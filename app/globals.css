@@ -40,9 +40,15 @@
     text-align: justify;
   }
   
-  /* Headings should remain left-aligned for better readability */
+  /* All titles/headings should be centered */
   h1, h2, h3, h4, h5, h6 {
-    text-align: left;
+    text-align: center;
+  }
+  
+  /* Hero section titles should remain left-aligned */
+  section[class*="relative min-h-screen"] h1,
+  section[class*="relative min-h-screen"] h2 {
+    text-align: left !important;
   }
   
   /* Navigation and buttons should remain left-aligned */

@@ -84,7 +84,7 @@ export default function FeaturedEvents() {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredEvents.map((event, index) => (
+          {featuredEvents.slice(0, 3).map((event, index) => (
             <motion.div
               key={event.id}
               initial={{ opacity: 0, y: 30 }}
