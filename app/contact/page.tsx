@@ -24,10 +24,14 @@ export default function ContactPage() {
     }, 3000);
   };
 
-  // Google Maps embed URL for the address - using CHANGER FUSIONS ENTERPRISE location
-  const mapAddress = encodeURIComponent("CHANGER FUSIONS ENTERPRISE, Mombasa, Kenya");
-  const googleMapsUrl = `https://www.google.com/maps?q=${mapAddress}&output=embed`;
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${mapAddress}`;
+  // Google Maps embed URL for the address - using CHANGER FUSIONS ENTERPRISE location from Google Business Profile
+  const mapAddress = "CHANGER FUSIONS ENTERPRISE, Mombasa, Kenya";
+  const encodedAddress = encodeURIComponent(mapAddress);
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+  const googleBusinessProfileUrl = "https://share.google/WYxPFHfwFnSjfywZn";
+  
+  // Google Maps embed URL - using search query format (works without API key)
+  const mapEmbedUrl = `https://www.google.com/maps?q=${encodedAddress}&output=embed&hl=en`;
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
@@ -80,10 +84,17 @@ export default function ContactPage() {
               </div>
               <h3 className="text-xl font-bold mb-2 text-gray-900">Address</h3>
               <p className="text-gray-600 text-sm">
-                AMBALAL BULDING, NKRUMA ROAD<br />
-                MOMBASA MOMBASA DISTRICT<br />
-                MOMBASA P.O BOX 281, 40305 - MBITA
+                CHANGER FUSIONS ENTERPRISE<br />
+                Mombasa, Kenya
               </p>
+              <a
+                href={googleBusinessProfileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block transition-colors"
+              >
+                View on Google Maps →
+              </a>
             </div>
           </motion.div>
 
@@ -101,17 +112,28 @@ export default function ContactPage() {
                 <p className="text-gray-600 mb-4">
                   Visit us at our office in Mombasa. We're here to help you with all your marketing and event planning needs.
                 </p>
-                <a
-                  href={directionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
-                >
-                  <Navigation className="w-5 h-5 mr-2" />
-                  Get Directions
-                </a>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a
+                    href={directionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                  >
+                    <Navigation className="w-5 h-5 mr-2" />
+                    Get Directions
+                  </a>
+                  <a
+                    href={googleBusinessProfileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                  >
+                    <MapPin className="w-5 h-5 mr-2" />
+                    View on Google Business
+                  </a>
+                </div>
               </div>
-              <div className="relative h-96 w-full">
+              <div className="relative h-96 w-full bg-gray-200">
                 <iframe
                   width="100%"
                   height="100%"
@@ -119,7 +141,9 @@ export default function ContactPage() {
                   loading="lazy"
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6d-s6V4qO3gJ&q=The+Ambalal+Building,+Nkruma+Road,+Mombasa,+Kenya`}
+                  src={mapEmbedUrl}
+                  title="CHANGER FUSIONS ENTERPRISE Location"
+                  className="absolute inset-0"
                 ></iframe>
               </div>
             </motion.div>
