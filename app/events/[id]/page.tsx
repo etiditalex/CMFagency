@@ -11,17 +11,17 @@ import { useParams } from "next/navigation";
 // All events data - matching the events page
 const featuredEvent = {
   id: 1,
-  title: "Changer Fusions Enterprise Gala Awards 2025",
-  subtitle: "Gala AWARDS",
-  date: new Date(2025, 10, 24),
-  endDate: new Date(2025, 10, 28),
-  galaDate: new Date(2025, 10, 28),
-  location: "Kenya School of Government (Main)",
-  fullLocation: "Kenya School of Government - Nairobi",
-  time: "09:00 AM - 09:00 PM",
+  title: "Mr and Ms Deaf Kenya",
+  subtitle: "Beauty Pageant",
+  date: new Date(2024, 8, 15),
+  endDate: new Date(2024, 8, 15),
+  galaDate: new Date(2024, 8, 15),
+  location: "Mombasa, Kenya",
+  fullLocation: "Mombasa, Coast Region",
+  time: "6:00 PM - 11:00 PM",
   image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-  description: "Changer Fusions Enterprise Gala Awards is an immersive journey where young leaders and creatives design powerful sustainable fashion pieces while gaining skills in leadership, climate advocacy, and innovation. Over 4 transformative days, participants collaborate, create, and prepare to showcase their eco-conscious designs. The experience culminates in the spectacular Gala Awards Night, themed Sustainable Fashion; a celebration of beauty, intellect, and climate action across Africa.",
-  status: "upcoming",
+  description: "A prestigious beauty pageant celebrating the beauty, talent, and achievements of the deaf community in Kenya. This inclusive event showcases the remarkable abilities and contributions of deaf individuals, promoting awareness, inclusion, and empowerment. The pageant features contestants from across Kenya competing for the titles of Mr and Ms Deaf Kenya, highlighting their talents, advocacy work, and positive impact on society.",
+  status: "past",
   category: "Fashion & Modelling",
   registrationOpen: false,
   tickets: [
@@ -163,7 +163,7 @@ const allEvents = [
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprise.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
     status: "upcoming",
     category: "Corporate Partnership",
   },
@@ -299,13 +299,15 @@ export default function EventDetailPage() {
   // Generate schedule based on event type
   const generateSchedule = (event: any) => {
     if (event.id === 1) {
-      // Gala Awards special schedule
+      // Mr and Ms Deaf Kenya schedule
       return [
-        { time: "Day 1 (Nov 24)", activity: "Registration & Opening Ceremony" },
-        { time: "Day 2 (Nov 25)", activity: "Workshops & Design Sessions" },
-        { time: "Day 3 (Nov 26)", activity: "Collaboration & Creation" },
-        { time: "Day 4 (Nov 27)", activity: "Final Preparations" },
-        { time: "Day 5 (Nov 28)", activity: "Gala Awards Night - 09:00 AM - 09:00 PM" },
+        { time: "6:00 PM", activity: "Registration & Welcome Reception" },
+        { time: "6:30 PM", activity: "Opening Ceremony & Introduction of Contestants" },
+        { time: "7:00 PM", activity: "Talent Showcase & Cultural Performances" },
+        { time: "8:00 PM", activity: "Fashion & Evening Wear Competition" },
+        { time: "9:00 PM", activity: "Question & Answer Session" },
+        { time: "10:00 PM", activity: "Awards Ceremony & Crowning of Winners" },
+        { time: "11:00 PM", activity: "Closing & Networking" },
       ];
     }
     // Default schedule for other events

@@ -1,4 +1,4 @@
-# Deployment Checklist for Changer Fusions Enterprise Website
+# Deployment Checklist for Changer Fusions Enterprises Website
 
 ## ✅ Build Status
 - **Build Status**: ✅ Successful

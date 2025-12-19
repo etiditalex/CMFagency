@@ -34,4 +34,21 @@
   }
 }
 
+/* Text justification across all website */
+@layer base {
+  p, div, span, li, td, th, article, section {
+    text-align: justify;
+  }
+  
+  /* Headings should remain left-aligned for better readability */
+  h1, h2, h3, h4, h5, h6 {
+    text-align: left;
+  }
+  
+  /* Navigation and buttons should remain left-aligned */
+  nav, button, a, input, textarea, select {
+    text-align: left;
+  }
+}
+
 

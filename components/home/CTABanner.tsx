@@ -60,7 +60,7 @@ export default function CTABanner() {
             Fuse Change & Excellence
           </h2>
           <p className="text-xl text-white/90 mb-8 leading-relaxed">
-            Join thousands of professionals who trust Changer Fusions Enterprise for transformative event planning,
+            Join thousands of professionals who trust Changer Fusions Enterprises for transformative event planning,
             strategic marketing solutions, and comprehensive career development. Experience the fusion of innovation and enterprise excellence.
           </p>
 

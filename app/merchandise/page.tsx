@@ -22,53 +22,53 @@ const merchandise: Array<{
   // T-Shirts
   {
     id: 1,
-    name: "Changer Fusions Enterprise Classic T-Shirt",
+    name: "Changer Fusions Enterprises Classic T-Shirt",
     price: 2500,
     originalPrice: null,
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/t-shirts_hm50aj.jpg",
     category: "T-Shirts",
     rating: 4.8,
     reviews: 124,
-    description: "Premium quality cotton t-shirt with Changer Fusions Enterprise branding. Comfortable fit for everyday wear.",
+    description: "Premium quality cotton t-shirt with Changer Fusions Enterprises branding. Comfortable fit for everyday wear.",
     inStock: true,
   },
   // Water Bottles
   {
     id: 2,
-    name: "Changer Fusions Enterprise Water Bottle",
+    name: "Changer Fusions Enterprises Water Bottle",
     price: 1500,
     originalPrice: null,
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/water_bottle_it6dhy.jpg",
     category: "Water Bottles",
     rating: 4.6,
     reviews: 203,
-    description: "Eco-friendly stainless steel water bottle with Changer Fusions Enterprise logo. Keeps drinks cold for 24 hours or hot for 12 hours.",
+    description: "Eco-friendly stainless steel water bottle with Changer Fusions Enterprises logo. Keeps drinks cold for 24 hours or hot for 12 hours.",
     inStock: true,
   },
   // Hoodies
   {
     id: 3,
-    name: "Changer Fusions Enterprise Classic Hoodie",
+    name: "Changer Fusions Enterprises Classic Hoodie",
     price: 4500,
     originalPrice: null,
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/hoodie_hwkw2l.jpg",
     category: "Hoodies",
     rating: 4.9,
     reviews: 89,
-    description: "Comfortable hoodie perfect for casual wear. Features Changer Fusions Enterprise branding and soft fleece interior.",
+    description: "Comfortable hoodie perfect for casual wear. Features Changer Fusions Enterprises branding and soft fleece interior.",
     inStock: true,
   },
   // Key Holders
   {
     id: 4,
-    name: "Changer Fusions Enterprise Key Holder",
+    name: "Changer Fusions Enterprises Key Holder",
     price: 800,
     originalPrice: null,
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/Key_holder_nkhf6x.jpg",
     category: "Key Holders",
     rating: 4.4,
     reviews: 145,
-    description: "Premium key holder with Changer Fusions Enterprise logo. Durable and stylish design.",
+    description: "Premium key holder with Changer Fusions Enterprises logo. Durable and stylish design.",
     inStock: true,
   },
 ];
@@ -102,7 +102,7 @@ export default function MerchandisePage() {
             className="text-center max-w-3xl mx-auto"
           >
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Changer Fusions Enterprise Merchandise
+              Changer Fusions Enterprises Merchandise
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
               Show your support with our premium branded merchandise. Quality products designed

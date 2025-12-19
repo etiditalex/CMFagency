@@ -24,9 +24,9 @@ export default function ContactPage() {
     }, 3000);
   };
 
-  // Google Maps embed URL for the address
-  const mapAddress = "The+Ambalal+Building,+Nkruma+Road,+Mombasa,+Kenya";
-  const googleMapsUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6d-s6V4qO3gJ&q=${mapAddress}`;
+  // Google Maps embed URL for the address - using CHANGER FUSIONS ENTERPRISE location
+  const mapAddress = encodeURIComponent("CHANGER FUSIONS ENTERPRISE, Mombasa, Kenya");
+  const googleMapsUrl = `https://www.google.com/maps?q=${mapAddress}&output=embed`;
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${mapAddress}`;
 
   return (

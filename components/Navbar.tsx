@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, Phone, User, Ticket } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -26,7 +26,6 @@ export default function Navbar() {
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
     { href: "/merchandise", label: "Merchandise" },
-    { href: "/contact", label: "Contact" },
   ];
 
   return (
@@ -62,8 +61,8 @@ export default function Navbar() {
           <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
             <div className="relative w-20 h-20 md:w-24 md:h-24">
               <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765365917/cmfagency_logo_h1skcp.jpg"
-                alt="Changer Fusions Enterprise Logo"
+                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                alt="Changer Fusions Enterprises Logo"
                 fill
                 className="object-contain"
                 priority
@@ -90,13 +89,6 @@ export default function Navbar() {
                   {getTotalItems()}
                 </span>
               )}
-            </Link>
-            <Link
-              href="/contact"
-              className="p-2 text-gray-900 hover:text-primary-600 transition-colors"
-              aria-label="Phone"
-            >
-              <Phone className="w-5 h-5" />
             </Link>
             <Link
               href="/profile"
@@ -160,14 +152,6 @@ export default function Navbar() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span>Shopping Cart</span>
-                </Link>
-                <Link
-                  href="/contact"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>Contact</span>
                 </Link>
                 <Link
                   href="/profile"

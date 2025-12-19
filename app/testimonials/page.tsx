@@ -20,7 +20,7 @@ const testimonials = [
     role: "CEO, TechCorp Inc.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892261/IMG_9817_qlxozr.jpg",
     rating: 5,
-    quote: "Changer Fusions Enterprise transformed our event planning process. Their attention to detail and creative approach made our annual conference a huge success. The team's professionalism and dedication to excellence is unmatched. Highly recommended!",
+    quote: "Changer Fusions Enterprises transformed our event planning process. Their attention to detail and creative approach made our annual conference a huge success. The team's professionalism and dedication to excellence is unmatched. Highly recommended!",
   },
   {
     id: 3,
@@ -28,7 +28,7 @@ const testimonials = [
     role: "Marketing Director, GreenLife",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892256/IMG_0331_zz7s2k.jpg",
     rating: 5,
-    quote: "Working with Changer Fusions Enterprise has been a game-changer for our brand. Their marketing strategies and portfolio of work speak for themselves. They understand our vision and deliver exceptional results every time.",
+    quote: "Working with Changer Fusions Enterprises has been a game-changer for our brand. Their marketing strategies and portfolio of work speak for themselves. They understand our vision and deliver exceptional results every time.",
   },
   {
     id: 4,
@@ -36,7 +36,7 @@ const testimonials = [
     role: "Event Coordinator, EventPro",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892255/IMG_0320_xc3kuq.jpg",
     rating: 4.5,
-    quote: "The team at Changer Fusions Enterprise is professional, creative, and always delivers on time. They've helped us execute multiple successful events with seamless planning. Their expertise in event management is truly remarkable.",
+    quote: "The team at Changer Fusions Enterprises is professional, creative, and always delivers on time. They've helped us execute multiple successful events with seamless planning. Their expertise in event management is truly remarkable.",
   },
   {
     id: 5,
@@ -44,7 +44,7 @@ const testimonials = [
     role: "Founder, StartupHub",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892258/IMG_0373_e07xid.jpg",
     rating: 5,
-    quote: "Changer Fusions Enterprise's comprehensive approach to marketing and event planning helped us establish our brand in the market. Their expertise is unmatched, and they truly care about their clients' success.",
+    quote: "Changer Fusions Enterprises' comprehensive approach to marketing and event planning helped us establish our brand in the market. Their expertise is unmatched, and they truly care about their clients' success.",
   },
 ];
 
@@ -241,7 +241,7 @@ export default function TestimonialsPage() {
               Ready to Fuse Change & Excellence?
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Let's work together to create transformative success stories. Contact Changer Fusions Enterprise today to experience the fusion of innovation and enterprise excellence.
+              Let's work together to create transformative success stories. Contact Changer Fusions Enterprises today to experience the fusion of innovation and enterprise excellence.
             </p>
             <a
               href="/contact"

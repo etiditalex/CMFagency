@@ -24,14 +24,6 @@ const carouselItems = [
     partnerLink: "/contact",
   },
   {
-    id: 3,
-    title: "SUSTAINABLE FASHION GALA",
-    mission: "Celebrating Eco-Conscious Design and Climate Action Through Fashion.",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
-  },
-  {
     id: 4,
     title: "MARKETING EXCELLENCE AWARDS",
     mission: "Recognizing Innovation and Excellence in Marketing Across Industries.",
@@ -40,17 +32,9 @@ const carouselItems = [
     partnerLink: "/contact",
   },
   {
-    id: 5,
-    title: "YOUTH EMPOWERMENT SUMMIT",
-    mission: "Empowering the Next Generation of Leaders and Innovators.",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.00_AM_b8niqq.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
-  },
-  {
     id: 6,
-    title: "INNOVATION & TECHNOLOGY FORUM",
-    mission: "Bridging the Gap Between Innovation and Market Success.",
+    title: "AGRICULTURAL SHOW & EXHIBITION",
+    mission: "Showcasing Innovation in Agriculture, Livestock, and Agribusiness. Connecting Farmers, Exhibitors, and Industry Leaders for Sustainable Agricultural Development.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg",
     registerLink: "/events",
     partnerLink: "/contact",
@@ -156,7 +140,7 @@ export default function Hero() {
                     className="mb-4"
                   >
                     <span className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      <span>Changer Fusions Enterprise</span>
+                      <span>Changer Fusions Enterprises</span>
                     </span>
                   </motion.div>
 

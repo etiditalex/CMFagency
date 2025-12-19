@@ -10,7 +10,7 @@ import { format } from "date-fns";
 const featuredEvents = [
   {
     id: 1,
-    title: "Changer Fusions Enterprise Gala Awards 2025",
+    title: "Changer Fusions Enterprises Gala Awards 2025",
     date: new Date(2025, 10, 24),
     location: "Kenya School of Government (Main)",
     time: "09:00 AM - 09:00 PM",
@@ -60,7 +60,7 @@ const featuredEvents = [
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprise.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
   },
 ];
 

@@ -9,16 +9,16 @@ import { format } from "date-fns";
 
 const featuredEvent = {
   id: 1,
-  title: "Changer Fusions Enterprise Gala Awards 2025",
-  subtitle: "Gala AWARDS",
-  date: new Date(2025, 10, 24),
-  endDate: new Date(2025, 10, 28),
-  galaDate: new Date(2025, 10, 28),
-  location: "Kenya School of Government (Main)",
-  fullLocation: "Kenya School of Government - Nairobi",
-  time: "09:00 AM - 09:00 PM",
+  title: "Mr and Ms Deaf Kenya",
+  subtitle: "Beauty Pageant",
+  date: new Date(2024, 8, 15),
+  endDate: new Date(2024, 8, 15),
+  galaDate: new Date(2024, 8, 15),
+  location: "Mombasa, Kenya",
+  fullLocation: "Mombasa, Coast Region",
+  time: "6:00 PM - 11:00 PM",
   image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-  description: "Changer Fusions Enterprise Gala Awards is an immersive journey where young leaders and creatives design powerful sustainable fashion pieces while gaining skills in leadership, climate advocacy, and innovation. Over 4 transformative days, participants collaborate, create, and prepare to showcase their eco-conscious designs. The experience culminates in the spectacular Gala Awards Night, themed Sustainable Fashion; a celebration of beauty, intellect, and climate action across Africa.",
+  description: "A prestigious beauty pageant celebrating the beauty, talent, and achievements of the deaf community in Kenya. This inclusive event showcases the remarkable abilities and contributions of deaf individuals, promoting awareness, inclusion, and empowerment. The pageant features contestants from across Kenya competing for the titles of Mr and Ms Deaf Kenya, highlighting their talents, advocacy work, and positive impact on society.",
   registrationOpen: false,
   tickets: [
     { type: "Early Bird", price: 1000, currency: "KSh" },
@@ -161,7 +161,7 @@ const events = [
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprise.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
     status: "upcoming",
     category: "Corporate Partnership",
   },
@@ -311,9 +311,9 @@ export default function EventsPage() {
                 <div className="bg-gradient-to-br from-primary-500 to-secondary-500 p-5 rounded-lg shadow-lg flex-shrink-0 w-32 h-32 flex flex-col items-center justify-center">
                   <Award className="w-10 h-10 text-white mb-2" />
                   <div className="text-center">
-                    <p className="text-white text-xs font-bold leading-tight">CHANGER</p>
-                    <p className="text-white text-xs font-bold leading-tight">MARKETING FUSION</p>
-                    <p className="text-white text-sm font-bold mt-1">Gala AWARDS</p>
+                    <p className="text-white text-xs font-bold leading-tight">MR & MS</p>
+                    <p className="text-white text-xs font-bold leading-tight">DEAF</p>
+                    <p className="text-white text-sm font-bold mt-1">KENYA</p>
                   </div>
                 </div>
                 <div className="flex-1">
@@ -373,13 +373,13 @@ export default function EventsPage() {
                 <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
 
                 <div className="relative z-10 flex flex-col h-full">
-                  {/* Gala AWARDS Title - Elegant Script Style */}
+                  {/* Mr and Ms Deaf Kenya Title - Elegant Script Style */}
                   <div className="mb-6">
-                    <h2 className="text-7xl md:text-8xl font-bold text-white leading-none" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-2px' }}>
-                      Gala
+                    <h2 className="text-5xl md:text-6xl font-bold text-white leading-none" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-1px' }}>
+                      Mr & Ms
                     </h2>
-                    <h2 className="text-7xl md:text-8xl font-bold text-white leading-none" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-2px' }}>
-                      AWARDS
+                    <h2 className="text-5xl md:text-6xl font-bold text-white leading-none" style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', letterSpacing: '-1px' }}>
+                      Deaf Kenya
                     </h2>
                   </div>
 

@@ -31,10 +31,10 @@ export default function CompanyIntro() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              About Changer Fusions Enterprise
+              About Changer Fusions Enterprises
             </h2>
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              CMF is a dynamic platform offering comprehensive solutions for event planning,
+              CFE is a dynamic platform offering comprehensive solutions for event planning,
               marketing, and career development. We integrate planning, branding, training,
               job opportunities, and talent management into one seamless experience.
             </p>
@@ -88,7 +88,7 @@ export default function CompanyIntro() {
             <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <Image
                 src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892252/IMG_0310_lemh6v.jpg"
-                alt="Changer Fusions Enterprise Team"
+                alt="Changer Fusions Enterprises Team"
                 fill
                 className="object-cover"
               />
