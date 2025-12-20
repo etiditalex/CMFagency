@@ -39,7 +39,7 @@ export default function Navbar() {
       }`}
     >
       <div className="container-custom">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-[90px]">
           {/* Left Section - Navigation Links */}
           <div className="hidden lg:flex items-center space-x-6">
             {navLinks.map((link) => (
@@ -58,8 +58,8 @@ export default function Navbar() {
           </div>
 
           {/* Center Section - Logo */}
-          <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
-            <div className="relative w-20 h-20 md:w-24 md:h-24">
+          <Link href="/" className="absolute left-1/2 transform -translate-x-1/2 z-10">
+            <div className="relative w-48 h-[90px] md:w-56 lg:w-64">
               <Image
                 src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
                 alt="Changer Fusions Enterprises Logo"

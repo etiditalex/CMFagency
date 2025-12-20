@@ -32,7 +32,7 @@ const featuredEvents = [
     date: new Date(2024, 10, 15),
     location: "Nairobi, Kenya",
     time: "6:00 PM - 9:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
     description: "Networking event for marketing professionals to connect, share insights, and build meaningful business relationships.",
   },
   {
