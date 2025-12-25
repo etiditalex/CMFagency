@@ -2,50 +2,35 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Handshake } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 const carouselItems = [
   {
     id: 1,
-    title: "2025/2027 BOOTCAMP & GALA AWARDS",
-    mission: "Empowering Climate Champions for a Sustainable Future for Africa.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
+    alt: "Marketing and Events",
   },
   {
     id: 2,
-    title: "CHANGER FUSIONS ENTERPRISE SUMMIT 2025",
-    mission: "Market to thrive, Market to exist. Empowering businesses through innovative marketing strategies and transformative solutions.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
+    alt: "Business Growth",
   },
   {
     id: 3,
-    title: "MARKETING EXCELLENCE AWARDS",
-    mission: "Recognizing Innovation and Excellence in Marketing Across Industries.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.32.06_AM_loqhra.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
+    alt: "Marketing Excellence",
   },
   {
     id: 4,
-    title: "AGRICULTURAL SHOW & EXHIBITION",
-    mission: "Showcasing Innovation in Agriculture, Livestock, and Agribusiness. Connecting Farmers, Exhibitors, and Industry Leaders for Sustainable Agricultural Development.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
+    alt: "Events and Exhibitions",
   },
   {
     id: 5,
-    title: "CHANGER FUSIONS ENTERPRISES",
-    mission: "Market to thrive, Market to exist. Empowering businesses through innovative marketing strategies and transformative solutions.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
-    registerLink: "/events",
-    partnerLink: "/contact",
+    alt: "Strategic Marketing",
   },
 ];
 
@@ -127,7 +112,7 @@ export default function Hero() {
             <div className="absolute inset-0">
               <Image
                 src={carouselItems[currentIndex].image}
-                alt={carouselItems[currentIndex].title}
+                alt={carouselItems[currentIndex].alt}
                 fill
                 className="object-cover"
                 priority={currentIndex === 0}
@@ -135,70 +120,70 @@ export default function Hero() {
               {/* Overlay with website colors */}
               <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
             </div>
-
-            {/* Content Overlay */}
-            <div className="relative z-10 h-full flex items-center">
-              <div className="container-custom w-full">
-                <div className="max-w-2xl">
-                  {/* Tagline */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    className="mb-4"
-                  >
-                    <span className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      <span>Changer Fusions Enterprises</span>
-                    </span>
-                  </motion.div>
-
-                  {/* Title */}
-                  <motion.h1
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight text-left"
-                  >
-                    {carouselItems[currentIndex].title}
-                  </motion.h1>
-
-                  {/* Mission Statement */}
-                  <motion.p
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="text-xl md:text-2xl text-white/95 mb-8 italic font-light"
-                  >
-                    {carouselItems[currentIndex].mission}
-                  </motion.p>
-
-                  {/* Action Buttons */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                    className="flex flex-col sm:flex-row gap-4"
-                  >
-                    <Link
-                      href={carouselItems[currentIndex].registerLink}
-                      className="inline-flex items-center justify-center space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
-                    >
-                      <CheckCircle className="w-5 h-5 text-primary-600" />
-                      <span>Register today</span>
-                    </Link>
-                    <Link
-                      href={carouselItems[currentIndex].partnerLink}
-                      className="inline-flex items-center justify-center space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
-                    >
-                      <ArrowRight className="w-5 h-5 text-primary-600" />
-                      <span>Partner with us</span>
-                    </Link>
-                  </motion.div>
-                </div>
-              </div>
-            </div>
           </motion.div>
         </AnimatePresence>
+
+        {/* Static Content Overlay - Always visible */}
+        <div className="relative z-10 h-full flex items-center">
+          <div className="container-custom w-full">
+            <div className="max-w-2xl">
+              {/* Tagline */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="mb-4"
+              >
+                <span className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
+                  <span>Changer Fusions</span>
+                </span>
+              </motion.div>
+
+              {/* Title */}
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight text-left"
+              >
+                Strategic Marketing That Powers Growth and Relevance
+              </motion.h1>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed"
+              >
+                Market to thrive, Market to exit
+              </motion.p>
+
+              {/* Action Buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+                className="flex flex-col sm:flex-row gap-4"
+              >
+                <Link
+                  href="/events"
+                  className="inline-flex items-center justify-start space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
+                >
+                  <Calendar className="w-5 h-5 text-primary-600" />
+                  <span>Are you planning an event?</span>
+                </Link>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-start space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
+                >
+                  <Handshake className="w-5 h-5 text-primary-600" />
+                  <span>Partner with Us</span>
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+        </div>
 
         {/* Navigation Arrows */}
         <button

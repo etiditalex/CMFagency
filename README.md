@@ -1,4 +1,4 @@
-# Changer Fusions Enterprises - Marketing & Events Planning Platform
+# Changer Fusions - Marketing & Events Planning Platform
 
 A comprehensive Next.js 14 application for event planning, marketing, and career development services.
 

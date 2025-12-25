@@ -1,48 +1,43 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Clock, ArrowRight, Rocket, Briefcase, BookOpen, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 
-// Real events from the events page
+// Icon mapping for event categories
+const getEventIcon = (category: string) => {
+  const iconMap: { [key: string]: any } = {
+    "Corporate Events": Briefcase,
+    "Marketing & Brand Events": Rocket,
+    "Training, Workshops & Masterclasses": BookOpen,
+    "Student Engagement": Users,
+    "Fashion & Modelling": Sparkles,
+  };
+  return iconMap[category] || Calendar;
+};
+
+// Gradient colors for icon backgrounds - using website color palette
+const getIconGradient = (index: number) => {
+  const gradients = [
+    "from-primary-500 to-primary-600",
+    "from-secondary-400 via-secondary-500 to-primary-500",
+    "from-primary-500 to-primary-600",
+    "from-secondary-400 via-secondary-500 to-primary-500",
+  ];
+  return gradients[index % gradients.length];
+};
+
+// Featured events representing our event categories
 const featuredEvents = [
   {
-    id: 1,
-    title: "Changer Fusions Enterprises Gala Awards 2025",
-    date: new Date(2025, 10, 24),
-    location: "Kenya School of Government (Main)",
-    time: "09:00 AM - 09:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    description: "An immersive journey where young leaders and creatives design powerful sustainable fashion pieces while gaining skills in leadership, climate advocacy, and innovation.",
-  },
-  {
-    id: 6,
-    title: "Mr and Miss Culture Subaland",
-    date: new Date(2024, 10, 5),
-    location: "Subaland Region",
-    time: "4:00 PM - 8:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
-    description: "Cultural pageant celebrating the rich heritage and traditions of the Subaland region through fashion, talent, and cultural presentations.",
-  },
-  {
-    id: 8,
-    title: "Marketing Society Networking Mixer",
-    date: new Date(2024, 10, 15),
+    id: 12,
+    title: "Corporate Sponsorship Launch",
+    date: new Date(2024, 8, 20),
     location: "Nairobi, Kenya",
-    time: "6:00 PM - 9:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
-    description: "Networking event for marketing professionals to connect, share insights, and build meaningful business relationships.",
-  },
-  {
-    id: 15,
-    title: "Leadership Development Seminar",
-    date: new Date(2024, 10, 8),
-    location: "University Campus",
-    time: "9:00 AM - 4:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
-    description: "Comprehensive seminar focused on developing leadership skills, strategic thinking, and professional growth for students and young professionals.",
+    time: "10:00 AM - 2:00 PM",
+    description: "Official launch event for corporate sponsorship partnerships, featuring stakeholder presentations and partnership announcements.",
+    category: "Corporate Events",
   },
   {
     id: 11,
@@ -50,8 +45,17 @@ const featuredEvents = [
     date: new Date(2024, 11, 5),
     location: "Nairobi, Kenya",
     time: "2:00 PM - 5:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
     description: "Launch event for major marketing campaigns, featuring guest speakers, strategy presentations, and networking opportunities.",
+    category: "Marketing & Brand Events",
+  },
+  {
+    id: 15,
+    title: "Leadership Development Seminar",
+    date: new Date(2024, 10, 8),
+    location: "University Campus",
+    time: "9:00 AM - 4:00 PM",
+    description: "Comprehensive seminar focused on developing leadership skills, strategic thinking, and professional growth.",
+    category: "Training, Workshops & Masterclasses",
   },
   {
     id: 13,
@@ -59,8 +63,8 @@ const featuredEvents = [
     date: new Date(2024, 10, 22),
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions.",
+    category: "Corporate Events",
   },
 ];
 
@@ -79,58 +83,43 @@ export default function FeaturedEvents() {
             Featured Events
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover upcoming events and join our community of professionals
+            Discover our events and join our community of professionals
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredEvents.slice(0, 3).map((event, index) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 group"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <Image
-                  src={event.image}
-                  alt={event.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute top-4 left-4 bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  {format(event.date, "MMM d")}
-                </div>
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2 text-gray-900">{event.title}</h3>
-                <p className="text-gray-600 mb-4 text-sm">{event.description}</p>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                    {format(event.date, "EEEE, MMMM d, yyyy")}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {featuredEvents.map((event, index) => {
+            const EventIcon = getEventIcon(event.category);
+            const iconGradient = getIconGradient(index);
+            
+            return (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group"
+              >
+                <Link href={`/events/${event.id}`} className="block p-6">
+                  {/* Icon Container */}
+                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4`}>
+                    <EventIcon className="w-8 h-8 text-white" />
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="w-4 h-4 mr-2 text-primary-600" />
-                    {event.location}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Clock className="w-4 h-4 mr-2 text-primary-600" />
-                    {event.time}
-                  </div>
-                </div>
-                <Link
-                  href={`/events/${event.id}`}
-                  className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 transition-colors group-hover:gap-2 gap-1"
-                >
-                  Learn More
-                  <ArrowRight className="w-4 h-4" />
+                  
+                  {/* Title */}
+                  <h3 className="text-lg font-bold mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
+                    {event.title}
+                  </h3>
+                  
+                  {/* Description */}
+                  <p className="text-gray-600 text-sm leading-relaxed">
+                    {event.description}
+                  </p>
                 </Link>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
 
         <motion.div

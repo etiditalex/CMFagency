@@ -55,10 +55,10 @@ export default function AboutPage() {
               </span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              About Changer Fusions Enterprises
+              About Changer Fusions
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              Changer Fusions Enterprises (CFE) is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients. With a focus on harnessing the power of change and innovation, CFE drives meaningful results and facilitates growth in an ever-evolving marketing landscape.
+              Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients. With a focus on harnessing the power of change and innovation, Changer Fusions drives meaningful results and facilitates growth in an ever-evolving marketing landscape.
             </p>
           </motion.div>
         </div>
@@ -121,7 +121,7 @@ export default function AboutPage() {
               What We Do
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Changer Fusions Enterprises offers a comprehensive suite of marketing services designed to meet the needs of businesses of all sizes.
+              Changer Fusions offers a comprehensive suite of marketing services designed to meet the needs of businesses of all sizes.
             </p>
           </motion.div>
 
@@ -195,7 +195,7 @@ export default function AboutPage() {
             >
               <h2 className="text-4xl font-bold mb-6 text-gray-900">What Makes Us Different?</h2>
               <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                Changer Fusions Enterprises' focus on "blending innovative marketing techniques" suggests we stay on top of the latest marketing trends and integrate them into our strategies. Our motto highlights our proactive approach, emphasizing the importance of marketing for business success.
+                Changer Fusions' focus on "blending innovative marketing techniques" suggests we stay on top of the latest marketing trends and integrate them into our strategies. Our motto highlights our proactive approach, emphasizing the importance of marketing for business success.
               </p>
               <p className="text-lg text-gray-700 leading-relaxed">
                 We conduct in-depth research to understand your target audience, your competitors, and current marketing trends. This data analysis allows us to develop effective marketing strategies that drive meaningful results and facilitate growth in an ever-evolving marketing landscape.
@@ -211,7 +211,7 @@ export default function AboutPage() {
               <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl">
                 <Image
                   src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892262/IMG_9853_ys9f08.jpg"
-                  alt="Changer Fusions Enterprises Team"
+                  alt="Changer Fusions Team"
                   fill
                   className="object-cover"
                 />

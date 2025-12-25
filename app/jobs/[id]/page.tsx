@@ -10,7 +10,7 @@ const jobs = [
   {
     id: 1,
     title: "Senior Marketing Manager",
-    company: "Changer Fusions Enterprises",
+    company: "Changer Fusions",
     location: "Remote / New York, NY",
     type: "Full-time",
     salary: "$80,000 - $120,000",
@@ -55,7 +55,7 @@ const jobs = [
   {
     id: 2,
     title: "Event Coordinator",
-    company: "Changer Fusions Enterprises",
+    company: "Changer Fusions",
     location: "Los Angeles, CA",
     type: "Full-time",
     salary: "$50,000 - $70,000",
@@ -100,7 +100,7 @@ const jobs = [
   {
     id: 3,
     title: "Graphic Designer",
-    company: "Changer Fusions Enterprises",
+    company: "Changer Fusions",
     location: "Remote",
     type: "Part-time",
     salary: "$40,000 - $60,000",
@@ -144,7 +144,7 @@ const jobs = [
   {
     id: 4,
     title: "Web Developer",
-    company: "Changer Fusions Enterprises",
+    company: "Changer Fusions",
     location: "San Francisco, CA",
     type: "Full-time",
     salary: "$90,000 - $130,000",

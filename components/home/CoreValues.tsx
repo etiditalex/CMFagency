@@ -1,43 +1,43 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, Leaf, Globe, Handshake, Lightbulb } from "lucide-react";
+import { Lightbulb, Shield, Star, Heart, TrendingUp } from "lucide-react";
 
 const coreValues = [
   {
-    icon: Users,
-    title: "Youth Empowerment",
-    description: "We believe in the power of young people to lead and inspire change. Equipping them with the right skills, resources, and platforms to foster the next generation of climate ambassadors.",
-    iconColor: "text-red-500",
-    bgColor: "bg-red-50",
+    icon: Lightbulb,
+    title: "Innovation",
+    description: "We embrace creativity, emerging trends, and modern technologies to deliver forward-thinking marketing strategies and memorable event experiences.",
+    iconColor: "text-yellow-500",
+    bgColor: "bg-yellow-50",
   },
   {
-    icon: Leaf,
-    title: "Sustainability",
-    description: "We champion practices that protect and restore the environment, securing the well-being of today's communities while safeguarding the future of generations to come.",
-    iconColor: "text-green-500",
-    bgColor: "bg-green-50",
-  },
-  {
-    icon: Globe,
-    title: "Inclusivity",
-    description: "We champion diversity by engaging voices from all genders, ages, and backgrounds, ensuring our initiatives reflect the true richness and strength of our communities.",
+    icon: Shield,
+    title: "Integrity",
+    description: "We operate with honesty, transparency, and accountability in every engagement, building trust with our clients, partners, and stakeholders.",
     iconColor: "text-blue-500",
     bgColor: "bg-blue-50",
   },
   {
-    icon: Handshake,
-    title: "Collaboration",
-    description: "We work with a wide range of partners, including government bodies, NGOs, local communities, and private sector players, to maximize the impact of our initiatives.",
+    icon: Star,
+    title: "Excellence",
+    description: "We are committed to the highest standards of quality, professionalism, and execution in both marketing solutions and event delivery.",
     iconColor: "text-primary-600",
     bgColor: "bg-primary-50",
   },
   {
-    icon: Lightbulb,
-    title: "Innovation and Technology",
-    description: "We embrace creativity and new technologies to advance climate advocacy and environmental conservation for lasting impact.",
-    iconColor: "text-yellow-500",
-    bgColor: "bg-yellow-50",
+    icon: Heart,
+    title: "Client-Centricity",
+    description: "Our clients' goals are at the center of everything we do. We listen, collaborate, and tailor solutions that deliver real value and measurable impact.",
+    iconColor: "text-red-500",
+    bgColor: "bg-red-50",
+  },
+  {
+    icon: TrendingUp,
+    title: "Impact & Results",
+    description: "We focus on outcomes, not just activity. Our success is measured by growth, visibility, engagement, and lasting impact for our clients.",
+    iconColor: "text-green-500",
+    bgColor: "bg-green-50",
   },
 ];
 

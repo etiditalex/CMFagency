@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
 
@@ -21,6 +20,7 @@ const featuredEvent = {
   time: "6:00 PM - 11:00 PM",
   image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
   description: "A prestigious beauty pageant celebrating the beauty, talent, and achievements of the deaf community in Kenya. This inclusive event showcases the remarkable abilities and contributions of deaf individuals, promoting awareness, inclusion, and empowerment. The pageant features contestants from across Kenya competing for the titles of Mr and Ms Deaf Kenya, highlighting their talents, advocacy work, and positive impact on society.",
+  fullDescription: "Mr and Ms Deaf Kenya is a prestigious and inclusive beauty pageant that celebrates the beauty, talent, and remarkable achievements of the deaf community in Kenya. This groundbreaking event goes beyond traditional pageantry to showcase the incredible abilities, resilience, and contributions of deaf individuals across the nation. The pageant features contestants from various regions of Kenya who compete for the prestigious titles of Mr and Ms Deaf Kenya, demonstrating their talents, advocacy work, cultural heritage, and positive impact on society. The event includes multiple competition segments including talent showcases, cultural presentations, evening wear competitions, and question-and-answer sessions that highlight contestants' intelligence, confidence, and commitment to advocacy. Beyond the competition, this pageant serves as a powerful platform for promoting awareness about deaf culture, breaking down barriers, challenging stereotypes, and advocating for inclusion and accessibility. The event brings together the deaf community, their families, supporters, and allies to celebrate diversity and empowerment. Winners of the pageant become ambassadors for the deaf community, using their platform to advocate for rights, accessibility, and inclusion. This event is not just about beauty and talent, but about celebrating the strength, resilience, and achievements of the deaf community while inspiring others and creating positive change in society.",
   status: "past",
   category: "Fashion & Modelling",
   registrationOpen: false,
@@ -142,6 +142,7 @@ const allEvents = [
     time: "2:00 PM - 5:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
     description: "Launch event for major marketing campaigns, featuring guest speakers, strategy presentations, and networking opportunities.",
+    fullDescription: "Join us for an exclusive Marketing Campaign Launch event that brings together industry leaders, marketing professionals, and business executives. This comprehensive event features keynote presentations from renowned marketing strategists who will share insights on cutting-edge marketing trends, digital transformation strategies, and innovative campaign approaches. Attendees will have the opportunity to learn about successful case studies, participate in interactive strategy workshops, and network with peers from various industries. The event includes panel discussions on topics such as social media marketing, content strategy, brand positioning, and customer engagement. Whether you're launching a new product, rebranding your company, or looking to enhance your marketing efforts, this event provides valuable knowledge and connections to help you achieve your marketing goals. Don't miss this opportunity to gain actionable insights and build meaningful professional relationships.",
     status: "upcoming",
     category: "Marketing & Promotional",
   },
@@ -153,6 +154,7 @@ const allEvents = [
     time: "10:00 AM - 2:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
     description: "Official launch event for corporate sponsorship partnerships, featuring stakeholder presentations and partnership announcements.",
+    fullDescription: "The Corporate Sponsorship Launch is a prestigious event that marks the beginning of strategic partnerships between leading corporations and Changer Fusions. This exclusive gathering brings together C-level executives, business leaders, and key stakeholders to announce and celebrate new sponsorship initiatives. The event features detailed presentations on partnership opportunities, corporate social responsibility programs, and collaborative initiatives that drive mutual growth and community impact. Attendees will gain insights into how corporate sponsorship can enhance brand visibility, support community development, and create meaningful social change. The program includes networking sessions, partnership showcases, and interactive discussions on sustainable business practices. This event is ideal for corporate leaders looking to expand their brand presence, engage with communities, and build strategic alliances that deliver both business value and social impact. Join us to explore how your organization can partner with us to create lasting positive change.",
     status: "past",
     category: "Corporate Partnership",
   },
@@ -163,7 +165,8 @@ const allEvents = [
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions.",
+    fullDescription: "The Joint Promotional Launch is a dynamic event that celebrates collaborative initiatives between Changer Fusions and our corporate partners. This exciting gathering showcases innovative joint marketing campaigns, co-branded initiatives, and strategic partnerships that drive business growth and market expansion. The event features live demonstrations of collaborative projects, interactive presentations on partnership success stories, and exclusive previews of upcoming joint ventures. Attendees will have the opportunity to learn about partnership models, explore collaboration opportunities, and network with potential business partners. The program includes workshops on building effective partnerships, case study presentations, and panel discussions featuring successful corporate collaborations. Whether you're a business looking to expand through partnerships or a corporate leader seeking innovative collaboration opportunities, this event provides valuable insights and networking platforms. Join us to discover how strategic partnerships can amplify your brand reach, enhance your market presence, and create mutually beneficial business relationships.",
     status: "upcoming",
     category: "Corporate Partnership",
   },
@@ -175,6 +178,7 @@ const allEvents = [
     time: "9:00 AM - 1:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
     description: "Strategic forum bringing together key stakeholders to discuss partnerships, collaborations, and future initiatives.",
+    fullDescription: "The Stakeholder Engagement Forum is a strategic gathering designed to foster meaningful dialogue between Changer Fusions and our key stakeholders, including corporate partners, community leaders, government representatives, and industry experts. This comprehensive forum provides a platform for discussing current initiatives, exploring future collaboration opportunities, and addressing challenges and opportunities in the market. The event features structured discussions on partnership strategies, collaborative project planning, and long-term relationship building. Attendees will participate in interactive workshops, strategic planning sessions, and networking opportunities designed to strengthen stakeholder relationships. The forum covers topics such as corporate social responsibility, sustainable business practices, community engagement, and innovative partnership models. This event is essential for stakeholders who want to stay informed about our initiatives, contribute to strategic planning, and build stronger collaborative relationships. Join us to be part of shaping the future of our partnerships and collaborative endeavors.",
     status: "past",
     category: "Corporate Partnership",
   },
@@ -186,6 +190,7 @@ const allEvents = [
     time: "9:00 AM - 4:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     description: "Comprehensive seminar focused on developing leadership skills, strategic thinking, and professional growth for students and young professionals.",
+    fullDescription: "The Leadership Development Seminar is an intensive, full-day program designed to equip students and young professionals with essential leadership skills and strategic thinking capabilities. This comprehensive seminar covers a wide range of topics including effective communication, decision-making processes, team management, conflict resolution, and emotional intelligence. Participants will engage in interactive workshops, case study analyses, and practical exercises that help them develop their leadership style and enhance their professional capabilities. The seminar features presentations from experienced leaders and industry experts who share real-world insights and best practices. Topics covered include building high-performing teams, managing change and uncertainty, developing strategic vision, and creating inclusive work environments. Whether you're a student preparing for your career, a young professional looking to advance, or someone seeking to enhance your leadership abilities, this seminar provides valuable knowledge and practical tools. Join us for a transformative learning experience that will help you become a more effective and confident leader in your personal and professional life.",
     status: "upcoming",
     category: "Educational & Leadership",
   },
@@ -197,6 +202,7 @@ const allEvents = [
     time: "2:00 PM - 5:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
     description: "Interactive panel discussion featuring industry experts sharing insights on career development and professional growth strategies.",
+    fullDescription: "The Professional Development Panel Discussion brings together a diverse group of industry experts, successful professionals, and career coaches to share valuable insights on career development and professional growth. This interactive session features panelists from various industries who discuss their career journeys, challenges they've overcome, and strategies that have contributed to their success. Topics covered include career planning, skill development, networking strategies, work-life balance, navigating career transitions, and building a personal brand. The discussion format allows for audience participation, with opportunities to ask questions and receive personalized advice from the panelists. Whether you're just starting your career, considering a career change, or looking to advance in your current field, this panel discussion provides practical advice and inspiration. The event includes networking breaks where attendees can connect with panelists and fellow professionals. Join us for an engaging afternoon of learning, inspiration, and professional growth.",
     status: "past",
     category: "Educational & Leadership",
   },
@@ -208,6 +214,7 @@ const allEvents = [
     time: "10:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     description: "Hands-on workshop series covering essential skills for career success, including communication, problem-solving, and digital literacy.",
+    fullDescription: "The Skill-Building Workshop Series is a comprehensive, hands-on program designed to develop essential skills that are crucial for career success in today's competitive job market. This intensive workshop series covers multiple skill areas including effective communication, critical thinking, problem-solving, digital literacy, time management, and teamwork. Each workshop session is interactive and practical, featuring exercises, role-playing activities, and real-world scenarios that help participants apply what they learn immediately. The series is structured to build upon each session, creating a comprehensive learning experience that enhances both personal and professional capabilities. Participants will work on projects, participate in group activities, and receive personalized feedback from experienced facilitators. The workshops are designed for students, recent graduates, and young professionals who want to strengthen their skill set and increase their employability. By the end of the series, participants will have developed a portfolio of skills and gained confidence in their abilities. Join us for this transformative learning experience that will give you a competitive edge in your career journey.",
     status: "upcoming",
     category: "Educational & Leadership",
   },
@@ -219,6 +226,7 @@ const allEvents = [
     time: "1:00 PM - 4:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
     description: "Forum for student leaders to discuss challenges, share experiences, and develop strategies for effective leadership in academic and community settings.",
+    fullDescription: "The Student Leadership Forum is a dedicated platform for student leaders from various academic institutions and community organizations to come together, share experiences, and collaborate on leadership challenges. This interactive forum provides a safe space for student leaders to discuss common issues they face, such as managing teams, organizing events, balancing academic and leadership responsibilities, and motivating peers. The forum features structured discussions, breakout sessions, and collaborative problem-solving activities that help participants develop practical leadership strategies. Experienced mentors and advisors facilitate discussions and provide guidance on effective leadership practices. Topics covered include team building, conflict resolution, project management, public speaking, and community engagement. The forum also includes networking opportunities where student leaders can connect with peers from other institutions, share best practices, and build lasting professional relationships. Whether you're a student council member, club president, community organizer, or aspiring leader, this forum provides valuable insights and support. Join us to connect with fellow leaders, gain new perspectives, and enhance your leadership capabilities.",
     status: "past",
     category: "Educational & Leadership",
   },
@@ -230,6 +238,7 @@ const allEvents = [
     time: "3:00 PM - 5:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     description: "Open town hall meeting providing students with a platform to voice concerns, share ideas, and engage with campus leadership.",
+    fullDescription: "The Campus Town Hall Meeting is an open, inclusive forum designed to foster transparent communication between students and campus leadership. This democratic platform provides students with the opportunity to voice their concerns, share innovative ideas, ask questions, and engage directly with administrators, faculty, and student representatives. The meeting covers a wide range of topics including campus facilities, academic programs, student services, campus policies, safety and security, extracurricular activities, and future campus initiatives. The format encourages active participation, with structured time for questions, suggestions, and open dialogue. Campus leadership uses this forum to share updates on ongoing projects, respond to student feedback, and discuss plans for campus improvements. This is an essential event for students who want to be actively involved in shaping their campus experience and ensuring their voices are heard. Whether you have concerns to raise, ideas to share, or simply want to stay informed about campus developments, this town hall meeting provides the perfect platform. Join us to be part of the conversation and help make a positive impact on your campus community.",
     status: "upcoming",
     category: "Student Engagement",
   },
@@ -241,6 +250,7 @@ const allEvents = [
     time: "2:00 PM - 4:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     description: "Interactive forum designed to gather student feedback on campus services, programs, and initiatives to improve student experience.",
+    fullDescription: "The Student Feedback Forum is a dedicated event designed to actively gather comprehensive feedback from students about various aspects of campus life, including academic services, student support programs, campus facilities, dining services, housing, transportation, and extracurricular activities. This interactive forum uses multiple feedback collection methods including structured surveys, focus group discussions, one-on-one interviews, and open suggestion sessions. The feedback collected during this forum is carefully analyzed and used to inform decision-making processes, improve existing services, and develop new initiatives that better meet student needs. The forum provides a structured environment where students can share both positive feedback and constructive criticism in a constructive manner. Campus administrators and service providers attend the forum to listen to student perspectives and respond to concerns. This event is crucial for ensuring that student voices are heard and that campus services continue to evolve to meet changing student needs. Your participation in this forum directly contributes to improving the campus experience for all students. Join us to share your thoughts, experiences, and suggestions for making our campus an even better place to learn and grow.",
     status: "past",
     category: "Student Engagement",
   },
@@ -252,6 +262,7 @@ const allEvents = [
     time: "10:00 AM - 2:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     description: "Campus-wide engagement drive encouraging student participation in activities, clubs, and campus initiatives to foster a vibrant campus community.",
+    fullDescription: "The Student Engagement Drive is a campus-wide initiative designed to inspire and encourage student participation in various activities, clubs, organizations, and campus programs. This dynamic event showcases the diverse range of opportunities available on campus, from academic clubs and professional organizations to sports teams, cultural groups, volunteer programs, and special interest societies. The drive features interactive booths, live demonstrations, performances, and presentations from different student organizations, giving students the chance to explore and learn about various engagement opportunities. Student leaders and organization representatives are available to answer questions, share their experiences, and help students find activities that match their interests and goals. The event also includes workshops on getting involved, building leadership skills, and making the most of campus life. Whether you're interested in joining a club, starting a new organization, participating in community service, or simply exploring new interests, this engagement drive provides the perfect starting point. Research shows that engaged students have better academic performance, stronger social connections, and greater satisfaction with their college experience. Join us to discover how you can get involved and make your campus experience more enriching and fulfilling.",
     status: "upcoming",
     category: "Student Engagement",
   },
@@ -335,16 +346,8 @@ export default function EventDetailPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg overflow-hidden mb-8"
+              className="bg-white rounded-xl shadow-lg mb-8"
             >
-              <div className="relative h-96">
-                <Image
-                  src={event.image}
-                  alt={event.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="px-4 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold">
@@ -360,7 +363,7 @@ export default function EventDetailPage() {
                 </div>
                 <h1 className="text-4xl font-bold mb-4 text-gray-900">{event.title}</h1>
                 <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                  {event.description}
+                  {"fullDescription" in event && event.fullDescription ? event.fullDescription : event.description}
                 </p>
 
                 {/* Event Details */}

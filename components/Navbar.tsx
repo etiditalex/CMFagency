@@ -40,8 +40,21 @@ export default function Navbar() {
     >
       <div className="container-custom">
         <div className="flex items-center justify-between h-[90px]">
-          {/* Left Section - Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6">
+          {/* Left Section - Logo */}
+          <Link href="/" className="flex-shrink-0">
+            <div className="relative w-48 h-[90px] md:w-56 lg:w-64">
+              <Image
+                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                alt="Changer Fusions Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+          </Link>
+
+          {/* Center Section - Navigation Links */}
+          <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -57,26 +70,13 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Center Section - Logo */}
-          <Link href="/" className="absolute left-1/2 transform -translate-x-1/2 z-10">
-            <div className="relative w-48 h-[90px] md:w-56 lg:w-64">
-              <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
-                alt="Changer Fusions Enterprises Logo"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
-
           {/* Right Section - Utility Icons and Events Button */}
           <div className="hidden lg:flex items-center space-x-4">
             <Link
               href="/marketing-fusion"
               className="font-bold text-gray-900 text-sm hover:text-primary-600 transition-colors"
             >
-              Marketing Fusion
+              Why Changer Fusions
             </Link>
             <Link
               href="/cart"
@@ -143,7 +143,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors"
                 >
-                  Marketing Fusion
+                  Why Changer Fusions
                 </Link>
                 <Link
                   href="/cart"

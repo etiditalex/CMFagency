@@ -4,17 +4,6 @@ import { motion } from "framer-motion";
 import { Users, CheckCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-const features = [
-  "Event Planning & Management",
-  "Trade Show Booth Design",
-  "Event Promotion & Marketing",
-  "Post-Event Follow-up & Analysis",
-  "Venue Selection & Coordination",
-  "Vendor Management",
-  "Event Branding",
-  "Attendee Engagement Strategies",
-];
-
 const benefits = [
   "Successful and memorable events",
   "Increased brand visibility",
@@ -46,7 +35,7 @@ export default function EventsMarketingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Event Management Scope Section */}
       <section className="section-padding bg-white">
         <div className="container-custom">
           <motion.div
@@ -57,14 +46,26 @@ export default function EventsMarketingPage() {
             className="text-center mb-12"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Our Events Marketing Services
+              Our Event Management Scope
             </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive event management services from concept to evaluation
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            {features.map((feature, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-5xl mx-auto">
+            {[
+              "Event Concept Development",
+              "Planning & Budgeting",
+              "Venue Sourcing & Setup",
+              "Event Marketing & Promotion",
+              "Logistics & Vendor Management",
+              "On-site Coordination & Execution",
+              "Media Coverage & Documentation",
+              "Post-Event Reporting & Evaluation",
+            ].map((item, index) => (
               <motion.div
-                key={feature}
+                key={item}
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
@@ -72,7 +73,7 @@ export default function EventsMarketingPage() {
                 className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
               >
                 <CheckCircle className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
-                <span className="text-gray-700 font-medium">{feature}</span>
+                <span className="text-gray-700 font-medium">{item}</span>
               </motion.div>
             ))}
           </div>

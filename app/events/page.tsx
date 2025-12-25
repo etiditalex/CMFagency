@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, Search, Ticket, QrCode, Award } from "lucide-react";
+import { Calendar, MapPin, Search, Ticket, QrCode, Award, Lightbulb, Rocket, Briefcase, BookOpen, Users, Target, TrendingUp, Sparkles } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 
 const featuredEvent = {
@@ -30,107 +29,6 @@ const featuredEvent = {
 };
 
 const events = [
-  // Fashion & Modelling Events
-  {
-    id: 2,
-    title: "The Coast Fashion and Modeling Awards",
-    date: new Date(2024, 8, 15),
-    location: "Mombasa, Coast Region",
-    time: "6:00 PM - 11:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    description: "Celebrating excellence in fashion and modeling along the Kenyan coast. A prestigious awards ceremony recognizing top talent in the fashion industry.",
-    status: "past",
-    category: "Fashion & Modelling",
-  },
-  {
-    id: 3,
-    title: "Mr and Miss Mombasa International Show",
-    date: new Date(2024, 9, 20),
-    location: "Mombasa, Coast Region",
-    time: "7:00 PM - 10:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
-    description: "An international showcase celebrating beauty, talent, and culture. Featuring contestants from across the region competing for prestigious titles.",
-    status: "past",
-    category: "Fashion & Modelling",
-  },
-  {
-    id: 4,
-    title: "Mr and Miss Mbita",
-    date: new Date(2024, 7, 10),
-    location: "Mbita, Homa Bay County",
-    time: "5:00 PM - 9:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    description: "A local pageant celebrating the beauty and talent of Mbita's youth, promoting cultural values and community engagement.",
-    status: "past",
-    category: "Fashion & Modelling",
-  },
-  {
-    id: 5,
-    title: "Mr and Miss Fashion Mbita",
-    date: new Date(2024, 7, 25),
-    location: "Mbita, Homa Bay County",
-    time: "6:00 PM - 10:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
-    description: "Fashion-focused competition showcasing innovative designs and modeling talent from the Mbita region.",
-    status: "past",
-    category: "Fashion & Modelling",
-  },
-  {
-    id: 6,
-    title: "Mr and Miss Culture Subaland",
-    date: new Date(2024, 10, 5),
-    location: "Subaland Region",
-    time: "4:00 PM - 8:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
-    description: "Cultural pageant celebrating the rich heritage and traditions of the Subaland region through fashion, talent, and cultural presentations.",
-    status: "upcoming",
-    category: "Fashion & Modelling",
-  },
-  // Marketing & Promotional Events
-  {
-    id: 7,
-    title: "Marketing Society of Kenya Workshop",
-    date: new Date(2024, 9, 12),
-    location: "Nairobi, Kenya",
-    time: "9:00 AM - 5:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Professional development workshop covering the latest marketing trends, strategies, and best practices in the Kenyan market.",
-    status: "past",
-    category: "Marketing & Promotional",
-  },
-  {
-    id: 8,
-    title: "Marketing Society Networking Mixer",
-    date: new Date(2024, 10, 15),
-    location: "Nairobi, Kenya",
-    time: "6:00 PM - 9:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    description: "Networking event for marketing professionals to connect, share insights, and build meaningful business relationships.",
-    status: "upcoming",
-    category: "Marketing & Promotional",
-  },
-  {
-    id: 9,
-    title: "Brand Activation Event - Marketing Society",
-    date: new Date(2024, 8, 28),
-    location: "Nairobi, Kenya",
-    time: "10:00 AM - 4:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
-    description: "Interactive brand activation event featuring product launches, demonstrations, and engaging consumer experiences.",
-    status: "past",
-    category: "Marketing & Promotional",
-  },
-  {
-    id: 10,
-    title: "King Experience - Live Concert",
-    date: new Date(2024, 9, 30),
-    location: "Nairobi, Kenya",
-    time: "7:00 PM - 11:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9937_v0nwkr.jpg",
-    description: "Spectacular live concert featuring Prince Indah, Okello Max, and Kelechi Africana. An unforgettable night of music and entertainment.",
-    status: "past",
-    category: "Marketing & Promotional",
-  },
   {
     id: 11,
     title: "Marketing Campaign Launch",
@@ -161,7 +59,7 @@ const events = [
     location: "Nairobi, Kenya",
     time: "11:00 AM - 3:00 PM",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions Enterprises.",
+    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions.",
     status: "upcoming",
     category: "Corporate Partnership",
   },
@@ -256,6 +154,29 @@ const events = [
     category: "Student Engagement",
   },
 ];
+
+// Icon mapping for event categories
+const getEventIcon = (category: string) => {
+  const iconMap: { [key: string]: any } = {
+    "Marketing & Promotional": Rocket,
+    "Corporate Partnership": Briefcase,
+    "Educational & Leadership": BookOpen,
+    "Student Engagement": Users,
+    "Fashion & Modelling": Sparkles,
+  };
+  return iconMap[category] || Calendar;
+};
+
+// Gradient colors for icon backgrounds - using website color palette
+const getIconGradient = (index: number) => {
+  const gradients = [
+    "from-primary-500 to-primary-600",
+    "from-secondary-400 via-secondary-500 to-primary-500",
+    "from-primary-500 to-primary-600",
+    "from-secondary-400 via-secondary-500 to-primary-500",
+  ];
+  return gradients[index % gradients.length];
+};
 
 export default function EventsPage() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
@@ -515,66 +436,39 @@ export default function EventsPage() {
             </div>
           </motion.div>
 
-          {/* Events Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredEvents.map((event, index) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.05 }}
-                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300 group"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={event.image}
-                    alt={event.title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4 bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    {format(event.date, "MMM d")}
-                  </div>
-                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">
-                    {event.category}
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">{event.title}</h3>
-                  <p className="text-gray-600 mb-4 text-sm line-clamp-2">{event.description}</p>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                      {format(event.date, "EEEE, MMMM d, yyyy")}
+          {/* Events Grid - Card Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredEvents.map((event, index) => {
+              const EventIcon = getEventIcon(event.category);
+              const iconGradient = getIconGradient(index);
+              
+              return (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group"
+                >
+                  <Link href={`/events/${event.id}`} className="block p-6">
+                    {/* Icon Container */}
+                    <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4`}>
+                      <EventIcon className="w-8 h-8 text-white" />
                     </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <MapPin className="w-4 h-4 mr-2 text-primary-600" />
-                      {event.location}
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2 text-primary-600" />
-                      {event.time}
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/events/${event.id}`}
-                      className="flex-1 btn-primary text-center text-sm"
-                    >
-                      View Details
-                    </Link>
-                    {event.status === "upcoming" && (
-                      <Link
-                        href={`/events/${event.id}?rsvp=true`}
-                        className="flex-1 btn-outline text-center text-sm"
-                      >
-                        RSVP
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                    
+                    {/* Title */}
+                    <h3 className="text-lg font-bold mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
+                      {event.title}
+                    </h3>
+                    
+                    {/* Description */}
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      {event.description}
+                    </p>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
 
           {filteredEvents.length === 0 && (

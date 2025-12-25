@@ -33,12 +33,12 @@ export default function Footer() {
               <div className="relative w-10 h-10">
                 <Image
                   src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
-                  alt="Changer Fusions Enterprises Logo"
+                  alt="Changer Fusions Logo"
                   fill
                   className="object-contain"
                 />
               </div>
-              <span className="text-xl font-bold text-white">Changer Fusions Enterprises</span>
+              <span className="text-xl font-bold text-white">Changer Fusions</span>
             </div>
             <p className="text-sm mb-4 font-semibold text-primary-300 mb-2">
               Market to thrive, Market to exist
@@ -119,7 +119,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-8 text-center text-sm">
-          <p>&copy; {currentYear} Changer Fusions Enterprises (CFE). All rights reserved.</p>
+          <p>&copy; {currentYear} Changer Fusions. All rights reserved.</p>
         </div>
       </div>
     </footer>

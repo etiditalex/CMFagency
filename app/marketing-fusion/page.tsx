@@ -86,7 +86,7 @@ export default function MarketingFusionPage() {
               </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-              Changer Fusions Enterprises
+              Changer Fusions
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed">
               We blend innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients.
@@ -281,7 +281,7 @@ export default function MarketingFusionPage() {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg max-w-xs">
                   <p className="text-gray-700 leading-relaxed text-sm">
-                    Changer Fusions Enterprises was founded, beginning our journey as a marketing strategic partner with a vision to blend innovative marketing techniques and transformative strategies.
+                    Changer Fusions was founded, beginning our journey as a marketing strategic partner with a vision to blend innovative marketing techniques and transformative strategies.
                   </p>
                 </div>
                 {/* Arrow pointing to next milestone */}
@@ -477,7 +477,7 @@ export default function MarketingFusionPage() {
                 </div>
                 <div className="bg-gray-50 p-4 rounded-lg max-w-xs">
                   <p className="text-gray-700 leading-relaxed text-sm">
-                    Launching the Changer Fusions Enterprises Gala Awards 2025, an immersive journey for young leaders and creatives focused on sustainable fashion, leadership, and climate advocacy.
+                    Launching the Changer Fusions Gala Awards 2025, an immersive journey for young leaders and creatives focused on sustainable fashion, leadership, and climate advocacy.
                   </p>
                 </div>
               </motion.div>
@@ -500,10 +500,10 @@ export default function MarketingFusionPage() {
                 What Makes Us Different?
               </h2>
               <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                Changer Fusions Enterprises' focus on "blending innovative marketing techniques" suggests we stay on top of the latest marketing trends and integrate them into our strategies. Our motto highlights our proactive approach, emphasizing the importance of marketing for business success.
+                Changer Fusions' focus on "blending innovative marketing techniques" suggests we stay on top of the latest marketing trends and integrate them into our strategies. Our motto highlights our proactive approach, emphasizing the importance of marketing for business success.
               </p>
               <p className="text-lg text-gray-700 leading-relaxed">
-                With a focus on harnessing the power of change and innovation, CFE drives meaningful results and facilitates growth in an ever-evolving marketing landscape. We create impactful and tailored solutions that help businesses thrive and define their existence in the marketplace.
+                With a focus on harnessing the power of change and innovation, Changer Fusions drives meaningful results and facilitates growth in an ever-evolving marketing landscape. We create impactful and tailored solutions that help businesses thrive and define their existence in the marketplace.
               </p>
             </motion.div>
             <motion.div
@@ -546,7 +546,7 @@ export default function MarketingFusionPage() {
               Ready to Thrive in the Marketplace?
             </h2>
             <p className="text-xl text-white/90 mb-8">
-              Let Changer Fusions Enterprises help you harness the power of marketing as the catalyst for change and innovation. Contact us today to create impactful solutions for your business.
+              Let Changer Fusions help you harness the power of marketing as the catalyst for change and innovation. Contact us today to create impactful solutions for your business.
             </p>
             <Link
               href="/contact"
