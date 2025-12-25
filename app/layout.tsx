@@ -6,14 +6,91 @@ import Footer from "@/components/Footer";
 import PageLoader from "@/components/PageLoader";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import SEOStructuredData from "@/components/SEOStructuredData";
 import { CartProvider } from "@/contexts/CartContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Changer Fusions - Market to Thrive, Market to Exist",
-  description: "Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies. We harness the power of marketing as the catalyst for change and innovation.",
-  keywords: "Changer Fusions, digital marketing, website development, branding, market research, events marketing, content creation, marketing strategy, business growth",
+  metadataBase: new URL("https://changerfusions.com"),
+  title: {
+    default: "Changer Fusions - Market to Thrive, Market to Exist | Marketing Agency Kenya",
+    template: "%s | Changer Fusions",
+  },
+  description: "Changer Fusions is a leading marketing agency in Kenya specializing in digital marketing, website development, branding, event management, and market research. We help businesses grow with innovative marketing strategies and cutting-edge technologies.",
+  keywords: [
+    "Changer Fusions",
+    "marketing agency Kenya",
+    "digital marketing Kenya",
+    "website development Kenya",
+    "branding services Kenya",
+    "event management Kenya",
+    "market research Kenya",
+    "content creation Kenya",
+    "marketing strategy Kenya",
+    "business growth Kenya",
+    "Mombasa marketing agency",
+    "Nairobi marketing services",
+    "SEO services Kenya",
+    "social media marketing Kenya",
+    "event planning Kenya",
+  ],
+  authors: [{ name: "Changer Fusions" }],
+  creator: "Changer Fusions",
+  publisher: "Changer Fusions",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_KE",
+    url: "https://changerfusions.com",
+    siteName: "Changer Fusions",
+    title: "Changer Fusions - Market to Thrive, Market to Exist | Marketing Agency Kenya",
+    description: "Leading marketing agency in Kenya offering digital marketing, website development, branding, event management, and market research services.",
+    images: [
+      {
+        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Changer Fusions - Marketing Agency Kenya",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Changer Fusions - Market to Thrive, Market to Exist",
+    description: "Leading marketing agency in Kenya offering digital marketing, website development, branding, and event management services.",
+    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    // Add your verification codes here when available
+    // google: "your-google-verification-code",
+    // yandex: "your-yandex-verification-code",
+  },
+  alternates: {
+    canonical: "https://changerfusions.com",
+  },
+  category: "Marketing Agency",
+  other: {
+    "geo.region": "KE",
+    "geo.placename": "Mombasa",
+    "geo.position": "-4.0435;39.6682",
+    "ICBM": "-4.0435, 39.6682",
+  },
 };
 
 export default function RootLayout({
@@ -24,6 +101,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <SEOStructuredData />
         <CartProvider>
           <PageLoader>
             <Navbar />
