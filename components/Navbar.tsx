@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -10,6 +10,8 @@ import { useCart } from "@/contexts/CartContext";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
+  const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const { getTotalItems } = useCart();
 
   useEffect(() => {
@@ -23,9 +25,22 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
+    { href: "/merchandise", label: "Merchandise" },
+  ];
+
+  const testimonialsLinks = [
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
-    { href: "/merchandise", label: "Merchandise" },
+  ];
+
+  const servicesLinks = [
+    { href: "/services", label: "All Services" },
+    { href: "/services/digital-marketing", label: "Digital Marketing" },
+    { href: "/services/website-development", label: "Website Development" },
+    { href: "/services/branding", label: "Branding & Creative" },
+    { href: "/services/market-research", label: "Market Research" },
+    { href: "/services/events-marketing", label: "Events Marketing" },
+    { href: "/services/content-creation", label: "Content Creation" },
   ];
 
   return (
@@ -68,6 +83,80 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Testimonials Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setTestimonialsOpen(true)}
+              onMouseLeave={() => setTestimonialsOpen(false)}
+            >
+              <Link
+                href="/testimonials"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+              >
+                <span>Testimonials</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {testimonialsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {testimonialsLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
+            {/* Services Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setServicesOpen(true)}
+              onMouseLeave={() => setServicesOpen(false)}
+            >
+              <Link
+                href="/services"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+              >
+                <span>Services</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {servicesOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {servicesLinks.map((service) => (
+                      <Link
+                        key={service.href}
+                        href={service.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {service.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Right Section - Utility Icons and Events Button */}
@@ -137,6 +226,77 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              
+              {/* Testimonials Section in Mobile */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setTestimonialsOpen(!testimonialsOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <span>Testimonials</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {testimonialsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {testimonialsLinks.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setTestimonialsOpen(false);
+                          }}
+                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
+              {/* Services Section in Mobile */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setServicesOpen(!servicesOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <span>Services</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {servicesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {servicesLinks.map((service) => (
+                        <Link
+                          key={service.href}
+                          href={service.href}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setServicesOpen(false);
+                          }}
+                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                        >
+                          {service.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
                   href="/marketing-fusion"
