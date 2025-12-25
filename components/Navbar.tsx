@@ -12,6 +12,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
+  const [eventsOpen, setEventsOpen] = useState(false);
   const { getTotalItems } = useCart();
 
   useEffect(() => {
@@ -41,6 +42,12 @@ export default function Navbar() {
     { href: "/services/market-research", label: "Market Research" },
     { href: "/services/events-marketing", label: "Events Marketing" },
     { href: "/services/content-creation", label: "Content Creation" },
+  ];
+
+  const eventsLinks = [
+    { href: "/events", label: "All Events" },
+    { href: "/events?filter=upcoming", label: "Upcoming Events" },
+    { href: "/events?filter=past", label: "Past Events" },
   ];
 
   return (
@@ -186,13 +193,44 @@ export default function Navbar() {
             >
               <User className="w-5 h-5" />
             </Link>
-            <Link
-              href="/events"
-              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 border border-primary-700 rounded-lg text-white font-bold hover:bg-primary-700 transition-colors"
+            
+            {/* Events Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setEventsOpen(true)}
+              onMouseLeave={() => setEventsOpen(false)}
             >
-              <Ticket className="w-5 h-5" />
-              <span>Events</span>
-            </Link>
+              <Link
+                href="/events"
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 border border-primary-700 rounded-lg text-white font-bold hover:bg-primary-700 transition-colors"
+              >
+                <Ticket className="w-5 h-5" />
+                <span>Events</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {eventsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {eventsLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -297,6 +335,44 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
               
+              {/* Events Section in Mobile */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setEventsOpen(!eventsOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <div className="flex items-center space-x-2">
+                    <Ticket className="w-5 h-5" />
+                    <span>Events</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {eventsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {eventsLinks.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setEventsOpen(false);
+                          }}
+                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
                   href="/marketing-fusion"
@@ -320,14 +396,6 @@ export default function Navbar() {
                 >
                   <User className="w-5 h-5" />
                   <span>Profile</span>
-                </Link>
-                <Link
-                  href="/events"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-primary-600 border border-primary-700 rounded-lg text-white font-bold hover:bg-primary-700 transition-colors"
-                >
-                  <Ticket className="w-5 h-5" />
-                  <span>Events</span>
                 </Link>
               </div>
             </div>

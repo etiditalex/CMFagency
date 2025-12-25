@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Search, Ticket, QrCode, Award, Lightbulb, Rocket, Briefcase, BookOpen, Users, Target, TrendingUp, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -178,10 +179,22 @@ const getIconGradient = (index: number) => {
   return gradients[index % gradients.length];
 };
 
-export default function EventsPage() {
-  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
+function EventsPageContent() {
+  const searchParams = useSearchParams();
+  const urlFilter = searchParams.get("filter");
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">(
+    (urlFilter === "upcoming" || urlFilter === "past") ? urlFilter : "all"
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
+
+  useEffect(() => {
+    if (urlFilter === "upcoming" || urlFilter === "past") {
+      setFilter(urlFilter);
+    } else {
+      setFilter("all");
+    }
+  }, [urlFilter]);
 
   const categories = [
     "All",
@@ -483,5 +496,20 @@ export default function EventsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense fallback={
+      <div className="pt-20 min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading events...</p>
+        </div>
+      </div>
+    }>
+      <EventsPageContent />
+    </Suspense>
   );
 }
