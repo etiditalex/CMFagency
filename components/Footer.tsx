@@ -12,6 +12,7 @@ export default function Footer() {
     { href: "/jobs", label: "Job Board" },
     { href: "/about", label: "About Us" },
     { href: "/contact", label: "Contact" },
+    { href: "/merchandise", label: "Merchandise" },
   ];
 
   const services = [

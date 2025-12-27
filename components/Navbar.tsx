@@ -26,7 +26,6 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/about", label: "About" },
-    { href: "/merchandise", label: "Merchandise" },
   ];
 
   const testimonialsLinks = [
@@ -91,43 +90,6 @@ export default function Navbar() {
               </Link>
             ))}
             
-            {/* Testimonials Dropdown */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setTestimonialsOpen(true)}
-              onMouseLeave={() => setTestimonialsOpen(false)}
-            >
-              <Link
-                href="/testimonials"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
-              >
-                <span>Testimonials</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
-              </Link>
-              
-              <AnimatePresence>
-                {testimonialsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                  >
-                    {testimonialsLinks.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            
             {/* Services Dropdown */}
             <div 
               className="relative"
@@ -174,6 +136,44 @@ export default function Navbar() {
             >
               Why Changer Fusions
             </Link>
+            
+            {/* Testimonials Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setTestimonialsOpen(true)}
+              onMouseLeave={() => setTestimonialsOpen(false)}
+            >
+              <Link
+                href="/testimonials"
+                className="font-bold text-gray-900 text-sm hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+              >
+                <span>Testimonials</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {testimonialsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {testimonialsLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            
             <Link
               href="/cart"
               className="relative p-2 text-gray-900 hover:text-primary-600 transition-colors"
@@ -265,41 +265,6 @@ export default function Navbar() {
                 </Link>
               ))}
               
-              {/* Testimonials Section in Mobile */}
-              <div className="pt-2">
-                <button
-                  onClick={() => setTestimonialsOpen(!testimonialsOpen)}
-                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
-                >
-                  <span>Testimonials</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {testimonialsOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="pl-4 space-y-2 mt-2"
-                    >
-                      {testimonialsLinks.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => {
-                            setIsOpen(false);
-                            setTestimonialsOpen(false);
-                          }}
-                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-              
               {/* Services Section in Mobile */}
               <div className="pt-2">
                 <button
@@ -381,6 +346,42 @@ export default function Navbar() {
                 >
                   Why Changer Fusions
                 </Link>
+                
+                {/* Testimonials Section in Mobile */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setTestimonialsOpen(!testimonialsOpen)}
+                    className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                  >
+                    <span>Testimonials</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  <AnimatePresence>
+                    {testimonialsOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pl-4 space-y-2 mt-2"
+                      >
+                        {testimonialsLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setTestimonialsOpen(false);
+                            }}
+                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                
                 <Link
                   href="/cart"
                   onClick={() => setIsOpen(false)}
