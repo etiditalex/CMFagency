@@ -13,7 +13,7 @@ export default function WhatsAppButton() {
 
   return (
     <motion.div
-      className="fixed right-6 top-1/2 -translate-y-1/2 z-40"
+      className="hidden md:block fixed right-6 top-1/2 -translate-y-1/2 z-40"
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: 1 }}
