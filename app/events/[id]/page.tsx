@@ -455,6 +455,8 @@ export default function EventDetailPage() {
                     </label>
                     <input
                       type="text"
+                      id="event-contact-name"
+                      name="name"
                       required
                       value={contactFormData.name}
                       onChange={(e) => setContactFormData({ ...contactFormData, name: e.target.value })}
@@ -467,6 +469,8 @@ export default function EventDetailPage() {
                     </label>
                     <input
                       type="email"
+                      id="event-contact-email"
+                      name="email"
                       required
                       value={contactFormData.email}
                       onChange={(e) => setContactFormData({ ...contactFormData, email: e.target.value })}
@@ -479,6 +483,8 @@ export default function EventDetailPage() {
                     </label>
                     <input
                       type="tel"
+                      id="event-contact-phone"
+                      name="phone"
                       value={contactFormData.phone}
                       onChange={(e) => setContactFormData({ ...contactFormData, phone: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
@@ -490,6 +496,8 @@ export default function EventDetailPage() {
                     </label>
                     <input
                       type="text"
+                      id="event-contact-subject"
+                      name="subject"
                       required
                       value={contactFormData.subject}
                       onChange={(e) => setContactFormData({ ...contactFormData, subject: e.target.value })}
@@ -502,6 +510,8 @@ export default function EventDetailPage() {
                       Message *
                     </label>
                     <textarea
+                      id="event-contact-message"
+                      name="message"
                       required
                       rows={4}
                       value={contactFormData.message}

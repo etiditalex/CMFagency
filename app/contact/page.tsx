@@ -175,6 +175,8 @@ export default function ContactPage() {
                       </label>
                       <input
                         type="text"
+                        id="contact-name"
+                        name="name"
                         required
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -187,6 +189,8 @@ export default function ContactPage() {
                       </label>
                       <input
                         type="email"
+                        id="contact-email"
+                        name="email"
                         required
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -200,6 +204,8 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="tel"
+                      id="contact-phone"
+                      name="phone"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -211,6 +217,8 @@ export default function ContactPage() {
                     </label>
                     <input
                       type="text"
+                      id="contact-subject"
+                      name="subject"
                       required
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -222,6 +230,8 @@ export default function ContactPage() {
                       Message *
                     </label>
                     <textarea
+                      id="contact-message"
+                      name="message"
                       required
                       rows={6}
                       value={formData.message}

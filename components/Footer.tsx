@@ -157,6 +157,8 @@ export default function Footer() {
             <form className="space-y-2">
               <input
                 type="email"
+                id="newsletter-email"
+                name="newsletterEmail"
                 placeholder="Your email"
                 className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
               />
