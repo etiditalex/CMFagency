@@ -13,6 +13,7 @@ export default function Navbar() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const { getTotalItems } = useCart();
 
   useEffect(() => {
@@ -25,7 +26,12 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/about", label: "About" },
+  ];
+
+  const aboutLinks = [
+    { href: "/about", label: "About Us" },
+    { href: "/about/team", label: "Our Team" },
+    { href: "/about/partners", label: "Our Partners" },
   ];
 
   const testimonialsLinks = [
@@ -89,6 +95,43 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            
+            {/* About Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setAboutOpen(true)}
+              onMouseLeave={() => setAboutOpen(false)}
+            >
+              <Link
+                href="/about"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+              >
+                <span>About</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {aboutOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {aboutLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             
             {/* Services Dropdown */}
             <div 
@@ -264,6 +307,41 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              
+              {/* About Section in Mobile */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setAboutOpen(!aboutOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <span>About</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {aboutOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {aboutLinks.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setAboutOpen(false);
+                          }}
+                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               {/* Services Section in Mobile */}
               <div className="pt-2">

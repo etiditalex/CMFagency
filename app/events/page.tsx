@@ -302,9 +302,57 @@ function EventsPageContent() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-12"
+              className="text-center py-16"
             >
-              <p className="text-gray-600 text-lg">No events found matching your criteria.</p>
+              {filter === "upcoming" ? (
+                <div className="space-y-6">
+                  <motion.h2
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className="text-5xl md:text-7xl font-bold"
+                  >
+                    <motion.span
+                      animate={{
+                        backgroundPosition: ["0%", "100%", "0%"],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600 bg-clip-text text-transparent"
+                      style={{
+                        backgroundSize: "200% auto",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        display: "inline-block",
+                      }}
+                    >
+                      Coming Soon
+                    </motion.span>
+                  </motion.h2>
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                    className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto"
+                  >
+                    We're working on exciting upcoming events. Stay tuned for updates!
+                  </motion.p>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: [0.5, 1, 0.5], scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="flex justify-center mt-8"
+                  >
+                    <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full animate-spin"></div>
+                  </motion.div>
+                </div>
+              ) : (
+                <p className="text-gray-600 text-lg">No events found matching your criteria.</p>
+              )}
             </motion.div>
           )}
         </div>
