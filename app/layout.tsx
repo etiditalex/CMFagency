@@ -19,6 +19,14 @@ export const metadata: Metadata = {
     default: "Changer Fusions - Market to Thrive, Market to Exist | Marketing Agency Kenya",
     template: "%s | Changer Fusions",
   },
+  icons: {
+    icon: [
+      { url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg", sizes: "any" },
+      { url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg", type: "image/jpeg" },
+    ],
+    shortcut: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    apple: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+  },
   description: "Changer Fusions is a leading marketing agency in Kenya specializing in digital marketing, website development, branding, event management, and market research. We help businesses grow with innovative marketing strategies and cutting-edge technologies.",
   keywords: [
     "Changer Fusions",
