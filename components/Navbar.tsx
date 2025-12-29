@@ -52,7 +52,7 @@ export default function Navbar() {
   const eventsLinks = [
     { href: "/events", label: "All Events" },
     { href: "/events/upcoming", label: "Upcoming Events" },
-    { href: "/events?filter=past", label: "Past Events" },
+    { href: "/events/past", label: "Past Events" },
   ];
 
   return (
