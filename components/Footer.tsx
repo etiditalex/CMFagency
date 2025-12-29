@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar, Image as ImageIcon, Briefcase, Mail, Phone, MapPin } from "lucide-react";
+import { Calendar, Image as ImageIcon, Briefcase, Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Twitter } from "lucide-react";
 import Image from "next/image";
 
 export default function Footer() {
@@ -103,6 +103,57 @@ export default function Footer() {
             <p className="text-sm mb-4">
               Subscribe to our newsletter for the latest updates and event announcements.
             </p>
+            
+            {/* Social Media Icons */}
+            <div className="mb-6">
+              <p className="text-sm mb-3 text-gray-400">Follow us on social media</p>
+              <div className="flex items-center gap-3">
+                <a
+                  href="https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-gray-800 hover:bg-primary-600 flex items-center justify-center transition-colors duration-200 group"
+                  aria-label="Follow us on Instagram"
+                >
+                  <Instagram className="w-5 h-5 text-gray-300 group-hover:text-white" />
+                </a>
+                <a
+                  href="https://www.facebook.com/share/187Kse9GrQ/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-gray-800 hover:bg-primary-600 flex items-center justify-center transition-colors duration-200 group"
+                  aria-label="Follow us on Facebook"
+                >
+                  <Facebook className="w-5 h-5 text-gray-300 group-hover:text-white" />
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/changer-fusions-2262a53a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-gray-800 hover:bg-primary-600 flex items-center justify-center transition-colors duration-200 group"
+                  aria-label="Follow us on LinkedIn"
+                >
+                  <Linkedin className="w-5 h-5 text-gray-300 group-hover:text-white" />
+                </a>
+                <div
+                  className="w-10 h-10 rounded-full bg-gray-800 opacity-50 flex items-center justify-center cursor-not-allowed"
+                  aria-label="Twitter (Coming Soon)"
+                  title="Twitter (Coming Soon)"
+                >
+                  <Twitter className="w-5 h-5 text-gray-500" />
+                </div>
+                <div
+                  className="w-10 h-10 rounded-full bg-gray-800 opacity-50 flex items-center justify-center cursor-not-allowed"
+                  aria-label="Google Plus (Coming Soon)"
+                  title="Google Plus (Coming Soon)"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.5 13h-2.5v2.5h-2V13H10v-2h2.5V8.5h2V11H18v2z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
             <form className="space-y-2">
               <input
                 type="email"

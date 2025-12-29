@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle, Send, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 
 // All events data - matching the events page
 const featuredEvent = {
@@ -275,14 +276,14 @@ const getEventById = (id: number) => {
 export default function EventDetailPage() {
   const params = useParams();
   const event = getEventById(Number(params.id));
-  const [showRSVP, setShowRSVP] = useState(false);
-  const [formData, setFormData] = useState({
+  const [contactFormData, setContactFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    company: "",
+    subject: "",
+    message: "",
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [contactSubmitted, setContactSubmitted] = useState(false);
 
   if (!event) {
     return (
@@ -297,37 +298,55 @@ export default function EventDetailPage() {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    setSubmitted(true);
+    setContactSubmitted(true);
     setTimeout(() => {
-      setShowRSVP(false);
-      setSubmitted(false);
-    }, 2000);
+      setContactSubmitted(false);
+      setContactFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    }, 3000);
   };
 
-  // Generate schedule based on event type
-  const generateSchedule = (event: any) => {
-    if (event.id === 1) {
-      // Mr and Ms Deaf Kenya schedule
-      return [
-        { time: "6:00 PM", activity: "Registration & Welcome Reception" },
-        { time: "6:30 PM", activity: "Opening Ceremony & Introduction of Contestants" },
-        { time: "7:00 PM", activity: "Talent Showcase & Cultural Performances" },
-        { time: "8:00 PM", activity: "Fashion & Evening Wear Competition" },
-        { time: "9:00 PM", activity: "Question & Answer Session" },
-        { time: "10:00 PM", activity: "Awards Ceremony & Crowning of Winners" },
-        { time: "11:00 PM", activity: "Closing & Networking" },
-      ];
-    }
-    // Default schedule for other events
-    return [
-      { time: "Opening", activity: "Registration & Welcome" },
-      { time: "Main Session", activity: event.description },
-      { time: "Closing", activity: "Networking & Closing Remarks" },
+  // Gallery images for each event - using existing event images
+  const getGalleryImages = (eventId: number) => {
+    const galleryMap: { [key: number]: string[] } = {
+      1: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9937_v0nwkr.jpg",
+      ],
+      11: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
+      ],
+      12: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+      ],
+      13: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
+      ],
+      14: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+      ],
+      15: [
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
+        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+      ],
+    };
+    return galleryMap[eventId] || [
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
     ];
   };
+
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
@@ -342,11 +361,12 @@ export default function EventDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
+            {/* Event Description Section */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg mb-8"
+              className="bg-white rounded-xl shadow-lg"
             >
               <div className="p-8">
                 <div className="flex items-center gap-3 mb-4">
@@ -361,179 +381,143 @@ export default function EventDetailPage() {
                     {event.status === "upcoming" ? "Upcoming" : "Past Event"}
                   </span>
                 </div>
-                <h1 className="text-4xl font-bold mb-4 text-gray-900">{event.title}</h1>
-                <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                  {"fullDescription" in event && event.fullDescription ? event.fullDescription : event.description}
-                </p>
-
-                {/* Event Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <div className="flex items-start space-x-3">
-                    <Calendar className="w-6 h-6 text-primary-600 mt-1" />
-                    <div>
-                      <div className="font-semibold text-gray-900">Date</div>
-                      <div className="text-gray-600">{format(event.date, "EEEE, MMMM d, yyyy")}</div>
-                      {"endDate" in event && event.endDate && (
-                        <div className="text-sm text-gray-500">
-                          to {format(event.endDate, "MMMM d, yyyy")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <Clock className="w-6 h-6 text-primary-600 mt-1" />
-                    <div>
-                      <div className="font-semibold text-gray-900">Time</div>
-                      <div className="text-gray-600">{event.time}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-6 h-6 text-primary-600 mt-1" />
-                    <div>
-                      <div className="font-semibold text-gray-900">Location</div>
-                      <div className="text-gray-600">{event.location}</div>
-                      {"fullLocation" in event && event.fullLocation && (
-                        <div className="text-sm text-gray-500">{event.fullLocation}</div>
-                      )}
-                    </div>
-                  </div>
+                <h1 className="text-4xl font-bold mb-6 text-gray-900">{event.title}</h1>
+                <div className="prose prose-lg max-w-none">
+                  <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-line">
+                    {"fullDescription" in event && event.fullDescription ? event.fullDescription : event.description}
+                  </p>
                 </div>
+              </div>
+            </motion.div>
 
-                {/* Tickets for Gala Awards */}
-                {event.id === 1 && "tickets" in event && event.tickets && (
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold mb-4 text-gray-900">Ticket Pricing</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {event.tickets.map((ticket: any, index: number) => (
-                        <div
-                          key={index}
-                          className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                        >
-                          <div className="font-semibold text-gray-900 mb-1">{ticket.type}</div>
-                          <div className="text-2xl font-bold text-primary-600">
-                            {ticket.currency} {ticket.price.toLocaleString()}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Schedule */}
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold mb-4 text-gray-900">Event Schedule</h2>
-                  <div className="space-y-3">
-                    {generateSchedule(event).map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div className="font-semibold text-primary-600 min-w-[150px]">
-                          {item.time}
-                        </div>
-                        <div className="text-gray-700">{item.activity}</div>
-                      </div>
-                    ))}
-                  </div>
+            {/* Gallery Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white rounded-xl shadow-lg"
+            >
+              <div className="p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <ImageIcon className="w-6 h-6 text-primary-600" />
+                  <h2 className="text-3xl font-bold text-gray-900">Event Gallery</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {getGalleryImages(event.id).map((imageUrl, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={`${event.title} - Image ${index + 1}`}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar - Contact Us Form */}
           <div className="lg:col-span-1">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
               className="bg-white rounded-xl shadow-lg p-6 sticky top-24"
             >
-              <h3 className="text-xl font-bold mb-4 text-gray-900">Register for Event</h3>
-              {event.status === "upcoming" ? (
-                <>
-                  {!showRSVP ? (
-                    <button
-                      onClick={() => setShowRSVP(true)}
-                      className="w-full btn-primary mb-4"
-                    >
-                      RSVP Now
-                    </button>
-                  ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Company
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.company}
-                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
-                      </div>
-                      {submitted ? (
-                        <div className="flex items-center justify-center space-x-2 text-green-600 py-4">
-                          <CheckCircle className="w-5 h-5" />
-                          <span>Registration Successful!</span>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button type="submit" className="flex-1 btn-primary">
-                            Submit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowRSVP(false)}
-                            className="flex-1 btn-outline"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      )}
-                    </form>
-                  )}
-                </>
+              <h2 className="text-xl font-bold mb-4 text-gray-900">Contact Us</h2>
+              <p className="text-sm text-gray-600 mb-6">
+                Have questions about this event? Get in touch with us.
+              </p>
+              {contactSubmitted ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8"
+                >
+                  <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold mb-2 text-gray-900">Message Sent!</h3>
+                  <p className="text-sm text-gray-600">We'll get back to you soon.</p>
+                </motion.div>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-600 mb-4">This event has already taken place.</p>
-                  <Link href="/events" className="btn-primary w-full">
-                    View Other Events
-                  </Link>
-                </div>
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Full Name (Individual/Company) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={contactFormData.name}
+                      onChange={(e) => setContactFormData({ ...contactFormData, name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={contactFormData.email}
+                      onChange={(e) => setContactFormData({ ...contactFormData, email: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={contactFormData.phone}
+                      onChange={(e) => setContactFormData({ ...contactFormData, phone: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Subject *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={contactFormData.subject}
+                      onChange={(e) => setContactFormData({ ...contactFormData, subject: e.target.value })}
+                      placeholder={`Inquiry about ${event.title}`}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Message *
+                    </label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={contactFormData.message}
+                      onChange={(e) => setContactFormData({ ...contactFormData, message: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      placeholder="Tell us how we can help you..."
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full btn-primary inline-flex items-center justify-center text-sm py-2"
+                  >
+                    Send Message
+                    <Send className="ml-2 w-4 h-4" />
+                  </button>
+                </form>
               )}
             </motion.div>
           </div>

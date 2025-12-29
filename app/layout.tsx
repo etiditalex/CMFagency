@@ -8,6 +8,7 @@ import PageLoader from "@/components/PageLoader";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import SEOStructuredData from "@/components/SEOStructuredData";
+import SocialShare from "@/components/SocialShare";
 import { CartProvider } from "@/contexts/CartContext";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -120,6 +121,7 @@ export default function RootLayout({
           <PageLoader>
             <Navbar />
             <main className="min-h-screen">{children}</main>
+            <SocialShare />
             <Footer />
             <CookieBanner />
             <WhatsAppButton />
