@@ -76,6 +76,8 @@ export default function Navbar() {
                 fill
                 className="object-contain"
                 priority
+                fetchPriority="high"
+                sizes="(max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
               />
             </div>
           </Link>
