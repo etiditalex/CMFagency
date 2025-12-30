@@ -80,9 +80,9 @@ export default function QuickLinks() {
             >
               <Link
                 href={link.href}
-                className="block bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 group"
+                className="block bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 group text-center md:text-center lg:text-left"
               >
-                <div className={`w-14 h-14 rounded-lg bg-gradient-to-r ${link.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <div className={`w-14 h-14 rounded-lg bg-gradient-to-r ${link.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto md:mx-auto lg:mx-0`}>
                   <link.icon className="w-7 h-7 text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-primary-600 transition-colors">

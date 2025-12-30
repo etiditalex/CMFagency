@@ -112,12 +112,12 @@ export default function ContactPage() {
                 <p className="text-gray-600 mb-4">
                   Visit us at our office in Mombasa. We're here to help you with all your marketing and event planning needs.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-row gap-3">
                   <a
                     href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
                   >
                     <Navigation className="w-5 h-5 mr-2" />
                     Get Directions
@@ -126,7 +126,7 @@ export default function ContactPage() {
                     href={googleBusinessProfileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center text-primary-600 hover:text-primary-700 font-semibold transition-colors"
                   >
                     <MapPin className="w-5 h-5 mr-2" />
                     View on Google Business

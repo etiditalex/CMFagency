@@ -124,12 +124,12 @@ export default function CareerDevelopmentPage() {
               Grow your professional network and advance your career with our comprehensive career development services. 
               From career counseling to networking opportunities, we're here to support your professional journey.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact" className="btn-primary inline-flex items-center justify-center">
+            <div className="flex flex-row gap-4 justify-center">
+              <Link href="/contact" className="w-full sm:w-auto btn-primary inline-flex items-center justify-center">
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
-              <Link href="/jobs" className="btn-outline inline-flex items-center justify-center">
+              <Link href="/jobs" className="w-full sm:w-auto btn-outline inline-flex items-center justify-center">
                 Browse Jobs
                 <Briefcase className="ml-2 w-5 h-5" />
               </Link>

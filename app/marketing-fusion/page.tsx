@@ -91,16 +91,16 @@ export default function MarketingFusionPage() {
             <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed">
               We blend innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-row items-center justify-center gap-4">
               <Link
                 href="/contact"
-                className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center justify-center"
               >
                 Get Started
               </Link>
               <Link
                 href="/portfolios"
-                className="bg-white/10 backdrop-blur-sm text-white border-2 border-white hover:bg-white/20 font-semibold py-4 px-8 rounded-lg transition-all duration-300"
+                className="w-full sm:w-auto bg-white/10 backdrop-blur-sm text-white border-2 border-white hover:bg-white/20 font-semibold py-4 px-8 rounded-lg transition-all duration-300 inline-flex items-center justify-center"
               >
                 View Our Work
               </Link>

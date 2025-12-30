@@ -1,21 +1,80 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { User, Mail, Phone, MapPin, Calendar, Edit, Settings, ShoppingBag, Ticket, Heart, CreditCard, LogOut } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Edit, Settings, ShoppingBag, Ticket, Heart, CreditCard, LogOut, Lock } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import AuthModal from "@/components/AuthModal";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "orders" | "events" | "settings">("overview");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const router = useRouter();
 
-  const userInfo = {
-    name: "John Doe",
-    email: "john.doe@example.com",
+  useEffect(() => {
+    // Check if user is logged in (check localStorage or session)
+    const checkAuth = () => {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    // Listen for storage changes (for cross-tab sync)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "user") {
+        checkAuth();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
+    router.push("/");
+  };
+
+  const handleAuthSuccess = (userData: any) => {
+    setIsAuthenticated(true);
+    setShowAuthModal(false);
+    // Update state without full page reload
+    setIsLoading(false);
+  };
+
+  // Default user info - will be replaced with actual user data when logged in
+  const getDefaultUserInfo = () => ({
+    name: "Guest User",
+    email: "guest@example.com",
     phone: "+254 700 000 000",
     location: "Nairobi, Kenya",
     memberSince: "January 2024",
-    avatar: "https://ui-avatars.com/api/?name=John+Doe&background=6366f1&color=fff&size=200",
-  };
+    avatar: "https://ui-avatars.com/api/?name=Guest+User&background=6366f1&color=fff&size=200",
+  });
+
+  const userInfo = isAuthenticated 
+    ? (() => {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          try {
+            return JSON.parse(storedUser);
+          } catch {
+            return getDefaultUserInfo();
+          }
+        }
+        return getDefaultUserInfo();
+      })()
+    : null;
 
   const stats = [
     { label: "Events Attended", value: "12", icon: Ticket },
@@ -34,6 +93,60 @@ export default function ProfilePage() {
     { id: 2, title: "Brand Activation Workshop", date: "2024-10-22", location: "Mombasa" },
   ];
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="pt-20 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <>
+        <div className="pt-20 min-h-screen bg-gray-50 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full mx-4 text-center"
+          >
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-primary-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Login Required</h2>
+            <p className="text-gray-600 mb-6">
+              Please log in or create an account to access your profile and view your account information.
+            </p>
+            <div className="flex flex-row gap-4">
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 transition-all shadow-lg hover:shadow-xl"
+              >
+                Sign In / Sign Up
+              </button>
+              <button
+                onClick={() => router.push("/")}
+                className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Go Home
+              </button>
+            </div>
+          </motion.div>
+        </div>
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -47,16 +160,16 @@ export default function ProfilePage() {
           >
             <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
               <img
-                src={userInfo.avatar}
-                alt={userInfo.name}
+                src={userInfo?.avatar || "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=200"}
+                alt={userInfo?.name || "User"}
                 className="w-full h-full object-cover"
               />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{userInfo.name}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">{userInfo?.name || "User"}</h1>
               <p className="text-white/90 flex items-center space-x-2">
                 <Mail className="w-4 h-4" />
-                <span>{userInfo.email}</span>
+                <span>{userInfo?.email || "user@example.com"}</span>
               </p>
             </div>
           </motion.div>
@@ -88,7 +201,10 @@ export default function ProfilePage() {
                     <span className="font-medium">{tab.label}</span>
                   </button>
                 ))}
-                <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors duration-200 mt-4">
+                <button 
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors duration-200 mt-4"
+                >
                   <LogOut className="w-5 h-5" />
                   <span className="font-medium">Logout</span>
                 </button>
@@ -138,35 +254,35 @@ export default function ProfilePage() {
                       <User className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Full Name</div>
-                        <div className="text-gray-900 font-medium">{userInfo.name}</div>
+                        <div className="text-gray-900 font-medium">{userInfo?.name || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Mail className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Email Address</div>
-                        <div className="text-gray-900 font-medium">{userInfo.email}</div>
+                        <div className="text-gray-900 font-medium">{userInfo?.email || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Phone className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Phone Number</div>
-                        <div className="text-gray-900 font-medium">{userInfo.phone}</div>
+                        <div className="text-gray-900 font-medium">{userInfo?.phone || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <MapPin className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Location</div>
-                        <div className="text-gray-900 font-medium">{userInfo.location}</div>
+                        <div className="text-gray-900 font-medium">{userInfo?.location || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Calendar className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Member Since</div>
-                        <div className="text-gray-900 font-medium">{userInfo.memberSince}</div>
+                        <div className="text-gray-900 font-medium">{userInfo?.memberSince || "N/A"}</div>
                       </div>
                     </div>
                   </div>

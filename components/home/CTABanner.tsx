@@ -64,17 +64,17 @@ export default function CTABanner() {
             strategic marketing solutions, and comprehensive career development. Experience the fusion of innovation and enterprise excellence.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-row items-center justify-center gap-4">
             <Link
               href="/contact"
-              className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center group"
+              className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center justify-center group"
             >
               Contact Us
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/events"
-              className="bg-white/10 backdrop-blur-sm text-white border-2 border-white hover:bg-white/20 font-semibold py-4 px-8 rounded-lg transition-all duration-300 inline-flex items-center group"
+              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm text-white border-2 border-white hover:bg-white/20 font-semibold py-4 px-8 rounded-lg transition-all duration-300 inline-flex items-center justify-center group"
             >
               Explore Events
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

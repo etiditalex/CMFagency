@@ -99,11 +99,11 @@ export default function FeaturedEvents() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
-                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group"
+                className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group text-center md:text-center lg:text-left"
               >
                 <Link href={`/events/${event.id}`} className="block p-6">
                   {/* Icon Container */}
-                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4`}>
+                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4 mx-auto md:mx-auto lg:mx-0`}>
                     <EventIcon className="w-8 h-8 text-white" />
                   </div>
                   

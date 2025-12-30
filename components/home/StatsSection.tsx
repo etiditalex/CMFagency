@@ -104,7 +104,7 @@ export default function StatsSection() {
 
       {/* Stats Content */}
       <div className="container-custom relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
@@ -112,20 +112,18 @@ export default function StatsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="text-center"
+              className="text-center flex flex-col items-center"
             >
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30">
-                  <stat.icon className="w-8 h-8 text-white" />
-                </div>
+              <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 mb-4">
+                <stat.icon className="w-8 h-8 text-white" />
               </div>
-              <div className="mb-2">
+              <div className="mb-2 text-center">
                 <span className="text-5xl md:text-6xl font-bold text-white">
                   {Math.floor(counters[index]).toLocaleString()}
                 </span>
                 <span className="text-5xl md:text-6xl font-bold text-white">{stat.suffix}</span>
               </div>
-              <p className="text-white text-lg font-medium">{stat.label}</p>
+              <p className="text-white text-lg font-medium text-center">{stat.label}</p>
             </motion.div>
           ))}
         </div>
