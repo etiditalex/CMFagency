@@ -37,6 +37,7 @@ export default function Navbar() {
   const testimonialsLinks = [
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
+    { href: "/blogs", label: "Blogs/News" },
   ];
 
   const servicesLinks = [

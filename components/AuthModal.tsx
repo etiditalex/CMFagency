@@ -21,6 +21,22 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Check if user exists by email
+  const getUserByEmail = (email: string) => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.email === email) {
+          return user;
+        }
+      }
+    } catch (error) {
+      console.error("Error reading user data:", error);
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -43,72 +59,164 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
         setLoading(false);
         return;
       }
+
+      // Check if user already exists
+      const existingUser = getUserByEmail(formData.email);
+      if (existingUser) {
+        setError("An account with this email already exists. Please sign in instead.");
+        setLoading(false);
+        setMode("login");
+        return;
+      }
     } else {
       if (!formData.email || !formData.password) {
         setError("Please fill in all fields");
         setLoading(false);
         return;
       }
+
+      // Check if user exists for login
+      const existingUser = getUserByEmail(formData.email);
+      if (!existingUser) {
+        setError("No account found with this email. Please sign up first.");
+        setLoading(false);
+        setMode("signup");
+        return;
+      }
     }
 
     // Simulate API call
     setTimeout(() => {
-      const userData = {
-        name: mode === "signup" ? formData.name : formData.email.split("@")[0],
-        email: formData.email,
-        phone: "+254 700 000 000",
-        location: "Nairobi, Kenya",
-        memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(mode === "signup" ? formData.name : formData.email.split("@")[0])}&background=6366f1&color=fff&size=200`,
-        provider: "email",
-      };
-
-      // Store user data
-      localStorage.setItem("user", JSON.stringify(userData));
-      setLoading(false);
-      onSuccess(userData);
-      onClose();
-      setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+      const existingUser = getUserByEmail(formData.email);
+      
+      if (mode === "signup" || !existingUser) {
+        // Create new account
+        const userData = {
+          name: formData.name || formData.email.split("@")[0],
+          email: formData.email,
+          password: formData.password, // In production, this should be hashed
+          phone: "+254 700 000 000",
+          location: "Nairobi, Kenya",
+          memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || formData.email.split("@")[0])}&background=6366f1&color=fff&size=200`,
+          authMethods: ["email"], // Track which auth methods are linked
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+        setLoading(false);
+        onSuccess(userData);
+        onClose();
+        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+      } else {
+        // Login with existing account
+        setLoading(false);
+        onSuccess(existingUser);
+        onClose();
+        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+      }
     }, 1000);
   };
 
   const handleGoogleLogin = () => {
     setLoading(true);
-    // Simulate Google OAuth
+    // Simulate Google OAuth - In production, this would use Google OAuth API
+    // For demo: Using a default email. In production, Google OAuth provides this automatically
     setTimeout(() => {
-      const userData = {
-        name: "Google User",
-        email: "user@gmail.com",
-        phone: "+254 700 000 000",
-        location: "Nairobi, Kenya",
-        memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-        avatar: "https://ui-avatars.com/api/?name=Google+User&background=4285F4&color=fff&size=200",
-        provider: "google",
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-      setLoading(false);
-      onSuccess(userData);
-      onClose();
+      // Check if there's an existing user - if so, use their email, otherwise use demo email
+      const existingUsers = localStorage.getItem("user");
+      let googleEmail = "user@gmail.com";
+      let googleName = "Google User";
+      
+      if (existingUsers) {
+        try {
+          const user = JSON.parse(existingUsers);
+          googleEmail = user.email;
+          googleName = user.name;
+        } catch (e) {
+          // Use defaults
+        }
+      }
+      
+      const existingUser = getUserByEmail(googleEmail);
+      
+      if (existingUser) {
+        // User exists - login with Google
+        // Add Google to auth methods if not already there
+        if (!existingUser.authMethods?.includes("google")) {
+          existingUser.authMethods = existingUser.authMethods || [];
+          existingUser.authMethods.push("google");
+        }
+        localStorage.setItem("user", JSON.stringify(existingUser));
+        setLoading(false);
+        onSuccess(existingUser);
+        onClose();
+      } else {
+        // New user - create account with Google
+        const userData = {
+          name: googleName,
+          email: googleEmail,
+          phone: "+254 700 000 000",
+          location: "Nairobi, Kenya",
+          memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(googleName)}&background=4285F4&color=fff&size=200`,
+          authMethods: ["google"],
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+        setLoading(false);
+        onSuccess(userData);
+        onClose();
+      }
     }, 1000);
   };
 
   const handleFacebookLogin = () => {
     setLoading(true);
-    // Simulate Facebook OAuth
+    // Simulate Facebook OAuth - In production, this would use Facebook OAuth API
+    // For demo: Using a default email. In production, Facebook OAuth provides this automatically
     setTimeout(() => {
-      const userData = {
-        name: "Facebook User",
-        email: "user@facebook.com",
-        phone: "+254 700 000 000",
-        location: "Nairobi, Kenya",
-        memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-        avatar: "https://ui-avatars.com/api/?name=Facebook+User&background=1877F2&color=fff&size=200",
-        provider: "facebook",
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-      setLoading(false);
-      onSuccess(userData);
-      onClose();
+      // Check if there's an existing user - if so, use their email, otherwise use demo email
+      const existingUsers = localStorage.getItem("user");
+      let facebookEmail = "user@facebook.com";
+      let facebookName = "Facebook User";
+      
+      if (existingUsers) {
+        try {
+          const user = JSON.parse(existingUsers);
+          facebookEmail = user.email;
+          facebookName = user.name;
+        } catch (e) {
+          // Use defaults
+        }
+      }
+      
+      const existingUser = getUserByEmail(facebookEmail);
+      
+      if (existingUser) {
+        // User exists - login with Facebook
+        // Add Facebook to auth methods if not already there
+        if (!existingUser.authMethods?.includes("facebook")) {
+          existingUser.authMethods = existingUser.authMethods || [];
+          existingUser.authMethods.push("facebook");
+        }
+        localStorage.setItem("user", JSON.stringify(existingUser));
+        setLoading(false);
+        onSuccess(existingUser);
+        onClose();
+      } else {
+        // New user - create account with Facebook
+        const userData = {
+          name: facebookName,
+          email: facebookEmail,
+          phone: "+254 700 000 000",
+          location: "Nairobi, Kenya",
+          memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(facebookName)}&background=1877F2&color=fff&size=200`,
+          authMethods: ["facebook"],
+        };
+        localStorage.setItem("user", JSON.stringify(userData));
+        setLoading(false);
+        onSuccess(userData);
+        onClose();
+      }
     }, 1000);
   };
 
@@ -148,8 +256,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             </div>
             <p className="text-white/90">
               {mode === "login"
-                ? "Sign in to access your account"
-                : "Join us to get started"}
+                ? "Sign in with email, Google, or Facebook"
+                : "Create your account with email, Google, or Facebook"}
             </p>
           </div>
 

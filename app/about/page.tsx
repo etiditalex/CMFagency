@@ -41,8 +41,21 @@ export default function AboutPage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-primary-50 to-secondary-50">
-        <div className="container-custom">
+      <section className="relative section-padding overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg"
+            alt="About Changer Fusions"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/85 via-secondary-800/75 to-primary-900/85"></div>
+        </div>
+        
+        <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -50,14 +63,14 @@ export default function AboutPage() {
             className="text-center max-w-4xl mx-auto"
           >
             <div className="mb-6">
-              <span className="inline-block bg-primary-100 text-primary-700 px-6 py-3 rounded-full text-lg font-bold mb-4">
+              <span className="inline-block bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-full text-lg font-bold mb-4 shadow-lg">
                 Market to thrive, Market to exist
               </span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg">
               About Changer Fusions
             </h1>
-            <p className="text-xl text-gray-600 leading-relaxed">
+            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
               Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients. With a focus on harnessing the power of change and innovation, Changer Fusions drives meaningful results and facilitates growth in an ever-evolving marketing landscape.
             </p>
           </motion.div>

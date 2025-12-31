@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Send, CheckCircle, Navigation } from "lucide-react";
+import Image from "next/image";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -35,21 +36,40 @@ export default function ContactPage() {
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      <section className="section-padding">
-        <div className="container-custom">
+      {/* Hero Section */}
+      <section className="relative section-padding overflow-hidden min-h-[300px] md:min-h-[400px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg"
+            alt="Contact Us"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+        </div>
+        
+        <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
               Get In Touch
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-white/90 max-w-2xl mx-auto">
               Have a question or want to work with us? We'd love to hear from you.
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      <section className="section-padding">
+        <div className="container-custom">
 
           {/* Contact Info Cards */}
           <motion.div

@@ -4,7 +4,7 @@ import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
 import StatsSection from "@/components/home/StatsSection";
-import NewsSection from "@/components/home/NewsSection";
+import PartnersCarousel from "@/components/home/PartnersCarousel";
 import CTABanner from "@/components/home/CTABanner";
 
 export const metadata: Metadata = {
@@ -49,7 +49,7 @@ export default function Home() {
       <CoreValues />
       <QuickLinks />
       <StatsSection />
-      <NewsSection />
+      <PartnersCarousel />
       <CTABanner />
     </>
   );

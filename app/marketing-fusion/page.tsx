@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Zap, Target, TrendingUp, Users, BarChart, Lightbulb, CheckCircle, Globe, FileText, Video, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 const services = [
   {
@@ -57,22 +58,20 @@ export default function MarketingFusionPage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-primary-600 via-secondary-600 to-primary-600 relative overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.2, 1],
-              x: [0, 50, 0],
-              y: [0, -50, 0],
-            }}
-            transition={{
-              duration: 15,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
+      <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg"
+            alt="Changer Fusions"
+            fill
+            className="object-cover object-center"
+            priority
           />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
         </div>
+        
         <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

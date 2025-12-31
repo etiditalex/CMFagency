@@ -2,11 +2,25 @@
 
 import { motion } from "framer-motion";
 import { Calendar, Sparkles } from "lucide-react";
+import Image from "next/image";
 
 export default function UpcomingEventsPage() {
   return (
-    <div className="pt-20 min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center">
-      <div className="container-custom">
+    <div className="pt-20 min-h-screen relative flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <Image
+          src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154666/The_Kings_Experience_7_mpvtww.jpg"
+          alt="Upcoming Events"
+          fill
+          className="object-cover object-center"
+          priority
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/70 via-secondary-800/60 to-primary-900/70"></div>
+      </div>
+      
+      <div className="container-custom relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -47,7 +61,7 @@ export default function UpcomingEventsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-xl md:text-2xl lg:text-3xl text-gray-600 max-w-3xl mx-auto font-medium"
+              className="text-xl md:text-2xl lg:text-3xl text-white/90 max-w-3xl mx-auto font-medium"
             >
               We're working on exciting upcoming events. Stay tuned for updates!
             </motion.p>

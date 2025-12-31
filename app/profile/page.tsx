@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AuthModal from "@/components/AuthModal";
+import Image from "next/image";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "orders" | "events" | "settings">("overview");
@@ -17,10 +18,24 @@ export default function ProfilePage() {
   useEffect(() => {
     // Check if user is logged in (check localStorage or session)
     const checkAuth = () => {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        setIsAuthenticated(true);
-      } else {
+      try {
+        const userData = localStorage.getItem("user");
+        if (userData) {
+          // Validate that the data is valid JSON and has required fields
+          const parsed = JSON.parse(userData);
+          if (parsed && parsed.email && parsed.name) {
+            setIsAuthenticated(true);
+          } else {
+            // Invalid data - clear it
+            localStorage.removeItem("user");
+            setIsAuthenticated(false);
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        // Corrupted data - clear it
+        localStorage.removeItem("user");
         setIsAuthenticated(false);
       }
       setIsLoading(false);
@@ -52,29 +67,32 @@ export default function ProfilePage() {
     setIsLoading(false);
   };
 
-  // Default user info - will be replaced with actual user data when logged in
-  const getDefaultUserInfo = () => ({
-    name: "Guest User",
-    email: "guest@example.com",
-    phone: "+254 700 000 000",
-    location: "Nairobi, Kenya",
-    memberSince: "January 2024",
-    avatar: "https://ui-avatars.com/api/?name=Guest+User&background=6366f1&color=fff&size=200",
-  });
-
-  const userInfo = isAuthenticated 
-    ? (() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-          try {
-            return JSON.parse(storedUser);
-          } catch {
-            return getDefaultUserInfo();
-          }
+  // Get user info only when authenticated
+  const getUserInfo = () => {
+    if (!isAuthenticated) {
+      return null;
+    }
+    
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        // Validate required fields
+        if (parsed && parsed.email && parsed.name) {
+          return parsed;
         }
-        return getDefaultUserInfo();
-      })()
-    : null;
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      // Clear corrupted data
+      localStorage.removeItem("user");
+      setIsAuthenticated(false);
+    }
+    
+    return null;
+  };
+
+  const userInfo = getUserInfo();
 
   const stats = [
     { label: "Events Attended", value: "12", icon: Ticket },
@@ -105,8 +123,13 @@ export default function ProfilePage() {
     );
   }
 
-  // Show login prompt if not authenticated
-  if (!isAuthenticated) {
+  // Show login prompt if not authenticated or if userInfo is invalid
+  if (!isAuthenticated || !userInfo) {
+    // Clear any invalid data
+    if (!isAuthenticated && localStorage.getItem("user")) {
+      localStorage.removeItem("user");
+    }
+    
     return (
       <>
         <div className="pt-20 min-h-screen bg-gray-50 flex items-center justify-center">
@@ -150,8 +173,21 @@ export default function ProfilePage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-12">
-        <div className="container-custom">
+      <section className="relative section-padding overflow-hidden min-h-[300px] md:min-h-[400px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154665/The_Kings_Experience_8_jjuk4p.jpg"
+            alt="Profile"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+        </div>
+        
+        <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -160,16 +196,16 @@ export default function ProfilePage() {
           >
             <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
               <img
-                src={userInfo?.avatar || "https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=200"}
-                alt={userInfo?.name || "User"}
+                src={userInfo.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userInfo.name)}&background=6366f1&color=fff&size=200`}
+                alt={userInfo.name}
                 className="w-full h-full object-cover"
               />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{userInfo?.name || "User"}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">{userInfo.name}</h1>
               <p className="text-white/90 flex items-center space-x-2">
                 <Mail className="w-4 h-4" />
-                <span>{userInfo?.email || "user@example.com"}</span>
+                <span>{userInfo.email}</span>
               </p>
             </div>
           </motion.div>
@@ -254,35 +290,35 @@ export default function ProfilePage() {
                       <User className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Full Name</div>
-                        <div className="text-gray-900 font-medium">{userInfo?.name || "N/A"}</div>
+                        <div className="text-gray-900 font-medium">{userInfo.name || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Mail className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Email Address</div>
-                        <div className="text-gray-900 font-medium">{userInfo?.email || "N/A"}</div>
+                        <div className="text-gray-900 font-medium">{userInfo.email || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Phone className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Phone Number</div>
-                        <div className="text-gray-900 font-medium">{userInfo?.phone || "N/A"}</div>
+                        <div className="text-gray-900 font-medium">{userInfo.phone || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <MapPin className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Location</div>
-                        <div className="text-gray-900 font-medium">{userInfo?.location || "N/A"}</div>
+                        <div className="text-gray-900 font-medium">{userInfo.location || "N/A"}</div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <Calendar className="w-5 h-5 text-gray-400" />
                       <div>
                         <div className="text-sm text-gray-500">Member Since</div>
-                        <div className="text-gray-900 font-medium">{userInfo?.memberSince || "N/A"}</div>
+                        <div className="text-gray-900 font-medium">{userInfo.memberSince || "N/A"}</div>
                       </div>
                     </div>
                   </div>

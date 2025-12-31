@@ -13,6 +13,7 @@ const pastEvents = [
     date: new Date(2025, 0, 15), // January 2025
     location: "Kenya",
     description: "A prestigious event celebrating the beauty, talent, and achievements of the deaf community in Kenya.",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
   },
   {
@@ -22,7 +23,8 @@ const pastEvents = [
     location: "Kenya",
     description: "Hosted by Global Women Impact Foundation, this summit brought together women leaders and advocates for empowerment and equality.",
     hostedBy: "Global Women Impact Foundation",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767153675/Global_women_impact_2_adeysa.jpg",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767153675/Global_women_impact_1_q8cocr.jpg",
   },
   {
     id: "kings-experience-coast-edition-2025",
@@ -30,7 +32,8 @@ const pastEvents = [
     date: new Date(2025, 8, 15), // September 2025
     location: "Coast Region, Kenya",
     description: "An unforgettable entertainment experience featuring top artists and performers from the coast region.",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9937_v0nwkr.jpg",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154665/The_Kings_Experience_2_fixdek.jpg",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154664/The_Kings_Experience_1_ime4hx.jpg",
   },
   {
     id: "mombasa-international-show-2025",
@@ -38,6 +41,7 @@ const pastEvents = [
     date: new Date(2025, 8, 20), // September 2025
     location: "Mombasa, Kenya",
     description: "A grand international showcase celebrating culture, talent, and excellence in Mombasa.",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
   },
   {
@@ -46,6 +50,7 @@ const pastEvents = [
     date: new Date(2025, 4, 15), // May 2025
     location: "Coast Region, Kenya",
     description: "Celebrating excellence in fashion and modeling along the Kenyan coast with prestigious awards.",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards2_defemi.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037227/CoastFashionsandmodellingawards1_bdf13y.jpg",
   },
   {
@@ -55,6 +60,7 @@ const pastEvents = [
     location: "Nairobi, Kenya",
     description: "A comprehensive conference for marketing students held at St. Paul's University, featuring industry insights and networking opportunities.",
     venue: "St. Paul's University",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
   },
   {
@@ -63,6 +69,7 @@ const pastEvents = [
     date: new Date(2025, 1, 14), // February 2025
     location: "Mombasa, Kenya",
     description: "A glamorous beauty pageant celebrating love and beauty in Mombasa with the crowning of Miss Valentines.",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
   },
   {
@@ -71,6 +78,7 @@ const pastEvents = [
     date: new Date(2025, 8, 25), // September 2025
     location: "Mombasa, Kenya",
     description: "An international showcase celebrating beauty, talent, and culture with contestants from across the region.",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
   },
   {
@@ -80,6 +88,7 @@ const pastEvents = [
     location: "Pwani University, Kenya",
     description: "A dynamic conference bringing together students from the coast region for learning, networking, and collaboration.",
     venue: "Pwani University",
+    defaultImage: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
   },
 ];
@@ -88,18 +97,33 @@ export default function PastEventsPage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-primary-50 to-secondary-50">
-        <div className="container-custom">
+      <section className="relative section-padding overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg"
+            alt="Past Events Background"
+            fill
+            className="object-cover object-center object-top"
+            style={{ objectPosition: "center top" }}
+            priority
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+        </div>
+        
+        {/* Content */}
+        <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
               Past Events
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-white/90">
               Relive the memorable moments from our past events. Explore event details, galleries, and share your feedback.
             </p>
           </motion.div>
@@ -119,7 +143,19 @@ export default function PastEventsPage() {
                 className="group relative h-[400px] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200"
               >
                 <Link href={`/events/past/${event.id}`} className="block h-full">
-                  {/* Background Image - Shows on Hover */}
+                  {/* Default Background Image - Always Visible */}
+                  <div className="absolute inset-0 opacity-100 group-hover:opacity-0 transition-opacity duration-300">
+                    <Image
+                      src={event.defaultImage || event.image}
+                      alt={event.title}
+                      fill
+                      className="object-cover"
+                    />
+                    {/* Light Overlay for Default State */}
+                    <div className="absolute inset-0 bg-white/40"></div>
+                  </div>
+
+                  {/* Hover Background Image - Shows on Hover */}
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <Image
                       src={event.image}
@@ -132,9 +168,9 @@ export default function PastEventsPage() {
                   </div>
 
                   {/* Content - Always Visible */}
-                  <div className="relative h-full flex flex-col p-6 bg-white group-hover:bg-transparent transition-colors duration-300">
+                  <div className="relative h-full flex flex-col p-6">
                     {/* Default Content */}
-                    <div className="flex-1 group-hover:opacity-0 transition-opacity duration-300">
+                    <div className="flex-1 group-hover:opacity-0 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-lg p-4">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <h3 className="text-xl font-bold text-gray-900 mb-2">
@@ -180,7 +216,7 @@ export default function PastEventsPage() {
                     </div>
 
                     {/* Default CTA - Hidden on Hover */}
-                    <div className="flex items-center text-primary-600 font-semibold text-sm group-hover:opacity-0 transition-opacity duration-300">
+                    <div className="flex items-center text-primary-600 font-semibold text-sm group-hover:opacity-0 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-lg p-2 px-4">
                       <span>View Event Details</span>
                       <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
