@@ -39,6 +39,16 @@ const teamMembers = [
       "Stakeholder Engagement: Beyond the numbers, she is passionate about resolving concerns and maintaining a welcoming environment for all clients and partners.",
     ],
   },
+  {
+    name: "Byron Kodhiambo",
+    position: "Marketing and Communications Manager",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767192241/mypi_jc8no0.jpg",
+    description: "Byron Kodhiambo is the Marketing and Communications Manager at Changer Fusions, where he leads brand strategy, communications, and sales-driven marketing initiatives. He has played a key role in driving creative sales ideas, strategic partnerships, and audience engagement campaigns that support business growth and brand visibility.",
+    achievements: [
+      "With a people-centered and results-oriented approach, Byron helps position Changer Fusions as a trusted, innovative force in Kenya's events and creative industry.",
+      "He champions talent development, collaboration, and ethical leadership within the organization.",
+    ],
+  },
 ];
 
 export default function OurTeamPage() {
@@ -95,7 +105,7 @@ export default function OurTeamPage() {
                       src={teamMembers[0].image}
                       alt={teamMembers[0].name}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                       priority
                     />
                   </div>
@@ -156,51 +166,63 @@ export default function OurTeamPage() {
                     Our Team
                   </h2>
                 </motion.div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
                   {teamMembers.slice(1).map((member, memberIndex) => (
                     <motion.div
                       key={member.name}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: (memberIndex + 1) * 0.2 }}
-                      className="space-y-6"
+                      className="group relative"
                     >
-                      {/* Image */}
-                      <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lg">
-                        <Image
-                          src={member.image}
-                          alt={member.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      {/* Card Container */}
+                      <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lg bg-white">
+                        {/* Image */}
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={member.image}
+                            alt={member.name}
+                            fill
+                            className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
 
-                      {/* Content */}
-                      <div>
-                        <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                          {member.name}
-                        </h3>
-                        <p className="text-lg text-primary-600 font-semibold mb-4">
-                          {member.position}
-                        </p>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                          {member.description}
-                        </p>
-                        <div className="space-y-3">
-                          {member.achievements.map((achievement, idx) => (
-                            <motion.div
-                              key={idx}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, delay: (memberIndex + 1) * 0.2 + 0.3 + idx * 0.1 }}
-                              className="flex items-start space-x-3"
-                            >
-                              <div className="flex-shrink-0 mt-1">
-                                <div className="w-2 h-2 rounded-full bg-primary-600"></div>
-                              </div>
-                              <p className="text-gray-700 leading-relaxed text-sm">{achievement}</p>
-                            </motion.div>
-                          ))}
+                        {/* Overlay with Content - Shows on Hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
+                              {member.name}
+                            </h3>
+                            <p className="text-lg text-primary-300 font-semibold mb-4">
+                              {member.position}
+                            </p>
+                            <p className="text-white/90 text-sm leading-relaxed mb-4 line-clamp-3">
+                              {member.description}
+                            </p>
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                              {member.achievements.map((achievement, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-start space-x-2"
+                                >
+                                  <div className="flex-shrink-0 mt-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary-400"></div>
+                                  </div>
+                                  <p className="text-white/80 text-xs leading-relaxed">{achievement}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Always Visible Name and Position */}
+                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent group-hover:opacity-0 transition-opacity duration-300">
+                          <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
+                            {member.name}
+                          </h3>
+                          <p className="text-primary-300 font-semibold text-sm">
+                            {member.position}
+                          </p>
                         </div>
                       </div>
                     </motion.div>
