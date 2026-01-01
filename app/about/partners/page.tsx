@@ -102,14 +102,81 @@ export default function OurPartnersPage() {
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+        </div>
+      </section>
 
-            {/* CTA Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="mt-12 p-8 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl text-white"
-            >
+      {/* Partner Logos Grid Section */}
+      <section className="section-padding bg-gray-50">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+              Our Trusted Partners
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              We're proud to collaborate with these exceptional organizations
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                id: 1,
+                image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159309/Patrners_2_vad9x7.jpg",
+                alt: "Partner 1",
+              },
+              {
+                id: 2,
+                image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_3_h6mjkl.jpg",
+                alt: "Partner 2",
+              },
+              {
+                id: 3,
+                image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_1_llldgx.jpg",
+                alt: "Partner 3",
+              },
+              {
+                id: 4,
+                image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_4_vujwiy.jpg",
+                alt: "Partner 4",
+              },
+            ].map((partner, index) => (
+              <motion.div
+                key={partner.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6 flex items-center justify-center border border-gray-100 h-48"
+              >
+                <div className="relative w-full h-full">
+                  <Image
+                    src={partner.image}
+                    alt={partner.alt}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="section-padding bg-white">
+        <div className="container-custom">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="p-8 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl text-white text-center">
               <h3 className="text-2xl md:text-3xl font-bold mb-4">
                 Interested in Partnering With Us?
               </h3>
@@ -122,7 +189,7 @@ export default function OurPartnersPage() {
               >
                 Get In Touch
               </a>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </section>

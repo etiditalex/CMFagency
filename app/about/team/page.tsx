@@ -59,7 +59,7 @@ export default function OurTeamPage() {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767153675/Global_women_impact_5_krzjoo.jpg"
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg"
             alt="Our Team"
             fill
             className="object-cover object-top"
