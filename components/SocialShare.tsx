@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Facebook, Twitter, Linkedin, Share2, Link as LinkIcon, Mail } from "lucide-react";
 
 export default function SocialShare() {
+  const pathname = usePathname();
   const [currentUrl, setCurrentUrl] = useState("");
   const [currentTitle, setCurrentTitle] = useState("");
 
@@ -14,6 +16,11 @@ export default function SocialShare() {
       setCurrentTitle(document.title);
     }
   }, []);
+
+  // Hide social share on job board pages
+  if (pathname?.startsWith("/jobs")) {
+    return null;
+  }
 
   const shareText = encodeURIComponent(
     `Check out ${currentTitle} on Changer Fusions - Market to Thrive, Market to Exist`
