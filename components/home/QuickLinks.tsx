@@ -23,7 +23,7 @@ const quickLinks = [
     icon: Briefcase,
     title: "Job Board",
     description: "Find career opportunities",
-    href: "/page-not-found",
+    href: "/jobs",
     color: "from-accent-500 to-accent-600",
   },
   {
