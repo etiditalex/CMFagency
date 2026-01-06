@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Briefcase, Send, CheckCircle, ArrowLeft, Upload } from "lucide-react";
 import Link from "next/link";
 
 export default function JobApplicationPage() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,12 +26,41 @@ export default function JobApplicationPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+    
+    // Format the application data for WhatsApp
+    const whatsappMessage = `*Job Application - Changer Fusions*
+
+*Full Name:* ${formData.name}
+*Email:* ${formData.email}
+*Phone:* ${formData.phone}
+*Position of Interest:* ${formData.position}
+*Years of Experience:* ${formData.experience}
+*Resume/CV:* ${resumeFile ? resumeFile.name : 'Not uploaded'}
+
+*Cover Letter:*
+${formData.coverLetter}
+
+---
+*Note: Please attach your resume/CV file to this message.*`;
+
+    // Encode the message for WhatsApp URL
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    const whatsappNumber = "0755933829"; // Remove leading 0 and add country code for international format
+    const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
+    
+    // Open WhatsApp in a new window
+    window.open(whatsappUrl, '_blank');
+    
+    // Show success message
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
       setFormData({ name: "", email: "", phone: "", position: "", experience: "", coverLetter: "" });
-    }, 3000);
+      setResumeFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }, 5000);
   };
 
   return (
@@ -85,9 +115,10 @@ export default function JobApplicationPage() {
                   className="text-center py-12"
                 >
                   <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold mb-2 text-gray-900">Application Submitted!</h3>
-                  <p className="text-gray-600 mb-4">We've received your application and will review it shortly.</p>
-                  <p className="text-gray-600">We'll get back to you as soon as possible.</p>
+                  <h3 className="text-2xl font-bold mb-2 text-gray-900">Application Sent to WhatsApp!</h3>
+                  <p className="text-gray-600 mb-4">Your application has been sent to our WhatsApp number.</p>
+                  <p className="text-gray-600 mb-4 font-semibold">Please attach your resume/CV file in the WhatsApp chat.</p>
+                  <p className="text-gray-600">We'll review your application and get back to you as soon as possible.</p>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -197,6 +228,7 @@ export default function JobApplicationPage() {
                         accept=".pdf,.doc,.docx"
                         className="hidden"
                         required
+                        ref={fileInputRef}
                         onChange={handleFileChange}
                       />
                     </label>
