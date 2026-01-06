@@ -16,6 +16,20 @@ export const metadata: Metadata = {
     title: "Marketing Services Kenya - Changer Fusions",
     description: "Comprehensive marketing services in Kenya for business growth and success.",
     url: "https://changerfusions.com/services",
+    images: [
+      {
+        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Marketing Services Kenya - Changer Fusions",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Marketing Services Kenya - Changer Fusions",
+    description: "Comprehensive marketing services in Kenya for business growth and success.",
+    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
   },
   alternates: {
     canonical: "https://changerfusions.com/services",

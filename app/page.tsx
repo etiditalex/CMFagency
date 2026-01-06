@@ -36,6 +36,12 @@ export const metadata: Metadata = {
     locale: "en_KE",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Changer Fusions - Leading Marketing Agency in Kenya",
+    description: "Premier marketing agency in Kenya offering digital marketing, website development, branding, and event management services.",
+    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+  },
   alternates: {
     canonical: "https://changerfusions.com",
   },
