@@ -1,7 +1,4 @@
-import { Metadata } from "next";
-import metadataConfig from "./metadata";
-
-export const metadata: Metadata = metadataConfig;
+export { metadata } from "./metadata";
 
 export default function TeamLayout({
   children,
