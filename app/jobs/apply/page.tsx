@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Briefcase, Send, CheckCircle, ArrowLeft, Upload } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function JobApplicationPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -13,6 +14,7 @@ export default function JobApplicationPage() {
     phone: "",
     position: "",
     experience: "",
+    location: "Mombasa",
     coverLetter: "",
   });
   const [resumeFile, setResumeFile] = useState<File | null>(null);
@@ -28,12 +30,13 @@ export default function JobApplicationPage() {
     e.preventDefault();
     
     // Format the application data for WhatsApp
-    const whatsappMessage = `*Job Application - Changer Fusions*
+    const whatsappMessage = `*Job Application - Partner Position*
 
 *Full Name:* ${formData.name}
 *Email:* ${formData.email}
 *Phone:* ${formData.phone}
 *Position of Interest:* ${formData.position}
+*Location:* ${formData.location}
 *Years of Experience:* ${formData.experience}
 *Resume/CV:* ${resumeFile ? resumeFile.name : 'Not uploaded'}
 
@@ -55,7 +58,7 @@ ${formData.coverLetter}
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
-      setFormData({ name: "", email: "", phone: "", position: "", experience: "", coverLetter: "" });
+      setFormData({ name: "", email: "", phone: "", position: "", experience: "", location: "Mombasa", coverLetter: "" });
       setResumeFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -66,8 +69,21 @@ ${formData.coverLetter}
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="section-padding bg-gradient-to-br from-primary-600 to-secondary-600">
-        <div className="container-custom">
+      <section className="relative section-padding overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg"
+            alt="Career Opportunities"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+        </div>
+        
+        <div className="container-custom relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -78,7 +94,7 @@ ${formData.coverLetter}
               Apply for a Position
             </h1>
             <p className="text-xl text-white/90">
-              Join the Changer Fusions team and be part of creating impactful experiences and innovative solutions.
+              Apply for exciting career opportunities with our partners.
             </p>
           </motion.div>
         </div>
@@ -188,20 +204,37 @@ ${formData.coverLetter}
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Years of Experience *
-                    </label>
-                    <input
-                      type="text"
-                      id="job-experience"
-                      name="experience"
-                      required
-                      value={formData.experience}
-                      onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="e.g., 3-5 years"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Years of Experience *
+                      </label>
+                      <input
+                        type="text"
+                        id="job-experience"
+                        name="experience"
+                        required
+                        value={formData.experience}
+                        onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="e.g., 3-5 years"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location *
+                      </label>
+                      <input
+                        type="text"
+                        id="job-location"
+                        name="location"
+                        required
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Mombasa"
+                      />
+                    </div>
                   </div>
 
                   <div>
