@@ -139,7 +139,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }));
         }
 
-        // Send verification code via email
+        // Send verification code via email (non-blocking - registration succeeds even if email fails)
+        console.log('Sending verification email to:', email);
         try {
           const emailResponse = await fetch('/api/send-verification-email', {
             method: 'POST',
@@ -153,34 +154,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }),
           });
 
-          const emailResult = await emailResponse.json();
-          
           if (!emailResponse.ok) {
-            console.error('Failed to send verification email:', {
+            const emailResult = await emailResponse.json();
+            console.warn('⚠️ Email sending failed (non-critical):', {
               status: emailResponse.status,
               error: emailResult.error,
-              details: emailResult.details,
             });
-            // Registration still succeeds, code is available on verification page
+            // Registration still succeeds - email verification is optional
           } else {
-            console.log('Verification email sent successfully to:', email, {
+            const emailResult = await emailResponse.json();
+            console.log('✅ Verification email sent successfully to:', email, {
               emailId: emailResult.emailId,
             });
           }
         } catch (emailError: any) {
-          console.error('Error sending verification email:', {
-            error: emailError.message,
-            stack: emailError.stack,
-          });
-          // Don't fail registration if email fails - code is still available on verification page
+          console.warn('⚠️ Email sending error (non-critical):', emailError.message);
+          // Registration succeeds regardless - email verification is optional
         }
 
-        // Auto-login the user (they can access application but need to verify email)
+        // Auto-login the user - they can access application immediately
+        // Email verification is optional and can be done later
         const userData = {
           id: data.user.id,
           email: data.user.email || "",
           name: data.user.user_metadata?.name || name,
-          emailVerified: false, // Not verified yet
+          emailVerified: false, // Will be set to true when verified
         };
         setUser(userData);
 
@@ -298,42 +296,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(`verification_code_${email}`, verificationCode);
       }
 
-      // Send verification code via email
-      try {
-        const emailResponse = await fetch('/api/send-verification-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            code: verificationCode,
-            name: userName,
-          }),
-        });
+      // Send verification code via email - MUST succeed
+      console.log('📧 Resending verification email to:', email);
+      const emailResponse = await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          code: verificationCode,
+          name: userName,
+        }),
+      });
 
-        const emailResult = await emailResponse.json();
-        
-        if (!emailResponse.ok) {
-          console.error('Failed to resend verification email:', {
-            status: emailResponse.status,
-            error: emailResult.error,
-            details: emailResult.details,
-          });
-          // Still return success as code is updated and available on verification page
-        } else {
-          console.log('Verification code email resent successfully to:', email, {
-            emailId: emailResult.emailId,
-          });
-        }
-      } catch (emailError: any) {
-        console.error('Error resending verification email:', {
-          error: emailError.message,
-          stack: emailError.stack,
+      const emailResult = await emailResponse.json();
+      
+      if (!emailResponse.ok || !emailResult.success) {
+        const errorMsg = emailResult.error || `Failed to send email (${emailResponse.status})`;
+        console.error('❌ Failed to resend verification email:', {
+          status: emailResponse.status,
+          error: errorMsg,
+          details: emailResult.details,
         });
-        // Still return success as code is updated
+        return { 
+          success: false, 
+          error: errorMsg || 'Failed to send verification email. Please check your email configuration.' 
+        };
       }
 
+      console.log('✅ Verification code email resent successfully to:', email, {
+        emailId: emailResult.emailId,
+      });
+      
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message || "An error occurred while resending code" };

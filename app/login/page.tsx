@@ -86,14 +86,17 @@ export default function LoginPage() {
       setError("Password must be at least 6 characters");
       return;
     }
+    setSuccessMessage("Creating your account...");
     const result = await register(registerName, registerEmail, registerPassword);
     if (result.success) {
-      setSuccessMessage("Registration successful! A verification code has been sent to your email. Please check your inbox and enter the code to continue.");
+      setSuccessMessage("✅ Account created successfully! Redirecting to application...");
       setTimeout(() => {
-        router.push(`/verify-email?email=${encodeURIComponent(registerEmail)}`);
-      }, 2000);
+        // Redirect directly to application - email verification is optional
+        router.push("/application");
+      }, 1500);
     } else {
       setError(result.error || "Registration failed. Please try again.");
+      setSuccessMessage("");
     }
   };
 

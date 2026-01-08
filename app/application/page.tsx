@@ -76,15 +76,27 @@ export default function ApplicationPage() {
   const certificateRef = useRef<HTMLInputElement>(null);
   const cvRef = useRef<HTMLInputElement>(null);
 
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     // Wait for auth to finish loading before checking
     if (loading) return;
     
     if (!isAuthenticated) {
       router.push("/login");
-    } else if (isAuthenticated && user && !user.emailVerified) {
-      router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
     }
+    // Note: Email verification is optional - users can access application without verifying
+    // They can verify email later if they want
   }, [isAuthenticated, user, router, loading]);
 
   // Load saved data from localStorage

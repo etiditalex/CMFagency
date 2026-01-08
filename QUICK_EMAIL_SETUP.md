@@ -71,3 +71,4 @@ If you prefer a different email service, you can modify `app/api/send-verificati
 The code structure is already set up - just replace the Resend API call with your preferred service.
 
 
+

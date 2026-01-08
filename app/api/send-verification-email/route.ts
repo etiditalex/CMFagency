@@ -68,17 +68,26 @@ export async function POST(request: NextRequest) {
     // Send email using Resend API (free tier available)
     // Get API key from environment variable: RESEND_API_KEY
     const resendApiKey = process.env.RESEND_API_KEY;
+    // NOTE: Resend requires domain verification to send to any email
+    // Using onboarding@resend.dev only sends to your verified email (changerfusions@gmail.com)
+    // To send to any email, verify a domain at https://resend.com/domains
     const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'CMF Agency <onboarding@resend.dev>';
     
     console.log('Attempting to send email:', {
       email,
       hasApiKey: !!resendApiKey,
+      apiKeyPrefix: resendApiKey ? resendApiKey.substring(0, 10) + '...' : 'none',
       fromEmail: resendFromEmail,
     });
     
     if (!resendApiKey) {
       // No Resend API key configured
       console.error('RESEND_API_KEY not configured. Email cannot be sent.');
+      console.error('Available env vars:', {
+        hasResendKey: !!process.env.RESEND_API_KEY,
+        hasFromEmail: !!process.env.RESEND_FROM_EMAIL,
+        nodeEnv: process.env.NODE_ENV,
+      });
       
       return NextResponse.json({ 
         success: false,
@@ -87,61 +96,102 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    try {
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: resendFromEmail,
-          to: email,
-          subject: 'Verify Your Email - CMF Agency',
-          html: emailHtml,
-        }),
-      });
+    // Send email via Resend API with retry logic
+    const maxRetries = 3;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`📧 Attempt ${attempt}/${maxRetries}: Sending verification email to ${email}`);
+        
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFromEmail,
+            to: email,
+            subject: 'Verify Your Email - CMF Agency',
+            html: emailHtml,
+          }),
+        });
 
-      const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          const text = await response.text();
+          console.error(`❌ Attempt ${attempt}: Failed to parse response:`, text);
+          if (attempt === maxRetries) {
+            return NextResponse.json({ 
+              success: false,
+              error: `Invalid response from email service: ${response.status}`,
+              details: { rawResponse: text },
+            }, { status: response.status });
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
 
-      if (!response.ok) {
-        console.error('Resend API error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data,
+        if (!response.ok) {
+          const errorMessage = data.message || data.error?.message || `HTTP ${response.status}`;
+          console.error(`❌ Attempt ${attempt} failed:`, {
+            status: response.status,
+            error: errorMessage,
+            fullResponse: data,
+          });
+          
+          // Retry on server errors (500+) or rate limits (429)
+          if ((response.status >= 500 || response.status === 429) && attempt < maxRetries) {
+            const delay = 1000 * attempt; // 1s, 2s, 3s
+            console.log(`⏳ Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+          
+          // Non-retryable error or last attempt - return detailed error
+          return NextResponse.json({ 
+            success: false,
+            error: errorMessage,
+            details: data,
+            resendError: true,
+          }, { status: response.status });
+        }
+
+        // Success! Verify we got an email ID
+        if (!data.id) {
+          console.warn('⚠️ Email API returned success but no email ID:', data);
+        }
+        
+        console.log(`✅ Email sent successfully! ID: ${data.id || 'unknown'}`);
+        return NextResponse.json({ 
+          success: true,
+          message: 'Verification code email sent successfully',
+          emailId: data.id
         });
         
-        // Return detailed error for debugging
-        return NextResponse.json({ 
-          success: false,
-          error: data.message || `Failed to send email: ${response.status} ${response.statusText}`,
-          details: data,
-          fallback: true
-        }, { status: response.status });
+      } catch (error: any) {
+        console.error(`❌ Attempt ${attempt} error:`, error.message);
+        
+        if (attempt === maxRetries) {
+          return NextResponse.json({ 
+            success: false,
+            error: error.message || 'Failed to send verification email after multiple attempts',
+          }, { status: 500 });
+        }
+        
+        // Wait before retrying
+        const delay = 1000 * attempt;
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      console.log('Email sent successfully via Resend:', {
-        email,
-        emailId: data.id,
-      });
-      
-      return NextResponse.json({ 
-        success: true,
-        message: 'Verification code email sent successfully',
-        emailId: data.id
-      });
-    } catch (emailError: any) {
-      console.error('Error sending email via Resend:', {
-        error: emailError.message,
-        stack: emailError.stack,
-      });
-      
-      return NextResponse.json({ 
-        success: false,
-        error: emailError.message || 'Failed to send verification email. Please check the verification page for your code.',
-        fallback: true
-      }, { status: 500 });
     }
+    
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to send verification email after multiple attempts',
+    }, { status: 500 });
 
   } catch (error: any) {
     console.error('Error sending verification email:', error);

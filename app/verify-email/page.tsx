@@ -88,14 +88,25 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    const result = await resendVerificationCode(email);
-    setResending(false);
-
-    if (result.success) {
-      setResendSuccess(true);
-      setTimeout(() => setResendSuccess(false), 5000);
-    } else {
-      setError(result.error || "Failed to resend code. Please try again.");
+    try {
+      console.log('🔄 Resending verification code to:', email);
+      const result = await resendVerificationCode(email);
+      
+      if (result.success) {
+        setResendSuccess(true);
+        setTimeout(() => setResendSuccess(false), 5000);
+        console.log('✅ Resend successful');
+      } else {
+        const errorMsg = result.error || "Failed to resend code. Please check your email configuration or try again later.";
+        setError(errorMsg);
+        console.error('❌ Resend failed:', errorMsg);
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || "An error occurred while resending the code. Please try again.";
+      setError(errorMsg);
+      console.error('❌ Resend error:', err);
+    } finally {
+      setResending(false);
     }
   };
 
