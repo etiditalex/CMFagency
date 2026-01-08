@@ -156,13 +156,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const emailResult = await emailResponse.json();
           
           if (!emailResponse.ok) {
-            console.warn('Failed to send verification email:', emailResult.error || 'Unknown error');
+            console.error('Failed to send verification email:', {
+              status: emailResponse.status,
+              error: emailResult.error,
+              details: emailResult.details,
+            });
             // Registration still succeeds, code is available on verification page
           } else {
-            console.log('Verification email sent successfully to:', email);
+            console.log('Verification email sent successfully to:', email, {
+              emailId: emailResult.emailId,
+            });
           }
-        } catch (emailError) {
-          console.warn('Error sending verification email:', emailError);
+        } catch (emailError: any) {
+          console.error('Error sending verification email:', {
+            error: emailError.message,
+            stack: emailError.stack,
+          });
           // Don't fail registration if email fails - code is still available on verification page
         }
 
@@ -298,13 +307,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const emailResult = await emailResponse.json();
         
         if (!emailResponse.ok) {
-          console.warn('Failed to resend verification email:', emailResult.error);
+          console.error('Failed to resend verification email:', {
+            status: emailResponse.status,
+            error: emailResult.error,
+            details: emailResult.details,
+          });
           // Still return success as code is updated and available on verification page
         } else {
-          console.log('Verification code email resent successfully to:', email);
+          console.log('Verification code email resent successfully to:', email, {
+            emailId: emailResult.emailId,
+          });
         }
-      } catch (emailError) {
-        console.warn('Error resending verification email:', emailError);
+      } catch (emailError: any) {
+        console.error('Error resending verification email:', {
+          error: emailError.message,
+          stack: emailError.stack,
+        });
         // Still return success as code is updated
       }
 

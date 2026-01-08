@@ -68,58 +68,79 @@ export async function POST(request: NextRequest) {
     // Send email using Resend API (free tier available)
     // Get API key from environment variable: RESEND_API_KEY
     const resendApiKey = process.env.RESEND_API_KEY;
+    const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'CMF Agency <onboarding@resend.dev>';
     
-    if (resendApiKey) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'CMF Agency <onboarding@resend.dev>',
-            to: email,
-            subject: 'Verify Your Email - CMF Agency',
-            html: emailHtml,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          console.error('Resend API error:', data);
-          throw new Error(data.message || 'Failed to send email via Resend');
-        }
-
-        console.log('Email sent successfully via Resend to:', email);
-        return NextResponse.json({ 
-          success: true,
-          message: 'Verification code email sent successfully',
-          emailId: data.id
-        });
-      } catch (emailError: any) {
-        console.error('Error sending email via Resend:', emailError);
-        // Try alternative email service or return error
-        return NextResponse.json({ 
-          success: false,
-          error: emailError.message || 'Failed to send verification email. Please check the verification page for your code.',
-          fallback: true
-        }, { status: 500 });
-      }
-    } else {
+    console.log('Attempting to send email:', {
+      email,
+      hasApiKey: !!resendApiKey,
+      fromEmail: resendFromEmail,
+    });
+    
+    if (!resendApiKey) {
       // No Resend API key configured
-      console.warn('RESEND_API_KEY not configured. Email cannot be sent.');
-      
-      // Try to use Supabase's email system as fallback
-      // Note: This will send Supabase's default confirmation email
-      // The verification code will still be available on the verification page
+      console.error('RESEND_API_KEY not configured. Email cannot be sent.');
       
       return NextResponse.json({ 
         success: false,
         error: 'Email service not configured. Please set RESEND_API_KEY in environment variables. Your verification code is available on the verification page.',
         fallback: true
       }, { status: 400 });
+    }
+    
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: resendFromEmail,
+          to: email,
+          subject: 'Verify Your Email - CMF Agency',
+          html: emailHtml,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Resend API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: data,
+        });
+        
+        // Return detailed error for debugging
+        return NextResponse.json({ 
+          success: false,
+          error: data.message || `Failed to send email: ${response.status} ${response.statusText}`,
+          details: data,
+          fallback: true
+        }, { status: response.status });
+      }
+
+      console.log('Email sent successfully via Resend:', {
+        email,
+        emailId: data.id,
+      });
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Verification code email sent successfully',
+        emailId: data.id
+      });
+    } catch (emailError: any) {
+      console.error('Error sending email via Resend:', {
+        error: emailError.message,
+        stack: emailError.stack,
+      });
+      
+      return NextResponse.json({ 
+        success: false,
+        error: emailError.message || 'Failed to send verification email. Please check the verification page for your code.',
+        fallback: true
+      }, { status: 500 });
     }
 
   } catch (error: any) {
