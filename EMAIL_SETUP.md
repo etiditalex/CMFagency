@@ -148,3 +148,4 @@ For issues or questions:
 - Check Supabase documentation: https://supabase.com/docs
 - Review API route: `app/api/send-verification-email/route.ts`
 
+

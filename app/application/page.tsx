@@ -79,8 +79,10 @@ export default function ApplicationPage() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
+    } else if (isAuthenticated && user && !user.emailVerified) {
+      router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   // Load saved data from localStorage
   useEffect(() => {
