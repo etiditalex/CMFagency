@@ -16,20 +16,50 @@
 
 Add these in Vercel Dashboard → Settings → Environment Variables:
 
-### Required:
+### Required (Must Have):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://jgroawmmjuhdjtdvnlxa.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4iZ3_t7mI9AEyjI98VhAPw_oFQxa02Q
-SUPABASE_SERVICE_ROLE_KEY=[your service role key]
+SUPABASE_SERVICE_ROLE_KEY=[your service role key - get from Supabase Settings → API]
 ```
+
+**How to get SUPABASE_SERVICE_ROLE_KEY:**
+1. Go to https://app.supabase.com
+2. Select your project
+3. Go to **Settings** → **API**
+4. Copy the **service_role** key (the secret one, not the anon key)
+5. ⚠️ **Keep this secret!** Never commit it to GitHub
 
 ### Optional (for email sending):
 ```
-RESEND_API_KEY=re_HVKoFRgK_KG7DEDtDbJ6HwyGa5FKEgHJ1
+RESEND_API_KEY=re_9HNjZdEJ_7mmPB3Ei2Nz9rAUGASA668AK
 RESEND_FROM_EMAIL=CMF Agency <onboarding@resend.dev>
 ```
 
 **Note:** Even if Resend is not configured, the app works! Email verification just won't send emails.
+
+## Complete Environment Variables List
+
+Here's the complete list of all environment variables used in this project:
+
+### Supabase (Required)
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous/public key
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for admin operations)
+
+### Resend Email (Optional)
+- `RESEND_API_KEY` - Resend API key for sending emails
+- `RESEND_FROM_EMAIL` - Email address to send from
+
+### Summary Table
+
+| Variable | Required | Description | Where to Get |
+|----------|----------|-------------|--------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ Yes | Supabase project URL | Supabase Dashboard → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ Yes | Supabase public key | Supabase Dashboard → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ Yes | Supabase admin key | Supabase Dashboard → Settings → API (service_role) |
+| `RESEND_API_KEY` | ⚠️ Optional | Resend API key | https://resend.com/api-keys |
+| `RESEND_FROM_EMAIL` | ⚠️ Optional | Email sender address | Use `onboarding@resend.dev` or your verified domain |
 
 ## Deployment Steps
 
