@@ -17,8 +17,8 @@ export default function SocialShare() {
     }
   }, []);
 
-  // Hide social share on job board pages
-  if (pathname?.startsWith("/jobs")) {
+  // Hide social share on job board pages and login page
+  if (pathname?.startsWith("/jobs") || pathname === "/login") {
     return null;
   }
 

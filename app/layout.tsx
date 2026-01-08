@@ -10,6 +10,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import SEOStructuredData from "@/components/SEOStructuredData";
 import SocialShare from "@/components/SocialShare";
 import { CartProvider } from "@/contexts/CartContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -126,14 +127,16 @@ export default function RootLayout({
         </Script>
         <SEOStructuredData />
         <CartProvider>
-          <PageLoader>
-            <Navbar />
-            <main className="min-h-screen">{children}</main>
-            <SocialShare />
-            <Footer />
-            <CookieBanner />
-            <WhatsAppButton />
-          </PageLoader>
+          <AuthProvider>
+            <PageLoader>
+              <Navbar />
+              <main className="min-h-screen">{children}</main>
+              <SocialShare />
+              <Footer />
+              <CookieBanner />
+              <WhatsAppButton />
+            </PageLoader>
+          </AuthProvider>
         </CartProvider>
       </body>
     </html>

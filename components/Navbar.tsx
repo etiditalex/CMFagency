@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogIn, LogOut, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,20 @@ export default function Navbar() {
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [isLoginMode, setIsLoginMode] = useState(true);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [registerName, setRegisterName] = useState("");
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const { getTotalItems } = useCart();
+  const { user, login, register, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -232,13 +246,41 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-            <Link
-              href="/profile"
-              className="p-2 text-gray-900 hover:text-primary-600 transition-colors"
-              aria-label="User Profile"
-            >
-              <User className="w-5 h-5" />
-            </Link>
+            {isAuthenticated ? (
+              <div className="relative group">
+                <button
+                  className="flex items-center space-x-2 px-3 py-2 text-gray-900 hover:text-primary-600 transition-colors"
+                  aria-label="User Menu"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="text-sm font-medium">{user?.name}</span>
+                </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <Link
+                    href="/application"
+                    className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  >
+                    <FileText className="w-4 h-4 inline mr-2" />
+                    My Application
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4 inline mr-2" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              >
+                <LogIn className="w-5 h-5" />
+                <span>Login</span>
+              </Link>
+            )}
             
             {/* Events Dropdown */}
             <div 
@@ -471,16 +513,327 @@ export default function Navbar() {
                   <ShoppingCart className="w-5 h-5" />
                   <span>Shopping Cart</span>
                 </Link>
-                <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  <User className="w-5 h-5" />
-                  <span>Profile</span>
-                </Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      href="/application"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                    >
+                      <FileText className="w-5 h-5" />
+                      <span>My Application</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors w-full text-left"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span>Logout</span>
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center space-x-2 py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors w-full justify-center"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    <span>Login</span>
+                  </Link>
+                )}
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Login/Register Modal */}
+      <AnimatePresence>
+        {(showLoginModal || showRegisterModal) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4"
+            onClick={() => {
+              setShowLoginModal(false);
+              setShowRegisterModal(false);
+              setError("");
+              setSuccessMessage("");
+              setShowForgotPassword(false);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {showForgotPassword ? "Reset Password" : isLoginMode ? "Sign In" : "Create Account"}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setShowRegisterModal(false);
+                    setError("");
+                    setSuccessMessage("");
+                    setShowForgotPassword(false);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+                  {successMessage}
+                </div>
+              )}
+
+              {showForgotPassword ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Forgot Password
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Enter your email address and we'll send you instructions to reset your password.
+                    </p>
+                  </div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setError("");
+                      setSuccessMessage("");
+                      
+                      // Check if user exists
+                      if (typeof window !== "undefined") {
+                        const users = JSON.parse(localStorage.getItem("users") || "[]");
+                        const foundUser = users.find((u: any) => u.email === forgotPasswordEmail);
+                        
+                        if (foundUser) {
+                          // In a real app, you would send an email here
+                          // For now, we'll just show a success message
+                          setSuccessMessage(`Password reset instructions would be sent to ${forgotPasswordEmail}. In production, this would send an email.`);
+                          setTimeout(() => {
+                            setShowForgotPassword(false);
+                            setForgotPasswordEmail("");
+                            setSuccessMessage("");
+                          }, 3000);
+                        } else {
+                          setError("No account found with this email address.");
+                        }
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="your.email@example.com"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full btn-primary"
+                    >
+                      Send Reset Instructions
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setForgotPasswordEmail("");
+                        setError("");
+                        setSuccessMessage("");
+                      }}
+                      className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Back to Login
+                    </button>
+                  </form>
+                </div>
+              ) : isLoginMode ? (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError("");
+                    const success = await login(loginEmail, loginPassword);
+                    if (success) {
+                      setShowLoginModal(false);
+                      setLoginEmail("");
+                      setLoginPassword("");
+                    } else {
+                      setError("Invalid email or password");
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(true);
+                          setError("");
+                          setSuccessMessage("");
+                        }}
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full btn-primary"
+                  >
+                    Sign In
+                  </button>
+                  <p className="text-center text-sm text-gray-600">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginMode(false);
+                        setError("");
+                        setSuccessMessage("");
+                        setShowForgotPassword(false);
+                      }}
+                      className="text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Sign Up / Register
+                    </button>
+                  </p>
+                </form>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setError("");
+                    if (registerPassword.length < 6) {
+                      setError("Password must be at least 6 characters");
+                      return;
+                    }
+                    const success = await register(registerName, registerEmail, registerPassword);
+                    if (success) {
+                      setShowRegisterModal(false);
+                      setRegisterName("");
+                      setRegisterEmail("");
+                      setRegisterPassword("");
+                    } else {
+                      setError("Email already registered");
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="your.email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={registerPassword}
+                      onChange={(e) => setRegisterPassword(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="At least 6 characters"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full btn-primary"
+                  >
+                    Register
+                  </button>
+                  <p className="text-center text-sm text-gray-600">
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsLoginMode(true);
+                        setError("");
+                        setSuccessMessage("");
+                        setShowForgotPassword(false);
+                      }}
+                      className="text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Sign In
+                    </button>
+                  </p>
+                </form>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
