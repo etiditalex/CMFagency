@@ -336,10 +336,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("user");
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      // Clear any local storage items related to auth
+      if (typeof window !== "undefined") {
+        // Clear verification codes and pending verifications
+        const keys = Object.keys(localStorage);
+        keys.forEach(key => {
+          if (key.startsWith('verification_code_') || key.startsWith('pending_verification_')) {
+            localStorage.removeItem(key);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still clear user state even if signOut fails
+      setUser(null);
     }
   };
 

@@ -22,19 +22,16 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  // Redirect if already logged in
+  // Redirect if already logged in (users are remembered via Supabase session)
   useEffect(() => {
     if (loading) return; // Wait for auth to finish loading
     
     if (isAuthenticated) {
-      // Check if email is verified
-      if (user?.emailVerified) {
-        router.push("/application");
-      } else if (user?.email) {
-        router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
-      }
+      // If user is already logged in, redirect to application
+      // Email verification is optional, so we don't require it
+      router.push("/application");
     }
-  }, [isAuthenticated, loading, router, user]);
+  }, [isAuthenticated, loading, router]);
 
   // Show loading state while checking authentication
   if (loading) {
