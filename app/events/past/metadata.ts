@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Past Events - Event Gallery & Highlights | Changer Fusions",
     description: "Relive the memorable moments from our past events. Explore event details, galleries, and share your feedback.",
-    url: "https://changerfusions.com/events/past",
+    url: "https://cmfagency.co.ke/events/past",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/events/past",
+    canonical: "https://cmfagency.co.ke/events/past",
   },
 };
 

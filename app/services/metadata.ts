@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Marketing Services Kenya - Changer Fusions",
     description: "Comprehensive marketing services in Kenya for business growth and success.",
-    url: "https://changerfusions.com/services",
+    url: "https://cmfagency.co.ke/services",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/services",
+    canonical: "https://cmfagency.co.ke/services",
   },
 };
 

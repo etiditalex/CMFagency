@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About Changer Fusions - Marketing Agency Kenya",
     description: "Learn about Changer Fusions, a forward-thinking marketing agency in Kenya helping businesses grow.",
-    url: "https://changerfusions.com/about",
+    url: "https://cmfagency.co.ke/about",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/about",
+    canonical: "https://cmfagency.co.ke/about",
   },
 };
 

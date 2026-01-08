@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://changerfusions.com";
+  const baseUrl = "https://cmfagency.co.ke";
   const now = new Date();
 
   const routes = [

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Events - Upcoming & Past Events | Changer Fusions",
     description: "Discover exciting upcoming events and relive memorable past events organized by Changer Fusions.",
-    url: "https://changerfusions.com/events",
+    url: "https://cmfagency.co.ke/events",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154666/The_Kings_Experience_7_mpvtww.jpg",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154666/The_Kings_Experience_7_mpvtww.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/events",
+    canonical: "https://cmfagency.co.ke/events",
   },
 };
 

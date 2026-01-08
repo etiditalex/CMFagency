@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contact Us - Get In Touch with Changer Fusions",
     description: "Have a question or want to work with us? Contact Changer Fusions, Kenya's leading marketing agency.",
-    url: "https://changerfusions.com/contact",
+    url: "https://cmfagency.co.ke/contact",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/contact",
+    canonical: "https://cmfagency.co.ke/contact",
   },
 };
 

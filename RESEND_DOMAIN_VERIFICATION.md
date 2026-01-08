@@ -16,7 +16,7 @@ Resend **does not allow** sending emails FROM Gmail addresses. You must verify a
    - Click "Add Domain"
 
 2. **Add Your Domain:**
-   - Enter your domain (e.g., `changerfusions.com` or `changerfusions.co.ke`)
+   - Enter your domain (e.g., `cmfagency.co.ke`)
    - Click "Add"
 
 3. **Add DNS Records:**
@@ -81,7 +81,7 @@ I've reverted to `onboarding@resend.dev` which will:
 
 ## Quick Domain Verification Guide
 
-If you have a domain (e.g., changerfusions.com):
+If you have a domain (e.g., cmfagency.co.ke):
 
 1. Go to https://resend.com/domains
 2. Add domain

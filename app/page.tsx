@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Changer Fusions - Leading Marketing Agency in Kenya",
     description: "Premier marketing agency in Kenya offering digital marketing, website development, branding, and event management services.",
-    url: "https://changerfusions.com",
+    url: "https://cmfagency.co.ke",
     siteName: "Changer Fusions",
     images: [
       {
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com",
+    canonical: "https://cmfagency.co.ke",
   },
 };
 

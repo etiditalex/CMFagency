@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Our Partners - Strategic Partnerships | Changer Fusions",
     description: "Building strong partnerships to deliver exceptional value and create lasting impact.",
-    url: "https://changerfusions.com/about/partners",
+    url: "https://cmfagency.co.ke/about/partners",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.05_AM_bulcfe.jpg",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.05_AM_bulcfe.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/about/partners",
+    canonical: "https://cmfagency.co.ke/about/partners",
   },
 };
 

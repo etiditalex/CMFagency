@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Career Development - Professional Growth & Networking | Changer Fusions",
     description: "Grow your professional network and advance your career with Changer Fusions' comprehensive career development services.",
-    url: "https://changerfusions.com/career",
+    url: "https://cmfagency.co.ke/career",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/career",
+    canonical: "https://cmfagency.co.ke/career",
   },
 };
 

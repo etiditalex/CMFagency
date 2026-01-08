@@ -46,17 +46,17 @@ You should now be able to:
 
 ## For Production (Optional)
 
-If you want to use a custom domain (e.g., `noreply@changerfusions.com`):
+If you want to use a custom domain (e.g., `noreply@cmfagency.co.ke`):
 
 1. **Verify Domain in Resend:**
    - Go to https://resend.com/domains
-   - Add your domain (e.g., changerfusions.com)
+   - Add your domain (e.g., cmfagency.co.ke)
    - Add DNS records (SPF, DKIM, DMARC)
    - Wait for verification
 
 2. **Update Environment Variable:**
    ```env
-   RESEND_FROM_EMAIL=CMF Agency <noreply@changerfusions.com>
+   RESEND_FROM_EMAIL=CMF Agency <noreply@cmfagency.co.ke>
    ```
 
 3. **Benefits:**

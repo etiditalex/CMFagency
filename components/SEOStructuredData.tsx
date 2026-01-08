@@ -6,10 +6,10 @@ export default function SEOStructuredData() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "@id": "https://changerfusions.com/#organization",
-    name: "Changer Fusions",
-    alternateName: "CMF Agency",
-    url: "https://changerfusions.com",
+    "@id": "https://cmfagency.co.ke/#organization",
+    name: "CHANGER FUSIONS ENTERPRISE",
+    alternateName: ["Changer Fusions", "CMF Agency"],
+    url: "https://cmfagency.co.ke",
     logo: {
       "@type": "ImageObject",
       url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
@@ -75,13 +75,13 @@ export default function SEOStructuredData() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "Changer Fusions",
-    url: "https://changerfusions.com",
+    name: "CHANGER FUSIONS ENTERPRISE",
+    url: "https://cmfagency.co.ke",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://changerfusions.com/search?q={search_term_string}",
+        urlTemplate: "https://cmfagency.co.ke/search?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },
@@ -91,10 +91,10 @@ export default function SEOStructuredData() {
     "@context": "https://schema.org",
     "@type": "Service",
     serviceType: "Marketing Agency Services",
-    provider: {
-      "@type": "Organization",
-      name: "Changer Fusions",
-    },
+      provider: {
+        "@type": "Organization",
+        name: "CHANGER FUSIONS ENTERPRISE",
+      },
     areaServed: {
       "@type": "Country",
       name: "Kenya",
@@ -180,7 +180,7 @@ export default function SEOStructuredData() {
         name: "How can I contact Changer Fusions?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://changerfusions.com/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
+          text: "You can contact CHANGER FUSIONS ENTERPRISE by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://cmfagency.co.ke/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
         },
       },
       {
@@ -226,7 +226,7 @@ export default function SEOStructuredData() {
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://changerfusions.com",
+        item: "https://cmfagency.co.ke",
       },
     ],
   };
@@ -234,10 +234,10 @@ export default function SEOStructuredData() {
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "@id": "https://changerfusions.com/#localbusiness",
-    name: "Changer Fusions",
+    "@id": "https://cmfagency.co.ke/#localbusiness",
+    name: "CHANGER FUSIONS ENTERPRISE",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
-    url: "https://changerfusions.com",
+    url: "https://cmfagency.co.ke",
     telephone: "+254-797-777347",
     priceRange: "$$",
     address: {

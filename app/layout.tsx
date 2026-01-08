@@ -15,7 +15,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://changerfusions.com"),
+  metadataBase: new URL("https://cmfagency.co.ke"),
   title: {
     default: "Changer Fusions - Market to Thrive, Market to Exist | Marketing Agency Kenya",
     template: "%s | Changer Fusions",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_KE",
-    url: "https://changerfusions.com",
+    url: "https://cmfagency.co.ke",
     siteName: "Changer Fusions",
     title: "Changer Fusions - Market to Thrive, Market to Exist | Leading Marketing Agency Kenya",
     description: "Kenya's premier marketing agency offering comprehensive digital marketing, website development, branding, event management, and market research services. Based in Mombasa, serving businesses across Kenya with innovative strategies and cutting-edge technologies.",
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
     // yandex: "your-yandex-verification-code",
   },
   alternates: {
-    canonical: "https://changerfusions.com",
+    canonical: "https://cmfagency.co.ke",
   },
   category: "Marketing Agency",
   other: {

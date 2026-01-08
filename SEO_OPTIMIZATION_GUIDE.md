@@ -89,7 +89,7 @@ Enhanced structured data for AI overviews:
 ## 🚀 Next Steps for Maximum Ranking
 
 ### 1. **Google Search Console**
-- Submit sitemap: `https://changerfusions.com/sitemap.xml`
+- Submit sitemap: `https://cmfagency.co.ke/sitemap.xml`
 - Verify website ownership
 - Monitor search performance
 - Fix any crawl errors

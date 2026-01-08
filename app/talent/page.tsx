@@ -18,7 +18,7 @@ const talents = [
     projects: 45,
     bio: "Experienced professional model with expertise in fashion, commercial, and editorial photography.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
   {
     id: 2,
@@ -32,7 +32,7 @@ const talents = [
     projects: 38,
     bio: "Versatile model specializing in fashion shows, commercial campaigns, and brand representation.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
   {
     id: 3,
@@ -46,7 +46,7 @@ const talents = [
     projects: 52,
     bio: "Professional model with extensive experience in editorial shoots, fashion shows, and special events.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
   {
     id: 4,
@@ -60,7 +60,7 @@ const talents = [
     projects: 60,
     bio: "Talented model known for dynamic runway presence and versatility in various modeling genres.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
   {
     id: 5,
@@ -74,7 +74,7 @@ const talents = [
     projects: 42,
     bio: "Professional model specializing in fashion photography, editorial work, and brand campaigns.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
   {
     id: 6,
@@ -88,7 +88,7 @@ const talents = [
     projects: 35,
     bio: "Experienced professional model with expertise in commercial campaigns, fashion shows, and special events.",
     linkedin: "#",
-    email: "info@changerfusions.com",
+    email: "info@cmfagency.co.ke",
   },
 ];
 

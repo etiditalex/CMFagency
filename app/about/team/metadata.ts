@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Our Team - Meet the Changer Fusions Team",
     description: "Meet the passionate professionals driving innovation and excellence at Changer Fusions.",
-    url: "https://changerfusions.com/about/team",
+    url: "https://cmfagency.co.ke/about/team",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/about/team",
+    canonical: "https://cmfagency.co.ke/about/team",
   },
 };
 

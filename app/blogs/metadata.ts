@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Blogs & News - Marketing Insights & Industry Updates | Changer Fusions",
     description: "Stay updated with the latest insights, trends, and news from the world of marketing, events, and business growth.",
-    url: "https://changerfusions.com/blogs",
+    url: "https://cmfagency.co.ke/blogs",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/blogs",
+    canonical: "https://cmfagency.co.ke/blogs",
   },
 };
 

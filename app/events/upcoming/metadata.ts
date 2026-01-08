@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Upcoming Events - Coming Soon | Changer Fusions",
     description: "We're working on exciting upcoming events. Stay tuned for updates on our latest events, conferences, and celebrations.",
-    url: "https://changerfusions.com/events/upcoming",
+    url: "https://cmfagency.co.ke/events/upcoming",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154666/The_Kings_Experience_7_mpvtww.jpg",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154666/The_Kings_Experience_7_mpvtww.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/events/upcoming",
+    canonical: "https://cmfagency.co.ke/events/upcoming",
   },
 };
 

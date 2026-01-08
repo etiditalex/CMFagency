@@ -46,8 +46,8 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://changerfusions.com/sitemap.xml",
-    host: "https://changerfusions.com",
+    sitemap: "https://cmfagency.co.ke/sitemap.xml",
+    host: "https://cmfagency.co.ke",
   };
 }
 

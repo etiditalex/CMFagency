@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Job Board - Career Opportunities at Changer Fusions",
     description: "Explore exciting career opportunities with Changer Fusions. Join our team and be part of creating impactful experiences.",
-    url: "https://changerfusions.com/jobs",
+    url: "https://cmfagency.co.ke/jobs",
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg"],
   },
   alternates: {
-    canonical: "https://changerfusions.com/jobs",
+    canonical: "https://cmfagency.co.ke/jobs",
   },
 };
 
