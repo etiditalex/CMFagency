@@ -11,6 +11,7 @@ These are **REQUIRED** for authentication to work:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 **How to get these values:**
@@ -19,6 +20,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 3. Copy:
    - **Project URL** → Use for `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public** key → Use for `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **service_role** key (secret) → Use for `SUPABASE_SERVICE_ROLE_KEY` ⚠️ **Keep this secret!**
 
 ### 2. Resend Email Configuration (Optional but Recommended)
 
@@ -73,6 +75,7 @@ After adding all environment variables:
 
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` added to Vercel
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` added to Vercel
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` added to Vercel (for email confirmation)
 - [ ] `RESEND_API_KEY` added to Vercel (optional)
 - [ ] `RESEND_FROM_EMAIL` added to Vercel (optional)
 - [ ] All variables set for Production, Preview, and Development

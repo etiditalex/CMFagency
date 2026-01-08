@@ -217,46 +217,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: false, error: "Invalid verification code. Please try again." };
         }
 
-        // Verify email in Supabase
-        // Note: In production, you would verify the code on the backend
-        // For now, we'll confirm the email manually
-        const { error: verifyError } = await supabase.auth.updateUser({
-          data: { email_verified: true }
-        });
+        // Get current session to get userId
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          return { success: false, error: "No active session. Please log in again." };
+        }
 
-        if (verifyError) {
-          // If update fails, try to verify using the token from email
-          // For now, we'll just mark as verified locally
-          console.warn("Could not update user verification status:", verifyError);
+        const userId = session.user.id;
+
+        // Confirm email in Supabase using admin API
+        try {
+          const confirmResponse = await fetch('/api/confirm-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email,
+              userId,
+            }),
+          });
+
+          const confirmResult = await confirmResponse.json();
+
+          if (!confirmResponse.ok) {
+            console.warn('Failed to confirm email in Supabase:', confirmResult.error);
+            // Still proceed with verification, but Supabase won't show it as confirmed
+          } else {
+            console.log('Email confirmed successfully in Supabase');
+          }
+        } catch (confirmError) {
+          console.warn('Error confirming email in Supabase:', confirmError);
+          // Continue with verification even if Supabase confirmation fails
         }
 
         // Clear verification data
         localStorage.removeItem(`verification_code_${email}`);
         localStorage.removeItem(`pending_verification_${email}`);
 
-        // Update user metadata to mark email as verified
-        // Note: This is a custom verification system, not Supabase's built-in email confirmation
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // Update user metadata
-          await supabase.auth.updateUser({
-            data: { 
-              email_verified: true,
-              email_verified_at: new Date().toISOString()
-            }
-          });
-          
-          // Refresh session to get updated user data
-          const { data: { session: refreshedSession } } = await supabase.auth.getSession();
-          if (refreshedSession?.user) {
-            const userData = {
-              id: refreshedSession.user.id,
-              email: refreshedSession.user.email || "",
-              name: refreshedSession.user.user_metadata?.name || refreshedSession.user.email?.split("@")[0] || "",
-              emailVerified: true, // Manually set since we're using custom verification
-            };
-            setUser(userData);
-          }
+        // Refresh session to get updated user data
+        const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+        if (refreshedSession?.user) {
+          const userData = {
+            id: refreshedSession.user.id,
+            email: refreshedSession.user.email || "",
+            name: refreshedSession.user.user_metadata?.name || refreshedSession.user.email?.split("@")[0] || "",
+            emailVerified: refreshedSession.user.email_confirmed_at !== null, // Check Supabase's confirmation status
+          };
+          setUser(userData);
         }
 
         return { success: true };
