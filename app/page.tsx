@@ -8,10 +8,11 @@ import PartnersCarousel from "@/components/home/PartnersCarousel";
 import CTABanner from "@/components/home/CTABanner";
 
 export const metadata: Metadata = {
-  title: "Changer Fusions - Leading Marketing Agency in Kenya | Digital Marketing Services",
-  description: "Changer Fusions is Kenya's premier marketing agency offering digital marketing, website development, branding, event management, and market research services. Market to thrive, Market to exist. Based in Mombasa, serving clients across Kenya.",
+  title: "Changer Fusions - Leading Marketing Agency in Kenya | Digital Marketing, Web Development, Branding",
+  description: "Changer Fusions is Kenya's #1 marketing agency offering comprehensive digital marketing, website development, branding, event management, and market research services. Based in Mombasa, serving businesses across Kenya. Market to thrive, Market to exist. Get expert marketing solutions that drive growth and results.",
   keywords: [
     "marketing agency Kenya",
+    "best marketing agency Kenya",
     "digital marketing Kenya",
     "Mombasa marketing agency",
     "website development Kenya",
@@ -19,6 +20,15 @@ export const metadata: Metadata = {
     "event management Kenya",
     "SEO services Kenya",
     "social media marketing Kenya",
+    "top marketing company Kenya",
+    "marketing consultancy Kenya",
+    "web design Kenya",
+    "brand identity Kenya",
+    "event planning Kenya",
+    "market research Kenya",
+    "content creation Kenya",
+    "online marketing Kenya",
+    "marketing solutions Kenya",
   ],
   openGraph: {
     title: "Changer Fusions - Leading Marketing Agency in Kenya",

@@ -5,29 +5,34 @@ export const runtime = 'edge';
  
 // Image metadata
 export const size = {
-  width: 32,
-  height: 32,
+  width: 512,
+  height: 512,
 };
 export const contentType = 'image/png';
  
-// Image generation
+// Generate favicon using the logo
 export default function Icon() {
   return new ImageResponse(
     (
       <div
         style={{
-          fontSize: 24,
-          background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold',
+          background: 'white',
         }}
       >
-        CF
+        <img
+          src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+          alt="Changer Fusions Logo"
+          width={512}
+          height={512}
+          style={{
+            objectFit: 'contain',
+          }}
+        />
       </div>
     ),
     {

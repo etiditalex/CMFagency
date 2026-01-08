@@ -6,26 +6,64 @@ export default function SEOStructuredData() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": "https://changerfusions.com/#organization",
     name: "Changer Fusions",
+    alternateName: "CMF Agency",
     url: "https://changerfusions.com",
-    logo: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
-    description: "Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies.",
+    logo: {
+      "@type": "ImageObject",
+      url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+      width: 1200,
+      height: 630,
+    },
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    description: "Changer Fusions is Kenya's premier marketing agency specializing in digital marketing, website development, branding, event management, and market research. We help businesses across Kenya grow with innovative marketing strategies, cutting-edge technologies, and data-driven solutions. Market to thrive, Market to exist.",
+    slogan: "Market to Thrive, Market to Exist",
+    foundingDate: "2020",
     address: {
       "@type": "PostalAddress",
       streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
       addressLocality: "Mombasa",
-      addressRegion: "Mombasa District",
+      addressRegion: "Mombasa County",
       postalCode: "40305",
       addressCountry: "KE",
     },
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: "+254-797-777347",
-      contactType: "Customer Service",
-      email: "info@cmfagency.co.ke",
-      areaServed: "KE",
-      availableLanguage: ["en", "sw"],
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: "-4.0435",
+      longitude: "39.6682",
     },
+    contactPoint: [
+      {
+        "@type": "ContactPoint",
+        telephone: "+254-797-777347",
+        contactType: "Customer Service",
+        email: "info@cmfagency.co.ke",
+        areaServed: ["KE", "Africa"],
+        availableLanguage: ["en", "sw"],
+      },
+      {
+        "@type": "ContactPoint",
+        telephone: "+254-797-777347",
+        contactType: "Sales",
+        email: "info@cmfagency.co.ke",
+        areaServed: ["KE"],
+      },
+    ],
+    areaServed: {
+      "@type": "Country",
+      name: "Kenya",
+    },
+    knowsAbout: [
+      "Digital Marketing",
+      "Website Development",
+      "Branding",
+      "Event Management",
+      "Market Research",
+      "Content Creation",
+      "SEO",
+      "Social Media Marketing",
+    ],
     sameAs: [
       // Add social media links when available
       // "https://www.facebook.com/changerfusions",
@@ -126,7 +164,7 @@ export default function SEOStructuredData() {
         name: "What services does Changer Fusions offer?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Changer Fusions offers comprehensive marketing services including digital marketing, website development and design, branding and creative services, market research and analysis, events marketing, and content creation. We help businesses grow with innovative marketing strategies and cutting-edge technologies.",
+          text: "Changer Fusions offers comprehensive marketing services including digital marketing (SEO, social media, email marketing), website development and design, branding and creative services (logo design, brand identity), market research and analysis, events marketing and management, and content creation (videos, graphics, copywriting). We help businesses across Kenya grow with innovative marketing strategies and cutting-edge technologies.",
         },
       },
       {
@@ -134,7 +172,7 @@ export default function SEOStructuredData() {
         name: "Where is Changer Fusions located?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Changer Fusions is located in Mombasa, Kenya at AMBALAL BUILDING, NKRUMA ROAD, MOMBASA DISTRICT, P.O BOX 281, 40305 - MBITA. We serve clients across Kenya and beyond.",
+          text: "Changer Fusions is located in Mombasa, Kenya at AMBALAL BUILDING, NKRUMA ROAD, MOMBASA DISTRICT, P.O BOX 281, 40305 - MBITA. We serve clients across Kenya including Nairobi, Mombasa, Kisumu, and beyond.",
         },
       },
       {
@@ -142,7 +180,7 @@ export default function SEOStructuredData() {
         name: "How can I contact Changer Fusions?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page on our website. We also have a WhatsApp button on our website for instant inquiries.",
+          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://changerfusions.com/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
         },
       },
       {
@@ -150,18 +188,87 @@ export default function SEOStructuredData() {
         name: "Does Changer Fusions organize events?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes, Changer Fusions offers comprehensive event management services including event planning, venue sourcing, event marketing and promotion, logistics management, on-site coordination, and post-event reporting. We organize various types of events including corporate events, conferences, workshops, and community events.",
+          text: "Yes, Changer Fusions offers comprehensive event management services including event planning, venue sourcing, event marketing and promotion, logistics management, on-site coordination, and post-event reporting. We organize various types of events including corporate events, conferences, workshops, product launches, and community events throughout Kenya.",
         },
       },
       {
         "@type": "Question",
-        name: "What makes Changer Fusions different from other marketing agencies?",
+        name: "What makes Changer Fusions different from other marketing agencies in Kenya?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Changer Fusions stands out by blending innovative marketing techniques with cutting-edge technologies and transformative strategies. We focus on 'Market to thrive, Market to exist' - emphasizing the importance of marketing for business success. Our comprehensive approach includes in-depth research, data-driven strategies, and a commitment to delivering measurable results.",
+          text: "Changer Fusions stands out by blending innovative marketing techniques with cutting-edge technologies and transformative strategies. We focus on 'Market to thrive, Market to exist' - emphasizing the critical importance of marketing for business success. Our comprehensive approach includes in-depth research, data-driven strategies, measurable results, and a commitment to helping businesses grow. We combine digital marketing expertise with creative branding and strategic event management to deliver holistic marketing solutions.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Does Changer Fusions provide SEO services?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes, Changer Fusions provides comprehensive SEO (Search Engine Optimization) services to help businesses improve their Google rankings and online visibility. Our SEO services include keyword research, on-page optimization, technical SEO, content optimization, link building, and local SEO for businesses in Kenya.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What areas in Kenya does Changer Fusions serve?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Changer Fusions serves clients across Kenya including Mombasa, Nairobi, Kisumu, Nakuru, Eldoret, and other major cities. While we are based in Mombasa, we work with businesses throughout Kenya and can provide remote services or travel for on-site consultations when needed.",
         },
       },
     ],
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://changerfusions.com",
+      },
+    ],
+  };
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": "https://changerfusions.com/#localbusiness",
+    name: "Changer Fusions",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    url: "https://changerfusions.com",
+    telephone: "+254-797-777347",
+    priceRange: "$$",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
+      addressLocality: "Mombasa",
+      addressRegion: "Mombasa County",
+      postalCode: "40305",
+      addressCountry: "KE",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: -4.0435,
+      longitude: 39.6682,
+    },
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+      ],
+      opens: "09:00",
+      closes: "17:00",
+    },
+    areaServed: {
+      "@type": "Country",
+      name: "Kenya",
+    },
   };
 
   return (
@@ -170,6 +277,8 @@ export default function SEOStructuredData() {
       <StructuredData data={websiteSchema} />
       <StructuredData data={serviceSchema} />
       <StructuredData data={faqSchema} />
+      <StructuredData data={localBusinessSchema} />
+      <StructuredData data={breadcrumbSchema} />
     </>
   );
 }
