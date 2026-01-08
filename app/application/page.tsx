@@ -14,8 +14,11 @@ import {
   ArrowLeft,
   X,
   Send,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { validateDocument, getDocumentTypeName, type ValidationResult } from "@/lib/documentValidator";
 
 interface PersonalDetails {
   firstName: string;
@@ -68,6 +71,12 @@ export default function ApplicationPage() {
     jobPosition: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [fileValidations, setFileValidations] = useState<{
+    [key: string]: ValidationResult;
+  }>({});
+  const [validatingFiles, setValidatingFiles] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // File refs
   const passportPhotoRef = useRef<HTMLInputElement>(null);
@@ -125,15 +134,85 @@ export default function ApplicationPage() {
     }
   }, [personalDetails, jobSelection, user]);
 
-  const handleFileChange = (
+  const handleFileChange = async (
     field: keyof Documents | "cv",
     file: File | null
   ) => {
-    if (field === "cv") {
-      setJobSelection({ ...jobSelection, cv: file });
-    } else {
-      setDocuments({ ...documents, [field]: file });
+    if (!file) {
+      // Clear validation when file is removed
+      setFileValidations(prev => {
+        const newState = { ...prev };
+        delete newState[field];
+        return newState;
+      });
+      
+      if (field === "cv") {
+        setJobSelection({ ...jobSelection, cv: null });
+      } else {
+        setDocuments({ ...documents, [field]: null });
+      }
+      return;
     }
+
+    // Set validating state
+    setValidatingFiles(prev => ({ ...prev, [field]: true }));
+
+    // Validate document based on field type
+    let documentType: 'id' | 'passport' | 'certificate' = 'id';
+    if (field === 'passportPhoto') {
+      documentType = 'passport';
+    } else if (field === 'certificateOfGoodConduct') {
+      documentType = 'certificate';
+    } else if (field === 'idFront' || field === 'idBack') {
+      documentType = 'id';
+    }
+
+    // Only validate ID, passport, and certificate (not CV)
+    if (field === 'cv') {
+      // For CV, just set it without validation
+      setJobSelection({ ...jobSelection, cv: file });
+    } else if (field === 'idFront' || field === 'idBack' || field === 'passportPhoto' || field === 'certificateOfGoodConduct') {
+      try {
+        const validation = await validateDocument(file, documentType);
+        
+        setFileValidations(prev => ({
+          ...prev,
+          [field]: validation,
+        }));
+
+        // Only set file if validation passes
+        if (validation.isValid) {
+          setDocuments({ ...documents, [field]: file });
+        } else {
+          // Clear the file input if validation fails
+          if (field === "passportPhoto" && passportPhotoRef.current) {
+            passportPhotoRef.current.value = '';
+          } else if (field === "idFront" && idFrontRef.current) {
+            idFrontRef.current.value = '';
+          } else if (field === "idBack" && idBackRef.current) {
+            idBackRef.current.value = '';
+          } else if (field === "certificateOfGoodConduct" && certificateRef.current) {
+            certificateRef.current.value = '';
+          }
+        }
+      } catch (error) {
+        console.error('Validation error:', error);
+        setFileValidations(prev => ({
+          ...prev,
+          [field]: {
+            isValid: false,
+            error: 'An error occurred while validating the document. Please try again.',
+          },
+        }));
+      }
+    }
+
+    // Clear validating state
+    setValidatingFiles(prev => {
+      const newState = { ...prev };
+      delete newState[field];
+      return newState;
+    });
   };
 
   const handleSubmit = () => {
@@ -386,12 +465,32 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">
-                  JPG, PNG (MAX. 5MB)
+                  JPG, PNG (MAX. 5MB) - Must be actual passport document
                 </p>
-                {documents.passportPhoto && (
-                  <p className="text-sm text-primary-600 mt-2 font-semibold">
+                {validatingFiles.passportPhoto && (
+                  <p className="text-sm text-blue-600 mt-2 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Validating document...
+                  </p>
+                )}
+                {documents.passportPhoto && !validatingFiles.passportPhoto && (
+                  <p className="text-sm text-primary-600 mt-2 font-semibold flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
                     {documents.passportPhoto.name}
                   </p>
+                )}
+                {fileValidations.passportPhoto && !fileValidations.passportPhoto.isValid && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                    <AlertCircle className="w-4 h-4 inline mr-1" />
+                    {fileValidations.passportPhoto.error}
+                  </div>
+                )}
+                {fileValidations.passportPhoto?.warnings && fileValidations.passportPhoto.warnings.length > 0 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
+                    {fileValidations.passportPhoto.warnings.map((warning, idx) => (
+                      <p key={idx}>⚠️ {warning}</p>
+                    ))}
+                  </div>
                 )}
               </div>
               <input
@@ -424,12 +523,32 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">
-                  JPG, PNG (MAX. 5MB)
+                  JPG, PNG (MAX. 5MB) - Must be actual ID card front
                 </p>
-                {documents.idFront && (
-                  <p className="text-sm text-primary-600 mt-2 font-semibold">
+                {validatingFiles.idFront && (
+                  <p className="text-sm text-blue-600 mt-2 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Validating document...
+                  </p>
+                )}
+                {documents.idFront && !validatingFiles.idFront && (
+                  <p className="text-sm text-primary-600 mt-2 font-semibold flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
                     {documents.idFront.name}
                   </p>
+                )}
+                {fileValidations.idFront && !fileValidations.idFront.isValid && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                    <AlertCircle className="w-4 h-4 inline mr-1" />
+                    {fileValidations.idFront.error}
+                  </div>
+                )}
+                {fileValidations.idFront?.warnings && fileValidations.idFront.warnings.length > 0 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
+                    {fileValidations.idFront.warnings.map((warning, idx) => (
+                      <p key={idx}>⚠️ {warning}</p>
+                    ))}
+                  </div>
                 )}
               </div>
               <input
@@ -460,12 +579,32 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">
-                  JPG, PNG (MAX. 5MB)
+                  JPG, PNG (MAX. 5MB) - Must be actual ID card back
                 </p>
-                {documents.idBack && (
-                  <p className="text-sm text-primary-600 mt-2 font-semibold">
+                {validatingFiles.idBack && (
+                  <p className="text-sm text-blue-600 mt-2 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Validating document...
+                  </p>
+                )}
+                {documents.idBack && !validatingFiles.idBack && (
+                  <p className="text-sm text-primary-600 mt-2 font-semibold flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
                     {documents.idBack.name}
                   </p>
+                )}
+                {fileValidations.idBack && !fileValidations.idBack.isValid && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                    <AlertCircle className="w-4 h-4 inline mr-1" />
+                    {fileValidations.idBack.error}
+                  </div>
+                )}
+                {fileValidations.idBack?.warnings && fileValidations.idBack.warnings.length > 0 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
+                    {fileValidations.idBack.warnings.map((warning, idx) => (
+                      <p key={idx}>⚠️ {warning}</p>
+                    ))}
+                  </div>
                 )}
               </div>
               <input
@@ -496,12 +635,32 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">
-                  PDF, JPG, PNG (MAX. 5MB)
+                  PDF, JPG, PNG (MAX. 5MB) - Must be actual certificate document
                 </p>
-                {documents.certificateOfGoodConduct && (
-                  <p className="text-sm text-primary-600 mt-2 font-semibold">
+                {validatingFiles.certificateOfGoodConduct && (
+                  <p className="text-sm text-blue-600 mt-2 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                    Validating document...
+                  </p>
+                )}
+                {documents.certificateOfGoodConduct && !validatingFiles.certificateOfGoodConduct && (
+                  <p className="text-sm text-primary-600 mt-2 font-semibold flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
                     {documents.certificateOfGoodConduct.name}
                   </p>
+                )}
+                {fileValidations.certificateOfGoodConduct && !fileValidations.certificateOfGoodConduct.isValid && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-600 text-xs">
+                    <AlertCircle className="w-4 h-4 inline mr-1" />
+                    {fileValidations.certificateOfGoodConduct.error}
+                  </div>
+                )}
+                {fileValidations.certificateOfGoodConduct?.warnings && fileValidations.certificateOfGoodConduct.warnings.length > 0 && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 text-xs">
+                    {fileValidations.certificateOfGoodConduct.warnings.map((warning, idx) => (
+                      <p key={idx}>⚠️ {warning}</p>
+                    ))}
+                  </div>
                 )}
               </div>
               <input
