@@ -43,7 +43,7 @@ interface JobSelection {
 
 export default function ApplicationPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   const [currentStage, setCurrentStage] = useState(1);
   const [showVerificationNotice, setShowVerificationNotice] = useState(false);
   const [personalDetails, setPersonalDetails] = useState<PersonalDetails>({
@@ -77,12 +77,15 @@ export default function ApplicationPage() {
   const cvRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking
+    if (loading) return;
+    
     if (!isAuthenticated) {
       router.push("/login");
     } else if (isAuthenticated && user && !user.emailVerified) {
       router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, loading]);
 
   // Load saved data from localStorage
   useEffect(() => {

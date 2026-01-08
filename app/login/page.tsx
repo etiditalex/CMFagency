@@ -10,7 +10,7 @@ import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, register, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated, loading, user } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -24,12 +24,30 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
+    if (loading) return; // Wait for auth to finish loading
+    
     if (isAuthenticated) {
-      router.push("/application");
+      // Check if email is verified
+      if (user?.emailVerified) {
+        router.push("/application");
+      } else if (user?.email) {
+        router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, loading, router, user]);
 
   // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 flex items-center justify-center">

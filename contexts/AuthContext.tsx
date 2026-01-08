@@ -225,16 +225,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(`verification_code_${email}`);
         localStorage.removeItem(`pending_verification_${email}`);
 
-        // Refresh user session
+        // Update user metadata to mark email as verified
+        // Note: This is a custom verification system, not Supabase's built-in email confirmation
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const userData = {
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
-            emailVerified: true,
-          };
-          setUser(userData);
+          // Update user metadata
+          await supabase.auth.updateUser({
+            data: { 
+              email_verified: true,
+              email_verified_at: new Date().toISOString()
+            }
+          });
+          
+          // Refresh session to get updated user data
+          const { data: { session: refreshedSession } } = await supabase.auth.getSession();
+          if (refreshedSession?.user) {
+            const userData = {
+              id: refreshedSession.user.id,
+              email: refreshedSession.user.email || "",
+              name: refreshedSession.user.user_metadata?.name || refreshedSession.user.email?.split("@")[0] || "",
+              emailVerified: true, // Manually set since we're using custom verification
+            };
+            setUser(userData);
+          }
         }
 
         return { success: true };

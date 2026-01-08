@@ -11,7 +11,7 @@ import Image from "next/image";
 export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { verifyEmail, resendVerificationCode, isAuthenticated, user } = useAuth();
+  const { verifyEmail, resendVerificationCode, isAuthenticated, user, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -21,6 +21,9 @@ export default function VerifyEmailPage() {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to finish loading
+    if (loading) return;
+    
     // Get email from URL params or localStorage
     const emailParam = searchParams.get("email");
     if (emailParam) {
@@ -41,7 +44,7 @@ export default function VerifyEmailPage() {
     if (isAuthenticated && user?.emailVerified) {
       router.push("/application");
     }
-  }, [searchParams, isAuthenticated, router, user]);
+  }, [searchParams, isAuthenticated, router, user, loading]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
