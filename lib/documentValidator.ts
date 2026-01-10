@@ -196,3 +196,4 @@ export function getDocumentTypeName(type: 'id' | 'passport' | 'certificate'): st
   }
 }
 
+

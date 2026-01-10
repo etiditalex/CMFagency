@@ -7,7 +7,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import SocialShare from "@/components/SocialShare";
 
 const pastEventsData: { [key: string]: any } = {
   "mr-mrs-deaf-kenya-2025": {
@@ -523,10 +522,6 @@ export default function PastEventDetailPage() {
           </div>
         </div>
 
-        {/* Social Share */}
-        <div className="mt-8">
-          <SocialShare />
-        </div>
       </div>
     </div>
   );

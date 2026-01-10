@@ -141,3 +141,4 @@ useEffect(() => {
 ✅ **Auto-login** when returning to site
 ✅ **Secure session management** via Supabase
 
+

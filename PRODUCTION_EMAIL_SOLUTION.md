@@ -65,3 +65,4 @@ If you prefer to keep Resend, we can make email verification optional for now:
 
 Let me know which approach you prefer!
 
+

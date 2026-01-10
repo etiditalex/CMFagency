@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Clock, ArrowRight, Phone, Mail } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -95,25 +95,28 @@ const pastEvents = [
 
 export default function PastEventsPage() {
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="relative section-padding overflow-hidden min-h-[500px] md:min-h-[600px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg"
-            alt="Past Events Background"
-            fill
-            className="object-cover object-center object-top"
-            style={{ objectPosition: "center top" }}
-            priority
+      <section className="relative w-full h-screen overflow-hidden flex items-center">
+        {/* Background Video */}
+        <div className="absolute inset-0 w-full h-full">
+          <iframe
+            src="https://www.youtube.com/embed/GpbNlgVikiE?autoplay=1&mute=1&loop=1&playlist=GpbNlgVikiE&controls=0&rel=0&modestbranding=1&playsinline=1"
+            title="Past Events Background Video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute top-0 left-0 w-full h-full"
+            style={{ 
+              border: "none",
+              pointerEvents: "none"
+            }}
           />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
         </div>
         
         {/* Content */}
-        <div className="container-custom relative z-10">
+        <div className="container-custom relative z-10 px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -131,100 +134,99 @@ export default function PastEventsPage() {
       </section>
 
       {/* Events List */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <section className="section-padding bg-white py-16">
+        <div className="container-custom max-w-6xl">
+          <div className="space-y-8">
             {pastEvents.map((event, index) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group relative h-[400px] rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200"
+                className="group"
               >
-                <Link href={`/events/past/${event.id}`} className="block h-full">
-                  {/* Default Background Image - Always Visible */}
-                  <div className="absolute inset-0 opacity-100 group-hover:opacity-0 transition-opacity duration-300">
-                    <Image
-                      src={event.defaultImage || event.image}
-                      alt={event.title}
-                      fill
-                      className="object-cover"
-                    />
-                    {/* Light Overlay for Default State */}
-                    <div className="absolute inset-0 bg-white/40"></div>
-                  </div>
-
-                  {/* Hover Background Image - Shows on Hover */}
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Image
-                      src={event.image}
-                      alt={event.title}
-                      fill
-                      className="object-cover"
-                    />
-                    {/* Dark Overlay */}
-                    <div className="absolute inset-0 bg-black/60"></div>
-                  </div>
-
-                  {/* Content - Always Visible */}
-                  <div className="relative h-full flex flex-col p-6">
-                    {/* Default Content */}
-                    <div className="flex-1 group-hover:opacity-0 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold text-gray-900 mb-2">
-                            {event.title}
-                          </h3>
-                          {event.hostedBy && (
-                            <p className="text-sm text-gray-500 mb-2">Hosted by: {event.hostedBy}</p>
-                          )}
-                          {event.venue && (
-                            <p className="text-sm text-gray-500 mb-2">Venue: {event.venue}</p>
-                          )}
+                <Link href={`/events/past/${event.id}`} className="block">
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
+                    <div className="flex flex-col md:flex-row">
+                      {/* Image Section - Left Side */}
+                      <div className="relative w-full md:w-80 lg:w-96 h-64 md:h-64 flex-shrink-0">
+                        <Image
+                          src={event.image || event.defaultImage}
+                          alt={event.title}
+                          fill
+                          className="object-cover"
+                        />
+                        {/* Date Box - Primary Color */}
+                        <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
+                          <div className="text-white font-bold text-xl leading-tight">
+                            {format(event.date, "dd")}
+                          </div>
+                          <div className="text-white font-semibold text-xs uppercase tracking-wide mt-1">
+                            {format(event.date, "MMM")}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-2 text-primary-600" />
-                          {format(event.date, "MMMM d, yyyy")}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2 text-primary-600" />
-                          {event.location}
-                        </div>
-                      </div>
+                      {/* Content Section - Right Side */}
+                      <div className="flex-1 p-6 md:p-8">
+                        {/* Title */}
+                        <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
+                          {event.title}
+                        </h3>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-                    </div>
+                        {/* Date & Time - Primary Color */}
+                        <div className="text-primary-600 font-semibold mb-3 text-base">
+                          {format(event.date, "MMM d, yyyy")} 08:00 - {format(new Date(event.date.getTime() + 86400000), "MMM d, yyyy")} 16:00
+                        </div>
 
-                    {/* Hover Content - Description Overlay */}
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="text-white">
-                        <h3 className="text-2xl font-bold mb-3">{event.title}</h3>
-                        <p className="text-white/90 text-sm leading-relaxed mb-4 line-clamp-4">
+                        {/* Location - Dark Gray */}
+                        <div className="text-gray-700 mb-4">
+                          {event.venue ? `${event.venue}, ${event.location}` : event.location}
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-gray-600 mb-6 line-clamp-2">
                           {event.description}
                         </p>
-                        <div className="flex items-center text-white font-semibold text-sm">
-                          <span>View Event Details</span>
-                          <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+
+                        {/* Icons Row */}
+                        <div className="flex flex-wrap gap-4 md:gap-6 text-sm mt-4">
+                          <div className="flex items-center text-gray-700">
+                            <MapPin className="w-4 h-4 mr-2 text-secondary-600 flex-shrink-0" />
+                            <span className="uppercase font-medium">{event.location}</span>
+                          </div>
+                          <div className="flex items-center text-gray-700">
+                            <Calendar className="w-4 h-4 mr-2 text-secondary-600 flex-shrink-0" />
+                            <span className="font-medium uppercase">{format(event.date, "MMMM Do")}</span>
+                          </div>
+                          <div className="flex items-center text-gray-700">
+                            <Phone className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
+                            <span className="font-medium">CALL US +254 797 777347</span>
+                          </div>
+                          <div className="flex items-center text-gray-700">
+                            <Mail className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
+                            <span className="font-medium">info@cmfagency.co.ke</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Default CTA - Hidden on Hover */}
-                    <div className="flex items-center text-primary-600 font-semibold text-sm group-hover:opacity-0 transition-opacity duration-300 bg-white/90 backdrop-blur-sm rounded-lg p-2 px-4">
-                      <span>View Event Details</span>
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </Link>
               </motion.div>
             ))}
           </div>
+
+          {/* Load More Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: pastEvents.length * 0.1 }}
+            className="flex justify-center mt-12"
+          >
+            <button className="border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+              Load More
+            </button>
+          </motion.div>
         </div>
       </section>
     </div>

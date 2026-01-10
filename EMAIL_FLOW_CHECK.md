@@ -105,3 +105,4 @@ Expected response:
 4. Check terminal and browser console for logs
 5. Verify email arrives
 
+

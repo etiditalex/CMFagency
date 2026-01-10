@@ -3,6 +3,7 @@ import Hero from "@/components/home/Hero";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
+import ModelEventExperience from "@/components/home/ModelEventExperience";
 import StatsSection from "@/components/home/StatsSection";
 import PartnersCarousel from "@/components/home/PartnersCarousel";
 import CTABanner from "@/components/home/CTABanner";
@@ -63,6 +64,7 @@ export default function Home() {
       <Hero />
       <FeaturedEvents />
       <CoreValues />
+      <ModelEventExperience />
       <QuickLinks />
       <StatsSection />
       <PartnersCarousel />
