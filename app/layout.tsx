@@ -2,13 +2,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import PageLoader from "@/components/PageLoader";
-import CookieBanner from "@/components/CookieBanner";
-import WhatsAppButton from "@/components/WhatsAppButton";
 import SEOStructuredData from "@/components/SEOStructuredData";
-import SocialShare from "@/components/SocialShare";
+import ConditionalLayout from "@/components/ConditionalLayout";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
@@ -141,12 +137,7 @@ export default function RootLayout({
         <CartProvider>
           <AuthProvider>
             <PageLoader>
-              <Navbar />
-              <main className="min-h-screen">{children}</main>
-              <SocialShare />
-              <Footer />
-              <CookieBanner />
-              <WhatsAppButton />
+              <ConditionalLayout>{children}</ConditionalLayout>
             </PageLoader>
           </AuthProvider>
         </CartProvider>
