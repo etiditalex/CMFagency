@@ -37,9 +37,9 @@ export default function LoginPage() {
   // Show loading state while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="fixed inset-0 bg-white flex items-center justify-center">
+        <div className="text-gray-900 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p>Loading...</p>
         </div>
       </div>
@@ -48,9 +48,9 @@ export default function LoginPage() {
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+      <div className="fixed inset-0 bg-white flex items-center justify-center">
+        <div className="text-gray-900 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p>Redirecting...</p>
         </div>
       </div>
@@ -136,11 +136,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex items-start justify-center p-4 sm:p-6 md:p-8 overflow-y-auto">
+    <div className="fixed inset-0 bg-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto z-50">
       {/* Optional: Subtle gradient overlay (can be removed if you want pure white) */}
       <div className="fixed inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 pointer-events-none"></div>
 
-      <div className="relative z-10 w-full max-w-md py-8 sm:py-12 my-auto">
+      <div className="relative z-10 w-full max-w-md py-8 sm:py-12">
         {/* Logo and Welcome Text */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

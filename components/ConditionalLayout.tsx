@@ -17,14 +17,19 @@ export default function ConditionalLayout({
   // Hide Navbar and Footer on login and verify-email pages
   const hideLayout = pathname === "/login" || pathname === "/verify-email";
 
+  // For login/verify-email pages, render children directly without any wrapper
+  if (hideLayout) {
+    return <>{children}</>;
+  }
+
   return (
     <>
-      {!hideLayout && <Navbar />}
-      <main className={hideLayout ? "" : "min-h-screen"}>{children}</main>
-      {!hideLayout && <SocialShare />}
-      {!hideLayout && <Footer />}
-      {!hideLayout && <CookieBanner />}
-      {!hideLayout && <WhatsAppButton />}
+      <Navbar />
+      <main className="min-h-screen">{children}</main>
+      <SocialShare />
+      <Footer />
+      <CookieBanner />
+      <WhatsAppButton />
     </>
   );
 }
