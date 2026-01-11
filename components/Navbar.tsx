@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogIn, LogOut, FileText } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogIn, LogOut, FileText, Instagram, Facebook, Linkedin, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -15,6 +15,10 @@ export default function Navbar() {
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [careersOpen, setCareersOpen] = useState(false);
+  const [careersSubmenuOpen, setCareersSubmenuOpen] = useState<string | null>(null);
+  const [careersMobileOpen, setCareersMobileOpen] = useState(false);
+  const [careersMobileSubmenuOpen, setCareersMobileSubmenuOpen] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -70,6 +74,27 @@ export default function Navbar() {
     { href: "/events/past", label: "Past Events" },
   ];
 
+  const careersLinks = {
+    attachments: [
+      { href: "/careers/attachments/marketing-opportunities", label: "Marketing Opportunities" },
+      { href: "/careers/attachments/fashion-opportunities", label: "Fashion Opportunities" },
+      { href: "/careers/attachments/events-opportunities", label: "Events Opportunities" },
+      { href: "/careers/attachments/education-opportunities", label: "Education Opportunities" },
+    ],
+    internships: [
+      { href: "/careers/internships/marketing-opportunities", label: "Marketing Opportunities" },
+      { href: "/careers/internships/fashion-opportunities", label: "Fashion Opportunities" },
+      { href: "/careers/internships/events-opportunities", label: "Events Opportunities" },
+      { href: "/careers/internships/education-opportunities", label: "Education Opportunities" },
+    ],
+    jobs: [
+      { href: "/careers/jobs/marketing-opportunities", label: "Marketing Opportunities" },
+      { href: "/careers/jobs/fashion-opportunities", label: "Fashion Opportunities" },
+      { href: "/careers/jobs/events-opportunities", label: "Events Opportunities" },
+      { href: "/careers/jobs/education-opportunities", label: "Education Opportunities" },
+    ],
+  };
+
   return (
     <motion.nav
       initial={{ y: -100 }}
@@ -80,25 +105,94 @@ export default function Navbar() {
           : "bg-white/95 backdrop-blur-sm"
       }`}
     >
+      {/* Top Bar - Logo, Social Icons, Login */}
+      <div className="bg-primary-600 text-white">
+        <div className="container-custom">
+          <div className="flex items-center justify-between h-12 md:h-14">
+            {/* Logo - Left */}
+            <Link href="/" className="flex-shrink-0 h-full">
+              <div className="relative h-full w-auto min-w-[120px] md:min-w-[150px]">
+                <Image
+                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                  alt="Changer Fusions Logo"
+                  fill
+                  className="object-contain"
+                  priority
+                  fetchPriority="high"
+                  sizes="(max-width: 768px) 120px, 150px"
+                />
+              </div>
+            </Link>
+
+            {/* Social Media Icons - Center */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <a
+                href="https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
+                aria-label="Follow us on Instagram"
+              >
+                <Instagram className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a
+                href="https://www.facebook.com/share/187Kse9GrQ/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
+                aria-label="Follow us on Facebook"
+              >
+                <Facebook className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a
+                href="https://www.linkedin.com/in/changer-fusions-2262a53a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
+                aria-label="Follow us on LinkedIn"
+              >
+                <Linkedin className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+              </a>
+            </div>
+
+            {/* Login Button - Right */}
+            <div className="flex items-center gap-2">
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2 md:gap-3">
+                  <Link
+                    href="/application"
+                    className="text-xs md:text-sm font-medium text-white hover:text-white/80 transition-colors flex items-center gap-1"
+                  >
+                    <User className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">{user?.email?.split('@')[0] || 'Account'}</span>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="text-xs md:text-sm font-medium text-white hover:text-white/80 transition-colors flex items-center gap-1"
+                  >
+                    <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+                    <span className="hidden sm:inline">Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1 md:py-1.5 bg-white text-primary-600 hover:bg-white/90 rounded-lg font-semibold text-xs md:text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                >
+                  <LogIn className="w-3 h-3 md:w-4 md:h-4" />
+                  <span className="hidden sm:inline">Login</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navigation Bar */}
       <div className="container-custom">
         <div className="flex items-center justify-between h-[90px]">
-          {/* Left Section - Logo */}
-          <Link href="/" className="flex-shrink-0">
-            <div className="relative w-48 h-[90px] md:w-56 lg:w-64">
-              <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
-                alt="Changer Fusions Logo"
-                fill
-                className="object-contain"
-                priority
-                fetchPriority="high"
-                sizes="(max-width: 768px) 192px, (max-width: 1024px) 224px, 256px"
-              />
-            </div>
-          </Link>
-
-          {/* Center Section - Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
+          {/* Navigation Links */}
+          <div className="hidden lg:flex items-center space-x-6 flex-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -186,17 +280,144 @@ export default function Navbar() {
                 )}
               </AnimatePresence>
             </div>
-          </div>
 
-          {/* Right Section - Utility Icons and Events Button */}
-          <div className="hidden lg:flex items-center space-x-4">
+            {/* Why Changer Fusions */}
             <Link
               href="/marketing-fusion"
-              className="font-bold text-gray-900 text-sm hover:text-primary-600 transition-colors"
+              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
             >
               Why Changer Fusions
             </Link>
-            
+
+            {/* Track Application - Portal Button */}
+            <Link
+              href="/track-application"
+              className="flex items-center space-x-2 px-4 py-2 bg-primary-600 border border-primary-700 rounded-lg text-white font-bold hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
+            >
+              <Search className="w-5 h-5" />
+              <span>Track Application</span>
+            </Link>
+
+            {/* Careers Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setCareersOpen(true)}
+              onMouseLeave={() => {
+                setCareersOpen(false);
+                setCareersSubmenuOpen(null);
+              }}
+            >
+              <Link
+                href="/careers"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+              >
+                <span>Careers</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersOpen ? 'rotate-180' : ''}`} />
+              </Link>
+              
+              <AnimatePresence>
+                {careersOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {/* Attachments */}
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setCareersSubmenuOpen('attachments')}
+                      onMouseLeave={() => setCareersSubmenuOpen(null)}
+                    >
+                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
+                        <span>Attachments</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'attachments' ? 'rotate-180' : ''}`} />
+                      </div>
+                      {careersSubmenuOpen === 'attachments' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                        >
+                          {careersLinks.attachments.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Internships */}
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setCareersSubmenuOpen('internships')}
+                      onMouseLeave={() => setCareersSubmenuOpen(null)}
+                    >
+                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
+                        <span>Internships</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'internships' ? 'rotate-180' : ''}`} />
+                      </div>
+                      {careersSubmenuOpen === 'internships' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                        >
+                          {careersLinks.internships.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Jobs */}
+                    <div
+                      className="relative"
+                      onMouseEnter={() => setCareersSubmenuOpen('jobs')}
+                      onMouseLeave={() => setCareersSubmenuOpen(null)}
+                    >
+                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
+                        <span>Jobs</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'jobs' ? 'rotate-180' : ''}`} />
+                      </div>
+                      {careersSubmenuOpen === 'jobs' && (
+                        <motion.div
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                        >
+                          {careersLinks.jobs.map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Testimonials Dropdown */}
             <div 
               className="relative"
@@ -205,7 +426,7 @@ export default function Navbar() {
             >
               <Link
                 href="/testimonials"
-                className="font-bold text-gray-900 text-sm hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
               >
                 <span>Testimonials</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
@@ -246,41 +467,6 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
-            {isAuthenticated ? (
-              <div className="relative group">
-                <button
-                  className="flex items-center space-x-2 px-3 py-2 text-gray-900 hover:text-primary-600 transition-colors"
-                  aria-label="User Menu"
-                >
-                  <User className="w-5 h-5" />
-                  <span className="text-sm font-medium">{user?.name}</span>
-                </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <Link
-                    href="/application"
-                    className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                  >
-                    <FileText className="w-4 h-4 inline mr-2" />
-                    My Application
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4 inline mr-2" />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                <LogIn className="w-5 h-5" />
-                <span>Login</span>
-              </Link>
-            )}
             
             {/* Events Dropdown */}
             <div 
@@ -423,6 +609,114 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
               
+              {/* Careers Section in Mobile */}
+              <div className="pt-2">
+                <button
+                  onClick={() => setCareersMobileOpen(!careersMobileOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <span>Careers</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersMobileOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {careersMobileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {/* Attachments */}
+                      <div>
+                        <button
+                          onClick={() => setCareersMobileSubmenuOpen(careersMobileSubmenuOpen === 'attachments' ? null : 'attachments')}
+                          className="flex items-center justify-between w-full py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm font-medium"
+                        >
+                          <span>Attachments</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${careersMobileSubmenuOpen === 'attachments' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {careersMobileSubmenuOpen === 'attachments' && (
+                          <div className="pl-4 space-y-1 mt-1">
+                            {careersLinks.attachments.map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  setCareersMobileOpen(false);
+                                  setCareersMobileSubmenuOpen(null);
+                                }}
+                                className="block py-1.5 text-gray-500 hover:text-primary-600 transition-colors duration-200 text-xs"
+                              >
+                                {item.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Internships */}
+                      <div>
+                        <button
+                          onClick={() => setCareersMobileSubmenuOpen(careersMobileSubmenuOpen === 'internships' ? null : 'internships')}
+                          className="flex items-center justify-between w-full py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm font-medium"
+                        >
+                          <span>Internships</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${careersMobileSubmenuOpen === 'internships' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {careersMobileSubmenuOpen === 'internships' && (
+                          <div className="pl-4 space-y-1 mt-1">
+                            {careersLinks.internships.map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  setCareersMobileOpen(false);
+                                  setCareersMobileSubmenuOpen(null);
+                                }}
+                                className="block py-1.5 text-gray-500 hover:text-primary-600 transition-colors duration-200 text-xs"
+                              >
+                                {item.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Jobs */}
+                      <div>
+                        <button
+                          onClick={() => setCareersMobileSubmenuOpen(careersMobileSubmenuOpen === 'jobs' ? null : 'jobs')}
+                          className="flex items-center justify-between w-full py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm font-medium"
+                        >
+                          <span>Jobs</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${careersMobileSubmenuOpen === 'jobs' ? 'rotate-180' : ''}`} />
+                        </button>
+                        {careersMobileSubmenuOpen === 'jobs' && (
+                          <div className="pl-4 space-y-1 mt-1">
+                            {careersLinks.jobs.map((item) => (
+                              <Link
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  setCareersMobileOpen(false);
+                                  setCareersMobileSubmenuOpen(null);
+                                }}
+                                className="block py-1.5 text-gray-500 hover:text-primary-600 transition-colors duration-200 text-xs"
+                              >
+                                {item.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              
               {/* Events Section in Mobile */}
               <div className="pt-2">
                 <button
@@ -470,6 +764,15 @@ export default function Navbar() {
                   Why Changer Fusions
                 </Link>
                 
+                <Link
+                  href="/track-application"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-2 py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-bold shadow-md"
+                >
+                  <Search className="w-5 h-5" />
+                  <span>Track Application</span>
+                </Link>
+                
                 {/* Testimonials Section in Mobile */}
                 <div className="pt-2">
                   <button
@@ -513,16 +816,16 @@ export default function Navbar() {
                   <ShoppingCart className="w-5 h-5" />
                   <span>Shopping Cart</span>
                 </Link>
-                {isAuthenticated ? (
+                {isAuthenticated && (
                   <>
-                    <Link
+                <Link
                       href="/application"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                    >
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                >
                       <FileText className="w-5 h-5" />
                       <span>My Application</span>
-                    </Link>
+                </Link>
                     <button
                       onClick={() => {
                         logout();
@@ -534,15 +837,6 @@ export default function Navbar() {
                       <span>Logout</span>
                     </button>
                   </>
-                ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center space-x-2 py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors w-full justify-center"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    <span>Login</span>
-                  </Link>
                 )}
               </div>
             </div>

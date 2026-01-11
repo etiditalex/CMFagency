@@ -215,9 +215,99 @@ export default function ApplicationPage() {
     });
   };
 
-  const handleSubmit = () => {
-    // Format application data for WhatsApp
-    const whatsappMessage = `*Job Application Submission*
+  const handleSubmit = async () => {
+    try {
+      // Save application to database first
+      const applicationPayload = {
+        userId: user?.id || null,
+        firstName: personalDetails.firstName,
+        secondName: personalDetails.secondName,
+        email: personalDetails.email,
+        phone: personalDetails.phone,
+        idNumber: personalDetails.idNumber,
+        nationalId: personalDetails.idNumber,
+        gender: personalDetails.gender,
+        age: personalDetails.age,
+        county: personalDetails.county,
+        passport: personalDetails.passport,
+        applicationType: "job",
+        jobPosition: jobSelection.jobPosition,
+        documents: {
+          passportPhoto: documents.passportPhoto,
+          idFront: documents.idFront,
+          idBack: documents.idBack,
+          certificateOfGoodConduct: documents.certificateOfGoodConduct,
+        },
+        jobSelection: {
+          cv: jobSelection.cv,
+        },
+      };
+
+      const saveResponse = await fetch("/api/submit-application", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(applicationPayload),
+      });
+
+      const saveResult = await saveResponse.json();
+      let cmfAgencyId = "";
+
+      if (saveResponse.ok && saveResult.cmfAgencyId) {
+        cmfAgencyId = saveResult.cmfAgencyId;
+      }
+
+      // Format application data for WhatsApp
+      const whatsappMessage = `*Job Application Submission*
+${cmfAgencyId ? `\n*CMF Agency ID: ${cmfAgencyId}*\n` : ""}
+
+*Personal Details:*
+First Name: ${personalDetails.firstName}
+Second Name: ${personalDetails.secondName}
+Email: ${personalDetails.email}
+Phone: ${personalDetails.phone}
+ID Number: ${personalDetails.idNumber}
+Gender: ${personalDetails.gender}
+Age: ${personalDetails.age}
+County: ${personalDetails.county}
+Passport: ${personalDetails.passport || "Not provided"}
+
+*Job Selection:*
+Position: ${jobSelection.jobPosition}
+CV: ${jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
+
+*Documents:*
+Passport Photo: ${documents.passportPhoto ? documents.passportPhoto.name : "Not uploaded"}
+ID Front: ${documents.idFront ? documents.idFront.name : "Not uploaded"}
+ID Back: ${documents.idBack ? documents.idBack.name : "Not uploaded"}
+Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not uploaded"}
+
+${cmfAgencyId ? `\n*Track your application using ID: ${cmfAgencyId}*\n` : ""}
+---
+*Note: Please attach all document files to this WhatsApp message.*`;
+
+      const encodedMessage = encodeURIComponent(whatsappMessage);
+      const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
+
+      window.open(whatsappUrl, "_blank");
+      setSubmitted(true);
+
+      // Clear saved data after submission
+      if (user) {
+        localStorage.removeItem(`application_${user.id}`);
+      }
+
+      // Show success message with CMF Agency ID if available
+      if (cmfAgencyId) {
+        alert(
+          `Application submitted successfully!\n\nYour CMF Agency ID: ${cmfAgencyId}\n\nYou can track your application status using this ID.`
+        );
+      }
+    } catch (error: any) {
+      console.error("Error submitting application:", error);
+      // Still allow WhatsApp submission even if database save fails
+      const whatsappMessage = `*Job Application Submission*
 
 *Personal Details:*
 First Name: ${personalDetails.firstName}
@@ -243,15 +333,11 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
 ---
 *Note: Please attach all document files to this WhatsApp message.*`;
 
-    const encodedMessage = encodeURIComponent(whatsappMessage);
-    const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
+      const encodedMessage = encodeURIComponent(whatsappMessage);
+      const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
 
-    window.open(whatsappUrl, "_blank");
-    setSubmitted(true);
-
-    // Clear saved data after submission
-    if (user) {
-      localStorage.removeItem(`application_${user.id}`);
+      window.open(whatsappUrl, "_blank");
+      setSubmitted(true);
     }
   };
 

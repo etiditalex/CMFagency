@@ -15,6 +15,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   resendVerificationCode: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -335,6 +336,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/application`,
+        },
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // OAuth redirect will happen automatically
+      // The user will be redirected back to /application after successful authentication
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || "An error occurred during Google sign-in" };
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -362,6 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         login,
         register,
+        signInWithGoogle,
         verifyEmail,
         resendVerificationCode,
         logout,
