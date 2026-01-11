@@ -136,10 +136,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-y-auto z-50">
-      {/* Optional: Subtle gradient overlay (can be removed if you want pure white) */}
-      <div className="fixed inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 pointer-events-none"></div>
-
+    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700 flex items-center justify-center p-4 sm:p-6 md:p-8 pt-24 relative">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }}></div>
+      </div>
       <div className="relative z-10 w-full max-w-md py-8 sm:py-12">
         {/* Logo and Welcome Text */}
         <motion.div
@@ -157,10 +161,10 @@ export default function LoginPage() {
               />
             </div>
           </Link>
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-2">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-2">
             Changer Fusions
           </h1>
-          <p className="text-xl text-gray-700">
+          <p className="text-xl text-white/90">
             {showForgotPassword ? "Reset Your Password" : isLoginMode ? "Welcome Back!" : "Create Your Account"}
           </p>
         </motion.div>
