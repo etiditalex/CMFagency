@@ -11,19 +11,37 @@ You already have:
 
 ## 🚀 Step-by-Step Setup
 
-### Step 1: Configure Google OAuth in Supabase Dashboard
+### Step 1: Configure Site URL in Supabase (CRITICAL - Fixes Localhost Redirect)
+
+**This is the most important step to fix the localhost redirect issue!**
 
 1. Go to: https://app.supabase.com
 2. Select your project: **jgroawmmjuhdjtdvnlxa**
-3. Navigate to **Authentication** → **Providers**
-4. Find **Google** in the list
-5. Click **Enable** toggle to turn it on
-6. Enter the credentials:
-   - **Client ID (for OAuth)**: `[Your Google OAuth Client ID]`
-   - **Client Secret (for OAuth)**: `[Your Google OAuth Client Secret]`
-7. Click **Save**
+3. Navigate to **Authentication** → **URL Configuration**
+4. Under **Site URL**, change from `http://localhost:3000` to your production URL:
+   ```
+   https://cm-fagency.vercel.app
+   ```
+   (Or your custom domain if you have one, e.g., `https://cmfagency.co.ke`)
+5. Under **Redirect URLs**, add your production domain:
+   ```
+   https://cm-fagency.vercel.app/**
+   ```
+   (The `**` allows all paths on your domain)
+6. Click **Save**
 
-### Step 2: Update Google Cloud Console Redirect URIs
+### Step 2: Configure Google OAuth in Supabase Dashboard
+
+1. Still in Supabase Dashboard
+2. Navigate to **Authentication** → **Providers**
+3. Find **Google** in the list
+4. Click **Enable** toggle to turn it on
+5. Enter the credentials:
+   - **Client ID (for OAuth)**: `837082169242-5pu8of4utofhnapbkvp8kag5po2v3ghu`
+   - **Client Secret (for OAuth)**: `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`
+6. Click **Save**
+
+### Step 3: Update Google Cloud Console Redirect URIs
 
 1. Go to: https://console.cloud.google.com
 2. Navigate to **APIs & Services** → **Credentials**
@@ -38,7 +56,7 @@ You already have:
    (Add your actual production domain if different)
 6. Click **Save**
 
-### Step 3: Add Environment Variables to Vercel
+### Step 4: Add Environment Variables to Vercel
 
 1. Go to: https://vercel.com
 2. Select your project: **CMFagency**
@@ -59,7 +77,7 @@ You already have:
    - Select **Production**, **Preview**, and **Development**
    - Click **Save**
 
-### Step 4: Redeploy Your Application
+### Step 5: Redeploy Your Application
 
 After adding/updating environment variables:
 
@@ -78,6 +96,8 @@ git push origin main
 
 After setup, verify:
 
+- [ ] **Site URL is set to production domain in Supabase** (CRITICAL!)
+- [ ] **Redirect URLs include production domain in Supabase**
 - [ ] Google OAuth is enabled in Supabase Dashboard
 - [ ] Client ID and Secret are saved in Supabase
 - [ ] Redirect URI is added in Google Cloud Console
@@ -114,14 +134,25 @@ After setup, verify:
 2. Make sure Google provider is enabled
 3. Verify no extra spaces when copying credentials
 
+### OAuth redirecting to localhost on production
+
+**Problem**: Supabase Site URL is still set to localhost
+
+**Solution**:
+1. Go to Supabase Dashboard → **Authentication** → **URL Configuration**
+2. Change **Site URL** from `http://localhost:3000` to your production URL
+3. Add production domain to **Redirect URLs** with `/**` wildcard
+4. Save and test again
+
 ### OAuth not working on production but works locally
 
-**Problem**: Environment variables not set in Vercel
+**Problem**: Environment variables not set in Vercel OR Site URL not configured
 
 **Solution**:
 1. Verify all environment variables are in Vercel
 2. Make sure they're set for **Production** environment
-3. Redeploy the application after adding variables
+3. **Check Supabase Site URL is set to production domain** (most common issue!)
+4. Redeploy the application after adding variables
 
 ### User redirected to wrong page after login
 
@@ -133,10 +164,12 @@ After setup, verify:
 
 ## 📝 Important Notes
 
-1. **Google OAuth credentials are stored in Supabase**, not in Vercel environment variables
-2. **Supabase environment variables** (URL and keys) are stored in Vercel
-3. **The redirect URI** must match exactly in Google Cloud Console
-4. **Production domain** should be added to Google Cloud Console redirect URIs if using a custom domain
+1. **Site URL in Supabase MUST be set to production domain** - This is the #1 cause of localhost redirects!
+2. **Google OAuth credentials are stored in Supabase**, not in Vercel environment variables
+3. **Supabase environment variables** (URL and keys) are stored in Vercel
+4. **The redirect URI** must match exactly in Google Cloud Console
+5. **Production domain** should be added to Google Cloud Console redirect URIs if using a custom domain
+6. **You don't need to add anything to Vercel for Google OAuth** - only Supabase environment variables (URL and keys)
 
 ## 🎯 Quick Reference
 
