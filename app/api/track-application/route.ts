@@ -21,6 +21,21 @@ export async function POST(request: NextRequest) {
   try {
     const { method, value, userId } = await request.json();
 
+    if (!supabaseAdmin) {
+      const missingVars = [];
+      if (!supabaseUrl) missingVars.push("NEXT_PUBLIC_SUPABASE_URL");
+      if (!supabaseServiceKey) missingVars.push("SUPABASE_SERVICE_ROLE_KEY");
+      
+      console.error("Missing environment variables:", missingVars.join(", "));
+      return NextResponse.json(
+        { 
+          error: "Database connection not configured",
+          details: `Missing: ${missingVars.join(", ")}. Please add these to your .env.local file and restart the server.`
+        },
+        { status: 500 }
+      );
+    }
+
     // If userId is provided, fetch user's applications directly
     if (userId && !method && !value) {
       const { data, error } = await supabaseAdmin
