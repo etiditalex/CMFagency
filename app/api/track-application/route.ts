@@ -19,7 +19,48 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
 
 export async function POST(request: NextRequest) {
   try {
-    const { method, value } = await request.json();
+    const { method, value, userId } = await request.json();
+
+    // If userId is provided, fetch user's applications directly
+    if (userId && !method && !value) {
+      const { data, error } = await supabaseAdmin
+        .from("applications")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error querying applications by user_id:", error);
+        return NextResponse.json(
+          { error: "Failed to query applications" },
+          { status: 500 }
+        );
+      }
+
+      if (!data || data.length === 0) {
+        return NextResponse.json(
+          { error: "No applications found for this user" },
+          { status: 404 }
+        );
+      }
+
+      // Return all applications or just the most recent
+      const applications = data.map((app) => ({
+        id: app.id,
+        cmfAgencyId: app.cmf_agency_id,
+        applicationType: app.application_type,
+        status: app.status || "pending",
+        name: app.name || app.full_name,
+        submittedAt: app.created_at,
+        notes: app.notes || app.comments,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        applications: applications,
+        application: applications[0], // Most recent for backward compatibility
+      });
+    }
 
     if (!method || !value) {
       return NextResponse.json(

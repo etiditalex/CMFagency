@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Mail, Lock, User, Facebook } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -20,6 +21,25 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted (client-side only)
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   // Check if user exists by email
   const getUserByEmail = (email: string) => {
@@ -220,18 +240,18 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     }, 1000);
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted || typeof window === "undefined") return null;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         />
 
         {/* Modal */}
@@ -239,7 +259,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden z-[10000]"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-6 text-white">
@@ -439,5 +460,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       </div>
     </AnimatePresence>
   );
+
+  // Render modal as a portal to document.body
+  if (typeof document !== "undefined" && document.body) {
+    return createPortal(modalContent, document.body);
+  }
+  return null;
 }
 

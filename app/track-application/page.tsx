@@ -1,20 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, IdCard, Phone, Hash, CheckCircle, XCircle, Clock, ArrowLeft, ArrowRight, Mail } from "lucide-react";
+import { Search, IdCard, Phone, Hash, CheckCircle, XCircle, Clock, ArrowLeft, ArrowRight, Mail, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TrackingMethod = "nationalId" | "phoneNumber" | "cmfAgencyId";
 
 export default function TrackApplicationPage() {
   const router = useRouter();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [trackingMethod, setTrackingMethod] = useState<TrackingMethod>("nationalId");
   const [trackingValue, setTrackingValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [applicationData, setApplicationData] = useState<any>(null);
+  const [userApplications, setUserApplications] = useState<any[]>([]);
+  const [loadingUserApps, setLoadingUserApps] = useState(false);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +97,47 @@ export default function TrackApplicationPage() {
     }
   };
 
+  // Fetch user's applications when logged in
+  useEffect(() => {
+    if (isAuthenticated && user?.id && !authLoading) {
+      fetchUserApplications();
+    }
+  }, [isAuthenticated, user?.id, authLoading]);
+
+  const fetchUserApplications = async () => {
+    setLoadingUserApps(true);
+    setError("");
+    try {
+      const response = await fetch("/api/track-application", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.applications) {
+        setUserApplications(data.applications);
+        // Auto-select the most recent application
+        if (data.applications.length > 0) {
+          setApplicationData(data.application || data.applications[0]);
+        }
+      } else {
+        // No applications found is not an error
+        setUserApplications([]);
+      }
+    } catch (err: any) {
+      console.error("Error fetching user applications:", err);
+      // Don't show error for logged-in users with no applications
+    } finally {
+      setLoadingUserApps(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
       <section className="section-padding">
@@ -115,8 +160,89 @@ export default function TrackApplicationPage() {
                 Track Your Application
               </h1>
               <p className="text-gray-600 mb-8">
-                Check the status of your application using one of the methods below
+                {isAuthenticated
+                  ? "View your application status or track using other methods below"
+                  : "Check the status of your application using one of the methods below"}
               </p>
+
+              {/* Logged in user's applications */}
+              {isAuthenticated && (
+                <div className="mb-8">
+                  {loadingUserApps ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+                      <p className="text-gray-600">Loading your applications...</p>
+                    </div>
+                  ) : userApplications.length > 0 ? (
+                    <div className="bg-primary-50 rounded-lg p-6 border border-primary-200 mb-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <User className="w-5 h-5 text-primary-600" />
+                        <h2 className="text-lg font-bold text-gray-900">Your Applications</h2>
+                      </div>
+                      <div className="space-y-4">
+                        {userApplications.map((app, index) => (
+                          <motion.div
+                            key={app.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className={`p-4 bg-white rounded-lg border-2 cursor-pointer transition-all ${
+                              applicationData?.id === app.id
+                                ? "border-primary-600 shadow-md"
+                                : "border-gray-200 hover:border-primary-300"
+                            }`}
+                            onClick={() => setApplicationData(app)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {getStatusIcon(app.status)}
+                                <div>
+                                  <div className="font-semibold text-gray-900">
+                                    {app.applicationType || "Application"} - {app.cmfAgencyId}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    Submitted: {app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "N/A"}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className={`text-sm font-medium px-3 py-1 rounded-full border ${getStatusColor(app.status)}`}>
+                                {app.status || "Pending"}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-6 text-center">
+                      <p className="text-gray-600 mb-4">You haven't submitted any applications yet.</p>
+                      <Link
+                        href="/application"
+                        className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                      >
+                        Submit Your First Application
+                        <ArrowRight className="w-5 h-5" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Login prompt for non-authenticated users */}
+              {!isAuthenticated && !authLoading && (
+                <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 mb-6">
+                  <p className="text-gray-700 mb-4">
+                    <strong>Tip:</strong> Log in to automatically view all your applications!
+                  </p>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition-colors"
+                  >
+                    Log In Now
+                    <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
+              )}
 
               {/* Tracking Method Selection */}
               <div className="space-y-3 mb-6">

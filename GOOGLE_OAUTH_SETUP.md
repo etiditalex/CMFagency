@@ -45,18 +45,25 @@ The login page now supports Google authentication. Users can sign in or create a
 
 ### 4. Update Redirect URLs (if needed)
 
-The redirect URL is automatically set to `/application` in the code. If you need to change it:
+The redirect URL is automatically set to `/track-application` in the code. If you need to change it:
 
 - Edit `contexts/AuthContext.tsx`
 - Find `signInWithGoogle` function
-- Update `redirectTo: `${window.location.origin}/application``
+- Update `redirectTo: `${window.location.origin}/track-application``
 
 ### 5. Test Google Sign-In
 
+**Option 1: Use the Test Page**
+1. Go to `/test-oauth` page
+2. Click **Test Google Sign-In** button
+3. Check the configuration status
+4. Review any error messages
+
+**Option 2: Use the Login Page**
 1. Go to your login page: `/login`
 2. Click **Sign in with Google**
 3. You should be redirected to Google's sign-in page
-4. After signing in, you'll be redirected back to `/application`
+4. After signing in, you'll be redirected back to `/track-application`
 
 ## How It Works
 
@@ -65,7 +72,7 @@ The redirect URL is automatically set to `/application` in the code. If you need
 3. User authorizes the application
 4. Google redirects back to Supabase with an authorization code
 5. Supabase exchanges the code for user information
-6. User is automatically logged in and redirected to `/application`
+6. User is automatically logged in and redirected to `/track-application`
 
 ## For Production (Vercel)
 
@@ -75,7 +82,7 @@ When deploying to Vercel:
    - Add: `https://[your-supabase-project].supabase.co/auth/v1/callback`
    - Remove localhost URLs (or keep for development)
 
-2. The redirect URL in code (`/application`) will work automatically on your production domain
+2. The redirect URL in code (`/track-application`) will work automatically on your production domain
 
 ## Troubleshooting
 

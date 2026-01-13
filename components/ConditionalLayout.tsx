@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SocialShare from "@/components/SocialShare";
@@ -11,6 +12,20 @@ export default function ConditionalLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isVerifyEmailPage = pathname === "/verify-email";
+
+  // For verify-email pages, hide navbar and show full-screen layout
+  if (isVerifyEmailPage) {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {children}
+        <CookieBanner />
+        <WhatsAppButton />
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar />

@@ -5,14 +5,12 @@ import { User, Mail, Phone, MapPin, Calendar, Edit, Settings, ShoppingBag, Ticke
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AuthModal from "@/components/AuthModal";
 import Image from "next/image";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "orders" | "events" | "settings">("overview");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -60,12 +58,6 @@ export default function ProfilePage() {
     router.push("/");
   };
 
-  const handleAuthSuccess = (userData: any) => {
-    setIsAuthenticated(true);
-    setShowAuthModal(false);
-    // Update state without full page reload
-    setIsLoading(false);
-  };
 
   // Get user info only when authenticated
   const getUserInfo = () => {
@@ -146,12 +138,12 @@ export default function ProfilePage() {
               Please log in or create an account to access your profile and view your account information.
             </p>
             <div className="flex flex-row gap-4">
-              <button
-                onClick={() => setShowAuthModal(true)}
+              <Link
+                href="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-600 text-white rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 transition-all shadow-lg hover:shadow-xl"
               >
                 Sign In / Sign Up
-              </button>
+              </Link>
               <button
                 onClick={() => router.push("/")}
                 className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-white text-gray-700 border-2 border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
@@ -161,11 +153,6 @@ export default function ProfilePage() {
             </div>
           </motion.div>
         </div>
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
-        />
       </>
     );
   }
