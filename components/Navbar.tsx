@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Twitter, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -206,6 +206,15 @@ export default function Navbar() {
                 aria-label="Follow us on LinkedIn"
               >
                   <Linkedin className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
+              </a>
+              <a
+                href="https://x.com/ChangerFusions"
+                target="_blank"
+                rel="noopener noreferrer"
+                  className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
+                aria-label="Follow us on X (Twitter)"
+              >
+                  <Twitter className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
               </a>
               </div>
             </div>

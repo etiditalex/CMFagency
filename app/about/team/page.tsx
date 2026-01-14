@@ -2,9 +2,11 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Users, Award, Target, Lightbulb } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
-const teamMembers = [
+const executiveMembers = [
   {
     name: "Javan Rolynce",
     position: "Chief Executive Officer (CEO)",
@@ -17,6 +19,29 @@ const teamMembers = [
       "His vision for Changer Fusions is to create platforms that elevate talent, foster collaboration, and deliver meaningful value to clients, partners, and communities.",
     ],
   },
+  {
+    name: "Alex Etidit",
+    position: "Technical Director",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768370403/Alex_Etidit-CTO_nkeiwj.jpg",
+    description: "Alex Etidit serves as the Technical Director at Changer Fusions, overseeing all technical architecture, systems development, and digital innovation initiatives. With a deep understanding of technology infrastructure and emerging digital solutions, Alex ensures that the organization remains technologically agile, secure, and scalable.",
+    achievements: [
+      "His role is central to driving product development, optimizing technical processes, and aligning technology with the company's long-term strategic goals.",
+      "Alex is passionate about using technology to solve real-world challenges and enhance operational efficiency.",
+    ],
+  },
+  {
+    name: "Violet Moriasi",
+    position: "Marketing Director",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768399105/Violet_Kwamboka-_Director_Marketing_w5n2ac.jpg",
+    description: "Violet Moriasi is the Marketing Director at Changer Fusions, responsible for shaping the company's brand identity, marketing strategy, and market positioning. She brings extensive experience in digital marketing, brand communication, and audience engagement across multiple platforms.",
+    achievements: [
+      "Violet is known for her creative insight and data-driven approach to marketing, ensuring that campaigns are impactful, consistent, and aligned with business objectives.",
+      "Her leadership continues to strengthen Changer Fusions' visibility, brand credibility, and customer engagement.",
+    ],
+  },
+];
+
+const teamMembers = [
   {
     name: "Glen Washington",
     position: "Operations and Events Manager",
@@ -49,249 +74,221 @@ const teamMembers = [
       "He champions talent development, collaboration, and ethical leadership within the organization.",
     ],
   },
+  {
+    name: "Maxwell Wisdom",
+    position: "Legal & Contracts Manager",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768399036/Maxwell_Wisdom-_Legal_and_Contracts_xyfhy6.jpg",
+    description: "Maxwell Wisdom serves as the Legal & Contracts Manager at Changer Fusions, where he supports business operations through effective contract management and risk control. He is responsible for drafting and negotiating client, vendor, and partnership agreements, identifying legal risks within projects, and proposing practical mitigation measures.",
+    achievements: [
+      "Maxwell works closely with other departments and marketing teams, ensuring all digital, creative, and consulting services are governed by clear, enforceable legal terms that protect the organization's interests.",
+    ],
+  },
+  {
+    name: "Mohamed Ibrahim",
+    position: "Social Media Manager",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768398936/Mohamed_Ibrahim-Social_Media_Manager_sckrd2.jpg",
+    description: "Mohamed Ibrahim is a dedicated Social Media Manager at Changer Fusions, with a strong foundation in digital communication and content management. He is a hardworking, self-motivated professional with solid computer and digital competencies, capable of managing multiple responsibilities with accuracy and professionalism.",
+    achievements: [
+      "Mohamed plays an active role in overseeing and optimizing the company's social media platforms, ensuring consistent brand messaging, audience engagement, and digital visibility.",
+      "He is committed to continuous learning, personal development, and making meaningful contributions toward the organization's growth and strategic objectives.",
+    ],
+  },
 ];
+
+interface MemberCardProps {
+  member: typeof executiveMembers[0];
+  index: number;
+}
+
+function MemberCard({ member, index }: MemberCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100"
+    >
+      <div className="relative w-full aspect-[3/4]">
+        <Image
+          src={member.image}
+          alt={member.name}
+          fill
+          className="object-cover object-top"
+        />
+      </div>
+      <div className="p-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
+        <p className="text-secondary-600 font-semibold mb-4">{member.position}</p>
+        
+        {isExpanded ? (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-4"
+          >
+            <p className="text-gray-700 text-sm leading-relaxed">{member.description}</p>
+            <div className="space-y-2 pt-2 border-t border-gray-200">
+              {member.achievements.map((achievement, idx) => (
+                <div key={idx} className="flex items-start space-x-2">
+                  <div className="flex-shrink-0 mt-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">{achievement}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="text-secondary-600 hover:text-secondary-700 font-semibold text-sm flex items-center space-x-1 mt-4"
+            >
+              <span>View less</span>
+              <ChevronRight className="w-4 h-4 rotate-90" />
+            </button>
+          </motion.div>
+        ) : (
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="bg-secondary-600 hover:bg-secondary-700 text-white font-semibold py-2.5 px-6 rounded-md transition-colors duration-300 text-sm w-full"
+          >
+            View more
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 export default function OurTeamPage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg"
-            alt="Our Team"
-            fill
-            className="object-cover object-top"
-            priority
-          />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/50 via-secondary-800/40 to-primary-900/50"></div>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container-custom py-4">
+          <div className="text-sm text-gray-600">
+            <Link href="/" className="hover:text-secondary-600">CHANGER FUSIONS</Link>
+            {" > "}
+            <Link href="/about" className="hover:text-secondary-600">ABOUT US</Link>
+            {" > "}
+            <span className="text-gray-900 font-semibold">OUR TEAM</span>
+          </div>
         </div>
-        
-        <div className="container-custom relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-              Our Team
-            </h1>
-            <p className="text-lg text-white/90">
-              Meet the passionate professionals driving innovation and excellence at Changer Fusions
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      </div>
 
-      {/* Team Members Section */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <div className="space-y-24">
-            {/* CEO Section - Full Width */}
-            {teamMembers[0] && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                {/* Image */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="space-y-6"
+      <div className="container-custom py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Left Sidebar - Navigation */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white border-2 border-secondary-600 rounded-lg p-6 sticky top-24">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">ABOUT</h2>
+              <nav className="space-y-2">
+                <Link
+                  href="/about"
+                  className="block text-gray-700 hover:text-secondary-600 transition-colors duration-200"
                 >
-                  <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lg">
-                    <Image
-                      src={teamMembers[0].image}
-                      alt={teamMembers[0].name}
-                      fill
-                      className="object-cover object-top"
-                      priority
-                    />
-                  </div>
-                </motion.div>
-
-                {/* Content */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="space-y-6"
+                  ABOUT US
+                </Link>
+                <Link
+                  href="/about/team"
+                  className="block text-secondary-600 font-semibold flex items-center space-x-2"
                 >
-                  <div>
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                      {teamMembers[0].name}
-                    </h2>
-                    <p className="text-xl text-primary-600 font-semibold mb-6">
-                      {teamMembers[0].position}
-                    </p>
-                  </div>
+                  <ChevronRight className="w-4 h-4" />
+                  <span>OUR TEAM</span>
+                </Link>
+                <Link
+                  href="/about/partners"
+                  className="block text-gray-700 hover:text-secondary-600 transition-colors duration-200 flex items-center space-x-2"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  <span>PARTNERS</span>
+                </Link>
+              </nav>
 
-                  <div className="prose prose-lg max-w-none">
-                    <p className="text-gray-700 leading-relaxed mb-6">
-                      {teamMembers[0].description}
-                    </p>
-
-                    <div className="space-y-4">
-                      {teamMembers[0].achievements.map((achievement, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 0.3 + idx * 0.1 }}
-                          className="flex items-start space-x-3"
-                        >
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-primary-600"></div>
-                          </div>
-                          <p className="text-gray-700 leading-relaxed">{achievement}</p>
-                        </motion.div>
-                      ))}
+              {/* Vision, Mission, and Core Values Section */}
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">OUR VISION</h3>
+                <p className="text-gray-700 text-sm leading-relaxed mb-6">
+                  To make marketing the force behind business in Kenya and beyond.
+                </p>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">OUR MISSION</h3>
+                <p className="text-gray-700 text-sm leading-relaxed mb-6">
+                  To deliver innovative, impactful marketing solutions that drive business growth and create lasting value for our clients and communities.
+                </p>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">CORE VALUES</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
                     </div>
-                  </div>
-                </motion.div>
+                    <span className="text-gray-700 text-sm leading-relaxed">
+                      <strong className="text-gray-900">Innovation:</strong> We embrace creativity, emerging trends, and modern technologies.
+                    </span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
+                    </div>
+                    <span className="text-gray-700 text-sm leading-relaxed">
+                      <strong className="text-gray-900">Integrity:</strong> We operate with honesty, transparency, and accountability.
+                    </span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
+                    </div>
+                    <span className="text-gray-700 text-sm leading-relaxed">
+                      <strong className="text-gray-900">Excellence:</strong> We are committed to the highest standards of quality and professionalism.
+                    </span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
+                    </div>
+                    <span className="text-gray-700 text-sm leading-relaxed">
+                      <strong className="text-gray-900">Client-Centricity:</strong> Our clients' goals are at the center of everything we do.
+                    </span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <div className="flex-shrink-0 mt-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
+                    </div>
+                    <span className="text-gray-700 text-sm leading-relaxed">
+                      <strong className="text-gray-900">Impact & Results:</strong> We focus on outcomes and measurable impact for our clients.
+                    </span>
+                  </li>
+                </ul>
               </div>
-            )}
+            </div>
+          </aside>
 
-            {/* Other Team Members - Grid Layout */}
-            {teamMembers.length > 1 && (
-              <div>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                  className="text-center mb-12"
-                >
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                    Our Team
-                  </h2>
-                </motion.div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-                  {teamMembers.slice(1).map((member, memberIndex) => (
-                    <motion.div
-                      key={member.name}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: (memberIndex + 1) * 0.2 }}
-                      className="group relative"
-                    >
-                      {/* Card Container */}
-                      <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-lg bg-white">
-                        {/* Image */}
-                        <div className="relative w-full h-full">
-                          <Image
-                            src={member.image}
-                            alt={member.name}
-                            fill
-                            className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
-                          />
-                        </div>
+          {/* Main Content */}
+          <main className="lg:col-span-3">
+            {/* Executive Section */}
+            <section className="mb-12">
+              <h2 className="text-3xl font-bold text-secondary-600 mb-8">EXECUTIVE</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {executiveMembers.map((member, index) => (
+                  <MemberCard key={member.name} member={member} index={index} />
+                ))}
+              </div>
+            </section>
 
-                        {/* Overlay with Content - Shows on Hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                          <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                              {member.name}
-                            </h3>
-                            <p className="text-lg text-primary-300 font-semibold mb-4">
-                              {member.position}
-                            </p>
-                            <p className="text-white/90 text-sm leading-relaxed mb-4 line-clamp-3">
-                              {member.description}
-                            </p>
-                            <div className="space-y-2 max-h-32 overflow-y-auto">
-                              {member.achievements.map((achievement, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-start space-x-2"
-                                >
-                                  <div className="flex-shrink-0 mt-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary-400"></div>
-                                  </div>
-                                  <p className="text-white/80 text-xs leading-relaxed">{achievement}</p>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Always Visible Name and Position */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent group-hover:opacity-0 transition-opacity duration-300">
-                          <h3 className="text-xl md:text-2xl font-bold text-white mb-1">
-                            {member.name}
-                          </h3>
-                          <p className="text-primary-300 font-semibold text-sm">
-                            {member.position}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
+            {/* Team Section */}
+            {teamMembers.length > 0 && (
+              <section>
+                <h2 className="text-3xl font-bold text-secondary-600 mb-8">TEAM</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {teamMembers.map((member, index) => (
+                    <MemberCard key={member.name} member={member} index={index} />
                   ))}
                 </div>
-              </div>
+              </section>
             )}
-          </div>
+          </main>
         </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="section-padding bg-gray-50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Our Core Values
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              The principles that guide our team and shape our work
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                icon: Users,
-                title: "People-Centered",
-                description: "We prioritize relationships and understand that success comes through collaboration.",
-              },
-              {
-                icon: Target,
-                title: "Results-Driven",
-                description: "We focus on delivering measurable outcomes that exceed expectations.",
-              },
-              {
-                icon: Lightbulb,
-                title: "Innovation",
-                description: "We embrace creativity and new approaches to solve complex challenges.",
-              },
-              {
-                icon: Award,
-                title: "Excellence",
-                description: "We maintain the highest standards in every project we undertake.",
-              },
-            ].map((value, index) => (
-              <motion.div
-                key={value.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 text-center md:text-center lg:text-left"
-              >
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center mb-4 mx-auto md:mx-auto lg:mx-0">
-                  <value.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{value.title}</h3>
-                <p className="text-gray-600">{value.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
-

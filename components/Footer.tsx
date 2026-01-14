@@ -135,13 +135,15 @@ export default function Footer() {
                 >
                   <Linkedin className="w-5 h-5 text-gray-300 group-hover:text-white" />
                 </a>
-                <div
-                  className="w-10 h-10 rounded-full bg-gray-800 opacity-50 flex items-center justify-center cursor-not-allowed"
-                  aria-label="Twitter (Coming Soon)"
-                  title="Twitter (Coming Soon)"
+                <a
+                  href="https://x.com/ChangerFusions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-gray-800 hover:bg-primary-600 flex items-center justify-center transition-colors duration-200 group"
+                  aria-label="Follow us on X (Twitter)"
                 >
-                  <Twitter className="w-5 h-5 text-gray-500" />
-                </div>
+                  <Twitter className="w-5 h-5 text-gray-300 group-hover:text-white" />
+                </a>
                 <div
                   className="w-10 h-10 rounded-full bg-gray-800 opacity-50 flex items-center justify-center cursor-not-allowed"
                   aria-label="Google Plus (Coming Soon)"
