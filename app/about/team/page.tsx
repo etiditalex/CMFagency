@@ -2,9 +2,10 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import StructuredData from "@/components/StructuredData";
 
 const executiveMembers = [
   {
@@ -162,6 +163,153 @@ function MemberCard({ member, index }: MemberCardProps) {
 }
 
 export default function OurTeamPage() {
+  // Structured Data for SEO
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://cmfagency.co.ke/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "About Us",
+        item: "https://cmfagency.co.ke/about",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "Our Team",
+        item: "https://cmfagency.co.ke/about/team",
+      },
+    ],
+  };
+
+  const webpageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://cmfagency.co.ke/about/team",
+    url: "https://cmfagency.co.ke/about/team",
+    name: "Our Team - Expert Marketing Professionals in Kenya | Changer Fusions",
+    description: "Meet the expert marketing team at Changer Fusions - Kenya's leading marketing agency. Our experienced professionals deliver innovative marketing solutions for businesses across Kenya.",
+    inLanguage: "en-KE",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "Changer Fusions",
+      url: "https://cmfagency.co.ke",
+    },
+    breadcrumb: {
+      "@id": "https://cmfagency.co.ke/about/team#breadcrumb",
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      name: "Changer Fusions Team Members",
+      description: "Expert marketing professionals and team members at Changer Fusions",
+      itemListElement: [
+        ...executiveMembers.map((member, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: {
+            "@type": "Person",
+            name: member.name,
+            jobTitle: member.position,
+            description: member.description,
+            image: member.image,
+            worksFor: {
+              "@type": "Organization",
+              name: "Changer Fusions",
+              url: "https://cmfagency.co.ke",
+            },
+          },
+        })),
+        ...teamMembers.map((member, index) => ({
+          "@type": "ListItem",
+          position: executiveMembers.length + index + 1,
+          item: {
+            "@type": "Person",
+            name: member.name,
+            jobTitle: member.position,
+            description: member.description,
+            image: member.image,
+            worksFor: {
+              "@type": "Organization",
+              name: "Changer Fusions",
+              url: "https://cmfagency.co.ke",
+            },
+          },
+        })),
+      ],
+    },
+  };
+
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Changer Fusions",
+    url: "https://cmfagency.co.ke",
+    logo: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    description: "Kenya's leading marketing agency specializing in digital marketing, website development, branding, event management, and market research.",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
+      addressLocality: "Mombasa",
+      addressRegion: "Mombasa County",
+      postalCode: "40305",
+      addressCountry: "KE",
+    },
+    employee: [
+      ...executiveMembers.map((member) => ({
+        "@type": "Person",
+        name: member.name,
+        jobTitle: member.position,
+        description: member.description,
+        image: member.image,
+      })),
+      ...teamMembers.map((member) => ({
+        "@type": "Person",
+        name: member.name,
+        jobTitle: member.position,
+        description: member.description,
+        image: member.image,
+      })),
+    ],
+  };
+
+  useEffect(() => {
+    // Add structured data scripts
+    const scripts = [
+      { id: "breadcrumb-schema", data: breadcrumbSchema },
+      { id: "webpage-schema", data: webpageSchema },
+      { id: "organization-schema", data: organizationSchema },
+    ];
+
+    scripts.forEach(({ id, data }) => {
+      const existingScript = document.getElementById(id);
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = id;
+      script.text = JSON.stringify(data);
+      document.head.appendChild(script);
+    });
+
+    return () => {
+      scripts.forEach(({ id }) => {
+        const script = document.getElementById(id);
+        if (script) {
+          script.remove();
+        }
+      });
+    };
+  }, []);
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Breadcrumb */}
@@ -265,6 +413,14 @@ export default function OurTeamPage() {
 
           {/* Main Content */}
           <main className="lg:col-span-3">
+            {/* Page Title - H1 for SEO */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">Our Expert Marketing Team in Kenya</h1>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                Meet the passionate professionals driving innovation and excellence at Changer Fusions. Our experienced team delivers exceptional marketing solutions for businesses across Kenya.
+              </p>
+            </div>
+            
             {/* Executive Section */}
             <section className="mb-12">
               <h2 className="text-3xl font-bold text-secondary-600 mb-8">EXECUTIVE</h2>
