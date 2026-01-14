@@ -111,8 +111,8 @@ export default function PastEventsPage() {
               pointerEvents: "none"
             }}
           />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/60"></div>
         </div>
         
         {/* Content */}

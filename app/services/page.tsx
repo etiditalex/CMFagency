@@ -65,7 +65,8 @@ export default function ServicesPage() {
             priority
           />
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/60"></div>
         </div>
         
         <div className="container-custom relative z-10">
@@ -75,8 +76,8 @@ export default function ServicesPage() {
             transition={{ duration: 0.6 }}
             className="text-center max-w-4xl mx-auto"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">Our Services</h1>
-            <p className="text-xl text-white/90 leading-relaxed">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-2xl">Our Services</h1>
+            <p className="text-xl text-white leading-relaxed drop-shadow-lg">
               Comprehensive marketing solutions designed to help your business thrive and grow. From digital marketing to event planning, we provide end-to-end services that drive results.
             </p>
           </motion.div>

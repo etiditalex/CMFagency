@@ -102,8 +102,8 @@ export default function TestimonialsPage() {
                 "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg)",
             }}
           >
-            {/* Dark Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-900/90 via-secondary-800/85 to-primary-900/90 backdrop-blur-sm"></div>
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/70"></div>
           </div>
         </div>
 
@@ -114,9 +114,9 @@ export default function TestimonialsPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="text-center mb-8 md:mb-12 px-4"
           >
-            <h1 className="text-5xl md:text-7xl font-bold text-white uppercase tracking-wide mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white uppercase tracking-wide mb-4 md:mb-6 drop-shadow-lg">
               Testimonials
             </h1>
             
@@ -154,11 +154,11 @@ export default function TestimonialsPage() {
                   x: { type: "spring", stiffness: 300, damping: 30 },
                   opacity: { duration: 0.2 },
                 }}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-center px-4"
               >
                 {/* Profile Picture */}
                 <div className="flex justify-center lg:justify-start">
-                  <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white/30 shadow-2xl">
+                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl">
                     <Image
                       src={currentTestimonial.image}
                       alt={currentTestimonial.name}
@@ -169,7 +169,7 @@ export default function TestimonialsPage() {
                 </div>
 
                 {/* Testimonial Content */}
-                <div className="lg:col-span-2 space-y-4">
+                <div className="lg:col-span-2 space-y-3 md:space-y-4">
                   {/* Star Rating */}
                   <div className="flex items-center space-x-1 mb-4">
                     {[...Array(5)].map((_, i) => (
@@ -188,21 +188,21 @@ export default function TestimonialsPage() {
 
                   {/* Quote */}
                   <div className="relative">
-                    <span className="text-8xl md:text-9xl font-serif text-white/20 absolute -left-4 -top-4 leading-none">
+                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -left-2 sm:-left-4 -top-2 sm:-top-4 leading-none">
                       "
                     </span>
-                    <p className="text-white text-lg md:text-xl leading-relaxed pl-8 pr-4 relative z-10">
+                    <p className="text-white text-base sm:text-lg md:text-xl leading-relaxed pl-6 sm:pl-8 pr-2 sm:pr-4 relative z-10 drop-shadow-md">
                       {currentTestimonial.quote}
                     </p>
-                    <span className="text-8xl md:text-9xl font-serif text-white/20 absolute -right-4 -bottom-8 leading-none">
+                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 leading-none">
                       "
                     </span>
                   </div>
 
                   {/* Attribution */}
-                  <div className="pt-4">
-                    <p className="text-white text-xl font-semibold">{currentTestimonial.name}</p>
-                    <p className="text-white/80 text-lg">{currentTestimonial.role}</p>
+                  <div className="pt-3 md:pt-4">
+                    <p className="text-white text-lg sm:text-xl font-semibold drop-shadow-md">{currentTestimonial.name}</p>
+                    <p className="text-white text-base sm:text-lg drop-shadow-md">{currentTestimonial.role}</p>
                   </div>
                 </div>
               </motion.div>
@@ -211,17 +211,17 @@ export default function TestimonialsPage() {
             {/* Navigation Arrows */}
             <button
               onClick={() => paginate(-1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all duration-300 z-20 group"
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 lg:-translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
               aria-label="Previous testimonial"
             >
-              <ChevronLeft className="w-6 h-6 text-white group-hover:text-primary-200" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
             </button>
             <button
               onClick={() => paginate(1)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all duration-300 z-20 group"
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 lg:translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
               aria-label="Next testimonial"
             >
-              <ChevronRight className="w-6 h-6 text-white group-hover:text-primary-200" />
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
             </button>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function TestimonialsPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Ready to Fuse Change & Excellence?
             </h2>
-            <p className="text-xl text-white/90 mb-8">
+            <p className="text-xl text-white mb-8 drop-shadow-lg">
               Let's work together to create transformative success stories. Contact Changer Fusions today to experience the fusion of innovation and enterprise excellence.
             </p>
             <a

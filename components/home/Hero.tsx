@@ -117,8 +117,8 @@ export default function Hero() {
                 className="object-cover"
                 priority={currentIndex === 0}
               />
-              {/* Overlay with website colors */}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+              {/* Dark overlay for better text readability */}
+              <div className="absolute inset-0 bg-black/60"></div>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -144,7 +144,7 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight text-left"
+                className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight text-left drop-shadow-2xl"
               >
                 Strategic Marketing That Powers Growth and Relevance
               </motion.h1>
@@ -154,7 +154,7 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-xl md:text-2xl text-white/95 mb-8 leading-relaxed"
+                className="text-xl md:text-2xl text-white mb-8 leading-relaxed drop-shadow-lg"
               >
                 Market to thrive, Market to exit
               </motion.p>

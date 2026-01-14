@@ -79,8 +79,8 @@ ${formData.coverLetter}
             className="object-cover object-center"
             priority
           />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/60"></div>
         </div>
         
         <div className="container-custom relative z-10">
@@ -90,10 +90,10 @@ ${formData.coverLetter}
             transition={{ duration: 0.6 }}
             className="text-left max-w-4xl py-12"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white drop-shadow-2xl">
               Apply for a Position
             </h1>
-            <p className="text-xl text-white/90">
+            <p className="text-xl text-white drop-shadow-lg">
               Apply for exciting career opportunities with our partners.
             </p>
           </motion.div>

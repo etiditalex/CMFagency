@@ -77,7 +77,8 @@ export default function BlogsPage() {
             priority
           />
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/85 via-secondary-800/75 to-primary-900/85"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/65"></div>
         </div>
         
         <div className="container-custom relative z-10">

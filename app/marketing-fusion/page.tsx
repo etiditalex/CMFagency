@@ -68,8 +68,8 @@ export default function MarketingFusionPage() {
             className="object-cover object-center"
             priority
           />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/60"></div>
         </div>
         
         <div className="container-custom relative z-10">
@@ -84,7 +84,7 @@ export default function MarketingFusionPage() {
                 Market to thrive, Market to exist
               </span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
+            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-2xl">
               Changer Fusions
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-8 leading-relaxed">

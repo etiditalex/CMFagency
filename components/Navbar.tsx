@@ -226,10 +226,10 @@ export default function Navbar() {
 
       {/* Main Navigation Bar */}
       <div className="container-custom">
-        <div className="flex items-center justify-between h-[90px]">
+        <div className="flex items-center justify-between h-[80px] sm:h-[90px] md:h-[100px]">
           {/* Logo - Left */}
           <Link href="/" className="flex-shrink-0 h-full flex items-center">
-            <div className="relative h-16 w-auto min-w-[120px] md:min-w-[150px]">
+            <div className="relative h-20 w-auto min-w-[160px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px]">
               <Image
                 src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
                 alt="Changer Fusions Logo"
@@ -237,7 +237,7 @@ export default function Navbar() {
                 className="object-contain"
                 priority
                 fetchPriority="high"
-                sizes="(max-width: 768px) 120px, 150px"
+                sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 220px"
               />
             </div>
           </Link>

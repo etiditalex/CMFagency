@@ -51,8 +51,8 @@ export default function AboutPage() {
             className="object-cover object-center"
             priority
           />
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/85 via-secondary-800/75 to-primary-900/85"></div>
+          {/* Dark overlay for better text readability */}
+          <div className="absolute inset-0 bg-black/65"></div>
         </div>
         
         <div className="container-custom relative z-10">
@@ -67,10 +67,10 @@ export default function AboutPage() {
                 Market to thrive, Market to exist
               </span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-2xl">
               About Changer Fusions
             </h1>
-            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
+            <p className="text-xl text-white leading-relaxed drop-shadow-lg">
               Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients. With a focus on harnessing the power of change and innovation, Changer Fusions drives meaningful results and facilitates growth in an ever-evolving marketing landscape.
             </p>
           </motion.div>
