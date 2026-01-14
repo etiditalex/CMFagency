@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Twitter, Search } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -212,9 +212,11 @@ export default function Navbar() {
                 target="_blank"
                 rel="noopener noreferrer"
                   className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
-                aria-label="Follow us on X (Twitter)"
+                aria-label="Follow us on X"
               >
-                  <Twitter className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
+                  <svg className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
               </a>
               </div>
             </div>

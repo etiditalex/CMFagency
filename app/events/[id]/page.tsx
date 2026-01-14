@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle, Send, Image as ImageIcon } from "lucide-react";
+import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle, Send } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 
 // All events data - matching the events page
 const featuredEvent = {
@@ -308,44 +307,6 @@ export default function EventDetailPage() {
     }, 3000);
   };
 
-  // Gallery images for each event - using existing event images
-  const getGalleryImages = (eventId: number) => {
-    const galleryMap: { [key: number]: string[] } = {
-      1: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9942_jmpqcq.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892267/IMG_9940_btsrbk.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9937_v0nwkr.jpg",
-      ],
-      11: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
-      ],
-      12: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-      ],
-      13: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-      ],
-      14: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-      ],
-      15: [
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-        "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-      ],
-    };
-    return galleryMap[eventId] || [
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    ];
-  };
 
 
   return (
@@ -390,39 +351,6 @@ export default function EventDetailPage() {
               </div>
             </motion.div>
 
-            {/* Gallery Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-xl shadow-lg"
-            >
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <ImageIcon className="w-6 h-6 text-primary-600" />
-                  <h2 className="text-3xl font-bold text-gray-900">Event Gallery</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {getGalleryImages(event.id).map((imageUrl, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
-                    >
-                      <Image
-                        src={imageUrl}
-                        alt={`${event.title} - Image ${index + 1}`}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
           </div>
 
           {/* Sidebar - Contact Us Form */}

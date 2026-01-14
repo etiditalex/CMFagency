@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, ArrowLeft, Image as ImageIcon, Star, Send, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, ArrowLeft, Star, Send, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 
 const pastEventsData: { [key: string]: any } = {
   "mr-mrs-deaf-kenya-2025": {
@@ -256,39 +255,6 @@ export default function PastEventDetailPage() {
               </div>
             </motion.div>
 
-            {/* Gallery */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-white rounded-xl shadow-lg"
-            >
-              <div className="p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <ImageIcon className="w-6 h-6 text-primary-600" />
-                  <h2 className="text-3xl font-bold text-gray-900">Event Gallery</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.gallery.map((imageUrl: string, index: number) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
-                    >
-                      <Image
-                        src={imageUrl}
-                        alt={`${event.title} - Image ${index + 1}`}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
 
             {/* Review Form */}
             <motion.div
