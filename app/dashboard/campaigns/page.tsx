@@ -43,7 +43,7 @@ export default function DashboardCampaignsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !user) {
-      router.push("/login");
+      router.replace("/fusion-xpress");
       return;
     }
 
@@ -54,6 +54,21 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
+        // Admin gate: dashboard requires allowlisted admin account.
+        const { data: adminRow, error: adminErr } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (adminErr) throw adminErr;
+        if (!adminRow) {
+          // Sign out so we don't "share" sessions with the job applicant login.
+          await supabase.auth.signOut();
+          router.replace("/fusion-xpress?error=unauthorized");
+          return;
+        }
+
         const { data: campaignRows, error: campaignsError } = await supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at")
@@ -126,7 +141,7 @@ export default function DashboardCampaignsPage() {
   if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="pt-24 min-h-screen bg-gray-50">
+    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
       <div className="container-custom py-8">
         <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
           <div>

@@ -15,6 +15,8 @@ export default function ConditionalLayout({
   const pathname = usePathname();
   const isVerifyEmailPage = pathname === "/verify-email";
   const isTeamPage = pathname === "/about/team";
+  const isFusionXpress = pathname === "/fusion-xpress";
+  const isDashboard = pathname?.startsWith("/dashboard");
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -31,7 +33,8 @@ export default function ConditionalLayout({
     <>
       <Navbar />
       <main className="min-h-screen">{children}</main>
-      {!isTeamPage && <SocialShare />}
+      {/* Keep admin pages clean: no floating social share widget */}
+      {!isTeamPage && !isFusionXpress && !isDashboard && <SocialShare />}
       <Footer />
       <CookieBanner />
       <WhatsAppButton />

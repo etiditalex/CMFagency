@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -38,6 +38,7 @@ export default function Navbar() {
     { href: "/about", label: "About Us" },
     { href: "/about/team", label: "Our Team" },
     { href: "/about/partners", label: "Our Partners" },
+    { href: "/marketing-fusion", label: "Why Changer Fusions" },
   ];
 
   const testimonialsLinks = [
@@ -332,14 +333,6 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Why Changer Fusions */}
-            <Link
-              href="/marketing-fusion"
-              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
-            >
-              Why Changer Fusions
-            </Link>
-
             {/* Careers Dropdown */}
             <div 
               className="relative"
@@ -546,6 +539,15 @@ export default function Navbar() {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Fusion Xpress (Ticketing & Campaigns) */}
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-bold hover:bg-black transition-colors shadow-md"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Fusion Xpress</span>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -829,13 +831,14 @@ export default function Navbar() {
               
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
-                  href="/marketing-fusion"
+                  href="/dashboard/campaigns"
                   onClick={() => setIsOpen(false)}
-                  className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors"
+                  className="flex items-center justify-center gap-2 py-2 px-4 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-bold shadow-md"
                 >
-                  Why Changer Fusions
+                  <Shield className="w-5 h-5" />
+                  <span>Fusion Xpress</span>
                 </Link>
-                
+
                 <Link
                   href="/track-application"
                   onClick={() => setIsOpen(false)}

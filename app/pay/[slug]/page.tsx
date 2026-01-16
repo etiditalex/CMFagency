@@ -74,7 +74,14 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
           }
         }
       } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Unable to load campaign");
+        if (cancelled) return;
+        const parts = [
+          e?.message,
+          e?.details,
+          e?.hint,
+          e?.code ? `code=${e.code}` : null,
+        ].filter(Boolean);
+        setError(parts.length > 0 ? parts.join(" | ") : "Unable to load campaign");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -147,6 +154,19 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
             <p className="text-gray-600 mt-2">
               This link may be inactive or expired. If you believe this is an error, contact the organizer.
             </p>
+            {error && (
+              <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 mt-0.5" />
+                <div>
+                  <div className="font-semibold">Debug info (local testing)</div>
+                  <div className="text-sm mt-1 break-words">{error}</div>
+                  <div className="text-xs text-gray-600 mt-2">
+                    Common causes: the Supabase SQL hasn’t been run yet, the slug doesn’t exist, or RLS is hiding an
+                    inactive/out-of-window campaign.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -45,12 +45,42 @@ export default function NewCampaignPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adminChecked, setAdminChecked] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !user) {
-      router.push("/login");
+      router.replace("/fusion-xpress");
+      return;
     }
+
+    let cancelled = false;
+
+    const checkAdmin = async () => {
+      try {
+        const { data: adminRow, error: adminErr } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (adminErr) throw adminErr;
+        if (!adminRow) {
+          await supabase.auth.signOut();
+          router.replace("/fusion-xpress?error=unauthorized");
+          return;
+        }
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
+      } finally {
+        if (!cancelled) setAdminChecked(true);
+      }
+    };
+
+    checkAdmin();
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, isAuthenticated, router, user]);
 
   useEffect(() => {
@@ -85,6 +115,7 @@ export default function NewCampaignPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!adminChecked) return;
 
     setSaving(true);
     setError(null);
@@ -152,8 +183,19 @@ export default function NewCampaignPage() {
 
   if (!isAuthenticated || !user) return null;
 
+  if (!adminChecked && !error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking Fusion Xpress access…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-24 min-h-screen bg-gray-50">
+    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
       <div className="container-custom py-8 max-w-4xl">
         <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
           <div>
@@ -354,8 +396,8 @@ export default function NewCampaignPage() {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="submit"
-              disabled={!canSubmit || saving}
-              className={`btn-primary ${(!canSubmit || saving) && "opacity-60 cursor-not-allowed"}`}
+              disabled={!canSubmit || saving || !adminChecked}
+              className={`btn-primary ${(!canSubmit || saving || !adminChecked) && "opacity-60 cursor-not-allowed"}`}
             >
               {saving ? "Creating..." : "Create campaign"}
             </button>
