@@ -18,6 +18,7 @@ export default function ConditionalLayout({
   const isTeamPage = pathname === "/about/team";
   const isFusionXpress = pathname === "/fusion-xpress";
   const isDashboard = pathname?.startsWith("/dashboard");
+  const isAboutSection = pathname?.startsWith("/about");
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -36,10 +37,11 @@ export default function ConditionalLayout({
       <main className="min-h-screen">{children}</main>
       <CfmaPopupBanner />
       {/* Keep admin pages clean: no floating social share widget */}
-      {!isTeamPage && !isFusionXpress && !isDashboard && <SocialShare />}
+      {!isTeamPage && !isFusionXpress && !isDashboard && !isAboutSection && <SocialShare />}
       <Footer />
       <CookieBanner />
-      <WhatsAppButton />
+      {/* Avoid floating WhatsApp button on About pages (matches requested design without green overlay button) */}
+      {!isAboutSection && <WhatsAppButton />}
     </>
   );
 }
