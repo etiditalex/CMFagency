@@ -311,10 +311,10 @@ export default function OurTeamPage() {
   }, []);
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
+    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
-        <div className="container-custom py-4">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-4">
           <div className="text-sm text-gray-600">
             <Link href="/" className="hover:text-secondary-600">CHANGER FUSIONS</Link>
             {" > "}
@@ -325,7 +325,7 @@ export default function OurTeamPage() {
         </div>
       </div>
 
-      <div className="container-custom py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Sidebar - Navigation */}
           <aside className="lg:col-span-1">

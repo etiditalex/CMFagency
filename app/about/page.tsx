@@ -24,7 +24,7 @@ export default function AboutPage() {
 
   return (
     <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
-      <div className="container-custom py-10">
+      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
           {/* Main content (left) */}
           <main className="lg:col-span-3">

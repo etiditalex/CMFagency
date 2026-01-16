@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function OurPartnersPage() {
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
+    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
         {/* Background Image */}
@@ -23,7 +23,7 @@ export default function OurPartnersPage() {
           <div className="absolute inset-0 bg-black/60"></div>
         </div>
         
-        <div className="container-custom relative z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -42,7 +42,7 @@ export default function OurPartnersPage() {
 
       {/* Content Section */}
       <section className="section-padding bg-white">
-        <div className="container-custom">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -109,7 +109,7 @@ export default function OurPartnersPage() {
 
       {/* Partner Logos Grid Section */}
       <section className="section-padding bg-gray-50">
-        <div className="container-custom">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -170,7 +170,7 @@ export default function OurPartnersPage() {
 
       {/* CTA Section */}
       <section className="section-padding bg-white">
-        <div className="container-custom">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
