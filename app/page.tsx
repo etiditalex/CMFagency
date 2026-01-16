@@ -5,6 +5,7 @@ import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
 import StatsSection from "@/components/home/StatsSection";
 import PartnersCarousel from "@/components/home/PartnersCarousel";
+import ConferenceNews from "@/components/home/ConferenceNews";
 import CTABanner from "@/components/home/CTABanner";
 
 export const metadata: Metadata = {
@@ -66,6 +67,7 @@ export default function Home() {
       <QuickLinks />
       <StatsSection />
       <PartnersCarousel />
+      <ConferenceNews />
       <CTABanner />
     </>
   );
