@@ -11,14 +11,15 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#2563eb',
     icons: [
       {
-        src: 'https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg',
-        sizes: 'any',
-        type: 'image/jpeg',
+        // Deterministic, local icon route (generated in `app/icon.tsx`)
+        src: '/icon',
+        sizes: '512x512',
+        type: 'image/png',
       },
       {
-        src: 'https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg',
+        src: '/icon',
         sizes: '512x512',
-        type: 'image/jpeg',
+        type: 'image/png',
         purpose: 'maskable',
       },
     ],

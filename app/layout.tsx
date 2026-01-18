@@ -14,12 +14,10 @@ export const metadata: Metadata = {
     template: "%s | Changer Fusions",
   },
   icons: {
-    icon: [
-      { url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg", sizes: "any" },
-      { url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg", type: "image/jpeg" },
-    ],
-    shortcut: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
-    apple: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    // Use deterministic, local icon routes (no remote fetch).
+    icon: [{ url: "/icon", sizes: "any", type: "image/png" }],
+    shortcut: "/icon",
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
   },
   description: "Changer Fusions is Kenya's premier marketing agency specializing in digital marketing, website development, branding, event management, and market research. Based in Mombasa, we help businesses across Kenya grow with innovative marketing strategies, cutting-edge technologies, and data-driven solutions. Market to thrive, Market to exist.",
   keywords: [
@@ -65,6 +63,7 @@ export const metadata: Metadata = {
     description: "Kenya's premier marketing agency offering comprehensive digital marketing, website development, branding, event management, and market research services. Based in Mombasa, serving businesses across Kenya with innovative strategies and cutting-edge technologies.",
     images: [
       {
+        // If you later add `app/opengraph-image.tsx`, switch this to `/opengraph-image`.
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
         width: 1200,
         height: 630,
