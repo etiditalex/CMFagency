@@ -273,8 +273,10 @@ const getEventById = (id: number) => {
 };
 
 export default function EventDetailPage() {
-  const params = useParams();
-  const event = getEventById(Number(params.id));
+  const params = useParams<{ id?: string | string[] }>();
+  const idParam = params?.id;
+  const eventId = Array.isArray(idParam) ? Number(idParam[0]) : Number(idParam);
+  const event = Number.isFinite(eventId) ? getEventById(eventId) : undefined;
   const [contactFormData, setContactFormData] = useState({
     name: "",
     email: "",

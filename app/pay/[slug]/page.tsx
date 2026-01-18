@@ -29,7 +29,7 @@ type Contestant = {
 export default function PayCampaignPage({ params }: { params: { slug: string } }) {
   const slug = params.slug;
   const searchParams = useSearchParams();
-  const ref = searchParams.get("ref");
+  const ref = searchParams?.get("ref") ?? null;
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

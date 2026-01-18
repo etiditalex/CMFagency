@@ -159,7 +159,7 @@ const getIconGradient = (index: number) => {
 
 function EventsPageContent() {
   const searchParams = useSearchParams();
-  const urlFilter = searchParams.get("filter");
+  const urlFilter = searchParams?.get("filter");
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">(
     (urlFilter === "upcoming" || urlFilter === "past") ? urlFilter : "all"
   );

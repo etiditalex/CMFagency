@@ -97,7 +97,9 @@ const getNewsById = (id: number) => {
 
 export default function NewsDetailPage() {
   const params = useParams();
-  const newsItem = getNewsById(Number(params.id));
+  const idParam = params?.id;
+  const id = Array.isArray(idParam) ? idParam[0] : idParam;
+  const newsItem = id ? getNewsById(Number(id)) : undefined;
 
   if (!newsItem) {
     return (

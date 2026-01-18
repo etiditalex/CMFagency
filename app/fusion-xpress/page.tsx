@@ -23,7 +23,7 @@ import { supabase } from "@/lib/supabase";
 export default function FusionXpressAdminLoginPage() {
   const router = useRouter();
   const sp = useSearchParams();
-  const initialError = sp.get("error");
+  const initialError = sp?.get("error") ?? null;
 
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");

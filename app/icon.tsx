@@ -1,7 +1,6 @@
-import { ImageResponse } from 'next/og';
+import { ImageResponse } from "next/og";
 
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const runtime = "edge";
 
 export const size = {
   width: 512,
@@ -10,72 +9,42 @@ export const size = {
 
 export const contentType = 'image/png';
 
-export default async function Icon() {
-  try {
-    // Fetch the image
-    const imageUrl = 'https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg';
-    const imageResponse = await fetch(imageUrl, {
-      cache: 'no-store',
-    });
-    
-    if (!imageResponse.ok) {
-      throw new Error('Failed to fetch image');
-    }
-    
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = Buffer.from(imageBuffer).toString('base64');
-    const dataUrl = `data:image/jpeg;base64,${base64Image}`;
-    
-    return new ImageResponse(
-      (
+export default function Icon() {
+  // Keep this icon generation deterministic (no remote fetch) to avoid flaky builds/runtime.
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #2563eb 0%, #059669 100%)",
+        }}
+      >
         <div
           style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'white',
-          }}
-        >
-          <img
-            src={dataUrl}
-            alt="Changer Fusions Logo"
-            width={512}
-            height={512}
-            style={{
-              objectFit: 'contain',
-            }}
-          />
-        </div>
-      ),
-      {
-        ...size,
-      }
-    );
-  } catch (error) {
-    // Fallback to a simple colored icon if image fetch fails
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'linear-gradient(135deg, #2563eb 0%, #059669 100%)',
-            fontSize: 200,
-            fontWeight: 'bold',
-            color: 'white',
+            width: 380,
+            height: 380,
+            borderRadius: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(255,255,255,0.12)",
+            border: "6px solid rgba(255,255,255,0.25)",
+            color: "white",
+            fontSize: 180,
+            fontWeight: 800,
+            letterSpacing: -8,
           }}
         >
           CF
         </div>
-      ),
-      {
-        ...size,
-      }
-    );
-  }
+      </div>
+    ),
+    {
+      ...size,
+    }
+  );
 }

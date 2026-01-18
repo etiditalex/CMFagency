@@ -25,7 +25,7 @@ export default function VerifyEmailPage() {
     if (authLoading) return;
     
     // Get email from URL params or localStorage
-    const emailParam = searchParams.get("email");
+    const emailParam = searchParams?.get("email");
     if (emailParam) {
       setEmail(emailParam);
     } else if (typeof window !== "undefined") {

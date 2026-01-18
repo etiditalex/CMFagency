@@ -40,7 +40,9 @@ const getPortfolioById = (id: number) => {
 
 export default function PortfolioDetailPage() {
   const params = useParams();
-  const portfolio = getPortfolioById(Number(params.id));
+  const idParam = params?.id;
+  const id = Array.isArray(idParam) ? idParam[0] : idParam;
+  const portfolio = id ? getPortfolioById(Number(id)) : undefined;
 
   if (!portfolio) {
     return (

@@ -149,9 +149,10 @@ const pastEventsData: { [key: string]: any } = {
 };
 
 export default function PastEventDetailPage() {
-  const params = useParams();
-  const eventId = params.id as string;
-  const event = pastEventsData[eventId];
+  const params = useParams<{ id?: string | string[] }>();
+  const idParam = params?.id;
+  const eventId = Array.isArray(idParam) ? idParam[0] : idParam;
+  const event = eventId ? pastEventsData[eventId] : undefined;
 
   const [reviewFormData, setReviewFormData] = useState({
     name: "",
