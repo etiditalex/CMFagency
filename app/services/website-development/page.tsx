@@ -130,12 +130,13 @@ export default function WebsiteDevelopmentPage() {
               <div className="mt-8 pt-8 border-t border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">OUR VISION</h3>
                 <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To make marketing the force behind business in Kenya and beyond.
+                  To be the driving force behind businesses' success in a dynamic and ever-evolving
+                  market landscape.
                 </p>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">OUR MISSION</h3>
                 <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To deliver innovative, impactful marketing solutions that drive business growth and
-                  create lasting value for our clients and communities.
+                  To harness marketing as the catalyst for change and innovation, empowering
+                  businesses to thrive and define their existence in the marketplace.
                 </p>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">CORE VALUES</h3>
                 <ul className="space-y-3">
@@ -179,16 +180,8 @@ export default function WebsiteDevelopmentPage() {
           <main className="lg:col-span-3">
             {/* Header image card */}
             <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              <div className="relative aspect-[16/7] min-h-[260px]">
-                <Image
-                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1768713273/3129998_vgcngu.jpg"
-                  alt="Website Development"
-                  fill
-                  className="object-cover object-center"
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 900px"
-                />
-                <div className="absolute inset-0 bg-black/35" />
+              <div className="relative aspect-[16/7] min-h-[260px] bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800">
+                <div className="absolute inset-0 bg-black/15" />
 
                 <div className="absolute inset-0 flex items-end p-6 md:p-8">
                   <motion.div

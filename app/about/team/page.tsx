@@ -358,11 +358,11 @@ export default function OurTeamPage() {
               <div className="mt-8 pt-8 border-t border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">OUR VISION</h3>
                 <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To make marketing the force behind business in Kenya and beyond.
+                  To be the driving force behind businesses' success in a dynamic and ever-evolving market landscape.
                 </p>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">OUR MISSION</h3>
                 <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To deliver innovative, impactful marketing solutions that drive business growth and create lasting value for our clients and communities.
+                  To harness marketing as the catalyst for change and innovation, empowering businesses to thrive and define their existence in the marketplace.
                 </p>
                 <h3 className="text-lg font-bold text-gray-900 mb-4">CORE VALUES</h3>
                 <ul className="space-y-3">
