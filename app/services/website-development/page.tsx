@@ -8,7 +8,7 @@ import Image from "next/image";
 const pastWebsiteWork = [
   {
     name: "The WAK Movement",
-    url: "https://thewakmovement.co.ke",
+    url: "https://thewalkmovement.co.ke",
     image:
       "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768656538/Mombasa_walk_movement_lzpfyc.jpg",
   },
@@ -181,7 +181,7 @@ export default function WebsiteDevelopmentPage() {
             <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <div className="relative aspect-[16/7] min-h-[260px]">
                 <Image
-                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg"
+                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1768713273/3129998_vgcngu.jpg"
                   alt="Website Development"
                   fill
                   className="object-cover object-center"
