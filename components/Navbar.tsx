@@ -12,6 +12,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [servicesCmfaIndex, setServicesCmfaIndex] = useState(0);
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -29,6 +30,21 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const cmfaPreviewImages = [
+    "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
+    "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448264/HighFashionAudition202512_uju1mf.jpg",
+    "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448264/HighFashionAudition202511_rsqv2k.jpg",
+    "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition20257_aptp81.jpg",
+  ];
+
+  useEffect(() => {
+    if (!servicesOpen) return;
+    const t = window.setInterval(() => {
+      setServicesCmfaIndex((p) => (p + 1) % cmfaPreviewImages.length);
+    }, 2500);
+    return () => window.clearInterval(t);
+  }, [servicesOpen, cmfaPreviewImages.length]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -56,6 +72,8 @@ export default function Navbar() {
     { href: "/services/events-marketing", label: "Events Marketing" },
     { href: "/services/content-creation", label: "Content Creation" },
   ];
+  const servicesLinksCol1 = servicesLinks.slice(0, Math.ceil(servicesLinks.length / 2));
+  const servicesLinksCol2 = servicesLinks.slice(Math.ceil(servicesLinks.length / 2));
 
   const eventsLinks = [
     { href: "/events", label: "All Events" },
@@ -317,17 +335,80 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="absolute top-full left-0 mt-2 w-[620px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
-                    {servicesLinks.map((service) => (
-                      <Link
-                        key={service.href}
-                        href={service.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                      >
-                        {service.label}
-                      </Link>
-                    ))}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Links: container 1 */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Services
+                        </div>
+                        {servicesLinksCol1.map((service) => (
+                          <Link
+                            key={service.href}
+                            href={service.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {service.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Links: container 2 */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          More
+                        </div>
+                        {servicesLinksCol2.map((service) => (
+                          <Link
+                            key={service.href}
+                            href={service.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {service.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* CFMA carousel */}
+                      <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                        <Link href="/events/upcoming" className="block">
+                          <div className="relative aspect-[16/10]">
+                            <AnimatePresence mode="wait" initial={false}>
+                              <motion.div
+                                key={servicesCmfaIndex}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.35 }}
+                                className="absolute inset-0"
+                              >
+                                <Image
+                                  src={cmfaPreviewImages[servicesCmfaIndex]}
+                                  alt="CFMA 2026 preview"
+                                  fill
+                                  className="object-cover object-center"
+                                  sizes="(max-width: 1024px) 100vw, 310px"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                              </motion.div>
+                            </AnimatePresence>
+
+                            <div className="absolute left-3 right-3 bottom-3">
+                              <div className="inline-flex items-center rounded-full bg-secondary-600 text-white px-3 py-1 text-[11px] font-extrabold tracking-widest">
+                                UPCOMING EVENT
+                              </div>
+                              <div className="mt-2 text-white font-extrabold text-lg leading-tight">
+                                CFMA 2026
+                              </div>
+                              <div className="text-white/90 text-sm font-semibold">
+                                View highlights & details
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -678,6 +759,39 @@ export default function Navbar() {
                           {service.label}
                         </Link>
                       ))}
+
+                      <div className="pt-3 pr-4">
+                        <Link
+                          href="/events/upcoming"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setServicesOpen(false);
+                          }}
+                          className="block rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm"
+                        >
+                          <div className="relative aspect-[16/9]">
+                            <Image
+                              src={cmfaPreviewImages[servicesCmfaIndex]}
+                              alt="CFMA 2026 preview"
+                              fill
+                              className="object-cover object-center"
+                              sizes="(max-width: 768px) 100vw, 420px"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent" />
+                            <div className="absolute left-3 right-3 bottom-3">
+                              <div className="inline-flex items-center rounded-full bg-secondary-600 text-white px-3 py-1 text-[11px] font-extrabold tracking-widest">
+                                UPCOMING EVENT
+                              </div>
+                              <div className="mt-2 text-white font-extrabold text-lg leading-tight">
+                                CFMA 2026
+                              </div>
+                              <div className="text-white/90 text-sm font-semibold">
+                                Tap to view details
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

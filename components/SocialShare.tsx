@@ -17,8 +17,14 @@ export default function SocialShare() {
     }
   }, []);
 
-  // Hide social share on home page, job board pages, application page, track application page, and past events pages
-  if (pathname === "/" || pathname?.startsWith("/jobs") || pathname === "/application" || pathname === "/track-application" || pathname?.startsWith("/events/past")) {
+  // Hide social share on home page, job board pages, application page, track application page, and events pages
+  if (
+    pathname === "/" ||
+    pathname?.startsWith("/jobs") ||
+    pathname === "/application" ||
+    pathname === "/track-application" ||
+    pathname?.startsWith("/events")
+  ) {
     return null;
   }
 

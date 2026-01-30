@@ -1,14 +1,155 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, ArrowRight, ChevronLeft, ChevronRight, Download, Handshake, BadgeCheck } from "lucide-react";
+import {
+  Calendar,
+  CalendarPlus,
+  ChevronDown,
+  MapPin,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Handshake,
+  BadgeCheck,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function SponsorDropdown({
+  buttonClassName,
+  buttonIconClassName,
+  buttonTextClassName,
+  menuAlign = "left",
+}: {
+  buttonClassName: string;
+  buttonIconClassName?: string;
+  buttonTextClassName?: string;
+  menuAlign?: "left" | "right";
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const sponsorOptions = useMemo(
+    () => [
+      {
+        label: "High fashion model / showcase model",
+        href: "https://forms.gle/vDySg2WJyUZ621EA7",
+      },
+      {
+        // No dedicated form link provided yet; using the general interest form for now.
+        label: "Award contender / competing model or designer",
+        href: "https://forms.gle/GM5fRiutVXko1MaZ9",
+      },
+      {
+        label: "Designer",
+        href: "https://forms.gle/Rs1YyH1aGzfXeqE8A",
+      },
+      {
+        label: "Volunteer",
+        href: "https://forms.gle/DKvcV6g9ecjmsbwC8",
+      },
+      {
+        label: "Creative art performance / entertainment",
+        href: "https://forms.gle/DaagrPhqGMtTz3vr7",
+      },
+    ],
+    []
+  );
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onMouseDown = (e: MouseEvent) => {
+      const el = wrapRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) setOpen(false);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={buttonClassName}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <BadgeCheck className={buttonIconClassName ?? "w-5 h-5"} />
+        <span className={buttonTextClassName}>Become a Sponsor</span>
+        <ChevronDown className="w-5 h-5 opacity-90" />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className={[
+            "absolute z-30 mt-2 w-[min(420px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden",
+            menuAlign === "right" ? "right-0" : "left-0",
+          ].join(" ")}
+        >
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Register as</div>
+          </div>
+          <div className="py-1">
+            {sponsorOptions.map((opt) => (
+              <a
+                key={opt.label}
+                role="menuitem"
+                href={opt.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-4 py-3 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                onClick={() => setOpen(false)}
+              >
+                {opt.label}
+              </a>
+            ))}
+            <div className="border-t border-gray-100 my-1" />
+            <a
+              role="menuitem"
+              href="https://forms.gle/GM5fRiutVXko1MaZ9"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-3 text-sm font-extrabold text-primary-700 hover:bg-primary-50"
+              onClick={() => setOpen(false)}
+            >
+              Register Interest
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function UpcomingEventsPage() {
   const heroImage =
     "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
+
+  // Google Calendar: all-day event (end date is exclusive)
+  const googleCalendarUrl =
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent("Coast Fashion and Modelling Awards 2026 (CFMA 2026)")}` +
+    `&dates=${encodeURIComponent("20260815/20260816")}` +
+    `&details=${encodeURIComponent(
+      "Join CFMA 2026 in Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.\n\nEvent details: https://cmfagency.co.ke/events/upcoming"
+    )}` +
+    `&location=${encodeURIComponent("Mombasa, Kenya")}` +
+    `&ctz=${encodeURIComponent("Africa/Nairobi")}`;
 
   const galleryImages = useMemo(
     () => [
@@ -128,20 +269,24 @@ export default function UpcomingEventsPage() {
             {/* CTA Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
               <a
-                href="#enquiries"
+                href="https://forms.gle/GM5fRiutVXko1MaZ9"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-6 py-3 shadow-lg"
               >
                 <Handshake className="w-5 h-5" />
                 Partner With Us
                 <ArrowRight className="w-5 h-5" />
               </a>
+              <SponsorDropdown buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg" />
               <a
-                href="#enquiries"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg"
+                href={googleCalendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md border border-white/30"
               >
-                <BadgeCheck className="w-5 h-5" />
-                Become a Sponsor
-                <ArrowRight className="w-5 h-5" />
+                <CalendarPlus className="w-5 h-5" />
+                Add to Google Calendar
               </a>
               <a
                 href="/downloads/sponsorship-proposal-2026.pdf"
@@ -150,14 +295,6 @@ export default function UpcomingEventsPage() {
               >
                 <Download className="w-5 h-5" />
                 Download Sponsorship Proposal
-              </a>
-              <a
-                href="/downloads/concept-note-2026.pdf"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md"
-                download
-              >
-                <Download className="w-5 h-5" />
-                Download Concept Note (2026)
               </a>
             </div>
           </motion.div>
@@ -210,21 +347,12 @@ export default function UpcomingEventsPage() {
                     <Handshake className="w-4 h-4" />
                     Partner With Us
                   </a>
-                  <a
-                    href="#sec-enquiries"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2.5 shadow"
-                  >
-                    <BadgeCheck className="w-4 h-4" />
-                    Become a Sponsor
-                  </a>
-                  <a
-                    href="/downloads/concept-note-2026.pdf"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-2.5"
-                    download
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Concept Note
-                  </a>
+                  <SponsorDropdown
+                    buttonClassName="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2.5 shadow"
+                    buttonIconClassName="w-4 h-4"
+                    buttonTextClassName="text-sm"
+                    menuAlign="left"
+                  />
                   <a
                     href="/downloads/sponsorship-proposal-2026.pdf"
                     className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-2.5"
@@ -268,21 +396,11 @@ export default function UpcomingEventsPage() {
                         <Handshake className="w-4 h-4" />
                         Partner With Us
                       </a>
-                      <a
-                        href="#sec-enquiries"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-3 shadow"
-                      >
-                        <BadgeCheck className="w-4 h-4" />
-                        Become a Sponsor
-                      </a>
-                      <a
-                        href="/downloads/concept-note-2026.pdf"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-3"
-                        download
-                      >
-                        <Download className="w-4 h-4" />
-                        Concept Note
-                      </a>
+                      <SponsorDropdown
+                        buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-3 shadow"
+                        buttonIconClassName="w-4 h-4"
+                        menuAlign="right"
+                      />
                       <a
                         href="/downloads/sponsorship-proposal-2026.pdf"
                         className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-3"
@@ -578,14 +696,6 @@ export default function UpcomingEventsPage() {
                               </button>
                               <div className="text-xs text-gray-500">
                                 Downloads:{" "}
-                                <a
-                                  className="text-primary-600 hover:text-primary-700 font-semibold"
-                                  href="/downloads/concept-note-2026.pdf"
-                                  download
-                                >
-                                  Concept Note 2026
-                                </a>{" "}
-                                ·{" "}
                                 <a
                                   className="text-primary-600 hover:text-primary-700 font-semibold"
                                   href="/downloads/sponsorship-proposal-2026.pdf"

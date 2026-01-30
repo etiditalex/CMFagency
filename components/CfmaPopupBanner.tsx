@@ -139,24 +139,18 @@ export default function CfmaPopupBanner() {
                   >
                     View Event Details
                   </Link>
-                  <Link
-                    href="/events/upcoming#sec-enquiries"
+                  <a
+                    href="https://forms.gle/GM5fRiutVXko1MaZ9"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center justify-center rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-5 py-3 shadow"
                     onClick={close}
                   >
                     Partner With Us
-                  </Link>
+                  </a>
                 </div>
 
                 <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <a
-                    href="/downloads/concept-note-2026.pdf"
-                    download
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-5 py-3"
-                  >
-                    <Download className="h-5 w-5 text-primary-700" />
-                    Concept Note
-                  </a>
                   <a
                     href="/downloads/sponsorship-proposal-2026.pdf"
                     download
