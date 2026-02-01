@@ -160,7 +160,8 @@ export default function FusionXpressAdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+    <div className="min-h-screen pt-28 md:pt-32">
+      <div className="min-h-[calc(100vh-7rem)] md:min-h-[calc(100vh-8rem)] grid grid-cols-1 lg:grid-cols-2">
       {/* Left brand panel */}
       <section className="relative hidden lg:block">
         <div
@@ -229,21 +230,12 @@ export default function FusionXpressAdminLoginPage() {
               <p className="mt-2 text-gray-600 text-center">
                 Use your admin account to access the Fusion Xpress dashboard.
               </p>
+              <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 text-center">
+                Members-only access. Only allowlisted admin members can sign in.
+              </div>
             </div>
 
             <div className="p-8">
-              <div className="mb-5 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
-                Setup required in Supabase:
-                <div className="mt-2 font-mono text-xs text-gray-700">
-                  database/ticketing_voting_mvp.sql
-                  <br />
-                  database/ticketing_voting_mvp_patch_02_admin.sql
-                </div>
-                <div className="mt-2 text-xs text-gray-600">
-                  After signup, allowlist the user in <span className="font-mono">admin_users</span>.
-                </div>
-              </div>
-
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                   {error}
@@ -372,6 +364,7 @@ export default function FusionXpressAdminLoginPage() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 }

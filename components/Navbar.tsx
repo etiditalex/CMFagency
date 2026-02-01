@@ -760,7 +760,7 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Fusion Xpress (Ticketing & Campaigns) */}
+            {/* Fusion Xpress (Admin portal) */}
             <Link
               href="/fusion-xpress"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-bold hover:bg-black transition-colors shadow-md"
@@ -768,6 +768,7 @@ export default function Navbar() {
               <Shield className="w-4 h-4" />
               <span>Fusion Xpress</span>
             </Link>
+
           </div>
 
           {/* Mobile Menu Button */}
