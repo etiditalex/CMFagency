@@ -12,6 +12,7 @@ import {
   Download,
   Handshake,
   BadgeCheck,
+  Ticket,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -215,6 +216,18 @@ export default function UpcomingEventsPage() {
     }
   };
 
+  const tocItems = useMemo(
+    () => [
+      { href: "#sec-details", label: "Event Details" },
+      { href: "#sec-overview", label: "Event Overview" },
+      { href: "#sec-why", label: "Why This Event Matters" },
+      { href: "#sec-highlights", label: "Event Highlights" },
+      { href: "#sec-gallery", label: "Gallery & Highlights (2025)" },
+      { href: "#sec-enquiries", label: "Enquiries" },
+    ],
+    []
+  );
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero */}
@@ -242,7 +255,7 @@ export default function UpcomingEventsPage() {
             initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-            className="max-w-4xl"
+            className="mx-auto max-w-4xl text-center"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-md text-white font-semibold">
               <Calendar className="w-4 h-4" />
@@ -257,7 +270,7 @@ export default function UpcomingEventsPage() {
               Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism
             </p>
 
-            <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-3 text-white/95">
+            <div className="mt-6 flex flex-col items-center sm:flex-row sm:items-center sm:justify-center gap-3 text-white/95">
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-lg px-4 py-2">
                 <Calendar className="w-5 h-5 text-secondary-300" />
                 <span className="font-semibold">15th August 2026</span>
@@ -269,36 +282,50 @@ export default function UpcomingEventsPage() {
             </div>
 
             {/* CTA Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/contact"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
-              >
-                <Handshake className="w-5 h-5" />
-                Partner With Us
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <SponsorDropdown
-                buttonLabel="Participate as"
-                buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
-              />
-              <a
-                href={googleCalendarUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md border border-white/30 whitespace-nowrap"
-              >
-                <CalendarPlus className="w-5 h-5" />
-                Add to Google Calendar
-              </a>
-              <a
-                href="/downloads/sponsorship-proposal-2026.pdf"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white text-gray-900 hover:bg-gray-100 font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
-                download
-              >
-                <Download className="w-5 h-5" />
-                Download Sponsorship Proposal
-              </a>
+            <div className="mt-8 flex flex-col items-stretch sm:items-center gap-4">
+              {/* Primary actions */}
+              <div className="flex flex-col sm:flex-row sm:justify-center gap-3">
+                <Link
+                  href="/pay/cfma-2026"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
+                >
+                  <Ticket className="w-5 h-5" />
+                  Buy Ticket Online
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <SponsorDropdown
+                  buttonLabel="Participate as"
+                  buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
+                />
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md border border-white/30 whitespace-nowrap"
+                >
+                  <Handshake className="w-5 h-5" />
+                  Partner With Us
+                </Link>
+              </div>
+
+              {/* Secondary links (less visual weight) */}
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/90">
+                <a
+                  href={googleCalendarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 hover:text-white font-semibold"
+                >
+                  <CalendarPlus className="w-4 h-4" />
+                  Add to Google Calendar
+                </a>
+                <a
+                  href="/downloads/sponsorship-proposal-2026.pdf"
+                  className="inline-flex items-center gap-2 hover:text-white font-semibold"
+                  download
+                >
+                  <Download className="w-4 h-4" />
+                  Download Sponsorship Proposal
+                </a>
+              </div>
             </div>
           </motion.div>
           </div>
@@ -315,21 +342,14 @@ export default function UpcomingEventsPage() {
             Back to Events
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Table of Contents (desktop) */}
-            <aside className="hidden lg:block lg:col-span-3">
+          <div className="grid grid-cols-1 gap-8">
+            {/* Legacy Table of Contents (kept for reference, now replaced by inline navigation) */}
+            <aside className="hidden">
               <div className="sticky top-24 bg-white rounded-xl shadow-lg border border-gray-200 p-5">
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Concept Note</div>
                 <div className="mt-1 font-extrabold text-gray-900">CFMA 2026</div>
                 <div className="mt-4 space-y-1 text-sm">
-                  {[
-                    { href: "#sec-details", label: "Event Details" },
-                    { href: "#sec-overview", label: "Event Overview" },
-                    { href: "#sec-why", label: "Why This Event Matters" },
-                    { href: "#sec-highlights", label: "Event Highlights" },
-                    { href: "#sec-gallery", label: "Gallery & Highlights (2025)" },
-                    { href: "#sec-enquiries", label: "Enquiries" },
-                  ].map((item) => (
+                  {tocItems.map((item) => (
                     <a
                       key={item.href}
                       href={item.href}
@@ -349,10 +369,18 @@ export default function UpcomingEventsPage() {
                     <Handshake className="w-4 h-4" />
                     Partner With Us
                   </a>
+                  <Link
+                    href="/pay/cfma-2026"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-4 py-2.5 shadow whitespace-nowrap"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    Buy Ticket Online
+                  </Link>
                   <SponsorDropdown
                     buttonClassName="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2.5 shadow"
                     buttonIconClassName="w-4 h-4"
                     buttonTextClassName="text-sm"
+                    buttonLabel="Participate as"
                     menuAlign="left"
                   />
                   <a
@@ -373,13 +401,13 @@ export default function UpcomingEventsPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.1 }}
               transition={{ duration: 0.5 }}
-              className="lg:col-span-9"
+              className="w-full max-w-5xl mx-auto"
             >
               <div className="bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-6 sm:p-8 md:p-12">
                   {/* Document header */}
                   <header className="border-b border-gray-200 pb-6 mb-8">
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col items-center gap-2">
                       <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Concept Note</div>
                       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
                         Coast Fashion and Modelling Awards 2026 (CFMA 2026)
@@ -389,8 +417,24 @@ export default function UpcomingEventsPage() {
                       </p>
                     </div>
 
-                    {/* Mobile quick actions */}
-                    <div className="lg:hidden mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Inline navigation + quick actions (centered) */}
+                    <div className="mt-6 max-w-4xl mx-auto">
+                      <div className="text-xs font-bold tracking-widest text-gray-500 uppercase text-center">
+                        On this page
+                      </div>
+                      <div className="mt-3 flex flex-wrap justify-center gap-2">
+                        {tocItems.map((item) => (
+                          <a
+                            key={item.href}
+                            href={item.href}
+                            className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                          >
+                            {item.label}
+                          </a>
+                        ))}
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <a
                         href="#sec-enquiries"
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-4 py-3 shadow"
@@ -398,9 +442,17 @@ export default function UpcomingEventsPage() {
                         <Handshake className="w-4 h-4" />
                         Partner With Us
                       </a>
+                      <Link
+                        href="/pay/cfma-2026"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-4 py-3 shadow whitespace-nowrap"
+                      >
+                        <Ticket className="w-4 h-4" />
+                        Buy Ticket Online
+                      </Link>
                       <SponsorDropdown
                         buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-3 shadow"
                         buttonIconClassName="w-4 h-4"
+                        buttonLabel="Participate as"
                         menuAlign="right"
                       />
                       <a
@@ -411,6 +463,7 @@ export default function UpcomingEventsPage() {
                         <Download className="w-4 h-4" />
                         Proposal
                       </a>
+                      </div>
                     </div>
                   </header>
 

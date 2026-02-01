@@ -762,7 +762,7 @@ export default function Navbar() {
 
             {/* Fusion Xpress (Ticketing & Campaigns) */}
             <Link
-              href="/dashboard/campaigns"
+              href="/fusion-xpress"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-bold hover:bg-black transition-colors shadow-md"
             >
               <Shield className="w-4 h-4" />
@@ -1084,7 +1084,7 @@ export default function Navbar() {
               
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
-                  href="/dashboard/campaigns"
+                  href="/fusion-xpress"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center gap-2 py-2 px-4 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-bold shadow-md"
                 >

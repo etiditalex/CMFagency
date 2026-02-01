@@ -8,6 +8,12 @@ import { Minus, Plus, Ticket, Vote } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 
+function isMissingAdminUsersTable(err: any) {
+  const msg = String(err?.message ?? "");
+  const code = String(err?.code ?? "");
+  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+}
+
 type CampaignType = "ticket" | "vote";
 
 type ContestantDraft = {
@@ -64,7 +70,15 @@ export default function NewCampaignPage() {
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (adminErr) throw adminErr;
+        if (adminErr) {
+          if (isMissingAdminUsersTable(adminErr)) {
+            await supabase.auth.signOut();
+            router.replace("/fusion-xpress?error=setup");
+            return;
+          }
+          throw adminErr;
+        }
+
         if (!adminRow) {
           await supabase.auth.signOut();
           router.replace("/fusion-xpress?error=unauthorized");
@@ -204,9 +218,14 @@ export default function NewCampaignPage() {
               Creates a shareable link at <span className="font-mono">/pay/[slug]</span>. Public users don’t need login.
             </p>
           </div>
-          <Link href="/dashboard/campaigns" className="btn-outline">
-            Back to campaigns
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="btn-outline">
+              Dashboard
+            </Link>
+            <Link href="/dashboard/campaigns" className="btn-outline">
+              Back to campaigns
+            </Link>
+          </div>
         </div>
 
         {error && (

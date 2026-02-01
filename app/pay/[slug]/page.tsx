@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -26,10 +26,33 @@ type Contestant = {
   sort_order: number;
 };
 
-export default function PayCampaignPage({ params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export default function PayCampaignPage() {
+  const routeParams = useParams<{ slug?: string | string[] }>();
+  const slug = useMemo(() => {
+    const s = routeParams?.slug;
+    if (Array.isArray(s)) return s[0] ?? "";
+    return String(s ?? "");
+  }, [routeParams?.slug]);
   const searchParams = useSearchParams();
-  const ref = searchParams?.get("ref") ?? null;
+  const ref =
+    searchParams?.get("ref") ??
+    // Paystack commonly redirects back with ?reference=... / ?trxref=...
+    searchParams?.get("reference") ??
+    searchParams?.get("trxref") ??
+    null;
+
+  const [txStatus, setTxStatus] = useState<
+    null | {
+      status: "pending" | "success" | "failed" | "abandoned" | string;
+      verified_at: string | null;
+      fulfilled_at: string | null;
+      paid_at: string | null;
+      currency: string | null;
+      amount: number | null;
+      quantity: number | null;
+      campaign_type: "ticket" | "vote" | string | null;
+    }
+  >(null);
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -50,13 +73,29 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
       setError(null);
 
       try {
+        if (!slug) throw new Error("Missing campaign slug in URL.");
         const { data: c, error: cErr } = await supabase
           .from("campaigns")
           .select("id,type,slug,title,description,currency,unit_amount,max_per_txn")
           .eq("slug", slug)
-          .single();
+          .maybeSingle();
 
         if (cErr) throw cErr;
+        if (!c) {
+          // Common: campaign exists but is not publicly visible due to RLS or inactive/out-of-window.
+          const msg = [
+            `Campaign "${slug}" is not available publicly.`,
+            "",
+            "Checklist:",
+            "- Confirm the row exists in public.campaigns for this slug.",
+            "- Ensure is_active = true.",
+            "- Ensure starts_at/ends_at are NULL or within the current time window.",
+            '- Ensure the public RLS policy "campaigns_public_read_active" exists and grants SELECT to anon.',
+            "",
+            "If you recently created the campaign, open it from the dashboard first to confirm it saved correctly.",
+          ].join("\n");
+          throw new Error(msg);
+        }
 
         if (!cancelled) setCampaign(c as Campaign);
 
@@ -75,13 +114,9 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
         }
       } catch (e: any) {
         if (cancelled) return;
-        const parts = [
-          e?.message,
-          e?.details,
-          e?.hint,
-          e?.code ? `code=${e.code}` : null,
-        ].filter(Boolean);
-        setError(parts.length > 0 ? parts.join(" | ") : "Unable to load campaign");
+        const msg = String(e?.message ?? "");
+        const parts = [msg, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
+        setError(parts.length > 0 ? parts.join("\n") : "Unable to load campaign");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -92,6 +127,55 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
       cancelled = true;
     };
   }, [slug]);
+
+  useEffect(() => {
+    if (!ref) return;
+
+    let cancelled = false;
+    let interval: number | undefined;
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`/api/paystack/status?ref=${encodeURIComponent(ref)}`);
+        const json = (await res.json()) as any;
+        if (!res.ok) throw new Error(json?.error ?? "Unable to fetch payment status");
+
+        const next = {
+          status: String(json.status ?? "pending"),
+          verified_at: (json.verified_at as string | null) ?? null,
+          fulfilled_at: (json.fulfilled_at as string | null) ?? null,
+          paid_at: (json.paid_at as string | null) ?? null,
+          currency: (json.currency as string | null) ?? null,
+          amount: (typeof json.amount === "number" ? (json.amount as number) : null) as number | null,
+          quantity: (typeof json.quantity === "number" ? (json.quantity as number) : null) as number | null,
+          campaign_type: (json.campaign_type as any) ?? null,
+        };
+
+        if (!cancelled) setTxStatus(next);
+
+        // Stop polling once webhook has verified the transaction (or failed it).
+        if (next.status === "success" || next.status === "failed" || next.status === "abandoned") {
+          if (interval) window.clearInterval(interval);
+        }
+      } catch {
+        // Non-fatal: keep polling briefly. (e.g. webhook or DB propagation delay)
+      }
+    };
+
+    fetchStatus();
+    interval = window.setInterval(fetchStatus, 2000);
+
+    // Safety stop after 60s.
+    const stopTimeout = window.setTimeout(() => {
+      if (interval) window.clearInterval(interval);
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      if (interval) window.clearInterval(interval);
+      window.clearTimeout(stopTimeout);
+    };
+  }, [ref]);
 
   const total = useMemo(() => {
     if (!campaign) return 0;
@@ -197,11 +281,29 @@ export default function PayCampaignPage({ params }: { params: { slug: string } }
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="w-5 h-5 text-secondary-700 mt-0.5" />
                   <div>
-                    <div className="font-semibold text-gray-900">Payment received (processing)</div>
+                    <div className="font-semibold text-gray-900">
+                      {txStatus?.status === "success"
+                        ? "Payment confirmed"
+                        : txStatus?.status === "failed" || txStatus?.status === "abandoned"
+                          ? "Payment not successful"
+                          : "Payment received (processing)"}
+                    </div>
                     <div className="text-gray-700 mt-1">
                       Your payment is being confirmed securely by webhook. Reference:{" "}
                       <span className="font-mono">{ref}</span>
                     </div>
+                    {txStatus?.status && (
+                      <div className="text-sm text-gray-700 mt-2">
+                        Status: <span className="font-semibold">{txStatus.status}</span>
+                        {txStatus.quantity != null ? (
+                          <span>
+                            {" "}
+                            · {txStatus.campaign_type === "vote" ? "Votes" : "Tickets"}:{" "}
+                            <span className="font-semibold">{txStatus.quantity.toLocaleString()}</span>
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                     <div className="text-sm text-gray-600 mt-2">
                       Do not refresh repeatedly—webhook confirmation may take a short moment depending on the provider.
                     </div>

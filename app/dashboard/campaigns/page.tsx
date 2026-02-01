@@ -3,10 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, ExternalLink, Plus, Ticket, Vote } from "lucide-react";
+import { Copy, ExternalLink, LineChart, Plus, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+
+function isMissingAdminUsersTable(err: any) {
+  const msg = String(err?.message ?? "");
+  const code = String(err?.code ?? "");
+  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+}
 
 type CampaignRow = {
   id: string;
@@ -61,7 +67,16 @@ export default function DashboardCampaignsPage() {
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (adminErr) throw adminErr;
+        if (adminErr) {
+          // Missing allowlist table means setup isn't complete; block access.
+          if (isMissingAdminUsersTable(adminErr)) {
+            await supabase.auth.signOut();
+            router.replace("/fusion-xpress?error=setup");
+            return;
+          }
+          throw adminErr;
+        }
+
         if (!adminRow) {
           // Sign out so we don't "share" sessions with the job applicant login.
           await supabase.auth.signOut();
@@ -77,15 +92,14 @@ export default function DashboardCampaignsPage() {
 
         if (campaignsError) throw campaignsError;
 
+        // Stats view is optional; if it's missing, still show campaigns + links.
         const { data: statsRows, error: statsError } = await supabase
           .from("campaign_stats")
           .select("campaign_id,total_amount,total_votes,successful_transactions")
           .eq("created_by", user.id);
 
-        if (statsError) throw statsError;
-
         const statsById = new Map<string, CampaignStatsRow>(
-          (statsRows ?? []).map((s) => [s.campaign_id, s])
+          (!statsError ? (statsRows ?? []) : []).map((s) => [s.campaign_id, s])
         );
 
         const merged: CampaignWithStats[] = (campaignRows ?? []).map((c: CampaignRow) => {
@@ -151,10 +165,15 @@ export default function DashboardCampaignsPage() {
               handled by webhook only.
             </p>
           </div>
-          <Link href="/dashboard/campaigns/new" className="btn-primary inline-flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            New Campaign
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="btn-outline">
+              Back to dashboard
+            </Link>
+            <Link href="/dashboard/campaigns/new" className="btn-primary inline-flex items-center gap-2">
+              <Plus className="w-5 h-5" />
+              New Campaign
+            </Link>
+          </div>
         </div>
 
         {error && (
@@ -218,6 +237,14 @@ export default function DashboardCampaignsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
+                      <Link
+                        href={`/dashboard/campaigns/${c.id}`}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        title="Open campaign report"
+                      >
+                        <LineChart className="w-4 h-4" />
+                        Report
+                      </Link>
                       <Link
                         href={publicUrl}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"

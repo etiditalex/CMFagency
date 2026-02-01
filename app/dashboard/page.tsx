@@ -1,0 +1,494 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ExternalLink,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Shield,
+  Ticket,
+  Vote,
+  Wallet,
+} from "lucide-react";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+
+function isMissingAdminUsersTable(err: any) {
+  const msg = String(err?.message ?? "");
+  const code = String(err?.code ?? "");
+  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+}
+
+export default function DashboardHomePage() {
+  const router = useRouter();
+  const { isAuthenticated, user, loading: authLoading, logout } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [adminOk, setAdminOk] = useState(false);
+
+  const [dataLoading, setDataLoading] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [campaignsCount, setCampaignsCount] = useState(0);
+  const [activeCampaignsCount, setActiveCampaignsCount] = useState(0);
+  const [inactiveCampaignsCount, setInactiveCampaignsCount] = useState(0);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const [totalTicketsIssued, setTotalTicketsIssued] = useState(0);
+  const [successfulPayments, setSuccessfulPayments] = useState(0);
+  const [revenueByCurrency, setRevenueByCurrency] = useState<Record<string, number>>({});
+  const [recentTransactions, setRecentTransactions] = useState<
+    Array<{
+      id: string;
+      reference: string;
+      status: string;
+      amount: number;
+      currency: string;
+      created_at: string;
+      campaign_id: string;
+    }>
+  >([]);
+  const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
+
+  const refreshInFlightRef = useRef(false);
+
+  const formatRevenue = useMemo(() => {
+    const entries = Object.entries(revenueByCurrency).filter(([, v]) => Number.isFinite(v) && v > 0);
+    if (entries.length === 0) return "—";
+    if (entries.length === 1) {
+      const [cur, amt] = entries[0];
+      return `${cur} ${Number(amt).toLocaleString()}`;
+    }
+    // Multi-currency: compact list.
+    return entries
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([cur, amt]) => `${cur} ${Number(amt).toLocaleString()}`)
+      .join(" · ");
+  }, [revenueByCurrency]);
+
+  const refreshData = useCallback(async () => {
+    if (!user?.id) return;
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+
+    setDataLoading(true);
+    setError(null);
+
+    try {
+      // Campaigns: total + active/inactive + title lookup for transactions list.
+      const { data: campaigns, error: cErr } = await supabase
+        .from("campaigns")
+        .select("id,title,type,is_active,created_at")
+        .order("created_at", { ascending: false });
+
+      if (cErr) throw cErr;
+
+      const rows = campaigns ?? [];
+      setCampaignsCount(rows.length);
+      setActiveCampaignsCount(rows.filter((c) => c.is_active).length);
+      setInactiveCampaignsCount(rows.filter((c) => !c.is_active).length);
+
+      const titleMap: Record<string, { title: string; type: string }> = {};
+      for (const c of rows as any[]) {
+        titleMap[String(c.id)] = { title: String(c.title ?? "Untitled campaign"), type: String(c.type ?? "") };
+      }
+      setCampaignTitleById(titleMap);
+
+      // Recent transactions (money report): keep it non-PII (no email).
+      const { data: txRows, error: txErr } = await supabase
+        .from("transactions")
+        .select("id,reference,status,amount,currency,created_at,campaign_id")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (txErr) throw txErr;
+      setRecentTransactions((txRows ?? []) as any[]);
+
+      // Successful payments + revenue
+      const { data: successTx, error: sErr } = await supabase
+        .from("transactions")
+        .select("amount,currency")
+        .eq("status", "success");
+
+      if (sErr) throw sErr;
+
+      setSuccessfulPayments((successTx ?? []).length);
+      const rev: Record<string, number> = {};
+      for (const t of (successTx ?? []) as any[]) {
+        const cur = String(t.currency ?? "").toUpperCase() || "—";
+        const amt = Number(t.amount ?? 0);
+        if (!Number.isFinite(amt)) continue;
+        rev[cur] = (rev[cur] ?? 0) + amt;
+      }
+      setRevenueByCurrency(rev);
+
+      // Votes: real-time total (idempotent via votes table)
+      const { data: voteRows, error: vErr } = await supabase.from("votes").select("votes");
+      if (vErr) throw vErr;
+      setTotalVotes(
+        (voteRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0)
+      );
+
+      // Tickets issued: real-time total (idempotent via ticket_issues table)
+      const { data: tiRows, error: tiErr } = await supabase.from("ticket_issues").select("quantity");
+      if (tiErr) throw tiErr;
+      setTotalTicketsIssued(
+        (tiRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
+      );
+
+      setLastUpdatedAt(new Date().toISOString());
+    } catch (e: any) {
+      const parts = [e?.message, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
+      setError(parts.length ? parts.join("\n") : "Failed to load dashboard reports");
+    } finally {
+      setDataLoading(false);
+      refreshInFlightRef.current = false;
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated || !user) {
+      router.replace("/fusion-xpress");
+      return;
+    }
+
+    let cancelled = false;
+
+    const checkAdmin = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        setAdminOk(false);
+        const { data: adminRow, error: adminErr } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (adminErr) {
+          if (isMissingAdminUsersTable(adminErr)) {
+            await supabase.auth.signOut();
+            router.replace("/fusion-xpress?error=setup");
+            return;
+          }
+          throw adminErr;
+        }
+
+        if (!adminRow) {
+          await supabase.auth.signOut();
+          router.replace("/fusion-xpress?error=unauthorized");
+          return;
+        }
+
+        if (cancelled) return;
+        setAdminOk(true);
+        await refreshData();
+      } catch (e: any) {
+        if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    checkAdmin();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isAuthenticated, refreshData, router, user]);
+
+  useEffect(() => {
+    if (!adminOk || !user?.id) return;
+
+    const channel = supabase
+      .channel(`fusion-xpress-dashboard-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => refreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, () => refreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_issues" }, () => refreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, () => refreshData())
+      .subscribe();
+
+    const interval = window.setInterval(() => refreshData(), 15_000);
+
+    return () => {
+      window.clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [adminOk, refreshData, user?.id]);
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Avoid flashing private UI while redirecting.
+  if (!isAuthenticated || !user) return null;
+
+  const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
+
+  return (
+    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
+      <div className="container-custom py-8 max-w-6xl">
+        <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white px-4 py-2 font-bold">
+              <Shield className="w-4 h-4" />
+              Fusion Xpress
+            </div>
+            <h1 className="mt-4 text-3xl md:text-4xl font-extrabold text-gray-900">Admin Dashboard</h1>
+            <p className="mt-2 text-gray-600 max-w-2xl">
+              Create ticket or voting campaigns, generate shareable payment links, and track webhook-confirmed activity.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={refreshData}
+              disabled={dataLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
+              title="Refresh reports"
+            >
+              <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="text-left">
+            <span className="font-semibold">Last updated:</span> {updatedLabel}
+          </div>
+          <div className="text-left text-gray-500">
+            Auto-updates when payments/votes/tickets change.
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 whitespace-pre-wrap">
+            {error}
+          </div>
+        )}
+
+        {/* KPI cards */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Revenue</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900">{formatRevenue}</div>
+                <div className="mt-2 text-sm text-gray-600">Webhook-confirmed payments only.</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
+                <Wallet className="w-5 h-5 text-primary-700" />
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900">{successfulPayments.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600">Count of successful transactions.</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-xl bg-secondary-50 items-center justify-center">
+                <Shield className="w-5 h-5 text-secondary-700" />
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Tickets issued</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalTicketsIssued.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600">Issued after webhook verification.</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+                <Ticket className="w-5 h-5 text-gray-900" />
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalVotes.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600">Counted from votes table.</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
+                <Vote className="w-5 h-5 text-primary-700" />
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Total campaigns</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900">{campaignsCount.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600">
+                  Active: <span className="font-semibold text-green-700">{activeCampaignsCount}</span> · Inactive:{" "}
+                  <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
+                </div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+                <ExternalLink className="w-5 h-5 text-gray-500" />
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6 text-white border border-black/10">
+            <div className="text-xs font-bold tracking-widest text-white/70 uppercase">Public link format</div>
+            <div className="mt-2 text-xl font-extrabold">/pay/&lt;slug&gt;</div>
+            <div className="mt-3 text-white/80 text-sm">
+              Campaign links are public, but payment success is confirmed only by webhook.
+            </div>
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link
+            href="/dashboard/campaigns"
+            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Manage</div>
+                <div className="mt-1 text-xl font-extrabold text-gray-900">Campaigns</div>
+                <div className="mt-2 text-gray-600">
+                  View your campaigns and copy public payment links.
+                </div>
+              </div>
+              <ExternalLink className="w-5 h-5 text-gray-400" />
+            </div>
+            <div className="mt-5 flex items-center gap-3 text-sm text-gray-600">
+              <span className="inline-flex items-center gap-1">
+                <Ticket className="w-4 h-4" /> Tickets
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <Vote className="w-4 h-4" /> Voting
+              </span>
+            </div>
+          </Link>
+
+          <Link
+            href="/dashboard/campaigns/new"
+            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Create</div>
+                <div className="mt-1 text-xl font-extrabold text-gray-900">New Campaign</div>
+                <div className="mt-2 text-gray-600">
+                  Set price, slug, and publish a new link.
+                </div>
+              </div>
+              <Plus className="w-5 h-5 text-gray-400" />
+            </div>
+          </Link>
+        </div>
+
+        {/* Money report: recent transactions */}
+        <div className="mt-10 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-100 flex items-start justify-between gap-4">
+            <div>
+              <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Reports</div>
+              <h2 className="mt-1 text-xl font-extrabold text-gray-900">Recent payments</h2>
+              <p className="mt-2 text-gray-600 text-sm">
+                Latest transactions (non-PII). Status is webhook-confirmed only when marked <span className="font-semibold">success</span>.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/campaigns"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+            >
+              View campaigns
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="overflow-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr className="text-left">
+                  <th className="px-6 py-3 font-bold text-gray-600">Time</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Campaign</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Type</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentTransactions.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-6 text-gray-600" colSpan={6}>
+                      No transactions yet.
+                    </td>
+                  </tr>
+                ) : (
+                  recentTransactions.map((t) => {
+                    const c = campaignTitleById[t.campaign_id];
+                    const status = String(t.status ?? "");
+                    const statusClass =
+                      status === "success"
+                        ? "text-green-700 bg-green-50 border-green-100"
+                        : status === "failed"
+                          ? "text-red-700 bg-red-50 border-red-100"
+                          : "text-gray-700 bg-gray-50 border-gray-100";
+
+                    return (
+                      <tr key={t.id} className="border-b border-gray-100">
+                        <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
+                          {new Date(t.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
+                          {c?.title ?? "—"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
+                          {c?.type ? (c.type === "vote" ? "Voting" : "Tickets") : "—"}
+                        </td>
+                        <td className="px-6 py-4 text-gray-700 font-mono whitespace-nowrap">{t.reference}</td>
+                        <td className="px-6 py-4 text-gray-900 whitespace-nowrap">
+                          {String(t.currency ?? "").toUpperCase()} {Number(t.amount ?? 0).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${statusClass}`}>
+                            {status || "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
