@@ -17,7 +17,7 @@ export default function Navbar() {
   const [eventsOpen, setEventsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
-  const [careersSubmenuOpen, setCareersSubmenuOpen] = useState<string | null>(null);
+  const [careersNewsIndex, setCareersNewsIndex] = useState(0);
   const [careersMobileOpen, setCareersMobileOpen] = useState(false);
   const [careersMobileSubmenuOpen, setCareersMobileSubmenuOpen] = useState<string | null>(null);
   const { getTotalItems } = useCart();
@@ -45,6 +45,35 @@ export default function Navbar() {
     }, 2500);
     return () => window.clearInterval(t);
   }, [servicesOpen, cmfaPreviewImages.length]);
+
+  const careersNewsItems = [
+    {
+      title: "New Event Management Features Launched",
+      image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892264/IMG_9921_rccldq.jpg",
+      href: "/news/1",
+      meta: "Platform Updates",
+    },
+    {
+      title: "Marketing Trends for 2024",
+      image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9937_v0nwkr.jpg",
+      href: "/news/2",
+      meta: "Industry Insights",
+    },
+    {
+      title: "Career Development Workshop Series",
+      image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
+      href: "/news/3",
+      meta: "Training",
+    },
+  ];
+
+  useEffect(() => {
+    if (!careersOpen) return;
+    const t = window.setInterval(() => {
+      setCareersNewsIndex((p) => (p + 1) % careersNewsItems.length);
+    }, 2600);
+    return () => window.clearInterval(t);
+  }, [careersOpen, careersNewsItems.length]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -80,6 +109,21 @@ export default function Navbar() {
     { href: "/events/upcoming", label: "Upcoming Events" },
     { href: "/events/past", label: "Past Events" },
   ];
+
+  const eventsCol1 = [eventsLinks[0]];
+  const eventsCol2 = [eventsLinks[1]];
+  const eventsCol3 = [eventsLinks[2]];
+
+  // Quick actions for CFMA 2026 (no images)
+  const cfmaGoogleCalendarUrl =
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent("Coast Fashion and Modelling Awards 2026 (CFMA 2026)")}` +
+    `&dates=${encodeURIComponent("20260815/20260816")}` +
+    `&details=${encodeURIComponent(
+      "Join CFMA 2026 in Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.\n\nEvent details: https://cmfagency.co.ke/events/upcoming"
+    )}` +
+    `&location=${encodeURIComponent("Mombasa, Kenya")}` +
+    `&ctz=${encodeURIComponent("Africa/Nairobi")}`;
 
   const careersLinks = {
     attachments: [
@@ -283,13 +327,19 @@ export default function Navbar() {
               onMouseEnter={() => setAboutOpen(true)}
               onMouseLeave={() => setAboutOpen(false)}
             >
-              <Link
-                href="/about"
+              <button
+                type="button"
                 className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={aboutOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setAboutOpen((p) => !p);
+                }}
               >
                 <span>About</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
-              </Link>
+              </button>
               
               <AnimatePresence>
                 {aboutOpen && (
@@ -320,13 +370,19 @@ export default function Navbar() {
               onMouseEnter={() => setServicesOpen(true)}
               onMouseLeave={() => setServicesOpen(false)}
             >
-              <Link
-                href="/services"
+              <button
+                type="button"
                 className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={servicesOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setServicesOpen((p) => !p);
+                }}
               >
                 <span>Services</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
-              </Link>
+              </button>
               
               <AnimatePresence>
                 {servicesOpen && (
@@ -335,7 +391,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-[620px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Links: container 1 */}
@@ -418,18 +474,21 @@ export default function Navbar() {
             <div 
               className="relative"
               onMouseEnter={() => setCareersOpen(true)}
-              onMouseLeave={() => {
-                setCareersOpen(false);
-                setCareersSubmenuOpen(null);
-              }}
+              onMouseLeave={() => setCareersOpen(false)}
             >
-              <Link
-                href="/careers"
+              <button
+                type="button"
                 className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={careersOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setCareersOpen((p) => !p);
+                }}
               >
                 <span>Careers</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersOpen ? 'rotate-180' : ''}`} />
-              </Link>
+              </button>
               
               <AnimatePresence>
                 {careersOpen && (
@@ -438,96 +497,95 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
-                    {/* Attachments */}
-                    <div
-                      className="relative"
-                      onMouseEnter={() => setCareersSubmenuOpen('attachments')}
-                      onMouseLeave={() => setCareersSubmenuOpen(null)}
-                    >
-                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
-                        <span>Attachments</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'attachments' ? 'rotate-180' : ''}`} />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Container 1: Attachments */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Attachments
+                        </div>
+                        {careersLinks.attachments.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
                       </div>
-                      {careersSubmenuOpen === 'attachments' && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                        >
-                          {careersLinks.attachments.map((item) => (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                            >
-                              {item.label}
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </div>
 
-                    {/* Internships */}
-                    <div
-                      className="relative"
-                      onMouseEnter={() => setCareersSubmenuOpen('internships')}
-                      onMouseLeave={() => setCareersSubmenuOpen(null)}
-                    >
-                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
-                        <span>Internships</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'internships' ? 'rotate-180' : ''}`} />
+                      {/* Container 2: Internships */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Internships
+                        </div>
+                        {careersLinks.internships.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
                       </div>
-                      {careersSubmenuOpen === 'internships' && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                        >
-                          {careersLinks.internships.map((item) => (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                            >
-                              {item.label}
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </div>
 
-                    {/* Jobs */}
-                    <div
-                      className="relative"
-                      onMouseEnter={() => setCareersSubmenuOpen('jobs')}
-                      onMouseLeave={() => setCareersSubmenuOpen(null)}
-                    >
-                      <div className="px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium flex items-center justify-between cursor-pointer">
-                        <span>Jobs</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersSubmenuOpen === 'jobs' ? 'rotate-180' : ''}`} />
+                      {/* Container 3: Jobs */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Jobs
+                        </div>
+                        {careersLinks.jobs.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
                       </div>
-                      {careersSubmenuOpen === 'jobs' && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          className="absolute left-full top-0 ml-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
-                        >
-                          {careersLinks.jobs.map((item) => (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                            >
-                              {item.label}
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
+
+                      {/* Container 4: News updates carousel */}
+                      <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                        <Link href="/blogs" className="block">
+                          <div className="relative aspect-[16/10]">
+                            <AnimatePresence mode="wait" initial={false}>
+                              <motion.div
+                                key={careersNewsIndex}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.35 }}
+                                className="absolute inset-0"
+                              >
+                                <Image
+                                  src={careersNewsItems[careersNewsIndex].image}
+                                  alt={careersNewsItems[careersNewsIndex].title}
+                                  fill
+                                  className="object-cover object-center"
+                                  sizes="(max-width: 1024px) 100vw, 310px"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent" />
+                              </motion.div>
+                            </AnimatePresence>
+
+                            <div className="absolute left-3 right-3 bottom-3">
+                              <div className="inline-flex items-center rounded-full bg-primary-600 text-white px-3 py-1 text-[11px] font-extrabold tracking-widest">
+                                NEWS UPDATES
+                              </div>
+                              <div className="mt-2 text-white font-extrabold text-lg leading-tight line-clamp-2">
+                                {careersNewsItems[careersNewsIndex].title}
+                              </div>
+                              <div className="text-white/90 text-sm font-semibold">
+                                {careersNewsItems[careersNewsIndex].meta} • View all
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -540,13 +598,19 @@ export default function Navbar() {
               onMouseEnter={() => setTestimonialsOpen(true)}
               onMouseLeave={() => setTestimonialsOpen(false)}
             >
-              <Link
-                href="/testimonials"
+              <button
+                type="button"
                 className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={testimonialsOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setTestimonialsOpen((p) => !p);
+                }}
               >
                 <span>Testimonials</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
-              </Link>
+              </button>
               
               <AnimatePresence>
                 {testimonialsOpen && (
@@ -590,13 +654,19 @@ export default function Navbar() {
               onMouseEnter={() => setEventsOpen(true)}
               onMouseLeave={() => setEventsOpen(false)}
             >
-              <Link
-                href="/events"
+              <button
+                type="button"
                 className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={eventsOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setEventsOpen((p) => !p);
+                }}
               >
                 <span>Events</span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
-              </Link>
+              </button>
               
               <AnimatePresence>
                 {eventsOpen && (
@@ -605,17 +675,86 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
-                    {eventsLinks.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Container 1 */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Events
+                        </div>
+                        {eventsCol1.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Container 2 */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Upcoming
+                        </div>
+                        {eventsCol2.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Container 3 */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Past
+                        </div>
+                        {eventsCol3.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+
+                      {/* Container 4: Quick actions (no images) */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
+                        <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          CFMA 2026
+                        </div>
+                        <Link
+                          href="/events/upcoming"
+                          className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        >
+                          View Event Details
+                        </Link>
+                        <a
+                          href="https://forms.gle/GM5fRiutVXko1MaZ9"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        >
+                          Partner With Us
+                        </a>
+                        <a
+                          href={cfmaGoogleCalendarUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        >
+                          Add to Google Calendar
+                        </a>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

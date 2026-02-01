@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Globe, Award, Target, Users, Lightbulb, ArrowRight, CheckCircle } from "lucide-react";
+import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -52,167 +52,113 @@ const services = [
 
 export default function ServicesPage() {
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.32.06_AM_loqhra.jpg"
-            alt="Our Services"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          {/* Gradient Overlay */}
-          {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/60"></div>
-        </div>
-        
-        <div className="container-custom relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-2xl">Our Services</h1>
-            <p className="text-xl text-white leading-relaxed drop-shadow-lg">
-              Comprehensive marketing solutions designed to help your business thrive and grow. From digital marketing to event planning, we provide end-to-end services that drive results.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Services Grid */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              What We Offer
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explore our comprehensive range of marketing and business services
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden border border-gray-100"
-              >
-                <Link href={service.href} className="block">
-                  <div className="p-6">
-                    <div className="w-16 h-16 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center mb-4">
-                      <service.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-3 text-gray-900">{service.title}</h3>
-                    <p className="text-gray-600 mb-6 leading-relaxed">{service.description}</p>
-                    
-                    <div className="space-y-2 mb-6">
-                      {service.features.map((feature) => (
-                        <div key={feature} className="flex items-center space-x-2">
-                          <CheckCircle className="w-4 h-4 text-primary-600 flex-shrink-0" />
-                          <span className="text-sm text-gray-600">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center text-primary-600 font-semibold group">
-                      <span>Learn More</span>
-                      <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Us Section */}
-      <section className="section-padding bg-gray-50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Why Choose Changer Fusions?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We combine innovative strategies with proven methodologies to deliver exceptional results
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Expert Team",
-                description: "Our experienced professionals bring years of industry expertise to every project.",
-              },
-              {
-                title: "Custom Solutions",
-                description: "Tailored strategies designed specifically for your business needs and goals.",
-              },
-              {
-                title: "Proven Results",
-                description: "Track record of delivering measurable results and driving business growth.",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white p-6 rounded-xl shadow-lg"
-              >
-                <h3 className="text-xl font-bold mb-3 text-gray-900">{item.title}</h3>
-                <p className="text-gray-600 leading-relaxed">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="section-padding bg-primary-600 text-white">
-        <div className="container-custom text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Get Started?</h2>
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Let's discuss how our services can help your business achieve its goals and drive growth.
-            </p>
-            <Link
-              href="/contact"
-              className="inline-flex items-center space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+    <div className="pt-28 md:pt-32 min-h-screen bg-white">
+      <div className="container-custom py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Main */}
+          <main className="lg:col-span-8">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
             >
-              <span>Contact Us</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
+              <div className="text-sm font-bold tracking-widest text-gray-500 uppercase">Services</div>
+              <h1 className="mt-3 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+                Marketing services built to help you grow
+              </h1>
+              <p className="mt-4 text-gray-600 leading-relaxed max-w-3xl">
+                Explore our core services — from digital marketing and website development to branding, research, events,
+                and content creation.
+              </p>
+            </motion.div>
+
+            <div className="mt-10 space-y-10">
+              <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="p-6 md:p-8 border-b border-gray-200">
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">Our Services</h2>
+                  <p className="mt-2 text-gray-600">
+                    A clear breakdown of what we offer — similar to a venue “rooms & spaces” listing.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-gray-200">
+                  {services.map((service) => (
+                    <div key={service.href} className="p-6 md:p-8">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary-600/10 text-primary-700 grid place-items-center">
+                          <service.icon className="w-6 h-6" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <h3 className="text-xl md:text-2xl font-extrabold text-gray-900">
+                              {service.title}
+                            </h3>
+                            <Link
+                              href={service.href}
+                              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-2"
+                            >
+                              View details
+                            </Link>
+                          </div>
+                          <p className="mt-2 text-gray-700 leading-relaxed">{service.description}</p>
+                          <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
+                            {service.features.map((feature) => (
+                              <li key={feature} className="flex items-start gap-3">
+                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-secondary-600 flex-shrink-0" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </main>
+
+          {/* Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-sm">
+              <div className="text-sm font-bold tracking-widest text-gray-500 uppercase">Get in touch</div>
+              <h2 className="mt-2 text-2xl font-extrabold text-gray-900">Talk to our team</h2>
+              <p className="mt-2 text-gray-600 leading-relaxed">
+                Need a proposal or want to discuss a service? Reach us via phone or email.
+              </p>
+
+              <div className="mt-6 space-y-3 text-gray-700">
+                <div className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-primary-700" />
+                  <span className="font-semibold">+254 797 777347</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-primary-700" />
+                  <span className="font-semibold">info@cmfagency.co.ke</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-primary-700 mt-0.5" />
+                  <span className="text-sm leading-relaxed">
+                    AMBALAL BUILDING, NKRUMA ROAD, MOMBASA
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <Link href="/contact" className="btn-primary w-full inline-flex items-center justify-center">
+                  Contact Us
+                </Link>
+                <Link
+                  href="/events/upcoming"
+                  className="w-full inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-3"
+                >
+                  View upcoming events
+                </Link>
+              </div>
+            </div>
+          </aside>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
