@@ -21,11 +21,13 @@ function SponsorDropdown({
   buttonClassName,
   buttonIconClassName,
   buttonTextClassName,
+  buttonLabel = "Become a Sponsor",
   menuAlign = "left",
 }: {
   buttonClassName: string;
   buttonIconClassName?: string;
   buttonTextClassName?: string;
+  buttonLabel?: string;
   menuAlign?: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
@@ -89,7 +91,7 @@ function SponsorDropdown({
         aria-expanded={open}
       >
         <BadgeCheck className={buttonIconClassName ?? "w-5 h-5"} />
-        <span className={buttonTextClassName}>Become a Sponsor</span>
+        <span className={buttonTextClassName}>{buttonLabel}</span>
         <ChevronDown className="w-5 h-5 opacity-90" />
       </button>
 
@@ -97,7 +99,7 @@ function SponsorDropdown({
         <div
           role="menu"
           className={[
-            "absolute z-30 mt-2 w-[min(420px,calc(100vw-2rem))] rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden",
+            "absolute z-30 mt-2 w-[min(420px,calc(100vw-2rem))] max-h-[70vh] overflow-auto rounded-xl border border-gray-200 bg-white shadow-2xl",
             menuAlign === "right" ? "right-0" : "left-0",
           ].join(" ")}
         >
@@ -216,7 +218,7 @@ export default function UpcomingEventsPage() {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero */}
-      <section className="relative overflow-hidden min-h-[560px] md:min-h-[680px]">
+      <section className="relative overflow-hidden min-h-[700px] md:min-h-[820px]">
       <div className="absolute inset-0">
         <Image
             src={heroImage}
@@ -235,7 +237,7 @@ export default function UpcomingEventsPage() {
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[520px] h-[240px] rounded-full bg-fuchsia-500/15 blur-3xl" />
       </div>
       
-        <div className="container-custom relative z-10 py-14 md:py-20">
+        <div className="container-custom relative z-10 pt-14 pb-24 md:pt-20 md:pb-28">
         <motion.div
             initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -268,29 +270,30 @@ export default function UpcomingEventsPage() {
 
             {/* CTA Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <a
-                href="https://forms.gle/GM5fRiutVXko1MaZ9"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-6 py-3 shadow-lg"
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
               >
                 <Handshake className="w-5 h-5" />
                 Partner With Us
                 <ArrowRight className="w-5 h-5" />
-              </a>
-              <SponsorDropdown buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg" />
+              </Link>
+              <SponsorDropdown
+                buttonLabel="Participate as"
+                buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
+              />
               <a
                 href={googleCalendarUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md border border-white/30"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-semibold px-6 py-3 shadow-lg backdrop-blur-md border border-white/30 whitespace-nowrap"
               >
                 <CalendarPlus className="w-5 h-5" />
                 Add to Google Calendar
               </a>
               <a
                 href="/downloads/sponsorship-proposal-2026.pdf"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white text-gray-900 hover:bg-gray-100 font-semibold px-6 py-3 shadow-lg"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white text-gray-900 hover:bg-gray-100 font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
                 download
               >
                 <Download className="w-5 h-5" />
@@ -320,13 +323,12 @@ export default function UpcomingEventsPage() {
                 <div className="mt-1 font-extrabold text-gray-900">CFMA 2026</div>
                 <div className="mt-4 space-y-1 text-sm">
                   {[
-                    { href: "#sec-details", label: "1. Event Details" },
-                    { href: "#sec-overview", label: "2. Event Overview" },
-                    { href: "#sec-why", label: "3. Why This Event Matters" },
-                    { href: "#sec-involved", label: "4. Get Involved / Participate" },
-                    { href: "#sec-highlights", label: "5. Event Highlights" },
-                    { href: "#sec-gallery", label: "6. Gallery & Highlights (2025)" },
-                    { href: "#sec-enquiries", label: "7. Enquiries" },
+                    { href: "#sec-details", label: "Event Details" },
+                    { href: "#sec-overview", label: "Event Overview" },
+                    { href: "#sec-why", label: "Why This Event Matters" },
+                    { href: "#sec-highlights", label: "Event Highlights" },
+                    { href: "#sec-gallery", label: "Gallery & Highlights (2025)" },
+                    { href: "#sec-enquiries", label: "Enquiries" },
                   ].map((item) => (
                     <a
                       key={item.href}
@@ -412,28 +414,23 @@ export default function UpcomingEventsPage() {
                     </div>
                   </header>
 
-                  {/* 1. Event Details */}
+                  {/* Event Details */}
                   <section id="sec-details" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        1
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Event Details</h3>
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
-                          <div className="flex items-start gap-3">
-                            <Calendar className="w-5 h-5 text-primary-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-gray-900">Date</div>
-                              <div>15th August 2026</div>
-                            </div>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Event Details</h3>
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-primary-600 mt-0.5" />
+                          <div>
+                            <div className="font-semibold text-gray-900">Date</div>
+                            <div>15th August 2026</div>
                           </div>
-                          <div className="flex items-start gap-3">
-                            <MapPin className="w-5 h-5 text-primary-600 mt-0.5" />
-                            <div>
-                              <div className="font-semibold text-gray-900">Location</div>
-                              <div>Mombasa, Kenya</div>
-                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <MapPin className="w-5 h-5 text-primary-600 mt-0.5" />
+                          <div>
+                            <div className="font-semibold text-gray-900">Location</div>
+                            <div>Mombasa, Kenya</div>
                           </div>
                         </div>
                       </div>
@@ -442,271 +439,213 @@ export default function UpcomingEventsPage() {
 
                   <div className="my-10 border-t border-dashed border-gray-200" />
 
-                  {/* 2. Event Overview */}
+                  {/* Event Overview */}
                   <section id="sec-overview" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        2
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Event Overview</h3>
-                        <div className="mt-4 prose prose-lg max-w-none">
-                          <p className="text-gray-700">
-                            The Coast Fashion and Modelling Awards 2026 (CFMA 2026) is a premier creative industry event
-                            organized by Changer Fusions, building on the success of the 2025 edition which hosted over 350
-                            participants and awarded 30 outstanding contributors in the fashion and modelling industry.
-                          </p>
-                          <p className="text-gray-700">
-                            CFMA 2026 is a flagship platform celebrating coastal heritage, empowering youth talent, and
-                            promoting sustainable fashion practices and eco-tourism initiatives in the region.
-                          </p>
-                        </div>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Event Overview</h3>
+                      <div className="mt-4 prose prose-lg max-w-none">
+                        <p className="text-gray-700">
+                          The Coast Fashion and Modelling Awards 2026 (CFMA 2026) is a premier creative industry event
+                          organized by Changer Fusions, building on the success of the 2025 edition which hosted over 350
+                          participants and awarded 30 outstanding contributors in the fashion and modelling industry.
+                        </p>
+                        <p className="text-gray-700">
+                          CFMA 2026 is a flagship platform celebrating coastal heritage, empowering youth talent, and
+                          promoting sustainable fashion practices and eco-tourism initiatives in the region.
+                        </p>
                       </div>
                     </div>
                   </section>
 
                   <div className="my-10 border-t border-dashed border-gray-200" />
 
-                  {/* 3. Why This Event Matters */}
+                  {/* Why This Event Matters */}
                   <section id="sec-why" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        3
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Why This Event Matters</h3>
-                        <ul className="mt-4 space-y-3 text-gray-700">
-                          {[
-                            "Provides a platform for youth creatives and emerging talent to showcase their skills.",
-                            "Preserves and promotes the rich cultural heritage of the Coast.",
-                            "Advocates for sustainable and eco-friendly fashion practices.",
-                            "Promotes eco-tourism and responsible destination branding.",
-                          ].map((item) => (
-                            <li key={item} className="flex items-start gap-3">
-                              <span className="mt-1.5 w-2.5 h-2.5 rounded-full bg-secondary-600 flex-shrink-0" />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Why This Event Matters</h3>
+                      <ul className="mt-4 space-y-3 text-gray-700">
+                        {[
+                          "Provides a platform for youth creatives and emerging talent to showcase their skills.",
+                          "Preserves and promotes the rich cultural heritage of the Coast.",
+                          "Advocates for sustainable and eco-friendly fashion practices.",
+                          "Promotes eco-tourism and responsible destination branding.",
+                        ].map((item) => (
+                          <li key={item} className="flex items-start gap-3">
+                            <span className="mt-1.5 w-2.5 h-2.5 rounded-full bg-secondary-600 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </section>
 
                   <div className="my-10 border-t border-dashed border-gray-200" />
 
-                  {/* 4. Get Involved */}
-                  <section id="sec-involved" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        4
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Get Involved / Participate as a</h3>
-                        <ol className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-gray-700 list-decimal pl-5">
-                          {[
-                            "High fashion model / showcase model",
-                            "Award contender / competing model or designer",
-                            "Designer",
-                            "Volunteer",
-                            "Creative art performance / entertainment",
-                          ].map((item) => (
-                            <li key={item} className="pl-1">
-                              {item}
-                            </li>
-                          ))}
-                        </ol>
-                        <div className="mt-6">
-                          <a href="#sec-enquiries" className="btn-primary inline-flex items-center gap-2">
-                            Register Interest
-                            <ArrowRight className="w-5 h-5" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-
-                  <div className="my-10 border-t border-dashed border-gray-200" />
-
-                  {/* 5. Event Highlights */}
+                  {/* Event Highlights */}
                   <section id="sec-highlights" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        5
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Event Highlights</h3>
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {[
-                            { title: "Fashion Showcases", desc: "Heritage-inspired and eco-conscious designs" },
-                            { title: "Modelling Competitions", desc: "Emerging and professional models" },
-                            { title: "Cultural Performances", desc: "Music, dance, and traditional arts" },
-                            { title: "Awards Ceremony", desc: "Recognition across 30+ categories" },
-                            { title: "Eco-Tourism Exhibitions", desc: "Coastal destinations and conservation projects" },
-                          ].map((h) => (
-                            <div key={h.title} className="rounded-lg border border-gray-200 bg-gray-50 p-5">
-                              <div className="font-bold text-gray-900">{h.title}</div>
-                              <div className="text-gray-600">{h.desc}</div>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Event Highlights</h3>
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {[
+                          { title: "Fashion Showcases", desc: "Heritage-inspired and eco-conscious designs" },
+                          { title: "Modelling Competitions", desc: "Emerging and professional models" },
+                          { title: "Cultural Performances", desc: "Music, dance, and traditional arts" },
+                          { title: "Awards Ceremony", desc: "Recognition across 30+ categories" },
+                          { title: "Eco-Tourism Exhibitions", desc: "Coastal destinations and conservation projects" },
+                        ].map((h) => (
+                          <div key={h.title} className="rounded-lg border border-gray-200 bg-gray-50 p-5">
+                            <div className="font-bold text-gray-900">{h.title}</div>
+                            <div className="text-gray-600">{h.desc}</div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </section>
 
                   <div className="my-10 border-t border-dashed border-gray-200" />
 
-                  {/* 6. Gallery */}
+                  {/* Gallery */}
                   <section id="sec-gallery" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        6
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Gallery & Highlights from 2025</h3>
-                        <p className="text-gray-600 mt-2">
-                          Highlights from the 2025 Coast Fashion and Modelling Awards – celebrating talent and heritage.
-                        </p>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Gallery & Highlights from 2025</h3>
+                      <p className="text-gray-600 mt-2">
+                        Highlights from the 2025 Coast Fashion and Modelling Awards – celebrating talent and heritage.
+                      </p>
 
-                        <div className="mt-6 relative rounded-xl overflow-hidden bg-gray-100 aspect-[16/9]">
-                          <AnimatePresence initial={false} mode="wait" custom={slideDir}>
-                            <motion.div
-                              key={slideIndex}
-                              initial={{ opacity: 0, x: slideDir > 0 ? 24 : -24 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              exit={{ opacity: 0, x: slideDir > 0 ? -24 : 24 }}
-                              transition={{ duration: 0.35 }}
-                              className="absolute inset-0"
-                            >
-                              <Image
-                                src={galleryImages[slideIndex]}
-                                alt={`High fashion audition 2025 - ${slideIndex + 1}`}
-                                fill
-                                className="object-cover object-center"
-                                sizes="(max-width: 768px) 100vw, 900px"
-                              />
-                              <div className="absolute inset-0 bg-black/10" />
-            </motion.div>
-                          </AnimatePresence>
-
-                          <button
-                            onClick={goPrev}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg"
-                            aria-label="Previous image"
+                      <div className="mt-6 relative rounded-xl overflow-hidden bg-gray-100 aspect-[16/9]">
+                        <AnimatePresence initial={false} mode="wait" custom={slideDir}>
+                          <motion.div
+                            key={slideIndex}
+                            initial={{ opacity: 0, x: slideDir > 0 ? 24 : -24 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: slideDir > 0 ? -24 : 24 }}
+                            transition={{ duration: 0.35 }}
+                            className="absolute inset-0"
                           >
-                            <ChevronLeft className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={goNext}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg"
-                            aria-label="Next image"
-                          >
-                            <ChevronRight className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {galleryImages.map((_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => {
-                                setSlideDir(i > slideIndex ? 1 : -1);
-                                setSlideIndex(i);
-                              }}
-                              className={`h-2.5 rounded-full transition-all ${
-                                i === slideIndex ? "w-8 bg-primary-600" : "w-2.5 bg-gray-300 hover:bg-gray-400"
-                              }`}
-                              aria-label={`Go to image ${i + 1}`}
+                            <Image
+                              src={galleryImages[slideIndex]}
+                              alt={`High fashion audition 2025 - ${slideIndex + 1}`}
+                              fill
+                              className="object-cover object-center"
+                              sizes="(max-width: 768px) 100vw, 900px"
                             />
-                          ))}
-                        </div>
+                            <div className="absolute inset-0 bg-black/10" />
+                          </motion.div>
+                        </AnimatePresence>
+
+                        <button
+                          onClick={goPrev}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={goNext}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-gray-900 rounded-full p-2 shadow-lg"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {galleryImages.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              setSlideDir(i > slideIndex ? 1 : -1);
+                              setSlideIndex(i);
+                            }}
+                            className={`h-2.5 rounded-full transition-all ${
+                              i === slideIndex ? "w-8 bg-primary-600" : "w-2.5 bg-gray-300 hover:bg-gray-400"
+                            }`}
+                            aria-label={`Go to image ${i + 1}`}
+                          />
+                        ))}
                       </div>
                     </div>
                   </section>
 
                   <div className="my-10 border-t border-dashed border-gray-200" />
 
-                  {/* 7. Enquiries */}
+                  {/* Enquiries */}
                   <section id="sec-enquiries" className="scroll-mt-28">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-extrabold">
-                        7
-                      </div>
-                      <div className="w-full">
-                        <h3 className="text-2xl font-bold text-gray-900">Enquiries</h3>
-                        <p className="text-gray-600 mt-2">
-                          Partnership, sponsorship, participation, and general enquiries.
-                        </p>
+                    <div className="w-full">
+                      <h3 className="text-2xl font-bold text-gray-900">Enquiries</h3>
+                      <p className="text-gray-600 mt-2">
+                        Partnership, sponsorship, participation, and general enquiries.
+                      </p>
 
-                        <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
-                          {submitted ? (
-                            <div className="rounded-xl bg-secondary-50 border border-secondary-100 p-4">
-                              <div className="font-semibold text-gray-900">Thanks! Your enquiry is ready to send.</div>
-                              <div className="text-gray-600 mt-1">
-                                If your email app didn’t open, you can also contact us via the{" "}
-                                <Link href="/contact" className="text-primary-600 hover:text-primary-700 font-semibold">
-                                  Contact page
-                                </Link>
-                                .
-                              </div>
+                      <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+                        {submitted ? (
+                          <div className="rounded-xl bg-secondary-50 border border-secondary-100 p-4">
+                            <div className="font-semibold text-gray-900">Thanks! Your enquiry is ready to send.</div>
+                            <div className="text-gray-600 mt-1">
+                              If your email app didn’t open, you can also contact us via the{" "}
+                              <Link href="/contact" className="text-primary-600 hover:text-primary-700 font-semibold">
+                                Contact page
+                              </Link>
+                              .
                             </div>
-                          ) : (
-                            <form onSubmit={onSubmitEnquiry} className="space-y-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                  value={enquiry.name}
-                                  onChange={(e) => setEnquiry((p) => ({ ...p, name: e.target.value }))}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
-                                <input
-                                  value={enquiry.organization}
-                                  onChange={(e) => setEnquiry((p) => ({ ...p, organization: e.target.value }))}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input
-                                  type="email"
-                                  value={enquiry.email}
-                                  onChange={(e) => setEnquiry((p) => ({ ...p, email: e.target.value }))}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
-                                  required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Message / Partnership Interest
-                                </label>
-                                <textarea
-                                  value={enquiry.message}
-                                  onChange={(e) => setEnquiry((p) => ({ ...p, message: e.target.value }))}
-                                  rows={5}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
-                                  required
-                                />
-                              </div>
-                              <button type="submit" className="w-full btn-primary inline-flex items-center justify-center gap-2">
-                                Send Enquiry
-                                <ArrowRight className="w-5 h-5" />
-                              </button>
-                              <div className="text-xs text-gray-500">
-                                Downloads:{" "}
-                                <a
-                                  className="text-primary-600 hover:text-primary-700 font-semibold"
-                                  href="/downloads/sponsorship-proposal-2026.pdf"
-                                  download
-                                >
-                                  Sponsorship Proposal
-                                </a>
-                              </div>
-                            </form>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <form onSubmit={onSubmitEnquiry} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                              <input
+                                value={enquiry.name}
+                                onChange={(e) => setEnquiry((p) => ({ ...p, name: e.target.value }))}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+                              <input
+                                value={enquiry.organization}
+                                onChange={(e) => setEnquiry((p) => ({ ...p, organization: e.target.value }))}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                              <input
+                                type="email"
+                                value={enquiry.email}
+                                onChange={(e) => setEnquiry((p) => ({ ...p, email: e.target.value }))}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Message / Partnership Interest
+                              </label>
+                              <textarea
+                                value={enquiry.message}
+                                onChange={(e) => setEnquiry((p) => ({ ...p, message: e.target.value }))}
+                                rows={5}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+                                required
+                              />
+                            </div>
+                            <button type="submit" className="w-full btn-primary inline-flex items-center justify-center gap-2">
+                              Send Enquiry
+                              <ArrowRight className="w-5 h-5" />
+                            </button>
+                            <div className="text-xs text-gray-500">
+                              Downloads:{" "}
+                              <a
+                                className="text-primary-600 hover:text-primary-700 font-semibold"
+                                href="/downloads/sponsorship-proposal-2026.pdf"
+                                download
+                              >
+                                Sponsorship Proposal
+                              </a>
+                            </div>
+                          </form>
+                        )}
                       </div>
                     </div>
                   </section>
