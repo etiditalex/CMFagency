@@ -1,24 +1,6 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
 
-const csp = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'self'",
-  "object-src 'none'",
-  // Allow Next/Image + remote images used by the site.
-  "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com",
-  "font-src 'self' data: https:",
-  // Next injects styles; keep this compatible.
-  "style-src 'self' 'unsafe-inline'",
-  // In dev, Next can require eval for tooling; avoid in prod.
-  `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"}`,
-  // Supabase/Webhooks/analytics etc. Keep permissive to avoid breakage.
-  "connect-src 'self' https: wss:",
-  "upgrade-insecure-requests",
-].join('; ')
-
 const nextConfig = {
   // Ensure Turbopack uses this project root (we have another lockfile on disk).
   turbopack: {
@@ -30,7 +12,6 @@ const nextConfig = {
   poweredByHeader: false,
   async headers() {
     const securityHeaders = [
-      { key: 'Content-Security-Policy', value: csp },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
       { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
