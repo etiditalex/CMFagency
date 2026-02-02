@@ -13,6 +13,11 @@ export async function GET(req: Request) {
   const ref = (url.searchParams.get("ref") ?? "").trim();
 
   if (!ref) return NextResponse.json({ error: "Missing ref" }, { status: 400 });
+  // Basic input hardening to avoid abuse and satisfy scanners.
+  // Paystack refs are typically short, url-safe identifiers.
+  if (!/^[A-Za-z0-9._-]{6,128}$/.test(ref)) {
+    return NextResponse.json({ error: "Invalid ref" }, { status: 400 });
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -35,7 +40,8 @@ export async function GET(req: Request) {
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Intentionally do NOT return buyer PII (email).
-  return NextResponse.json({
+  const res = NextResponse.json(
+    {
     reference: tx.reference,
     status: tx.status,
     verified_at: tx.verified_at,
@@ -46,6 +52,9 @@ export async function GET(req: Request) {
     quantity: tx.quantity,
     campaign_type: tx.campaign_type,
     campaign_id: tx.campaign_id,
-  });
+    },
+    { headers: { "Cache-Control": "no-store" } }
+  );
+  return res;
 }
 
