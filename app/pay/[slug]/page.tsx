@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
@@ -27,6 +27,7 @@ type Contestant = {
 };
 
 export default function PayCampaignPage() {
+  const router = useRouter();
   const routeParams = useParams<{ slug?: string | string[] }>();
   const slug = useMemo(() => {
     const s = routeParams?.slug;
@@ -36,9 +37,6 @@ export default function PayCampaignPage() {
   const searchParams = useSearchParams();
   const ref =
     searchParams?.get("ref") ??
-    // Paystack commonly redirects back with ?reference=... / ?trxref=...
-    searchParams?.get("reference") ??
-    searchParams?.get("trxref") ??
     null;
 
   const [txStatus, setTxStatus] = useState<
@@ -51,6 +49,7 @@ export default function PayCampaignPage() {
       amount: number | null;
       quantity: number | null;
       campaign_type: "ticket" | "vote" | string | null;
+      mpesa_receipt?: string | null;
     }
   >(null);
 
@@ -61,6 +60,7 @@ export default function PayCampaignPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
 
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
@@ -136,7 +136,7 @@ export default function PayCampaignPage() {
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/paystack/status?ref=${encodeURIComponent(ref)}`);
+        const res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
         const json = (await res.json()) as any;
         if (!res.ok) throw new Error(json?.error ?? "Unable to fetch payment status");
 
@@ -149,6 +149,7 @@ export default function PayCampaignPage() {
           amount: (typeof json.amount === "number" ? (json.amount as number) : null) as number | null,
           quantity: (typeof json.quantity === "number" ? (json.quantity as number) : null) as number | null,
           campaign_type: (json.campaign_type as any) ?? null,
+          mpesa_receipt: (json.mpesa_receipt as string | null) ?? null,
         };
 
         if (!cancelled) setTxStatus(next);
@@ -191,26 +192,27 @@ export default function PayCampaignPage() {
 
     try {
       const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
-      if (!email.trim()) throw new Error("Email is required.");
+      if (!phone.trim()) throw new Error("Phone number is required.");
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
 
-      const res = await fetch("/api/paystack/initialize", {
+      const res = await fetch("/api/mpesa/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug: campaign.slug,
-          email: email.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
           quantity: q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
         }),
       });
 
-      const json = (await res.json()) as { authorization_url?: string; reference?: string; error?: string };
+      const json = (await res.json()) as { reference?: string; customer_message?: string; error?: string };
       if (!res.ok) throw new Error(json.error || "Payment initialization failed.");
-      if (!json.authorization_url) throw new Error("Missing payment authorization URL.");
+      if (!json.reference) throw new Error("Missing transaction reference.");
 
-      // Redirect to Paystack checkout page
-      window.location.href = json.authorization_url;
+      // Stay on page and start polling for webhook confirmation.
+      router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
     } catch (e: any) {
       setError(e?.message ?? "Payment initialization failed.");
     } finally {
@@ -355,7 +357,7 @@ export default function PayCampaignPage() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900">Pay</h2>
             <p className="text-gray-600 mt-1">
-              Select quantity and proceed to checkout. Payment is confirmed only by webhook.
+              Enter your phone number to receive an M-Pesa STK prompt. Payment is confirmed only by webhook.
             </p>
 
             {error && (
@@ -367,14 +369,27 @@ export default function PayCampaignPage() {
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone (M-Pesa)</label>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="07XXXXXXXX"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-2">Format: 07XXXXXXXX (Safaricom)</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email (optional)</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="you@example.com"
-                  required
                 />
               </div>
 
@@ -413,10 +428,10 @@ export default function PayCampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Redirecting...
+                    Sending STK prompt...
                   </>
                 ) : (
-                  "Proceed to checkout"
+                  "Pay with M-Pesa"
                 )}
               </button>
             </form>
