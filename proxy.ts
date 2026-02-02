@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Strict CSP with per-request nonce (PCI-friendly).
+ * Also includes lightweight edge WAF-style request blocking for common probes.
  *
  * Next.js will automatically apply the nonce to:
  * - Framework/runtime scripts
@@ -11,6 +12,24 @@ import { NextRequest, NextResponse } from "next/server";
  * IMPORTANT: Pages must be dynamically rendered for nonce injection to work.
  */
 export function proxy(request: NextRequest) {
+  // ---------------------------------------------------------------------------
+  // Lightweight WAF-style blocks (best-effort).
+  // Note: A managed WAF (Cloudflare/AWS/Vercel) is still recommended for compliance
+  // detection + bot mitigation + rate limiting.
+  // ---------------------------------------------------------------------------
+  const block = getWafBlock(request);
+  if (block) {
+    return new NextResponse("Forbidden", {
+      status: 403,
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-WAF-Blocked": "1",
+        "X-WAF-Rule": block.rule,
+      },
+    });
+  }
+
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const isDev = process.env.NODE_ENV === "development";
 
@@ -43,6 +62,69 @@ export function proxy(request: NextRequest) {
 
   response.headers.set("Content-Security-Policy", contentSecurityPolicyHeaderValue);
   return response;
+}
+
+function getWafBlock(request: NextRequest): { rule: string } | null {
+  const { pathname, search } = request.nextUrl;
+  const url = request.nextUrl.href;
+
+  // Basic URL length limit to reduce abuse.
+  if (url.length > 2048) return { rule: "url-length" };
+
+  // Block common CMS/probe paths not used by this app.
+  const p = pathname.toLowerCase();
+  const blockedPaths = [
+    "/wp-admin",
+    "/wp-login.php",
+    "/xmlrpc.php",
+    "/phpmyadmin",
+    "/.env",
+    "/.git",
+    "/server-status",
+  ];
+  if (blockedPaths.some((bp) => p === bp || p.startsWith(`${bp}/`))) return { rule: "known-probe-path" };
+
+  // Path traversal / encoded traversal probes.
+  if (p.includes("..") || p.includes("%2e%2e") || p.includes("%2f..") || p.includes("..%2f")) return { rule: "path-traversal" };
+
+  // Simple SQLi / XSS probe patterns in query string.
+  const q = decodeSafe(search).toLowerCase();
+  if (q) {
+    // XSS-ish
+    if (q.includes("<script") || q.includes("javascript:") || q.includes("%3cscript")) return { rule: "xss-probe" };
+    // SQLi-ish
+    if (
+      q.includes("union select") ||
+      q.includes("information_schema") ||
+      q.includes("sleep(") ||
+      q.includes("benchmark(") ||
+      q.includes("'--") ||
+      q.includes("\"--") ||
+      q.includes(" or 1=1") ||
+      q.includes(" or '1'='1") ||
+      q.includes(" or \"1\"=\"1")
+    ) {
+      return { rule: "sqli-probe" };
+    }
+  }
+
+  // Overly large request bodies are suspicious for a mostly static marketing site.
+  // (Skip if content-length is missing.)
+  const cl = request.headers.get("content-length");
+  if (cl) {
+    const n = Number(cl);
+    if (Number.isFinite(n) && n > 1_000_000) return { rule: "body-too-large" }; // 1MB
+  }
+
+  return null;
+}
+
+function decodeSafe(s: string) {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
 }
 
 export const config = {
