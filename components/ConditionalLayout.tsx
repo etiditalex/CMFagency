@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import SocialShare from "@/components/SocialShare";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -45,8 +44,6 @@ export default function ConditionalLayout({
     <>
       <Navbar />
       <main className="min-h-screen">{children}</main>
-      {/* Keep admin pages clean: no floating social share widget */}
-      {!isTeamPage && !isFusionXpress && !isDashboard && !isAboutSection && <SocialShare />}
       <Footer />
       <CookieBanner />
       {/* Avoid floating WhatsApp button on About pages (matches requested design without green overlay button) */}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Lock, Mail, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock, Mail, Shield } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -206,224 +206,269 @@ export default function FusionXpressAdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen pt-28 md:pt-32">
-      <div className="min-h-[calc(100vh-7rem)] md:min-h-[calc(100vh-8rem)] grid grid-cols-1 lg:grid-cols-2">
-      {/* Left brand panel */}
-      <section className="relative hidden lg:block">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg)",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/55 to-black/70" />
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-primary-500/25 blur-3xl" />
-          <div className="absolute bottom-10 -right-20 w-80 h-80 rounded-full bg-secondary-500/25 blur-3xl" />
-        </div>
-
-        <div className="relative h-full flex items-center px-10 xl:px-16">
-          <div className="max-w-xl text-white">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-4 py-2 backdrop-blur-md">
+    <div className="min-h-screen pt-28 md:pt-32 bg-white">
+      <div className="container-custom py-10 max-w-6xl">
+        {/* Marketing / services section (like screenshot), then login at the end */}
+        <section className="text-left">
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-secondary-200 bg-secondary-50 px-4 py-2 text-secondary-800 font-extrabold">
               <Shield className="w-4 h-4" />
-              Admin Portal
+              Entertainment industry services
+            </div>
+            <h1 className="mt-5 text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight">
+              Changer Fusions helps creators run unforgettable experiences.
+            </h1>
+            <p className="mt-4 text-gray-600 leading-relaxed">
+              We support event organizers, artists, talent brands, and entertainment businesses with campaign setup, ticketing,
+              voting programs, and marketing execution—built to be simple for audiences and reliable for admins.
+            </p>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl border border-secondary-300 shadow-sm p-6">
+              <div className="text-secondary-800 font-extrabold">Experiences</div>
+              <div className="mt-3 text-4xl font-extrabold text-gray-900">Ticketing</div>
+              <div className="mt-2 text-sm text-gray-600">For Events, Shows & Launches</div>
+              <div className="mt-5 space-y-3 text-sm text-gray-700">
+                {[
+                  "Create ticketing campaigns in minutes",
+                  "Webhook-confirmed M-Pesa payments",
+                  "Issue tickets only after verification",
+                ].map((t) => (
+                  <div key={t} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary-700 mt-0.5" />
+                    <span>{t}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <h1 className="mt-6 text-4xl xl:text-5xl font-extrabold leading-tight text-white text-left">
-              Fusion Xpress
-            </h1>
-            <p className="mt-4 text-white/90 text-lg leading-relaxed">
-              A private dashboard for creating campaigns, generating payment links, and monitoring ticket/vote activity.
-            </p>
-
-            <div className="mt-8 space-y-3 text-white/90">
-              <div className="rounded-xl bg-white/10 border border-white/15 p-4 backdrop-blur-md">
-                <div className="font-semibold text-white">What you can do</div>
-                <ul className="mt-3 space-y-2 text-sm">
-                  <li>Generate shareable links for tickets or voting campaigns</li>
-                  <li>Track webhook-confirmed transactions and fulfillment</li>
-                  <li>Keep campaigns active/inactive with clear visibility rules</li>
-                </ul>
+            <div className="bg-white rounded-xl border border-secondary-300 shadow-sm p-6">
+              <div className="text-secondary-800 font-extrabold">Voting Programs</div>
+              <div className="mt-3 text-4xl font-extrabold text-gray-900">Voting</div>
+              <div className="mt-2 text-sm text-gray-600">For Paid Voting Programs</div>
+              <div className="mt-5 space-y-3 text-sm text-gray-700">
+                {[
+                  "Contestant setup + shareable links",
+                  "Votes counted only after webhook success",
+                  "Clear reporting for campaign performance",
+                ].map((t) => (
+                  <div key={t} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary-700 mt-0.5" />
+                    <span>{t}</span>
+                  </div>
+                ))}
               </div>
+            </div>
 
-              <div className="text-xs text-white/70">
-                Access is restricted to allowlisted admins only. If you need access, contact the system administrator.
+            <div className="bg-white rounded-xl border border-secondary-300 shadow-sm p-6">
+              <div className="text-secondary-800 font-extrabold">Enterprise</div>
+              <div className="mt-3 text-4xl font-extrabold text-gray-900">Custom</div>
+              <div className="mt-2 text-sm text-gray-600">Ideal for Businesses & Companies</div>
+              <div className="mt-5 space-y-3 text-sm text-gray-700">
+                {[
+                  "Custom workflows and reporting",
+                  "Security-first admin access control",
+                  "Support with go-live + monitoring",
+                ].map((t) => (
+                  <div key={t} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-secondary-700 mt-0.5" />
+                    <span>{t}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6">
+                <a
+                  href="/contact"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black transition-colors"
+                >
+                  Talk to sales
+                </a>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Right login panel */}
-      <section className="relative bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-6 py-16 lg:py-10">
-        <div className="w-full max-w-md">
-          <Link href="/" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Home
-          </Link>
-
-          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-            <div className="p-8 border-b border-gray-100">
-              <div className="flex items-center justify-center">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white flex items-center justify-center shadow-lg">
-                  <Shield className="w-7 h-7" />
-                </div>
-              </div>
-              <h2 className="mt-5 text-3xl font-extrabold text-gray-900 text-center">
-                {mode === "login" ? "Admin Sign In" : "Request Admin Access"}
-              </h2>
-              <p className="mt-2 text-gray-600 text-center">
-                Use your admin account to access the Fusion Xpress dashboard.
-              </p>
-              <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 text-center">
-                Members-only access. Only allowlisted admin members can sign in.
-              </div>
+          <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+            <div className="font-extrabold text-gray-900">About Changer Fusions</div>
+            <p className="mt-2 text-gray-600 leading-relaxed">
+              Changer Fusions is a creative and marketing partner focused on entertainment experiences—helping teams launch,
+              promote, and measure outcomes with tools that are dependable in production.
+            </p>
+            <div className="mt-4 text-sm text-gray-700">
+              Fusion Xpress is our private admin portal for managing campaigns, links, and webhook-confirmed activity.
             </div>
+          </div>
+        </section>
 
-            <div className="p-8">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
+        {/* Admin login (towards the end) */}
+        <section className="mt-12 flex items-center justify-center">
+          <div className="w-full max-w-md">
+            <Link href="/" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Home
+            </Link>
 
-              <form onSubmit={onSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="admin@company.com"
-                    />
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+              <div className="p-8 border-b border-gray-100">
+                <div className="flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white flex items-center justify-center shadow-lg">
+                    <Shield className="w-7 h-7" />
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="Enter your password"
-                    />
-                  </div>
+                <h2 className="mt-5 text-3xl font-extrabold text-gray-900 text-center">
+                  {mode === "login" ? "Admin Sign In" : "Request Admin Access"}
+                </h2>
+                <p className="mt-2 text-gray-600 text-center">
+                  Use your admin account to access the Fusion Xpress dashboard.
+                </p>
+                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 text-center">
+                  Members-only access. Only allowlisted admin members can sign in.
                 </div>
+              </div>
 
-                {mode === "login" && (
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={onForgotPassword}
-                      className="text-sm font-semibold text-primary-700 hover:text-primary-800"
-                      disabled={loading}
-                    >
-                      Forgot / Create password
-                    </button>
-                    {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
+              <div className="p-8">
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    {error}
                   </div>
                 )}
 
-                {mode === "signup" && (
+                <form onSubmit={onSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="admin@company.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <input
                         type="password"
                         required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="Confirm your password"
+                        placeholder="Enter your password"
                       />
                     </div>
                   </div>
-                )}
 
-                <div className="flex items-center justify-between gap-3">
-                  <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    />
-                    Keep me signed in
-                  </label>
+                  {mode === "login" && (
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={onForgotPassword}
+                        className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+                        disabled={loading}
+                      >
+                        Forgot / Create password
+                      </button>
+                      {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
+                    </div>
+                  )}
 
-                  <span className="text-xs text-gray-500">
-                    {rememberMe ? "Session saved" : "Session not saved"}
-                  </span>
+                  {mode === "signup" && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="password"
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="Confirm your password"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      Keep me signed in
+                    </label>
+
+                    <span className="text-xs text-gray-500">
+                      {rememberMe ? "Session saved" : "Session not saved"}
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading || !canSubmit}
+                    className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loading
+                      ? mode === "login"
+                        ? "Signing in..."
+                        : "Creating account..."
+                      : mode === "login"
+                        ? "Sign in to dashboard"
+                        : "Create account (admin only)"}
+                  </button>
+                </form>
+
+                <div className="mt-6 text-center text-sm text-gray-600">
+                  {mode === "login" ? (
+                    <>
+                      Need an admin account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode("signup");
+                          setError(null);
+                          setPassword("");
+                          setConfirmPassword("");
+                        }}
+                        className="text-primary-700 hover:text-primary-800 font-semibold"
+                      >
+                        Request access
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have access?{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode("login");
+                          setError(null);
+                          setPassword("");
+                          setConfirmPassword("");
+                        }}
+                        className="text-primary-700 hover:text-primary-800 font-semibold"
+                      >
+                        Sign in
+                      </button>
+                    </>
+                  )}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading || !canSubmit}
-                  className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {loading
-                    ? mode === "login"
-                      ? "Signing in..."
-                      : "Creating account..."
-                    : mode === "login"
-                      ? "Sign in to dashboard"
-                      : "Create account (admin only)"}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center text-sm text-gray-600">
-                {mode === "login" ? (
-                  <>
-                    Need an admin account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("signup");
-                        setError(null);
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
-                      className="text-primary-700 hover:text-primary-800 font-semibold"
-                    >
-                      Request access
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have access?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("login");
-                        setError(null);
-                        setPassword("");
-                        setConfirmPassword("");
-                      }}
-                      className="text-primary-700 hover:text-primary-800 font-semibold"
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-6 text-xs text-gray-500 text-center">
-                This portal is restricted. Non-admin users cannot access campaigns or generate payment links.
+                <div className="mt-6 text-xs text-gray-500 text-center">
+                  This portal is restricted. Non-admin users cannot access campaigns or generate payment links.
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
     </div>
   );
