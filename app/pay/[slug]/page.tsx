@@ -61,7 +61,6 @@ export default function PayCampaignPage() {
   const [contestants, setContestants] = useState<Contestant[]>([]);
 
   const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
 
@@ -210,7 +209,6 @@ export default function PayCampaignPage() {
         body: JSON.stringify({
           slug: campaign.slug,
           phone: phone.trim(),
-          email: email.trim() || undefined,
           quantity: q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
         }),
@@ -378,7 +376,7 @@ export default function PayCampaignPage() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900">Pay</h2>
             <p className="text-gray-600 mt-1">
-              Enter your phone number to receive an M-Pesa STK prompt. Payment is confirmed only by webhook.
+              Enter your phone number to receive an M-Pesa prompt. Payment is confirmed only by webhook.
             </p>
 
             {error && (
@@ -389,6 +387,15 @@ export default function PayCampaignPage() {
             )}
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
+              {submitting && (
+                <div className="p-4 rounded-lg border border-primary-200 bg-primary-50 text-primary-900">
+                  <div className="font-extrabold">Handling Payment</div>
+                  <div className="mt-1 text-sm text-primary-900/90">We are processing your Mpesa payment.</div>
+                  <div className="mt-3 text-sm text-primary-900/90">
+                    Please check your phone and Enter your Mpesa PIN...
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone (M-Pesa)</label>
                 <input
@@ -401,17 +408,6 @@ export default function PayCampaignPage() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-2">Format: 07XXXXXXXX (Safaricom)</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email (optional)</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="you@example.com"
-                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -449,7 +445,7 @@ export default function PayCampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending STK prompt...
+                    Handling Payment...
                   </>
                 ) : (
                   "Pay with M-Pesa"
