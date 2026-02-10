@@ -10,8 +10,10 @@ type InitBody = {
   contestant_id?: string | null;
 };
 
-function normalizeMpesaPhone(input: string) {
-  const raw = String(input ?? "").trim().replace(/\s+/g, "");
+function normalizeMpesaPhone(input: string): string | null {
+  const raw = String(input ?? "")
+    .trim()
+    .replace(/\s+/g, "");
   const digits = raw.replace(/[^\d+]/g, "");
 
   // Accept: 07XXXXXXXX, 7XXXXXXXX, +2547XXXXXXXX, 2547XXXXXXXX
@@ -42,7 +44,9 @@ async function getDarajaAccessToken(baseUrl: string, consumerKey: string, consum
 
 function darajaTimestamp(now = new Date()) {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(
+    now.getMinutes()
+  )}${pad(now.getSeconds())}`;
 }
 
 type DarajaStkResponse = {
@@ -85,7 +89,11 @@ export async function POST(req: Request) {
     const phone = normalizeMpesaPhone(body.phone ?? "");
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
-    if (!phone) return NextResponse.json({ error: "Phone must be a valid Safaricom number (e.g. 07XXXXXXXX)" }, { status: 400 });
+    if (!phone)
+      return NextResponse.json(
+        { error: "Phone must be a valid Safaricom number (e.g. 07XXXXXXXX)" },
+        { status: 400 }
+      );
     if (!Number.isFinite(quantity) || quantity < 1) {
       return NextResponse.json({ error: "Quantity must be at least 1" }, { status: 400 });
     }
@@ -124,7 +132,10 @@ export async function POST(req: Request) {
 
     // Daraja STK Push is KES-only in practice for most setups.
     if (String(campaign.currency ?? "").toUpperCase() !== "KES") {
-      return NextResponse.json({ error: "This campaign is not payable via M-Pesa (currency must be KES)." }, { status: 400 });
+      return NextResponse.json(
+        { error: "This campaign is not payable via M-Pesa (currency must be KES)." },
+        { status: 400 }
+      );
     }
 
     const q = Math.max(1, Math.min(Number(campaign.max_per_txn), quantity));
@@ -213,20 +224,18 @@ export async function POST(req: Request) {
     // Store Daraja IDs for callback correlation (best-effort).
     const checkoutRequestId = String(stkJson.CheckoutRequestID ?? "");
     const merchantRequestId = String(stkJson.MerchantRequestID ?? "");
-    if (checkoutRequestId) {
-      await supabase
-        .from("transactions")
-        .update({
-          metadata: {
-            slug: campaign.slug,
-            campaign_title: campaign.title,
-            mpesa_phone: phone,
-            mpesa_checkout_request_id: checkoutRequestId,
-            mpesa_merchant_request_id: merchantRequestId || null,
-          },
-        })
-        .eq("reference", reference);
-    }
+    await supabase
+      .from("transactions")
+      .update({
+        metadata: {
+          slug: campaign.slug,
+          campaign_title: campaign.title,
+          mpesa_phone: phone,
+          mpesa_checkout_request_id: checkoutRequestId || null,
+          mpesa_merchant_request_id: merchantRequestId || null,
+        },
+      })
+      .eq("reference", reference);
 
     return NextResponse.json({
       reference,

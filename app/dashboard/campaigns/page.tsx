@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Copy, ExternalLink, LineChart, Plus, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,8 +38,11 @@ type CampaignWithStats = CampaignRow & {
   successful_transactions: number;
 };
 
+type CampaignTypeFilter = "all" | "ticket" | "vote";
+
 export default function DashboardCampaignsPage() {
   const router = useRouter();
+  const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -87,16 +90,15 @@ export default function DashboardCampaignsPage() {
         const { data: campaignRows, error: campaignsError } = await supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at")
-          .eq("created_by", user.id)
           .order("created_at", { ascending: false });
 
         if (campaignsError) throw campaignsError;
 
         // Stats view is optional; if it's missing, still show campaigns + links.
+        // NOTE: do not filter by created_by so admins can see existing campaigns created earlier.
         const { data: statsRows, error: statsError } = await supabase
           .from("campaign_stats")
-          .select("campaign_id,total_amount,total_votes,successful_transactions")
-          .eq("created_by", user.id);
+          .select("campaign_id,total_amount,total_votes,successful_transactions");
 
         const statsById = new Map<string, CampaignStatsRow>(
           (!statsError ? (statsRows ?? []) : []).map((s) => [s.campaign_id, s])
@@ -140,9 +142,27 @@ export default function DashboardCampaignsPage() {
     }
   };
 
+  // IMPORTANT: hooks must run on every render (no conditional hook calls).
+  const filter = (() => {
+    const t = (sp?.get("type") ?? "all").toLowerCase();
+    if (t === "ticket" || t === "vote") return t;
+    return "all";
+  })() as CampaignTypeFilter;
+
+  const counts = useMemo(() => {
+    const ticket = campaigns.filter((c) => c.type === "ticket").length;
+    const vote = campaigns.filter((c) => c.type === "vote").length;
+    return { all: campaigns.length, ticket, vote };
+  }, [campaigns]);
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return campaigns;
+    return campaigns.filter((c) => c.type === filter);
+  }, [campaigns, filter]);
+
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading campaigns...</p>
@@ -155,52 +175,84 @@ export default function DashboardCampaignsPage() {
   if (!isAuthenticated || !user) return null;
 
   return (
-    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
-      <div className="container-custom py-8">
-        <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Campaigns</h1>
-            <p className="text-gray-600 mt-2 max-w-2xl">
-              Create ticket or voting campaigns and share public payment links. Payment confirmation and fulfillment are
-              handled by webhook only.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="btn-outline">
-              Back to dashboard
-            </Link>
-            <Link href="/dashboard/campaigns/new" className="btn-primary inline-flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              New Campaign
-            </Link>
-          </div>
+    <div className="text-left">
+      <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+        <div className="min-w-0">
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Campaigns</h2>
+          <p className="text-gray-600 mt-1 max-w-3xl text-left">
+            Create ticket or voting campaigns and share public payment links. Payment confirmation and fulfillment are
+            handled by webhook only.
+          </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/campaigns/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800"
+          >
+            <Plus className="w-4 h-4" />
+            New Campaign
+          </Link>
+        </div>
+      </div>
 
-        {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>
-        )}
+      {/* Type filters */}
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        {[
+          { id: "all", label: `All (${counts.all})` },
+          { id: "ticket", label: `Ticketing (${counts.ticket})` },
+          { id: "vote", label: `Voting (${counts.vote})` },
+        ].map((t) => {
+          const active = filter === (t.id as CampaignTypeFilter);
+          const href = t.id === "all" ? "/dashboard/campaigns" : `/dashboard/campaigns?type=${t.id}`;
+          return (
+            <Link
+              key={t.id}
+              href={href}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md border text-sm font-semibold transition-colors ${
+                active
+                  ? "border-primary-600 bg-primary-50 text-primary-800"
+                  : "border-gray-200 bg-white hover:bg-gray-50 text-gray-900"
+              }`}
+            >
+              {t.id === "ticket" ? <Ticket className="w-4 h-4" /> : t.id === "vote" ? <Vote className="w-4 h-4" /> : null}
+              {t.label}
+            </Link>
+          );
+        })}
+      </div>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {campaigns.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-              <p className="text-gray-700">
-                You don’t have any campaigns yet. Create your first one to generate a shareable link.
-              </p>
-              <div className="mt-6">
-                <Link href="/dashboard/campaigns/new" className="btn-primary inline-flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Create Campaign
-                </Link>
-              </div>
+      {error && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
+      )}
+
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-md shadow-sm p-8 border border-gray-200">
+            <p className="text-gray-700 text-left">
+              {filter === "vote"
+                ? "You don’t have any voting campaigns yet. Create one to start collecting votes."
+                : filter === "ticket"
+                  ? "You don’t have any ticketing campaigns yet. Create one to start selling tickets."
+                  : "You don’t have any campaigns yet. Create your first one to generate a shareable link."}
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/dashboard/campaigns/new"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800"
+              >
+                <Plus className="w-4 h-4" />
+                Create Campaign
+              </Link>
             </div>
-          ) : (
-            campaigns.map((c) => {
+          </div>
+        ) : (
+          filtered.map((c) => {
               const isVote = c.type === "vote";
               const Icon = isVote ? Vote : Ticket;
               const publicUrl = `/pay/${c.slug}`;
 
               return (
-                <div key={c.id} className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div key={c.id} className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -208,8 +260,8 @@ export default function DashboardCampaignsPage() {
                           <Icon className="w-5 h-5 text-primary-700" />
                         </span>
                         <div className="min-w-0">
-                          <div className="font-bold text-gray-900 text-lg truncate">{c.title}</div>
-                          <div className="text-sm text-gray-600 truncate">
+                          <div className="font-extrabold text-gray-900 text-lg truncate text-left">{c.title}</div>
+                          <div className="text-sm text-gray-600 truncate text-left">
                             <span className="font-semibold">{isVote ? "Voting" : "Tickets"}</span> ·{" "}
                             <span className="font-mono">{c.slug}</span>
                           </div>
@@ -239,7 +291,7 @@ export default function DashboardCampaignsPage() {
                     <div className="flex flex-col gap-2">
                       <Link
                         href={`/dashboard/campaigns/${c.id}`}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
                         title="Open campaign report"
                       >
                         <LineChart className="w-4 h-4" />
@@ -247,7 +299,7 @@ export default function DashboardCampaignsPage() {
                       </Link>
                       <Link
                         href={publicUrl}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
                         title="Open public link"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -256,7 +308,7 @@ export default function DashboardCampaignsPage() {
                       <button
                         type="button"
                         onClick={() => copyLink(c.slug)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
                         title="Copy public link"
                       >
                         <Copy className="w-4 h-4" />
@@ -272,8 +324,7 @@ export default function DashboardCampaignsPage() {
                 </div>
               );
             })
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

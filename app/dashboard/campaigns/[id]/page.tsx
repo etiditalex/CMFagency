@@ -369,7 +369,7 @@ export default function CampaignReportPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading report…</p>
@@ -385,8 +385,8 @@ export default function CampaignReportPage() {
   const TypeIcon = isVote ? Vote : Ticket;
 
   return (
-    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
-      <div className="container-custom py-8 max-w-6xl">
+    <div className="text-left">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-start justify-between gap-4 flex-col lg:flex-row">
           <div className="min-w-0">
             <Link href="/dashboard/campaigns" className="inline-flex items-center text-primary-700 hover:text-primary-800 font-semibold">
@@ -395,7 +395,7 @@ export default function CampaignReportPage() {
             </Link>
 
             <div className="mt-4 flex items-center gap-3 flex-wrap">
-              <div className="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white px-4 py-2 font-bold">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary-700 text-white px-4 py-2 font-bold">
                 <Shield className="w-4 h-4" />
                 Campaign Report
               </div>
@@ -416,10 +416,10 @@ export default function CampaignReportPage() {
               )}
             </div>
 
-            <h1 className="mt-4 text-3xl md:text-4xl font-extrabold text-gray-900 truncate">
+            <h2 className="mt-4 text-2xl md:text-3xl font-extrabold text-gray-900 truncate text-left">
               {campaign?.title ?? "Campaign"}
-            </h1>
-            <div className="mt-2 text-gray-600">
+            </h2>
+            <div className="mt-2 text-gray-600 text-left">
               Slug: <span className="font-mono text-gray-900">{campaign?.slug ?? "—"}</span>
               <span className="mx-2">·</span>
               Last updated: <span className="font-semibold">{updatedLabel}</span>
@@ -449,7 +449,7 @@ export default function CampaignReportPage() {
 
             <Link
               href={publicUrl || "/dashboard/campaigns"}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
             >
               <ExternalLink className="w-4 h-4" />
               Open public page
@@ -458,9 +458,9 @@ export default function CampaignReportPage() {
         </div>
 
         {/* Date range controls */}
-        <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+        <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 p-4">
           <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 text-left">
               <span className="font-semibold">Range:</span> {rangeLabel}
               <span className="mx-2">·</span>
               <span className="font-semibold">Last updated:</span> {updatedLabel}
@@ -517,7 +517,7 @@ export default function CampaignReportPage() {
                   type="button"
                   onClick={() => refreshData()}
                   disabled={dataLoading}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black disabled:opacity-60"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
                 >
                   <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
                   Apply
@@ -528,7 +528,7 @@ export default function CampaignReportPage() {
         </div>
 
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 whitespace-pre-wrap">
+          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">
             {error}
           </div>
         )}
@@ -556,7 +556,7 @@ export default function CampaignReportPage() {
                 <div className="mt-2 text-sm text-gray-600">Webhook-confirmed.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-xl bg-secondary-50 items-center justify-center">
-                <Shield className="w-5 h-5 text-secondary-700" />
+                <Shield className="w-5 h-5 text-secondary-800" />
               </span>
             </div>
           </div>

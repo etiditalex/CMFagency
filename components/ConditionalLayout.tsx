@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import SocialShare from "@/components/SocialShare";
 import CookieBanner from "@/components/CookieBanner";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export default function ConditionalLayout({
   children,
@@ -27,6 +28,16 @@ export default function ConditionalLayout({
         <CookieBanner />
         <WhatsAppButton />
       </div>
+    );
+  }
+
+  // Dashboard uses its own shell layout (sidebar + top bar).
+  if (isDashboard) {
+    return (
+      <>
+        <DashboardShell>{children}</DashboardShell>
+        <CookieBanner />
+      </>
     );
   }
 

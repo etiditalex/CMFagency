@@ -46,6 +46,8 @@ export default function FusionXpressAdminLoginPage() {
         : null
   );
 
+  const [resetSent, setResetSent] = useState(false);
+
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
     if (!password) return false;
@@ -55,12 +57,30 @@ export default function FusionXpressAdminLoginPage() {
     return true;
   }, [confirmPassword, email, mode, password]);
 
+  const maybeClaimAdmin = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      await fetch("/api/fusion-xpress/claim-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: token }),
+      });
+    } catch {
+      // non-blocking
+    }
+  };
+
   useEffect(() => {
     // If already signed in and admin, go straight to dashboard.
     const check = async () => {
       const { data } = await supabase.auth.getSession();
       const userId = data.session?.user?.id;
       if (!userId) return;
+
+      // If this email is configured in the server allowlist, auto-claim admin access.
+      await maybeClaimAdmin();
 
       const { data: adminRow, error: adminErr } = await supabase
         .from("admin_users")
@@ -111,6 +131,7 @@ export default function FusionXpressAdminLoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    setResetSent(false);
 
     try {
       if (mode === "signup") {
@@ -136,6 +157,7 @@ export default function FusionXpressAdminLoginPage() {
           );
         }
 
+        await maybeClaimAdmin();
         await requireAdminOrSignOut(userId);
       } else {
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({
@@ -148,12 +170,36 @@ export default function FusionXpressAdminLoginPage() {
         const userId = data.user?.id;
         if (!userId) throw new Error("Login failed. Please try again.");
 
+        await maybeClaimAdmin();
         await requireAdminOrSignOut(userId);
       }
 
       router.replace("/dashboard");
     } catch (e: any) {
       setError(e?.message ?? "Unable to sign in.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onForgotPassword = async () => {
+    setError(null);
+    setResetSent(false);
+    const e = email.trim();
+    if (!e) {
+      setError("Enter your email first, then click “Forgot password”.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(e, {
+        redirectTo: `${window.location.origin}/fusion-xpress/reset-password`,
+      });
+      if (resetErr) throw resetErr;
+      setResetSent(true);
+    } catch (err: any) {
+      setError(err?.message ?? "Unable to send reset link.");
     } finally {
       setLoading(false);
     }
@@ -272,6 +318,20 @@ export default function FusionXpressAdminLoginPage() {
                     />
                   </div>
                 </div>
+
+                {mode === "login" && (
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={onForgotPassword}
+                      className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+                      disabled={loading}
+                    >
+                      Forgot / Create password
+                    </button>
+                    {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
+                  </div>
+                )}
 
                 {mode === "signup" && (
                   <div>

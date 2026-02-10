@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ExternalLink,
-  LogOut,
   Plus,
   RefreshCw,
   Shield,
@@ -25,7 +24,7 @@ function isMissingAdminUsersTable(err: any) {
 
 export default function DashboardHomePage() {
   const router = useRouter();
-  const { isAuthenticated, user, loading: authLoading, logout } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +221,7 @@ export default function DashboardHomePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard…</p>
@@ -237,255 +236,251 @@ export default function DashboardHomePage() {
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
 
   return (
-    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
-      <div className="container-custom py-8 max-w-6xl">
-        <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white px-4 py-2 font-bold">
-              <Shield className="w-4 h-4" />
-              Fusion Xpress
-            </div>
-            <h1 className="mt-4 text-3xl md:text-4xl font-extrabold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600 max-w-2xl">
-              Create ticket or voting campaigns, generate shareable payment links, and track webhook-confirmed activity.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={refreshData}
-              disabled={dataLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
-              title="Refresh reports"
-            >
-              <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </button>
-            <button
-              type="button"
-              onClick={logout}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign out
-            </button>
-          </div>
+    <div className="text-left">
+      <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+        <div className="min-w-0">
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Recent Activity</h2>
+          <p className="mt-1 text-gray-600 max-w-3xl text-left">
+            Create ticket or voting campaigns, generate shareable payment links, and track webhook-confirmed activity.
+          </p>
         </div>
 
-        <div className="mt-4 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="text-left">
-            <span className="font-semibold">Last updated:</span> {updatedLabel}
-          </div>
-          <div className="text-left text-gray-500">
-            Auto-updates when payments/votes/tickets change.
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={refreshData}
+            disabled={dataLoading}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
+            title="Refresh reports"
+          >
+            <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
         </div>
+      </div>
 
-        {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 whitespace-pre-wrap">
-            {error}
+      <div className="mt-3 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="text-left">
+          <span className="font-semibold">Last updated:</span> {updatedLabel}
+        </div>
+        <div className="text-left text-gray-500">Auto-updates when payments/votes/tickets change.</div>
+      </div>
+
+      {error && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">
+          {error}
+        </div>
+      )}
+
+      {/* KPI cards (styled like screenshot tiles) */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
           </div>
-        )}
-
-        {/* KPI cards */}
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Revenue</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{formatRevenue}</div>
-                <div className="mt-2 text-sm text-gray-600">Webhook-confirmed payments only.</div>
+                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Revenue</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenue}</div>
+                <div className="mt-2 text-sm text-gray-600 text-left">Webhook-confirmed payments only.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
                 <Wallet className="w-5 h-5 text-primary-700" />
               </span>
             </div>
-          </div>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
+          </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{successfulPayments.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">Count of successful transactions.</div>
+                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Successful payments</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{successfulPayments.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600 text-left">Count of successful transactions.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-xl bg-secondary-50 items-center justify-center">
                 <Shield className="w-5 h-5 text-secondary-700" />
               </span>
             </div>
-          </div>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
+          </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Tickets issued</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalTicketsIssued.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">Issued after webhook verification.</div>
+                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Tickets issued</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalTicketsIssued.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600 text-left">Issued after webhook verification.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
                 <Ticket className="w-5 h-5 text-gray-900" />
               </span>
             </div>
-          </div>
+        </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
+          </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalVotes.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">Counted from votes table.</div>
+                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Votes counted</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalVotes.toLocaleString()}</div>
+                <div className="mt-2 text-sm text-gray-600 text-left">Counted from votes table.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
                 <Vote className="w-5 h-5 text-primary-700" />
               </span>
             </div>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Total campaigns</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{campaignsCount.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">
-                  Active: <span className="font-semibold text-green-700">{activeCampaignsCount}</span> · Inactive:{" "}
-                  <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
-                </div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
-                <ExternalLink className="w-5 h-5 text-gray-500" />
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-lg p-6 text-white border border-black/10">
-            <div className="text-xs font-bold tracking-widest text-white/70 uppercase">Public link format</div>
-            <div className="mt-2 text-xl font-extrabold">/pay/&lt;slug&gt;</div>
-            <div className="mt-3 text-white/80 text-sm">
-              Campaign links are public, but payment success is confirmed only by webhook.
-            </div>
-          </div>
         </div>
+      </div>
 
-        {/* Quick actions */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link
-            href="/dashboard/campaigns"
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Manage</div>
-                <div className="mt-1 text-xl font-extrabold text-gray-900">Campaigns</div>
-                <div className="mt-2 text-gray-600">
-                  View your campaigns and copy public payment links.
-                </div>
-              </div>
-              <ExternalLink className="w-5 h-5 text-gray-400" />
-            </div>
-            <div className="mt-5 flex items-center gap-3 text-sm text-gray-600">
-              <span className="inline-flex items-center gap-1">
-                <Ticket className="w-4 h-4" /> Tickets
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <Vote className="w-4 h-4" /> Voting
-              </span>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/campaigns/new"
-            className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Create</div>
-                <div className="mt-1 text-xl font-extrabold text-gray-900">New Campaign</div>
-                <div className="mt-2 text-gray-600">
-                  Set price, slug, and publish a new link.
-                </div>
-              </div>
-              <Plus className="w-5 h-5 text-gray-400" />
-            </div>
-          </Link>
-        </div>
-
-        {/* Money report: recent transactions */}
-        <div className="mt-10 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex items-start justify-between gap-4">
+      {/* Summary tiles */}
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Reports</div>
-              <h2 className="mt-1 text-xl font-extrabold text-gray-900">Recent payments</h2>
-              <p className="mt-2 text-gray-600 text-sm">
-                Latest transactions (non-PII). Status is webhook-confirmed only when marked <span className="font-semibold">success</span>.
-              </p>
+              <div className="text-sm font-extrabold text-primary-700 text-left">Total campaigns</div>
+              <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{campaignsCount.toLocaleString()}</div>
+              <div className="mt-2 text-sm text-gray-600 text-left">
+                Active: <span className="font-semibold text-secondary-700">{activeCampaignsCount}</span> · Inactive:{" "}
+                <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
+              </div>
             </div>
+            <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+              <ExternalLink className="w-5 h-5 text-gray-500" />
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="text-sm font-extrabold text-primary-700 text-left">Public link format</div>
+          <div className="mt-2 text-xl font-extrabold text-gray-900 text-left">/pay/&lt;slug&gt;</div>
+          <div className="mt-3 text-gray-600 text-sm text-left">
+            Campaign links are public, but payment success is confirmed only by webhook.
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/dashboard/campaigns"
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800"
             >
-              View campaigns
+              Manage campaigns
               <ExternalLink className="w-4 h-4" />
             </Link>
+            <Link
+              href="/dashboard/campaigns/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold"
+            >
+              Create new
+              <Plus className="w-4 h-4" />
+            </Link>
           </div>
+        </div>
+      </div>
 
-          <div className="overflow-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr className="text-left">
-                  <th className="px-6 py-3 font-bold text-gray-600">Time</th>
-                  <th className="px-6 py-3 font-bold text-gray-600">Campaign</th>
-                  <th className="px-6 py-3 font-bold text-gray-600">Type</th>
-                  <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
-                  <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
-                  <th className="px-6 py-3 font-bold text-gray-600">Status</th>
+      {/* Money report: recent transactions */}
+      <div className="mt-8 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4">
+          <div>
+            <div className="text-sm font-extrabold text-primary-700 text-left">Recent Payments</div>
+            <p className="mt-2 text-gray-600 text-sm text-left">
+              Latest transactions (non-PII). Status is webhook-confirmed only when marked{" "}
+              <span className="font-semibold">success</span>.
+            </p>
+          </div>
+          <Link
+            href="/dashboard/campaigns"
+            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+          >
+            View More
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
+
+        <div className="overflow-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr className="text-left">
+                <th className="px-6 py-3 font-bold text-gray-600">Time</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Campaign</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Type</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentTransactions.length === 0 ? (
+                <tr>
+                  <td className="px-6 py-6 text-gray-600" colSpan={6}>
+                    No transactions yet.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.length === 0 ? (
-                  <tr>
-                    <td className="px-6 py-6 text-gray-600" colSpan={6}>
-                      No transactions yet.
-                    </td>
-                  </tr>
-                ) : (
-                  recentTransactions.map((t) => {
-                    const c = campaignTitleById[t.campaign_id];
-                    const status = String(t.status ?? "");
-                    const statusClass =
-                      status === "success"
-                        ? "text-green-700 bg-green-50 border-green-100"
-                        : status === "failed"
-                          ? "text-red-700 bg-red-50 border-red-100"
-                          : "text-gray-700 bg-gray-50 border-gray-100";
+              ) : (
+                recentTransactions.map((t) => {
+                  const c = campaignTitleById[t.campaign_id];
+                  const status = String(t.status ?? "");
+                  const statusClass =
+                    status === "success"
+                      ? "text-secondary-800 bg-secondary-50 border-secondary-100"
+                      : status === "failed"
+                        ? "text-red-700 bg-red-50 border-red-100"
+                        : "text-gray-700 bg-gray-50 border-gray-100";
 
-                    return (
-                      <tr key={t.id} className="border-b border-gray-100">
-                        <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
-                          {new Date(t.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
-                          {c?.title ?? "—"}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
-                          {c?.type ? (c.type === "vote" ? "Voting" : "Tickets") : "—"}
-                        </td>
-                        <td className="px-6 py-4 text-gray-700 font-mono whitespace-nowrap">{t.reference}</td>
-                        <td className="px-6 py-4 text-gray-900 whitespace-nowrap">
-                          {String(t.currency ?? "").toUpperCase()} {Number(t.amount ?? 0).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${statusClass}`}>
-                            {status || "—"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                  return (
+                    <tr key={t.id} className="border-b border-gray-100">
+                      <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
+                        {new Date(t.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
+                        {c?.title ?? "—"}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
+                        {c?.type ? (c.type === "vote" ? "Voting" : "Tickets") : "—"}
+                      </td>
+                      <td className="px-6 py-4 text-gray-700 font-mono whitespace-nowrap">{t.reference}</td>
+                      <td className="px-6 py-4 text-gray-900 whitespace-nowrap">
+                        {String(t.currency ?? "").toUpperCase()} {Number(t.amount ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${statusClass}`}>
+                          {status || "—"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

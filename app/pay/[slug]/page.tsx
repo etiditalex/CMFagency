@@ -137,8 +137,17 @@ export default function PayCampaignPage() {
     const fetchStatus = async () => {
       try {
         const res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
-        const json = (await res.json()) as any;
-        if (!res.ok) throw new Error(json?.error ?? "Unable to fetch payment status");
+        const raw = await res.text();
+        let json: any = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw);
+          } catch {
+            // Non-JSON response (e.g. Next error HTML). We'll treat as transient.
+            json = {};
+          }
+        }
+        if (!res.ok) throw new Error(json?.error ?? raw ?? "Unable to fetch payment status");
 
         const next = {
           status: String(json.status ?? "pending"),
@@ -207,8 +216,20 @@ export default function PayCampaignPage() {
         }),
       });
 
-      const json = (await res.json()) as { reference?: string; customer_message?: string; error?: string };
-      if (!res.ok) throw new Error(json.error || "Payment initialization failed.");
+      const raw = await res.text();
+      let json: { reference?: string; customer_message?: string; error?: string } = {};
+      if (raw) {
+        try {
+          json = JSON.parse(raw) as typeof json;
+        } catch {
+          // Non-JSON response (e.g. Next error HTML). We'll surface raw below.
+        }
+      }
+
+      if (!res.ok) {
+        const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
+        throw new Error(details || `Payment initialization failed (HTTP ${res.status})`);
+      }
       if (!json.reference) throw new Error("Missing transaction reference.");
 
       // Stay on page and start polling for webhook confirmation.

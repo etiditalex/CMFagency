@@ -78,7 +78,7 @@ export async function POST(req: Request) {
   const resultCode = Number(cb?.ResultCode);
   const resultDesc = String(cb?.ResultDesc ?? "");
 
-  if (!checkoutRequestId) {
+  if (!checkoutRequestId && !merchantRequestId) {
     // Acknowledge to avoid retries looping forever.
     return NextResponse.json({ ok: true });
   }
@@ -87,12 +87,31 @@ export async function POST(req: Request) {
     auth: { persistSession: false },
   });
 
-  // Find our pending transaction by checkout_request_id stored in metadata.
-  const { data, error: txErr } = await supabase
-    .from("transactions")
-    .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata")
-    .eq("metadata->>mpesa_checkout_request_id", checkoutRequestId)
-    .maybeSingle();
+  // Find our pending transaction by the best available Daraja correlation id.
+  // Prefer CheckoutRequestID, but fall back to MerchantRequestID when needed.
+  let data: unknown = null;
+  let txErr: unknown = null;
+
+  if (checkoutRequestId) {
+    const r = await supabase
+      .from("transactions")
+      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata")
+      .eq("metadata->>mpesa_checkout_request_id", checkoutRequestId)
+      .maybeSingle();
+    data = r.data;
+    txErr = r.error;
+  }
+
+  // Fallback if CheckoutRequestID wasn't present or didn't match.
+  if ((!data || txErr) && merchantRequestId) {
+    const r = await supabase
+      .from("transactions")
+      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata")
+      .eq("metadata->>mpesa_merchant_request_id", merchantRequestId)
+      .maybeSingle();
+    data = r.data;
+    txErr = r.error;
+  }
 
   const tx = data as unknown as DbTx | null;
   if (txErr || !tx) {

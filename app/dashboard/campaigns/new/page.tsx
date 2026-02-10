@@ -186,7 +186,7 @@ export default function NewCampaignPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -199,7 +199,7 @@ export default function NewCampaignPage() {
 
   if (!adminChecked && !error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center pt-28">
+      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Checking Fusion Xpress access…</p>
@@ -209,30 +209,26 @@ export default function NewCampaignPage() {
   }
 
   return (
-    <div className="pt-32 md:pt-40 min-h-screen bg-gray-50">
-      <div className="container-custom py-8 max-w-4xl">
-        <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900">New Campaign</h1>
-            <p className="text-gray-600 mt-2">
-              Creates a shareable link at <span className="font-mono">/pay/[slug]</span>. Public users don’t need login.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="btn-outline">
-              Dashboard
-            </Link>
-            <Link href="/dashboard/campaigns" className="btn-outline">
-              Back to campaigns
-            </Link>
-          </div>
+    <div className="text-left">
+      <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
+        <div>
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">New Campaign</h2>
+          <p className="text-gray-600 mt-1 text-left">
+            Creates a shareable link at <span className="font-mono">/pay/[slug]</span>. Public users don’t need login.
+          </p>
         </div>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/campaigns" className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold">
+            Back to campaigns
+          </Link>
+        </div>
+      </div>
 
-        {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">{error}</div>
-        )}
+      {error && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
+      )}
 
-        <form onSubmit={onSubmit} className="mt-8 bg-white rounded-xl shadow-lg p-6 border border-gray-100 space-y-6">
+      <form onSubmit={onSubmit} className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200 space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Campaign type</label>
@@ -422,7 +418,6 @@ export default function NewCampaignPage() {
             </button>
           </div>
         </form>
-      </div>
     </div>
   );
 }
