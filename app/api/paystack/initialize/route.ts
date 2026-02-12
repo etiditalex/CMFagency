@@ -81,11 +81,11 @@ export async function POST(req: Request) {
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
 
     // IMPORTANT:
-    // We treat campaign.unit_amount as the value expected by your payment provider API
-    // (typically minor units). If your provider expects a different scaling, adjust here
-    // and ensure the webhook verifies against the same logic.
+    // We treat campaign.unit_amount as ex-VAT. 16% VAT is added to all payments.
     const unitAmount = Number(campaign.unit_amount);
-    const amount = unitAmount * q;
+    const subtotal = unitAmount * q;
+    const vatAmount = Math.round(subtotal * 0.16); // 16% VAT
+    const amount = subtotal + vatAmount;
 
     // Insert "pending" transaction. RLS restricts this to pending-only inserts.
     const { error: insertErr } = await supabase.from("transactions").insert({
@@ -98,11 +98,13 @@ export async function POST(req: Request) {
       currency: campaign.currency,
       unit_amount: unitAmount,
       amount,
+      vat_amount: vatAmount,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
       metadata: {
         slug: campaign.slug,
         campaign_title: campaign.title,
+        vat_rate: 16,
       },
     });
 

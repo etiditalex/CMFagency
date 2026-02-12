@@ -186,10 +186,16 @@ export default function PayCampaignPage() {
     };
   }, [ref]);
 
-  const total = useMemo(() => {
-    if (!campaign) return 0;
-    return Math.max(1, quantity) * campaign.unit_amount;
+  const qty = useMemo(() => {
+    if (!campaign) return 1;
+    return Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
   }, [campaign, quantity]);
+  const subtotal = useMemo(() => {
+    if (!campaign) return 0;
+    return qty * campaign.unit_amount;
+  }, [campaign, qty]);
+  const vatAmount = useMemo(() => Math.round(subtotal * 0.16), [subtotal]);
+  const total = useMemo(() => subtotal + vatAmount, [subtotal, vatAmount]);
 
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -427,12 +433,19 @@ export default function PayCampaignPage() {
                   <p className="text-xs text-gray-500 mt-2">Max per transaction: {campaign.max_per_txn}</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                  <div className="text-xs text-gray-500">Total</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-1">
-                    {campaign.currency} {total.toLocaleString()}
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Subtotal</span>
+                    <span>{campaign.currency} {subtotal.toLocaleString()}</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    Unit: {campaign.currency} {campaign.unit_amount.toLocaleString()}
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>VAT (16%)</span>
+                    <span>{campaign.currency} {vatAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-gray-200 mt-2 pt-2">
+                    <div className="text-xs text-gray-500">Total (incl. VAT)</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-1">
+                      {campaign.currency} {total.toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </div>

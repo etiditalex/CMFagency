@@ -13,10 +13,13 @@ import {
   Handshake,
   BadgeCheck,
   Ticket,
+  BarChart3,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
+import { usePortal } from "@/contexts/PortalContext";
 
 function SponsorDropdown({
   buttonClassName,
@@ -140,6 +143,7 @@ function SponsorDropdown({
 }
 
 export default function UpcomingEventsPage() {
+  const { isPortalMember } = usePortal();
   const heroImage =
     "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
 
@@ -174,6 +178,7 @@ export default function UpcomingEventsPage() {
 
   const [slideIndex, setSlideIndex] = useState(0);
   const [slideDir, setSlideDir] = useState(1);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -285,14 +290,15 @@ export default function UpcomingEventsPage() {
             <div className="mt-8 flex flex-col items-stretch sm:items-center gap-4">
               {/* Primary actions */}
               <div className="flex flex-col sm:flex-row sm:justify-center gap-3">
-                <Link
-                  href="/pay/cfma-2026"
+                <button
+                  type="button"
+                  onClick={() => setTicketModalOpen(true)}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
                 >
                   <Ticket className="w-5 h-5" />
                   Buy Ticket Online
                   <ArrowRight className="w-5 h-5" />
-                </Link>
+                </button>
                 <SponsorDropdown
                   buttonLabel="Participate as"
                   buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
@@ -325,6 +331,15 @@ export default function UpcomingEventsPage() {
                   <Download className="w-4 h-4" />
                   Download Sponsorship Proposal
                 </a>
+                {isPortalMember && (
+                  <Link
+                    href="/dashboard/campaigns?type=ticket"
+                    className="inline-flex items-center gap-2 hover:text-white font-semibold"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    View ticket sales in Fusion Xpress
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
@@ -369,13 +384,14 @@ export default function UpcomingEventsPage() {
                     <Handshake className="w-4 h-4" />
                     Partner With Us
                   </a>
-                  <Link
-                    href="/pay/cfma-2026"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-4 py-2.5 shadow whitespace-nowrap"
-                  >
-                    <Ticket className="w-4 h-4" />
-                    Buy Ticket Online
-                  </Link>
+                        <button
+                          type="button"
+                          onClick={() => setTicketModalOpen(true)}
+                          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-4 py-2.5 shadow whitespace-nowrap"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Buy Ticket Online
+                        </button>
                   <SponsorDropdown
                     buttonClassName="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2.5 shadow"
                     buttonIconClassName="w-4 h-4"
@@ -442,13 +458,14 @@ export default function UpcomingEventsPage() {
                         <Handshake className="w-4 h-4" />
                         Partner With Us
                       </a>
-                      <Link
-                        href="/pay/cfma-2026"
+                      <button
+                        type="button"
+                        onClick={() => setTicketModalOpen(true)}
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold px-4 py-3 shadow whitespace-nowrap"
                       >
                         <Ticket className="w-4 h-4" />
                         Buy Ticket Online
-                      </Link>
+                      </button>
                       <SponsorDropdown
                         buttonClassName="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-3 shadow"
                         buttonIconClassName="w-4 h-4"
@@ -708,6 +725,8 @@ export default function UpcomingEventsPage() {
           </div>
       </div>
       </section>
+
+      <CmfAwardsTicketModal open={ticketModalOpen} onClose={() => setTicketModalOpen(false)} />
     </div>
   );
 }

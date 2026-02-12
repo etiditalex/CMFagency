@@ -157,7 +157,9 @@ export async function POST(req: Request) {
 
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
     const unitAmount = Number(campaign.unit_amount);
-    const amount = unitAmount * q;
+    const subtotal = unitAmount * q;
+    const vatAmount = Math.round(subtotal * 0.16); // 16% VAT
+    const amount = subtotal + vatAmount;
 
     const { error: insertErr } = await supabase.from("transactions").insert({
       campaign_id: campaign.id,
@@ -169,12 +171,14 @@ export async function POST(req: Request) {
       currency: "KES",
       unit_amount: unitAmount,
       amount,
+      vat_amount: vatAmount,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
       metadata: {
         slug: campaign.slug,
         campaign_title: campaign.title,
         mpesa_phone: phone,
+        vat_rate: 16,
       },
     });
 
