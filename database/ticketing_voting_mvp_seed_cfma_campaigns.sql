@@ -1,6 +1,7 @@
 -- CMF Agency - Seed CFMA 2026 campaigns for Fusion Xpress
 -- -----------------------------------------------------------------------------
--- Creates the cfma-2026 and cfma-2026-vip ticketing campaigns so purchases from
+-- Creates the cfma-2026 (Regular 500), cfma-2026-vip (VIP 1500), cfma-2026-vvip
+-- (VVIP 3500) ticketing campaigns so purchases from
 -- the upcoming events page "Buy Ticket Online" modal appear in the Fusion Xpress
 -- dashboard.
 --
@@ -32,7 +33,7 @@ begin
     return;
   end if;
 
-  -- CFMA 2026 - Early Bird Regular (KES 800 ex-VAT)
+  -- CFMA 2026 - Early Bird Regular (KES 500 ex-VAT)
   insert into public.campaigns (
     type, slug, title, description, currency, unit_amount, max_per_txn, is_active, created_by
   )
@@ -42,13 +43,13 @@ begin
     'CFMA 2026 - Early Bird Regular',
     'Coast Fashion and Modelling Awards 2026 - Regular ticket. 15th August 2026, Mombasa.',
     'KES',
-    800,
+    500,
     10,
     true,
     admin_id
   where not exists (select 1 from public.campaigns where slug = 'cfma-2026');
 
-  -- CFMA 2026 - Early Bird VIP (KES 3000 ex-VAT)
+  -- CFMA 2026 - Early Bird VIP (KES 1500 ex-VAT)
   insert into public.campaigns (
     type, slug, title, description, currency, unit_amount, max_per_txn, is_active, created_by
   )
@@ -58,11 +59,32 @@ begin
     'CFMA 2026 - Early Bird VIP',
     'Coast Fashion and Modelling Awards 2026 - VIP ticket. 15th August 2026, Mombasa.',
     'KES',
-    3000,
+    1500,
     10,
     true,
     admin_id
   where not exists (select 1 from public.campaigns where slug = 'cfma-2026-vip');
+
+  -- CFMA 2026 - Early Bird VVIP (KES 3500 ex-VAT)
+  insert into public.campaigns (
+    type, slug, title, description, currency, unit_amount, max_per_txn, is_active, created_by
+  )
+  select
+    'ticket',
+    'cfma-2026-vvip',
+    'CFMA 2026 - Early Bird VVIP',
+    'Coast Fashion and Modelling Awards 2026 - VVIP ticket. 15th August 2026, Mombasa.',
+    'KES',
+    3500,
+    10,
+    true,
+    admin_id
+  where not exists (select 1 from public.campaigns where slug = 'cfma-2026-vvip');
+
+  -- Update prices for existing campaigns (in case they were created with old values)
+  update public.campaigns set unit_amount = 500, title = 'CFMA 2026 - Early Bird Regular' where slug = 'cfma-2026';
+  update public.campaigns set unit_amount = 1500, title = 'CFMA 2026 - Early Bird VIP' where slug = 'cfma-2026-vip';
+  update public.campaigns set unit_amount = 3500, title = 'CFMA 2026 - Early Bird VVIP' where slug = 'cfma-2026-vvip';
 
   raise notice 'CFMA campaigns seeded. Purchases from the upcoming events page will now appear in Fusion Xpress dashboard.';
 end $$;

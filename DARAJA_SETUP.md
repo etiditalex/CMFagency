@@ -52,7 +52,7 @@ Ticket purchases from the upcoming events page ("Buy Ticket Online") **automatic
    ```
    database/ticketing_voting_mvp_seed_cfma_campaigns.sql
    ```
-   This creates `cfma-2026` (Regular KES 800) and `cfma-2026-vip` (VIP KES 3000) campaigns, owned by your first admin.
+   This creates `cfma-2026` (Regular KES 500), `cfma-2026-vip` (VIP KES 1500), and `cfma-2026-vvip` (VVIP KES 3500) campaigns, owned by your first admin.
 
 2. **Real-time updates**: The dashboard subscribes to `transactions` and `ticket_issues`. After a successful M-Pesa payment:
    - The transaction is updated to `status = 'success'`
@@ -61,5 +61,5 @@ Ticket purchases from the upcoming events page ("Buy Ticket Online") **automatic
 
 3. **Supabase Realtime** (optional for instant updates): In Supabase Dashboard → Database → Replication, add `transactions` and `ticket_issues` to the replication set. Otherwise, the dashboard still updates within ~15 seconds via polling.
 
-4. **Where to view sales**: Log in to Fusion Xpress → Dashboard → Campaigns. Click **CFMA 2026 - Early Bird Regular** or **CFMA 2026 - Early Bird VIP** to see transactions, revenue, and ticket counts. Portal members can also use the "View ticket sales in Fusion Xpress" link on the upcoming events page.
+4. **Where to view sales**: Log in to Fusion Xpress → Dashboard → Campaigns. Click **CFMA 2026 - Early Bird Regular**, **Early Bird VIP**, or **Early Bird VVIP** to see transactions, revenue, and ticket counts. Portal members can also use the "View ticket sales in Fusion Xpress" link on the upcoming events page.
 

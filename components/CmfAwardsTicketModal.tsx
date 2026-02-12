@@ -16,8 +16,9 @@ const EVENT = {
 };
 
 const TICKET_TIERS = [
-  { id: "regular", label: "Early bird - Regular Ticket", slug: "cfma-2026", unitAmount: 800 },
-  { id: "vip", label: "Early bird - VIP Ticket", slug: "cfma-2026-vip", unitAmount: 3000 },
+  { id: "regular", label: "Early bird - Regular", slug: "cfma-2026", unitAmount: 500 },
+  { id: "vip", label: "Early bird - VIP", slug: "cfma-2026-vip", unitAmount: 1500 },
+  { id: "vvip", label: "Early bird - VVIP", slug: "cfma-2026-vvip", unitAmount: 3500 },
 ] as const;
 
 const STEPS = ["Select tickets", "Details", "Payment"] as const;
@@ -39,7 +40,7 @@ type Props = {
 
 export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [quantities, setQuantities] = useState<Record<string, number>>({ regular: 0, vip: 0 });
+  const [quantities, setQuantities] = useState<Record<string, number>>({ regular: 0, vip: 0, vvip: 0 });
   const [details, setDetails] = useState<FormDetails>({
     company: "",
     firstName: "",
@@ -86,7 +87,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
 
   const reset = useCallback(() => {
     setStep(1);
-    setQuantities({ regular: 0, vip: 0 });
+    setQuantities({ regular: 0, vip: 0, vvip: 0 });
     setDetails({
       company: "",
       firstName: "",
