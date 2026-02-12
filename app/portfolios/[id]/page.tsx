@@ -31,7 +31,7 @@ const getPortfolioById = (id: number) => {
         "Business Cards",
         "Letterhead Design",
       ],
-      challenge: "TechCorp needed a brand refresh that would appeal to both enterprise clients and tech-savvy consumers while maintaining their professional reputation.",
+      challenge: "TechCorp needed a brand refresh that would appeal to both corporate clients and tech-savvy consumers while maintaining their professional reputation.",
       solution: "We developed a bold, modern identity system that combines clean geometric shapes with vibrant colors, creating a distinctive look that stands out in the competitive tech market.",
     },
   ];

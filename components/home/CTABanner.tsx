@@ -61,7 +61,7 @@ export default function CTABanner() {
           </h2>
           <p className="text-xl text-white/90 mb-8 leading-relaxed">
             Join thousands of professionals who trust Changer Fusions for transformative event planning,
-            strategic marketing solutions, and comprehensive career development. Experience the fusion of innovation and enterprise excellence.
+            strategic marketing solutions, and comprehensive career development. Experience the fusion of innovation and professional excellence.
           </p>
 
           <div className="flex flex-row items-center justify-center gap-4">

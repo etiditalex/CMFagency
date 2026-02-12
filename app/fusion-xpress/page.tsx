@@ -339,7 +339,7 @@ export default function FusionXpressAdminLoginPage() {
             </div>
 
             <div className="bg-white rounded-xl border border-secondary-300 shadow-sm p-6">
-              <div className="text-secondary-800 font-extrabold">Enterprise</div>
+              <div className="text-secondary-800 font-extrabold">Premium</div>
               <div className="mt-3 text-4xl font-extrabold text-gray-900">Custom</div>
               <div className="mt-2 text-sm text-gray-600">Ideal for Businesses & Companies</div>
               <div className="mt-5 space-y-3 text-sm text-gray-700">

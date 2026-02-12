@@ -70,6 +70,11 @@ Enhanced structured data for AI overviews:
 - "event management Kenya"
 - "branding services Kenya"
 
+### Local / Knowledge Panel Keywords (Ambalal):
+- "Changer Fusions"
+- "marketing agency Ambalal"
+- "Changer Fusions Ambalal"
+
 ### Event-specific Keywords (CFMA 2026 / Mombasa events):
 - "Buy tickets online"
 - "CMF awards 2026"

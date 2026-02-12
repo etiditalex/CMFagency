@@ -10,9 +10,11 @@ import ConferenceNews from "@/components/home/ConferenceNews";
 import CTABanner from "@/components/home/CTABanner";
 
 export const metadata: Metadata = {
-  title: "Changer Fusions - Leading Marketing Agency in Kenya | Digital Marketing, Web Development, Branding",
-  description: "Changer Fusions is Kenya's #1 marketing agency offering comprehensive digital marketing, website development, branding, event management, and market research services. Based in Mombasa, serving businesses across Kenya. Market to thrive, Market to exist. Get expert marketing solutions that drive growth and results.",
+  title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",
+  description: "Changer Fusions is Kenya's leading marketing agency in Ambalal, Mombasa. Digital marketing, website development, branding, event management, market research. Ambalal Building, Nkruma Road. Market to thrive, Market to exist.",
   keywords: [
+    "Changer Fusions",
+    "marketing agency Ambalal",
     "marketing agency Kenya",
     "best marketing agency Kenya",
     "digital marketing Kenya",

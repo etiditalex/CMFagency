@@ -7,8 +7,12 @@ export default function SEOStructuredData() {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": "https://cmfagency.co.ke/#organization",
-    name: "CHANGER FUSIONS ENTERPRISE",
-    alternateName: ["Changer Fusions", "CMF Agency"],
+    name: "Changer Fusions",
+    alternateName: [
+      "Changer Fusions",
+      "CMF Agency",
+      "Changer Fusions - Marketing Agency in Ambalal",
+    ],
     url: "https://cmfagency.co.ke",
     logo: {
       "@type": "ImageObject",
@@ -22,16 +26,16 @@ export default function SEOStructuredData() {
     foundingDate: "2020",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
-      addressLocality: "Mombasa",
+      streetAddress: "Ambalal Building, Nkruma Road",
+      addressLocality: "Ambalal",
       addressRegion: "Mombasa County",
-      postalCode: "40305",
+      postalCode: "80100",
       addressCountry: "KE",
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: "-4.0435",
-      longitude: "39.6682",
+      latitude: -4.0435,
+      longitude: 39.6682,
     },
     contactPoint: [
       {
@@ -75,7 +79,7 @@ export default function SEOStructuredData() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "CHANGER FUSIONS ENTERPRISE",
+    name: "Changer Fusions",
     url: "https://cmfagency.co.ke",
     potentialAction: {
       "@type": "SearchAction",
@@ -93,7 +97,7 @@ export default function SEOStructuredData() {
     serviceType: "Marketing Agency Services",
       provider: {
         "@type": "Organization",
-        name: "CHANGER FUSIONS ENTERPRISE",
+        name: "Changer Fusions",
       },
     areaServed: {
       "@type": "Country",
@@ -172,7 +176,7 @@ export default function SEOStructuredData() {
         name: "Where is Changer Fusions located?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Changer Fusions is located in Mombasa, Kenya at AMBALAL BUILDING, NKRUMA ROAD, MOMBASA DISTRICT, P.O BOX 281, 40305 - MBITA. We serve clients across Kenya including Nairobi, Mombasa, Kisumu, and beyond.",
+          text: "Changer Fusions is located in Ambalal, Mombasa, Kenya at Ambalal Building, Nkruma Road. We are a marketing agency in Ambalal serving clients across Kenya including Nairobi, Mombasa, Kisumu, and beyond.",
         },
       },
       {
@@ -180,7 +184,7 @@ export default function SEOStructuredData() {
         name: "How can I contact Changer Fusions?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can contact CHANGER FUSIONS ENTERPRISE by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://cmfagency.co.ke/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
+          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://cmfagency.co.ke/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
         },
       },
       {
@@ -251,17 +255,19 @@ export default function SEOStructuredData() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     "@id": "https://cmfagency.co.ke/#localbusiness",
-    name: "CHANGER FUSIONS ENTERPRISE",
+    name: "Changer Fusions - Marketing Agency in Ambalal",
+    alternateName: ["Changer Fusions", "Marketing agency in Ambalal", "CMF Agency"],
+    description: "Changer Fusions is a marketing agency in Ambalal, Mombasa, Kenya. Offering digital marketing, website development, branding, event management, and market research. Based at Ambalal Building, Nkruma Road.",
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
     url: "https://cmfagency.co.ke",
     telephone: "+254-797-777347",
     priceRange: "$$",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
-      addressLocality: "Mombasa",
+      streetAddress: "Ambalal Building, Nkruma Road",
+      addressLocality: "Ambalal",
       addressRegion: "Mombasa County",
-      postalCode: "40305",
+      postalCode: "80100",
       addressCountry: "KE",
     },
     geo: {

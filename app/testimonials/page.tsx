@@ -241,7 +241,7 @@ export default function TestimonialsPage() {
               Ready to Fuse Change & Excellence?
             </h2>
             <p className="text-xl text-white mb-8 drop-shadow-lg">
-              Let's work together to create transformative success stories. Contact Changer Fusions today to experience the fusion of innovation and enterprise excellence.
+              Let's work together to create transformative success stories. Contact Changer Fusions today to experience the fusion of innovation and professional excellence.
             </p>
             <a
               href="/contact"

@@ -25,8 +25,8 @@ export default function ContactPage() {
     }, 3000);
   };
 
-  // Google Maps embed URL for the address - using CHANGER FUSIONS ENTERPRISE location from Google Business Profile
-  const mapAddress = "CHANGER FUSIONS ENTERPRISE, Mombasa, Kenya";
+  // Google Maps embed URL for the address - Ambalal Building, Nkruma Road, Mombasa
+  const mapAddress = "Changer Fusions, Ambalal Building, Nkruma Road, Ambalal, Mombasa, Kenya";
   const encodedAddress = encodeURIComponent(mapAddress);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
   const googleBusinessProfileUrl = "https://share.google/WYxPFHfwFnSjfywZn";
@@ -104,8 +104,8 @@ export default function ContactPage() {
               </div>
               <h3 className="text-xl font-bold mb-2 text-gray-900">Address</h3>
               <p className="text-gray-600 text-sm">
-                CHANGER FUSIONS ENTERPRISE<br />
-                Mombasa, Kenya
+                Ambalal Building, Nkruma Road<br />
+                Ambalal, Mombasa, Kenya
               </p>
               <a
                 href={googleBusinessProfileUrl}
@@ -130,7 +130,7 @@ export default function ContactPage() {
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-2xl font-bold mb-2 text-gray-900">Find Us</h2>
                 <p className="text-gray-600 mb-4">
-                  Visit us at our office in Mombasa. We're here to help you with all your marketing and event planning needs.
+                  Visit us at our office in Ambalal, Mombasa. Marketing agency in Ambalal—we're here to help with digital marketing, branding, and event planning.
                 </p>
                 <div className="flex flex-row gap-3">
                   <a
@@ -162,7 +162,7 @@ export default function ContactPage() {
                   allowFullScreen
                   referrerPolicy="no-referrer-when-downgrade"
                   src={mapEmbedUrl}
-                  title="CHANGER FUSIONS ENTERPRISE Location"
+                  title="Changer Fusions Location"
                   className="absolute inset-0"
                 ></iframe>
               </div>

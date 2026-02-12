@@ -76,6 +76,8 @@ export const metadata: Metadata = {
     "events Mombasa 2026",
     "Mombasa events",
     "fashion event Mombasa",
+    "marketing agency Ambalal",
+    "Changer Fusions Ambalal",
   ],
   authors: [{ name: "Changer Fusions" }],
   creator: "Changer Fusions",
@@ -133,7 +135,7 @@ export const metadata: Metadata = {
   category: "Marketing Agency",
   other: {
     "geo.region": "KE",
-    "geo.placename": "Mombasa",
+    "geo.placename": "Ambalal, Mombasa",
     "geo.position": "-4.0435;39.6682",
     "ICBM": "-4.0435, 39.6682",
   },

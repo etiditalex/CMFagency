@@ -2,8 +2,10 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact Us - Get In Touch with Changer Fusions | Marketing Agency Kenya",
-  description: "Have a question or want to work with us? Contact Changer Fusions, Kenya's leading marketing agency. Reach us via email, phone, or visit our office in Mombasa.",
+  description: "Contact Changer Fusions—marketing agency in Ambalal, Mombasa. Visit Ambalal Building, Nkruma Road. Email, phone, directions.",
   keywords: [
+    "Changer Fusions contact",
+    "marketing agency Ambalal",
     "contact Changer Fusions",
     "marketing agency contact Kenya",
     "Mombasa marketing agency",

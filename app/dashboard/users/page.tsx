@@ -268,7 +268,7 @@ export default function DashboardUsersPage() {
                 >
                   <option value="basic">Basic</option>
                   <option value="pro">Pro</option>
-                  <option value="enterprise">Enterprise</option>
+                  <option value="enterprise">Premium</option>
                 </select>
               </div>
             )}
