@@ -6,13 +6,8 @@ import { useRouter } from "next/navigation";
 import { Minus, Plus, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
-
-function isMissingAdminUsersTable(err: any) {
-  const msg = String(err?.message ?? "");
-  const code = String(err?.code ?? "");
-  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
-}
 
 type CampaignType = "ticket" | "vote";
 
@@ -34,6 +29,7 @@ function slugify(input: string) {
 export default function NewCampaignPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading } = usePortal();
 
   const [type, setType] = useState<CampaignType>("ticket");
   const [title, setTitle] = useState("");
@@ -51,51 +47,14 @@ export default function NewCampaignPage() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [adminChecked, setAdminChecked] = useState(false);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress");
       return;
     }
-
-    let cancelled = false;
-
-    const checkAdmin = async () => {
-      try {
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (adminErr) {
-          if (isMissingAdminUsersTable(adminErr)) {
-            await supabase.auth.signOut();
-            router.replace("/fusion-xpress?error=setup");
-            return;
-          }
-          throw adminErr;
-        }
-
-        if (!adminRow) {
-          await supabase.auth.signOut();
-          router.replace("/fusion-xpress?error=unauthorized");
-          return;
-        }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
-      } finally {
-        if (!cancelled) setAdminChecked(true);
-      }
-    };
-
-    checkAdmin();
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, isAuthenticated, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user]);
 
   useEffect(() => {
     // Auto-suggest slug if user hasn't typed one yet.
@@ -129,7 +88,6 @@ export default function NewCampaignPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!adminChecked) return;
 
     setSaving(true);
     setError(null);
@@ -184,7 +142,7 @@ export default function NewCampaignPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || portalLoading) {
     return (
       <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -195,18 +153,7 @@ export default function NewCampaignPage() {
     );
   }
 
-  if (!isAuthenticated || !user) return null;
-
-  if (!adminChecked && !error) {
-    return (
-      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking Fusion Xpress access…</p>
-        </div>
-      </div>
-    );
-  }
+  if (!isAuthenticated || !user || !isPortalMember) return null;
 
   return (
     <div className="text-left">
@@ -411,8 +358,8 @@ export default function NewCampaignPage() {
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="submit"
-              disabled={!canSubmit || saving || !adminChecked}
-              className={`btn-primary ${(!canSubmit || saving || !adminChecked) && "opacity-60 cursor-not-allowed"}`}
+              disabled={!canSubmit || saving}
+              className={`btn-primary ${(!canSubmit || saving) && "opacity-60 cursor-not-allowed"}`}
             >
               {saving ? "Creating..." : "Create campaign"}
             </button>

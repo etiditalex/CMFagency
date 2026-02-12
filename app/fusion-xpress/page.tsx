@@ -7,6 +7,13 @@ import { ArrowLeft, CheckCircle2, Lock, Mail, Shield } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
+function isMissingPortalMembersTable(err: any) {
+  const msg = String(err?.message ?? "");
+  const code = String(err?.code ?? "");
+  // Postgres: 42P01 = undefined_table
+  return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
+}
+
 function isMissingAdminUsersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
@@ -15,17 +22,18 @@ function isMissingAdminUsersTable(err: any) {
 }
 
 /**
- * Fusion Xpress (Admin Login)
+ * Fusion Xpress (Portal Login)
  * -----------------------------------------------------------------------------
  * This is intentionally separate from the job-application login UI/flow.
  *
  * Security:
- * - Uses Supabase Auth, but requires the signed-in user to exist in `admin_users`.
- * - If not allowlisted, we sign the user out and show an error.
+ * - Uses Supabase Auth.
+ * - Requires the signed-in user to exist in `portal_members` (RBAC).
+ * - Admins have role `admin`; clients have role `client`.
+ * - Backward-compatible fallback: if `portal_members` isn't installed yet, `admin_users` is treated as admin access.
  *
  * DB requirement:
- * - Run `database/ticketing_voting_mvp_patch_02_admin.sql` in Supabase.
- * - Insert admin row into `admin_users`.
+ * - Run `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql` in Supabase.
  */
 export default function FusionXpressAdminLoginPage() {
   const router = useRouter();
@@ -40,9 +48,9 @@ export default function FusionXpressAdminLoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(
     initialError === "unauthorized"
-      ? "Access denied. Sign in with an allowlisted admin account."
+      ? "Access denied. Ask an admin to add your account to the portal."
       : initialError === "setup"
-        ? "Fusion Xpress is not configured yet. Run the database setup SQL and enable admin allowlisting."
+        ? "Fusion Xpress portal is not configured yet. Run the database setup SQL in Supabase."
         : null
   );
 
@@ -73,7 +81,7 @@ export default function FusionXpressAdminLoginPage() {
   };
 
   useEffect(() => {
-    // If already signed in and admin, go straight to dashboard.
+    // If already signed in and a portal member, go straight to dashboard.
     const check = async () => {
       const { data } = await supabase.auth.getSession();
       const userId = data.session?.user?.id;
@@ -82,22 +90,35 @@ export default function FusionXpressAdminLoginPage() {
       // If this email is configured in the server allowlist, auto-claim admin access.
       await maybeClaimAdmin();
 
-      const { data: adminRow, error: adminErr } = await supabase
-        .from("admin_users")
-        .select("user_id")
+      const { data: memberRow, error: memberErr } = await supabase
+        .from("portal_members")
+        .select("user_id,role")
         .eq("user_id", userId)
         .maybeSingle();
 
-      // If admin allowlist table isn't installed, block access until configured.
-      if (adminErr && isMissingAdminUsersTable(adminErr)) {
-        await supabase.auth.signOut();
-        setError(
-          "Fusion Xpress is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_02_admin.sql`, then allowlist your user in `admin_users`."
-        );
+      // Backward-compat: if portal_members isn't installed yet, allow legacy admins in.
+      if (memberErr && isMissingPortalMembersTable(memberErr)) {
+        const { data: adminRow, error: adminErr } = await supabase
+          .from("admin_users")
+          .select("user_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (adminErr && isMissingAdminUsersTable(adminErr)) {
+          await supabase.auth.signOut();
+          setError(
+            "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
+          );
+          return;
+        }
+
+        if (adminRow) {
+          router.replace("/dashboard");
+        }
         return;
       }
 
-      if (adminRow) {
+      if (memberRow) {
         router.replace("/dashboard");
       }
     };
@@ -105,25 +126,59 @@ export default function FusionXpressAdminLoginPage() {
     check();
   }, [router]);
 
-  const requireAdminOrSignOut = async (userId: string) => {
-    const { data: adminRow, error: adminErr } = await supabase
-      .from("admin_users")
-      .select("user_id")
+  const requirePortalMemberOrSignOut = async (userId: string, mode: "login" | "signup") => {
+    const { data: memberRow, error: memberErr } = await supabase
+      .from("portal_members")
+      .select("user_id,role")
       .eq("user_id", userId)
       .maybeSingle();
 
-    if (adminErr && isMissingAdminUsersTable(adminErr)) {
-      await supabase.auth.signOut();
-      throw new Error(
-        "Fusion Xpress is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_02_admin.sql`, then allowlist your user in `admin_users`."
-      );
+    if (memberErr && isMissingPortalMembersTable(memberErr)) {
+      // Backward-compat: if portal_members isn't installed yet, allow legacy admins in.
+      const { data: adminRow, error: adminErr } = await supabase
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (adminErr && isMissingAdminUsersTable(adminErr)) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
+        );
+      }
+      if (adminErr) throw adminErr;
+      if (!adminRow) {
+        await supabase.auth.signOut();
+        throw new Error("Access denied. Ask an admin to add your account to the portal.");
+      }
+      return;
     }
-    if (adminErr) throw adminErr;
-    if (!adminRow) {
+    if (memberErr) throw memberErr;
+
+    if (!memberRow) {
+      // Backward-compat: portal_members exists, but allow legacy admins via admin_users.
+      const { data: adminRow, error: adminErr } = await supabase
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (adminErr && isMissingAdminUsersTable(adminErr)) {
+        await supabase.auth.signOut();
+        throw new Error(
+          "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
+        );
+      }
+      if (adminErr) throw adminErr;
+      if (adminRow) return;
+
+      // Keep job-applicant sessions from lingering on the portal.
       await supabase.auth.signOut();
-      throw new Error(
-        "Account created/signed in, but not yet authorized for Fusion Xpress. Ask an admin to allowlist your user in admin_users."
-      );
+      if (mode === "signup") {
+        throw new Error("Account created. An admin must approve and add you to the portal before you can sign in.");
+      }
+      throw new Error("Access denied. Ask an admin to add your account to the portal.");
     }
   };
 
@@ -158,7 +213,7 @@ export default function FusionXpressAdminLoginPage() {
         }
 
         await maybeClaimAdmin();
-        await requireAdminOrSignOut(userId);
+        await requirePortalMemberOrSignOut(userId, "signup");
       } else {
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -171,7 +226,7 @@ export default function FusionXpressAdminLoginPage() {
         if (!userId) throw new Error("Login failed. Please try again.");
 
         await maybeClaimAdmin();
-        await requireAdminOrSignOut(userId);
+        await requirePortalMemberOrSignOut(userId, "login");
       }
 
       router.replace("/dashboard");
@@ -245,9 +300,14 @@ export default function FusionXpressAdminLoginPage() {
               <div className="mt-2 text-sm text-gray-600">For Events, Shows & Launches</div>
               <div className="mt-5 space-y-3 text-sm text-gray-700">
                 {[
-                  "Create ticketing campaigns in minutes",
-                  "Webhook-confirmed M-Pesa payments",
-                  "Issue tickets only after verification",
+                  "Gate team upon request",
+                  "4% of revenue (Revenue > KSh 1,000,000)",
+                  "5% of revenue (Revenue <= KSh 1,000,000)",
+                  "Send emails to attendees",
+                  "Add coupons to tickets",
+                  "Add managers to your experience",
+                  "Payouts on request",
+                  "Dedicated support personnel",
                 ].map((t) => (
                   <div key={t} className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-secondary-700 mt-0.5" />
@@ -263,9 +323,12 @@ export default function FusionXpressAdminLoginPage() {
               <div className="mt-2 text-sm text-gray-600">For Paid Voting Programs</div>
               <div className="mt-5 space-y-3 text-sm text-gray-700">
                 {[
-                  "Contestant setup + shareable links",
-                  "Votes counted only after webhook success",
-                  "Clear reporting for campaign performance",
+                  "Dedicated support personnel",
+                  "20% of revenue (Revenue > KSh 1,000,000)",
+                  "30% of revenue (Revenue <= KSh 1,000,000)",
+                  "Send emails to contestants",
+                  "Unlimited categories",
+                  "Unlimited contestants",
                 ].map((t) => (
                   <div key={t} className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-secondary-700 mt-0.5" />

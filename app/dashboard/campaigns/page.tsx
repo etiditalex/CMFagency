@@ -6,12 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Copy, ExternalLink, LineChart, Plus, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
-function isMissingAdminUsersTable(err: any) {
+function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
-  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+  return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
 }
 
 type CampaignRow = {
@@ -44,14 +45,15 @@ export default function DashboardCampaignsPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignWithStats[]>([]);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress");
       return;
     }
@@ -63,30 +65,6 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        // Admin gate: dashboard requires allowlisted admin account.
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (adminErr) {
-          // Missing allowlist table means setup isn't complete; block access.
-          if (isMissingAdminUsersTable(adminErr)) {
-            await supabase.auth.signOut();
-            router.replace("/fusion-xpress?error=setup");
-            return;
-          }
-          throw adminErr;
-        }
-
-        if (!adminRow) {
-          // Sign out so we don't "share" sessions with the job applicant login.
-          await supabase.auth.signOut();
-          router.replace("/fusion-xpress?error=unauthorized");
-          return;
-        }
-
         const { data: campaignRows, error: campaignsError } = await supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at")
@@ -116,6 +94,12 @@ export default function DashboardCampaignsPage() {
 
         if (!cancelled) setCampaigns(merged);
       } catch (e: any) {
+        // If portal membership table isn't installed, block access until configured.
+        if (isMissingPortalMembersTable(e)) {
+          await supabase.auth.signOut();
+          router.replace("/fusion-xpress?error=setup");
+          return;
+        }
         if (!cancelled) setError(e?.message ?? "Failed to load campaigns");
       } finally {
         if (!cancelled) setLoading(false);
@@ -126,7 +110,7 @@ export default function DashboardCampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user]);
 
   const origin = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -172,7 +156,7 @@ export default function DashboardCampaignsPage() {
   }
 
   // If redirecting, render nothing to avoid flashing private UI
-  if (!isAuthenticated || !user) return null;
+  if (!isAuthenticated || !user || !isPortalMember) return null;
 
   return (
     <div className="text-left">

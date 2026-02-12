@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Shield, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
+import { UserCog } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 function isMissingAdminUsersTable(err: any) {
@@ -16,6 +18,7 @@ function isMissingAdminUsersTable(err: any) {
 export default function DashboardUsersPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading, isAdmin, isFullAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +28,8 @@ export default function DashboardUsersPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [makeAdmin, setMakeAdmin] = useState(false);
+  const [makeManager, setMakeManager] = useState(false);
+  const [tier, setTier] = useState<"basic" | "pro" | "enterprise">("basic");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -36,8 +41,8 @@ export default function DashboardUsersPage() {
   }, [confirm, email, password]);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress");
       return;
     }
@@ -47,27 +52,24 @@ export default function DashboardUsersPage() {
       setLoading(true);
       setError(null);
       try {
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (adminErr) {
-          if (isMissingAdminUsersTable(adminErr)) {
+        if (!isAdmin) {
+          const { data: adminRow, error: adminErr } = await supabase
+            .from("admin_users")
+            .select("user_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (adminErr && isMissingAdminUsersTable(adminErr)) {
             await supabase.auth.signOut();
             router.replace("/fusion-xpress?error=setup");
             return;
           }
-          throw adminErr;
+          if (adminErr) throw adminErr;
+          if (!adminRow) {
+            await supabase.auth.signOut();
+            router.replace("/fusion-xpress?error=unauthorized");
+            return;
+          }
         }
-
-        if (!adminRow) {
-          await supabase.auth.signOut();
-          router.replace("/fusion-xpress?error=unauthorized");
-          return;
-        }
-
         if (!cancelled) setAdminOk(true);
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
@@ -80,7 +82,7 @@ export default function DashboardUsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, router, user]);
+  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, router, user]);
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +105,9 @@ export default function DashboardUsersPage() {
           email: email.trim(),
           password,
           make_admin: makeAdmin,
+          make_manager: makeManager,
           email_confirm: true,
+          tier: makeAdmin || makeManager ? undefined : tier,
         }),
       });
 
@@ -116,11 +120,17 @@ export default function DashboardUsersPage() {
       }
       if (!res.ok) throw new Error(json?.error ?? raw ?? `Failed (HTTP ${res.status})`);
 
-      setSuccess(`Created user ${json.email ?? email.trim()}${makeAdmin ? " (admin)" : ""}.`);
+      setSuccess(
+        `Created user ${json.email ?? email.trim()}${
+          makeAdmin ? " (admin)" : makeManager ? " (manager)" : ` (${tier} tier)`
+        }.`
+      );
       setEmail("");
       setPassword("");
       setConfirm("");
       setMakeAdmin(false);
+      setMakeManager(false);
+      setTier("basic");
     } catch (err: any) {
       setError(err?.message ?? "Failed to create user");
     } finally {
@@ -128,7 +138,7 @@ export default function DashboardUsersPage() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || portalLoading || loading) {
     return (
       <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -139,7 +149,7 @@ export default function DashboardUsersPage() {
     );
   }
 
-  if (!isAuthenticated || !user) return null;
+  if (!isAuthenticated || !user || !isPortalMember) return null;
 
   return (
     <div className="text-left">
@@ -147,7 +157,7 @@ export default function DashboardUsersPage() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Users</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
-            Create accounts for portal users and (optionally) grant admin access to Fusion Xpress.
+            Create accounts for clients who purchase your service. Set their tier (Basic, Pro, Enterprise) based on purchase amount to control which dashboard features they can access.
           </p>
         </div>
       </div>
@@ -182,20 +192,51 @@ export default function DashboardUsersPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3 mt-6 md:mt-0">
-            <label className="inline-flex items-center gap-2 text-sm text-gray-700 font-semibold select-none">
-              <input
-                type="checkbox"
-                checked={makeAdmin}
-                onChange={(e) => setMakeAdmin(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              Make this user an admin
-            </label>
-            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-              <Shield className="w-4 h-4" />
-              Fusion Xpress
-            </span>
+          <div className="flex flex-wrap items-center gap-4 mt-6 md:mt-0">
+            {isFullAdmin && (
+              <>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700 font-semibold select-none">
+                  <input
+                    type="checkbox"
+                    checked={makeAdmin}
+                    onChange={(e) => {
+                      setMakeAdmin(e.target.checked);
+                      if (e.target.checked) setMakeManager(false);
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <Shield className="w-4 h-4" />
+                  Make this user a full admin
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-700 font-semibold select-none">
+                  <input
+                    type="checkbox"
+                    checked={makeManager}
+                    onChange={(e) => {
+                      setMakeManager(e.target.checked);
+                      if (e.target.checked) setMakeAdmin(false);
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <UserCog className="w-4 h-4" />
+                  Make this user a manager (limited admin)
+                </label>
+              </>
+            )}
+            {!makeAdmin && !makeManager && (
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-gray-700">Tier (by purchase amount):</label>
+                <select
+                  value={tier}
+                  onChange={(e) => setTier(e.target.value as "basic" | "pro" | "enterprise")}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="basic">Basic</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <div>

@@ -14,21 +14,22 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
-function isMissingAdminUsersTable(err: any) {
+function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
-  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+  return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
 }
 
 export default function DashboardHomePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading, isAdmin, isManager } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adminOk, setAdminOk] = useState(false);
 
   const [dataLoading, setDataLoading] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
@@ -149,59 +150,37 @@ export default function DashboardHomePage() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress");
       return;
     }
 
     let cancelled = false;
 
-    const checkAdmin = async () => {
+    const init = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        setAdminOk(false);
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (adminErr) {
-          if (isMissingAdminUsersTable(adminErr)) {
-            await supabase.auth.signOut();
-            router.replace("/fusion-xpress?error=setup");
-            return;
-          }
-          throw adminErr;
-        }
-
-        if (!adminRow) {
-          await supabase.auth.signOut();
-          router.replace("/fusion-xpress?error=unauthorized");
-          return;
-        }
-
+        // If portal_members isn't installed yet, block access until configured.
+        // (Prevents non-portal users from entering /dashboard.)
         if (cancelled) return;
-        setAdminOk(true);
         await refreshData();
       } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
+        if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    checkAdmin();
+    init();
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, refreshData, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
 
   useEffect(() => {
-    if (!adminOk || !user?.id) return;
+    if (!isPortalMember || !user?.id) return;
 
     const channel = supabase
       .channel(`fusion-xpress-dashboard-${user.id}`)
@@ -217,9 +196,9 @@ export default function DashboardHomePage() {
       window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [adminOk, refreshData, user?.id]);
+  }, [isPortalMember, refreshData, user?.id]);
 
-  if (authLoading || loading) {
+  if (authLoading || portalLoading || loading) {
     return (
       <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -231,7 +210,7 @@ export default function DashboardHomePage() {
   }
 
   // Avoid flashing private UI while redirecting.
-  if (!isAuthenticated || !user) return null;
+  if (!isAuthenticated || !user || !isPortalMember) return null;
 
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
 
@@ -265,6 +244,24 @@ export default function DashboardHomePage() {
         </div>
         <div className="text-left text-gray-500">Auto-updates when payments/votes/tickets change.</div>
       </div>
+
+      {!isAdmin && (
+        <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
+          <div className="font-extrabold">Client access</div>
+          <div className="mt-1 text-sm">
+            You can view and manage only campaigns created under your account. Admin-only tools (like user management) are hidden.
+          </div>
+        </div>
+      )}
+
+      {isManager && (
+        <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
+          <div className="font-extrabold">Manager access</div>
+          <div className="mt-1 text-sm">
+            You can add clients and manage campaigns. Only full admins can add other admins or managers.
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">

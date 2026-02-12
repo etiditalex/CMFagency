@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
     if (insertErr) {
       // If already exists, treat as ok.
       if (String(insertErr.code ?? "") === "23505") {
+        // Ensure portal membership exists too.
+        await admin.from("portal_members").upsert({ user_id: userId, role: "admin" });
         return NextResponse.json({ ok: true, claimed: true, already: true });
       }
       return NextResponse.json(
@@ -61,6 +63,9 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Ensure portal membership row exists (so admins can access /dashboard).
+    await admin.from("portal_members").upsert({ user_id: userId, role: "admin" });
 
     return NextResponse.json({ ok: true, claimed: true, already: false });
   } catch (e: unknown) {

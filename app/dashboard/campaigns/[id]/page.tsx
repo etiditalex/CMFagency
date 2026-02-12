@@ -15,12 +15,13 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
-function isMissingAdminUsersTable(err: any) {
+function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
-  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
+  return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
 }
 
 type Campaign = {
@@ -87,6 +88,7 @@ export default function CampaignReportPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -270,8 +272,8 @@ export default function CampaignReportPage() {
   };
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated || !user) {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress");
       return;
     }
@@ -283,46 +285,30 @@ export default function CampaignReportPage() {
 
     let cancelled = false;
 
-    const checkAdminAndLoad = async () => {
+    const load = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (adminErr) {
-          if (isMissingAdminUsersTable(adminErr)) {
-            await supabase.auth.signOut();
-            router.replace("/fusion-xpress?error=setup");
-            return;
-          }
-          throw adminErr;
-        }
-
-        if (!adminRow) {
-          await supabase.auth.signOut();
-          router.replace("/fusion-xpress?error=unauthorized");
-          return;
-        }
-
         if (!cancelled) await refreshData();
       } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Unable to verify admin access");
+        if (isMissingPortalMembersTable(e)) {
+          await supabase.auth.signOut();
+          router.replace("/fusion-xpress?error=setup");
+          return;
+        }
+        if (!cancelled) setError(e?.message ?? "Failed to load campaign report");
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
 
-    checkAdminAndLoad();
+    load();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, campaignId, isAuthenticated, router, user?.id]);
+  }, [authLoading, portalLoading, isPortalMember, campaignId, isAuthenticated, router, user?.id]);
 
   useEffect(() => {
     if (!campaignId) return;

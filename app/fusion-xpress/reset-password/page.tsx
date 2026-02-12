@@ -20,28 +20,84 @@ export default function FusionXpressResetPasswordPage() {
   }, [confirm, password]);
 
   useEffect(() => {
-    // The reset link sets a session in the URL hash; supabase client will pick it up
-    // because detectSessionInUrl is enabled in `lib/supabase.ts`.
-    const check = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+    // The reset link sets a session in the URL hash. Supabase parses it asynchronously.
+    // Use onAuthStateChange to wait for PASSWORD_RECOVERY or initial session, then
+    // fallback to polling getSession() for hash-based recovery.
+    let resolved = false;
+
+    const resolveReady = (hasSession: boolean) => {
+      if (resolved) return;
+      resolved = true;
+      setReady(true);
+      if (!hasSession) {
         setError("Invalid or expired reset link. Please request a new one from Fusion Xpress login.");
       }
-      setReady(true);
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        resolveReady(!!session);
+      }
+    });
+
+    const check = async () => {
+      for (let i = 0; i < 6; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          resolveReady(true);
+          return;
+        }
+        if (i < 5) await new Promise((r) => setTimeout(r, 400));
+      }
+      resolveReady(false);
     };
     check();
+
+    return () => sub?.subscription?.unsubscribe();
   }, []);
+
+  const maybeClaimAdmin = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      await fetch("/api/fusion-xpress/claim-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: token }),
+      });
+    } catch {
+      // non-blocking
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        setError(
+          "Your session has expired or the link was already used. Please request a new password reset link from Fusion Xpress login."
+        );
+        setLoading(false);
+        return;
+      }
       const { error: updErr } = await supabase.auth.updateUser({ password });
       if (updErr) throw updErr;
-      router.replace("/fusion-xpress");
+      // Claim admin if allowlisted, then go to dashboard (it will redirect to login if not a portal member).
+      await maybeClaimAdmin();
+      router.replace("/dashboard");
     } catch (err: any) {
-      setError(err?.message ?? "Unable to update password.");
+      const msg = err?.message ?? "Unable to update password.";
+      if (msg.includes("Auth session missing") || msg.includes("AuthSessionMissingError")) {
+        setError(
+          "Your session expired. Please request a new password reset link from Fusion Xpress login and use it within a few minutes."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,9 +135,19 @@ export default function FusionXpressResetPasswordPage() {
 
           <div className="p-8">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {error}
-              </div>
+              <>
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {error}
+                </div>
+                {(error.includes("Invalid or expired") || error.includes("session expired") || error.includes("Auth session missing")) && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                    <strong>How to reset your password:</strong> Go to{" "}
+                    <Link href="/fusion-xpress" className="underline font-semibold">Fusion Xpress login</Link>, enter your
+                    email, click &quot;Forgot / Create password&quot;, then click the link in the email. Do not navigate
+                    directly to this page.
+                  </div>
+                )}
+              </>
             )}
 
             <form onSubmit={onSubmit} className="space-y-4">

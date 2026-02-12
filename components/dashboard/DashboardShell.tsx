@@ -6,36 +6,51 @@ import { useMemo, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
   BarChart3,
+  BadgePercent,
   LayoutDashboard,
   Menu,
+  MessagesSquare,
   Plus,
   Search,
   Shield,
   Ticket,
+  UserCog,
   Vote,
   Users,
+  Wallet,
   X,
   LogOut,
   User,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
+
+type PortalTier = "basic" | "pro" | "enterprise";
 
 type NavItem = {
   label: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
   section: "main" | "manage" | "settings";
+  adminOnly?: boolean;
+  minTier?: PortalTier; // For clients: minimum tier to see this item. Admins ignore.
 };
+
+const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
   { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main" },
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main" },
-  { label: "Users", href: "/dashboard/users", icon: Users, section: "main" },
+  { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
   { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage" },
-  { label: "Profile", href: "/profile", icon: User, section: "settings" },
+  { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", minTier: "pro" },
+  { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", minTier: "pro" },
+  { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "manage", minTier: "pro" },
+  { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "manage", minTier: "pro" },
+  { label: "Account", href: "/dashboard/account", icon: User, section: "settings" },
 ];
 
 function parseHref(href: string) {
@@ -58,8 +73,16 @@ function isActivePath(pathname: string, currentType: string | null, href: string
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "";
   const sp = useSearchParams();
-  const currentType = sp?.get("type");
+  const currentType = sp?.get("type") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const { isAdmin, isPortalMember, loading: portalLoading, tier } = usePortal();
+
+  const canSeeItem = (item: NavItem) => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (!item.minTier || isAdmin) return true;
+    const userTier = tier ?? "basic";
+    return TIER_ORDER[userTier] >= TIER_ORDER[item.minTier];
+  };
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -71,7 +94,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const breadcrumbTail = active === "Dashboard" ? "Read" : active;
 
   // Avoid flashing private shell while auth pages redirect.
-  if (authLoading || !isAuthenticated) {
+  if (authLoading || portalLoading || !isAuthenticated || !isPortalMember) {
     return <>{children}</>;
   }
 
@@ -102,7 +125,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 {s.label}
               </div>
               <div className="mt-2 space-y-1">
-                {NAV.filter((x) => x.section === s.key).map((item) => {
+                {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
                   const Icon = item.icon;
                   const active = isActivePath(pathname, currentType, item.href);
                   return (
@@ -179,7 +202,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     {s.label}
                   </div>
                   <div className="mt-2 space-y-1">
-                    {NAV.filter((x) => x.section === s.key).map((item) => {
+                    {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
                       const Icon = item.icon;
                       const active = isActivePath(pathname, currentType, item.href);
                       return (

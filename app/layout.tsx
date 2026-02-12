@@ -8,6 +8,7 @@ import SEOStructuredData from "@/components/SEOStructuredData";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PortalProvider } from "@/contexts/PortalContext";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cmfagency.co.ke"),
@@ -163,9 +164,11 @@ export default async function RootLayout({
         <SEOStructuredData />
         <CartProvider>
           <AuthProvider>
-            <PageLoader>
-              <ConditionalLayout>{children}</ConditionalLayout>
-            </PageLoader>
+            <PortalProvider>
+              <PageLoader>
+                <ConditionalLayout>{children}</ConditionalLayout>
+              </PageLoader>
+            </PortalProvider>
           </AuthProvider>
         </CartProvider>
       </body>

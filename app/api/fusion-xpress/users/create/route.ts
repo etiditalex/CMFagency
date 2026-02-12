@@ -6,7 +6,9 @@ type Body = {
   email?: string;
   password?: string;
   make_admin?: boolean;
+  make_manager?: boolean;
   email_confirm?: boolean;
+  tier?: "basic" | "pro" | "enterprise";
 };
 
 export async function POST(req: NextRequest) {
@@ -16,7 +18,15 @@ export async function POST(req: NextRequest) {
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const makeAdmin = Boolean(body.make_admin);
+    const makeManager = Boolean(body.make_manager);
     const emailConfirm = body.email_confirm !== false; // default true
+    const tierVal = String(body.tier ?? "basic").toLowerCase();
+    const tier =
+      makeAdmin || makeManager
+        ? "enterprise"
+        : ["basic", "pro", "enterprise"].includes(tierVal)
+          ? (tierVal as "basic" | "pro" | "enterprise")
+          : "basic";
 
     if (!accessToken) return NextResponse.json({ error: "Missing access_token" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Missing email" }, { status: 400 });
@@ -43,18 +53,24 @@ export async function POST(req: NextRequest) {
     const callerId = String(callerData.user.id ?? "");
     if (!callerId) return NextResponse.json({ error: "Invalid caller" }, { status: 401 });
 
-    // Require caller to already be an admin (from allowlist table).
-    const { data: adminRow, error: adminErr } = await admin
-      .from("admin_users")
-      .select("user_id")
-      .eq("user_id", callerId)
-      .maybeSingle();
+    // Require caller to be admin or manager (portal_members) or legacy admin_users.
+    const { data: memberRow } = await admin.from("portal_members").select("role").eq("user_id", callerId).maybeSingle();
+    const isFullAdmin = memberRow?.role === "admin";
+    const isManager = memberRow?.role === "manager";
+    const isLegacyAdmin = !memberRow
+      ? (await admin.from("admin_users").select("user_id").eq("user_id", callerId).maybeSingle()).data != null
+      : false;
 
-    if (adminErr) {
-      return NextResponse.json({ error: adminErr.message ?? "Unable to verify admin access" }, { status: 500 });
-    }
-    if (!adminRow) {
+    if (!isFullAdmin && !isManager && !isLegacyAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Only full admins can create admins or managers.
+    if ((makeAdmin || makeManager) && !isFullAdmin && !isLegacyAdmin) {
+      return NextResponse.json(
+        { error: "Only full admins can add admins or managers" },
+        { status: 403 }
+      );
     }
 
     const { data, error } = await admin.auth.admin.createUser({
@@ -65,6 +81,16 @@ export async function POST(req: NextRequest) {
 
     if (error || !data?.user) {
       return NextResponse.json({ error: error?.message ?? "Failed to create user" }, { status: 400 });
+    }
+
+    // Add user to portal membership (so they can access /dashboard).
+    const role = makeAdmin ? "admin" : makeManager ? "manager" : "client";
+    const { error: pmErr } = await admin.from("portal_members").upsert({ user_id: data.user.id, role, tier });
+    if (pmErr) {
+      return NextResponse.json(
+        { error: pmErr.message ?? "User created, but failed to add to portal", user_id: data.user.id },
+        { status: 500 }
+      );
     }
 
     if (makeAdmin) {
@@ -82,6 +108,7 @@ export async function POST(req: NextRequest) {
       user_id: data.user.id,
       email: data.user.email,
       is_admin: makeAdmin,
+      is_manager: makeManager,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
