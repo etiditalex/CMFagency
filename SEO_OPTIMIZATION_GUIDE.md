@@ -70,6 +70,14 @@ Enhanced structured data for AI overviews:
 - "event management Kenya"
 - "branding services Kenya"
 
+### Event-specific Keywords (CFMA 2026 / Mombasa events):
+- "Buy tickets online"
+- "CMF awards 2026"
+- "events Mombasa 2026"
+- "Mombasa events 2026"
+- "fashion event Mombasa"
+- "buy event tickets Kenya"
+
 ## 📊 AI Overview Optimization
 
 ### For Google AI Overview:

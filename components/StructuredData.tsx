@@ -11,13 +11,12 @@ export default function StructuredData({ data }: StructuredDataProps) {
     const script = document.createElement("script");
     script.type = "application/ld+json";
     script.text = JSON.stringify(data);
-    script.id = "structured-data";
+    script.id = `structured-data-${Math.random().toString(36).slice(2)}`;
     document.head.appendChild(script);
 
     return () => {
-      const existingScript = document.getElementById("structured-data");
-      if (existingScript) {
-        document.head.removeChild(existingScript);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
     };
   }, [data]);

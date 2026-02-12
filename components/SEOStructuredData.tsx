@@ -215,6 +215,22 @@ export default function SEOStructuredData() {
           text: "Changer Fusions serves clients across Kenya including Mombasa, Nairobi, Kisumu, Nakuru, Eldoret, and other major cities. While we are based in Mombasa, we work with businesses throughout Kenya and can provide remote services or travel for on-site consultations when needed.",
         },
       },
+      {
+        "@type": "Question",
+        name: "Where can I buy tickets online for CMF Awards 2026 in Mombasa?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "You can buy tickets online for Coast Fashion & Modelling Awards 2026 (CMF Awards 2026) at https://cmfagency.co.ke/events/upcoming. The event takes place on 15th August 2026 in Mombasa, Kenya. Early bird tickets start from KES 500 (Regular), KES 1500 (VIP), and KES 3500 (VVIP). Payment is via M-Pesa.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What events are happening in Mombasa 2026?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "The Coast Fashion & Modelling Awards 2026 (CMF Awards 2026) is a major event in Mombasa on 15th August 2026. It celebrates heritage, empowers youth talent, and advances sustainable fashion and eco-tourism. Buy tickets online at cmfagency.co.ke/events/upcoming.",
+        },
+      },
     ],
   };
 

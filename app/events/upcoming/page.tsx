@@ -426,7 +426,7 @@ export default function UpcomingEventsPage() {
                     <div className="flex flex-col items-center gap-2">
                       <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Concept Note</div>
                       <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900">
-                        Coast Fashion and Modelling Awards 2026 (CFMA 2026)
+                        Coast Fashion and Modelling Awards 2026 (CMF Awards 2026)
                       </h2>
                       <p className="text-gray-700 font-medium">
                         Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism
@@ -522,6 +522,11 @@ export default function UpcomingEventsPage() {
                         <p className="text-gray-700">
                           CFMA 2026 is a flagship platform celebrating coastal heritage, empowering youth talent, and
                           promoting sustainable fashion practices and eco-tourism initiatives in the region.
+                        </p>
+                        <p className="text-gray-700">
+                          <strong>Buy tickets online</strong> for the CMF Awards 2026 in Mombasa. One of the premier{" "}
+                          <strong>events Mombasa 2026</strong>—join us on 15th August for an unforgettable celebration
+                          of fashion and talent.
                         </p>
                       </div>
                     </div>
