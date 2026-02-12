@@ -14,15 +14,50 @@ export default function ContactPage() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to send message. Please try again.");
+      }
+
+      // Pre-fill WhatsApp message with inquiry for team to reply
+      const whatsappMessage = `*New inquiry via Contact Form*
+
+*Name:* ${formData.name}
+*Email:* ${formData.email}
+*Phone:* ${formData.phone || "Not provided"}
+*Subject:* ${formData.subject}
+
+*Message:*
+${formData.message}`;
+
+      const whatsappNumber = "254797777347";
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+      window.open(whatsappUrl, "_blank");
+
+      setSubmitted(true);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-    }, 3000);
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Google Maps embed URL for the address - Ambalal Building, Nkruma Road, Mombasa
@@ -184,10 +219,15 @@ export default function ContactPage() {
                 >
                   <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold mb-2 text-gray-900">Message Sent!</h3>
-                  <p className="text-gray-600">We'll get back to you as soon as possible.</p>
+                  <p className="text-gray-600">We&apos;ve received your inquiry and a WhatsApp chat has opened so you can continue the conversation with us. We&apos;ll get back to you as soon as possible.</p>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {submitError && (
+                    <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                      {submitError}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -261,10 +301,11 @@ export default function ContactPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full btn-primary inline-flex items-center justify-center"
+                    disabled={submitting}
+                    className="w-full btn-primary inline-flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Send Message
-                    <Send className="ml-2 w-5 h-5" />
+                    {submitting ? "Sending..." : "Send Message"}
+                    {!submitting && <Send className="ml-2 w-5 h-5" />}
                   </button>
                 </form>
               )}

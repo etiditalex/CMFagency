@@ -7,6 +7,7 @@ import type { ComponentType, ReactNode } from "react";
 import {
   BarChart3,
   BadgePercent,
+  Inbox,
   LayoutDashboard,
   Menu,
   MessagesSquare,
@@ -57,6 +58,7 @@ const NAV: NavItem[] = [
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
+  { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
   { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
   { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },
   { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", featureKey: "coupons" },
