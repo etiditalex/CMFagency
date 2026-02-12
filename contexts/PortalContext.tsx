@@ -9,11 +9,24 @@ import { useAuth } from "@/contexts/AuthContext";
 type PortalRole = "admin" | "manager" | "client";
 type PortalTier = "basic" | "pro" | "enterprise";
 
+type PortalFeature =
+  | "payouts"
+  | "coupons"
+  | "managers"
+  | "email"
+  | "create_campaign"
+  | "ticketing"
+  | "voting"
+  | "reports";
+
 type PortalContextValue = {
   loading: boolean;
   isPortalMember: boolean;
   role: PortalRole | null;
   tier: PortalTier | null;
+  /** Enabled features for clients; admins/managers have all. */
+  features: PortalFeature[];
+  hasFeature: (key: PortalFeature) => boolean;
   /** Full admin: can add admins and managers. */
   isAdmin: boolean;
   /** Manager: can add clients only. Same data access as admin; UI enforces restrictions. */
@@ -43,10 +56,15 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [isPortalMember, setIsPortalMember] = useState(false);
   const [role, setRole] = useState<PortalRole | null>(null);
   const [tier, setTier] = useState<PortalTier | null>(null);
+  const [features, setFeatures] = useState<PortalFeature[]>([]);
 
   const isAdmin = useMemo(() => role === "admin" || role === "manager", [role]);
   const isManager = useMemo(() => role === "manager", [role]);
   const isFullAdmin = useMemo(() => role === "admin", [role]);
+  const hasFeature = useMemo(
+    () => (key: PortalFeature) => isAdmin || features.includes(key),
+    [isAdmin, features]
+  );
 
   const refresh = async () => {
     if (!user?.id) {
@@ -62,7 +80,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       // Prefer portal_members table (new RBAC model).
       const { data: memberRow, error: memberErr } = await supabase
         .from("portal_members")
-        .select("user_id,role,tier")
+        .select("user_id,role,tier,features")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -80,6 +98,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
               setIsPortalMember(false);
               setRole(null);
               setTier(null);
+              setFeatures([]);
               return;
             }
             throw adminErr;
@@ -89,10 +108,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
             setIsPortalMember(true);
             setRole("admin");
             setTier("enterprise");
+            setFeatures(["payouts", "coupons", "managers", "email", "create_campaign", "ticketing", "voting", "reports"]);
           } else {
             setIsPortalMember(false);
             setRole(null);
             setTier(null);
+            setFeatures([]);
           }
           return;
         }
@@ -113,6 +134,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
             setIsPortalMember(false);
             setRole(null);
             setTier(null);
+            setFeatures([]);
             return;
           }
           throw adminErr;
@@ -122,21 +144,45 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           setIsPortalMember(true);
           setRole("admin");
           setTier("enterprise");
+          setFeatures(["payouts", "coupons", "managers", "email"]);
           return;
         }
 
         setIsPortalMember(false);
         setRole(null);
         setTier(null);
+        setFeatures([]);
         return;
       }
 
       const r = String((memberRow as any).role ?? "client").toLowerCase();
       const t = String((memberRow as any).tier ?? "basic").toLowerCase();
       const validTier = ["basic", "pro", "enterprise"].includes(t) ? (t as PortalTier) : "basic";
+      const rawFeatures = (memberRow as any).features;
+      const allFeatureKeys = [
+        "payouts",
+        "coupons",
+        "managers",
+        "email",
+        "create_campaign",
+        "ticketing",
+        "voting",
+        "reports",
+      ] as const;
+      const fs: PortalFeature[] = Array.isArray(rawFeatures)
+        ? rawFeatures.filter((f: string) => allFeatureKeys.includes(f as PortalFeature))
+        : [];
+      // Backward compat: if features column missing/empty, derive from tier (pro/enterprise = all)
+      const derivedFeatures: PortalFeature[] =
+        fs.length > 0 ? fs : validTier === "pro" || validTier === "enterprise" ? [...allFeatureKeys] : [];
       setIsPortalMember(true);
       setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
       setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);
+      setFeatures(
+        r === "admin" || r === "manager"
+          ? ([...allFeatureKeys] as PortalFeature[])
+          : derivedFeatures
+      );
     } finally {
       setLoading(false);
     }
@@ -161,12 +207,14 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       isPortalMember,
       role,
       tier,
+      features,
+      hasFeature,
       isAdmin,
       isManager,
       isFullAdmin,
       refresh,
     }),
-    [authLoading, loading, isPortalMember, role, tier, isAdmin, isManager, isFullAdmin]
+    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin]
   );
 
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;

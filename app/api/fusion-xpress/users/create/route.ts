@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+const ALLOWED_FEATURES = [
+  "payouts",
+  "coupons",
+  "managers",
+  "email",
+  "create_campaign",
+  "ticketing",
+  "voting",
+  "reports",
+] as const;
+
 type Body = {
   access_token?: string;
   email?: string;
@@ -9,6 +20,7 @@ type Body = {
   make_manager?: boolean;
   email_confirm?: boolean;
   tier?: "basic" | "pro" | "enterprise";
+  features?: string[];
 };
 
 export async function POST(req: NextRequest) {
@@ -27,6 +39,11 @@ export async function POST(req: NextRequest) {
         : ["basic", "pro", "enterprise"].includes(tierVal)
           ? (tierVal as "basic" | "pro" | "enterprise")
           : "basic";
+
+    const rawFeatures = Array.isArray(body.features) ? body.features : [];
+    const features = rawFeatures
+      .map((f) => String(f).toLowerCase().trim())
+      .filter((f) => ALLOWED_FEATURES.includes(f as (typeof ALLOWED_FEATURES)[number]));
 
     if (!accessToken) return NextResponse.json({ error: "Missing access_token" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Missing email" }, { status: 400 });
@@ -85,7 +102,11 @@ export async function POST(req: NextRequest) {
 
     // Add user to portal membership (so they can access /dashboard).
     const role = makeAdmin ? "admin" : makeManager ? "manager" : "client";
-    const { error: pmErr } = await admin.from("portal_members").upsert({ user_id: data.user.id, role, tier });
+    // Admins/managers get all features (empty = bypass); clients get explicit list.
+    const featuresForDb = role === "client" ? features : [];
+    const { error: pmErr } = await admin
+      .from("portal_members")
+      .upsert({ user_id: data.user.id, role, tier, features: featuresForDb });
     if (pmErr) {
       return NextResponse.json(
         { error: pmErr.message ?? "User created, but failed to add to portal", user_id: data.user.id },

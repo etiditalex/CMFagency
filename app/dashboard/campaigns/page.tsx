@@ -45,7 +45,7 @@ export default function DashboardCampaignsPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -273,14 +273,16 @@ export default function DashboardCampaignsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <Link
-                        href={`/dashboard/campaigns/${c.id}`}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
-                        title="Open campaign report"
-                      >
-                        <LineChart className="w-4 h-4" />
-                        Report
-                      </Link>
+                      {hasFeature("reports") && (
+                        <Link
+                          href={`/dashboard/campaigns/${c.id}`}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                          title="Open campaign report"
+                        >
+                          <LineChart className="w-4 h-4" />
+                          Report
+                        </Link>
+                      )}
                       <Link
                         href={publicUrl}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"

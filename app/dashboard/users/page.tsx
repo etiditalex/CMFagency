@@ -2,12 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Shield, UserPlus } from "lucide-react";
+import {
+  BadgePercent,
+  BarChart3,
+  KeyRound,
+  MessagesSquare,
+  Plus,
+  Shield,
+  Ticket,
+  UserCog,
+  UserPlus,
+  Vote,
+  Wallet,
+} from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { UserCog } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+
+const FEATURES: { key: string; label: string; icon: typeof Wallet }[] = [
+  { key: "create_campaign", label: "Create campaigns", icon: Plus },
+  { key: "ticketing", label: "Ticketing", icon: Ticket },
+  { key: "voting", label: "Voting", icon: Vote },
+  { key: "reports", label: "Summary reports", icon: BarChart3 },
+  { key: "payouts", label: "Payouts", icon: Wallet },
+  { key: "coupons", label: "Coupons", icon: BadgePercent },
+  { key: "managers", label: "Managers", icon: UserCog },
+  { key: "email", label: "Email", icon: MessagesSquare },
+];
 
 function isMissingAdminUsersTable(err: any) {
   const msg = String(err?.message ?? "");
@@ -30,6 +52,9 @@ export default function DashboardUsersPage() {
   const [makeAdmin, setMakeAdmin] = useState(false);
   const [makeManager, setMakeManager] = useState(false);
   const [tier, setTier] = useState<"basic" | "pro" | "enterprise">("basic");
+  const [features, setFeatures] = useState<Record<string, boolean>>(
+    Object.fromEntries(FEATURES.map((f) => [f.key, false]))
+  );
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -108,6 +133,8 @@ export default function DashboardUsersPage() {
           make_manager: makeManager,
           email_confirm: true,
           tier: makeAdmin || makeManager ? undefined : tier,
+          features:
+            makeAdmin || makeManager ? undefined : Object.keys(features).filter((k) => features[k]),
         }),
       });
 
@@ -131,6 +158,7 @@ export default function DashboardUsersPage() {
       setMakeAdmin(false);
       setMakeManager(false);
       setTier("basic");
+      setFeatures(Object.fromEntries(FEATURES.map((f) => [f.key, false])));
     } catch (err: any) {
       setError(err?.message ?? "Failed to create user");
     } finally {
@@ -157,7 +185,7 @@ export default function DashboardUsersPage() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Users</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
-            Create accounts for clients who purchase your service. Set their tier (Basic, Pro, Enterprise) based on purchase amount to control which dashboard features they can access.
+            Create accounts for clients. Set their tier and check which features they can use (Payouts, Coupons, Managers, Email).
           </p>
         </div>
       </div>
@@ -228,7 +256,14 @@ export default function DashboardUsersPage() {
                 <label className="text-sm font-semibold text-gray-700">Tier (by purchase amount):</label>
                 <select
                   value={tier}
-                  onChange={(e) => setTier(e.target.value as "basic" | "pro" | "enterprise")}
+                  onChange={(e) => {
+                    const v = e.target.value as "basic" | "pro" | "enterprise";
+                    setTier(v);
+                    const allOn = v === "pro" || v === "enterprise";
+                    setFeatures((prev) =>
+                      Object.fromEntries(FEATURES.map((f) => [f.key, allOn]))
+                    );
+                  }}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="basic">Basic</option>
@@ -238,6 +273,51 @@ export default function DashboardUsersPage() {
               </div>
             )}
           </div>
+
+          {!makeAdmin && !makeManager && (
+            <div className="md:col-span-2 mt-2">
+              <div className="text-sm font-semibold text-gray-700 mb-3">Features (check what they can use)</div>
+              <div className="flex flex-wrap gap-4">
+                {FEATURES.map(({ key, label, icon: Icon }) => (
+                  <label
+                    key={key}
+                    className="inline-flex items-center gap-2 text-sm text-gray-700 font-medium select-none cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={features[key] ?? false}
+                      onChange={(e) =>
+                        setFeatures((prev) => ({ ...prev, [key]: e.target.checked }))
+                      }
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <Icon className="w-4 h-4 text-gray-500" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFeatures((prev) => Object.fromEntries(FEATURES.map((f) => [f.key, true])))
+                  }
+                  className="text-xs text-primary-600 hover:underline font-medium"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFeatures((prev) => Object.fromEntries(FEATURES.map((f) => [f.key, false])))
+                  }
+                  className="text-xs text-gray-500 hover:underline font-medium"
+                >
+                  Clear all
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>

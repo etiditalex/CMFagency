@@ -29,7 +29,7 @@ function slugify(input: string) {
 export default function NewCampaignPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, features } = usePortal();
 
   const [type, setType] = useState<CampaignType>("ticket");
   const [title, setTitle] = useState("");
@@ -54,7 +54,16 @@ export default function NewCampaignPage() {
       router.replace("/fusion-xpress");
       return;
     }
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user]);
+    if (!hasFeature("create_campaign")) router.replace("/dashboard");
+  }, [authLoading, isAuthenticated, isPortalMember, hasFeature, portalLoading, router, user]);
+
+  useEffect(() => {
+    if (portalLoading) return;
+    const hasT = features.includes("ticketing");
+    const hasV = features.includes("voting");
+    if (!hasT && hasV) setType("vote");
+    if (hasT && !hasV) setType("ticket");
+  }, [portalLoading, features]);
 
   useEffect(() => {
     // Auto-suggest slug if user hasn't typed one yet.
@@ -67,11 +76,12 @@ export default function NewCampaignPage() {
     if (!slugify(slug).trim()) return false;
     if (!Number.isFinite(unitAmount) || unitAmount <= 0) return false;
     if (!Number.isFinite(maxPerTxn) || maxPerTxn <= 0) return false;
-    if (type === "vote") {
+    const effectiveType = hasFeature("ticketing") && hasFeature("voting") ? type : hasFeature("ticketing") ? "ticket" : "vote";
+    if (effectiveType === "vote") {
       return contestants.some((c) => c.name.trim().length > 0);
     }
     return true;
-  }, [contestants, maxPerTxn, slug, title, type, unitAmount]);
+  }, [contestants, hasFeature, maxPerTxn, slug, title, type, unitAmount]);
 
   const addContestant = () => {
     setContestants((prev) => [...prev, { name: "", image_url: "" }]);
@@ -154,6 +164,10 @@ export default function NewCampaignPage() {
   }
 
   if (!isAuthenticated || !user || !isPortalMember) return null;
+  if (!hasFeature("create_campaign")) return null;
+
+  const canCreateTicket = hasFeature("ticketing");
+  const canCreateVote = hasFeature("voting");
 
   return (
     <div className="text-left">
@@ -180,26 +194,30 @@ export default function NewCampaignPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Campaign type</label>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setType("ticket")}
-                  className={`px-4 py-3 rounded-lg border font-semibold flex items-center justify-center gap-2 ${
-                    type === "ticket" ? "border-primary-600 bg-primary-50 text-primary-700" : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <Ticket className="w-5 h-5" />
-                  Tickets
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setType("vote")}
-                  className={`px-4 py-3 rounded-lg border font-semibold flex items-center justify-center gap-2 ${
-                    type === "vote" ? "border-primary-600 bg-primary-50 text-primary-700" : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <Vote className="w-5 h-5" />
-                  Voting
-                </button>
+                {canCreateTicket && (
+                  <button
+                    type="button"
+                    onClick={() => setType("ticket")}
+                    className={`px-4 py-3 rounded-lg border font-semibold flex items-center justify-center gap-2 ${
+                      type === "ticket" ? "border-primary-600 bg-primary-50 text-primary-700" : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <Ticket className="w-5 h-5" />
+                    Tickets
+                  </button>
+                )}
+                {canCreateVote && (
+                  <button
+                    type="button"
+                    onClick={() => setType("vote")}
+                    className={`px-4 py-3 rounded-lg border font-semibold flex items-center justify-center gap-2 ${
+                      type === "vote" ? "border-primary-600 bg-primary-50 text-primary-700" : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    <Vote className="w-5 h-5" />
+                    Voting
+                  </button>
+                )}
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 Voting MVP counts <span className="font-semibold">one contestant per transaction</span>.

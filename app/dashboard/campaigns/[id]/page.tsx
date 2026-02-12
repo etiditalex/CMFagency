@@ -88,7 +88,7 @@ export default function CampaignReportPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -277,6 +277,10 @@ export default function CampaignReportPage() {
       router.replace("/fusion-xpress");
       return;
     }
+    if (!hasFeature("reports")) {
+      router.replace("/dashboard/campaigns");
+      return;
+    }
     if (!campaignId) {
       setError("Missing campaign id in URL.");
       setLoading(false);
@@ -308,7 +312,7 @@ export default function CampaignReportPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, portalLoading, isPortalMember, campaignId, isAuthenticated, router, user?.id]);
+  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id]);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -364,7 +368,8 @@ export default function CampaignReportPage() {
     );
   }
 
-  if (!isAuthenticated || !user) return null;
+  if (!isAuthenticated || !user || !isPortalMember) return null;
+  if (!hasFeature("reports")) return null;
 
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
   const isVote = campaign?.type === "vote";

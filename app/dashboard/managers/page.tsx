@@ -11,17 +11,17 @@ import { usePortal } from "@/contexts/PortalContext";
 export default function DashboardManagersPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, tier } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) router.replace("/fusion-xpress");
-    if (!isAdmin && tier !== "pro" && tier !== "enterprise") router.replace("/dashboard");
-  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, tier, router, user]);
+    if (!hasFeature("managers")) router.replace("/dashboard");
+  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, hasFeature, router, user]);
 
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember) return null;
-  if (!isAdmin && tier !== "pro" && tier !== "enterprise") return null;
+  if (!hasFeature("managers")) return null;
 
   return (
     <div className="text-left">

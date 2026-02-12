@@ -26,7 +26,7 @@ function isMissingPortalMembersTable(err: any) {
 export default function DashboardHomePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isManager } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, isManager, hasFeature } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +269,21 @@ export default function DashboardHomePage() {
         </div>
       )}
 
+      {!hasFeature("reports") && (
+        <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-6 text-secondary-900">
+          <div className="font-extrabold">Dashboard</div>
+          <div className="mt-2 text-sm">
+            Summary reports are not enabled for your account. Visit{" "}
+            <Link href="/dashboard/campaigns" className="text-primary-700 font-semibold hover:underline">
+              campaigns
+            </Link>{" "}
+            to manage your campaigns.
+          </div>
+        </div>
+      )}
+
+      {hasFeature("reports") && (
+      <>
       {/* KPI cards (styled like screenshot tiles) */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
@@ -480,6 +495,8 @@ export default function DashboardHomePage() {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

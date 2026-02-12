@@ -34,22 +34,34 @@ type NavItem = {
   icon: ComponentType<{ className?: string }>;
   section: "main" | "manage" | "settings";
   adminOnly?: boolean;
-  minTier?: PortalTier; // For clients: minimum tier to see this item. Admins ignore.
+  /** Feature key: client needs this feature enabled to see item. Prefer over minTier. */
+  featureKey?:
+    | "payouts"
+    | "coupons"
+    | "managers"
+    | "email"
+    | "create_campaign"
+    | "ticketing"
+    | "voting"
+    | "reports";
+  /** Show if user has any of these features (for All Campaigns). */
+  featureKeysAny?: ("ticketing" | "voting")[];
+  minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
 };
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
-  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main" },
-  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main" },
-  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main" },
+  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
+  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
+  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
-  { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage" },
-  { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", minTier: "pro" },
-  { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", minTier: "pro" },
-  { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "manage", minTier: "pro" },
-  { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "manage", minTier: "pro" },
+  { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
+  { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },
+  { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", featureKey: "coupons" },
+  { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "manage", featureKey: "managers" },
+  { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "manage", featureKey: "email" },
   { label: "Account", href: "/dashboard/account", icon: User, section: "settings" },
 ];
 
@@ -75,10 +87,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const sp = useSearchParams();
   const currentType = sp?.get("type") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier } = usePortal();
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature } = usePortal();
 
   const canSeeItem = (item: NavItem) => {
     if (item.adminOnly && !isAdmin) return false;
+    if (item.featureKey) return hasFeature(item.featureKey);
+    if (item.featureKeysAny?.length)
+      return item.featureKeysAny.some((k) => hasFeature(k));
     if (!item.minTier || isAdmin) return true;
     const userTier = tier ?? "basic";
     return TIER_ORDER[userTier] >= TIER_ORDER[item.minTier];
