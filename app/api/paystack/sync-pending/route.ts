@@ -23,10 +23,13 @@ async function isAuthorized(req: Request): Promise<boolean> {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseAnonKey) return false;
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) return false;
 
+  // RLS requires auth.uid(); the client above sends the JWT so these queries run as the user.
   const { data: pm } = await supabase.from("portal_members").select("role").eq("user_id", user.id).maybeSingle();
   if (pm) return true;
   const { data: au } = await supabase.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle();
@@ -42,8 +45,15 @@ export async function GET(req: Request) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey || !paystackSecret) {
-    return NextResponse.json({ error: "Missing server configuration" }, { status: 500 });
+  const missing: string[] = [];
+  if (!supabaseUrl) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!supabaseServiceKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!paystackSecret) missing.push("PAYSTACK_SECRET_KEY");
+  if (missing.length) {
+    return NextResponse.json(
+      { error: `Missing server configuration. Add to Vercel: ${missing.join(", ")}` },
+      { status: 500 }
+    );
   }
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
