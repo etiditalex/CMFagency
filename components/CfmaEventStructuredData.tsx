@@ -47,7 +47,7 @@ export default function CfmaEventStructuredData() {
         price: "500",
         priceCurrency: "KES",
         availability: "https://schema.org/InStock",
-        url: "https://cmfagency.co.ke/events/upcoming",
+        url: "https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026",
         validFrom: "2025-01-01",
       },
       {
@@ -56,7 +56,7 @@ export default function CfmaEventStructuredData() {
         price: "1500",
         priceCurrency: "KES",
         availability: "https://schema.org/InStock",
-        url: "https://cmfagency.co.ke/events/upcoming",
+        url: "https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026",
         validFrom: "2025-01-01",
       },
       {
@@ -65,11 +65,11 @@ export default function CfmaEventStructuredData() {
         price: "3500",
         priceCurrency: "KES",
         availability: "https://schema.org/InStock",
-        url: "https://cmfagency.co.ke/events/upcoming",
+        url: "https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026",
         validFrom: "2025-01-01",
       },
     ],
-    url: "https://cmfagency.co.ke/events/upcoming",
+    url: "https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026",
   };
 
   return <StructuredData data={eventSchema} />;

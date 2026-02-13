@@ -7,7 +7,7 @@ const items = [
     day: "15",
     month: "AUG",
     meta: "Mombasa, Kenya • 2026",
-    href: "/events/upcoming",
+    href: "/events/upcoming/coast-fashion-modelling-awards-2026",
     featured: true,
   },
   {

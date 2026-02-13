@@ -133,7 +133,7 @@ export default function CfmaPopupBanner() {
 
                 <div className="mt-7 flex flex-col sm:flex-row gap-3">
                   <Link
-                    href="/events/upcoming"
+                    href="/events/upcoming/coast-fashion-modelling-awards-2026"
                     className="inline-flex items-center justify-center rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold px-5 py-3 shadow"
                     onClick={close}
                   >

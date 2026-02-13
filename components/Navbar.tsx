@@ -120,7 +120,7 @@ export default function Navbar() {
     `&text=${encodeURIComponent("Coast Fashion and Modelling Awards 2026 (CFMA 2026)")}` +
     `&dates=${encodeURIComponent("20260815/20260816")}` +
     `&details=${encodeURIComponent(
-      "Join CFMA 2026 in Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.\n\nEvent details: https://cmfagency.co.ke/events/upcoming"
+      "Join CFMA 2026 in Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.\n\nEvent details: https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026"
     )}` +
     `&location=${encodeURIComponent("Mombasa, Kenya")}` +
     `&ctz=${encodeURIComponent("Africa/Nairobi")}`;
@@ -428,7 +428,7 @@ export default function Navbar() {
 
                       {/* CFMA carousel */}
                       <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
-                        <Link href="/events/upcoming" className="block">
+                        <Link href="/events/upcoming/coast-fashion-modelling-awards-2026" className="block">
                           <div className="relative aspect-[16/10]">
                             <AnimatePresence mode="wait" initial={false}>
                               <motion.div
@@ -732,7 +732,7 @@ export default function Navbar() {
                           CFMA 2026
                         </div>
                         <Link
-                          href="/events/upcoming"
+                          href="/events/upcoming/coast-fashion-modelling-awards-2026"
                           className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
                         >
                           View Event Details
@@ -902,7 +902,7 @@ export default function Navbar() {
 
                       <div className="pt-3 pr-4">
                         <Link
-                          href="/events/upcoming"
+                          href="/events/upcoming/coast-fashion-modelling-awards-2026"
                           onClick={() => {
                             setIsOpen(false);
                             setServicesOpen(false);

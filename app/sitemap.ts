@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/services/content-creation", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events/upcoming", priority: 0.95, changeFrequency: "weekly" as const },
+    { path: "/events/upcoming/coast-fashion-modelling-awards-2026", priority: 0.95, changeFrequency: "weekly" as const },
     { path: "/events/past", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/testimonials", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/portfolios", priority: 0.85, changeFrequency: "weekly" as const },

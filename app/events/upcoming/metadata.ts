@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "CMF Awards 2026 Mombasa - Buy Tickets Online | Coast Fashion & Modelling Awards",
-  description: "Buy tickets online for Coast Fashion & Modelling Awards 2026 (CMF Awards 2026) in Mombasa, Kenya. 15th August 2026. Early bird tickets from KES 500. Celebrating heritage, empowering youth talent, advancing sustainable fashion. Partner, sponsor, or participate.",
+  title: "Upcoming Events | Coast Fashion & Modelling Awards | CMF Agency",
+  description: "Coast Fashion and Modelling Awards 2026 (CMFA) - our premier upcoming event in Mombasa. View details, get tickets, and be part of the excitement.",
   keywords: [
     "Buy tickets online",
     "CMF awards 2026",

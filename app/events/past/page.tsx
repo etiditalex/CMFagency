@@ -197,7 +197,7 @@ export default function PastEventsPage() {
                           </div>
                           <div className="flex items-center text-gray-700">
                             <Calendar className="w-4 h-4 mr-2 text-secondary-600 flex-shrink-0" />
-                            <span className="font-medium uppercase">{format(event.date, "MMMM Do")}</span>
+                            <span className="font-medium uppercase">{format(event.date, "MMMM d")}</span>
                           </div>
                           <div className="flex items-center text-gray-700">
                             <Phone className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
