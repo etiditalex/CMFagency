@@ -192,12 +192,10 @@ export default function PayCampaignPage() {
     if (!campaign) return 1;
     return Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
   }, [campaign, quantity]);
-  const subtotal = useMemo(() => {
+  const total = useMemo(() => {
     if (!campaign) return 0;
     return qty * campaign.unit_amount;
   }, [campaign, qty]);
-  const vatAmount = useMemo(() => Math.round(subtotal * 0.16), [subtotal]);
-  const total = useMemo(() => subtotal + vatAmount, [subtotal, vatAmount]);
 
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,7 +223,7 @@ export default function PayCampaignPage() {
         });
 
         const raw = await res.text();
-        let json: { reference?: string; customer_message?: string; error?: string } = {};
+        let json: { reference?: string; customer_message?: string; error?: string; details?: string } = {};
         if (raw) {
           try {
             json = JSON.parse(raw) as typeof json;
@@ -234,10 +232,11 @@ export default function PayCampaignPage() {
           }
         }
 
-        if (!res.ok) {
-          const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
-          throw new Error(details || `Payment initialization failed (HTTP ${res.status})`);
-        }
+      if (!res.ok) {
+        const errMsg = typeof json.error === "string" && json.error.trim() ? json.error : raw;
+        const extra = typeof json.details === "string" ? ` ${json.details}` : "";
+        throw new Error(errMsg + extra || `Payment initialization failed (HTTP ${res.status})`);
+      }
         if (!json.reference) throw new Error("Missing transaction reference.");
 
         router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
@@ -258,7 +257,7 @@ export default function PayCampaignPage() {
         });
 
         const raw = await res.text();
-        let json: { authorization_url?: string; reference?: string; error?: string } = {};
+        let json: { authorization_url?: string; reference?: string; error?: string; details?: string } = {};
         if (raw) {
           try {
             json = JSON.parse(raw) as typeof json;
@@ -268,8 +267,9 @@ export default function PayCampaignPage() {
         }
 
         if (!res.ok) {
-          const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
-          throw new Error(details || `Card payment initialization failed (HTTP ${res.status})`);
+          const errMsg = typeof json.error === "string" && json.error.trim() ? json.error : raw;
+          const extra = typeof json.details === "string" ? ` ${json.details}` : "";
+          throw new Error(errMsg + extra || `Card payment initialization failed (HTTP ${res.status})`);
         }
         if (!json.authorization_url) throw new Error("Missing payment link.");
 
@@ -528,16 +528,8 @@ export default function PayCampaignPage() {
                   <p className="text-xs text-gray-500 mt-2">Max per transaction: {campaign.max_per_txn}</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Subtotal</span>
-                    <span>{campaign.currency} {subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>VAT (16%)</span>
-                    <span>{campaign.currency} {vatAmount.toLocaleString()}</span>
-                  </div>
-                  <div className="border-t border-gray-200 mt-2 pt-2">
-                    <div className="text-xs text-gray-500">Total (incl. VAT)</div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="text-xs text-gray-500">Total</div>
                     <div className="text-2xl font-bold text-gray-900 mt-1">
                       {campaign.currency} {total.toLocaleString()}
                     </div>

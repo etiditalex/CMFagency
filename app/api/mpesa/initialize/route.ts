@@ -157,9 +157,7 @@ export async function POST(req: Request) {
 
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
     const unitAmount = Number(campaign.unit_amount);
-    const subtotal = unitAmount * q;
-    const vatAmount = Math.round(subtotal * 0.16); // 16% VAT
-    const amount = subtotal + vatAmount;
+    const amount = unitAmount * q;
 
     const { error: insertErr } = await supabase.from("transactions").insert({
       campaign_id: campaign.id,
@@ -171,20 +169,25 @@ export async function POST(req: Request) {
       currency: "KES",
       unit_amount: unitAmount,
       amount,
-      vat_amount: vatAmount,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
       metadata: {
         slug: campaign.slug,
         campaign_title: campaign.title,
         mpesa_phone: phone,
-        vat_rate: 16,
       },
     });
 
     if (insertErr) {
+      const msg = insertErr?.message ?? "";
+      const isRls = /policy|RLS|row level security/i.test(msg) || msg.includes("violates");
       return NextResponse.json(
-        { error: "Unable to create transaction (RLS rejected or invalid campaign)." },
+        {
+          error: isRls
+            ? "Unable to create transaction. Check: campaign is_active=true, dates valid."
+            : "Unable to create transaction.",
+          details: msg,
+        },
         { status: 400 }
       );
     }

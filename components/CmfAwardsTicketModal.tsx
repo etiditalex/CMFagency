@@ -22,7 +22,6 @@ const TICKET_TIERS = [
 ] as const;
 
 const STEPS = ["Select tickets", "Details", "Payment"] as const;
-const VAT_RATE = 0.16; // 16% VAT
 
 type FormDetails = {
   company: string;
@@ -62,13 +61,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     }));
   }, [quantities]);
 
-  const subtotal = useMemo(
+  const totalWithVat = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.total, 0),
     [lineItems]
   );
-
-  const vatAmount = useMemo(() => Math.round(subtotal * VAT_RATE), [subtotal]);
-  const totalWithVat = useMemo(() => subtotal + vatAmount, [subtotal, vatAmount]);
 
   const totalTickets = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.quantity, 0),
@@ -533,11 +529,11 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           <span className="font-semibold">{totalTickets}</span>
                         </div>
                         <div className="text-xs text-gray-500 mt-2">
-                          Subtotal KES {subtotal.toLocaleString()} + VAT (16%) KES {vatAmount.toLocaleString()}
+                          Total: KES {totalWithVat.toLocaleString()}
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount (incl. VAT)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
                         <div className="text-2xl font-bold text-gray-900">
                           Kes. {totalWithVat.toLocaleString()}
                         </div>
@@ -620,16 +616,6 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                       </span>
                     </div>
                   ))}
-                  <div className="pt-2 border-t border-gray-200">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Subtotal</span>
-                      <span>KES {subtotal.toLocaleString()}.00</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>VAT (16%)</span>
-                      <span>KES {vatAmount.toLocaleString()}.00</span>
-                    </div>
-                  </div>
                   <div className="pt-2 border-t border-gray-200 flex justify-between">
                     <span className="font-semibold text-gray-900">Total</span>
                     <span className="font-bold text-gray-900">

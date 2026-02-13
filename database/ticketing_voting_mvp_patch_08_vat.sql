@@ -17,6 +17,10 @@ comment on column public.transactions.vat_amount is 'VAT amount in minor units (
 alter table public.transactions
 drop constraint if exists transactions_amount_check;
 
+-- Drop new constraint if already applied (idempotent - safe to run patch twice)
+alter table public.transactions
+drop constraint if exists transactions_amount_vat_check;
+
 -- Add new constraint: amount = subtotal + vat_amount
 alter table public.transactions
 add constraint transactions_amount_vat_check
