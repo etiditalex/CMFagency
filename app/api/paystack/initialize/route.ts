@@ -129,6 +129,7 @@ export async function POST(req: Request) {
         amount_subunit: amountInSubunit,
         email,
         currency: campaign.currency,
+        channels: ["card", "mobile_money"],
       });
     }
 
@@ -149,6 +150,7 @@ export async function POST(req: Request) {
         currency: campaign.currency,
         reference,
         callback_url,
+        channels: ["card", "mobile_money"],
         metadata: {
           campaign_id: campaign.id,
           campaign_type: campaign.type,

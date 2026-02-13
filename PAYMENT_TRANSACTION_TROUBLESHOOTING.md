@@ -43,8 +43,31 @@ The API now returns `details` with the raw Supabase error. Use it to see whether
 
 ---
 
+## 5. Transactions stuck on "pending" (Paystack)
+
+When Paystack payments succeed but the dashboard still shows **pending**, the webhook may not be reaching your server.
+
+**Immediate fix:** Use the **"Sync pending"** button on the Fusion Xpress dashboard. It verifies each pending Paystack transaction against Paystack's API and updates status to success.
+
+**Webhook setup (to prevent future stuck payments):**
+
+1. Paystack Dashboard → Settings → API Keys & Webhooks
+2. Set Webhook URL: `https://<your-supabase-project>.supabase.co/functions/v1/paystack-webhook`
+3. Deploy the `paystack-webhook` Edge Function in Supabase and set secrets:
+   - `PAYSTACK_SECRET_KEY` (must match your Paystack secret)
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+
+**Common webhook causes:**
+- Webhook URL not set or wrong (localhost cannot receive webhooks)
+- Wrong `PAYSTACK_SECRET_KEY` in Supabase (signature verification fails)
+- Amount mismatch: our `tx.amount` is whole units (e.g. 5 KES); Paystack sends subunits (500). The webhook expects `tx.amount * 100` to match.
+
+---
+
 ## Quick checklist
 
 1. Run `ticketing_voting_mvp_patch_10_remove_vat.sql`
 2. Run `ticketing_voting_mvp_seed_cfma_campaigns.sql` (if CFMA campaigns are used)
 3. In `campaigns`, ensure `is_active = true` and dates are valid (or NULL)
+4. For stuck Paystack payments: click **Sync pending** on the dashboard

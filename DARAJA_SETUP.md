@@ -1,6 +1,10 @@
 # M-Pesa Daraja (STK Push) Setup
 
-This project now supports **M-Pesa Daraja STK Push** via:
+> **DEPRECATED**: Daraja API has been removed. All payments (Visa, Mastercard, M-Pesa, Airtel Money) now go through Paystack. See VERCEL_ENV_SETUP.md for Paystack configuration.
+
+---
+
+This document described **M-Pesa Daraja STK Push** (now removed) via:
 - `POST /api/mpesa/initialize` (creates pending transaction + triggers STK prompt)
 - `POST /api/mpesa/callback` (Safaricom callback; marks transaction success/failed + fulfills)
 - `GET /api/transactions/status?ref=...` (UI polling)

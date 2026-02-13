@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, CreditCard, Loader2, Minus, Plus, X } from "lucide-react";
+import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
 const EVENT = {
@@ -49,8 +49,6 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     repeatEmail: "",
     address: "",
   });
-  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
-  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -81,11 +79,12 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
     return true;
   }, [details]);
-  const canPayMpesa = phone.trim().length >= 9 && totalTickets > 0;
-  const canPayCard = details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()) && totalTickets > 0;
-  const canPay = paymentMethod === "mpesa" ? canPayMpesa : canPayCard;
   const isSingleTier = lineItems.length === 1;
-  const cardAvailable = isSingleTier;
+  const canPay =
+    isSingleTier &&
+    totalTickets > 0 &&
+    details.email.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim());
 
   const reset = useCallback(() => {
     setStep(1);
@@ -98,8 +97,6 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
       repeatEmail: "",
       address: "",
     });
-    setPaymentMethod("mpesa");
-    setPhone("");
     setError(null);
     setSubmitting(false);
   }, []);
@@ -130,12 +127,11 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     setError(null);
 
     try {
-      if (paymentMethod === "card") {
-        if (!cardAvailable || lineItems.length !== 1) {
-          throw new Error("Card payment is available for single ticket type only.");
-        }
-        const item = lineItems[0];
-        const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+      if (!isSingleTier) {
+        throw new Error("Please select one ticket type. For multiple types, visit each campaign page.");
+      }
+      const item = lineItems[0];
+      const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -176,6 +172,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             amount: json.amount_subunit,
             currency: json.currency,
             reference: json.reference,
+            channels: ["card", "mobile_money"],
             onSuccess: () => {
               onClose();
               window.location.href = `/pay/${item.slug}?ref=${encodeURIComponent(json.reference!)}`;
@@ -196,41 +193,6 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
         }
 
         throw new Error("Missing payment link.");
-      }
-
-      const refs: string[] = [];
-      for (let i = 0; i < lineItems.length; i++) {
-        const item = lineItems[i];
-        const res = await fetch("/api/mpesa/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: item.slug,
-            phone: phone.trim(),
-            quantity: item.quantity,
-            email: details.email.trim() || undefined,
-          }),
-        });
-
-        const raw = await res.text();
-        let json: { reference?: string; error?: string } = {};
-        if (raw) {
-          try {
-            json = JSON.parse(raw);
-          } catch {}
-        }
-
-        if (!res.ok) {
-          const msg = (typeof json.error === "string" ? json.error : raw) || "Payment initialization failed.";
-          throw new Error(msg);
-        }
-        if (!json.reference) throw new Error("Missing transaction reference.");
-
-        refs.push(json.reference);
-      }
-
-      onClose();
-      window.location.href = `/pay/${lineItems[0].slug}?ref=${encodeURIComponent(refs[0])}`;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Payment failed. Please try again.");
     } finally {
@@ -479,49 +441,16 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                     exit={{ opacity: 0, x: 8 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-xl font-bold text-gray-900">How would you like to pay?</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentMethod("mpesa")}
-                        className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-colors ${
-                          paymentMethod === "mpesa"
-                            ? "border-primary-600 bg-primary-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-[#00A651]/10 flex items-center justify-center shrink-0">
-                          <span className="text-lg font-bold text-[#00A651]">M</span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">M-Pesa</div>
-                          <p className="text-sm text-gray-600 mt-1">Safaricom mobile money. Enter phone on next step.</p>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => cardAvailable && setPaymentMethod("card")}
-                        disabled={!cardAvailable}
-                        className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-colors ${
-                          paymentMethod === "card"
-                            ? "border-primary-600 bg-primary-50"
-                            : cardAvailable
-                              ? "border-gray-200 hover:border-gray-300"
-                              : "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
-                        }`}
-                      >
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                          <CreditCard className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">Card (Visa/Mastercard)</div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {cardAvailable
-                              ? "Pay securely with your card. Uses email from above."
-                              : "Single ticket type only. Use M-Pesa for mixed orders."}
-                          </p>
-                        </div>
-                      </button>
+                    <h2 className="text-xl font-bold text-gray-900">Payment</h2>
+                    <div className="rounded-xl border border-gray-200 p-4 bg-blue-50/50">
+                      <p className="text-gray-700">
+                        Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or <strong>Airtel Money</strong>. Uses your email from the previous step.
+                      </p>
+                      {!isSingleTier && (
+                        <p className="text-amber-700 mt-2 text-sm font-medium">
+                          Please select one ticket type only. For multiple types, visit each campaign page.
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-3">
                       <button
@@ -534,7 +463,8 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                       <button
                         type="button"
                         onClick={goNext}
-                        className="flex-1 py-3 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold"
+                        disabled={!isSingleTier}
+                        className="flex-1 py-3 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold"
                       >
                         Continue
                       </button>
@@ -573,30 +503,15 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           Kes. {totalWithVat.toLocaleString()}
                         </div>
                       </div>
-                      {paymentMethod === "mpesa" ? (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                          <input
-                            type="tel"
-                            inputMode="tel"
-                            placeholder="Enter Phone Number"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Format: 07XXXXXXXX (Safaricom M-Pesa)</p>
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                          <div className="font-medium text-gray-900">Card payment</div>
-                          <p className="text-sm text-gray-600 mt-1">
-                            We&apos;ll use <span className="font-medium">{details.email}</span>
-                            {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                              ? " and open a secure popup to enter your card details (Visa/Mastercard)."
-                              : " and redirect you to Paystack to complete payment with Visa or Mastercard."}
-                          </p>
-                        </div>
-                      )}
+                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div className="font-medium text-gray-900">Pay with Card, M-Pesa or Airtel Money</div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          We&apos;ll use <span className="font-medium">{details.email}</span>
+                          {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                            ? " and open a secure popup to choose your payment method."
+                            : " and redirect you to Paystack to complete payment."}
+                        </p>
+                      </div>
                     </div>
                     <form onSubmit={handlePay} className="space-y-3">
                       <div className="flex gap-3">
@@ -615,12 +530,12 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           {submitting ? (
                             <>
                               <Loader2 className="w-5 h-5 animate-spin" />
-                              {paymentMethod === "mpesa" ? "Processing M-Pesa..." : "Redirecting..."}
+                              {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                                ? "Complete payment in popup..."
+                                : "Redirecting..."}
                             </>
-                          ) : paymentMethod === "mpesa" ? (
-                            "Pay with M-Pesa"
                           ) : (
-                            "Pay with Card (Visa/Mastercard)"
+                            "Pay with Card, M-Pesa or Airtel Money"
                           )}
                         </button>
                       </div>

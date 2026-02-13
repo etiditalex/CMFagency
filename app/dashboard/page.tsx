@@ -49,11 +49,14 @@ export default function DashboardHomePage() {
       currency: string;
       created_at: string;
       campaign_id: string;
+      provider?: string;
     }>
   >([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
 
   const refreshInFlightRef = useRef(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
 
   const formatRevenue = useMemo(() => {
     const entries = Object.entries(revenueByCurrency).filter(([, v]) => Number.isFinite(v) && v > 0);
@@ -100,7 +103,7 @@ export default function DashboardHomePage() {
       // Recent transactions (money report): keep it non-PII (no email).
       const { data: txRows, error: txErr } = await supabase
         .from("transactions")
-        .select("id,reference,status,amount,currency,created_at,campaign_id")
+        .select("id,reference,status,amount,currency,created_at,campaign_id,provider")
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -148,6 +151,34 @@ export default function DashboardHomePage() {
       refreshInFlightRef.current = false;
     }
   }, [user?.id]);
+
+  const syncPendingPaystack = useCallback(async () => {
+    if (!user) return;
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setSyncResult({ error: "Not logged in" });
+        return;
+      }
+      const res = await fetch("/api/paystack/sync-pending", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { updated?: number; error?: string };
+      if (!res.ok) {
+        setSyncResult({ error: json?.error ?? `HTTP ${res.status}` });
+        return;
+      }
+      setSyncResult({ updated: json.updated ?? 0 });
+      if ((json.updated ?? 0) > 0) await refreshData();
+    } catch (e: any) {
+      setSyncResult({ error: e?.message ?? "Sync failed" });
+    } finally {
+      setSyncing(false);
+    }
+  }, [user, refreshData]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -420,21 +451,37 @@ export default function DashboardHomePage() {
 
       {/* Money report: recent transactions */}
       <div className="mt-8 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4">
+        <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="text-sm font-extrabold text-primary-700 text-left">Recent Payments</div>
             <p className="mt-2 text-gray-600 text-sm text-left">
               Latest transactions (non-PII). Status is webhook-confirmed only when marked{" "}
-              <span className="font-semibold">success</span>.
+              <span className="font-semibold">success</span>. Stuck on pending? Click Sync to verify with Paystack.
             </p>
+            {syncResult && (
+              <p className={`mt-2 text-sm font-medium ${syncResult.error ? "text-red-600" : "text-green-700"}`}>
+                {syncResult.error ?? `Synced ${syncResult.updated} transaction(s).`}
+              </p>
+            )}
           </div>
-          <Link
-            href="/dashboard/campaigns"
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
-          >
-            View More
-            <ExternalLink className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={syncPendingPaystack}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary-200 bg-primary-50 text-primary-800 font-semibold hover:bg-primary-100 disabled:opacity-60"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync pending"}
+            </button>
+            <Link
+              href="/dashboard/campaigns"
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+            >
+              View More
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         <div className="overflow-auto">
@@ -446,13 +493,14 @@ export default function DashboardHomePage() {
                 <th className="px-6 py-3 font-bold text-gray-600">Type</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Provider</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Status</th>
               </tr>
             </thead>
             <tbody>
               {recentTransactions.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-6 text-gray-600" colSpan={6}>
+                  <td className="px-6 py-6 text-gray-600" colSpan={7}>
                     No transactions yet.
                   </td>
                 </tr>
@@ -479,8 +527,11 @@ export default function DashboardHomePage() {
                         {c?.type ? (c.type === "vote" ? "Voting" : "Tickets") : "—"}
                       </td>
                       <td className="px-6 py-4 text-gray-700 font-mono whitespace-nowrap">{t.reference}</td>
-                      <td className="px-6 py-4 text-gray-900 whitespace-nowrap">
+                        <td className="px-6 py-4 text-gray-900 whitespace-nowrap">
                         {String(t.currency ?? "").toUpperCase()} {Number(t.amount ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                        {(t as any).provider ?? "—"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-3 py-1 rounded-full border text-xs font-bold ${statusClass}`}>

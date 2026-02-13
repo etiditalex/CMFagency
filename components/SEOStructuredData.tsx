@@ -224,7 +224,7 @@ export default function SEOStructuredData() {
         name: "Where can I buy tickets online for CMF Awards 2026 in Mombasa?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can buy tickets online for Coast Fashion & Modelling Awards 2026 (CMF Awards 2026) at https://cmfagency.co.ke/events/upcoming. The event takes place on 15th August 2026 in Mombasa, Kenya. Early bird tickets start from KES 500 (Regular), KES 1500 (VIP), and KES 3500 (VVIP). Payment is via M-Pesa.",
+          text: "You can buy tickets online for Coast Fashion & Modelling Awards 2026 (CMF Awards 2026) at https://cmfagency.co.ke/events/upcoming. The event takes place on 15th August 2026 in Mombasa, Kenya. Early bird tickets start from KES 500 (Regular), KES 1500 (VIP), and KES 3500 (VVIP). Payment via Visa, Mastercard, M-Pesa or Airtel Money.",
         },
       },
       {

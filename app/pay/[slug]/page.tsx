@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, CheckCircle2, CreditCard, Loader2, Ticket, Vote } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
 import { supabase } from "@/lib/supabase";
@@ -61,8 +61,6 @@ export default function PayCampaignPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
 
-  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
@@ -208,46 +206,12 @@ export default function PayCampaignPage() {
     try {
       const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
+      if (!email.trim()) throw new Error("Email is required.");
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
 
-      if (paymentMethod === "mpesa") {
-        if (!phone.trim()) throw new Error("Phone number is required for M-Pesa.");
-
-        const res = await fetch("/api/mpesa/initialize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: campaign.slug,
-            phone: phone.trim(),
-            quantity: q,
-            contestant_id: campaign.type === "vote" ? contestantId : null,
-          }),
-        });
-
-        const raw = await res.text();
-        let json: { reference?: string; customer_message?: string; error?: string; details?: string } = {};
-        if (raw) {
-          try {
-            json = JSON.parse(raw) as typeof json;
-          } catch {
-            /* non-JSON */
-          }
-        }
-
-      if (!res.ok) {
-        const errMsg = typeof json.error === "string" && json.error.trim() ? json.error : raw;
-        const extra = typeof json.details === "string" ? ` ${json.details}` : "";
-        throw new Error(errMsg + extra || `Payment initialization failed (HTTP ${res.status})`);
-      }
-        if (!json.reference) throw new Error("Missing transaction reference.");
-
-        router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
-      } else {
-        if (!email.trim()) throw new Error("Email is required for card payment.");
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
-
-        const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-        const res = await fetch("/api/paystack/initialize", {
+      const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+      const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -292,6 +256,7 @@ export default function PayCampaignPage() {
             amount: json.amount_subunit,
             currency: json.currency,
             reference: json.reference,
+            channels: ["card", "mobile_money"],
             onSuccess: () => {
               router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference!)}`);
             },
@@ -312,7 +277,6 @@ export default function PayCampaignPage() {
         }
 
         throw new Error("Missing payment link.");
-      }
     } catch (e: any) {
       setError(e?.message ?? "Payment initialization failed.");
     } finally {
@@ -468,89 +432,36 @@ export default function PayCampaignPage() {
             )}
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
-              {/* Payment method selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Payment method</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("mpesa")}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
-                      paymentMethod === "mpesa"
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-[#00A651]/10 flex items-center justify-center">
-                      <span className="text-lg font-bold text-[#00A651]">M</span>
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">M-Pesa</div>
-                      <div className="text-xs text-gray-600">Safaricom mobile money</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("card")}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
-                      paymentMethod === "card"
-                        ? "border-primary-600 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">Card</div>
-                      <div className="text-xs text-gray-600">Visa, Mastercard</div>
-                    </div>
-                  </button>
-                </div>
+              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                <p className="text-sm text-gray-700">
+                  Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or <strong>Airtel Money</strong>.
+                </p>
               </div>
 
-              {paymentMethod === "mpesa" ? (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone (M-Pesa)</label>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="07XXXXXXXX"
-                    required={paymentMethod === "mpesa"}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">Format: 07XXXXXXXX (Safaricom)</p>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="you@example.com"
-                    required={paymentMethod === "card"}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">
-                    {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                      ? "A secure popup will open for you to enter your card details."
-                      : "You will be redirected to Paystack to enter your card details."}
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="you@example.com"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                    ? "A secure popup will open to choose your payment method and complete payment."
+                    : "You will be redirected to Paystack to choose your payment method."}
+                </p>
+              </div>
 
               {submitting && (
                 <div className="p-4 rounded-lg border border-primary-200 bg-primary-50 text-primary-900">
                   <div className="font-extrabold">Handling Payment</div>
                   <div className="mt-1 text-sm text-primary-900/90">
-                    {paymentMethod === "mpesa"
-                      ? "We are processing your M-Pesa payment. Please check your phone and enter your M-Pesa PIN."
-                      : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                        ? "Enter your card details in the secure popup."
-                        : "Redirecting you to complete card payment securely..."}
+                    {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                      ? "Choose your payment method and complete payment in the secure popup."
+                      : "Redirecting you to complete payment securely..."}
                   </div>
                 </div>
               )}
@@ -589,16 +500,12 @@ export default function PayCampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {paymentMethod === "mpesa"
-                      ? "Processing M-Pesa..."
-                      : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                        ? "Enter card details in popup..."
-                        : "Redirecting..."}
+                    {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                      ? "Complete payment in popup..."
+                      : "Redirecting to payment..."}
                   </>
-                ) : paymentMethod === "mpesa" ? (
-                  "Pay with M-Pesa"
                 ) : (
-                  "Pay with Card (Visa/Mastercard)"
+                  "Pay with Card, M-Pesa or Airtel Money"
                 )}
               </button>
             </form>
