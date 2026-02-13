@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
+import { AlertCircle, CheckCircle2, CreditCard, Loader2, Ticket, Vote } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -60,7 +60,9 @@ export default function PayCampaignPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
 
+  const [paymentMethod, setPaymentMethod] = useState<"mpesa" | "card">("mpesa");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
 
@@ -206,38 +208,73 @@ export default function PayCampaignPage() {
 
     try {
       const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
-      if (!phone.trim()) throw new Error("Phone number is required.");
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
 
-      const res = await fetch("/api/mpesa/initialize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: campaign.slug,
-          phone: phone.trim(),
-          quantity: q,
-          contestant_id: campaign.type === "vote" ? contestantId : null,
-        }),
-      });
+      if (paymentMethod === "mpesa") {
+        if (!phone.trim()) throw new Error("Phone number is required for M-Pesa.");
 
-      const raw = await res.text();
-      let json: { reference?: string; customer_message?: string; error?: string } = {};
-      if (raw) {
-        try {
-          json = JSON.parse(raw) as typeof json;
-        } catch {
-          // Non-JSON response (e.g. Next error HTML). We'll surface raw below.
+        const res = await fetch("/api/mpesa/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: campaign.slug,
+            phone: phone.trim(),
+            quantity: q,
+            contestant_id: campaign.type === "vote" ? contestantId : null,
+          }),
+        });
+
+        const raw = await res.text();
+        let json: { reference?: string; customer_message?: string; error?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw) as typeof json;
+          } catch {
+            /* non-JSON */
+          }
         }
-      }
 
-      if (!res.ok) {
-        const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
-        throw new Error(details || `Payment initialization failed (HTTP ${res.status})`);
-      }
-      if (!json.reference) throw new Error("Missing transaction reference.");
+        if (!res.ok) {
+          const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
+          throw new Error(details || `Payment initialization failed (HTTP ${res.status})`);
+        }
+        if (!json.reference) throw new Error("Missing transaction reference.");
 
-      // Stay on page and start polling for webhook confirmation.
-      router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
+        router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
+      } else {
+        if (!email.trim()) throw new Error("Email is required for card payment.");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
+
+        const res = await fetch("/api/paystack/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: campaign.slug,
+            email: email.trim(),
+            quantity: q,
+            contestant_id: campaign.type === "vote" ? contestantId : null,
+          }),
+        });
+
+        const raw = await res.text();
+        let json: { authorization_url?: string; reference?: string; error?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw) as typeof json;
+          } catch {
+            /* non-JSON */
+          }
+        }
+
+        if (!res.ok) {
+          const details = typeof json.error === "string" && json.error.trim() ? json.error : raw;
+          throw new Error(details || `Card payment initialization failed (HTTP ${res.status})`);
+        }
+        if (!json.authorization_url) throw new Error("Missing payment link.");
+
+        window.location.href = json.authorization_url;
+      }
     } catch (e: any) {
       setError(e?.message ?? "Payment initialization failed.");
     } finally {
@@ -382,39 +419,97 @@ export default function PayCampaignPage() {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <h2 className="text-xl font-bold text-gray-900">Pay</h2>
             <p className="text-gray-600 mt-1">
-              Enter your phone number to receive an M-Pesa prompt. Payment is confirmed only by webhook.
+              Choose your payment method. Payment is confirmed securely by webhook.
             </p>
 
             {error && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 mt-0.5" />
+                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
+              {/* Payment method selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Payment method</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("mpesa")}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
+                      paymentMethod === "mpesa"
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-[#00A651]/10 flex items-center justify-center">
+                      <span className="text-lg font-bold text-[#00A651]">M</span>
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">M-Pesa</div>
+                      <div className="text-xs text-gray-600">Safaricom mobile money</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod("card")}
+                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
+                      paymentMethod === "card"
+                        ? "border-primary-600 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Card</div>
+                      <div className="text-xs text-gray-600">Visa, Mastercard</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {paymentMethod === "mpesa" ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone (M-Pesa)</label>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="07XXXXXXXX"
+                    required={paymentMethod === "mpesa"}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Format: 07XXXXXXXX (Safaricom)</p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="you@example.com"
+                    required={paymentMethod === "card"}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">You will be redirected to Paystack to complete payment securely.</p>
+                </div>
+              )}
+
               {submitting && (
                 <div className="p-4 rounded-lg border border-primary-200 bg-primary-50 text-primary-900">
                   <div className="font-extrabold">Handling Payment</div>
-                  <div className="mt-1 text-sm text-primary-900/90">We are processing your Mpesa payment.</div>
-                  <div className="mt-3 text-sm text-primary-900/90">
-                    Please check your phone and Enter your Mpesa PIN...
+                  <div className="mt-1 text-sm text-primary-900/90">
+                    {paymentMethod === "mpesa"
+                      ? "We are processing your M-Pesa payment. Please check your phone and enter your M-Pesa PIN."
+                      : "Redirecting you to complete card payment securely..."}
                   </div>
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone (M-Pesa)</label>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="07XXXXXXXX"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-2">Format: 07XXXXXXXX (Safaricom)</p>
-              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -458,10 +553,12 @@ export default function PayCampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Handling Payment...
+                    {paymentMethod === "mpesa" ? "Processing M-Pesa..." : "Redirecting..."}
                   </>
-                ) : (
+                ) : paymentMethod === "mpesa" ? (
                   "Pay with M-Pesa"
+                ) : (
+                  "Pay with Card (Visa/Mastercard)"
                 )}
               </button>
             </form>

@@ -119,6 +119,9 @@ export async function POST(req: Request) {
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
     const callback_url = `${callbackBase}/pay/${campaign.slug}?ref=${reference}`;
 
+    // Paystack expects amount in subunit (cents/kobo). 1 KES = 100 cents.
+    const amountInSubunit = Math.round(amount * 100);
+
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
@@ -127,7 +130,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email,
-        amount,
+        amount: amountInSubunit,
         currency: campaign.currency,
         reference,
         callback_url,

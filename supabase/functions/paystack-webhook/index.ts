@@ -103,9 +103,11 @@ serve(async (req) => {
   }
 
   // Basic consistency checks (prevents mismatched webhook payloads from being counted).
-  const paidAmount = Number(payload.data?.amount ?? 0);
+  // Paystack sends amount in subunit (cents/kobo). Our tx.amount is in whole units.
+  const paidAmountSubunit = Number(payload.data?.amount ?? 0);
+  const expectedSubunit = Math.round(Number(tx.amount) * 100);
   const paidCurrency = (payload.data?.currency ?? "").toUpperCase();
-  if (paidAmount !== Number(tx.amount) || paidCurrency !== String(tx.currency).toUpperCase()) {
+  if (paidAmountSubunit !== expectedSubunit || paidCurrency !== String(tx.currency).toUpperCase()) {
     // Record failure state for audit, but do not fulfill.
     await supabase
       .from("transactions")
@@ -115,7 +117,7 @@ serve(async (req) => {
         metadata: {
           ...(typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {}),
           webhook_error: "amount_or_currency_mismatch",
-          paystack_amount: paidAmount,
+          paystack_amount: paidAmountSubunit,
           paystack_currency: paidCurrency,
           paystack_event_id: payload.data?.id ?? null,
         },
