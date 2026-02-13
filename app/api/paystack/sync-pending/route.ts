@@ -56,7 +56,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  const supabase = createClient(supabaseUrl!, supabaseServiceKey!, {
     auth: { persistSession: false },
   });
 
