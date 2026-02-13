@@ -22,7 +22,24 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    - **anon public** key → Use for `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role** key (secret) → Use for `SUPABASE_SERVICE_ROLE_KEY` ⚠️ **Keep this secret!**
 
-### 2. Resend Email Configuration (Optional but Recommended)
+### 2. Paystack Card Payments (For /pay Campaigns)
+
+For card (Visa/Mastercard) payments on campaign pay pages:
+
+```
+PAYSTACK_SECRET_KEY=sk_live_xxx          # Server-side; required for API
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_xxx  # Client-side; enables inline card popup (enter card on-page)
+```
+
+**How to get these:**
+1. Paystack Dashboard → Settings → API Keys & Webhooks
+2. Use the **Public Key** (pk_xxx) for `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`
+3. Use the **Secret Key** (sk_xxx) for `PAYSTACK_SECRET_KEY` ⚠️ **Keep secret!**
+
+- **With both keys:** Users enter card details in a secure popup on your site (no redirect).
+- **With secret only:** Users are redirected to Paystack's page to enter card details.
+
+### 3. Resend Email Configuration (Optional but Recommended)
 
 These are **OPTIONAL** but recommended for email verification to work:
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, CreditCard, Loader2, Ticket, Vote } from "lucide-react";
+import PaystackPop from "@paystack/inline-js";
 
 import { supabase } from "@/lib/supabase";
 
@@ -245,6 +246,7 @@ export default function PayCampaignPage() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
 
+        const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -253,11 +255,20 @@ export default function PayCampaignPage() {
             email: email.trim(),
             quantity: q,
             contestant_id: campaign.type === "vote" ? contestantId : null,
+            inline: useInline,
           }),
         });
 
         const raw = await res.text();
-        let json: { authorization_url?: string; reference?: string; error?: string; details?: string } = {};
+        let json: {
+          authorization_url?: string;
+          reference?: string;
+          amount_subunit?: number;
+          email?: string;
+          currency?: string;
+          error?: string;
+          details?: string;
+        } = {};
         if (raw) {
           try {
             json = JSON.parse(raw) as typeof json;
@@ -271,9 +282,36 @@ export default function PayCampaignPage() {
           const extra = typeof json.details === "string" ? ` ${json.details}` : "";
           throw new Error(errMsg + extra || `Card payment initialization failed (HTTP ${res.status})`);
         }
-        if (!json.authorization_url) throw new Error("Missing payment link.");
 
-        window.location.href = json.authorization_url;
+        if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
+          const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+          const paystack = new PaystackPop();
+          paystack.newTransaction({
+            key: paystackKey,
+            email: json.email,
+            amount: json.amount_subunit,
+            currency: json.currency,
+            reference: json.reference,
+            onSuccess: () => {
+              router.replace(`/pay/${campaign.slug}?ref=${encodeURIComponent(json.reference!)}`);
+            },
+            onCancel: () => {
+              setSubmitting(false);
+            },
+            onError: (err: { message?: string }) => {
+              setError(err?.message ?? "Payment was not completed.");
+              setSubmitting(false);
+            },
+          });
+          return;
+        }
+
+        if (json.authorization_url) {
+          window.location.href = json.authorization_url;
+          return;
+        }
+
+        throw new Error("Missing payment link.");
       }
     } catch (e: any) {
       setError(e?.message ?? "Payment initialization failed.");
@@ -496,7 +534,11 @@ export default function PayCampaignPage() {
                     placeholder="you@example.com"
                     required={paymentMethod === "card"}
                   />
-                  <p className="text-xs text-gray-500 mt-2">You will be redirected to Paystack to complete payment securely.</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                      ? "A secure popup will open for you to enter your card details."
+                      : "You will be redirected to Paystack to enter your card details."}
+                  </p>
                 </div>
               )}
 
@@ -506,7 +548,9 @@ export default function PayCampaignPage() {
                   <div className="mt-1 text-sm text-primary-900/90">
                     {paymentMethod === "mpesa"
                       ? "We are processing your M-Pesa payment. Please check your phone and enter your M-Pesa PIN."
-                      : "Redirecting you to complete card payment securely..."}
+                      : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                        ? "Enter your card details in the secure popup."
+                        : "Redirecting you to complete card payment securely..."}
                   </div>
                 </div>
               )}
@@ -545,7 +589,11 @@ export default function PayCampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {paymentMethod === "mpesa" ? "Processing M-Pesa..." : "Redirecting..."}
+                    {paymentMethod === "mpesa"
+                      ? "Processing M-Pesa..."
+                      : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                        ? "Enter card details in popup..."
+                        : "Redirecting..."}
                   </>
                 ) : paymentMethod === "mpesa" ? (
                   "Pay with M-Pesa"

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, CreditCard, Loader2, Minus, Plus, X } from "lucide-react";
+import PaystackPop from "@paystack/inline-js";
 
 const EVENT = {
   title: "Coast Fashion and Modelling Awards 2026",
@@ -134,6 +135,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
           throw new Error("Card payment is available for single ticket type only.");
         }
         const item = lineItems[0];
+        const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -141,11 +143,19 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             slug: item.slug,
             email: details.email.trim(),
             quantity: item.quantity,
+            inline: useInline,
           }),
         });
 
         const raw = await res.text();
-        let json: { authorization_url?: string; reference?: string; error?: string } = {};
+        let json: {
+          authorization_url?: string;
+          reference?: string;
+          amount_subunit?: number;
+          email?: string;
+          currency?: string;
+          error?: string;
+        } = {};
         if (raw) {
           try {
             json = JSON.parse(raw);
@@ -156,11 +166,36 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
           const msg = (typeof json.error === "string" ? json.error : raw) || "Card payment initialization failed.";
           throw new Error(msg);
         }
-        if (!json.authorization_url) throw new Error("Missing payment link.");
 
-        onClose();
-        window.location.href = json.authorization_url;
-        return;
+        if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
+          const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+          const paystack = new PaystackPop();
+          paystack.newTransaction({
+            key: paystackKey,
+            email: json.email,
+            amount: json.amount_subunit,
+            currency: json.currency,
+            reference: json.reference,
+            onSuccess: () => {
+              onClose();
+              window.location.href = `/pay/${item.slug}?ref=${encodeURIComponent(json.reference!)}`;
+            },
+            onCancel: () => setSubmitting(false),
+            onError: (err: { message?: string }) => {
+              setError(err?.message ?? "Payment was not completed.");
+              setSubmitting(false);
+            },
+          });
+          return;
+        }
+
+        if (json.authorization_url) {
+          onClose();
+          window.location.href = json.authorization_url;
+          return;
+        }
+
+        throw new Error("Missing payment link.");
       }
 
       const refs: string[] = [];
@@ -555,7 +590,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                         <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                           <div className="font-medium text-gray-900">Card payment</div>
                           <p className="text-sm text-gray-600 mt-1">
-                            We&apos;ll use <span className="font-medium">{details.email}</span> and redirect you to Paystack to complete payment with Visa or Mastercard.
+                            We&apos;ll use <span className="font-medium">{details.email}</span>
+                            {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                              ? " and open a secure popup to enter your card details (Visa/Mastercard)."
+                              : " and redirect you to Paystack to complete payment with Visa or Mastercard."}
                           </p>
                         </div>
                       )}

@@ -7,6 +7,8 @@ type InitBody = {
   email?: string;
   quantity?: number;
   contestant_id?: string | null;
+  /** When true, return ref/amount/email for Paystack Inline popup (card entry on-page) instead of redirect URL */
+  inline?: boolean;
 };
 
 /**
@@ -116,12 +118,24 @@ export async function POST(req: Request) {
       );
     }
 
+    // Paystack expects amount in subunit (cents/kobo). 1 KES = 100 cents.
+    const amountInSubunit = Math.round(amount * 100);
+
+    // Inline mode: return data for Paystack Inline popup (card entry on-page). No redirect.
+    const useInline = body.inline === true;
+    if (useInline) {
+      return NextResponse.json({
+        reference,
+        amount_subunit: amountInSubunit,
+        email,
+        currency: campaign.currency,
+      });
+    }
+
+    // Redirect mode: initialize Paystack, return URL to redirect.
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
     const callback_url = `${callbackBase}/pay/${campaign.slug}?ref=${reference}`;
-
-    // Paystack expects amount in subunit (cents/kobo). 1 KES = 100 cents.
-    const amountInSubunit = Math.round(amount * 100);
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
