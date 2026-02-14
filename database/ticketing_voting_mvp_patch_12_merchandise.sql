@@ -13,6 +13,11 @@ alter table public.campaigns drop constraint if exists campaigns_max_per_txn_che
 alter table public.campaigns add constraint campaigns_max_per_txn_check
   check (max_per_txn > 0 and max_per_txn <= 1000000);
 
+-- Merchandise uses quantity=total_kes; cart totals exceed 1000. Relax transactions.quantity.
+alter table public.transactions drop constraint if exists transactions_quantity_check;
+alter table public.transactions add constraint transactions_quantity_check
+  check (quantity > 0 and quantity <= 1000000);
+
 do $$
 declare
   admin_id uuid;

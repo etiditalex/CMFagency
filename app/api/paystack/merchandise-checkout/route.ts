@@ -121,8 +121,12 @@ export async function POST(req: Request) {
     });
 
     if (insertErr) {
+      const msg = insertErr.message ?? "";
+      const hint = /quantity|23514|check constraint/i.test(msg)
+        ? " Run database/ticketing_voting_mvp_patch_12_merchandise.sql in Supabase if not yet applied."
+        : "";
       return NextResponse.json(
-        { error: "Unable to create order", details: insertErr.message },
+        { error: `Unable to create order.${hint}`, details: msg },
         { status: 400 }
       );
     }
