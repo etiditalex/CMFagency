@@ -24,6 +24,7 @@ type CampaignRow = {
   unit_amount: number;
   is_active: boolean;
   created_at: string;
+  created_by?: string;
 };
 
 type CampaignStatsRow = {
@@ -67,7 +68,7 @@ export default function DashboardCampaignsPage() {
       try {
         let campaignsQuery = supabase
           .from("campaigns")
-          .select("id,type,slug,title,currency,unit_amount,is_active,created_at")
+          .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
           .order("created_at", { ascending: false });
 
         // Clients only see campaigns they created; admins/managers see all.
@@ -281,6 +282,11 @@ export default function DashboardCampaignsPage() {
                             <span className="font-semibold">{isVote ? "Voting" : "Tickets"}</span> ·{" "}
                             <span className="font-mono">{c.slug}</span>
                           </div>
+                          {isAdmin && (c as CampaignRow).created_by && (
+                            <div className="mt-1 text-xs text-gray-500">
+                              Created by: {(c as CampaignRow).created_by === user?.id ? "You" : "Client"}
+                            </div>
+                          )}
                         </div>
                       </div>
 
