@@ -100,8 +100,8 @@ export default function DashboardEmailPage() {
     setSuccess(null);
 
     try {
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.data?.session?.access_token;
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
       if (!token) throw new Error("Not logged in");
 
       const res = await fetch("/api/campaigns/send-email", {
