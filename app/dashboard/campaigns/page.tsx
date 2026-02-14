@@ -45,7 +45,7 @@ export default function DashboardCampaignsPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,15 +65,21 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        const { data: campaignRows, error: campaignsError } = await supabase
+        let campaignsQuery = supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at")
           .order("created_at", { ascending: false });
 
+        // Clients only see campaigns they created; admins/managers see all.
+        if (!isAdmin && user?.id) {
+          campaignsQuery = campaignsQuery.eq("created_by", user.id);
+        }
+
+        const { data: campaignRows, error: campaignsError } = await campaignsQuery;
+
         if (campaignsError) throw campaignsError;
 
         // Stats view is optional; if it's missing, still show campaigns + links.
-        // NOTE: do not filter by created_by so admins can see existing campaigns created earlier.
         const { data: statsRows, error: statsError } = await supabase
           .from("campaign_stats")
           .select("campaign_id,total_amount,total_votes,successful_transactions");
@@ -110,7 +116,7 @@ export default function DashboardCampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user, isAdmin]);
 
   const origin = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -225,8 +231,12 @@ export default function DashboardCampaignsPage() {
         })}
       </div>
 
-      {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
+      {(error || sp?.get("error") === "access") && (
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+          {sp?.get("error") === "access"
+            ? "You don't have access to that campaign. You can only view and edit campaigns you created."
+            : error}
+        </div>
       )}
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">

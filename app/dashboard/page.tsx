@@ -82,14 +82,22 @@ export default function DashboardHomePage() {
 
     try {
       // Campaigns: total + active/inactive + title lookup for transactions list.
-      const { data: campaigns, error: cErr } = await supabase
+      // Clients only see their own campaigns; admins/managers see all.
+      let campaignsQuery = supabase
         .from("campaigns")
         .select("id,title,type,is_active,created_at")
         .order("created_at", { ascending: false });
 
+      if (!isAdmin && user?.id) {
+        campaignsQuery = campaignsQuery.eq("created_by", user.id);
+      }
+
+      const { data: campaigns, error: cErr } = await campaignsQuery;
+
       if (cErr) throw cErr;
 
       const rows = campaigns ?? [];
+      const campaignIds = (rows as any[]).map((c) => c.id);
       setCampaignsCount(rows.length);
       setActiveCampaignsCount(rows.filter((c) => c.is_active).length);
       setInactiveCampaignsCount(rows.filter((c) => !c.is_active).length);
@@ -100,47 +108,64 @@ export default function DashboardHomePage() {
       }
       setCampaignTitleById(titleMap);
 
-      // Recent transactions (money report): keep it non-PII (no email).
-      const { data: txRows, error: txErr } = await supabase
-        .from("transactions")
-        .select("id,reference,status,amount,currency,created_at,campaign_id,provider")
-        .order("created_at", { ascending: false })
-        .limit(10);
+      // For clients, filter transactions/votes/tickets by their campaigns only.
+      // When client has no campaigns, return empty (don't run unfiltered queries).
+      const hasCampaigns = campaignIds.length > 0;
 
-      if (txErr) throw txErr;
-      setRecentTransactions((txRows ?? []) as any[]);
+      if (!hasCampaigns) {
+        setRecentTransactions([]);
+        setSuccessfulPayments(0);
+        setRevenueByCurrency({});
+        setTotalVotes(0);
+        setTotalTicketsIssued(0);
+      } else {
+        // Recent transactions (money report): keep it non-PII (no email).
+        const { data: txRows, error: txErr } = await supabase
+          .from("transactions")
+          .select("id,reference,status,amount,currency,created_at,campaign_id,provider")
+          .in("campaign_id", campaignIds)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (txErr) throw txErr;
+        setRecentTransactions((txRows ?? []) as any[]);
 
-      // Successful payments + revenue
-      const { data: successTx, error: sErr } = await supabase
-        .from("transactions")
-        .select("amount,currency")
-        .eq("status", "success");
+        // Successful payments + revenue
+        const { data: successTx, error: sErr } = await supabase
+          .from("transactions")
+          .select("amount,currency")
+          .eq("status", "success")
+          .in("campaign_id", campaignIds);
+        if (sErr) throw sErr;
+        setSuccessfulPayments((successTx ?? []).length);
+        const rev: Record<string, number> = {};
+        for (const t of (successTx ?? []) as any[]) {
+          const cur = String(t.currency ?? "").toUpperCase() || "—";
+          const amt = Number(t.amount ?? 0);
+          if (!Number.isFinite(amt)) continue;
+          rev[cur] = (rev[cur] ?? 0) + amt;
+        }
+        setRevenueByCurrency(rev);
 
-      if (sErr) throw sErr;
+        // Votes: real-time total (idempotent via votes table)
+        const { data: voteRows, error: vErr } = await supabase
+          .from("votes")
+          .select("votes,campaign_id")
+          .in("campaign_id", campaignIds);
+        if (vErr) throw vErr;
+        setTotalVotes(
+          (voteRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0)
+        );
 
-      setSuccessfulPayments((successTx ?? []).length);
-      const rev: Record<string, number> = {};
-      for (const t of (successTx ?? []) as any[]) {
-        const cur = String(t.currency ?? "").toUpperCase() || "—";
-        const amt = Number(t.amount ?? 0);
-        if (!Number.isFinite(amt)) continue;
-        rev[cur] = (rev[cur] ?? 0) + amt;
+        // Tickets issued: real-time total (idempotent via ticket_issues table)
+        const { data: tiRows, error: tiErr } = await supabase
+          .from("ticket_issues")
+          .select("quantity,campaign_id")
+          .in("campaign_id", campaignIds);
+        if (tiErr) throw tiErr;
+        setTotalTicketsIssued(
+          (tiRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
+        );
       }
-      setRevenueByCurrency(rev);
-
-      // Votes: real-time total (idempotent via votes table)
-      const { data: voteRows, error: vErr } = await supabase.from("votes").select("votes");
-      if (vErr) throw vErr;
-      setTotalVotes(
-        (voteRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0)
-      );
-
-      // Tickets issued: real-time total (idempotent via ticket_issues table)
-      const { data: tiRows, error: tiErr } = await supabase.from("ticket_issues").select("quantity");
-      if (tiErr) throw tiErr;
-      setTotalTicketsIssued(
-        (tiRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
-      );
 
       setLastUpdatedAt(new Date().toISOString());
     } catch (e: any) {
@@ -150,7 +175,7 @@ export default function DashboardHomePage() {
       setDataLoading(false);
       refreshInFlightRef.current = false;
     }
-  }, [user?.id]);
+  }, [user?.id, isAdmin]);
 
   const syncPendingPaystack = useCallback(async () => {
     if (!user) return;

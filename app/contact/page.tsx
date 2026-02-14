@@ -60,14 +60,17 @@ ${formData.message}`;
     }
   };
 
-  // Google Maps embed URL for the address - Ambalal Building, Nkruma Road, Mombasa
+  // Google Maps - Ambalal Building, Nkruma Road, Mombasa
   const mapAddress = "Changer Fusions, Ambalal Building, Nkruma Road, Ambalal, Mombasa, Kenya";
   const encodedAddress = encodeURIComponent(mapAddress);
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
   const googleBusinessProfileUrl = "https://share.google/WYxPFHfwFnSjfywZn";
-  
-  // Google Maps embed URL - using search query format (works without API key)
-  const mapEmbedUrl = `https://www.google.com/maps?q=${encodedAddress}&output=embed&hl=en`;
+
+  // Maps Embed API (requires API key) - the old ?q=&output=embed format is deprecated and shows "This content is blocked"
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const mapEmbedUrl = apiKey
+    ? `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedAddress}&zoom=16&language=en`
+    : null;
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
@@ -189,17 +192,34 @@ ${formData.message}`;
                 </div>
               </div>
               <div className="relative h-96 w-full bg-gray-200">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={mapEmbedUrl}
-                  title="Changer Fusions Location"
-                  className="absolute inset-0"
-                ></iframe>
+                {mapEmbedUrl ? (
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={mapEmbedUrl}
+                    title="Changer Fusions Location"
+                    className="absolute inset-0"
+                  />
+                ) : (
+                  <a
+                    href={directionsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-100 hover:bg-gray-200 transition-colors p-6"
+                  >
+                    <MapPin className="w-16 h-16 text-primary-500" />
+                    <span className="text-gray-700 font-medium text-center">
+                      Ambalal Building, Nkruma Road
+                      <br />
+                      Ambalal, Mombasa, Kenya
+                    </span>
+                    <span className="text-primary-600 font-semibold">View on Google Maps →</span>
+                  </a>
+                )}
               </div>
             </motion.div>
 

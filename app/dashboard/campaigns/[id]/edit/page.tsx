@@ -42,7 +42,7 @@ export default function EditCampaignPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, features } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, features, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<CampaignType>("ticket");
@@ -91,12 +91,18 @@ export default function EditCampaignPage() {
       try {
         const { data: campaign, error: cErr } = await supabase
           .from("campaigns")
-          .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active")
+          .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_by")
           .eq("id", campaignId)
           .single();
 
         if (cErr) throw cErr;
         if (!campaign || cancelled) return;
+
+        // Clients can only edit their own campaigns.
+        if (!isAdmin && user?.id && (campaign as { created_by?: string }).created_by !== user.id) {
+          router.replace("/dashboard/campaigns?error=access");
+          return;
+        }
 
         setType((campaign.type as CampaignType) ?? "ticket");
         setTitle(campaign.title ?? "");

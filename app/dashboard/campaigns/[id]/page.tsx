@@ -35,6 +35,7 @@ type Campaign = {
   max_per_txn: number;
   is_active: boolean;
   created_at: string;
+  created_by?: string;
 };
 
 type TxRow = {
@@ -88,7 +89,7 @@ export default function CampaignReportPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -191,11 +192,17 @@ export default function CampaignReportPage() {
       // Campaign
       const { data: c, error: cErr } = await supabase
         .from("campaigns")
-        .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at")
+        .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at,created_by")
         .eq("id", campaignId)
         .single();
       if (cErr) throw cErr;
-      setCampaign(c as Campaign);
+      const campaignData = c as Campaign;
+      // Clients can only view their own campaigns.
+      if (!isAdmin && user?.id && campaignData.created_by !== user.id) {
+        router.replace("/dashboard/campaigns?error=access");
+        return;
+      }
+      setCampaign(campaignData);
 
       // Recent transactions (non-PII)
       let txQuery = supabase
@@ -312,7 +319,7 @@ export default function CampaignReportPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id]);
+  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id, isAdmin]);
 
   useEffect(() => {
     if (!campaignId) return;
