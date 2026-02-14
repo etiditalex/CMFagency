@@ -76,7 +76,7 @@ export default function CartPage() {
       });
 
       const raw = await res.text();
-      let json: { reference?: string; authorization_url?: string; amount_subunit?: number; currency?: string; error?: string } = {};
+      let json: { reference?: string; authorization_url?: string; amount_subunit?: number; email?: string; currency?: string; error?: string } = {};
       if (raw) {
         try {
           json = JSON.parse(raw);
