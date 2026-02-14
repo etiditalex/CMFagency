@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 
   const { data: pendingRows, error: fetchErr } = await supabase
     .from("transactions")
-    .select("id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at")
+    .select("id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at,metadata")
     .eq("provider", "paystack")
     .eq("status", "pending");
 
@@ -116,7 +116,10 @@ export async function GET(req: Request) {
         .eq("id", tx.id);
 
       if (!tx.fulfilled_at) {
-        if (tx.campaign_type === "vote" && tx.contestant_id) {
+        const meta = (tx as any).metadata ?? {};
+        if (meta.merchandise_cart === true) {
+          // Merchandise: no ticket_issues, just mark fulfilled
+        } else if (tx.campaign_type === "vote" && tx.contestant_id) {
           await supabase.from("votes").upsert(
             {
               transaction_id: tx.id,
@@ -126,7 +129,7 @@ export async function GET(req: Request) {
             },
             { onConflict: "transaction_id", ignoreDuplicates: true }
           );
-        } else {
+        } else if (tx.campaign_type === "ticket") {
           await supabase.from("ticket_issues").upsert(
             {
               transaction_id: tx.id,

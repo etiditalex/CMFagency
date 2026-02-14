@@ -145,6 +145,17 @@ serve(async (req) => {
   // If already fulfilled, stop (idempotency).
   if (tx.fulfilled_at) return new Response("ok", { status: 200 });
 
+  // Merchandise: no ticket_issues/votes, just mark fulfilled
+  const meta = typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {};
+  if (meta.merchandise_cart === true) {
+    await supabase
+      .from("transactions")
+      .update({ fulfilled_at: new Date().toISOString() } as any)
+      .eq("id", tx.id)
+      .is("fulfilled_at", null);
+    return new Response("ok", { status: 200 });
+  }
+
   // Fulfill based on campaign type.
   if (tx.campaign_type === "vote") {
     if (!tx.contestant_id) return new Response("ok", { status: 200 });
