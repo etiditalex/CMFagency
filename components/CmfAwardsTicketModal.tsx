@@ -175,7 +175,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             channels: ["card", "mobile_money"],
             onSuccess: () => {
               onClose();
-              window.location.href = `/pay/${item.slug}?ref=${encodeURIComponent(json.reference!)}`;
+              window.location.href = `/${item.slug}?ref=${encodeURIComponent(json.reference!)}`;
             },
             onCancel: () => setSubmitting(false),
             onError: (err: { message?: string }) => {

@@ -112,7 +112,7 @@ export default function CampaignReportPage() {
 
   const publicUrl = useMemo(() => {
     if (!campaign?.slug) return "";
-    return `/pay/${campaign.slug}`;
+    return `/${campaign.slug}`;
   }, [campaign?.slug]);
 
   const formatRevenue = useMemo(() => {

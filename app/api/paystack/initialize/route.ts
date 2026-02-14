@@ -136,7 +136,7 @@ export async function POST(req: Request) {
     // Redirect mode: initialize Paystack, return URL to redirect.
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
-    const callback_url = `${callbackBase}/pay/${campaign.slug}?ref=${reference}`;
+    const callback_url = `${callbackBase}/${campaign.slug}?ref=${reference}`;
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",

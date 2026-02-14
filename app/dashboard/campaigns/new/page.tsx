@@ -175,7 +175,7 @@ export default function NewCampaignPage() {
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">New Campaign</h2>
           <p className="text-gray-600 mt-1 text-left">
-            Creates a shareable link at <span className="font-mono">/pay/[slug]</span>. Public users don’t need login.
+            Creates a shareable link at <span className="font-mono">/[slug]</span>. Public users don’t need login.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -264,7 +264,7 @@ export default function NewCampaignPage() {
                 placeholder="cfma-2026-vip"
                 required
               />
-              <p className="text-xs text-gray-500 mt-2">Used to generate the public link: /pay/{slugify(slug) || "your-slug"}</p>
+              <p className="text-xs text-gray-500 mt-2">Used to generate the public link: /{slugify(slug) || "your-slug"}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>

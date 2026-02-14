@@ -377,7 +377,7 @@ export default function FusionXpressAdminLoginPage() {
                   in Kenya
                 </h2>
                 <div className="mt-4 font-extrabold text-gray-900">
-                  No contracts, no monthly fees, no worries
+                  Contracts, No monthly fees, no worries
                 </div>
                 <p className="mt-3 text-gray-600 leading-relaxed max-w-xl">
                   Our fees are affordable and make sense. We only charge when you successfully sell tickets or collect paid

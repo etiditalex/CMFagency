@@ -31,7 +31,7 @@ export default function UpcomingEventsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section - matching past events style */}
-      <section className="relative w-full h-screen overflow-hidden flex items-center">
+      <section className="relative w-full min-h-[60vh] md:min-h-[70vh] overflow-hidden flex items-center py-20 md:py-24">
         <div className="absolute inset-0 w-full h-full">
           <Image
             src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg"
@@ -165,21 +165,6 @@ export default function UpcomingEventsPage() {
               </motion.div>
             ))}
           </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: upcomingEvents.length * 0.1 }}
-            className="flex justify-center mt-12"
-          >
-            <Link
-              href="/events?filter=upcoming"
-              className="inline-flex items-center gap-2 border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
-            >
-              View All Events
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
         </div>
       </section>
 

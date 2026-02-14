@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, ExternalLink, LineChart, Plus, Ticket, Vote } from "lucide-react";
+import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Trash2, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -39,7 +39,7 @@ type CampaignWithStats = CampaignRow & {
   successful_transactions: number;
 };
 
-type CampaignTypeFilter = "all" | "ticket" | "vote";
+type CampaignTypeFilter = "all" | "ticket" | "vote" | "drafts";
 
 export default function DashboardCampaignsPage() {
   const router = useRouter();
@@ -118,7 +118,7 @@ export default function DashboardCampaignsPage() {
   }, []);
 
   const copyLink = async (slug: string) => {
-    const url = `${origin}/pay/${slug}`;
+    const url = `${origin}/${slug}`;
     try {
       await navigator.clipboard.writeText(url);
     } catch {
@@ -129,20 +129,38 @@ export default function DashboardCampaignsPage() {
   // IMPORTANT: hooks must run on every render (no conditional hook calls).
   const filter = (() => {
     const t = (sp?.get("type") ?? "all").toLowerCase();
-    if (t === "ticket" || t === "vote") return t;
+    if (t === "ticket" || t === "vote" || t === "drafts") return t;
     return "all";
   })() as CampaignTypeFilter;
 
   const counts = useMemo(() => {
     const ticket = campaigns.filter((c) => c.type === "ticket").length;
     const vote = campaigns.filter((c) => c.type === "vote").length;
-    return { all: campaigns.length, ticket, vote };
+    const drafts = campaigns.filter((c) => !c.is_active).length;
+    return { all: campaigns.length, ticket, vote, drafts };
   }, [campaigns]);
 
   const filtered = useMemo(() => {
+    if (filter === "drafts") return campaigns.filter((c) => !c.is_active);
     if (filter === "all") return campaigns;
     return campaigns.filter((c) => c.type === filter);
   }, [campaigns, filter]);
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (campaignId: string, title: string) => {
+    if (!confirm(`Delete campaign "${title}"? This cannot be undone.`)) return;
+    setDeletingId(campaignId);
+    try {
+      const { error } = await supabase.from("campaigns").delete().eq("id", campaignId);
+      if (error) throw error;
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to delete campaign");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -182,12 +200,14 @@ export default function DashboardCampaignsPage() {
       {/* Type filters */}
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {[
-          { id: "all", label: `All (${counts.all})` },
-          { id: "ticket", label: `Ticketing (${counts.ticket})` },
-          { id: "vote", label: `Voting (${counts.vote})` },
+          { id: "all", label: `All (${counts.all})`, icon: null },
+          { id: "drafts", label: `Drafts (${counts.drafts})`, icon: FileEdit },
+          { id: "ticket", label: `Ticketing (${counts.ticket})`, icon: Ticket },
+          { id: "vote", label: `Voting (${counts.vote})`, icon: Vote },
         ].map((t) => {
           const active = filter === (t.id as CampaignTypeFilter);
           const href = t.id === "all" ? "/dashboard/campaigns" : `/dashboard/campaigns?type=${t.id}`;
+          const Icon = t.icon;
           return (
             <Link
               key={t.id}
@@ -198,7 +218,7 @@ export default function DashboardCampaignsPage() {
                   : "border-gray-200 bg-white hover:bg-gray-50 text-gray-900"
               }`}
             >
-              {t.id === "ticket" ? <Ticket className="w-4 h-4" /> : t.id === "vote" ? <Vote className="w-4 h-4" /> : null}
+              {Icon && <Icon className="w-4 h-4" />}
               {t.label}
             </Link>
           );
@@ -213,7 +233,9 @@ export default function DashboardCampaignsPage() {
         {filtered.length === 0 ? (
           <div className="bg-white rounded-md shadow-sm p-8 border border-gray-200">
             <p className="text-gray-700 text-left">
-              {filter === "vote"
+              {filter === "drafts"
+                ? "You don't have any draft campaigns. Unpublished (inactive) campaigns appear here."
+                : filter === "vote"
                 ? "You don’t have any voting campaigns yet. Create one to start collecting votes."
                 : filter === "ticket"
                   ? "You don’t have any ticketing campaigns yet. Create one to start selling tickets."
@@ -233,7 +255,7 @@ export default function DashboardCampaignsPage() {
           filtered.map((c) => {
               const isVote = c.type === "vote";
               const Icon = isVote ? Vote : Ticket;
-              const publicUrl = `/pay/${c.slug}`;
+              const publicUrl = `/${c.slug}`;
 
               return (
                 <div key={c.id} className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
@@ -265,14 +287,24 @@ export default function DashboardCampaignsPage() {
                         </div>
                         <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
                           <div className="text-xs text-gray-500">Status</div>
-                          <div className={`text-lg font-bold ${c.is_active ? "text-green-700" : "text-gray-500"}`}>
-                            {c.is_active ? "Active" : "Inactive"}
+                          <div className={`text-lg font-bold ${c.is_active ? "text-green-700" : "text-amber-600"}`}>
+                            {c.is_active ? "Active" : "Draft"}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex flex-col gap-2">
+                      {hasFeature("create_campaign") && (
+                        <Link
+                          href={`/dashboard/campaigns/${c.id}/edit`}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                          title="Edit campaign"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Edit
+                        </Link>
+                      )}
                       {hasFeature("reports") && (
                         <Link
                           href={`/dashboard/campaigns/${c.id}`}
@@ -300,6 +332,18 @@ export default function DashboardCampaignsPage() {
                         <Copy className="w-4 h-4" />
                         Copy
                       </button>
+                      {hasFeature("create_campaign") && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(c.id, c.title)}
+                          disabled={deletingId === c.id}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-200 hover:bg-red-50 text-red-700 font-semibold disabled:opacity-50"
+                          title="Delete campaign"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          {deletingId === c.id ? "Deleting…" : "Delete"}
+                        </button>
+                      )}
                     </div>
                   </div>
 

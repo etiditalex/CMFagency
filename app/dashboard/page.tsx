@@ -426,7 +426,7 @@ export default function DashboardHomePage() {
 
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
           <div className="text-sm font-extrabold text-primary-700 text-left">Public link format</div>
-          <div className="mt-2 text-xl font-extrabold text-gray-900 text-left">/pay/&lt;slug&gt;</div>
+          <div className="mt-2 text-xl font-extrabold text-gray-900 text-left">/&lt;slug&gt;</div>
           <div className="mt-3 text-gray-600 text-sm text-left">
             Campaign links are public, but payment success is confirmed only by webhook.
           </div>
