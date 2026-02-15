@@ -30,13 +30,34 @@ export async function GET(req: Request) {
   const { data: tx, error } = await supabase
     .from("transactions")
     .select(
-      "reference,provider,status,verified_at,fulfilled_at,paid_at,currency,amount,quantity,campaign_type,campaign_id,metadata"
+      "reference,provider,status,verified_at,fulfilled_at,paid_at,currency,amount,quantity,campaign_type,campaign_id,metadata,email,payer_name"
     )
     .eq("reference", ref)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Fetch campaign for receipt display (title, dates)
+  const campaignId = (tx as { campaign_id?: string }).campaign_id;
+  let campaign_title: string | null = null;
+  let campaign_slug: string | null = null;
+  let starts_at: string | null = null;
+  let ends_at: string | null = null;
+
+  if (campaignId) {
+    const { data: camp } = await supabase
+      .from("campaigns")
+      .select("title,slug,starts_at,ends_at")
+      .eq("id", campaignId)
+      .maybeSingle();
+    if (camp) {
+      campaign_title = (camp as { title?: string }).title ?? null;
+      campaign_slug = (camp as { slug?: string }).slug ?? null;
+      starts_at = (camp as { starts_at?: string | null }).starts_at ?? null;
+      ends_at = (camp as { ends_at?: string | null }).ends_at ?? null;
+    }
+  }
 
   const meta =
     tx && typeof (tx as unknown as { metadata?: unknown }).metadata === "object" && (tx as unknown as { metadata?: unknown }).metadata
@@ -56,7 +77,12 @@ export async function GET(req: Request) {
       quantity: tx.quantity,
       campaign_type: tx.campaign_type,
       campaign_id: tx.campaign_id,
-      // Useful to show M-Pesa receipt number once successful.
+      email: (tx as { email?: string | null }).email ?? null,
+      payer_name: (tx as { payer_name?: string | null }).payer_name ?? null,
+      campaign_title,
+      campaign_slug,
+      starts_at,
+      ends_at,
       mpesa_receipt: (meta["mpesa_receipt"] as string | null) ?? null,
     },
     { headers: { "Cache-Control": "no-store" } }

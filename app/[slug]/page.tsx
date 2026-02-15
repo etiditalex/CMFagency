@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
 import { supabase } from "@/lib/supabase";
+import PaymentReceipt from "@/components/PaymentReceipt";
 
 type Campaign = {
   id: string;
@@ -49,6 +50,12 @@ export default function CampaignPage() {
       quantity: number | null;
       campaign_type: "ticket" | "vote" | string | null;
       mpesa_receipt?: string | null;
+      campaign_title?: string | null;
+      campaign_slug?: string | null;
+      starts_at?: string | null;
+      ends_at?: string | null;
+      email?: string | null;
+      payer_name?: string | null;
     }
   >(null);
 
@@ -155,6 +162,12 @@ export default function CampaignPage() {
           quantity: (typeof json.quantity === "number" ? (json.quantity as number) : null) as number | null,
           campaign_type: (json.campaign_type as any) ?? null,
           mpesa_receipt: (json.mpesa_receipt as string | null) ?? null,
+          campaign_title: (json.campaign_title as string | null) ?? null,
+          campaign_slug: (json.campaign_slug as string | null) ?? null,
+          starts_at: (json.starts_at as string | null) ?? null,
+          ends_at: (json.ends_at as string | null) ?? null,
+          email: (json.email as string | null) ?? null,
+          payer_name: (json.payer_name as string | null) ?? null,
         };
 
         if (!cancelled) setTxStatus(next);
@@ -337,38 +350,50 @@ export default function CampaignPage() {
             </div>
 
             {ref && (
-              <div className="mt-6 rounded-lg border border-secondary-200 bg-secondary-50 p-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-secondary-700 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">
-                      {txStatus?.status === "success"
-                        ? "Payment confirmed"
-                        : txStatus?.status === "failed" || txStatus?.status === "abandoned"
-                          ? "Payment not successful"
-                          : "Payment received (processing)"}
-                    </div>
-                    <div className="text-gray-700 mt-1">
-                      Your payment is being confirmed securely by webhook. Reference:{" "}
-                      <span className="font-mono">{ref}</span>
-                    </div>
-                    {txStatus?.status && (
-                      <div className="text-sm text-gray-700 mt-2">
-                        Status: <span className="font-semibold">{txStatus.status}</span>
-                        {txStatus.quantity != null ? (
-                          <span>
-                            {" "}
-                            · {txStatus.campaign_type === "vote" ? "Votes" : "Tickets"}:{" "}
-                            <span className="font-semibold">{txStatus.quantity.toLocaleString()}</span>
-                          </span>
-                        ) : null}
+              <div className="mt-6">
+                {txStatus?.status === "success" ? (
+                  <PaymentReceipt
+                    reference={ref}
+                    campaignTitle={txStatus?.campaign_title ?? campaign.title}
+                    campaignSlug={txStatus?.campaign_slug ?? campaign.slug}
+                    type={txStatus?.campaign_type === "vote" ? "vote" : "ticket"}
+                    holder={txStatus?.payer_name?.trim() || txStatus?.email?.trim() || "—"}
+                    amount={txStatus?.amount ?? total}
+                    currency={txStatus?.currency ?? campaign.currency}
+                    quantity={txStatus?.quantity ?? 1}
+                    startsAt={txStatus?.starts_at}
+                    endsAt={txStatus?.ends_at}
+                  />
+                ) : txStatus?.status === "failed" || txStatus?.status === "abandoned" ? (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Payment not successful</div>
+                        <div className="text-gray-700 mt-1">
+                          Try again or contact us if you need help. Reference:{" "}
+                          <span className="font-mono">{ref}</span>
+                        </div>
                       </div>
-                    )}
-                    <div className="text-sm text-gray-600 mt-2">
-                      Do not refresh repeatedly—webhook confirmation may take a short moment depending on the provider.
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <Loader2 className="w-5 h-5 text-secondary-700 mt-0.5 animate-spin" />
+                      <div>
+                        <div className="font-semibold text-gray-900">Payment received (processing)</div>
+                        <div className="text-gray-700 mt-1">
+                          Your payment is being confirmed securely by webhook. Reference:{" "}
+                          <span className="font-mono">{ref}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          Do not refresh repeatedly—webhook confirmation may take a short moment.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import PaystackPop from "@paystack/inline-js";
 import { useCart } from "@/contexts/CartContext";
+import PaymentReceipt from "@/components/PaymentReceipt";
 
 const SHIPPING = 500;
 
@@ -24,6 +25,11 @@ export default function CartPage() {
     status: string;
     amount?: number;
     currency?: string;
+    quantity?: number;
+    payer_name?: string | null;
+    email?: string | null;
+    campaign_title?: string | null;
+    campaign_slug?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -32,8 +38,28 @@ export default function CartPage() {
     const poll = async () => {
       try {
         const res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
-        const json = (await res.json()) as { status?: string; amount?: number; currency?: string; error?: string };
-        if (!cancelled && json.status) setTxStatus({ status: json.status, amount: json.amount, currency: json.currency });
+        const json = (await res.json()) as {
+          status?: string;
+          amount?: number;
+          currency?: string;
+          quantity?: number;
+          payer_name?: string | null;
+          email?: string | null;
+          campaign_title?: string | null;
+          campaign_slug?: string | null;
+          error?: string;
+        };
+        if (!cancelled && json.status)
+          setTxStatus({
+            status: json.status,
+            amount: json.amount,
+            currency: json.currency,
+            quantity: json.quantity,
+            payer_name: json.payer_name,
+            email: json.email,
+            campaign_title: json.campaign_title,
+            campaign_slug: json.campaign_slug,
+          });
       } catch {}
     };
     poll();
@@ -245,25 +271,22 @@ export default function CartPage() {
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
                   {ref && txStatus && (
-                    <div className="mb-6 rounded-lg border p-4 bg-secondary-50 border-secondary-200">
-                      <div className="flex items-start gap-3">
-                        {txStatus.status === "success" ? (
-                          <>
-                            <CheckCircle2 className="w-5 h-5 text-secondary-700 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <div className="font-semibold text-gray-900">Payment confirmed</div>
-                              <div className="text-sm text-gray-700 mt-1">
-                                Your order has been received. We&apos;ll contact you for delivery details.
-                              </div>
-                              {txStatus.amount != null && (
-                                <div className="text-sm font-medium text-gray-600 mt-1">
-                                  {txStatus.currency ?? "KES"} {txStatus.amount?.toLocaleString()} paid
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        ) : txStatus.status === "failed" || txStatus.status === "abandoned" ? (
-                          <>
+                    <div className="mb-6">
+                      {txStatus.status === "success" ? (
+                        <PaymentReceipt
+                          reference={ref}
+                          campaignTitle={txStatus.campaign_title ?? "Merchandise Order"}
+                          campaignSlug={txStatus.campaign_slug ?? "merchandise"}
+                          type="order"
+                          holder={txStatus.payer_name?.trim() || txStatus.email?.trim() || "—"}
+                          amount={txStatus.amount ?? getTotalPrice() + SHIPPING}
+                          currency={txStatus.currency ?? "KES"}
+                          quantity={txStatus.quantity ?? getTotalItems()}
+                          orderLabel="Order Confirmed – Merchandise"
+                        />
+                      ) : txStatus.status === "failed" || txStatus.status === "abandoned" ? (
+                        <div className="rounded-lg border p-4 bg-red-50 border-red-200">
+                          <div className="flex items-start gap-3">
                             <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-semibold text-gray-900">Payment not completed</div>
@@ -271,9 +294,11 @@ export default function CartPage() {
                                 Try again or contact us if you need help.
                               </div>
                             </div>
-                          </>
-                        ) : (
-                          <>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border p-4 bg-secondary-50 border-secondary-200">
+                          <div className="flex items-start gap-3">
                             <Loader2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0 animate-spin" />
                             <div>
                               <div className="font-semibold text-gray-900">Processing payment</div>
@@ -281,9 +306,9 @@ export default function CartPage() {
                                 We&apos;re confirming your payment. Reference: {ref.slice(0, 16)}...
                               </div>
                             </div>
-                          </>
-                        )}
-                      </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
