@@ -771,14 +771,28 @@ export default function Navbar() {
 
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100"
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile: Cart icon + Hamburger */}
+          <div className="lg:hidden flex items-center gap-1">
+            <Link
+              href="/cart"
+              className="relative p-2.5 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-primary-600 transition-colors"
+              aria-label="Shopping Cart"
+            >
+              <ShoppingCart className="w-6 h-6" />
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-secondary-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Link>
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1140,10 +1154,17 @@ export default function Navbar() {
                 <Link
                   href="/cart"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center space-x-2 py-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  className="flex items-center justify-between py-2 text-gray-700 hover:text-primary-600 transition-colors"
                 >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span>Shopping Cart</span>
+                  <span className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    <span>Shopping Cart</span>
+                  </span>
+                  {getTotalItems() > 0 && (
+                    <span className="bg-secondary-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-2">
+                      {getTotalItems()}
+                    </span>
+                  )}
                 </Link>
                 {isAuthenticated ? (
                   <>
