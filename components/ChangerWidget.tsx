@@ -312,7 +312,17 @@ export default function ChangerWidget() {
                         : "bg-gray-100 text-gray-900"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.content}</p>
+                    <p className="whitespace-pre-wrap">
+                      {m.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+                        part.match(/^https?:\/\//) ? (
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={`underline font-medium ${m.role === "user" ? "text-white/95 hover:text-white" : "text-primary-600 hover:text-primary-700"}`}>
+                            {part}
+                          </a>
+                        ) : (
+                          part
+                        )
+                      )}
+                    </p>
                   </div>
                 </div>
               ))}

@@ -48,6 +48,8 @@ export default function DashboardChangerPage() {
   const [handoffLogs, setHandoffLogs] = useState<HandoffLog[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Array<{ role: string; content: string; created_at: string }>>([]);
+  const [agentInput, setAgentInput] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [pickingId, setPickingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -120,6 +122,42 @@ export default function DashboardChangerPage() {
       setMessages([]);
     }
   }, [selectedId, loadMessages]);
+
+  // Poll messages when viewing a live_agent conversation
+  const selectedConv = conversations.find((c) => c.id === selectedId);
+  useEffect(() => {
+    if (!selectedId || selectedConv?.status !== "live_agent") return;
+    const t = setInterval(() => loadMessages(selectedId), 2000);
+    return () => clearInterval(t);
+  }, [selectedId, selectedConv?.status, loadMessages]);
+
+  const sendAgentMessage = async () => {
+    const text = agentInput.trim();
+    if (!text || !selectedId || sendingMessage) return;
+    setSendingMessage(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const res = await fetch("/api/changer/agent-message", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ conversationId: selectedId, content: text }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAgentInput("");
+        loadMessages(selectedId);
+      } else {
+        setError(data.error || "Failed to send");
+      }
+    } catch {
+      setError("Failed to send");
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   const pickUp = async (conv: Conversation) => {
     if (conv.status === "live_agent") return;
@@ -321,15 +359,37 @@ export default function DashboardChangerPage() {
                         className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                           m.role === "user"
                             ? "bg-primary-600 text-white ml-auto"
+                            : m.role === "live_agent"
+                            ? "bg-green-100 text-green-900 border border-green-200"
                             : "bg-gray-100 text-gray-900"
                         }`}
                       >
-                        <span className="text-xs opacity-75">{m.role}</span>
+                        <span className="text-xs opacity-75">{m.role === "live_agent" ? LIVE_AGENT_NAME : m.role}</span>
                         <p className="whitespace-pre-wrap">{m.content}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+                {selected?.status === "live_agent" && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
+                    <input
+                      type="text"
+                      value={agentInput}
+                      onChange={(e) => setAgentInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendAgentMessage()}
+                      placeholder="Type your reply as Alex..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={sendAgentMessage}
+                      disabled={sendingMessage || !agentInput.trim()}
+                      className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Send
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-12 text-center text-gray-500">

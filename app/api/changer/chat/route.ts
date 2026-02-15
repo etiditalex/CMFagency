@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
       const transferMessage = "Transferring you to a live agent now. Alex will be with you shortly. Please hold...";
       await supabaseAdmin.from("changer_conversations").update({
         status: "waiting_for_agent",
+        handoff_requested_at: new Date().toISOString(),
         visitor_name: visitorName || undefined,
         visitor_email: visitorEmail || undefined,
         updated_at: new Date().toISOString(),

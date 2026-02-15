@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       .from("changer_conversations")
       .update({
         status: "waiting_for_agent",
+        handoff_requested_at: new Date().toISOString(),
         visitor_name: visitorName || conv.visitor_name,
         visitor_email: visitorEmail || conv.visitor_email,
         updated_at: new Date().toISOString(),

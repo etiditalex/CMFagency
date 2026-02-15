@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     const { data: conv, error: convErr } = await supabaseAdmin
       .from("changer_conversations")
-      .select("id, session_id, status, live_agent_name, live_agent_picked_at, created_at")
+      .select("id, session_id, status, live_agent_name, live_agent_picked_at, handoff_requested_at, agent_timeout_notified, created_at")
       .eq("session_id", sessionId)
       .single();
 
@@ -36,6 +36,38 @@ export async function GET(req: NextRequest) {
 
     if (!conv) {
       return NextResponse.json({ conversation: null, messages: [] });
+    }
+
+    // 2-min timeout: if waiting_for_agent and no response, notify user with WhatsApp/call fallback
+    const TIMEOUT_MS = 2 * 60 * 1000;
+    const now = Date.now();
+    const handoffAt = conv.handoff_requested_at ? new Date(conv.handoff_requested_at).getTime() : 0;
+
+    if (
+      conv.status === "waiting_for_agent" &&
+      handoffAt > 0 &&
+      now - handoffAt >= TIMEOUT_MS &&
+      !conv.agent_timeout_notified
+    ) {
+      const fallbackMessage =
+        "Our live agent is not available at the moment. Here's how you can get help:\n\n" +
+        "📞 Call us: +254 797 777347\n" +
+        "📱 WhatsApp: https://wa.me/254797777347 (open to chat)\n\n" +
+        "We'll get back to you as soon as possible. You can also continue chatting with me below for general questions.";
+
+      await supabaseAdmin.from("changer_messages").insert({
+        conversation_id: conv.id,
+        role: "assistant",
+        content: fallbackMessage,
+      });
+
+      await supabaseAdmin.from("changer_conversations").update({
+        status: "bot",
+        agent_timeout_notified: true,
+        updated_at: new Date().toISOString(),
+      }).eq("id", conv.id);
+
+      (conv as { status: string }).status = "bot";
     }
 
     const { data: messages, error: msgErr } = await supabaseAdmin
