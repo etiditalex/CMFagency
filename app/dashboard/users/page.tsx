@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgePercent,
   BarChart3,
   KeyRound,
   MessagesSquare,
+  Pencil,
   Plus,
   Shield,
   Ticket,
@@ -14,6 +15,7 @@ import {
   UserPlus,
   Vote,
   Wallet,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +59,31 @@ export default function DashboardUsersPage() {
   );
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [users, setUsers] = useState<
+    Array<{ user_id: string; email: string; role: string; tier: string; features: string[]; created_at: string }>
+  >([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
+  const [editForm, setEditForm] = useState<{ role: string; tier: string; features: Record<string, boolean> } | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const loadUsers = useCallback(async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/fusion-xpress/users", { headers: { Authorization: `Bearer ${token}` } });
+      const json = (await res.json()) as { users?: typeof users; error?: string };
+      if (!res.ok) throw new Error(json?.error ?? "Failed to load users");
+      setUsers(json.users ?? []);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
 
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
@@ -109,6 +136,10 @@ export default function DashboardUsersPage() {
     };
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, router, user]);
 
+  useEffect(() => {
+    if (adminOk) loadUsers();
+  }, [adminOk, loadUsers]);
+
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminOk) return;
@@ -152,6 +183,7 @@ export default function DashboardUsersPage() {
           makeAdmin ? " (admin)" : makeManager ? " (manager)" : ` (${tier} tier)`
         }.`
       );
+      loadUsers();
       setEmail("");
       setPassword("");
       setConfirm("");
@@ -163,6 +195,46 @@ export default function DashboardUsersPage() {
       setError(err?.message ?? "Failed to create user");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openEdit = (u: typeof users[0]) => {
+    setEditingUser(u);
+    setEditForm({
+      role: u.role,
+      tier: u.tier,
+      features: Object.fromEntries(FEATURES.map((f) => [f.key, u.features.includes(f.key)])),
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingUser || !editForm) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    setSavingEdit(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/fusion-xpress/users/${editingUser.user_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          access_token: token,
+          role: editForm.role as "admin" | "manager" | "client",
+          tier: editForm.tier as "basic" | "pro" | "enterprise",
+          features: Object.keys(editForm.features).filter((k) => editForm!.features[k]),
+        }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok) throw new Error(json?.error ?? "Failed to update");
+      setSuccess("User updated successfully.");
+      setEditingUser(null);
+      setEditForm(null);
+      loadUsers();
+    } catch (err: any) {
+      setError(err?.message ?? "Failed to update user");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -181,11 +253,11 @@ export default function DashboardUsersPage() {
 
   return (
     <div className="text-left">
-      <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
+        <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Users</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
-            Create accounts for clients. Set their tier and check which features they can use (Payouts, Coupons, Managers, Email).
+            Create accounts for clients and manage existing users. View all added users and change their features, role, or tier.
           </p>
         </div>
       </div>
@@ -364,6 +436,179 @@ export default function DashboardUsersPage() {
           </button>
         </div>
       </form>
+
+      {/* All users list */}
+      <div className="mt-10">
+        <h3 className="text-lg font-extrabold text-gray-900 mb-4">All users</h3>
+        {loadingUsers ? (
+          <div className="text-gray-600 py-8">Loading users…</div>
+        ) : users.length === 0 ? (
+          <div className="text-gray-500 py-6 border border-dashed border-gray-300 rounded-lg text-center">
+            No users yet. Create one above.
+          </div>
+        ) : (
+          <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-auto max-h-[400px]">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                  <tr>
+                    <th className="px-4 py-3 font-bold text-gray-600 text-left">Email</th>
+                    <th className="px-4 py-3 font-bold text-gray-600 text-left">Role</th>
+                    <th className="px-4 py-3 font-bold text-gray-600 text-left">Tier</th>
+                    <th className="px-4 py-3 font-bold text-gray-600 text-left">Features</th>
+                    <th className="px-4 py-3 font-bold text-gray-600 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.user_id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                      <td className="px-4 py-3 text-gray-900">{u.email}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${
+                            u.role === "admin"
+                              ? "bg-primary-100 text-primary-800"
+                              : u.role === "manager"
+                                ? "bg-secondary-100 text-secondary-800"
+                                : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{u.tier}</td>
+                      <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={u.features.join(", ")}>
+                        {u.role === "admin" || u.role === "manager"
+                          ? "All"
+                          : u.features.length > 0
+                            ? u.features.join(", ")
+                            : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {isFullAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => openEdit(u)}
+                            className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Edit user modal */}
+      {editingUser && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-extrabold text-gray-900">Edit user</h3>
+              <button
+                type="button"
+                onClick={() => { setEditingUser(null); setEditForm(null); }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">{editingUser.email}</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => {
+                    const v = e.target.value as "admin" | "manager" | "client";
+                    setEditForm((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            role: v,
+                            tier: v === "admin" || v === "manager" ? "enterprise" : prev.tier,
+                            features:
+                              v === "admin" || v === "manager"
+                                ? Object.fromEntries(FEATURES.map((f) => [f.key, true]))
+                                : prev.features,
+                          }
+                        : prev
+                    );
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="manager">Manager</option>
+                  <option value="client">Client</option>
+                </select>
+              </div>
+              {(editForm.role === "client") && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Tier</label>
+                    <select
+                      value={editForm.tier}
+                      onChange={(e) => setEditForm((prev) => prev ? { ...prev, tier: e.target.value } : prev)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="basic">Basic</option>
+                      <option value="pro">Pro</option>
+                      <option value="enterprise">Premium</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">Features</label>
+                    <div className="flex flex-wrap gap-3">
+                      {FEATURES.map(({ key, label, icon: Icon }) => (
+                        <label
+                          key={key}
+                          className="inline-flex items-center gap-2 text-sm text-gray-700 font-medium select-none cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editForm.features[key] ?? false}
+                            onChange={(e) =>
+                              setEditForm((prev) =>
+                                prev ? { ...prev, features: { ...prev.features, [key]: e.target.checked } } : prev
+                              )
+                            }
+                            className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                          />
+                          <Icon className="w-4 h-4 text-gray-500" />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => { setEditingUser(null); setEditForm(null); }}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                disabled={savingEdit}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
+              >
+                {savingEdit ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
