@@ -122,6 +122,9 @@ export default function ChangerWidget() {
             content: data.message,
           },
         ]);
+        if (data.handoffTriggered) {
+          setHandoffRequested(true);
+        }
       }
     } catch {
       setMessages((prev) => [

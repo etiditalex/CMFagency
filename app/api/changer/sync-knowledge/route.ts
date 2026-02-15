@@ -25,6 +25,7 @@ const PAGES_TO_INDEX = [
   { path: "/services/content-creation", title: "Content Creation", type: "service" as const },
   { path: "/events", title: "Events", type: "event" as const },
   { path: "/events/upcoming", title: "Upcoming Events", type: "event" as const },
+  { path: "/events/upcoming/coast-fashion-modelling-awards-2026", title: "CMFA 2026 - Ticketing & Voting", type: "event" as const },
   { path: "/contact", title: "Contact", type: "page" as const },
   { path: "/jobs", title: "Jobs", type: "page" as const },
   { path: "/career", title: "Careers", type: "page" as const },

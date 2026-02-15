@@ -14,6 +14,19 @@ const supabaseAdmin =
       })
     : null;
 
+const LIVE_AGENT_KEYWORDS = [
+  "live agent", "real person", "human", "speak to someone", "talk to agent",
+  "talk to a person", "speak to agent", "connect with agent", "human agent",
+  "customer service", "support agent", "transfer to agent", "hand me over",
+  "speak with someone", "get help from a person", "need a human",
+  "want to talk to someone", "can i speak to", "connect me to",
+];
+
+function wantsLiveAgent(message: string): boolean {
+  const lower = message.toLowerCase().trim();
+  return LIVE_AGENT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 async function getKnowledgeContext(query: string): Promise<string> {
   if (!supabaseAdmin) return "";
   const { data } = await supabaseAdmin
@@ -29,7 +42,7 @@ async function getKnowledgeContext(query: string): Promise<string> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { sessionId, message, visitorName, visitorEmail } = body;
+    const { sessionId, message, visitorName, visitorEmail, visitorContact, inquiryType } = body;
     const content = String(message || "").trim().slice(0, 2000);
 
     if (!sessionId || !content) {
@@ -104,14 +117,72 @@ export async function POST(req: NextRequest) {
       content,
     });
 
+    // If user requests a live agent, trigger handoff and indicate transfer
+    if (wantsLiveAgent(content)) {
+      const transferMessage = "Transferring you to a live agent now. Alex will be with you shortly. Please hold...";
+      await supabaseAdmin.from("changer_conversations").update({
+        status: "waiting_for_agent",
+        visitor_name: visitorName || undefined,
+        visitor_email: visitorEmail || undefined,
+        updated_at: new Date().toISOString(),
+      }).eq("id", conv.id);
+
+      await supabaseAdmin.from("changer_messages").insert({
+        conversation_id: conv.id,
+        role: "assistant",
+        content: transferMessage,
+      });
+
+      // Send email to changerfusions@gmail.com (handoff notification)
+      const resendApiKey = process.env.RESEND_API_KEY;
+      const fromEmail = process.env.RESEND_FROM_EMAIL || "CMF Agency <onboarding@resend.dev>";
+      if (resendApiKey) {
+        const { data: msgs } = await supabaseAdmin
+          .from("changer_messages")
+          .select("role, content")
+          .eq("conversation_id", conv.id)
+          .order("created_at", { ascending: true })
+          .limit(15);
+        const summary = msgs?.map((m) => `[${m.role}]: ${m.content}`).join("\n").slice(0, 1200) || "";
+        const CHANGER_EMAIL = "changerfusions@gmail.com";
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: CHANGER_EMAIL,
+            subject: `Changer: Live agent requested - ${visitorName || "Visitor"}`,
+            html: `<p>A visitor requested a live agent. Visitor: ${visitorName || "—"} | ${visitorEmail || "—"} | ${visitorContact || "—"}</p><p>Inquiry: ${inquiryType || "—"}</p><pre>${summary.replace(/</g, "&lt;")}</pre><p><a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke"}/dashboard/changer">Open Changer</a></p>`,
+          }),
+        }).catch((e) => console.error("Changer handoff email:", e));
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: transferMessage,
+        role: "assistant",
+        handoffTriggered: true,
+      });
+    }
+
     const knowledgeContext = await getKnowledgeContext(content);
 
-    const systemPrompt = `You are Changer, the friendly AI assistant for CMF Agency (Changer Fusions), a marketing and events agency in Kenya. You help visitors with inquiries about services, events, careers, merchandise, and general information.
+    const systemPrompt = `You are Changer, the friendly AI assistant for CMF Agency (Changer Fusions), a marketing and events agency in Kenya. You help visitors with:
 
-Be helpful, professional, and concise. If you don't know something, suggest they contact the team or request a live agent.
+**Bookings & Events**: Event registration, ticket purchases for Coast Fashion and Modelling Awards (CMFA), upcoming events. Tickets can be bought via the "Buy Ticket Online" button on event pages. Payment is through Paystack (card, mobile money).
+
+**Voting**: CMF Agency runs voting campaigns. Visitors can vote for nominees. Voting pages are linked from events and campaigns. Guide users to the relevant event or voting page.
+
+**Ticketing**: Event tickets (Regular, VIP, VVIP) are sold through Fusion Xpress. Prices and availability vary by event. Direct users to /events/upcoming for current events.
+
+**Services**: Digital marketing, website development, branding, market research, events marketing, content creation.
+
+**Careers & Merchandise**: Jobs, internships, talent programs, branded merchandise (T-shirts, hoodies, etc.).
+
+Be helpful, professional, and concise. Answer questions about bookings, voting, ticketing, events, services, and careers using the website content below when available.
 ${knowledgeContext}
 
-When users ask for a human, live agent, or real person, tell them they can click "Talk to a live agent" and someone named Alex will assist them.`;
+When users ask for a human, live agent, or real person, respond: "I'm transferring you to a live agent now. Alex will be with you shortly." The system will automatically handle the transfer.`;
 
     if (openaiKey) {
       const { text } = await generateText({
@@ -137,8 +208,8 @@ When users ask for a human, live agent, or real person, tell them they can click
     // Fallback: simple response using knowledge
     const fallbackMessage =
       knowledgeContext.length > 50
-        ? `Based on our website content, I'd be glad to help. For detailed questions about our services, events, or careers, please visit our contact page or click "Talk to a live agent" to connect with Alex, our support team member.`
-        : `Hello! I'm Changer, your CMF Agency assistant. I can help with general questions about our services, events, and careers. For specific inquiries, you can request a live agent (Alex) by clicking the button below.`;
+        ? `Based on our website content, I can help with bookings, voting, ticketing, events, services, and careers. For detailed support, visit /events/upcoming for tickets, or click "Talk to a live agent" to connect with Alex.`
+        : `Hello! I'm Changer. I can help with bookings, voting, ticketing, events, services, and careers. Visit /events/upcoming for event tickets. For a live agent, click the button below or type "I need a live agent".`;
 
     await supabaseAdmin.from("changer_messages").insert({
       conversation_id: conv.id,
