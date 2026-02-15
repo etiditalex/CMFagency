@@ -14,7 +14,7 @@ type Campaign = { id: string; title: string; type: string };
 export default function DashboardEmailPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
@@ -45,7 +45,7 @@ export default function DashboardEmailPage() {
           .from("campaigns")
           .select("id,title,type")
           .order("created_at", { ascending: false });
-        if (!isAdmin) q = q.eq("created_by", user.id);
+        if (!isFullAdmin) q = q.eq("created_by", user.id);
         const { data, error: e } = await q;
         if (e) throw e;
         if (!cancelled) setCampaigns((data ?? []) as Campaign[]);
@@ -58,7 +58,7 @@ export default function DashboardEmailPage() {
 
     load();
     return () => { cancelled = true; };
-  }, [user?.id, isAdmin]);
+  }, [user?.id, isFullAdmin]);
 
   useEffect(() => {
     if (!selectedCampaignId) {

@@ -26,7 +26,7 @@ function isMissingPortalMembersTable(err: any) {
 export default function DashboardHomePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isManager, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, hasFeature } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,13 +82,13 @@ export default function DashboardHomePage() {
 
     try {
       // Campaigns: total + active/inactive + title lookup for transactions list.
-      // Clients only see their own campaigns; admins/managers see all.
+      // Only full admins see all campaigns; managers and clients see only their own.
       let campaignsQuery = supabase
         .from("campaigns")
         .select("id,title,type,is_active,created_at")
         .order("created_at", { ascending: false });
 
-      if (!isAdmin && user?.id) {
+      if (!isFullAdmin && user?.id) {
         campaignsQuery = campaignsQuery.eq("created_by", user.id);
       }
 
@@ -175,7 +175,7 @@ export default function DashboardHomePage() {
       setDataLoading(false);
       refreshInFlightRef.current = false;
     }
-  }, [user?.id, isAdmin]);
+  }, [user?.id, isFullAdmin]);
 
   const syncPendingPaystack = useCallback(async () => {
     if (!user) return;
@@ -301,9 +301,9 @@ export default function DashboardHomePage() {
         <div className="text-left text-gray-500">Auto-updates when payments/votes/tickets change.</div>
       </div>
 
-      {!isAdmin && (
+      {!isFullAdmin && (
         <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
-          <div className="font-extrabold">Client access</div>
+          <div className="font-extrabold">Limited access</div>
           <div className="mt-1 text-sm">
             You can view and manage only campaigns created under your account. Admin-only tools (like user management) are hidden.
           </div>

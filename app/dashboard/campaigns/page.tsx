@@ -46,7 +46,7 @@ export default function DashboardCampaignsPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +71,8 @@ export default function DashboardCampaignsPage() {
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
           .order("created_at", { ascending: false });
 
-        // Clients only see campaigns they created; admins/managers see all.
-        if (!isAdmin && user?.id) {
+        // Only full admins see all campaigns; managers and clients see only their own.
+        if (!isFullAdmin && user?.id) {
           campaignsQuery = campaignsQuery.eq("created_by", user.id);
         }
 
@@ -117,7 +117,7 @@ export default function DashboardCampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user, isAdmin]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user, isFullAdmin]);
 
   const origin = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -282,7 +282,7 @@ export default function DashboardCampaignsPage() {
                             <span className="font-semibold">{isVote ? "Voting" : "Tickets"}</span> ·{" "}
                             <span className="font-mono">{c.slug}</span>
                           </div>
-                          {isAdmin && (c as CampaignRow).created_by && (
+                          {isFullAdmin && (c as CampaignRow).created_by && (
                             <div className="mt-1 text-xs text-gray-500">
                               Created by: {(c as CampaignRow).created_by === user?.id ? "You" : "Client"}
                             </div>

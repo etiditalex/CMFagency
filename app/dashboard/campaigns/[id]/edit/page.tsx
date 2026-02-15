@@ -42,7 +42,7 @@ export default function EditCampaignPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, features, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, features, isFullAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [type, setType] = useState<CampaignType>("ticket");
@@ -99,7 +99,7 @@ export default function EditCampaignPage() {
         if (!campaign || cancelled) return;
 
         // Clients can only edit their own campaigns.
-        if (!isAdmin && user?.id && (campaign as { created_by?: string }).created_by !== user.id) {
+        if (!isFullAdmin && user?.id && (campaign as { created_by?: string }).created_by !== user.id) {
           router.replace("/dashboard/campaigns?error=access");
           return;
         }

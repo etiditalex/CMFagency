@@ -89,7 +89,7 @@ export default function CampaignReportPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -198,7 +198,7 @@ export default function CampaignReportPage() {
       if (cErr) throw cErr;
       const campaignData = c as Campaign;
       // Clients can only view their own campaigns.
-      if (!isAdmin && user?.id && campaignData.created_by !== user.id) {
+      if (!isFullAdmin && user?.id && campaignData.created_by !== user.id) {
         router.replace("/dashboard/campaigns?error=access");
         return;
       }
@@ -319,7 +319,7 @@ export default function CampaignReportPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id, isAdmin]);
+  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id, isFullAdmin]);
 
   useEffect(() => {
     if (!campaignId) return;
