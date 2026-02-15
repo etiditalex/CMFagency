@@ -7,6 +7,8 @@ type InitBody = {
   email?: string;
   quantity?: number;
   contestant_id?: string | null;
+  /** Payer display name (e.g. "John Doe") for dashboard visibility after payment */
+  payer_name?: string | null;
   /** When true, return ref/amount/email for Paystack Inline popup (card entry on-page) instead of redirect URL */
   inline?: boolean;
 };
@@ -32,6 +34,7 @@ export async function POST(req: Request) {
     const email = (body.email ?? "").trim();
     const quantity = Math.trunc(Number(body.quantity ?? 0));
     const contestantId = body.contestant_id ?? null;
+    const payerName = (body.payer_name ?? "").trim() || null;
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -92,6 +95,7 @@ export async function POST(req: Request) {
       reference,
       provider: "paystack",
       email,
+      payer_name: payerName,
       quantity: q,
       currency: campaign.currency,
       unit_amount: unitAmount,

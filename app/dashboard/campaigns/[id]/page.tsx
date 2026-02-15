@@ -42,6 +42,8 @@ type TxRow = {
   id: string;
   reference: string;
   status: string;
+  email?: string | null;
+  payer_name?: string | null;
   amount: number;
   currency: string;
   quantity: number;
@@ -204,10 +206,10 @@ export default function CampaignReportPage() {
       }
       setCampaign(campaignData);
 
-      // Recent transactions (non-PII)
+      // Recent transactions (include payer identity for admin visibility)
       let txQuery = supabase
         .from("transactions")
-        .select("id,reference,status,amount,currency,quantity,created_at")
+        .select("id,reference,status,amount,currency,quantity,created_at,email,payer_name")
         .eq("campaign_id", campaignId);
       if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
       if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
@@ -632,7 +634,7 @@ export default function CampaignReportPage() {
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
             <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
-              Latest transactions in the selected range (non-PII). Use{" "}
+              Latest transactions in the selected range with payer name/email. Use{" "}
               <span className="font-semibold">success</span> for revenue and issuance.
             </p>
           </div>
@@ -642,6 +644,7 @@ export default function CampaignReportPage() {
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600">Time</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Payer</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Qty</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
@@ -651,7 +654,7 @@ export default function CampaignReportPage() {
               <tbody>
                 {recentTransactions.length === 0 ? (
                   <tr>
-                    <td className="px-6 py-6 text-gray-600" colSpan={5}>
+                    <td className="px-6 py-6 text-gray-600" colSpan={6}>
                       No transactions yet.
                     </td>
                   </tr>
@@ -665,10 +668,19 @@ export default function CampaignReportPage() {
                           ? "text-red-700 bg-red-50 border-red-100"
                           : "text-gray-700 bg-gray-50 border-gray-100";
 
+                    const payerDisplay = t.payer_name?.trim()
+                      ? String(t.payer_name).trim()
+                      : t.email?.trim()
+                        ? String(t.email)
+                        : "—";
+
                     return (
                       <tr key={t.id} className="border-b border-gray-100">
                         <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
                           {new Date(t.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-gray-900 font-medium whitespace-nowrap" title={t.email ?? undefined}>
+                          {payerDisplay}
                         </td>
                         <td className="px-6 py-4 text-gray-700 font-mono whitespace-nowrap">{t.reference}</td>
                         <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">

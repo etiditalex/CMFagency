@@ -138,6 +138,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
           body: JSON.stringify({
             slug: item.slug,
             email: details.email.trim(),
+            payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
             quantity: item.quantity,
             inline: useInline,
           }),

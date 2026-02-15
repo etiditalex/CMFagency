@@ -50,6 +50,8 @@ export default function DashboardHomePage() {
       created_at: string;
       campaign_id: string;
       provider?: string;
+      email?: string | null;
+      payer_name?: string | null;
     }>
   >([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
@@ -119,10 +121,10 @@ export default function DashboardHomePage() {
         setTotalVotes(0);
         setTotalTicketsIssued(0);
       } else {
-        // Recent transactions (money report): keep it non-PII (no email).
+        // Recent transactions (money report). Include payer identity for admin visibility.
         const { data: txRows, error: txErr } = await supabase
           .from("transactions")
-          .select("id,reference,status,amount,currency,created_at,campaign_id,provider")
+          .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
           .in("campaign_id", campaignIds)
           .order("created_at", { ascending: false })
           .limit(10);
@@ -480,7 +482,7 @@ export default function DashboardHomePage() {
           <div>
             <div className="text-sm font-extrabold text-primary-700 text-left">Recent Payments</div>
             <p className="mt-2 text-gray-600 text-sm text-left">
-              Latest transactions (non-PII). Status is webhook-confirmed only when marked{" "}
+              Latest transactions with payer name/email. Status is webhook-confirmed only when marked{" "}
               <span className="font-semibold">success</span>. Stuck on pending? Click Sync to verify with Paystack.
             </p>
             {syncResult && (
@@ -514,6 +516,7 @@ export default function DashboardHomePage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Time</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Payer</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Campaign</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Type</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Reference</th>
@@ -525,7 +528,7 @@ export default function DashboardHomePage() {
             <tbody>
               {recentTransactions.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-6 text-gray-600" colSpan={7}>
+                  <td className="px-6 py-6 text-gray-600" colSpan={8}>
                     No transactions yet.
                   </td>
                 </tr>
@@ -540,10 +543,19 @@ export default function DashboardHomePage() {
                         ? "text-red-700 bg-red-50 border-red-100"
                         : "text-gray-700 bg-gray-50 border-gray-100";
 
+                  const payerDisplay = (t as any).payer_name?.trim()
+                    ? String((t as any).payer_name).trim()
+                    : (t as any).email?.trim()
+                      ? String((t as any).email)
+                      : "—";
+
                   return (
                     <tr key={t.id} className="border-b border-gray-100">
                       <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
                         {new Date(t.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 text-gray-900 font-medium whitespace-nowrap" title={(t as any).email ?? undefined}>
+                        {payerDisplay}
                       </td>
                       <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
                         {c?.title ?? "—"}
