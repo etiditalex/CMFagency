@@ -8,7 +8,6 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import PaystackPop from "@paystack/inline-js";
 import { useCart } from "@/contexts/CartContext";
-import PaymentReceipt from "@/components/PaymentReceipt";
 
 const SHIPPING = 500;
 
@@ -273,17 +272,20 @@ export default function CartPage() {
                   {ref && txStatus && (
                     <div className="mb-6">
                       {txStatus.status === "success" ? (
-                        <PaymentReceipt
-                          reference={ref}
-                          campaignTitle={txStatus.campaign_title ?? "Merchandise Order"}
-                          campaignSlug={txStatus.campaign_slug ?? "merchandise"}
-                          type="order"
-                          holder={txStatus.payer_name?.trim() || txStatus.email?.trim() || "—"}
-                          amount={txStatus.amount ?? getTotalPrice() + SHIPPING}
-                          currency={txStatus.currency ?? "KES"}
-                          quantity={txStatus.quantity ?? getTotalItems()}
-                          orderLabel="Order Confirmed – Merchandise"
-                        />
+                        <div className="rounded-lg border p-6 bg-secondary-50 border-secondary-200">
+                          <div className="flex items-start gap-3">
+                            <CheckCircle2 className="w-6 h-6 text-secondary-700 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <div className="font-bold text-gray-900 text-lg">Payment confirmed</div>
+                              <div className="text-gray-700 mt-2">
+                                Your order receipt has been sent to your email.
+                              </div>
+                              <div className="text-sm text-gray-600 mt-2">
+                                Reference: <span className="font-mono">{ref}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       ) : txStatus.status === "failed" || txStatus.status === "abandoned" ? (
                         <div className="rounded-lg border p-4 bg-red-50 border-red-200">
                           <div className="flex items-start gap-3">

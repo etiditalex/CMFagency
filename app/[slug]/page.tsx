@@ -7,7 +7,6 @@ import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
 import { supabase } from "@/lib/supabase";
-import PaymentReceipt from "@/components/PaymentReceipt";
 
 type Campaign = {
   id: string;
@@ -67,6 +66,8 @@ export default function CampaignPage() {
   const [contestants, setContestants] = useState<Contestant[]>([]);
 
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
 
@@ -224,6 +225,7 @@ export default function CampaignPage() {
         body: JSON.stringify({
           slug: campaign.slug,
           email: email.trim(),
+          payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
           quantity: q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
           inline: useInline,
@@ -352,18 +354,20 @@ export default function CampaignPage() {
             {ref && (
               <div className="mt-6">
                 {txStatus?.status === "success" ? (
-                  <PaymentReceipt
-                    reference={ref}
-                    campaignTitle={txStatus?.campaign_title ?? campaign.title}
-                    campaignSlug={txStatus?.campaign_slug ?? campaign.slug}
-                    type={txStatus?.campaign_type === "vote" ? "vote" : "ticket"}
-                    holder={txStatus?.payer_name?.trim() || txStatus?.email?.trim() || "—"}
-                    amount={txStatus?.amount ?? total}
-                    currency={txStatus?.currency ?? campaign.currency}
-                    quantity={txStatus?.quantity ?? 1}
-                    startsAt={txStatus?.starts_at}
-                    endsAt={txStatus?.ends_at}
-                  />
+                  <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-6">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="w-6 h-6 text-secondary-700 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-bold text-gray-900 text-lg">Payment confirmed</div>
+                        <div className="text-gray-700 mt-2">
+                          Your receipt has been sent to your email with your {txStatus?.campaign_type === "vote" ? "vote" : "ticket"} details.
+                        </div>
+                        <div className="text-sm text-gray-600 mt-2">
+                          Reference: <span className="font-mono">{ref}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : txStatus?.status === "failed" || txStatus?.status === "abandoned" ? (
                   <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                     <div className="flex items-start gap-3">
@@ -458,6 +462,30 @@ export default function CampaignPage() {
                 </p>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="John"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Doe"
+                    required
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input

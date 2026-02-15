@@ -125,22 +125,25 @@ export async function POST(req: Request) {
     // Paystack expects amount in subunit (cents/kobo). 1 KES = 100 cents.
     const amountInSubunit = Math.round(amount * 100);
 
-    // Inline mode: return data for Paystack Inline popup (card entry on-page). No redirect.
-    const useInline = body.inline === true;
-    if (useInline) {
-      return NextResponse.json({
-        reference,
-        amount_subunit: amountInSubunit,
-        email,
-        currency: campaign.currency,
-        channels: ["card", "mobile_money"],
-      });
-    }
-
-    // Redirect mode: initialize Paystack, return URL to redirect.
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
     const callback_url = `${callbackBase}/${campaign.slug}?ref=${reference}`;
+
+    const ticketNumber = (() => {
+      const suffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
+      const prefix = campaign.slug
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+        .slice(0, 8);
+      const typeCode = campaign.type === "vote" ? "VOT" : "TKT";
+      return `${prefix}-${typeCode}-${suffix}`;
+    })();
+
+    const customFields: Array<{ display_name: string; variable_name: string; value: string }> = [
+      { display_name: campaign.type === "vote" ? "Vote number" : "Ticket number", variable_name: "ticket_number", value: ticketNumber },
+      { display_name: campaign.type === "vote" ? "Vote holder" : "Ticket holder", variable_name: "holder", value: payerName ?? email },
+      { display_name: campaign.type === "vote" ? "Votes" : "Tickets", variable_name: "quantity", value: String(q) },
+    ];
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -161,6 +164,7 @@ export async function POST(req: Request) {
           quantity: q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
           slug: campaign.slug,
+          custom_fields: customFields,
         },
       }),
     });
@@ -173,6 +177,17 @@ export async function POST(req: Request) {
         { error: paystackJson?.message ?? "Paystack initialize failed" },
         { status: 502 }
       );
+    }
+
+    const useInline = body.inline === true;
+    if (useInline) {
+      return NextResponse.json({
+        reference,
+        amount_subunit: amountInSubunit,
+        email,
+        currency: campaign.currency,
+        channels: ["card", "mobile_money"],
+      });
     }
 
     return NextResponse.json({

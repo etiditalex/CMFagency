@@ -12,6 +12,10 @@
  * - SUPABASE_URL
  * - SUPABASE_SERVICE_ROLE_KEY
  * - PAYSTACK_SECRET_KEY  (used to verify x-paystack-signature)
+ *
+ * Optional (for receipt email):
+ * - RESEND_API_KEY
+ * - RESEND_FROM_EMAIL
  */
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -93,7 +97,7 @@ serve(async (req) => {
   // Fetch the transaction we created during initialization.
   const { data: tx, error: txErr } = await supabase
     .from("transactions")
-    .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata")
+    .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata,email,payer_name")
     .eq("reference", reference)
     .single();
 
@@ -189,6 +193,63 @@ serve(async (req) => {
     .update({ fulfilled_at: new Date().toISOString() } as any)
     .eq("id", tx.id)
     .is("fulfilled_at", null);
+
+  // Send receipt email (holder name, ticket/vote number, amount) - real name preferred over email
+  const toEmail = (tx as any).email?.trim?.();
+  if (toEmail) {
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "CMF Agency <noreply@resend.dev>";
+    const holderName = (tx as any).payer_name?.trim?.() || toEmail;
+    const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
+    const meta = typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {};
+    const slug = meta.slug || meta.campaign_slug || "event";
+    const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+    const typeCode = tx.campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
+    const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
+    const campaignTitle = meta.campaign_title || meta.slug || "Event";
+
+    if (resendKey) {
+      const typeLabel = tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket";
+      const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 560px; margin: 0 auto; padding: 20px;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 1.4rem;">${String(campaignTitle).replace(/</g, "&lt;")}</h1>
+    <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0;">Payment confirmed</p>
+  </div>
+  <div style="background: #f8f9fa; padding: 24px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 12px 12px;">
+    <table style="width:100%; border-collapse: collapse;">
+      <tr><td style="padding: 8px 0; color: #666;">${typeLabel} number:</td><td style="padding: 8px 0; font-weight: bold; font-family: monospace;">${ticketNumber}</td></tr>
+      <tr><td style="padding: 8px 0; color: #666;">${typeLabel === "Order" ? "Customer" : typeLabel} holder:</td><td style="padding: 8px 0; font-weight: bold;">${String(holderName).replace(/</g, "&lt;")}</td></tr>
+      <tr><td style="padding: 8px 0; color: #666;">Amount paid:</td><td style="padding: 8px 0; font-weight: bold;">${String(tx.currency || "KES").toUpperCase()} ${Number(tx.amount || 0).toLocaleString()}</td></tr>
+      <tr><td style="padding: 8px 0; color: #666;">Quantity:</td><td style="padding: 8px 0; font-weight: bold;">${tx.quantity} ${tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets"}</td></tr>
+    </table>
+    <p style="margin-top: 20px; font-size: 12px; color: #666;">Reference: <code>${reference}</code></p>
+  </div>
+  <p style="color: #888; font-size: 11px; margin-top: 20px;">Sent by CMF Agency · Changer Fusions</p>
+</body>
+</html>`;
+      try {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: toEmail,
+            subject: `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`,
+            html,
+          }),
+        });
+      } catch {
+        // Non-fatal: receipt email failed, payment still succeeded
+      }
+    }
+  }
 
   return new Response("ok", { status: 200 });
 });
