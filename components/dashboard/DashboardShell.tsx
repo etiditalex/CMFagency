@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
   BarChart3,
@@ -52,6 +52,9 @@ type NavItem = {
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
 
+/** Inactivity timeout in ms. User is logged out after this period without activity. */
+const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
   { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
@@ -88,9 +91,57 @@ function isActivePath(pathname: string, currentType: string | null, href: string
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "";
   const sp = useSearchParams();
+  const router = useRouter();
   const currentType = sp?.get("type") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature } = usePortal();
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logoutRef = useRef(logout);
+  const routerRef = useRef(router);
+  logoutRef.current = logout;
+  routerRef.current = router;
+
+  useEffect(() => {
+    if (!isAuthenticated || !isPortalMember) return;
+
+    const resetTimer = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        logoutRef.current();
+        routerRef.current.replace("/fusion-xpress");
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const handleActivity = () => {
+      resetTimer();
+    };
+
+    let lastMove = 0;
+    const throttledMove = () => {
+      const now = Date.now();
+      if (now - lastMove < 1000) return;
+      lastMove = now;
+      handleActivity();
+    };
+
+    resetTimer();
+
+    window.addEventListener("mousedown", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("scroll", handleActivity, { passive: true });
+    window.addEventListener("touchstart", handleActivity, { passive: true });
+    window.addEventListener("mousemove", throttledMove);
+
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      window.removeEventListener("mousedown", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("scroll", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
+      window.removeEventListener("mousemove", throttledMove);
+    };
+  }, [isAuthenticated, isPortalMember]);
 
   const canSeeItem = (item: NavItem) => {
     if (item.adminOnly && !isAdmin) return false;

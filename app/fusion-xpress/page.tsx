@@ -40,10 +40,8 @@ export default function FusionXpressAdminLoginPage() {
   const sp = useSearchParams();
   const initialError = sp?.get("error") ?? null;
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(
@@ -59,11 +57,8 @@ export default function FusionXpressAdminLoginPage() {
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
     if (!password) return false;
-    if (mode === "signup") {
-      return password === confirmPassword && password.length >= 6;
-    }
     return true;
-  }, [confirmPassword, email, mode, password]);
+  }, [email, password]);
 
   const maybeClaimAdmin = async () => {
     try {
@@ -126,7 +121,7 @@ export default function FusionXpressAdminLoginPage() {
     check();
   }, [router]);
 
-  const requirePortalMemberOrSignOut = async (userId: string, mode: "login" | "signup") => {
+  const requirePortalMemberOrSignOut = async (userId: string) => {
     const { data: memberRow, error: memberErr } = await supabase
       .from("portal_members")
       .select("user_id,role")
@@ -175,9 +170,6 @@ export default function FusionXpressAdminLoginPage() {
 
       // Keep job-applicant sessions from lingering on the portal.
       await supabase.auth.signOut();
-      if (mode === "signup") {
-        throw new Error("Account created. An admin must approve and add you to the portal before you can sign in.");
-      }
       throw new Error("Access denied. Ask an admin to add your account to the portal.");
     }
   };
@@ -189,45 +181,18 @@ export default function FusionXpressAdminLoginPage() {
     setResetSent(false);
 
     try {
-      if (mode === "signup") {
-        if (password !== confirmPassword) throw new Error("Passwords do not match.");
-        if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-        const { data, error: signUpErr } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-        });
+      if (signInErr) throw signInErr;
 
-        if (signUpErr) throw signUpErr;
+      const userId = data.user?.id;
+      if (!userId) throw new Error("Sign in failed. Please try again.");
 
-        const userId = data.user?.id;
-        if (!userId) throw new Error("Sign up created no user. Please try again.");
-
-        // If email confirmations are enabled, Supabase may not create an active session yet.
-        // In that case, the admin can confirm email or the user can complete verification.
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          throw new Error(
-            "Account created. Please confirm your email, then come back to login. After that, an admin must allowlist your account for Fusion Xpress."
-          );
-        }
-
-        await maybeClaimAdmin();
-        await requirePortalMemberOrSignOut(userId, "signup");
-      } else {
-        const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-
-        if (signInErr) throw signInErr;
-
-        const userId = data.user?.id;
-        if (!userId) throw new Error("Login failed. Please try again.");
-
-        await maybeClaimAdmin();
-        await requirePortalMemberOrSignOut(userId, "login");
-      }
+      await maybeClaimAdmin();
+      await requirePortalMemberOrSignOut(userId);
 
       router.replace("/dashboard");
     } catch (e: any) {
@@ -431,14 +396,8 @@ export default function FusionXpressAdminLoginPage() {
                   </div>
                 </div>
                 <h2 className="mt-5 text-3xl font-extrabold text-gray-900 text-center">
-                  {mode === "login" ? "Admin Sign In" : "Request Admin Access"}
+                  Sign in
                 </h2>
-                <p className="mt-2 text-gray-600 text-center">
-                  Use your admin account to access the Fusion Xpress dashboard.
-                </p>
-                <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 text-center">
-                  Members-only access. Only allowlisted admin members can sign in.
-                </div>
               </div>
 
               <div className="p-8">
@@ -479,36 +438,17 @@ export default function FusionXpressAdminLoginPage() {
                     </div>
                   </div>
 
-                  {mode === "login" && (
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={onForgotPassword}
-                        className="text-sm font-semibold text-primary-700 hover:text-primary-800"
-                        disabled={loading}
-                      >
-                        Forgot / Create password
-                      </button>
-                      {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
-                    </div>
-                  )}
-
-                  {mode === "signup" && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="password"
-                          required
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          placeholder="Confirm your password"
-                        />
-                      </div>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={onForgotPassword}
+                      className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+                      disabled={loading}
+                    >
+                      Forgot password
+                    </button>
+                    {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
+                  </div>
 
                   <div className="flex items-center justify-between gap-3">
                     <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
@@ -531,55 +471,9 @@ export default function FusionXpressAdminLoginPage() {
                     disabled={loading || !canSubmit}
                     className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {loading
-                      ? mode === "login"
-                        ? "Signing in..."
-                        : "Creating account..."
-                      : mode === "login"
-                        ? "Sign in to dashboard"
-                        : "Create account (admin only)"}
+                    {loading ? "Signing in..." : "Sign in"}
                   </button>
                 </form>
-
-                <div className="mt-6 text-center text-sm text-gray-600">
-                  {mode === "login" ? (
-                    <>
-                      Need an admin account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode("signup");
-                          setError(null);
-                          setPassword("");
-                          setConfirmPassword("");
-                        }}
-                        className="text-primary-700 hover:text-primary-800 font-semibold"
-                      >
-                        Request access
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Already have access?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode("login");
-                          setError(null);
-                          setPassword("");
-                          setConfirmPassword("");
-                        }}
-                        className="text-primary-700 hover:text-primary-800 font-semibold"
-                      >
-                        Sign in
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                <div className="mt-6 text-xs text-gray-500 text-center">
-                  This portal is restricted. Non-admin users cannot access campaigns or generate payment links.
-                </div>
               </div>
             </div>
           </div>
