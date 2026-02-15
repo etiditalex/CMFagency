@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
@@ -61,6 +61,7 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const receiptRequestedRef = useRef(false);
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
@@ -135,6 +136,7 @@ export default function CampaignPage() {
 
   useEffect(() => {
     if (!ref) return;
+    receiptRequestedRef.current = false;
 
     let cancelled = false;
     let interval: number | undefined;
@@ -172,6 +174,13 @@ export default function CampaignPage() {
         };
 
         if (!cancelled) setTxStatus(next);
+
+        if (next.status === "success") {
+          if (!receiptRequestedRef.current) {
+            receiptRequestedRef.current = true;
+            fetch(`/api/send-receipt?ref=${encodeURIComponent(ref)}`, { method: "POST" }).catch(() => {});
+          }
+        }
 
         if (next.status === "success" || next.status === "failed" || next.status === "abandoned") {
           if (interval) window.clearInterval(interval);

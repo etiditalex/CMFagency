@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -18,8 +18,11 @@ export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart, getTotalPrice, getTotalItems } = useCart();
 
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const receiptRequestedRef = useRef(false);
   const [txStatus, setTxStatus] = useState<{
     status: string;
     amount?: number;
@@ -33,6 +36,7 @@ export default function CartPage() {
 
   useEffect(() => {
     if (!ref) return;
+    receiptRequestedRef.current = false;
     let cancelled = false;
     const poll = async () => {
       try {
@@ -48,7 +52,7 @@ export default function CartPage() {
           campaign_slug?: string | null;
           error?: string;
         };
-        if (!cancelled && json.status)
+        if (!cancelled && json.status) {
           setTxStatus({
             status: json.status,
             amount: json.amount,
@@ -59,6 +63,11 @@ export default function CartPage() {
             campaign_title: json.campaign_title,
             campaign_slug: json.campaign_slug,
           });
+          if (json.status === "success" && !receiptRequestedRef.current) {
+            receiptRequestedRef.current = true;
+            fetch(`/api/send-receipt?ref=${encodeURIComponent(ref)}`, { method: "POST" }).catch(() => {});
+          }
+        }
       } catch {}
     };
     poll();
@@ -87,6 +96,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: emailTrim,
+          payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
           cart: cart.map((item) => ({
             id: item.id,
             name: item.name,
@@ -315,6 +325,36 @@ export default function CartPage() {
                   )}
 
                   <form onSubmit={onCheckout} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="cart-first-name" className="block text-sm font-medium text-gray-700 mb-2">
+                          First name
+                        </label>
+                        <input
+                          id="cart-first-name"
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="John"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="cart-last-name" className="block text-sm font-medium text-gray-700 mb-2">
+                          Last name
+                        </label>
+                        <input
+                          id="cart-last-name"
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="Doe"
+                          required
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label htmlFor="cart-email" className="block text-sm font-medium text-gray-700 mb-2">
                         Email

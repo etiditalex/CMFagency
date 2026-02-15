@@ -13,6 +13,7 @@ type CartItem = {
 
 type InitBody = {
   email?: string;
+  payer_name?: string | null;
   cart?: CartItem[];
   shipping?: number;
   inline?: boolean;
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
     const body = (await req.json()) as InitBody;
 
     const email = (body.email ?? "").trim();
+    const payerName = (body.payer_name ?? "").trim() || null;
     const cart = Array.isArray(body.cart) ? body.cart : [];
     const shipping = Math.max(0, Math.trunc(Number(body.shipping ?? DEFAULT_SHIPPING)));
     const useInline = body.inline === true;
@@ -103,6 +105,7 @@ export async function POST(req: Request) {
       reference,
       provider: "paystack",
       email,
+      payer_name: payerName,
       quantity: total, // unit_amount=1, so amount = quantity
       currency: campaign.currency,
       unit_amount: 1,
@@ -133,19 +136,18 @@ export async function POST(req: Request) {
 
     const amountInSubunit = Math.round(total * 100);
 
-    if (useInline) {
-      return NextResponse.json({
-        reference,
-        amount_subunit: amountInSubunit,
-        email,
-        currency: campaign.currency,
-        channels: ["card", "mobile_money"],
-      });
-    }
-
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
     const callback_url = `${callbackBase.replace(/\/$/, "")}/cart?ref=${encodeURIComponent(reference)}`;
+
+    const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
+    const prefix = "MERCHANDISE".slice(0, 8);
+    const itemCount = validatedCart.reduce((sum, i) => sum + i.quantity, 0);
+    const customFields: Array<{ display_name: string; variable_name: string; value: string }> = [
+      { display_name: "Order number", variable_name: "order_number", value: `${prefix}-ORD-${ticketSuffix}` },
+      { display_name: "Customer", variable_name: "holder", value: payerName ?? email },
+      { display_name: "Items", variable_name: "quantity", value: String(itemCount) },
+    ];
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -165,6 +167,7 @@ export async function POST(req: Request) {
           campaign_type: campaign.type,
           slug: campaign.slug,
           merchandise_cart: true,
+          custom_fields: customFields,
         },
       }),
     });
@@ -176,6 +179,16 @@ export async function POST(req: Request) {
         { error: paystackJson?.message ?? "Paystack initialize failed" },
         { status: 502 }
       );
+    }
+
+    if (useInline) {
+      return NextResponse.json({
+        reference,
+        amount_subunit: amountInSubunit,
+        email,
+        currency: campaign.currency,
+        channels: ["card", "mobile_money"],
+      });
     }
 
     return NextResponse.json({
