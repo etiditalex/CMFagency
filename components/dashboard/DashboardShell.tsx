@@ -59,6 +59,7 @@ const NAV: NavItem[] = [
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
+  { label: "Changer", href: "/dashboard/changer", icon: MessagesSquare, section: "main", adminOnly: true },
   { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
   { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },
   { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", featureKey: "coupons" },

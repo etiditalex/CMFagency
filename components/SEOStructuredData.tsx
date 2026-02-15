@@ -184,7 +184,7 @@ export default function SEOStructuredData() {
         name: "How can I contact Changer Fusions?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://cmfagency.co.ke/contact. We also have a WhatsApp button on our website for instant inquiries and support.",
+          text: "You can contact Changer Fusions by phone at +254 797 777347, by email at info@cmfagency.co.ke, or by visiting our contact page at https://cmfagency.co.ke/contact. Chat with our AI assistant Changer on our website for instant inquiries and support.",
         },
       },
       {

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CookieBanner from "@/components/CookieBanner";
-import WhatsAppButton from "@/components/WhatsAppButton";
+import ChangerWidget from "@/components/ChangerWidget";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export default function ConditionalLayout({
@@ -25,7 +25,7 @@ export default function ConditionalLayout({
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {children}
         <CookieBanner />
-        <WhatsAppButton />
+        <ChangerWidget />
       </div>
     );
   }
@@ -46,8 +46,8 @@ export default function ConditionalLayout({
       <main className="min-h-screen">{children}</main>
       <Footer />
       <CookieBanner />
-      {/* Avoid floating WhatsApp button on About pages (matches requested design without green overlay button) */}
-      {!isAboutSection && <WhatsAppButton />}
+      {/* Changer AI chatbot - avoid on About pages to match design */}
+      {!isAboutSection && <ChangerWidget />}
     </>
   );
 }
