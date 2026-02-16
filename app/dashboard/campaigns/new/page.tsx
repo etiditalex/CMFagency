@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Ticket, Vote } from "lucide-react";
+import { Minus, Plus, Ticket, Upload, Vote, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -35,7 +35,8 @@ export default function NewCampaignPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [currency, setCurrency] = useState("KES");
   const [unitAmount, setUnitAmount] = useState<number>(1000);
   const [maxPerTxn, setMaxPerTxn] = useState<number>(10);
@@ -96,6 +97,28 @@ export default function NewCampaignPage() {
     setContestants((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
   };
 
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return null;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("Session expired. Please sign in again.");
+
+    const formData = new FormData();
+    formData.append("file", imageFile);
+
+    const res = await fetch("/api/campaign-image/upload", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error || "Image upload failed");
+    }
+    const { url } = (await res.json()) as { url?: string };
+    return url ?? null;
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -107,6 +130,11 @@ export default function NewCampaignPage() {
       const normalizedSlug = slugify(slug);
       if (!normalizedSlug) throw new Error("Slug is required");
 
+      let finalImageUrl: string | null = null;
+      if (imageFile) {
+        finalImageUrl = await uploadImage();
+      }
+
       // NOTE: We store amounts as integers to match provider APIs that use minor units.
       // If your provider expects a different scaling for your currency, adjust here and in the webhook.
       const { data: campaign, error: insertErr } = await supabase
@@ -116,7 +144,7 @@ export default function NewCampaignPage() {
           title: title.trim(),
           slug: normalizedSlug,
           description: description.trim() || null,
-          image_url: imageUrl.trim() || null,
+          image_url: finalImageUrl,
           currency: currency.trim().toUpperCase(),
           unit_amount: Math.trunc(unitAmount),
           max_per_txn: Math.trunc(maxPerTxn),
@@ -292,13 +320,43 @@ export default function NewCampaignPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Campaign image (optional)</label>
-            <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="https://example.com/image.jpg"
-            />
-            <p className="text-xs text-gray-500 mt-2">Paste an image URL for a banner or thumbnail on the public page.</p>
+            {imagePreviewUrl ? (
+              <div className="relative rounded-lg overflow-hidden border border-gray-200 w-full max-w-md">
+                <img src={imagePreviewUrl} alt="Preview" className="w-full h-40 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageFile(null);
+                    setImagePreviewUrl(null);
+                  }}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-red-600 text-white hover:bg-red-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">
+                    <span className="text-primary-600 font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">JPG, PNG, GIF, WebP (max 5MB)</p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) {
+                      setImageFile(f);
+                      setImagePreviewUrl(URL.createObjectURL(f));
+                    }
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
