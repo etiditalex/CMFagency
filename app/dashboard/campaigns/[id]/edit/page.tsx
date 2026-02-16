@@ -60,8 +60,8 @@ export default function EditCampaignPage() {
   const [isActive, setIsActive] = useState(true);
 
   const [contestants, setContestants] = useState<ContestantDraft[]>([
-    { name: "", image_url: "" },
-    { name: "", image_url: "" },
+    { name: "", image_url: "", imageFile: null, imagePreviewUrl: null },
+    { name: "", image_url: "", imageFile: null, imagePreviewUrl: null },
   ]);
 
   const [saving, setSaving] = useState(false);
