@@ -14,6 +14,7 @@ type Campaign = {
   slug: string;
   title: string;
   description: string | null;
+  image_url: string | null;
   currency: string;
   unit_amount: number;
   max_per_txn: number;
@@ -83,7 +84,7 @@ export default function CampaignPage() {
         if (!slug) throw new Error("Missing campaign slug in URL.");
         const { data: c, error: cErr } = await supabase
           .from("campaigns")
-          .select("id,type,slug,title,description,currency,unit_amount,max_per_txn")
+          .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn")
           .eq("slug", slug)
           .maybeSingle();
 
@@ -350,8 +351,17 @@ export default function CampaignPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left: campaign info */}
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            {campaign.image_url && (
+              <div className="mb-6 -mx-6 -mt-6 rounded-t-xl overflow-hidden">
+                <img
+                  src={campaign.image_url}
+                  alt={campaign.title}
+                  className="w-full h-48 sm:h-56 object-cover"
+                />
+              </div>
+            )}
             <div className="flex items-start gap-3">
-              <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center">
+              <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center flex-shrink-0">
                 <Icon className="w-5 h-5 text-primary-700" />
               </span>
               <div className="min-w-0">

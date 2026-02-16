@@ -35,6 +35,7 @@ export default function NewCampaignPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [currency, setCurrency] = useState("KES");
   const [unitAmount, setUnitAmount] = useState<number>(1000);
   const [maxPerTxn, setMaxPerTxn] = useState<number>(10);
@@ -115,6 +116,7 @@ export default function NewCampaignPage() {
           title: title.trim(),
           slug: normalizedSlug,
           description: description.trim() || null,
+          image_url: imageUrl.trim() || null,
           currency: currency.trim().toUpperCase(),
           unit_amount: Math.trunc(unitAmount),
           max_per_txn: Math.trunc(maxPerTxn),
@@ -286,6 +288,17 @@ export default function NewCampaignPage() {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Shown on the public payment page."
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Campaign image (optional)</label>
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="https://example.com/image.jpg"
+            />
+            <p className="text-xs text-gray-500 mt-2">Paste an image URL for a banner or thumbnail on the public page.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
