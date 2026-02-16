@@ -14,6 +14,8 @@ type CampaignType = "ticket" | "vote";
 type ContestantDraft = {
   name: string;
   image_url: string;
+  imageFile: File | null;
+  imagePreviewUrl: string | null;
 };
 
 function slugify(input: string) {
@@ -130,8 +132,11 @@ export default function EditCampaignPage() {
             const mapped = (conRows as ContestantRow[]).map((c) => ({
               name: c.name ?? "",
               image_url: c.image_url ?? "",
+              imageFile: null as File | null,
+              imagePreviewUrl: (c.image_url ?? "") || null,
             }));
-            setContestants(mapped.length >= 2 ? mapped : [...mapped, { name: "", image_url: "" }]);
+            const empty: ContestantDraft = { name: "", image_url: "", imageFile: null, imagePreviewUrl: null };
+            setContestants(mapped.length >= 2 ? mapped : [...mapped, empty]);
           }
         }
       } catch (e: any) {
@@ -160,7 +165,7 @@ export default function EditCampaignPage() {
   }, [contestants, hasFeature, maxPerTxn, slug, title, type, unitAmount]);
 
   const addContestant = () => {
-    setContestants((prev) => [...prev, { name: "", image_url: "" }]);
+    setContestants((prev) => [...prev, { name: "", image_url: "", imageFile: null, imagePreviewUrl: null }]);
   };
 
   const removeContestant = (idx: number) => {
@@ -171,14 +176,13 @@ export default function EditCampaignPage() {
     setContestants((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+  const uploadImageFile = async (file: File): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
     if (!token) throw new Error("Session expired. Please sign in again.");
 
     const formData = new FormData();
-    formData.append("file", imageFile);
+    formData.append("file", file);
 
     const res = await fetch("/api/campaign-image/upload", {
       method: "POST",
@@ -206,7 +210,7 @@ export default function EditCampaignPage() {
 
       let finalImageUrl: string | null = null;
       if (imageFile) {
-        finalImageUrl = await uploadImage();
+        finalImageUrl = await uploadImageFile(imageFile);
       } else if (imageUrl.trim()) {
         finalImageUrl = imageUrl.trim();
       }
@@ -232,19 +236,21 @@ export default function EditCampaignPage() {
         const { error: delErr } = await supabase.from("contestants").delete().eq("campaign_id", campaignId);
         if (delErr) throw delErr;
 
-        const cleaned = contestants
-          .map((c, i) => ({
-            campaign_id: campaignId,
-            name: c.name.trim(),
-            image_url: c.image_url.trim() || null,
-            sort_order: i,
-          }))
-          .filter((c) => c.name.length > 0);
-
+        const cleaned: { campaign_id: string; name: string; image_url: string | null; sort_order: number }[] = [];
+        for (let i = 0; i < contestants.length; i++) {
+          const c = contestants[i];
+          if (!c.name.trim()) continue;
+          let imgUrl: string | null = null;
+          if (c.imageFile) {
+            imgUrl = await uploadImageFile(c.imageFile);
+          } else if (c.image_url.trim()) {
+            imgUrl = c.image_url.trim();
+          }
+          cleaned.push({ campaign_id: campaignId, name: c.name.trim(), image_url: imgUrl, sort_order: cleaned.length });
+        }
         if (cleaned.length === 0) {
           throw new Error("Add at least 1 contestant for a voting campaign.");
         }
-
         const { error: contestantsErr } = await supabase.from("contestants").insert(cleaned);
         if (contestantsErr) throw contestantsErr;
       } else {
@@ -492,7 +498,7 @@ export default function EditCampaignPage() {
                     )}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="mt-3 space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                       <input
@@ -503,13 +509,36 @@ export default function EditCampaignPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Image URL (optional)</label>
-                      <input
-                        value={c.image_url}
-                        onChange={(e) => updateContestant(idx, { image_url: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="https://..."
-                      />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Image (optional)</label>
+                      {c.imagePreviewUrl ? (
+                        <div className="relative rounded-lg overflow-hidden border border-gray-200 w-full max-w-[200px]">
+                          <img src={c.imagePreviewUrl} alt="" className="w-full h-24 object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => updateContestant(idx, { imageFile: null, imagePreviewUrl: null, image_url: "" })}
+                            className="absolute top-1 right-1 p-1.5 rounded-full bg-red-600 text-white hover:bg-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="block cursor-pointer">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition-colors max-w-[200px]">
+                            <Upload className="w-6 h-6 text-gray-400 mx-auto mb-1" />
+                            <p className="text-xs text-gray-600">Click to upload</p>
+                            <p className="text-xs text-gray-500">JPG, PNG, GIF, WebP</p>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) updateContestant(idx, { imageFile: f, imagePreviewUrl: URL.createObjectURL(f), image_url: "" });
+                            }}
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
                 </div>
