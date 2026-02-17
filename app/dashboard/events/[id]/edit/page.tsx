@@ -52,6 +52,10 @@ export default function EditEventPage() {
   const [venue, setVenue] = useState("");
   const [hostedBy, setHostedBy] = useState("");
   const [ticketCampaignSlug, setTicketCampaignSlug] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [documentLabel, setDocumentLabel] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -104,6 +108,10 @@ export default function EditEventPage() {
         setVenue(String(ev.venue ?? ""));
         setHostedBy(String(ev.hosted_by ?? ""));
         setTicketCampaignSlug(String(ev.ticket_campaign_slug ?? ""));
+        setPaymentLink(String(ev.payment_link ?? ""));
+        setDocumentUrl(String(ev.document_url ?? ""));
+        setDocumentLabel(String(ev.document_label ?? ""));
+        setMapUrl(String(ev.map_url ?? ""));
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
         setImagePreviewUrl(img || null);
@@ -174,6 +182,10 @@ export default function EditEventPage() {
           venue: venue.trim() || null,
           hosted_by: hostedBy.trim() || null,
           ticket_campaign_slug: ticketCampaignSlug.trim() || null,
+          payment_link: paymentLink.trim() || null,
+          document_url: documentUrl.trim() || null,
+          document_label: documentLabel.trim() || null,
+          map_url: mapUrl.trim() || null,
           image_url: finalImageUrl,
         })
         .eq("id", eventId);
@@ -376,12 +388,57 @@ export default function EditEventPage() {
           )}
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
+            <input
+              value={ticketCampaignSlug}
+              onChange={(e) => setTicketCampaignSlug(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Payment link (optional)</label>
+            <input
+              type="url"
+              value={paymentLink}
+              onChange={(e) => setPaymentLink(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Document URL (optional)</label>
+            <input
+              type="url"
+              value={documentUrl}
+              onChange={(e) => setDocumentUrl(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="https://.../proposal.pdf"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Document button label (optional)</label>
+            <input
+              value={documentLabel}
+              onChange={(e) => setDocumentLabel(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Download Proposal"
+            />
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Map location (optional)</label>
           <input
-            value={ticketCampaignSlug}
-            onChange={(e) => setTicketCampaignSlug(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+            type="url"
+            value={mapUrl}
+            onChange={(e) => setMapUrl(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="https://maps.google.com/..."
           />
         </div>
 

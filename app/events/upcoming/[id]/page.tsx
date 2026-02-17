@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  ExternalLink,
   Handshake,
   MapPin,
   ArrowRight,
@@ -36,8 +37,26 @@ type DbEvent = {
   image_url: string | null;
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
+  payment_link: string | null;
+  document_url: string | null;
+  document_label: string | null;
+  map_url: string | null;
   gallery: string[] | null;
 };
+
+function buildGoogleCalendarUrl(event: Pick<DbEvent, "title" | "event_date" | "end_date" | "time" | "location" | "description">): string {
+  const d = event.event_date.replace(/-/g, "");
+  const endD = (event.end_date || event.event_date).replace(/-/g, "");
+  const startStr = `${d}T090000`;
+  const endStr = `${endD}T170000`;
+  return (
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(event.title)}` +
+    `&dates=${startStr}/${endStr}` +
+    `&details=${encodeURIComponent(event.description || "")}` +
+    `&location=${encodeURIComponent(event.location || "")}`
+  );
+}
 
 const CFMA_2026_ID = "coast-fashion-modelling-awards-2026";
 
@@ -547,6 +566,12 @@ function CfmaEventDetail() {
 function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
   const eventDate = new Date(event.event_date);
+  const hasTicket = !!event.ticket_campaign_slug;
+  const hasPayment = !!event.payment_link;
+  const hasDocument = !!event.document_url;
+  const hasMap = !!event.map_url;
+  const calendarUrl = buildGoogleCalendarUrl(event);
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <div className="container-custom py-8">
@@ -596,19 +621,68 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                 {event.full_description || event.description || ""}
               </p>
             </div>
-            {event.ticket_campaign_slug && (
-              <Link
-                href={`/${event.ticket_campaign_slug}`}
-                className="mt-8 inline-flex items-center gap-2 btn-primary"
+
+            {/* Action buttons grid: Payment/Ticket, Document, Map, Calendar */}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {hasTicket && (
+                <Link
+                  href={`/${event.ticket_campaign_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <Ticket className="w-5 h-5" />
+                  Buy Ticket Online
+                </Link>
+              )}
+              {hasPayment && (
+                <a
+                  href={event.payment_link!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  Pay Now
+                </a>
+              )}
+              {hasDocument && (
+                <a
+                  href={event.document_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  {event.document_label || "Download"}
+                </a>
+              )}
+              {hasMap && (
+                <a
+                  href={event.map_url!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                >
+                  <MapPin className="w-5 h-5" />
+                  View on Map
+                </a>
+              )}
+              <a
+                href={calendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
               >
-                <Ticket className="w-5 h-5" />
-                Buy Ticket Online
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            )}
+                <CalendarPlus className="w-5 h-5" />
+                Add to Calendar
+              </a>
+            </div>
+
             <Link
               href="/contact"
-              className={`mt-6 inline-flex items-center gap-2 btn-primary ${event.ticket_campaign_slug ? "ml-4" : ""}`}
+              className="mt-6 inline-flex items-center gap-2 btn-primary"
             >
               Get in Touch
               <ArrowRight className="w-5 h-5" />
@@ -708,7 +782,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,gallery")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();

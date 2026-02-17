@@ -44,6 +44,10 @@ export default function NewEventPage() {
   const [venue, setVenue] = useState("");
   const [hostedBy, setHostedBy] = useState("");
   const [ticketCampaignSlug, setTicketCampaignSlug] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [documentUrl, setDocumentUrl] = useState("");
+  const [documentLabel, setDocumentLabel] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -110,6 +114,10 @@ export default function NewEventPage() {
         venue: venue.trim() || null,
         hosted_by: hostedBy.trim() || null,
         ticket_campaign_slug: ticketCampaignSlug.trim() || null,
+        payment_link: paymentLink.trim() || null,
+        document_url: documentUrl.trim() || null,
+        document_label: documentLabel.trim() || null,
+        map_url: mapUrl.trim() || null,
         image_url: imageUrl,
         created_by: user.id,
       });
@@ -319,15 +327,62 @@ export default function NewEventPage() {
           )}
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
+            <input
+              value={ticketCampaignSlug}
+              onChange={(e) => setTicketCampaignSlug(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+              placeholder="e.g. cfma-2026"
+            />
+            <p className="text-xs text-gray-500 mt-2">Link to Fusion Xpress ticket campaign</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Payment link (optional)</label>
+            <input
+              type="url"
+              value={paymentLink}
+              onChange={(e) => setPaymentLink(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="https://..."
+            />
+            <p className="text-xs text-gray-500 mt-2">External pay link (M-Pesa, PayPal, etc.)</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Document URL (optional)</label>
+            <input
+              type="url"
+              value={documentUrl}
+              onChange={(e) => setDocumentUrl(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="https://.../proposal.pdf"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Document button label (optional)</label>
+            <input
+              value={documentLabel}
+              onChange={(e) => setDocumentLabel(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="e.g. Download Proposal"
+            />
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Map location (optional)</label>
           <input
-            value={ticketCampaignSlug}
-            onChange={(e) => setTicketCampaignSlug(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-            placeholder="e.g. cfma-2026"
+            type="url"
+            value={mapUrl}
+            onChange={(e) => setMapUrl(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="https://maps.google.com/... or https://goo.gl/maps/..."
           />
-          <p className="text-xs text-gray-500 mt-2">Link to a Fusion Xpress ticket campaign for Get Tickets button</p>
+          <p className="text-xs text-gray-500 mt-2">Google Maps link for event venue</p>
         </div>
 
         <div className="flex justify-end gap-3 pt-2">

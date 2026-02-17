@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, ArrowLeft, Star, Send, CheckCircle } from "lucide-react";
+import { Calendar, CalendarPlus, Download, MapPin, ArrowLeft, ExternalLink, Star, Send, CheckCircle, Ticket } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
@@ -13,6 +13,7 @@ type DbEvent = {
   slug: string;
   title: string;
   event_date: string;
+  end_date: string | null;
   location: string | null;
   time: string | null;
   description: string | null;
@@ -20,7 +21,24 @@ type DbEvent = {
   venue: string | null;
   hosted_by: string | null;
   gallery: string[] | null;
+  ticket_campaign_slug: string | null;
+  payment_link: string | null;
+  document_url: string | null;
+  document_label: string | null;
+  map_url: string | null;
 };
+
+function buildGoogleCalendarUrl(event: { title: string; event_date: string; end_date?: string | null; location?: string | null; description?: string | null }): string {
+  const d = event.event_date.replace(/-/g, "");
+  const endD = (event.end_date || event.event_date).replace(/-/g, "");
+  return (
+    "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(event.title)}` +
+    `&dates=${d}T090000/${endD}T170000` +
+    `&details=${encodeURIComponent(event.description || "")}` +
+    `&location=${encodeURIComponent(event.location || "")}`
+  );
+}
 
 const pastEventsData: { [key: string]: any } = {
   "mr-mrs-deaf-kenya-2025": {
@@ -183,7 +201,7 @@ export default function PastEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,location,time,description,full_description,venue,hosted_by,gallery")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,venue,hosted_by,gallery,ticket_campaign_slug,payment_link,document_url,document_label,map_url")
         .eq("slug", slugParam)
         .lt("event_date", format(new Date(), "yyyy-MM-dd"))
         .maybeSingle();
@@ -206,7 +224,14 @@ export default function PastEventDetailPage() {
     venue: dbEvent.venue,
     hostedBy: dbEvent.hosted_by,
     gallery: Array.isArray(dbEvent.gallery) ? dbEvent.gallery : undefined,
+    ticket_campaign_slug: dbEvent.ticket_campaign_slug,
+    payment_link: dbEvent.payment_link,
+    document_url: dbEvent.document_url,
+    document_label: dbEvent.document_label,
+    map_url: dbEvent.map_url,
   } : undefined);
+
+  const showActionGrid = !!dbEvent;
 
   const [reviewFormData, setReviewFormData] = useState({
     name: "",
@@ -318,6 +343,64 @@ export default function PastEventDetailPage() {
                     {event.fullDescription || event.description}
                   </p>
                 </div>
+                {showActionGrid && dbEvent && (
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {dbEvent.ticket_campaign_slug && (
+                      <a
+                        href={`/${dbEvent.ticket_campaign_slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                      >
+                        <Ticket className="w-5 h-5" />
+                        Buy Ticket
+                      </a>
+                    )}
+                    {dbEvent.payment_link && (
+                      <a
+                        href={dbEvent.payment_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                      >
+                        <ExternalLink className="w-5 h-5" />
+                        Pay
+                      </a>
+                    )}
+                    {dbEvent.document_url && (
+                      <a
+                        href={dbEvent.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
+                      >
+                        <Download className="w-5 h-5" />
+                        {dbEvent.document_label || "Download"}
+                      </a>
+                    )}
+                    {dbEvent.map_url && (
+                      <a
+                        href={dbEvent.map_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                      >
+                        <MapPin className="w-5 h-5" />
+                        View on Map
+                      </a>
+                    )}
+                    <a
+                      href={buildGoogleCalendarUrl(dbEvent)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                    >
+                      <CalendarPlus className="w-5 h-5" />
+                      Add to Calendar
+                    </a>
+                  </div>
+                )}
               </div>
             </motion.div>
 

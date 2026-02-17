@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Phone, Mail } from "lucide-react";
+import { Calendar, MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -97,83 +97,54 @@ export default function PastEventsPage() {
               <p className="text-lg">No past events to display.</p>
             </div>
           ) : (
-          <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event, index) => {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_IMG;
+              const locationStr = event.venue && event.location ? `${event.venue}, ${event.location}` : event.location || event.venue || "—";
               return (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
                 className="group"
               >
-                <Link href={`/events/past/${event.slug}`} className="block">
-                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-                    <div className="flex flex-col md:flex-row">
-                      {/* Image Section - Left Side */}
-                      <div className="relative w-full md:w-80 lg:w-96 h-64 md:h-64 flex-shrink-0">
-                        <Image
-                          src={imgUrl}
-                          alt={event.title}
-                          fill
-                          className="object-cover"
-                        />
-                        {/* Date Box - Primary Color */}
-                        <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
-                          <div className="text-white font-bold text-xl leading-tight">
-                            {format(eventDate, "dd")}
-                          </div>
-                          <div className="text-white font-semibold text-xs uppercase tracking-wide mt-1">
-                            {format(eventDate, "MMM")}
-                          </div>
-                        </div>
+                <Link href={`/events/past/${event.slug}`} className="block h-full">
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                    <div className="relative w-full aspect-[16/10]">
+                      <Image
+                        src={imgUrl}
+                        alt={event.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute top-3 left-3 bg-primary-600 rounded-lg px-4 py-3 shadow-lg">
+                        <div className="text-white font-bold text-lg leading-tight">{format(eventDate, "dd")}</div>
+                        <div className="text-white font-semibold text-xs uppercase tracking-wide">{format(eventDate, "MMM")}</div>
                       </div>
-
-                      {/* Content Section - Right Side */}
-                      <div className="flex-1 p-6 md:p-8">
-                        {/* Title */}
-                        <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
-                          {event.title}
-                        </h3>
-
-                        {/* Date & Time - Primary Color */}
-                        <div className="text-primary-600 font-semibold mb-3 text-base">
-                          {format(eventDate, "MMM d, yyyy")}
-                          {event.time ? ` · ${event.time}` : ""}
-                        </div>
-
-                        {/* Location - Dark Gray */}
-                        <div className="text-gray-700 mb-4">
-                          {event.venue && event.location ? `${event.venue}, ${event.location}` : event.location || event.venue || "—"}
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-gray-600 mb-6 line-clamp-2">
-                          {event.description ?? ""}
-                        </p>
-
-                        {/* Icons Row */}
-                        <div className="flex flex-wrap gap-4 md:gap-6 text-sm mt-4">
-                          <div className="flex items-center text-gray-700">
-                            <MapPin className="w-4 h-4 mr-2 text-secondary-600 flex-shrink-0" />
-                            <span className="uppercase font-medium">{event.location ?? "—"}</span>
-                          </div>
-                          <div className="flex items-center text-gray-700">
-                            <Calendar className="w-4 h-4 mr-2 text-secondary-600 flex-shrink-0" />
-                            <span className="font-medium uppercase">{format(eventDate, "MMMM d")}</span>
-                          </div>
-                          <div className="flex items-center text-gray-700">
-                            <Phone className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
-                            <span className="font-medium">CALL US +254 797 777347</span>
-                          </div>
-                          <div className="flex items-center text-gray-700">
-                            <Mail className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
-                            <span className="font-medium">info@cmfagency.co.ke</span>
-                          </div>
-                        </div>
+                    </div>
+                    <div className="p-5 flex-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-2">
+                        {event.title}
+                      </h3>
+                      <div className="text-primary-600 font-semibold text-sm mb-2">
+                        {format(eventDate, "MMM d, yyyy")}
+                        {event.time ? ` · ${event.time}` : ""}
                       </div>
+                      <div className="flex items-center gap-1.5 text-gray-600 text-sm mb-3">
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="line-clamp-1">{locationStr}</span>
+                      </div>
+                      <p className="text-gray-600 text-sm line-clamp-2">
+                        {event.description ?? ""}
+                      </p>
+                    </div>
+                    <div className="px-5 pb-5">
+                      <span className="inline-flex items-center text-primary-600 font-semibold text-sm group-hover:text-primary-700">
+                        View Details
+                        <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+                      </span>
                     </div>
                   </div>
                 </Link>
