@@ -21,6 +21,23 @@ import { format } from "date-fns";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
 import SponsorDropdown from "@/components/SponsorDropdown";
 import { usePortal } from "@/contexts/PortalContext";
+import { supabase } from "@/lib/supabase";
+
+type DbEvent = {
+  id: string;
+  slug: string;
+  title: string;
+  event_date: string;
+  end_date: string | null;
+  location: string | null;
+  time: string | null;
+  description: string | null;
+  full_description: string | null;
+  image_url: string | null;
+  default_image_url: string | null;
+  ticket_campaign_slug: string | null;
+  gallery: string[] | null;
+};
 
 const CFMA_2026_ID = "coast-fashion-modelling-awards-2026";
 
@@ -527,6 +544,82 @@ function CfmaEventDetail() {
   );
 }
 
+function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
+  const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
+  const eventDate = new Date(event.event_date);
+  return (
+    <div className="pt-20 min-h-screen bg-gray-50">
+      <div className="container-custom py-8">
+        <Link
+          href="/events/upcoming"
+          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
+        >
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Back to Upcoming Events
+        </Link>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-lg overflow-hidden"
+        >
+          <div className="relative w-full h-64 md:h-80">
+            <Image
+              src={imgUrl}
+              alt={event.title}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
+              <div className="text-white font-bold text-xl leading-tight">{format(eventDate, "dd")}</div>
+              <div className="text-white font-semibold text-xs uppercase tracking-wide mt-1">
+                {format(eventDate, "MMM")}
+              </div>
+            </div>
+          </div>
+          <div className="p-8">
+            <h1 className="text-4xl font-bold mb-6 text-gray-900">{event.title}</h1>
+            <div className="flex flex-wrap gap-4 text-gray-700 mb-6">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary-600" />
+                <span>{format(eventDate, "EEEE, MMMM d, yyyy")}</span>
+                {event.time && <span> · {event.time}</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary-600" />
+                <span>{event.location ?? "—"}</span>
+              </div>
+            </div>
+            <div className="prose prose-lg max-w-none">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                {event.full_description || event.description || ""}
+              </p>
+            </div>
+            {event.ticket_campaign_slug && (
+              <Link
+                href={`/${event.ticket_campaign_slug}`}
+                className="mt-8 inline-flex items-center gap-2 btn-primary"
+              >
+                <Ticket className="w-5 h-5" />
+                Buy Ticket Online
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            )}
+            <Link
+              href="/contact"
+              className={`mt-6 inline-flex items-center gap-2 btn-primary ${event.ticket_campaign_slug ? "ml-4" : ""}`}
+            >
+              Get in Touch
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 function GenericUpcomingEventDetail({
   event,
 }: {
@@ -597,10 +690,50 @@ function GenericUpcomingEventDetail({
 export default function UpcomingEventDetailPage() {
   const params = useParams<{ id?: string | string[] }>();
   const idParam = params?.id;
-  const eventId = Array.isArray(idParam) ? idParam[0] : idParam;
-  const event = eventId ? upcomingEventsData[eventId] : undefined;
+  const slugParam = Array.isArray(idParam) ? idParam[0] : idParam;
+  const hardcodedEvent = slugParam ? upcomingEventsData[slugParam] : undefined;
 
-  if (!event) {
+  const [dbEvent, setDbEvent] = useState<DbEvent | null>(null);
+  const [loading, setLoading] = useState(!!slugParam && !hardcodedEvent);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (hardcodedEvent || !slugParam) {
+      if (!slugParam) setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const today = format(new Date(), "yyyy-MM-dd");
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("fusion_events")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,gallery")
+        .eq("slug", slugParam)
+        .gte("event_date", today)
+        .maybeSingle();
+      if (!cancelled) {
+        if (!error && data) setDbEvent(data as DbEvent);
+        else setNotFound(true);
+        setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [hardcodedEvent, slugParam]);
+
+  if (loading) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading event...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || (!hardcodedEvent && !dbEvent)) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -613,9 +746,17 @@ export default function UpcomingEventDetailPage() {
     );
   }
 
-  if (event.isCfma) {
+  if (hardcodedEvent?.isCfma) {
     return <CfmaEventDetail />;
   }
 
-  return <GenericUpcomingEventDetail event={event} />;
+  if (hardcodedEvent) {
+    return <GenericUpcomingEventDetail event={hardcodedEvent} />;
+  }
+
+  if (dbEvent) {
+    return <DbUpcomingEventDetail event={dbEvent} />;
+  }
+
+  return null;
 }

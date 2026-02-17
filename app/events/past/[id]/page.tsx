@@ -1,11 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Clock, ArrowLeft, Star, Send, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, ArrowLeft, Star, Send, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+
+type DbEvent = {
+  id: string;
+  slug: string;
+  title: string;
+  event_date: string;
+  location: string | null;
+  time: string | null;
+  description: string | null;
+  full_description: string | null;
+  venue: string | null;
+  hosted_by: string | null;
+  gallery: string[] | null;
+};
 
 const pastEventsData: { [key: string]: any } = {
   "mr-mrs-deaf-kenya-2025": {
@@ -151,8 +166,47 @@ const pastEventsData: { [key: string]: any } = {
 export default function PastEventDetailPage() {
   const params = useParams<{ id?: string | string[] }>();
   const idParam = params?.id;
-  const eventId = Array.isArray(idParam) ? idParam[0] : idParam;
-  const event = eventId ? pastEventsData[eventId] : undefined;
+  const slugParam = Array.isArray(idParam) ? idParam[0] : idParam;
+
+  const hardcodedEvent = slugParam ? pastEventsData[slugParam] : undefined;
+  const [dbEvent, setDbEvent] = useState<DbEvent | null>(null);
+  const [loading, setLoading] = useState(!!slugParam && !hardcodedEvent);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (hardcodedEvent || !slugParam) {
+      if (!slugParam) setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("fusion_events")
+        .select("id,slug,title,event_date,location,time,description,full_description,venue,hosted_by,gallery")
+        .eq("slug", slugParam)
+        .lt("event_date", format(new Date(), "yyyy-MM-dd"))
+        .maybeSingle();
+      if (!cancelled) {
+        if (!error && data) setDbEvent(data as DbEvent);
+        else setNotFound(true);
+        setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [hardcodedEvent, slugParam]);
+
+  const event = hardcodedEvent ?? (dbEvent ? {
+    title: dbEvent.title,
+    date: new Date(dbEvent.event_date),
+    location: dbEvent.location ?? "",
+    description: dbEvent.description ?? "",
+    fullDescription: dbEvent.full_description ?? undefined,
+    venue: dbEvent.venue,
+    hostedBy: dbEvent.hosted_by,
+    gallery: Array.isArray(dbEvent.gallery) ? dbEvent.gallery : undefined,
+  } : undefined);
 
   const [reviewFormData, setReviewFormData] = useState({
     name: "",
@@ -171,7 +225,18 @@ export default function PastEventDetailPage() {
   });
   const [contactSubmitted, setContactSubmitted] = useState(false);
 
-  if (!event) {
+  if (loading) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading event...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event || notFound) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="text-center">

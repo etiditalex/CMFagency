@@ -3,136 +3,24 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Search, Ticket, Lightbulb, Rocket, Briefcase, BookOpen, Users, Target, TrendingUp, Sparkles } from "lucide-react";
+import { Calendar, MapPin, Search, Rocket, Briefcase, BookOpen, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { supabase } from "@/lib/supabase";
 
-const events = [
-  {
-    id: 11,
-    title: "Marketing Campaign Launch",
-    date: new Date(2024, 11, 5),
-    location: "Nairobi, Kenya",
-    time: "2:00 PM - 5:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Launch event for major marketing campaigns, featuring guest speakers, strategy presentations, and networking opportunities.",
-    status: "upcoming",
-    category: "Marketing & Promotional",
-  },
-  // Corporate Partnership Events
-  {
-    id: 12,
-    title: "Corporate Sponsorship Launch",
-    date: new Date(2024, 8, 20),
-    location: "Nairobi, Kenya",
-    time: "10:00 AM - 2:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
-    description: "Official launch event for corporate sponsorship partnerships, featuring stakeholder presentations and partnership announcements.",
-    status: "past",
-    category: "Corporate Partnership",
-  },
-  {
-    id: 13,
-    title: "Joint Promotional Launch",
-    date: new Date(2024, 10, 22),
-    location: "Nairobi, Kenya",
-    time: "11:00 AM - 3:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Collaborative promotional event showcasing joint initiatives between corporate partners and Changer Fusions.",
-    status: "upcoming",
-    category: "Corporate Partnership",
-  },
-  {
-    id: 14,
-    title: "Stakeholder Engagement Forum",
-    date: new Date(2024, 9, 18),
-    location: "Nairobi, Kenya",
-    time: "9:00 AM - 1:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
-    description: "Strategic forum bringing together key stakeholders to discuss partnerships, collaborations, and future initiatives.",
-    status: "past",
-    category: "Corporate Partnership",
-  },
-  // Educational & Leadership Events
-  {
-    id: 15,
-    title: "Leadership Development Seminar",
-    date: new Date(2024, 10, 8),
-    location: "University Campus",
-    time: "9:00 AM - 4:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-    description: "Comprehensive seminar focused on developing leadership skills, strategic thinking, and professional growth for students and young professionals.",
-    status: "upcoming",
-    category: "Educational & Leadership",
-  },
-  {
-    id: 16,
-    title: "Professional Development Panel Discussion",
-    date: new Date(2024, 8, 25),
-    location: "University Campus",
-    time: "2:00 PM - 5:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg",
-    description: "Interactive panel discussion featuring industry experts sharing insights on career development and professional growth strategies.",
-    status: "past",
-    category: "Educational & Leadership",
-  },
-  {
-    id: 17,
-    title: "Skill-Building Workshop Series",
-    date: new Date(2024, 11, 10),
-    location: "University Campus",
-    time: "10:00 AM - 3:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-    description: "Hands-on workshop series covering essential skills for career success, including communication, problem-solving, and digital literacy.",
-    status: "upcoming",
-    category: "Educational & Leadership",
-  },
-  {
-    id: 18,
-    title: "Student Leadership Forum",
-    date: new Date(2024, 9, 5),
-    location: "University Campus",
-    time: "1:00 PM - 4:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892263/IMG_9856_x8kq7w.jpg",
-    description: "Forum for student leaders to discuss challenges, share experiences, and develop strategies for effective leadership in academic and community settings.",
-    status: "past",
-    category: "Educational & Leadership",
-  },
-  // Student Engagement Events
-  {
-    id: 19,
-    title: "Campus Town Hall Meeting",
-    date: new Date(2024, 10, 12),
-    location: "University Campus",
-    time: "3:00 PM - 5:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-    description: "Open town hall meeting providing students with a platform to voice concerns, share ideas, and engage with campus leadership.",
-    status: "upcoming",
-    category: "Student Engagement",
-  },
-  {
-    id: 20,
-    title: "Student Feedback Forum",
-    date: new Date(2024, 8, 15),
-    location: "University Campus",
-    time: "2:00 PM - 4:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-    description: "Interactive forum designed to gather student feedback on campus services, programs, and initiatives to improve student experience.",
-    status: "past",
-    category: "Student Engagement",
-  },
-  {
-    id: 21,
-    title: "Student Engagement Drive",
-    date: new Date(2024, 11, 15),
-    location: "University Campus",
-    time: "10:00 AM - 2:00 PM",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9925_t4co5j.jpg",
-    description: "Campus-wide engagement drive encouraging student participation in activities, clubs, and campus initiatives to foster a vibrant campus community.",
-    status: "upcoming",
-    category: "Student Engagement",
-  },
-];
+type EventRow = {
+  id: string;
+  slug: string;
+  title: string;
+  event_date: string;
+  location: string | null;
+  time: string | null;
+  description: string | null;
+  image_url: string | null;
+  category: string | null;
+};
+
+const DEFAULT_IMG = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
 
 // Icon mapping for event categories
 const getEventIcon = (category: string) => {
@@ -157,6 +45,8 @@ const getIconGradient = (index: number) => {
   return gradients[index % gradients.length];
 };
 
+type DisplayEvent = EventRow & { status: "upcoming" | "past" };
+
 function EventsPageContent() {
   const searchParams = useSearchParams();
   const urlFilter = searchParams?.get("filter");
@@ -165,6 +55,8 @@ function EventsPageContent() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
+  const [events, setEvents] = useState<DisplayEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (urlFilter === "upcoming" || urlFilter === "past") {
@@ -173,6 +65,29 @@ function EventsPageContent() {
       setFilter("all");
     }
   }, [urlFilter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const today = format(new Date(), "yyyy-MM-dd");
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("fusion_events")
+        .select("id,slug,title,event_date,location,time,description,image_url,category")
+        .order("event_date", { ascending: false });
+      if (!cancelled) {
+        if (!error && data) {
+          const display: DisplayEvent[] = (data as EventRow[]).map((e) => ({
+            ...e,
+            status: e.event_date >= today ? "upcoming" : "past",
+          }));
+          setEvents(display);
+        }
+        setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const categories = [
     "All",
@@ -185,9 +100,10 @@ function EventsPageContent() {
 
   const filteredEvents = events.filter((event) => {
     const matchesFilter = filter === "all" || event.status === filter;
+    const desc = event.description ?? "";
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase());
+      desc.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === "All" || event.category === categoryFilter;
     return matchesFilter && matchesSearch && matchesCategory;
   });
@@ -264,10 +180,17 @@ function EventsPageContent() {
           </motion.div>
 
           {/* Events Grid - Card Design */}
+          {loading ? (
+            <div className="py-16 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading events...</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredEvents.map((event, index) => {
-              const EventIcon = getEventIcon(event.category);
+              const EventIcon = getEventIcon(event.category ?? "");
               const iconGradient = getIconGradient(index);
+              const detailPath = event.status === "upcoming" ? `/events/upcoming/${event.slug}` : `/events/past/${event.slug}`;
               
               return (
                 <motion.div
@@ -277,7 +200,7 @@ function EventsPageContent() {
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                   className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group text-center md:text-center lg:text-left"
                 >
-                  <Link href={`/events/${event.id}`} className="block p-6">
+                  <Link href={detailPath} className="block p-6">
                     {/* Icon Container */}
                     <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4 mx-auto md:mx-auto lg:mx-0`}>
                       <EventIcon className="w-8 h-8 text-white" />
@@ -290,15 +213,16 @@ function EventsPageContent() {
                     
                     {/* Description */}
                     <p className="text-gray-600 text-sm leading-relaxed">
-                      {event.description}
+                      {event.description ?? ""}
                     </p>
                   </Link>
                 </motion.div>
               );
             })}
           </div>
+          )}
 
-          {filteredEvents.length === 0 && (
+          {!loading && filteredEvents.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

@@ -7,6 +7,7 @@ import type { ComponentType, ReactNode } from "react";
 import {
   BarChart3,
   BadgePercent,
+  Calendar,
   Inbox,
   LayoutDashboard,
   Menu,
@@ -44,7 +45,8 @@ type NavItem = {
     | "create_campaign"
     | "ticketing"
     | "voting"
-    | "reports";
+    | "reports"
+    | "events";
   /** Show if user has any of these features (for All Campaigns). */
   featureKeysAny?: ("ticketing" | "voting")[];
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
@@ -63,6 +65,7 @@ const NAV: NavItem[] = [
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
   { label: "Changer", href: "/dashboard/changer", icon: MessagesSquare, section: "main", adminOnly: true },
+  { label: "Events", href: "/dashboard/events", icon: Calendar, section: "main", featureKey: "events" },
   { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
   { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },
   { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", featureKey: "coupons" },
