@@ -325,7 +325,8 @@ export default function NewCampaignPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Campaign image (optional)</label>
             {imagePreviewUrl ? (
               <div className="relative rounded-lg overflow-hidden border border-gray-200 w-full max-w-md">
-                <img src={imagePreviewUrl} alt="Preview" className="w-full h-40 object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imagePreviewUrl} alt="Campaign preview" className="w-full h-40 object-cover" referrerPolicy="no-referrer" />
                 <button
                   type="button"
                   onClick={() => {
@@ -354,7 +355,9 @@ export default function NewCampaignPage() {
                     const f = e.target.files?.[0];
                     if (f) {
                       setImageFile(f);
-                      setImagePreviewUrl(URL.createObjectURL(f));
+                      const reader = new FileReader();
+                      reader.onload = () => setImagePreviewUrl(reader.result as string);
+                      reader.readAsDataURL(f);
                     }
                   }}
                 />
@@ -457,7 +460,11 @@ export default function NewCampaignPage() {
                               className="hidden"
                               onChange={(e) => {
                                 const f = e.target.files?.[0];
-                                if (f) updateContestant(idx, { imageFile: f, imagePreviewUrl: URL.createObjectURL(f), image_url: "" });
+                                if (f) {
+                                  const reader = new FileReader();
+                                  reader.onload = () => updateContestant(idx, { imageFile: f, imagePreviewUrl: reader.result as string, image_url: "" });
+                                  reader.readAsDataURL(f);
+                                }
                               }}
                             />
                           </label>
