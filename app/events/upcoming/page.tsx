@@ -25,6 +25,21 @@ type EventRow = {
   ticket_campaign_slug: string | null;
 };
 
+// CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
+const CFMA_2026_EVENT: EventRow = {
+  id: "cfma-2026-default",
+  slug: "coast-fashion-modelling-awards-2026",
+  title: "Coast Fashion and Modelling Awards 2026 (CMFA)",
+  event_date: "2026-08-15",
+  end_date: null,
+  location: "Mombasa, Kenya",
+  time: "6:50 PM",
+  description: "Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.",
+  image_url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
+  default_image_url: null,
+  ticket_campaign_slug: null, // Uses CmfAwardsTicketModal
+};
+
 export default function UpcomingEventsPage() {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -40,7 +55,12 @@ export default function UpcomingEventsPage() {
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
-        if (!error) setEvents((data ?? []) as EventRow[]);
+        const dbEvents = (data ?? []) as EventRow[];
+        const hasCfmaInDb = dbEvents.some((e) => e.slug === "coast-fashion-modelling-awards-2026");
+        const merged = hasCfmaInDb
+          ? dbEvents
+          : [CFMA_2026_EVENT, ...dbEvents].sort((a, b) => a.event_date.localeCompare(b.event_date));
+        setEvents(merged);
         setLoading(false);
       }
     };
@@ -142,10 +162,14 @@ export default function UpcomingEventsPage() {
                       </span>
                     </div>
                   </Link>
-                  {event.ticket_campaign_slug && (
+                  {(event.ticket_campaign_slug || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
                       <Link
-                        href={`/${event.ticket_campaign_slug}`}
+                        href={
+                          event.slug === "coast-fashion-modelling-awards-2026"
+                            ? `/events/upcoming/${event.slug}`
+                            : `/${event.ticket_campaign_slug}`
+                        }
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
                       >

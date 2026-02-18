@@ -418,7 +418,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                                 onChange={() => setPaymentMethod("mpesa")}
                                 className="sr-only"
                               />
-                              <span className="font-medium">M-Pesa</span>
+                              <span className="font-medium">Pay with M-Pesa</span>
                             </label>
                             <label
                               className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
@@ -433,7 +433,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                                 onChange={() => setPaymentMethod("paystack")}
                                 className="sr-only"
                               />
-                              <span className="font-medium">Card / Airtel</span>
+                              <span className="font-medium">Pay with Card</span>
                             </label>
                           </div>
                         </div>
@@ -616,7 +616,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           </>
                         ) : (
                           <>
-                            <div className="font-medium text-gray-900">Pay with Card, M-Pesa or Airtel Money</div>
+                            <div className="font-medium text-gray-900">Pay with Card</div>
                             <p className="text-sm text-gray-600 mt-1">
                               We&apos;ll use <span className="font-medium">{details.email}</span>
                               {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
@@ -653,7 +653,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           ) : paymentMethod === "mpesa" && mpesaEnabled ? (
                             "Pay with M-Pesa"
                           ) : (
-                            "Pay with Card, M-Pesa or Airtel Money"
+                            "Pay with Card"
                           )}
                         </button>
                       </div>

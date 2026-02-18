@@ -528,7 +528,7 @@ export default function CampaignPage() {
                         className="sr-only"
                       />
                       <span className="text-lg">📱</span>
-                      <span className="font-medium">M-Pesa (Kenya)</span>
+                      <span className="font-medium">Pay with M-Pesa</span>
                     </label>
                     <label
                       className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
@@ -543,13 +543,13 @@ export default function CampaignPage() {
                         onChange={() => setPaymentMethod("paystack")}
                         className="sr-only"
                       />
-                      <span className="font-medium">Card / Airtel</span>
+                      <span className="font-medium">Pay with Card</span>
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {paymentMethod === "mpesa"
                       ? "Enter your M-Pesa number. You’ll receive a prompt on your phone."
-                      : "Pay with card, M-Pesa, or Airtel Money via Paystack."}
+                      : "Pay with Visa, Mastercard, or Airtel Money via Paystack."}
                   </p>
                 </div>
               )}
@@ -565,7 +565,7 @@ export default function CampaignPage() {
               {mpesaEnabled && isKes && paymentMethod === "paystack" && (
                 <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                   <p className="text-sm text-gray-700">
-                    Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, or <strong>Airtel Money</strong> via Paystack.
+                    <strong>Pay with Card</strong> — Visa, Mastercard, or Airtel Money via Paystack.
                   </p>
                 </div>
               )}
@@ -686,7 +686,7 @@ export default function CampaignPage() {
                 ) : paymentMethod === "mpesa" && mpesaEnabled && isKes ? (
                   "Pay with M-Pesa"
                 ) : (
-                  "Pay with Card, M-Pesa or Airtel Money"
+                  "Pay with Card"
                 )}
               </button>
             </form>
