@@ -8,6 +8,7 @@ import {
   BarChart3,
   BadgePercent,
   Calendar,
+  Download,
   Inbox,
   LayoutDashboard,
   Menu,
@@ -59,6 +60,7 @@ const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
+  { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "main", featureKey: "reports" },
   { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },

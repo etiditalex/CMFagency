@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { cloudinaryLoader } from "@/lib/cloudinary";
 import { motion } from "framer-motion";
 
 export default function HomeGalleryCarousel() {
@@ -129,6 +130,7 @@ export default function HomeGalleryCarousel() {
             >
               <div className="relative overflow-hidden rounded-md border border-gray-200 bg-gray-50 shadow-sm aspect-[4/3] group">
                 <Image
+                  loader={cloudinaryLoader}
                   src={src}
                   alt="Gallery image"
                   fill

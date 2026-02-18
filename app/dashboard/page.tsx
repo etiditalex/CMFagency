@@ -502,10 +502,10 @@ export default function DashboardHomePage() {
               {syncing ? "Syncing..." : "Sync pending"}
             </button>
             <Link
-              href="/dashboard/campaigns"
+              href="/dashboard/transactions"
               className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
             >
-              View More
+              All transactions
               <ExternalLink className="w-4 h-4" />
             </Link>
           </div>

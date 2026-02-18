@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, Handshake } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { cloudinaryLoader } from "@/lib/cloudinary";
 
 const carouselItems = [
   {
@@ -111,11 +112,14 @@ export default function Hero() {
             {/* Background Image */}
             <div className="absolute inset-0">
               <Image
+                loader={cloudinaryLoader}
                 src={carouselItems[currentIndex].image}
                 alt={carouselItems[currentIndex].alt}
                 fill
                 className="object-cover"
                 priority={currentIndex === 0}
+                fetchPriority={currentIndex === 0 ? "high" : undefined}
+                sizes="100vw"
               />
               {/* Dark overlay for better text readability */}
               <div className="absolute inset-0 bg-black/60"></div>

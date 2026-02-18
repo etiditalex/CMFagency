@@ -1,11 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import dynamic from "next/dynamic";
 import CookieBanner from "@/components/CookieBanner";
-import ChangerWidget from "@/components/ChangerWidget";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+
+const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: true });
+const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });
+const ChangerWidget = dynamic(() => import("@/components/ChangerWidget"), { ssr: false });
 
 export default function ConditionalLayout({
   children,

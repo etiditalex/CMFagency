@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import ProgressBar from "./ProgressBar";
 
+/**
+ * PageLoader: shows content immediately for faster perceived load.
+ * ProgressBar displays a thin top bar on route changes only (no blocking overlay).
+ */
 export default function PageLoader({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
-
-  const handleLoadingComplete = () => {
-    setIsLoading(false);
-  };
-
   return (
     <>
-      <ProgressBar onComplete={handleLoadingComplete} />
-      {!isLoading && children}
+      <ProgressBar />
+      {children}
     </>
   );
 }

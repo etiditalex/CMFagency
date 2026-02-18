@@ -1,13 +1,15 @@
 import { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Hero from "@/components/home/Hero";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
-import HomeGalleryCarousel from "@/components/home/HomeGalleryCarousel";
 import QuickLinks from "@/components/home/QuickLinks";
 import StatsSection from "@/components/home/StatsSection";
-import PartnersCarousel from "@/components/home/PartnersCarousel";
-import ConferenceNews from "@/components/home/ConferenceNews";
-import CTABanner from "@/components/home/CTABanner";
+
+const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
+const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarousel"), { ssr: true });
+const ConferenceNews = dynamic(() => import("@/components/home/ConferenceNews"), { ssr: true });
+const CTABanner = dynamic(() => import("@/components/home/CTABanner"), { ssr: true });
 
 export const metadata: Metadata = {
   title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",

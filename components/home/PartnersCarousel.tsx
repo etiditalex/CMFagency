@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { cloudinaryLoader } from "@/lib/cloudinary";
 
 const partnerLogos = [
   {
@@ -58,10 +59,12 @@ export default function PartnersCarousel() {
               >
                 <div className="relative w-48 md:w-64 lg:w-80 h-32 md:h-40 lg:h-48 bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6 flex items-center justify-center border border-gray-100">
                   <Image
+                    loader={cloudinaryLoader}
                     src={partner.image}
                     alt={partner.alt}
                     fill
                     className="object-contain"
+                    sizes="320px"
                   />
                 </div>
               </div>

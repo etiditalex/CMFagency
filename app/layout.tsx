@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { connection } from "next/server";
+import { inter } from "@/lib/fonts";
 import "./globals.css";
 import PageLoader from "@/components/PageLoader";
 import SEOStructuredData from "@/components/SEOStructuredData";
@@ -152,8 +153,8 @@ export default async function RootLayout({
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={inter.variable}>
+      <body className={inter.className}>
         {/* Google tag (gtag.js) */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-46VYE6KM7V"
