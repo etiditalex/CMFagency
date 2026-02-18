@@ -75,7 +75,8 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
 
   const canProceedFromStep1 = totalTickets > 0;
   const isSingleTier = lineItems.length === 1;
-  const mpesaEnabled = process.env.NEXT_PUBLIC_MPESA_ENABLED === "true";
+  // CFMA tickets are KES - always show M-Pesa option; backend errors if Daraja not configured
+  const showMpesaOption = true;
   const phoneNorm = (() => {
     const p = details.phone.replace(/\s/g, "");
     if (p.startsWith("+254")) return "254" + p.slice(4);
@@ -87,7 +88,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   const phoneValid = /^254[17]\d{8}$/.test(phoneNorm);
   const canProceedFromStep2 = useMemo(() => {
     if (!details.firstName.trim() || !details.lastName.trim()) return false;
-    if (paymentMethod === "mpesa" && mpesaEnabled) {
+    if (paymentMethod === "mpesa" && showMpesaOption) {
       return phoneValid;
     }
     if (!details.email.trim()) return false;
@@ -95,12 +96,12 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     const e = details.email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
     return true;
-  }, [details, paymentMethod, mpesaEnabled, phoneValid]);
+  }, [details, paymentMethod, showMpesaOption, phoneValid]);
   const canPay =
     isSingleTier &&
     totalTickets > 0 &&
     (paymentMethod === "mpesa"
-      ? mpesaEnabled && phoneValid
+      ? showMpesaOption && phoneValid
       : details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()));
 
   const reset = useCallback(() => {
@@ -151,7 +152,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
       }
       const item = lineItems[0];
 
-      if (paymentMethod === "mpesa" && mpesaEnabled) {
+      if (paymentMethod === "mpesa" && showMpesaOption) {
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -401,7 +402,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                   >
                     <h2 className="text-xl font-bold text-gray-900">Your details</h2>
                     <div className="space-y-4">
-                      {mpesaEnabled && (
+                      {showMpesaOption && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Payment method</label>
                           <div className="flex gap-3">
@@ -438,7 +439,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           </div>
                         </div>
                       )}
-                      {paymentMethod === "mpesa" && mpesaEnabled && (
+                      {paymentMethod === "mpesa" && showMpesaOption && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">M-Pesa phone number</label>
                           <input
@@ -606,7 +607,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                         </div>
                       </div>
                       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        {paymentMethod === "mpesa" && mpesaEnabled ? (
+                        {paymentMethod === "mpesa" && showMpesaOption ? (
                           <>
                             <div className="font-medium text-gray-900">Pay with M-Pesa</div>
                             <p className="text-sm text-gray-600 mt-1">

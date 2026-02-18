@@ -216,8 +216,9 @@ export default function CampaignPage() {
     return qty * campaign.unit_amount;
   }, [campaign, qty]);
 
-  const mpesaEnabled = process.env.NEXT_PUBLIC_MPESA_ENABLED === "true";
   const isKes = String(campaign?.currency ?? "").toUpperCase() === "KES";
+  // Show M-Pesa option for KES campaigns; backend will error if Daraja not configured
+  const showMpesaOption = isKes;
 
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,7 +231,7 @@ export default function CampaignPage() {
       const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
 
-      if (paymentMethod === "mpesa" && mpesaEnabled && isKes) {
+      if (paymentMethod === "mpesa" && isKes) {
         if (!phone.trim()) throw new Error("M-Pesa number is required (e.g. 254712345678)");
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
@@ -510,7 +511,7 @@ export default function CampaignPage() {
             )}
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
-              {mpesaEnabled && isKes && (
+              {showMpesaOption && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment method</label>
                   <div className="flex gap-3">
@@ -554,7 +555,7 @@ export default function CampaignPage() {
                 </div>
               )}
 
-              {(!mpesaEnabled || !isKes) && (
+              {!showMpesaOption && (
                 <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                   <p className="text-sm text-gray-700">
                     Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or{" "}
@@ -562,7 +563,7 @@ export default function CampaignPage() {
                   </p>
                 </div>
               )}
-              {mpesaEnabled && isKes && paymentMethod === "paystack" && (
+              {showMpesaOption && paymentMethod === "paystack" && (
                 <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
                   <p className="text-sm text-gray-700">
                     <strong>Pay with Card</strong> — Visa, Mastercard, or Airtel Money via Paystack.
@@ -570,7 +571,7 @@ export default function CampaignPage() {
                 </div>
               )}
 
-              {paymentMethod === "mpesa" && mpesaEnabled && isKes && (
+              {paymentMethod === "mpesa" && showMpesaOption && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     M-Pesa phone number <span className="text-red-500">*</span>
@@ -683,7 +684,7 @@ export default function CampaignPage() {
                         ? "Complete payment in popup..."
                         : "Redirecting to payment..."}
                   </>
-                ) : paymentMethod === "mpesa" && mpesaEnabled && isKes ? (
+                ) : paymentMethod === "mpesa" && showMpesaOption ? (
                   "Pay with M-Pesa"
                 ) : (
                   "Pay with Card"

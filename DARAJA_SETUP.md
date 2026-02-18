@@ -2,6 +2,35 @@
 
 This guide explains how to enable **M-Pesa STK Push** (native Kenya payments) via Safaricom's Daraja API in your Fusion Xpress system.
 
+## Database Status (Supabase)
+
+**No new migrations are required.** The existing schema already supports Daraja:
+
+- `transactions.provider` accepts `'daraja'` (in addition to `'paystack'`)
+- `transactions.metadata` (jsonb) stores `checkout_request_id`, `mpesa_receipt`, `phone`, etc.
+- `transactions.payer_name` is used for receipts (ensure patch 15 is applied)
+- The callback uses `ticket_issues` and `votes` tables—same as Paystack
+
+If you've applied the ticketing MVP patches (`ticketing_voting_mvp.sql` + patch 15), the database is ready.
+
+## Activation Checklist
+
+M-Pesa will only appear and work when all of the following are set in **Vercel** → Project → Settings → Environment Variables:
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `NEXT_PUBLIC_MPESA_ENABLED` | Optional | No longer required—M-Pesa option always shows for KES campaigns |
+| `MPESA_CONSUMER_KEY` | **Yes** | From Safaricom Developer Portal |
+| `MPESA_CONSUMER_SECRET` | **Yes** | From Safaricom Developer Portal |
+| `MPESA_SHORTCODE` | **Yes** | Your Business Short Code |
+| `MPESA_PASSKEY` | **Yes** | Lipa Na M-Pesa Online Passkey |
+| `NEXT_PUBLIC_SITE_URL` | **Yes** | e.g. `https://cmfagency.co.ke` (for callback) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | For callback to update transactions |
+
+**Production only:** Add `MPESA_OAUTH_URL` and `MPESA_STKPUSH_URL` if Safaricom gave you proxy URLs.
+
+After adding/env variables, **redeploy** the project in Vercel so the changes take effect.
+
 ## Overview
 
 - **STK Push** = A payment prompt is sent directly to the customer's phone. They enter their M-Pesa PIN to complete payment—no manual paybill entry.
