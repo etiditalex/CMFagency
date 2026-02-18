@@ -31,6 +31,18 @@ M-Pesa will only appear and work when all of the following are set in **Vercel**
 
 After adding/env variables, **redeploy** the project in Vercel so the changes take effect.
 
+### "Failed to get Daraja OAuth token" troubleshooting
+
+| Cause | Fix |
+|-------|-----|
+| **Wrong credentials** | Verify `MPESA_CONSUMER_KEY` and `MPESA_CONSUMER_SECRET` from [Safaricom Developer Portal](https://developer.safaricom.co.ke/) → Your App → Keys. No spaces or quotes. |
+| **Sandbox vs Production** | Sandbox: `MPESA_BASE_URL=https://sandbox.safaricom.co.ke`, use sandbox keys. Production: use production keys + `MPESA_BASE_URL=https://api.safaricom.co.ke` or custom proxy URLs. |
+| **Production proxy URLs** | If using proxy: set `MPESA_OAUTH_URL` to the **full** URL including `?grant_type=client_credentials` (or we append it). If still failing, try **removing** MPESA_OAUTH_URL and use only `MPESA_BASE_URL=https://api.safaricom.co.ke` with production keys. |
+| **App not approved** | Production apps must be approved. Use sandbox for testing. |
+| **Typos in env vars** | Check for extra spaces, missing characters. Keys are long—copy‑paste from the portal. |
+| **HTTP 404** | OAuth URL wrong. Remove `MPESA_OAUTH_URL` and use `MPESA_BASE_URL=https://api.safaricom.co.ke`, or fix the proxy URL. |
+| **HTTP 401** | Consumer key or secret is wrong. Re-copy from Safaricom portal. |
+
 ## Overview
 
 - **STK Push** = A payment prompt is sent directly to the customer's phone. They enter their M-Pesa PIN to complete payment—no manual paybill entry.

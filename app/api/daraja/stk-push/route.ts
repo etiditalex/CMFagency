@@ -63,7 +63,10 @@ export async function POST(req: Request) {
     const passKey = process.env.MPESA_PASSKEY;
     const baseUrl = (process.env.MPESA_BASE_URL ?? "https://sandbox.safaricom.co.ke").replace(/\/$/, "");
     // Production: Safaricom may provide custom proxy URLs. Use these if set.
-    const oauthUrl = process.env.MPESA_OAUTH_URL ?? `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
+    let oauthUrl = process.env.MPESA_OAUTH_URL ?? `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
+    if (!oauthUrl.includes("grant_type=")) {
+      oauthUrl += (oauthUrl.includes("?") ? "&" : "?") + "grant_type=client_credentials";
+    }
     const stkPushUrl = process.env.MPESA_STKPUSH_URL ?? `${baseUrl}/mpesa/stkpush/v1/processrequest`;
 
     if (!consumerKey || !consumerSecret || !shortCode || !passKey) {
@@ -145,13 +148,39 @@ export async function POST(req: Request) {
 
     // Get OAuth token
     const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-    const tokenRes = await fetch(oauthUrl, {
-      headers: { Authorization: `Basic ${auth}` },
-    });
-    const tokenJson = (await tokenRes.json()) as { access_token?: string; error?: string };
-    if (!tokenRes.ok || !tokenJson.access_token) {
+    let tokenRes: Response;
+    try {
+      tokenRes = await fetch(oauthUrl, {
+        method: "GET",
+        headers: { Authorization: `Basic ${auth}` },
+      });
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : "Network error";
       return NextResponse.json(
-        { error: tokenJson.error ?? "Failed to get Daraja OAuth token" },
+        { error: `Cannot reach Daraja OAuth (${msg}). Check MPESA_OAUTH_URL or MPESA_BASE_URL.` },
+        { status: 502 }
+      );
+    }
+
+    let tokenJson: { access_token?: string; error?: string; error_description?: string };
+    try {
+      tokenJson = (await tokenRes.json()) as typeof tokenJson;
+    } catch {
+      return NextResponse.json(
+        { error: `Daraja OAuth returned invalid response (HTTP ${tokenRes.status}). Check MPESA_OAUTH_URL.` },
+        { status: 502 }
+      );
+    }
+
+    if (!tokenRes.ok || !tokenJson.access_token) {
+      const statusHint =
+        tokenRes.status === 401 ? "Invalid consumer key or secret" :
+        tokenRes.status === 404 ? "OAuth URL not found — check MPESA_OAUTH_URL" :
+        tokenRes.status >= 500 ? "Safaricom server error — try again later" :
+        "Failed to get Daraja OAuth token";
+      const errMsg = tokenJson.error_description ?? tokenJson.error ?? statusHint;
+      return NextResponse.json(
+        { error: `${errMsg} (HTTP ${tokenRes.status})` },
         { status: 502 }
       );
     }
