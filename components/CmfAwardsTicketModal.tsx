@@ -88,20 +88,20 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   const phoneValid = /^254[17]\d{8}$/.test(phoneNorm);
   const canProceedFromStep2 = useMemo(() => {
     if (!details.firstName.trim() || !details.lastName.trim()) return false;
-    if (paymentMethod === "mpesa" && showMpesaOption) {
-      return phoneValid;
-    }
     if (!details.email.trim()) return false;
     if (details.email !== details.repeatEmail) return false;
     const e = details.email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
+    if (paymentMethod === "mpesa" && showMpesaOption) {
+      return phoneValid;
+    }
     return true;
   }, [details, paymentMethod, showMpesaOption, phoneValid]);
   const canPay =
     isSingleTier &&
     totalTickets > 0 &&
     (paymentMethod === "mpesa"
-      ? showMpesaOption && phoneValid
+      ? showMpesaOption && phoneValid && details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())
       : details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()));
 
   const reset = useCallback(() => {
@@ -156,10 +156,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slug: item.slug,
-            phone: phoneNorm,
-            email: details.email.trim() || undefined,
+            body: JSON.stringify({
+              slug: item.slug,
+              phone: phoneNorm,
+              email: details.email.trim(),
             payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
             quantity: item.quantity,
           }),

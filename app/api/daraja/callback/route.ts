@@ -134,45 +134,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    // Merchandise: just mark fulfilled
+    // Merchandise: just mark fulfilled (email sent below)
     if (meta.merchandise_cart === true) {
       await supabase
         .from("transactions")
         .update({ fulfilled_at: new Date().toISOString() } as any)
         .eq("id", tx.id)
         .is("fulfilled_at", null);
-      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
-    }
-
-    // Fulfill tickets or votes
-    if (tx.campaign_type === "vote" && tx.contestant_id) {
-      await supabase.from("votes").upsert(
-        {
-          transaction_id: tx.id,
-          campaign_id: tx.campaign_id,
-          contestant_id: tx.contestant_id,
-          votes: tx.quantity,
-        },
-        { onConflict: "transaction_id", ignoreDuplicates: true }
-      );
     } else {
-      await supabase.from("ticket_issues").upsert(
-        {
-          transaction_id: tx.id,
-          campaign_id: tx.campaign_id,
-          quantity: tx.quantity,
-        },
-        { onConflict: "transaction_id", ignoreDuplicates: true }
-      );
+      // Fulfill tickets or votes
+      if (tx.campaign_type === "vote" && tx.contestant_id) {
+        await supabase.from("votes").upsert(
+          {
+            transaction_id: tx.id,
+            campaign_id: tx.campaign_id,
+            contestant_id: tx.contestant_id,
+            votes: tx.quantity,
+          },
+          { onConflict: "transaction_id", ignoreDuplicates: true }
+        );
+      } else {
+        await supabase.from("ticket_issues").upsert(
+          {
+            transaction_id: tx.id,
+            campaign_id: tx.campaign_id,
+            quantity: tx.quantity,
+          },
+          { onConflict: "transaction_id", ignoreDuplicates: true }
+        );
+      }
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as any)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
     }
 
-    await supabase
-      .from("transactions")
-      .update({ fulfilled_at: new Date().toISOString() } as any)
-      .eq("id", tx.id)
-      .is("fulfilled_at", null);
-
-    // Send receipt email
+    // Send receipt email (tickets, votes, and merchandise)
     const toEmail = (tx as { email?: string | null }).email?.trim?.();
     if (toEmail) {
       const resendKey = process.env.RESEND_API_KEY;

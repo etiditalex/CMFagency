@@ -233,13 +233,16 @@ export default function CampaignPage() {
 
       if (paymentMethod === "mpesa" && isKes) {
         if (!phone.trim()) throw new Error("M-Pesa number is required (e.g. 254712345678)");
+        if (!email.trim()) throw new Error("Email is required to send your receipt.");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             slug: campaign.slug,
             phone: phone.trim(),
-            email: email.trim() || undefined,
+            email: email.trim(),
             payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
             quantity: q,
             contestant_id: campaign.type === "vote" ? contestantId : null,
