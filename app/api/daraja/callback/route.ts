@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendReceiptEmail } from "@/lib/send-receipt-email";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -173,8 +174,6 @@ export async function POST(req: Request) {
     // Send receipt email (tickets, votes, and merchandise)
     const toEmail = (tx as { email?: string | null }).email?.trim?.();
     if (toEmail) {
-      const resendKey = process.env.RESEND_API_KEY;
-      const fromEmail = process.env.RESEND_FROM_EMAIL || "CMF Agency <noreply@resend.dev>";
       const holderName = (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail;
       const reference = tx.reference;
       const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
@@ -183,48 +182,24 @@ export async function POST(req: Request) {
       const typeCode = tx.campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
       const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
       const campaignTitle = meta.campaign_title || meta.slug || "Event";
-      const typeLabel = tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket";
+      const typeLabel = (tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as "Ticket" | "Vote" | "Order";
+      const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
 
-      if (resendKey) {
-        const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 560px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #00A651 0%, #007A3D 100%); padding: 24px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 1.4rem;">${String(campaignTitle).replace(/</g, "&lt;")}</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0;">M-Pesa payment confirmed</p>
-  </div>
-  <div style="background: #f8f9fa; padding: 24px; border: 1px solid #e9ecef; border-top: none; border-radius: 0 0 12px 12px;">
-    <table style="width:100%; border-collapse: collapse;">
-      <tr><td style="padding: 8px 0; color: #666;">${typeLabel} number:</td><td style="padding: 8px 0; font-weight: bold; font-family: monospace;">${ticketNumber}</td></tr>
-      <tr><td style="padding: 8px 0; color: #666;">${typeLabel} holder:</td><td style="padding: 8px 0; font-weight: bold;">${String(holderName).replace(/</g, "&lt;")}</td></tr>
-      <tr><td style="padding: 8px 0; color: #666;">Amount paid:</td><td style="padding: 8px 0; font-weight: bold;">KES ${Number(tx.amount || 0).toLocaleString()}</td></tr>
-      <tr><td style="padding: 8px 0; color: #666;">M-Pesa receipt:</td><td style="padding: 8px 0; font-weight: bold;">${String(mpesaReceipt).replace(/</g, "&lt;")}</td></tr>
-      <tr><td style="padding: 8px 0; color: #666;">Quantity:</td><td style="padding: 8px 0; font-weight: bold;">${tx.quantity} ${tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets"}</td></tr>
-    </table>
-    <p style="margin-top: 20px; font-size: 12px; color: #666;">Reference: <code>${reference}</code></p>
-  </div>
-  <p style="color: #888; font-size: 11px; margin-top: 20px;">Sent by CMF Agency · Changer Fusions</p>
-</body>
-</html>`;
-        try {
-          await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: fromEmail,
-              to: toEmail,
-              subject: `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`,
-              html,
-            }),
-          });
-        } catch {
-          /* non-fatal */
-        }
+      try {
+        await sendReceiptEmail({
+          to: toEmail,
+          campaignTitle,
+          typeLabel,
+          ticketNumber,
+          holderName,
+          amount: `KES ${Number(tx.amount || 0).toLocaleString()}`,
+          quantity: `${tx.quantity} ${quantityLabel}`,
+          reference,
+          mpesaReceipt: mpesaReceipt || undefined,
+          variant: "mpesa",
+        });
+      } catch {
+        /* non-fatal */
       }
     }
 
