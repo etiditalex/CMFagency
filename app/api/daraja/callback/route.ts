@@ -177,11 +177,11 @@ export async function POST(req: Request) {
       const holderName = (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail;
       const reference = tx.reference;
       const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
-      const slug = meta.slug || meta.campaign_slug || "event";
-      const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+      const slug = String(meta.slug || meta.campaign_slug || "event");
+      const prefix = slug.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
       const typeCode = tx.campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
       const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
-      const campaignTitle = meta.campaign_title || meta.slug || "Event";
+      const campaignTitle = String(meta.campaign_title || meta.slug || "Event");
       const typeLabel = (tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as "Ticket" | "Vote" | "Order";
       const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
 
