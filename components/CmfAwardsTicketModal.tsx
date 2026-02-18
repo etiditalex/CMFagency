@@ -30,6 +30,7 @@ type FormDetails = {
   lastName: string;
   email: string;
   repeatEmail: string;
+  phone: string;
   address: string;
 };
 
@@ -47,8 +48,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     lastName: "",
     email: "",
     repeatEmail: "",
+    phone: "",
     address: "",
   });
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -71,20 +74,34 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   );
 
   const canProceedFromStep1 = totalTickets > 0;
+  const isSingleTier = lineItems.length === 1;
+  const mpesaEnabled = process.env.NEXT_PUBLIC_MPESA_ENABLED === "true";
+  const phoneNorm = (() => {
+    const p = details.phone.replace(/\s/g, "");
+    if (p.startsWith("+254")) return "254" + p.slice(4);
+    if (p.startsWith("254")) return p;
+    if (p.startsWith("0") && p.length >= 10) return "254" + p.slice(1);
+    if (p.length === 9 && /^[17]/.test(p)) return "254" + p;
+    return p;
+  })();
+  const phoneValid = /^254[17]\d{8}$/.test(phoneNorm);
   const canProceedFromStep2 = useMemo(() => {
     if (!details.firstName.trim() || !details.lastName.trim()) return false;
+    if (paymentMethod === "mpesa" && mpesaEnabled) {
+      return phoneValid;
+    }
     if (!details.email.trim()) return false;
     if (details.email !== details.repeatEmail) return false;
     const e = details.email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
     return true;
-  }, [details]);
-  const isSingleTier = lineItems.length === 1;
+  }, [details, paymentMethod, mpesaEnabled, phoneValid]);
   const canPay =
     isSingleTier &&
     totalTickets > 0 &&
-    details.email.trim().length > 0 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim());
+    (paymentMethod === "mpesa"
+      ? mpesaEnabled && phoneValid
+      : details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()));
 
   const reset = useCallback(() => {
     setStep(1);
@@ -95,8 +112,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
       lastName: "",
       email: "",
       repeatEmail: "",
+      phone: "",
       address: "",
     });
+    setPaymentMethod("mpesa");
     setError(null);
     setSubmitting(false);
   }, []);
@@ -131,6 +150,34 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
         throw new Error("Please select one ticket type. For multiple types, visit each campaign page.");
       }
       const item = lineItems[0];
+
+      if (paymentMethod === "mpesa" && mpesaEnabled) {
+        const res = await fetch("/api/daraja/stk-push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: item.slug,
+            phone: phoneNorm,
+            email: details.email.trim() || undefined,
+            payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
+            quantity: item.quantity,
+          }),
+        });
+        const raw = await res.text();
+        let json: { reference?: string; error?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw);
+          } catch {}
+        }
+        if (!res.ok) throw new Error(json.error ?? "M-Pesa STK Push failed");
+        if (json.reference) {
+          onClose();
+          window.location.href = `/${item.slug}?ref=${encodeURIComponent(json.reference)}`;
+        }
+        return;
+      }
+
       const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         const res = await fetch("/api/paystack/initialize", {
           method: "POST",
@@ -354,6 +401,56 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                   >
                     <h2 className="text-xl font-bold text-gray-900">Your details</h2>
                     <div className="space-y-4">
+                      {mpesaEnabled && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Payment method</label>
+                          <div className="flex gap-3">
+                            <label
+                              className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                                paymentMethod === "mpesa" ? "border-green-600 bg-green-50" : "border-gray-200 bg-white"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="mpesa"
+                                checked={paymentMethod === "mpesa"}
+                                onChange={() => setPaymentMethod("mpesa")}
+                                className="sr-only"
+                              />
+                              <span className="font-medium">M-Pesa</span>
+                            </label>
+                            <label
+                              className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                                paymentMethod === "paystack" ? "border-primary-600 bg-primary-50" : "border-gray-200 bg-white"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="paystack"
+                                checked={paymentMethod === "paystack"}
+                                onChange={() => setPaymentMethod("paystack")}
+                                className="sr-only"
+                              />
+                              <span className="font-medium">Card / Airtel</span>
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                      {paymentMethod === "mpesa" && mpesaEnabled && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">M-Pesa phone number</label>
+                          <input
+                            type="tel"
+                            placeholder="254712345678"
+                            value={details.phone}
+                            onChange={(e) => setDetails((d) => ({ ...d, phone: e.target.value }))}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            required
+                          />
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                         <input
@@ -383,7 +480,9 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Your email address</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Your email address {paymentMethod === "mpesa" ? "(optional, for receipt)" : ""}
+                        </label>
                         <div className="grid grid-cols-2 gap-2">
                           <input
                             type="email"
@@ -391,7 +490,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                             value={details.email}
                             onChange={(e) => setDetails((d) => ({ ...d, email: e.target.value }))}
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            required
+                            required={paymentMethod !== "mpesa"}
                           />
                           <input
                             type="email"
@@ -399,7 +498,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                             value={details.repeatEmail}
                             onChange={(e) => setDetails((d) => ({ ...d, repeatEmail: e.target.value }))}
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            required
+                            required={paymentMethod !== "mpesa"}
                           />
                         </div>
                       </div>
@@ -445,7 +544,9 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                     <h2 className="text-xl font-bold text-gray-900">Payment</h2>
                     <div className="rounded-xl border border-gray-200 p-4 bg-blue-50/50">
                       <p className="text-gray-700">
-                        Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or <strong>Airtel Money</strong>. Uses your email from the previous step.
+                        {paymentMethod === "mpesa"
+                          ? "You'll receive an M-Pesa prompt on your phone. Enter your PIN to complete payment."
+                          : "Pay with Visa, Mastercard, M-Pesa, or Airtel Money. Uses your email from the previous step."}
                       </p>
                       {!isSingleTier && (
                         <p className="text-amber-700 mt-2 text-sm font-medium">
@@ -505,13 +606,25 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                         </div>
                       </div>
                       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <div className="font-medium text-gray-900">Pay with Card, M-Pesa or Airtel Money</div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          We&apos;ll use <span className="font-medium">{details.email}</span>
-                          {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                            ? " and open a secure popup to choose your payment method."
-                            : " and redirect you to Paystack to complete payment."}
-                        </p>
+                        {paymentMethod === "mpesa" && mpesaEnabled ? (
+                          <>
+                            <div className="font-medium text-gray-900">Pay with M-Pesa</div>
+                            <p className="text-sm text-gray-600 mt-1">
+                              We&apos;ll send a prompt to <span className="font-medium">{details.phone || "your phone"}</span>.
+                              Enter your M-Pesa PIN to complete payment.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-medium text-gray-900">Pay with Card, M-Pesa or Airtel Money</div>
+                            <p className="text-sm text-gray-600 mt-1">
+                              We&apos;ll use <span className="font-medium">{details.email}</span>
+                              {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                                ? " and open a secure popup to choose your payment method."
+                                : " and redirect you to Paystack to complete payment."}
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                     <form onSubmit={handlePay} className="space-y-3">
@@ -531,10 +644,14 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                           {submitting ? (
                             <>
                               <Loader2 className="w-5 h-5 animate-spin" />
-                              {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                                ? "Complete payment in popup..."
-                                : "Redirecting..."}
+                              {paymentMethod === "mpesa"
+                                ? "Check your phone for M-Pesa prompt..."
+                                : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                                  ? "Complete payment in popup..."
+                                  : "Redirecting..."}
                             </>
+                          ) : paymentMethod === "mpesa" && mpesaEnabled ? (
+                            "Pay with M-Pesa"
                           ) : (
                             "Pay with Card, M-Pesa or Airtel Money"
                           )}

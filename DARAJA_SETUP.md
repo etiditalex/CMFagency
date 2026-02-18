@@ -1,69 +1,89 @@
-# M-Pesa Daraja (STK Push) Setup
+# M-Pesa Daraja API Setup (Fusion Xpress)
 
-> **DEPRECATED**: Daraja API has been removed. All payments (Visa, Mastercard, M-Pesa, Airtel Money) now go through Paystack. See VERCEL_ENV_SETUP.md for Paystack configuration.
+This guide explains how to enable **M-Pesa STK Push** (native Kenya payments) via Safaricom's Daraja API in your Fusion Xpress system.
 
----
+## Overview
 
-This document described **M-Pesa Daraja STK Push** (now removed) via:
-- `POST /api/mpesa/initialize` (creates pending transaction + triggers STK prompt)
-- `POST /api/mpesa/callback` (Safaricom callback; marks transaction success/failed + fulfills)
-- `GET /api/transactions/status?ref=...` (UI polling)
+- **STK Push** = A payment prompt is sent directly to the customer's phone. They enter their M-Pesa PIN to complete payment—no manual paybill entry.
+- **Daraja API** = Safaricom's official API for M-Pesa integration.
+- **Flow**: User selects M-Pesa → enters phone number → STK push initiated → user gets prompt on phone → Safaricom calls your callback → tickets issued, receipt sent.
 
-## Environment variables (Vercel)
+## Environment Variables
 
-Add these in Vercel → Project → Settings → Environment Variables:
+Add these in **Vercel** → Project → Settings → Environment Variables (or your hosting provider):
 
-### Required
-- `NEXT_PUBLIC_SITE_URL` (e.g. `https://cmfagency.co.ke`)
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+### Required (Daraja)
+| Variable | Description |
+|----------|-------------|
+| `MPESA_CONSUMER_KEY` | From [Safaricom Developer Portal](https://developer.safaricom.co.ke/) → Your App → Consumer Key |
+| `MPESA_CONSUMER_SECRET` | Same app → Consumer Secret |
+| `MPESA_SHORTCODE` | Your Business Short Code (Till or Paybill), e.g. `174379` for sandbox |
+| `MPESA_PASSKEY` | Lipa Na M-Pesa Online Passkey from the portal |
 
-### Daraja (STK Push)
-- `MPESA_CONSUMER_KEY`
-- `MPESA_CONSUMER_SECRET`
-- `MPESA_SHORTCODE` (Business Short Code)
-- `MPESA_PASSKEY`
-- `MPESA_CALLBACK_TOKEN` (random shared secret; used to validate callbacks)
+### Required (general)
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_SITE_URL` | Your public site URL, e.g. `https://cmfagency.co.ke` (used for callback) |
+| `NEXT_PUBLIC_MPESA_ENABLED` | Set to `true` to show M-Pesa option in the UI |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (for callback & metadata updates) |
 
-### Optional
-- `MPESA_BASE_URL`
-  - **Sandbox (STK Push endpoint you shared)**: `https://sandbox.safaricom.co.ke`
-  - **Production**: `https://api.safaricom.co.ke`
-- `MPESA_TRANSACTION_TYPE`
-  - Default: `CustomerPayBillOnline`
+### Optional (production proxy URLs)
+When going live, Safaricom may provide **custom proxy URLs** for your app (e.g. Proxy:OAuth2Token, Proxy:STKPush, Proxy:STKPushQuery). Add the **full URLs** you received:
+
+| Variable | Description |
+|----------|-------------|
+| `MPESA_OAUTH_URL` | Full URL for OAuth token (e.g. the Proxy:OAuth2Token link from Safaricom) |
+| `MPESA_STKPUSH_URL` | Full URL for STK Push (Proxy:STKPush link) |
+| `MPESA_STKPUSH_QUERY_URL` | Full URL for STK Push Query (Proxy:STKPushQuery) – reserved for future use |
+
+If these are set, they override `MPESA_BASE_URL` for those calls. If not set, the app uses standard paths under `MPESA_BASE_URL`.
+
+### Optional (other)
+| Variable | Description |
+|----------|-------------|
+| `MPESA_BASE_URL` | **Sandbox**: `https://sandbox.safaricom.co.ke` (default) / **Production**: `https://api.safaricom.co.ke` |
+| `RESEND_API_KEY` | For sending receipt emails |
+| `RESEND_FROM_EMAIL` | From address for receipts |
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/daraja/stk-push` | POST | Initiates STK Push—creates pending transaction, sends prompt to user's phone |
+| `/api/daraja/callback` | POST | Called by Safaricom when user completes/cancels. Updates transaction, issues tickets, sends receipt |
 
 ## Callback URL
 
-This app sets the callback automatically to:
+Safaricom must be able to reach your callback URL. It is set automatically to:
 
-`<NEXT_PUBLIC_SITE_URL>/api/mpesa/callback?token=<MPESA_CALLBACK_TOKEN>`
+```
+<NEXT_PUBLIC_SITE_URL>/api/daraja/callback
+```
 
-Make sure your Daraja app is configured to allow callbacks to your domain (public HTTPS).
+**Important:**
+- Use **HTTPS** in production (Safaricom requires it).
+- `localhost` will **not** receive callbacks—use a tunnel (e.g. ngrok) for local testing.
+- Configure your Daraja app in the portal to allow callbacks to your domain.
 
-## Notes
+## Campaign Requirements
 
-- Campaign currency must be **KES** for M-Pesa payments.
-- The `/pay/[slug]` page now uses **phone (M-Pesa)** instead of Paystack redirect checkout.
+- M-Pesa is only available for campaigns with currency **KES**.
+- Phone numbers must be in format `254XXXXXXXXX` (e.g. `254712345678`).
 
----
+## Where M-Pesa Appears
 
-## Fusion Xpress Dashboard – CFMA ticket sales
+1. **Campaign payment page** (`/[slug]`) – When `NEXT_PUBLIC_MPESA_ENABLED=true` and campaign is KES, users see "M-Pesa (Kenya)" and "Card / Airtel" options.
+2. **CFMA Ticket Modal** – "Buy Ticket Online" on upcoming events; M-Pesa option in step 2 when enabled.
 
-Ticket purchases from the upcoming events page ("Buy Ticket Online") **automatically appear in the Fusion Xpress dashboard**. The flow:
+## Sandbox vs Production
 
-1. **Campaign setup**: Ensure CFMA campaigns exist. Run in Supabase SQL editor:
-   ```
-   database/ticketing_voting_mvp_seed_cfma_campaigns.sql
-   ```
-   This creates `cfma-2026` (Regular KES 500), `cfma-2026-vip` (VIP KES 1500), and `cfma-2026-vvip` (VVIP KES 3500) campaigns, owned by your first admin.
+- **Sandbox**: Use sandbox credentials and `MPESA_BASE_URL=https://sandbox.safaricom.co.ke`. Test numbers: [Safaricom sandbox docs](https://developer.safaricom.co.ke/).
+- **Production**: Switch to production credentials, `MPESA_BASE_URL=https://api.safaricom.co.ke`, and ensure your app is approved for production.
 
-2. **Real-time updates**: The dashboard subscribes to `transactions` and `ticket_issues`. After a successful M-Pesa payment:
-   - The transaction is updated to `status = 'success'`
-   - Ticket issues are recorded
-   - The dashboard refreshes via Supabase Realtime (or 15s polling)
+## Paystack vs Daraja
 
-3. **Supabase Realtime** (optional for instant updates): In Supabase Dashboard → Database → Replication, add `transactions` and `ticket_issues` to the replication set. Otherwise, the dashboard still updates within ~15 seconds via polling.
-
-4. **Where to view sales**: Log in to Fusion Xpress → Dashboard → Campaigns. Click **CFMA 2026 - Early Bird Regular**, **Early Bird VIP**, or **Early Bird VVIP** to see transactions, revenue, and ticket counts. Portal members can also use the "View ticket sales in Fusion Xpress" link on the upcoming events page.
-
+- **Paystack**: Card, M-Pesa, Airtel (via Paystack gateway). Use for campaigns where Paystack is configured.
+- **Daraja**: Native M-Pesa STK Push (direct Safaricom). Often preferred for local Kenyan payments, lower fees, no intermediary.
+- Both can coexist: KES campaigns show M-Pesa (Daraja) and Card/Airtel (Paystack). Non-KES campaigns use Paystack only.

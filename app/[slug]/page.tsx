@@ -70,8 +70,10 @@ export default function CampaignPage() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
 
   useEffect(() => {
     let cancelled = false;
@@ -214,6 +216,9 @@ export default function CampaignPage() {
     return qty * campaign.unit_amount;
   }, [campaign, qty]);
 
+  const mpesaEnabled = process.env.NEXT_PUBLIC_MPESA_ENABLED === "true";
+  const isKes = String(campaign?.currency ?? "").toUpperCase() === "KES";
+
   const onPay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!campaign) return;
@@ -224,6 +229,37 @@ export default function CampaignPage() {
     try {
       const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
+
+      if (paymentMethod === "mpesa" && mpesaEnabled && isKes) {
+        if (!phone.trim()) throw new Error("M-Pesa number is required (e.g. 254712345678)");
+        const res = await fetch("/api/daraja/stk-push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: campaign.slug,
+            phone: phone.trim(),
+            email: email.trim() || undefined,
+            payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
+            quantity: q,
+            contestant_id: campaign.type === "vote" ? contestantId : null,
+          }),
+        });
+        const raw = await res.text();
+        let json: { reference?: string; error?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw);
+          } catch {}
+        }
+        if (!res.ok) {
+          throw new Error(json.error ?? "M-Pesa STK Push failed");
+        }
+        if (json.reference) {
+          router.replace(`/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
+        }
+        return;
+      }
+
       if (!email.trim()) throw new Error("Email is required.");
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
@@ -474,12 +510,82 @@ export default function CampaignPage() {
             )}
 
             <form onSubmit={onPay} className="mt-6 space-y-4">
-              <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
-                <p className="text-sm text-gray-700">
-                  Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or{" "}
-                  <strong>Airtel Money</strong>.
-                </p>
-              </div>
+              {mpesaEnabled && isKes && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment method</label>
+                  <div className="flex gap-3">
+                    <label
+                      className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                        paymentMethod === "mpesa" ? "border-green-600 bg-green-50" : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="mpesa"
+                        checked={paymentMethod === "mpesa"}
+                        onChange={() => setPaymentMethod("mpesa")}
+                        className="sr-only"
+                      />
+                      <span className="text-lg">📱</span>
+                      <span className="font-medium">M-Pesa (Kenya)</span>
+                    </label>
+                    <label
+                      className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                        paymentMethod === "paystack" ? "border-primary-600 bg-primary-50" : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="paystack"
+                        checked={paymentMethod === "paystack"}
+                        onChange={() => setPaymentMethod("paystack")}
+                        className="sr-only"
+                      />
+                      <span className="font-medium">Card / Airtel</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {paymentMethod === "mpesa"
+                      ? "Enter your M-Pesa number. You’ll receive a prompt on your phone."
+                      : "Pay with card, M-Pesa, or Airtel Money via Paystack."}
+                  </p>
+                </div>
+              )}
+
+              {(!mpesaEnabled || !isKes) && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                  <p className="text-sm text-gray-700">
+                    Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, <strong>M-Pesa</strong>, or{" "}
+                    <strong>Airtel Money</strong>.
+                  </p>
+                </div>
+              )}
+              {mpesaEnabled && isKes && paymentMethod === "paystack" && (
+                <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                  <p className="text-sm text-gray-700">
+                    Pay with <strong>Visa</strong>, <strong>Mastercard</strong>, or <strong>Airtel Money</strong> via Paystack.
+                  </p>
+                </div>
+              )}
+
+              {paymentMethod === "mpesa" && mpesaEnabled && isKes && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    M-Pesa phone number <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="254712345678"
+                    required={paymentMethod === "mpesa"}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Format: 254XXXXXXXXX (e.g. 254712345678)</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -506,19 +612,23 @@ export default function CampaignPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email {paymentMethod === "mpesa" ? "(optional, for receipt)" : ""}
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="you@example.com"
-                  required
+                  required={paymentMethod !== "mpesa"}
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                    ? "A secure popup will open to choose your payment method and complete payment."
-                    : "You will be redirected to Paystack to choose your payment method."}
+                  {paymentMethod === "mpesa"
+                    ? "We'll send your receipt here. Optional but recommended."
+                    : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                      ? "A secure popup will open to choose your payment method and complete payment."
+                      : "You will be redirected to Paystack to choose your payment method."}
                 </p>
               </div>
 
@@ -567,10 +677,14 @@ export default function CampaignPage() {
                 {submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                      ? "Complete payment in popup..."
-                      : "Redirecting to payment..."}
+                    {paymentMethod === "mpesa"
+                      ? "Check your phone for M-Pesa prompt..."
+                      : process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                        ? "Complete payment in popup..."
+                        : "Redirecting to payment..."}
                   </>
+                ) : paymentMethod === "mpesa" && mpesaEnabled && isKes ? (
+                  "Pay with M-Pesa"
                 ) : (
                   "Pay with Card, M-Pesa or Airtel Money"
                 )}
