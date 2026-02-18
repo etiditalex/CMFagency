@@ -651,7 +651,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                                   ? "Complete payment in popup..."
                                   : "Redirecting..."}
                             </>
-                          ) : paymentMethod === "mpesa" && mpesaEnabled ? (
+                          ) : paymentMethod === "mpesa" && showMpesaOption ? (
                             "Pay with M-Pesa"
                           ) : (
                             "Pay with Card"
