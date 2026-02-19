@@ -487,9 +487,9 @@ export default function CampaignPage() {
                         ) : (
                           <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
                         )}
-                        <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 truncate">{c.name}</div>
-                          {c.description && <div className="text-sm text-gray-600 truncate">{c.description}</div>}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-gray-900 break-words">{c.name}</div>
+                          {c.description && <div className="text-sm text-gray-600 break-words line-clamp-2">{c.description}</div>}
                         </div>
                       </div>
                     </label>
