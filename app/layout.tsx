@@ -148,7 +148,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Force dynamic rendering so Next can inject CSP nonces per request.
-  // (Required for strict PCI-friendly CSP.)
   await connection();
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 

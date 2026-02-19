@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { cloudinaryLoader } from "@/lib/cloudinary";
 
 const items = [
   {
@@ -68,7 +67,6 @@ export default function ConferenceNews() {
       {/* Background */}
       <div className="absolute inset-0">
         <Image
-          loader={cloudinaryLoader}
           src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg"
           alt="Conference background"
           fill
