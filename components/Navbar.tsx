@@ -288,22 +288,19 @@ export default function Navbar() {
       </div>
 
       {/* Main Navigation Bar */}
-      <div className="container-custom">
-        <div className="flex items-center justify-between h-[80px] sm:h-[90px] md:h-[100px]">
-          {/* Logo - Left */}
-          <Link href="/" className="flex-shrink-0 h-full flex items-center">
-            <div className="relative h-20 w-auto min-w-[160px] sm:min-w-[180px] md:min-w-[200px] lg:min-w-[220px]">
+      <div className="container-custom bg-white">
+        <div className="flex items-center justify-between h-[72px] sm:h-[80px] md:h-[88px]">
+            {/* Logo - Left; matches bar height, no overflow */}
+            <Link href="/" className="flex-shrink-0 flex items-center h-full py-2">
               <Image
                 src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
                 alt="Changer Fusions Logo"
-                fill
-                className="object-contain"
+                width={180}
+                height={72}
+                className="h-full max-h-[56px] sm:max-h-[64px] md:max-h-[72px] w-auto object-contain object-left"
                 priority
-                fetchPriority="high"
-                sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 220px"
               />
-            </div>
-          </Link>
+            </Link>
 
           {/* Navigation Links */}
           <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
