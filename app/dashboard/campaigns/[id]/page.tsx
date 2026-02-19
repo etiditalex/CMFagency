@@ -105,6 +105,7 @@ export default function CampaignReportPage() {
   const [recentTransactions, setRecentTransactions] = useState<TxRow[]>([]);
   const [contestants, setContestants] = useState<ContestantRow[]>([]);
   const [votesByContestant, setVotesByContestant] = useState<Record<string, number>>({});
+  const [revenueByContestant, setRevenueByContestant] = useState<Record<string, number>>({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
   const [range, setRange] = useState<RangePreset>("30d");
@@ -117,6 +118,32 @@ export default function CampaignReportPage() {
     if (!campaign?.slug) return "";
     return `/${campaign.slug}`;
   }, [campaign?.slug]);
+
+  const { voteWinnerIds, revenueLeaderIds } = useMemo(() => {
+    const winnerIds: string[] = [];
+    let maxVotes = 0;
+    for (const [id, v] of Object.entries(votesByContestant)) {
+      if (v > maxVotes) {
+        maxVotes = v;
+        winnerIds.length = 0;
+        winnerIds.push(id);
+      } else if (v === maxVotes && maxVotes > 0) {
+        winnerIds.push(id);
+      }
+    }
+    const revenueIds: string[] = [];
+    let maxRev = 0;
+    for (const [id, a] of Object.entries(revenueByContestant)) {
+      if (a > maxRev) {
+        maxRev = a;
+        revenueIds.length = 0;
+        revenueIds.push(id);
+      } else if (a === maxRev && maxRev > 0) {
+        revenueIds.push(id);
+      }
+    }
+    return { voteWinnerIds: winnerIds, revenueLeaderIds: revenueIds };
+  }, [votesByContestant, revenueByContestant]);
 
   const formatRevenue = useMemo(() => {
     const entries = Object.entries(revenueByCurrency).filter(([, v]) => Number.isFinite(v) && v > 0);
@@ -256,6 +283,25 @@ export default function CampaignReportPage() {
         byContestant[id] = (byContestant[id] ?? 0) + v;
       }
       setVotesByContestant(byContestant);
+
+      // Revenue by contestant (for vote campaigns: successful transactions grouped by contestant_id)
+      const revByContestant: Record<string, number> = {};
+      let revTxQuery = supabase
+        .from("transactions")
+        .select("contestant_id,amount,currency")
+        .eq("campaign_id", campaignId)
+        .eq("campaign_type", "vote")
+        .eq("status", "success");
+      if (rangeBounds.start) revTxQuery = revTxQuery.gte("created_at", rangeBounds.start);
+      if (rangeBounds.end) revTxQuery = revTxQuery.lte("created_at", rangeBounds.end);
+      const { data: revTxRows } = await revTxQuery;
+      for (const t of (revTxRows ?? []) as { contestant_id: string | null; amount: number; currency: string }[]) {
+        const id = String(t.contestant_id ?? "");
+        const amt = Number(t.amount ?? 0) || 0;
+        if (!id) continue;
+        revByContestant[id] = (revByContestant[id] ?? 0) + amt;
+      }
+      setRevenueByContestant(revByContestant);
 
       // Contestants (for vote breakdown)
       const { data: contestantsRows, error: conErr } = await supabase
@@ -595,6 +641,38 @@ export default function CampaignReportPage() {
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
               <h2 className="mt-1 text-xl font-extrabold text-gray-900">Votes by contestant</h2>
               <p className="mt-2 text-gray-600 text-sm">Totals are computed from webhook-confirmed vote rows.</p>
+
+              {/* Winner + Top revenue badges */}
+              {(voteWinnerIds.length > 0 || revenueLeaderIds.length > 0) && (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {voteWinnerIds.length > 0 && (
+                    <div className="inline-flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2">
+                      <Vote className="w-5 h-5 text-amber-600" />
+                      <div>
+                        <span className="text-xs font-bold text-amber-700 uppercase">Winner (most votes)</span>
+                        <div className="text-base font-extrabold text-amber-900">
+                          {voteWinnerIds
+                            .map((id) => contestants.find((c) => c.id === id)?.name ?? "—")
+                            .join(", ")}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {revenueLeaderIds.length > 0 && (
+                    <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2">
+                      <Wallet className="w-5 h-5 text-emerald-600" />
+                      <div>
+                        <span className="text-xs font-bold text-emerald-700 uppercase">Top revenue (most cash from votes)</span>
+                        <div className="text-base font-extrabold text-emerald-900">
+                          {revenueLeaderIds
+                            .map((id) => contestants.find((c) => c.id === id)?.name ?? "—")
+                            .join(", ")}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="overflow-auto">
@@ -603,24 +681,54 @@ export default function CampaignReportPage() {
                   <tr className="text-left">
                     <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
                     <th className="px-6 py-3 font-bold text-gray-600">Votes</th>
+                    <th className="px-6 py-3 font-bold text-gray-600">Revenue</th>
                   </tr>
                 </thead>
                 <tbody>
                   {contestants.length === 0 ? (
                     <tr>
-                      <td className="px-6 py-6 text-gray-600" colSpan={2}>
+                      <td className="px-6 py-6 text-gray-600" colSpan={3}>
                         No contestants found for this campaign.
                       </td>
                     </tr>
                   ) : (
-                    contestants.map((c) => (
-                      <tr key={c.id} className="border-b border-gray-100">
-                        <td className="px-6 py-4 text-gray-900 font-semibold">{c.name}</td>
-                        <td className="px-6 py-4 text-gray-900 font-extrabold">
-                          {(votesByContestant[c.id] ?? 0).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))
+                    contestants.map((c) => {
+                      const isVoteWinner = voteWinnerIds.includes(c.id);
+                      const isRevenueLeader = revenueLeaderIds.includes(c.id);
+                      return (
+                        <tr
+                          key={c.id}
+                          className={`border-b border-gray-100 ${
+                            isVoteWinner || isRevenueLeader ? "bg-amber-50/50" : ""
+                          }`}
+                        >
+                          <td className="px-6 py-4 text-gray-900 font-semibold">
+                            <span className="inline-flex items-center gap-2">
+                              {c.name}
+                              {isVoteWinner && (
+                                <span className="inline-flex items-center gap-0.5 rounded px-2 py-0.5 text-xs font-bold bg-amber-200 text-amber-900">
+                                  <Vote className="w-3 h-3" />
+                                  Winner
+                                </span>
+                              )}
+                              {isRevenueLeader && (
+                                <span className="inline-flex items-center gap-0.5 rounded px-2 py-0.5 text-xs font-bold bg-emerald-200 text-emerald-900">
+                                  <Wallet className="w-3 h-3" />
+                                  Top revenue
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-900 font-extrabold">
+                            {(votesByContestant[c.id] ?? 0).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-gray-900 font-semibold">
+                            {campaign?.currency ?? "KES"}{" "}
+                            {(revenueByContestant[c.id] ?? 0).toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
