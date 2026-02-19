@@ -156,7 +156,7 @@ export default function DashboardCampaignsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (campaignId: string, title: string) => {
-    if (!confirm(`Delete campaign "${title}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete campaign "${title}"? All related transactions will be removed. This cannot be undone.`)) return;
     setDeletingId(campaignId);
     try {
       const { error } = await supabase.from("campaigns").delete().eq("id", campaignId);
