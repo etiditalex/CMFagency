@@ -348,7 +348,7 @@ export default function DashboardHomePage() {
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View More
@@ -370,7 +370,7 @@ export default function DashboardHomePage() {
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View More
@@ -392,7 +392,7 @@ export default function DashboardHomePage() {
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View More
@@ -414,7 +414,7 @@ export default function DashboardHomePage() {
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View More

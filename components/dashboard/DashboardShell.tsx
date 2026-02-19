@@ -179,7 +179,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar (desktop) */}
       <aside className="hidden lg:flex w-72 flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5">
         <div className="h-16 flex items-center gap-3 px-5 border-b border-white/5">
@@ -195,7 +195,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <nav className="px-3 py-4 space-y-5">
           {sections.map((s) => (
             <div key={s.key}>
-              <div className="px-3 text-[11px] font-extrabold tracking-widest text-white/45 uppercase">
+              <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">
                 {s.label}
               </div>
               <div className="mt-2 space-y-1">
@@ -213,7 +213,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                       }`}
                     >
                       <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                      <span className="font-semibold">{item.label}</span>
+                      <span className="text-sm font-semibold">{item.label}</span>
                     </Link>
                   );
                 })}
@@ -255,8 +255,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                   <Shield className="w-5 h-5 text-primary-100" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-                  <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
+                  <div className="text-base font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
+                  <div className="text-sm text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
                 </div>
               </div>
               <button
@@ -272,7 +272,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             <nav className="px-3 py-4 space-y-5">
               {sections.map((s) => (
                 <div key={s.key}>
-                  <div className="px-3 text-[11px] font-extrabold tracking-widest text-white/45 uppercase">
+                  <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">
                     {s.label}
                   </div>
                   <div className="mt-2 space-y-1">
@@ -291,7 +291,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                           }`}
                         >
                           <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                          <span className="font-semibold">{item.label}</span>
+                          <span className="text-sm font-semibold">{item.label}</span>
                         </Link>
                       );
                     })}
@@ -336,7 +336,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
-              className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-500"
+              className="flex-1 bg-transparent outline-none text-base sm:text-sm text-gray-900 placeholder:text-gray-500"
             />
           </div>
 
@@ -351,7 +351,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <div className="px-4 sm:px-6 pt-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-3xl font-extrabold text-gray-900 text-left">{active}</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 text-left">{active}</h1>
               <div className="mt-1 text-sm text-gray-600 text-left">
                 <span className="text-primary-700 font-semibold">Dashboard</span>
                 <span className="mx-2">/</span>
@@ -361,9 +361,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Page content */}
+        {/* Page content - app-like contained layout like application screens */}
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div className="max-w-4xl lg:max-w-5xl mx-auto">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+              {children}
+            </div>
+          </div>
         </main>
       </div>
     </div>
