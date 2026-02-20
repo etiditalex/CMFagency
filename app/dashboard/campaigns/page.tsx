@@ -269,7 +269,7 @@ export default function DashboardCampaignsPage() {
               const publicUrl = `/${c.slug}`;
 
               return (
-                <div key={c.id} className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+                <div key={c.id} className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">

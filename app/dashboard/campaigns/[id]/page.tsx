@@ -581,54 +581,54 @@ export default function CampaignReportPage() {
 
         {/* KPIs */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Revenue</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{formatRevenue}</div>
                 <div className="mt-2 text-sm text-gray-600">Successful payments only.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary-700" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Wallet className="w-5 h-5 text-gray-600" />
               </span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{successfulPayments.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">Webhook-confirmed.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-secondary-50 items-center justify-center">
-                <Shield className="w-5 h-5 text-secondary-800" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Shield className="w-5 h-5 text-gray-600" />
               </span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Tickets issued</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalTicketsIssued.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">From ticket_issues.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
-                <Ticket className="w-5 h-5 text-gray-900" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Ticket className="w-5 h-5 text-gray-600" />
               </span>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalVotes.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">From votes table.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
-                <Vote className="w-5 h-5 text-primary-700" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Vote className="w-5 h-5 text-gray-600" />
               </span>
             </div>
           </div>
@@ -636,8 +636,8 @@ export default function CampaignReportPage() {
 
         {/* Vote breakdown */}
         {isVote && (
-          <div className="mt-10 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
+          <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
               <h2 className="mt-1 text-xl font-extrabold text-gray-900">Votes by contestant</h2>
               <p className="mt-2 text-gray-600 text-sm">Totals are computed from webhook-confirmed vote rows.</p>
@@ -677,7 +677,7 @@ export default function CampaignReportPage() {
 
             <div className="overflow-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr className="text-left">
                     <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
                     <th className="px-6 py-3 font-bold text-gray-600">Votes</th>
@@ -698,7 +698,7 @@ export default function CampaignReportPage() {
                       return (
                         <tr
                           key={c.id}
-                          className={`border-b border-gray-100 ${
+                          className={`border-b border-gray-200 ${
                             isVoteWinner || isRevenueLeader ? "bg-amber-50/50" : ""
                           }`}
                         >
@@ -737,8 +737,8 @@ export default function CampaignReportPage() {
         )}
 
         {/* Transactions */}
-        <div className="mt-10 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
+        <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
             <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
@@ -749,7 +749,7 @@ export default function CampaignReportPage() {
 
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600">Time</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Payer</th>
@@ -774,7 +774,7 @@ export default function CampaignReportPage() {
                         ? "text-green-700 bg-green-50 border-green-100"
                         : status === "failed"
                           ? "text-red-700 bg-red-50 border-red-100"
-                          : "text-gray-700 bg-gray-50 border-gray-100";
+                          : "text-gray-700 bg-gray-50 border-gray-200";
 
                     const payerDisplay = t.payer_name?.trim()
                       ? String(t.payer_name).trim()
@@ -783,7 +783,7 @@ export default function CampaignReportPage() {
                         : "—";
 
                     return (
-                      <tr key={t.id} className="border-b border-gray-100">
+                      <tr key={t.id} className="border-b border-gray-200">
                         <td className="px-6 py-4 text-gray-700 whitespace-nowrap">
                           {new Date(t.created_at).toLocaleString()}
                         </td>

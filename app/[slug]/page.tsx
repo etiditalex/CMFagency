@@ -66,6 +66,7 @@ export default function CampaignPage() {
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
 
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -136,6 +137,28 @@ export default function CampaignPage() {
       cancelled = true;
     };
   }, [slug]);
+
+  // Fetch vote counts for vote campaigns (for competition visibility)
+  const fetchVoteCounts = useMemo(() => {
+    return async () => {
+      if (!slug || !campaign || campaign.type !== "vote") return;
+      try {
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}/vote-counts`);
+        if (!res.ok) return;
+        const { counts } = (await res.json()) as { counts?: Record<string, number> };
+        if (counts && typeof counts === "object") setVoteCounts(counts);
+      } catch {
+        // Non-blocking
+      }
+    };
+  }, [slug, campaign?.type]);
+
+  useEffect(() => {
+    if (!campaign || campaign.type !== "vote") return;
+    fetchVoteCounts();
+    const interval = setInterval(fetchVoteCounts, 5000);
+    return () => clearInterval(interval);
+  }, [campaign, fetchVoteCounts]);
 
   useEffect(() => {
     if (!ref) return;
@@ -463,37 +486,44 @@ export default function CampaignPage() {
             {isVote && contestants.length > 0 && (
               <div className="mt-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-3">Contestants</h2>
+                <p className="text-sm text-gray-600 mb-3">Vote counts update in real time. See who&apos;s leading and join the competition!</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {contestants.map((c) => (
-                    <label
-                      key={c.id}
-                      className={`cursor-pointer rounded-lg border p-3 flex items-center gap-3 ${
-                        contestantId === c.id ? "border-primary-600 bg-primary-50" : "border-gray-200 bg-white"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="contestant"
-                        value={c.id}
-                        checked={contestantId === c.id}
-                        onChange={() => setContestantId(c.id)}
-                        className="w-4 h-4 text-primary-600"
-                      />
-                      <div className="flex items-center gap-3 min-w-0">
-                        {c.image_url ? (
-                          <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <Image src={c.image_url} alt={c.name} fill className="object-cover" />
+                  {contestants.map((c) => {
+                    const votes = voteCounts[c.id] ?? 0;
+                    return (
+                      <label
+                        key={c.id}
+                        className={`cursor-pointer rounded-lg border p-3 flex items-center gap-3 ${
+                          contestantId === c.id ? "border-primary-600 bg-primary-50" : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="contestant"
+                          value={c.id}
+                          checked={contestantId === c.id}
+                          onChange={() => setContestantId(c.id)}
+                          className="w-4 h-4 text-primary-600"
+                        />
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {c.image_url ? (
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                              <Image src={c.image_url} alt={c.name} fill className="object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-gray-900 break-words">{c.name}</div>
+                            <div className="text-sm font-semibold text-primary-600 mt-0.5">
+                              {votes.toLocaleString()} vote{votes !== 1 ? "s" : ""}
+                            </div>
+                            {c.description && <div className="text-sm text-gray-600 break-words line-clamp-2">{c.description}</div>}
                           </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-gray-900 break-words">{c.name}</div>
-                          {c.description && <div className="text-sm text-gray-600 break-words line-clamp-2">{c.description}</div>}
                         </div>
-                      </div>
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}

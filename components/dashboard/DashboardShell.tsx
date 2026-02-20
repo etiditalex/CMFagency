@@ -364,7 +364,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         {/* Page content - app-like contained layout like application screens */}
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
           <div className="max-w-4xl lg:max-w-5xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+            <div className="bg-white rounded-md border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
               {children}
             </div>
           </div>

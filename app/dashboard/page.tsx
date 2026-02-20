@@ -332,7 +332,7 @@ export default function DashboardHomePage() {
           <div className="font-extrabold">Dashboard</div>
           <div className="mt-2 text-sm">
             Summary reports are not enabled for your account. Visit{" "}
-            <Link href="/dashboard/campaigns" className="text-primary-700 font-semibold hover:underline">
+            <Link href="/dashboard/campaigns" className="text-gray-600 font-semibold hover:underline">
               campaigns
             </Link>{" "}
             to manage your campaigns.
@@ -344,7 +344,7 @@ export default function DashboardHomePage() {
       <>
       {/* KPI cards (styled like screenshot tiles) */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
@@ -356,17 +356,16 @@ export default function DashboardHomePage() {
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Revenue</div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenue}</div>
-                <div className="mt-2 text-sm text-gray-600 text-left">Webhook-confirmed payments only.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary-700" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Wallet className="w-5 h-5 text-gray-600" />
               </span>
             </div>
         </div>
 
-        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
@@ -378,17 +377,16 @@ export default function DashboardHomePage() {
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Successful payments</div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Successful payments</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{successfulPayments.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600 text-left">Count of successful transactions.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-secondary-50 items-center justify-center">
-                <Shield className="w-5 h-5 text-secondary-700" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Shield className="w-5 h-5 text-gray-600" />
               </span>
             </div>
         </div>
 
-        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
@@ -400,17 +398,16 @@ export default function DashboardHomePage() {
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Tickets issued</div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Tickets issued</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalTicketsIssued.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600 text-left">Issued after webhook verification.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
-                <Ticket className="w-5 h-5 text-gray-900" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Ticket className="w-5 h-5 text-gray-600" />
               </span>
             </div>
         </div>
 
-        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 border-t-4 border-primary-600">
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
@@ -422,12 +419,11 @@ export default function DashboardHomePage() {
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-primary-700 text-left">Votes counted</div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Votes counted</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalVotes.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600 text-left">Counted from votes table.</div>
               </div>
-              <span className="inline-flex w-10 h-10 rounded-xl bg-primary-50 items-center justify-center">
-                <Vote className="w-5 h-5 text-primary-700" />
+              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
+                <Vote className="w-5 h-5 text-gray-600" />
               </span>
             </div>
         </div>
@@ -438,26 +434,21 @@ export default function DashboardHomePage() {
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-extrabold text-primary-700 text-left">Total campaigns</div>
+              <div className="text-sm font-extrabold text-gray-700 text-left">Total campaigns</div>
               <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{campaignsCount.toLocaleString()}</div>
               <div className="mt-2 text-sm text-gray-600 text-left">
                 Active: <span className="font-semibold text-secondary-700">{activeCampaignsCount}</span> · Inactive:{" "}
                 <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
               </div>
             </div>
-            <span className="inline-flex w-10 h-10 rounded-xl bg-gray-50 items-center justify-center">
+            <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
               <ExternalLink className="w-5 h-5 text-gray-500" />
             </span>
           </div>
         </div>
 
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
-          <div className="text-sm font-extrabold text-primary-700 text-left">Public link format</div>
-          <div className="mt-2 text-xl font-extrabold text-gray-900 text-left">/&lt;slug&gt;</div>
-          <div className="mt-3 text-gray-600 text-sm text-left">
-            Campaign links are public, but payment success is confirmed only by webhook.
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link
               href="/dashboard/campaigns"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800"
@@ -480,11 +471,7 @@ export default function DashboardHomePage() {
       <div className="mt-8 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-sm font-extrabold text-primary-700 text-left">Recent Payments</div>
-            <p className="mt-2 text-gray-600 text-sm text-left">
-              Latest transactions with payer name/email. Status is webhook-confirmed only when marked{" "}
-              <span className="font-semibold">success</span>. Stuck on pending? Click Sync to verify with Paystack.
-            </p>
+            <div className="text-sm font-extrabold text-gray-700 text-left">Recent Payments</div>
             {syncResult && (
               <p className={`mt-2 text-sm font-medium ${syncResult.error ? "text-red-600" : "text-green-700"}`}>
                 {syncResult.error ?? `Synced ${syncResult.updated} transaction(s).`}
