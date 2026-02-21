@@ -164,18 +164,29 @@ export default function UpcomingEventsPage() {
                   </Link>
                   {(event.ticket_campaign_slug || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
-                      <Link
-                        href={
-                          event.slug === "coast-fashion-modelling-awards-2026"
-                            ? `/events/upcoming/${event.slug}`
-                            : `/${event.ticket_campaign_slug}`
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
-                      >
-                        <Ticket className="w-4 h-4" />
-                        Buy Ticket Online
-                      </Link>
+                      {event.slug === "coast-fashion-modelling-awards-2026" ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTicketModalOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Buy Ticket Online
+                        </button>
+                      ) : (
+                        <Link
+                          href={`/${event.ticket_campaign_slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Buy Ticket Online
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

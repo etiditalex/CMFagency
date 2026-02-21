@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 
 type StkPushBody = {
   slug?: string;
@@ -87,13 +88,27 @@ export async function POST(req: Request) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } }) : null;
 
-    const { data: campaign, error: campaignErr } = await supabase
+    let campaign: { id: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number } | null = null;
+
+    const { data: campaignData } = await supabase
       .from("campaigns")
       .select("id,type,slug,title,currency,unit_amount,max_per_txn")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
-    if (campaignErr) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    if (campaignData) {
+      campaign = campaignData as typeof campaign;
+    } else if (supabaseAdmin) {
+      const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
+      if (ensured) campaign = ensured;
+    }
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: "This ticket is not available yet. The event organizer needs to add an admin in Fusion Xpress—ticket campaigns are created automatically." },
+        { status: 404 }
+      );
+    }
     if (String(campaign.currency).toUpperCase() !== "KES") {
       return NextResponse.json({ error: "M-Pesa is only available for KES campaigns" }, { status: 400 });
     }

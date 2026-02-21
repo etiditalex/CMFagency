@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 
 type InitBody = {
   slug?: string;
@@ -53,16 +54,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "PAYSTACK_SECRET_KEY is not configured" }, { status: 500 });
     }
 
-    // Use anon key so inserts are governed by RLS (public can create pending txns only).
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } }) : null;
 
-    const { data: campaign, error: campaignErr } = await supabase
+    let campaign: { id: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number } | null = null;
+
+    const { data: campaignData } = await supabase
       .from("campaigns")
       .select("id,type,slug,title,currency,unit_amount,max_per_txn")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
-    if (campaignErr) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    if (campaignData) {
+      campaign = campaignData as typeof campaign;
+    } else if (supabaseAdmin) {
+      const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
+      if (ensured) campaign = ensured;
+    }
+
+    if (!campaign) {
+      return NextResponse.json(
+        { error: "This ticket is not available yet. The event organizer needs to add an admin in Fusion Xpress—ticket campaigns are created automatically." },
+        { status: 404 }
+      );
+    }
 
     const q = Math.max(1, Math.min(Number(campaign.max_per_txn), quantity));
 
