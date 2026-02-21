@@ -88,7 +88,8 @@ export async function POST(req: Request) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } }) : null;
 
-    let campaign: { id: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number } | null = null;
+    type CampaignRow = { id: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number };
+    let campaign: CampaignRow | null = null;
 
     const { data: campaignData } = await supabase
       .from("campaigns")
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (campaignData) {
-      campaign = campaignData as typeof campaign;
+      campaign = campaignData as CampaignRow;
     } else if (supabaseAdmin) {
       const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
       if (ensured) campaign = ensured;
