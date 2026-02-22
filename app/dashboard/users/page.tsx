@@ -349,6 +349,9 @@ export default function DashboardUsersPage() {
           {!makeAdmin && !makeManager && (
             <div className="md:col-span-2 mt-2">
               <div className="text-sm font-semibold text-gray-700 mb-3">Features (check what they can use)</div>
+              <p className="text-xs text-gray-500 mb-3 max-w-2xl">
+                Enable reports, ticketing, or voting only <strong>after an agreement is signed</strong> and activities begin. Clients see only their own campaigns and payments—never admin agency data.
+              </p>
               <div className="flex flex-wrap gap-4">
                 {FEATURES.map(({ key, label, icon: Icon }) => (
                   <label

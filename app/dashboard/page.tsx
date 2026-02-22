@@ -340,7 +340,16 @@ export default function DashboardHomePage() {
         </div>
       )}
 
-      {hasFeature("reports") && (
+      {hasFeature("reports") && campaignsCount === 0 && !isFullAdmin && !isManager && (
+        <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-6 text-secondary-900">
+          <div className="font-extrabold">No reports yet</div>
+          <div className="mt-2 text-sm">
+            Your dashboard will show activity once your campaign is live and our agreement is in place. Until then, you will not see any transactions or payment data.
+          </div>
+        </div>
+      )}
+
+      {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
       {/* KPI cards (styled like screenshot tiles) */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
