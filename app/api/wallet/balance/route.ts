@@ -37,7 +37,6 @@ export async function GET(req: Request) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
@@ -45,9 +44,6 @@ export async function GET(req: Request) {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: req.headers.get("authorization") ? { headers: { Authorization: req.headers.get("authorization")! } } : {},
   });
-  const supabaseAdmin = supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
-    : null;
 
   try {
     // Campaign IDs: always user's own campaigns (balance is per-user)
@@ -86,8 +82,8 @@ export async function GET(req: Request) {
       }
     }
 
-    // Pending M-Pesa withdrawals (reduce available)
-    const { data: withdrawals } = await (auth.isAdmin ? supabaseAdmin : supabase)
+    // Pending M-Pesa withdrawals (reduce available) - use supabase (RLS allows own rows)
+    const { data: withdrawals } = await supabase
       .from("withdrawal_requests")
       .select("amount,status")
       .eq("created_by", auth.id)
