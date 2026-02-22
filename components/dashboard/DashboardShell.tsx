@@ -104,8 +104,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);
   const routerRef = useRef(router);
-  logoutRef.current = logout;
-  routerRef.current = router;
+  useEffect(() => {
+    logoutRef.current = logout;
+    routerRef.current = router;
+  }, [logout, router]);
 
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember) return;

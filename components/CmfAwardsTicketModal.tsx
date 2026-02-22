@@ -269,7 +269,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -285,27 +285,27 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 16, scale: 0.98 }}
           transition={{ duration: 0.25 }}
-          className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200"
+          className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto overscroll-contain rounded-2xl bg-white shadow-2xl border border-gray-200"
         >
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-md border border-gray-200"
+            className="absolute right-2 top-2 sm:right-3 sm:top-3 z-20 inline-flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-md border border-gray-200"
             aria-label="Close"
           >
-            <X className="h-5 w-5 text-gray-800" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-800" />
           </button>
 
           <div className="grid grid-cols-1 md:grid-cols-5">
             {/* Left: main content */}
-            <div className="md:col-span-3 p-6 md:p-8">
-              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+            <div className="md:col-span-3 p-4 pt-12 sm:p-6 md:p-8">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                 <span>{EVENT.shortTitle}</span>
                 <span>·</span>
                 <span>{EVENT.date}</span>
                 <span>{EVENT.time}</span>
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                 {STEPS.map((s, i) => {
                   const stepNum = i + 1;
                   const active = step === stepNum || (step === 4 && stepNum === 3);
@@ -333,7 +333,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                     exit={{ opacity: 0, x: 8 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-xl font-bold text-gray-900">ADVANCE TICKETS</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">ADVANCE TICKETS</h2>
                     <div className="space-y-4">
                       {TICKET_TIERS.map((tier) => {
                         const qty = quantities[tier.id] ?? 0;
@@ -400,7 +400,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                     exit={{ opacity: 0, x: 8 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-xl font-bold text-gray-900">Your details</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Your details</h2>
                     <div className="space-y-4">
                       {showMpesaOption && (
                         <div>
@@ -542,7 +542,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                     exit={{ opacity: 0, x: 8 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-xl font-bold text-gray-900">Payment</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Payment</h2>
                     <div className="rounded-xl border border-gray-200 p-4 bg-blue-50/50">
                       <p className="text-gray-700">
                         {paymentMethod === "mpesa"
@@ -665,8 +665,8 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             </div>
 
             {/* Right: order summary / shopping cart */}
-            <div className="md:col-span-2 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <div className="md:col-span-2 bg-gray-50 border-t md:border-t-0 md:border-l border-gray-200 p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
                 {step === 1 ? "Shopping cart" : "Purchase overview"}
               </h3>
               {totalTickets === 0 ? (
@@ -704,8 +704,8 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                   Add promo code
                 </button>
               </div>
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-200">
+              <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+                <div className="relative h-16 sm:aspect-video sm:h-auto rounded-lg overflow-hidden bg-gray-200">
                   <Image
                     src={EVENT.imageUrl}
                     alt={EVENT.shortTitle}
