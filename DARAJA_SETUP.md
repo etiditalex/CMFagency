@@ -128,3 +128,41 @@ Safaricom must be able to reach your callback URL. It is set automatically to:
 - **Paystack**: Card, M-Pesa, Airtel (via Paystack gateway). Use for campaigns where Paystack is configured.
 - **Daraja**: Native M-Pesa STK Push (direct Safaricom). Often preferred for local Kenyan payments, lower fees, no intermediary.
 - Both can coexist: KES campaigns show M-Pesa (Daraja) and Card/Airtel (Paystack). Non-KES campaigns use Paystack only.
+
+---
+
+## M-Pesa B2C Withdrawals (Wallet Payouts)
+
+The Fusion Xpress Payouts page supports **M-Pesa B2C** withdrawals. Clients request payouts from their M-Pesa balance; admins must approve before the B2C API sends money.
+
+### Database
+
+Run `database/ticketing_voting_mvp_patch_23_withdrawal_requests.sql` in Supabase SQL editor.
+
+### B2C-Specific Env Variables
+
+| Variable | Required | Safaricom proxy | Notes |
+|----------|----------|-----------------|-------|
+| `MPESA_B2C_INITIATOR_NAME` | **Yes** | — | API operator username from [M-Pesa Org Portal](https://org.ke.m-pesa.com/) |
+| `MPESA_B2C_SECURITY_CREDENTIAL` | **Yes** | — | Encrypted initiator password (see [certificate encryption](https://developer.safaricom.co.ke/sites/default/files/cert/cert_sandbox/cert.cer)) |
+| `MPESA_B2C_SHORTCODE` | Optional | — | B2C shortcode—defaults to `MPESA_SHORTCODE` if not set |
+| `MPESA_B2C_URL` | Prod | **Proxy:B2C** | Paste the Proxy:B2C URL from Safaricom (production) |
+| `MPESA_TRANSACTION_STATUS_URL` | Optional | **Proxy:TransactionStatus** | For querying B2C transaction status |
+| `MPESA_ACCOUNT_BALANCE_URL` | Optional | **Proxy:AccountBalance** | For querying M-Pesa account balance |
+
+**Note:** B2C uses different credentials than Lipa Na M-Pesa. When going live, B2C and C2B require separate applications—you may need a B2C-enabled app and shortcode.
+
+### Flow
+
+1. Client requests withdrawal on Payouts page (amount, M-Pesa number).
+2. Admin sees pending request, clicks Approve or Reject.
+3. On Approve: B2C API is called → Safaricom sends money to recipient.
+4. Safaricom POSTs result to `/api/daraja/b2c-callback` → withdrawal status updated to completed/rejected.
+
+### Callback URL
+
+```
+<NEXT_PUBLIC_SITE_URL>/api/daraja/b2c-callback
+```
+
+Safaricom receives this URL in each B2C request; no pre-registration needed. Ensure your site is publicly reachable via HTTPS.
