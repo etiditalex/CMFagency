@@ -303,15 +303,6 @@ export default function DashboardHomePage() {
         <div className="text-left text-gray-500">Auto-updates when payments/votes/tickets change.</div>
       </div>
 
-      {!isFullAdmin && (
-        <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
-          <div className="font-extrabold">Limited access</div>
-          <div className="mt-1 text-sm">
-            You can view and manage only campaigns created under your account. Admin-only tools (like user management) are hidden.
-          </div>
-        </div>
-      )}
-
       {isManager && (
         <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
           <div className="font-extrabold">Manager access</div>
