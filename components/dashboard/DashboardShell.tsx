@@ -7,6 +7,7 @@ import type { ComponentType, ReactNode } from "react";
 import {
   BarChart3,
   BadgePercent,
+  BookOpen,
   Calendar,
   Download,
   Inbox,
@@ -67,6 +68,7 @@ const NAV: NavItem[] = [
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
   { label: "Changer", href: "/dashboard/changer", icon: MessagesSquare, section: "main", adminOnly: true },
+  { label: "Blogs", href: "/dashboard/blogs", icon: BookOpen, section: "main", adminOnly: true },
   { label: "Events", href: "/dashboard/events", icon: Calendar, section: "main", featureKey: "events" },
   { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
   { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },

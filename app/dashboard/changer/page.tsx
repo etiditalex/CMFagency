@@ -123,13 +123,16 @@ export default function DashboardChangerPage() {
     }
   }, [selectedId, loadMessages]);
 
-  // Poll messages when viewing a live_agent conversation
+  // Poll messages and conversation list when viewing a live_agent conversation so admin sees user replies
   const selectedConv = conversations.find((c) => c.id === selectedId);
   useEffect(() => {
     if (!selectedId || selectedConv?.status !== "live_agent") return;
-    const t = setInterval(() => loadMessages(selectedId), 2000);
+    const t = setInterval(() => {
+      loadMessages(selectedId);
+      loadData();
+    }, 2000);
     return () => clearInterval(t);
-  }, [selectedId, selectedConv?.status, loadMessages]);
+  }, [selectedId, selectedConv?.status, loadMessages, loadData]);
 
   const sendAgentMessage = async () => {
     const text = agentInput.trim();
@@ -329,6 +332,9 @@ export default function DashboardChangerPage() {
             </div>
             {selected ? (
               <div className="p-4">
+                {selected.status === "live_agent" && (
+                  <p className="text-xs text-gray-500 mb-2">Messages refresh every 2 seconds. Visitor replies will appear here.</p>
+                )}
                 <div className="flex gap-4 text-sm text-gray-600 mb-4">
                   {selected.visitor_name && (
                     <span className="inline-flex items-center gap-1">

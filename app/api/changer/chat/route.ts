@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
         content,
       });
       if (msgErr) console.error("Changer message insert:", msgErr);
+      await supabaseAdmin.from("changer_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conv.id);
       return NextResponse.json({
         success: true,
         message: "Your message has been sent. Alex will respond shortly.",
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
         content,
       });
       if (msgErr) console.error("Changer message insert:", msgErr);
+      await supabaseAdmin.from("changer_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conv.id);
       return NextResponse.json({
         success: true,
         message: "Your message has been received. A live agent will assist you shortly. We've notified our team.",

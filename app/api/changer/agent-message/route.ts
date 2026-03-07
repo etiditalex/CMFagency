@@ -71,6 +71,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
     }
 
+    await supabaseAdmin.from("changer_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     console.error("Changer agent-message error:", err);

@@ -45,6 +45,8 @@ export default function ChangerWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const [pollInterval, setPollInterval] = useState(3000);
+
   const loadConversation = useCallback(async () => {
     try {
       const res = await fetch(
@@ -62,10 +64,15 @@ export default function ChangerWidget() {
         );
         if (data.conversation.status === "waiting_for_agent") {
           setHandoffRequested(true);
+          setPollInterval(3000);
         }
         if (data.conversation.status === "live_agent" && data.conversation.live_agent_name) {
           setLiveAgentName(data.conversation.live_agent_name);
           setHandoffRequested(false);
+          setPollInterval(1500);
+        }
+        if (data.conversation.status === "bot") {
+          setPollInterval(3000);
         }
       }
     } catch {
@@ -76,7 +83,7 @@ export default function ChangerWidget() {
   useEffect(() => {
     if (open) {
       loadConversation();
-      pollRef.current = setInterval(loadConversation, 3000);
+      pollRef.current = setInterval(loadConversation, pollInterval);
     }
     return () => {
       if (pollRef.current) {
@@ -84,7 +91,7 @@ export default function ChangerWidget() {
         pollRef.current = null;
       }
     };
-  }, [open, loadConversation]);
+  }, [open, loadConversation, pollInterval]);
 
   useEffect(() => {
     scrollToBottom();

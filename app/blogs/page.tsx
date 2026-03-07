@@ -1,68 +1,51 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, User, ArrowRight, BookOpen } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { format } from "date-fns";
+import { supabase } from "@/lib/supabase";
 
-const blogPosts = [
-  {
-    id: 1,
-    title: "The Future of Digital Marketing in 2025",
-    excerpt: "Explore the latest trends and innovations shaping the digital marketing landscape, from AI-powered campaigns to personalized customer experiences.",
-    author: "Changer Fusions Team",
-    date: "January 15, 2025",
-    category: "Digital Marketing",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg",
-  },
-  {
-    id: 2,
-    title: "Event Planning Best Practices for Success",
-    excerpt: "Discover essential strategies and tips for planning memorable events that leave a lasting impression on attendees and achieve your objectives.",
-    author: "Changer Fusions Team",
-    date: "January 10, 2025",
-    category: "Events",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg",
-  },
-  {
-    id: 3,
-    title: "Building a Strong Brand Identity in the Modern Market",
-    excerpt: "Learn how to create a compelling brand identity that resonates with your target audience and sets you apart from competitors.",
-    author: "Changer Fusions Team",
-    date: "January 5, 2025",
-    category: "Branding",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767154665/The_Kings_Experience_4_rcq1m6.jpg",
-  },
-  {
-    id: 4,
-    title: "Content Creation Strategies That Drive Engagement",
-    excerpt: "Master the art of creating engaging content that captivates your audience and drives meaningful interactions across all platforms.",
-    author: "Changer Fusions Team",
-    date: "December 28, 2024",
-    category: "Content",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767153675/Global_women_impact_5_krzjoo.jpg",
-  },
-  {
-    id: 5,
-    title: "Market Research: Understanding Your Audience",
-    excerpt: "Dive deep into effective market research techniques that help you understand your audience and make data-driven marketing decisions.",
-    author: "Changer Fusions Team",
-    date: "December 20, 2024",
-    category: "Market Research",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.32.06_AM_loqhra.jpg",
-  },
-  {
-    id: 6,
-    title: "Website Development Trends for 2025",
-    excerpt: "Stay ahead with the latest web development trends, from responsive design to performance optimization and user experience enhancements.",
-    author: "Changer Fusions Team",
-    date: "December 15, 2024",
-    category: "Web Development",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
-  },
-];
+type BlogPost = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  author: string | null;
+  category: string | null;
+  image_url: string | null;
+  published_at: string | null;
+};
+
+const DEFAULT_HERO_IMAGE = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
 
 export default function BlogsPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const { data, error } = await supabase
+          .from("fusion_blogs")
+          .select("id, slug, title, excerpt, author, category, image_url, published_at")
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false });
+        if (error) throw error;
+        if (!cancelled) setPosts((data ?? []) as BlogPost[]);
+      } catch {
+        if (!cancelled) setPosts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -120,56 +103,58 @@ export default function BlogsPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogPosts.map((post, index) => (
-              <motion.article
-                key={post.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden group"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={post.image}
-                    alt={post.title}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                      {post.category}
-                    </span>
+            {loading ? (
+              <div className="col-span-full py-12 text-center text-gray-500">Loading articles…</div>
+            ) : posts.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-gray-500">No published articles yet. Check back soon.</div>
+            ) : (
+              posts.map((post, index) => (
+                <motion.article
+                  key={post.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden group"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={post.image_url || DEFAULT_HERO_IMAGE}
+                      alt={post.title}
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        {post.category || "Blog"}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex items-center text-sm text-gray-500 mb-3">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>{post.date}</span>
-                    <span className="mx-2">•</span>
-                    <User className="w-4 h-4 mr-2" />
-                    <span>{post.author}</span>
+                  <div className="p-6">
+                    <div className="flex items-center text-sm text-gray-500 mb-3">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>{post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}</span>
+                      <span className="mx-2">•</span>
+                      <User className="w-4 h-4 mr-2" />
+                      <span>{post.author || "Changer Fusions Team"}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
+                      {post.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-3">
+                      {post.excerpt || ""}
+                    </p>
+                    <Link
+                      href={`/blogs/${post.slug}`}
+                      className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 transition-colors duration-200 group/link"
+                    >
+                      <span>Read More</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover/link:translate-x-1 transition-transform duration-200" />
+                    </Link>
                   </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
-                    {post.title}
-                  </h3>
-                  
-                  <p className="text-gray-600 mb-4 line-clamp-3">
-                    {post.excerpt}
-                  </p>
-                  
-                  <Link
-                    href={`/blogs/${post.id}`}
-                    className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 transition-colors duration-200 group/link"
-                  >
-                    <span>Read More</span>
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover/link:translate-x-1 transition-transform duration-200" />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
+                </motion.article>
+              ))
+            )}
           </div>
         </div>
       </section>
