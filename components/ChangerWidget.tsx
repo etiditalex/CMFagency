@@ -100,9 +100,9 @@ export default function ChangerWidget() {
   const loadConversation = useCallback(async (forBadgeOnly = false) => {
     try {
       const url = `/api/changer/conversation?sessionId=${encodeURIComponent(sessionId.current)}&_=${Date.now()}`;
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetch(url, { cache: "no-store", credentials: "same-origin" });
       const data = await res.json();
-      if (!data.conversation) return;
+      if (!res.ok || data.error || !data.conversation) return;
       const list = (data.messages ?? []).map((m: { id: string; role: string; content: string; created_at?: string }) => ({
         id: String(m.id),
         role: m.role as "user" | "assistant" | "live_agent",
@@ -144,6 +144,13 @@ export default function ChangerWidget() {
       }
     };
   }, [open, loadConversation, pollInterval]);
+
+  // When a live agent is active: poll every 400ms so their messages show immediately
+  useEffect(() => {
+    if (!open || !liveAgentName) return;
+    const t = setInterval(() => loadConversation(false), 400);
+    return () => clearInterval(t);
+  }, [open, liveAgentName, loadConversation]);
 
   // When widget is closed: poll for unread badge only during 10-min session
   useEffect(() => {

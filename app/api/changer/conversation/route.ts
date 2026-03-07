@@ -37,7 +37,10 @@ export async function GET(req: NextRequest) {
     }
 
     if (!conv) {
-      return NextResponse.json({ conversation: null, messages: [] });
+      return NextResponse.json(
+        { conversation: null, messages: [] },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     // 2-min timeout: if waiting_for_agent and no response, notify user with WhatsApp/call fallback
@@ -80,12 +83,21 @@ export async function GET(req: NextRequest) {
 
     if (msgErr) {
       console.error("Changer messages fetch:", msgErr);
+      return NextResponse.json(
+        { error: "Failed to load messages" },
+        { status: 500, headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
+      );
     }
 
-    return NextResponse.json({
-      conversation: conv,
-      messages: messages ?? [],
-    });
+    return NextResponse.json(
+      { conversation: conv, messages: messages ?? [] },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   } catch (err: unknown) {
     console.error("Changer conversation error:", err);
     return NextResponse.json(
