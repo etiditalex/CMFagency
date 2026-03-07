@@ -42,6 +42,7 @@ export default function NewBlogPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [publishNow, setPublishNow] = useState(false);
+  const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +88,9 @@ export default function NewBlogPage() {
       if (!normalizedSlug) throw new Error("Slug is required");
       let imageUrl: string | null = null;
       if (imageFile) imageUrl = await uploadImageFile(imageFile);
+      const linksPayload = externalLinks
+        .filter((l) => l.label.trim() && l.url.trim())
+        .map((l) => ({ label: l.label.trim(), url: l.url.trim() }));
       const { error: insertErr } = await supabase.from("fusion_blogs").insert({
         slug: normalizedSlug,
         title: title.trim(),
@@ -95,6 +99,7 @@ export default function NewBlogPage() {
         author: author.trim() || "Changer Fusions Team",
         category: category.trim() || null,
         image_url: imageUrl,
+        external_links: linksPayload.length ? linksPayload : [],
         published_at: publishNow ? new Date().toISOString() : null,
         created_by: user.id,
       });
@@ -178,10 +183,59 @@ export default function NewBlogPage() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            rows={10}
+            rows={12}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Full post content (supports plain text and line breaks)"
+            placeholder="Full post content. Use ## for subtitles (bold), ### for subheadings, **bold text**, and [link text](https://...) for outbound links."
           />
+          <p className="text-xs text-gray-500 mt-2">
+            SEO tip: use <strong>## Subtitle</strong> and <strong>### Section</strong> for bold headings. Use <strong>[label](https://example.com)</strong> to link to other sites (backlinks).
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">References / external links (optional)</label>
+          <p className="text-xs text-gray-500 mb-2">Add links to other sites (e.g. sources, further reading) for SEO and backlink building.</p>
+          {externalLinks.map((link, idx) => (
+            <div key={idx} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={link.label}
+                onChange={(e) => {
+                  const next = [...externalLinks];
+                  next[idx] = { ...next[idx], label: e.target.value };
+                  setExternalLinks(next);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Label (e.g. Forbes, Wikipedia)"
+              />
+              <input
+                type="url"
+                value={link.url}
+                onChange={(e) => {
+                  const next = [...externalLinks];
+                  next[idx] = { ...next[idx], url: e.target.value };
+                  setExternalLinks(next);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="https://..."
+              />
+              <button
+                type="button"
+                onClick={() => setExternalLinks(externalLinks.filter((_, i) => i !== idx))}
+                className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                aria-label="Remove link"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setExternalLinks([...externalLinks, { label: "", url: "" }])}
+            className="text-sm text-primary-600 font-semibold hover:underline"
+          >
+            + Add reference link
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

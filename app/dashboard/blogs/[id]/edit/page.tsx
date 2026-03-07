@@ -51,6 +51,7 @@ export default function EditBlogPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [publishNow, setPublishNow] = useState(false);
+  const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +89,12 @@ export default function EditBlogPage() {
         setImageUrl(img);
         setImagePreviewUrl(img || null);
         setPublishNow(!!row.published_at);
+        const links = row.external_links;
+        setExternalLinks(
+          Array.isArray(links) && links.length > 0
+            ? links.map((l: { label?: string; url?: string }) => ({ label: String(l?.label ?? ""), url: String(l?.url ?? "") }))
+            : []
+        );
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load blog");
       } finally {
@@ -129,6 +136,9 @@ export default function EditBlogPage() {
       if (imageFile) finalImageUrl = await uploadImageFile(imageFile);
       else if (imageUrl.trim()) finalImageUrl = imageUrl.trim();
 
+      const linksPayload = externalLinks
+        .filter((l) => l.label.trim() && l.url.trim())
+        .map((l) => ({ label: l.label.trim(), url: l.url.trim() }));
       const { error: updateErr } = await supabase
         .from("fusion_blogs")
         .update({
@@ -139,6 +149,7 @@ export default function EditBlogPage() {
           author: author.trim() || "Changer Fusions Team",
           category: category.trim() || null,
           image_url: finalImageUrl,
+          external_links: linksPayload.length ? linksPayload : [],
           published_at: publishNow ? new Date().toISOString() : null,
         })
         .eq("id", blogId);
@@ -220,9 +231,59 @@ export default function EditBlogPage() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            rows={10}
+            rows={12}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="Use ## for subtitles (bold), ### for subheadings, **bold**, [text](https://...) for links."
           />
+          <p className="text-xs text-gray-500 mt-2">
+            SEO: <strong>## Subtitle</strong>, <strong>### Section</strong>, <strong>[label](url)</strong> for outbound links.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">References / external links (optional)</label>
+          <p className="text-xs text-gray-500 mb-2">Links to other sites for SEO and backlink building.</p>
+          {externalLinks.map((link, idx) => (
+            <div key={idx} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={link.label}
+                onChange={(e) => {
+                  const next = [...externalLinks];
+                  next[idx] = { ...next[idx], label: e.target.value };
+                  setExternalLinks(next);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="Label"
+              />
+              <input
+                type="url"
+                value={link.url}
+                onChange={(e) => {
+                  const next = [...externalLinks];
+                  next[idx] = { ...next[idx], url: e.target.value };
+                  setExternalLinks(next);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                placeholder="https://..."
+              />
+              <button
+                type="button"
+                onClick={() => setExternalLinks(externalLinks.filter((_, i) => i !== idx))}
+                className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                aria-label="Remove link"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setExternalLinks([...externalLinks, { label: "", url: "" }])}
+            className="text-sm text-primary-600 font-semibold hover:underline"
+          >
+            + Add reference link
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { Calendar, User, ArrowLeft, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { renderBlogBodyToHtml, type ExternalLink } from "@/lib/blog-body";
 
 type BlogPost = {
   id: string;
@@ -19,6 +20,7 @@ type BlogPost = {
   category: string | null;
   image_url: string | null;
   published_at: string | null;
+  external_links?: ExternalLink[] | null;
 };
 
 const DEFAULT_IMAGE = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
@@ -40,7 +42,7 @@ export default function BlogSlugPage() {
       try {
         const { data, error } = await supabase
           .from("fusion_blogs")
-          .select("id, slug, title, excerpt, body, author, category, image_url, published_at")
+          .select("id, slug, title, excerpt, body, author, category, image_url, published_at, external_links")
           .eq("slug", slug)
           .not("published_at", "is", null)
           .maybeSingle();
@@ -141,9 +143,31 @@ export default function BlogSlugPage() {
               {post.excerpt}
             </p>
           )}
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-            {post.body || ""}
-          </div>
+          <div
+            className="blog-body text-gray-700 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: renderBlogBodyToHtml(post.body) }}
+          />
+          {Array.isArray(post.external_links) && post.external_links.length > 0 && (
+            <section className="mt-10 pt-8 border-t border-gray-200">
+              <h2 className="font-bold text-xl text-gray-900 mb-4">References &amp; further reading</h2>
+              <ul className="space-y-2">
+                {post.external_links
+                  .filter((link) => link?.url && (link.url.startsWith("http://") || link.url.startsWith("https://")))
+                  .map((link, idx) => (
+                    <li key={idx}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 font-semibold hover:underline"
+                      >
+                        {link.label || link.url}
+                      </a>
+                    </li>
+                  ))}
+              </ul>
+            </section>
+          )}
         </motion.div>
       </article>
     </div>
