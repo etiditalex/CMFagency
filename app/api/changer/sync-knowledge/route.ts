@@ -34,6 +34,14 @@ const PAGES_TO_INDEX = [
   { path: "/merchandise", title: "Merchandise", type: "page" as const },
 ];
 
+/** Static fallback when live fetch returns 5xx or too little content (e.g. SSR issues during sync). */
+const STATIC_FALLBACK: Record<string, string> = {
+  "/events/upcoming":
+    "Upcoming Events. Discover our upcoming events. View details, get tickets, and be part of the excitement. Coast Fashion and Modelling Awards 2026 (CMFA) – 15 August 2026, Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion and Eco-Tourism. Buy tickets online. Check back for more upcoming events.",
+  "/events/upcoming/coast-fashion-modelling-awards-2026":
+    "Coast Fashion and Modelling Awards 2026 (CMFA 2026). Date: 15 August 2026. Location: Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion and Eco-Tourism. Buy tickets online. Early bird: Regular KES 500, VIP KES 1500, VVIP KES 3500. Payment via Visa, Mastercard, M-Pesa, Airtel Money. Partnership and sponsorship enquiries welcome. Add to Google Calendar. Download sponsorship proposal. Participate as model, designer, volunteer, or creative performer.",
+};
+
 function stripHtml(html: string): string {
   return html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -77,18 +85,37 @@ export async function POST(req: NextRequest) {
     for (const page of PAGES_TO_INDEX) {
       try {
         const url = `${BASE_URL}${page.path}`;
-        const res = await fetch(url, {
-          headers: { "User-Agent": "ChangerKnowledgeSync/1.0" },
-        });
-        if (!res.ok) {
-          errors.push(`${page.path}: HTTP ${res.status}`);
-          continue;
-        }
-        const html = await res.text();
-        const contentText = stripHtml(html);
-        if (contentText.length < 50) {
-          errors.push(`${page.path}: too little content`);
-          continue;
+        const fallback = STATIC_FALLBACK[page.path];
+        let contentText: string;
+
+        try {
+          const res = await fetch(url, {
+            headers: { "User-Agent": "ChangerKnowledgeSync/1.0" },
+          });
+          if (!res.ok) {
+            if (fallback && res.status >= 500) {
+              contentText = fallback;
+            } else {
+              errors.push(`${page.path}: HTTP ${res.status}`);
+              continue;
+            }
+          } else {
+            const html = await res.text();
+            contentText = stripHtml(html);
+            if (contentText.length < 50 && fallback) {
+              contentText = fallback;
+            } else if (contentText.length < 50) {
+              errors.push(`${page.path}: too little content`);
+              continue;
+            }
+          }
+        } catch (fetchErr) {
+          if (fallback) {
+            contentText = fallback;
+          } else {
+            errors.push(`${page.path}: ${fetchErr instanceof Error ? fetchErr.message : "Unknown"}`);
+            continue;
+          }
         }
 
         const { data: existing } = await supabaseAdmin
