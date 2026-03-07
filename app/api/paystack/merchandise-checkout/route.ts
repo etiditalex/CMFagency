@@ -70,16 +70,21 @@ export async function POST(req: Request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey || !paystackSecret) {
       return NextResponse.json(
-        { error: "PAYSTACK_SECRET_KEY or Supabase env vars missing" },
+        { error: "Payment is not configured. Set PAYSTACK_SECRET_KEY and Supabase env vars (see deployment docs)." },
         { status: 500 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    // Prefer service role so transaction insert is not blocked by RLS (e.g. anon policy edge cases).
+    const supabase =
+      supabaseServiceKey && supabaseUrl
+        ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+        : createClient(supabaseUrl, supabaseAnonKey);
 
     const { data: campaign, error: campaignErr } = await supabase
       .from("campaigns")
@@ -88,16 +93,20 @@ export async function POST(req: Request) {
       .single();
 
     if (campaignErr || !campaign) {
+      const hint = campaignErr?.code === "PGRST116"
+        ? " Run database/ticketing_voting_mvp_patch_12_merchandise.sql in Supabase to create the merchandise campaign."
+        : campaignErr?.message
+          ? ` ${campaignErr.message}`
+          : "";
       return NextResponse.json(
-        {
-          error: "Merchandise checkout not configured. Run database/ticketing_voting_mvp_patch_12_merchandise.sql",
-        },
+        { error: `Merchandise checkout not configured.${hint}` },
         { status: 503 }
       );
     }
 
     // Merchandise campaign uses unit_amount=1, quantity=total (in whole KES)
-    const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
+    // Paystack reference: only alphanumeric, hyphen, period, equals
+    const reference = `cmf-${crypto.randomUUID().replace(/-/g, "")}`;
 
     const { error: insertErr } = await supabase.from("transactions").insert({
       campaign_id: campaign.id,
@@ -125,8 +134,9 @@ export async function POST(req: Request) {
 
     if (insertErr) {
       const msg = insertErr.message ?? "";
-      const hint = /quantity|23514|check constraint/i.test(msg)
-        ? " Run database/ticketing_voting_mvp_patch_12_merchandise.sql in Supabase if not yet applied."
+      const isConstraint = /quantity|23514|check constraint|amount/i.test(msg);
+      const hint = isConstraint
+        ? " Ensure database/ticketing_voting_mvp_patch_12_merchandise.sql has been run in Supabase (relaxes quantity/amount limits for merchandise)."
         : "";
       return NextResponse.json(
         { error: `Unable to create order.${hint}`, details: msg },
