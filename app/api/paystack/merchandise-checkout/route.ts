@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
+import { ensureMerchandiseCampaign } from "@/lib/ensure-cfma-campaigns";
 
 type CartItem = {
   id: number;
@@ -86,18 +87,20 @@ export async function POST(req: Request) {
         ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
         : createClient(supabaseUrl, supabaseAnonKey);
 
-    const { data: campaign, error: campaignErr } = await supabase
+    let campaign = await supabase
       .from("campaigns")
       .select("id,type,slug,title,currency,unit_amount,max_per_txn")
       .eq("slug", "merchandise")
-      .single();
+      .maybeSingle()
+      .then((r) => r.data as typeof r.data);
 
-    if (campaignErr || !campaign) {
-      const hint = campaignErr?.code === "PGRST116"
-        ? " Run database/ticketing_voting_mvp_patch_12_merchandise.sql in Supabase to create the merchandise campaign."
-        : campaignErr?.message
-          ? ` ${campaignErr.message}`
-          : "";
+    if (!campaign && supabaseServiceKey && supabaseUrl) {
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
+      campaign = await ensureMerchandiseCampaign(adminClient);
+    }
+
+    if (!campaign) {
+      const hint = " Add an admin in Fusion Xpress (Users or portal_members), then try again. Or run database/ticketing_voting_mvp_patch_12_merchandise.sql in Supabase.";
       return NextResponse.json(
         { error: `Merchandise checkout not configured.${hint}` },
         { status: 503 }

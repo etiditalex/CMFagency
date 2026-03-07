@@ -111,3 +111,70 @@ export async function ensureCfmaCampaign(
 
   return inserted as CampaignRow;
 }
+
+const MERCHANDISE_SLUG = "merchandise";
+
+/**
+ * Ensures the merchandise campaign exists (for cart checkout).
+ * If not found, creates it using the first admin. Use with service-role client.
+ */
+export async function ensureMerchandiseCampaign(
+  supabaseAdmin: SupabaseClient
+): Promise<CampaignRow | null> {
+  const { data: existing } = await supabaseAdmin
+    .from("campaigns")
+    .select("id,type,slug,title,currency,unit_amount,max_per_txn")
+    .eq("slug", MERCHANDISE_SLUG)
+    .maybeSingle();
+
+  if (existing) return existing as CampaignRow;
+
+  let adminId: string | null = null;
+  try {
+    const { data: pm } = await supabaseAdmin
+      .from("portal_members")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    if (pm?.user_id) adminId = pm.user_id as string;
+    if (!adminId) {
+      const { data: au } = await supabaseAdmin
+        .from("admin_users")
+        .select("user_id")
+        .limit(1)
+        .maybeSingle();
+      if (au?.user_id) adminId = au.user_id as string;
+    }
+  } catch (e) {
+    console.warn("ensureMerchandiseCampaign: could not fetch admin", e);
+  }
+
+  if (!adminId) {
+    console.warn("ensureMerchandiseCampaign: No admin found. Add an admin in Fusion Xpress or run patch_12.");
+    return null;
+  }
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("campaigns")
+    .insert({
+      type: "ticket",
+      slug: MERCHANDISE_SLUG,
+      title: "Changer Fusions Merchandise",
+      description: "Branded merchandise - T-shirts, hoodies, water bottles, key holders.",
+      currency: "KES",
+      unit_amount: 1,
+      max_per_txn: 1000000,
+      is_active: true,
+      created_by: adminId,
+    })
+    .select("id,type,slug,title,currency,unit_amount,max_per_txn")
+    .single();
+
+  if (error) {
+    console.error("ensureMerchandiseCampaign: insert failed", error);
+    return null;
+  }
+
+  return inserted as CampaignRow;
+}

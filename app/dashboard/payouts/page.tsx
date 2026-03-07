@@ -19,6 +19,7 @@ type Withdrawal = {
   created_at: string;
   approved_at?: string | null;
   created_by?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export default function DashboardPayoutsPage() {
@@ -179,6 +180,9 @@ export default function DashboardPayoutsPage() {
   if (!hasFeature("payouts")) return null;
 
   const pendingAdmin = withdrawals.filter((w) => w.status === "pending_admin");
+  const stuckWithdrawals = withdrawals.filter((w) =>
+    ["processing", "approved"].includes(w.status)
+  );
   const myWithdrawals = isFullAdmin ? withdrawals : withdrawals.filter((w) => !w.created_by || w.created_by === user.id);
 
   const statusBadge = (s: string) => {
@@ -321,6 +325,11 @@ export default function DashboardPayoutsPage() {
                       {w.created_by && (
                         <span className="block text-xs text-gray-500 mt-1">Requested by: {w.created_by.slice(0, 8)}…</span>
                       )}
+                      {(w.metadata as { b2c_error?: string })?.b2c_error && (
+                        <span className="block text-xs text-red-600 mt-1">
+                          Previous B2C attempt failed: {(w.metadata as { b2c_error: string }).b2c_error}
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -342,6 +351,43 @@ export default function DashboardPayoutsPage() {
                         Reject
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Admin: Stuck withdrawals (revert when B2C fails or callback never arrives) */}
+          {isFullAdmin && stuckWithdrawals.length > 0 && (
+            <div className="mt-6 bg-orange-50 rounded-md shadow-sm p-6 border border-orange-200">
+              <h3 className="font-extrabold text-orange-900">Stuck withdrawals</h3>
+              <p className="mt-1 text-sm text-orange-800">
+                These were approved but cash may not have been sent. Click Revert to restore balance.
+              </p>
+              <div className="mt-4 space-y-3">
+                {stuckWithdrawals.map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded border border-orange-200"
+                  >
+                    <div>
+                      <span className="font-bold">KES {Number(w.amount).toLocaleString()}</span>
+                      <span className="text-gray-600 ml-2">→ {w.recipient_phone}</span>
+                      {(w.metadata as { b2c_error?: string })?.b2c_error && (
+                        <span className="block text-xs text-red-600 mt-1">
+                          B2C error: {(w.metadata as { b2c_error: string }).b2c_error}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleReject(w.id)}
+                      disabled={!!rejectingId}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 disabled:opacity-50"
+                    >
+                      {rejectingId === w.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                      Revert
+                    </button>
                   </div>
                 ))}
               </div>

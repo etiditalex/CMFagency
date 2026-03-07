@@ -20,6 +20,8 @@ export default function CartPage() {
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("paystack");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const receiptRequestedRef = useRef(false);
@@ -90,21 +92,53 @@ export default function CartPage() {
         throw new Error("Please enter a valid email address.");
       }
 
+      const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
+      const cartPayload = cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image,
+        category: item.category,
+      }));
+
+      if (paymentMethod === "mpesa") {
+        const res = await fetch("/api/daraja/merchandise-stk-push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: emailTrim,
+            payer_name: payerName,
+            phone: phone.trim(),
+            cart: cartPayload,
+            shipping: SHIPPING,
+          }),
+        });
+        const raw = await res.text();
+        let json: { reference?: string; error?: string; message?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw);
+          } catch {}
+        }
+        if (!res.ok) {
+          throw new Error(json?.error ?? `M-Pesa checkout failed (HTTP ${res.status})`);
+        }
+        if (json.reference) {
+          window.location.href = `/cart?ref=${encodeURIComponent(json.reference)}`;
+          return;
+        }
+        throw new Error(json?.error ?? "Missing reference.");
+      }
+
       const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
       const res = await fetch("/api/paystack/merchandise-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: emailTrim,
-          payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
-          cart: cart.map((item) => ({
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image,
-            category: item.category,
-          })),
+          payer_name: payerName,
+          cart: cartPayload,
           shipping: SHIPPING,
           inline: useInline,
         }),
@@ -368,10 +402,58 @@ export default function CartPage() {
                         placeholder="you@example.com"
                         required
                       />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Pay with card, M-Pesa, or Airtel Money via Paystack
-                      </p>
                     </div>
+
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700 mb-2">Payment method</span>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethod === "paystack"}
+                            onChange={() => setPaymentMethod("paystack")}
+                            className="text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-gray-700">Paystack (card / mobile money)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            checked={paymentMethod === "mpesa"}
+                            onChange={() => setPaymentMethod("mpesa")}
+                            className="text-primary-600 focus:ring-primary-500"
+                          />
+                          <span className="text-gray-700">M-Pesa (STK Push)</span>
+                        </label>
+                      </div>
+                      {paymentMethod === "paystack" && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Pay with card, M-Pesa, or Airtel Money via Paystack
+                        </p>
+                      )}
+                    </div>
+
+                    {paymentMethod === "mpesa" && (
+                      <div>
+                        <label htmlFor="cart-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                          M-Pesa number
+                        </label>
+                        <input
+                          id="cart-phone"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="254XXXXXXXXX or 07XXXXXXXX"
+                          required={paymentMethod === "mpesa"}
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          You will receive an M-Pesa prompt on this number to complete payment.
+                        </p>
+                      </div>
+                    )}
 
                     {error && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-2">

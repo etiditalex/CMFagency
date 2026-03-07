@@ -69,14 +69,15 @@ export async function POST(
       return NextResponse.json({ error: "Withdrawal request not found" }, { status: 404 });
     }
 
-    if (wr.status !== "pending_admin") {
-      return NextResponse.json(
-        { error: `Cannot ${action} - request is already ${wr.status}` },
-        { status: 400 }
-      );
-    }
-
+    // Reject: allowed for pending_admin, and for processing/approved (admin revert when B2C fails)
     if (action === "reject") {
+      const allowedForReject = ["pending_admin", "approved", "processing"];
+      if (!allowedForReject.includes(wr.status)) {
+        return NextResponse.json(
+          { error: `Cannot reject - request is ${wr.status}` },
+          { status: 400 }
+        );
+      }
       const { error: updErr } = await supabase
         .from("withdrawal_requests")
         .update({
@@ -87,7 +88,20 @@ export async function POST(
         .eq("id", id);
 
       if (updErr) throw updErr;
-      return NextResponse.json({ status: "rejected", message: "Withdrawal rejected" });
+      return NextResponse.json({
+        status: "rejected",
+        message: wr.status !== "pending_admin"
+          ? "Withdrawal reverted. Balance restored."
+          : "Withdrawal rejected",
+      });
+    }
+
+    // Approve: only when pending_admin
+    if (wr.status !== "pending_admin") {
+      return NextResponse.json(
+        { error: `Cannot approve - request is already ${wr.status}` },
+        { status: 400 }
+      );
     }
 
     // Approve first
@@ -118,8 +132,22 @@ export async function POST(
     });
 
     if (!b2cResult.ok) {
+      // Store failure in metadata for debugging, revert status so balance restores
+      await supabase
+        .from("withdrawal_requests")
+        .update({
+          status: "pending_admin",
+          approved_by: null,
+          approved_at: null,
+          metadata: { b2c_error: b2cResult.error },
+        })
+        .eq("id", id);
       return NextResponse.json(
-        { error: b2cResult.error, status: "approved_but_b2c_failed" },
+        {
+          error: b2cResult.error,
+          status: "b2c_failed",
+          hint: "Check MPESA_B2C_* env vars. See DARAJA_B2C_TROUBLESHOOTING.md",
+        },
         { status: 502 }
       );
     }
