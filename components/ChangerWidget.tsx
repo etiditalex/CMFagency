@@ -4,16 +4,64 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, User, Bot, Loader2 } from "lucide-react";
 
-function generateSessionId() {
-  if (typeof window !== "undefined" && window.localStorage) {
-    let id = window.localStorage.getItem("changer_session_id");
-    if (!id) {
-      id = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-      window.localStorage.setItem("changer_session_id", id);
-    }
-    return id;
+const CHANGER_SESSION_ID_KEY = "changer_session_id";
+const CHANGER_LAST_ACTIVITY_KEY = "changer_last_activity_at";
+const CHANGER_LAST_SEEN_MESSAGE_KEY = "changer_last_seen_message_id";
+const SESSION_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+function getStoredSessionId(): string {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
-  return `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  let id = window.localStorage.getItem(CHANGER_SESSION_ID_KEY);
+  if (!id) {
+    id = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    window.localStorage.setItem(CHANGER_SESSION_ID_KEY, id);
+  }
+  return id;
+}
+
+function createNewSessionId(): string {
+  const id = `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  if (typeof window !== "undefined" && window.localStorage) {
+    window.localStorage.setItem(CHANGER_SESSION_ID_KEY, id);
+    window.localStorage.removeItem(CHANGER_LAST_SEEN_MESSAGE_KEY);
+  }
+  return id;
+}
+
+function isSessionExpired(): boolean {
+  if (typeof window === "undefined" || !window.localStorage) return true;
+  const raw = window.localStorage.getItem(CHANGER_LAST_ACTIVITY_KEY);
+  if (!raw) return false; // no activity yet, don't treat as expired
+  const t = parseInt(raw, 10);
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t > SESSION_TIMEOUT_MS;
+}
+
+function touchSessionActivity() {
+  if (typeof window !== "undefined" && window.localStorage) {
+    window.localStorage.setItem(CHANGER_LAST_ACTIVITY_KEY, String(Date.now()));
+  }
+}
+
+function getLastSeenMessageId(): string | null {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  return window.localStorage.getItem(CHANGER_LAST_SEEN_MESSAGE_KEY);
+}
+
+function setLastSeenMessageId(id: string | null) {
+  if (typeof window !== "undefined" && window.localStorage) {
+    if (id) window.localStorage.setItem(CHANGER_LAST_SEEN_MESSAGE_KEY, id);
+    else window.localStorage.removeItem(CHANGER_LAST_SEEN_MESSAGE_KEY);
+  }
+}
+
+function getUnreadCount(messages: { id: string; role: string }[], lastSeenId: string | null): number {
+  if (!lastSeenId || messages.length === 0) return 0;
+  const idx = messages.findIndex((m) => m.id === lastSeenId);
+  const start = idx < 0 ? 0 : idx + 1;
+  return messages.slice(start).filter((m) => m.role === "assistant" || m.role === "live_agent").length;
 }
 
 type Message = {
@@ -37,8 +85,10 @@ export default function ChangerWidget() {
   const [visitorEmail, setVisitorEmail] = useState("");
   const [visitorContact, setVisitorContact] = useState("");
   const [inquiryType, setInquiryType] = useState<InquiryType>("support");
-  const sessionId = useRef(generateSessionId());
+  const [unreadCount, setUnreadCount] = useState(0);
+  const sessionId = useRef(getStoredSessionId());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const closedPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -47,33 +97,36 @@ export default function ChangerWidget() {
 
   const [pollInterval, setPollInterval] = useState(3000);
 
-  const loadConversation = useCallback(async () => {
+  const loadConversation = useCallback(async (forBadgeOnly = false) => {
     try {
       const res = await fetch(
         `/api/changer/conversation?sessionId=${encodeURIComponent(sessionId.current)}`
       );
       const data = await res.json();
-      if (data.conversation) {
-        setMessages(
-          (data.messages ?? []).map((m: { id: string; role: string; content: string; created_at?: string }) => ({
-            id: m.id,
-            role: m.role as "user" | "assistant" | "live_agent",
-            content: m.content,
-            created_at: m.created_at,
-          }))
-        );
-        if (data.conversation.status === "waiting_for_agent") {
-          setHandoffRequested(true);
-          setPollInterval(3000);
-        }
-        if (data.conversation.status === "live_agent" && data.conversation.live_agent_name) {
-          setLiveAgentName(data.conversation.live_agent_name);
-          setHandoffRequested(false);
-          setPollInterval(1500);
-        }
-        if (data.conversation.status === "bot") {
-          setPollInterval(3000);
-        }
+      if (!data.conversation) return;
+      const list = (data.messages ?? []).map((m: { id: string; role: string; content: string; created_at?: string }) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant" | "live_agent",
+        content: m.content,
+        created_at: m.created_at,
+      }));
+      if (forBadgeOnly) {
+        const lastSeen = getLastSeenMessageId();
+        setUnreadCount(getUnreadCount(list, lastSeen));
+        return;
+      }
+      setMessages(list);
+      if (data.conversation.status === "waiting_for_agent") {
+        setHandoffRequested(true);
+        setPollInterval(3000);
+      }
+      if (data.conversation.status === "live_agent" && data.conversation.live_agent_name) {
+        setLiveAgentName(data.conversation.live_agent_name);
+        setHandoffRequested(false);
+        setPollInterval(1500);
+      }
+      if (data.conversation.status === "bot") {
+        setPollInterval(3000);
       }
     } catch {
       // ignore
@@ -82,8 +135,8 @@ export default function ChangerWidget() {
 
   useEffect(() => {
     if (open) {
-      loadConversation();
-      pollRef.current = setInterval(loadConversation, pollInterval);
+      loadConversation(false);
+      pollRef.current = setInterval(() => loadConversation(false), pollInterval);
     }
     return () => {
       if (pollRef.current) {
@@ -93,6 +146,37 @@ export default function ChangerWidget() {
     };
   }, [open, loadConversation, pollInterval]);
 
+  // When widget is closed: poll for unread badge only during 10-min session
+  useEffect(() => {
+    if (open) return;
+    const tick = () => {
+      if (isSessionExpired()) {
+        setUnreadCount(0);
+        return;
+      }
+      loadConversation(true);
+    };
+    tick();
+    closedPollRef.current = setInterval(tick, 15000);
+    return () => {
+      if (closedPollRef.current) {
+        clearInterval(closedPollRef.current);
+        closedPollRef.current = null;
+      }
+    };
+  }, [open, loadConversation]);
+
+  // On open: touch activity and clear badge; on close: mark messages as seen
+  useEffect(() => {
+    if (open) {
+      touchSessionActivity();
+      setUnreadCount(0);
+    } else if (messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last?.id) setLastSeenMessageId(last.id);
+    }
+  }, [open, messages]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
@@ -100,6 +184,13 @@ export default function ChangerWidget() {
   const sendMessage = async () => {
     const text = input.trim();
     if (!text || loading) return;
+    if (isSessionExpired()) {
+      sessionId.current = createNewSessionId();
+      setMessages([]);
+      setHandoffRequested(false);
+      setLiveAgentName(null);
+    }
+    touchSessionActivity();
     setInput("");
     setMessages((prev) => [
       ...prev,
@@ -196,7 +287,10 @@ export default function ChangerWidget() {
       >
         <button
           type="button"
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            setOpen(!open);
+            if (!open) touchSessionActivity();
+          }}
           aria-label={open ? "Close Changer chat" : "Open Changer chat"}
           className="group relative block"
         >
@@ -207,6 +301,11 @@ export default function ChangerWidget() {
           >
             <MessageCircle className="w-7 h-7 text-white" />
           </motion.div>
+          {!open && unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white ring-2 ring-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </button>
       </motion.div>
 
