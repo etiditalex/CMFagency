@@ -27,6 +27,29 @@ function wantsLiveAgent(message: string): boolean {
   return LIVE_AGENT_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+const EVENT_SCHEDULE_ANSWER =
+  "The Coast Fashion and Modelling Awards 2026 (CMFA) is scheduled for 15 August 2026 in Mombasa, Kenya. Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion and Eco-Tourism. You can get tickets and more details on our upcoming events page.";
+
+const EVENT_SCHEDULE_QUESTION_PATTERNS = [
+  "when is the event",
+  "when is it scheduled",
+  "when does it happen",
+  "event date",
+  "event schedule",
+  "when is the next event",
+  "when is cmfa",
+  "when is the awards",
+  "date of the event",
+  "when and where",
+];
+
+function isEventScheduleQuestion(message: string): boolean {
+  const lower = message.toLowerCase().trim();
+  return EVENT_SCHEDULE_QUESTION_PATTERNS.some((p) => lower.includes(p)) ||
+    /\bwhen\b.*\b(event|scheduled|happen|date)\b/i.test(lower) ||
+    /\b(event|awards)\b.*\b(when|date)\b/i.test(lower);
+}
+
 async function getKnowledgeContext(query: string): Promise<string> {
   if (!supabaseAdmin) return "";
   // Fetch up to 50 knowledge entries so the bot understands the entire website
@@ -185,6 +208,8 @@ export async function POST(req: NextRequest) {
 **Careers & Merchandise**: Jobs, internships, talent programs, branded merchandise (T-shirts, hoodies, etc.).
 
 Be helpful, professional, and concise. Answer questions using the website content below when available. Base your answers only on the provided website content; do not invent information.
+
+**Important**: For questions like "when is the event", "when is it scheduled", "event date", "when does it happen" — always give a direct answer from the content: CMFA 2026 is on 15 August 2026 in Mombasa, Kenya. Never reply with a generic "Based on our website content, I can help with..." — that is not an answer to a specific question.
 ${knowledgeContext}
 
 **When you cannot answer from the website content** (e.g. the question is unclear, outside our services, or not covered above), respond exactly with: "I don't have that specific information on hand. Would you like to talk to a live agent who can help you? Just click 'Talk to a live agent' below or say 'I want to speak to someone'."
@@ -212,11 +237,17 @@ ${knowledgeContext}
       });
     }
 
-    // Fallback: simple response using knowledge
-    const fallbackMessage =
-      knowledgeContext.length > 50
-        ? `Based on our website content, I can help with bookings, voting, ticketing, events, services, and careers. For detailed support, visit /events/upcoming for tickets, or click "Talk to a live agent" to connect with someone from our team.`
-        : `Hello! I'm Changer. I can help with bookings, voting, ticketing, events, services, and careers. Visit /events/upcoming for event tickets. For a live agent, click the button below or type "I need a live agent".`;
+    // Fallback: answer event schedule questions directly; otherwise generic help
+    let fallbackMessage: string;
+    if (isEventScheduleQuestion(content)) {
+      fallbackMessage = EVENT_SCHEDULE_ANSWER;
+    } else if (knowledgeContext.length > 50) {
+      fallbackMessage =
+        "Based on our website content, I can help with bookings, voting, ticketing, events, services, and careers. For detailed support, visit /events/upcoming for tickets, or click \"Talk to a live agent\" to connect with someone from our team.";
+    } else {
+      fallbackMessage =
+        "Hello! I'm Changer. I can help with bookings, voting, ticketing, events, services, and careers. Visit /events/upcoming for event tickets. For a live agent, click the button below or type \"I need a live agent\".";
+    }
 
     await supabaseAdmin.from("changer_messages").insert({
       conversation_id: conv.id,

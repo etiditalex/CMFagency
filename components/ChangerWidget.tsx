@@ -99,9 +99,8 @@ export default function ChangerWidget() {
 
   const loadConversation = useCallback(async (forBadgeOnly = false) => {
     try {
-      const res = await fetch(
-        `/api/changer/conversation?sessionId=${encodeURIComponent(sessionId.current)}`
-      );
+      const url = `/api/changer/conversation?sessionId=${encodeURIComponent(sessionId.current)}&_=${Date.now()}`;
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       if (!data.conversation) return;
       const list = (data.messages ?? []).map((m: { id: string; role: string; content: string; created_at?: string }) => ({
@@ -123,7 +122,7 @@ export default function ChangerWidget() {
       if (data.conversation.status === "live_agent" && data.conversation.live_agent_name) {
         setLiveAgentName(data.conversation.live_agent_name);
         setHandoffRequested(false);
-        setPollInterval(1000);
+        setPollInterval(800);
       }
       if (data.conversation.status === "bot") {
         setPollInterval(3000);
@@ -418,6 +417,9 @@ export default function ChangerWidget() {
                         : "bg-gray-100 text-gray-900"
                     }`}
                   >
+                    {m.role === "live_agent" && liveAgentName && (
+                      <p className="text-xs font-medium text-primary-600 mb-1">{liveAgentName}</p>
+                    )}
                     <p className="whitespace-pre-wrap">
                       {m.content.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
                         part.match(/^https?:\/\//) ? (
