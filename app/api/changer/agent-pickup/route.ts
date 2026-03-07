@@ -3,7 +3,14 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const LIVE_AGENT_NAME = "Alex";
+const DEFAULT_AGENT_NAME = "Alex";
+const MAX_AGENT_NAME_LENGTH = 80;
+
+function sanitizeAgentName(raw: unknown): string {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (!s) return DEFAULT_AGENT_NAME;
+  return s.slice(0, MAX_AGENT_NAME_LENGTH) || DEFAULT_AGENT_NAME;
+}
 
 const supabaseAdmin =
   supabaseUrl && supabaseServiceKey
@@ -36,10 +43,11 @@ export async function POST(req: NextRequest) {
     if (!isAdmin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
     const body = await req.json();
-    const { conversationId } = body;
+    const { conversationId, agentName } = body;
     if (!conversationId) {
       return NextResponse.json({ error: "conversationId required" }, { status: 400 });
     }
+    const liveAgentName = sanitizeAgentName(agentName);
 
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Changer not configured" }, { status: 500 });
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
       .from("changer_conversations")
       .update({
         status: "live_agent",
-        live_agent_name: LIVE_AGENT_NAME,
+        live_agent_name: liveAgentName,
         live_agent_picked_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -73,15 +81,15 @@ export async function POST(req: NextRequest) {
     // Record in handoff log (admin dashboard only)
     await supabaseAdmin.from("changer_handoff_log").insert({
       conversation_id: conversationId,
-      live_agent_name: LIVE_AGENT_NAME,
+      live_agent_name: liveAgentName,
       picked_by_user_id: user.id,
     });
 
-    // Add system message so the user sees "Alex has joined"
+    // Add system message so the user sees who has joined
     await supabaseAdmin.from("changer_messages").insert({
       conversation_id: conversationId,
       role: "live_agent",
-      content: `${LIVE_AGENT_NAME} has joined the conversation. How can I help you?`,
+      content: `${liveAgentName} has joined the conversation. How can I help you?`,
     });
 
     return NextResponse.json({

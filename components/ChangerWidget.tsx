@@ -105,7 +105,7 @@ export default function ChangerWidget() {
       const data = await res.json();
       if (!data.conversation) return;
       const list = (data.messages ?? []).map((m: { id: string; role: string; content: string; created_at?: string }) => ({
-        id: m.id,
+        id: String(m.id),
         role: m.role as "user" | "assistant" | "live_agent",
         content: m.content,
         created_at: m.created_at,
@@ -118,12 +118,12 @@ export default function ChangerWidget() {
       setMessages(list);
       if (data.conversation.status === "waiting_for_agent") {
         setHandoffRequested(true);
-        setPollInterval(3000);
+        setPollInterval(1500);
       }
       if (data.conversation.status === "live_agent" && data.conversation.live_agent_name) {
         setLiveAgentName(data.conversation.live_agent_name);
         setHandoffRequested(false);
-        setPollInterval(1500);
+        setPollInterval(1000);
       }
       if (data.conversation.status === "bot") {
         setPollInterval(3000);
@@ -266,7 +266,7 @@ export default function ChangerWidget() {
           {
             id: `h-${Date.now()}`,
             role: "assistant",
-            content: data.message || "A live agent has been notified. Alex will join your conversation shortly. We've also sent an email to our team.",
+            content: data.message || "A live agent has been notified. Someone from our team will join your conversation shortly. We've also sent an email to our team.",
           },
         ]);
       }
@@ -472,7 +472,7 @@ export default function ChangerWidget() {
                     onClick={requestLiveAgent}
                     className="mt-2 w-full text-xs text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    Talk to a live agent (Alex)
+                    Talk to a live agent
                   </button>
                 )}
               </div>

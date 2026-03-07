@@ -29,14 +29,15 @@ function wantsLiveAgent(message: string): boolean {
 
 async function getKnowledgeContext(query: string): Promise<string> {
   if (!supabaseAdmin) return "";
+  // Fetch up to 50 knowledge entries so the bot understands the entire website
   const { data } = await supabaseAdmin
     .from("changer_knowledge")
     .select("title, content_text")
     .order("updated_at", { ascending: false })
-    .limit(10);
+    .limit(50);
   if (!data?.length) return "";
   const parts = data.map((r) => `[${r.title || "Content"}]\n${r.content_text}`).join("\n\n---\n\n");
-  return `\n\nRelevant website content (use this to answer accurately):\n${parts}`;
+  return `\n\nRelevant website content (use this to answer accurately; this is the full site context):\n${parts}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -90,9 +91,10 @@ export async function POST(req: NextRequest) {
       });
       if (msgErr) console.error("Changer message insert:", msgErr);
       await supabaseAdmin.from("changer_conversations").update({ updated_at: new Date().toISOString() }).eq("id", conv.id);
+      const agentName = conv.live_agent_name || "A live agent";
       return NextResponse.json({
         success: true,
-        message: "Your message has been sent. Alex will respond shortly.",
+        message: `Your message has been sent. ${agentName} will respond shortly.`,
         role: "live_agent",
       });
     }
@@ -121,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     // If user requests a live agent, trigger handoff and indicate transfer
     if (wantsLiveAgent(content)) {
-      const transferMessage = "Transferring you to a live agent now. Alex will be with you shortly. Please hold...";
+      const transferMessage = "Transferring you to a live agent now. They will be with you shortly. Please hold...";
       await supabaseAdmin.from("changer_conversations").update({
         status: "waiting_for_agent",
         handoff_requested_at: new Date().toISOString(),
@@ -182,10 +184,12 @@ export async function POST(req: NextRequest) {
 
 **Careers & Merchandise**: Jobs, internships, talent programs, branded merchandise (T-shirts, hoodies, etc.).
 
-Be helpful, professional, and concise. Answer questions about bookings, voting, ticketing, events, services, and careers using the website content below when available.
+Be helpful, professional, and concise. Answer questions using the website content below when available. Base your answers only on the provided website content; do not invent information.
 ${knowledgeContext}
 
-When users ask for a human, live agent, or real person, respond: "I'm transferring you to a live agent now. Alex will be with you shortly." The system will automatically handle the transfer.`;
+**When you cannot answer from the website content** (e.g. the question is unclear, outside our services, or not covered above), respond exactly with: "I don't have that specific information on hand. Would you like to talk to a live agent who can help you? Just click 'Talk to a live agent' below or say 'I want to speak to someone'."
+
+**When users ask for a human, live agent, or real person**, respond: "I'm transferring you to a live agent now. They will be with you shortly." The system will automatically handle the transfer.`;
 
     if (openaiKey) {
       const { text } = await generateText({
@@ -211,7 +215,7 @@ When users ask for a human, live agent, or real person, respond: "I'm transferri
     // Fallback: simple response using knowledge
     const fallbackMessage =
       knowledgeContext.length > 50
-        ? `Based on our website content, I can help with bookings, voting, ticketing, events, services, and careers. For detailed support, visit /events/upcoming for tickets, or click "Talk to a live agent" to connect with Alex.`
+        ? `Based on our website content, I can help with bookings, voting, ticketing, events, services, and careers. For detailed support, visit /events/upcoming for tickets, or click "Talk to a live agent" to connect with someone from our team.`
         : `Hello! I'm Changer. I can help with bookings, voting, ticketing, events, services, and careers. Visit /events/upcoming for event tickets. For a live agent, click the button below or type "I need a live agent".`;
 
     await supabaseAdmin.from("changer_messages").insert({

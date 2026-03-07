@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "A live agent has been notified. Alex will join your conversation shortly.",
+      message: "A live agent has been notified. Someone from our team will join your conversation shortly.",
     });
   } catch (err: unknown) {
     console.error("Changer handoff error:", err);

@@ -36,7 +36,7 @@ type HandoffLog = {
   picked_at: string;
 };
 
-const LIVE_AGENT_NAME = "Alex";
+const DEFAULT_AGENT_NAME = "Alex";
 
 export default function DashboardChangerPage() {
   const router = useRouter();
@@ -53,6 +53,8 @@ export default function DashboardChangerPage() {
   const [pickingId, setPickingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [pickupModalConv, setPickupModalConv] = useState<Conversation | null>(null);
+  const [pickupAgentName, setPickupAgentName] = useState(DEFAULT_AGENT_NAME);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -162,8 +164,10 @@ export default function DashboardChangerPage() {
     }
   };
 
-  const pickUp = async (conv: Conversation) => {
+  const pickUp = async (conv: Conversation, agentName?: string) => {
     if (conv.status === "live_agent") return;
+    setPickupModalConv(null);
+    const name = (agentName ?? pickupAgentName).trim() || DEFAULT_AGENT_NAME;
     setPickingId(conv.id);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
@@ -173,10 +177,11 @@ export default function DashboardChangerPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ conversationId: conv.id }),
+        body: JSON.stringify({ conversationId: conv.id, agentName: name }),
       });
       const data = await res.json();
       if (data.success) {
+        setPickupAgentName(name);
         loadData();
         if (selectedId === conv.id) loadMessages(conv.id);
       } else {
@@ -187,6 +192,11 @@ export default function DashboardChangerPage() {
     } finally {
       setPickingId(null);
     }
+  };
+
+  const openPickupModal = (conv: Conversation) => {
+    setPickupModalConv(conv);
+    setPickupAgentName(DEFAULT_AGENT_NAME);
   };
 
   const formatDate = (iso: string) => {
@@ -220,12 +230,47 @@ export default function DashboardChangerPage() {
 
   return (
     <div className="text-left">
+      {pickupModalConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-labelledby="pickup-modal-title">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5">
+            <h3 id="pickup-modal-title" className="font-semibold text-gray-900 mb-2">Pick up conversation</h3>
+            <p className="text-sm text-gray-600 mb-3">Enter your name so the visitor knows who they&apos;re talking to.</p>
+            <input
+              type="text"
+              value={pickupAgentName}
+              onChange={(e) => setPickupAgentName(e.target.value)}
+              placeholder={DEFAULT_AGENT_NAME}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-4"
+              onKeyDown={(e) => e.key === "Enter" && pickUp(pickupModalConv, undefined)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setPickupModalConv(null)}
+                className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => pickUp(pickupModalConv, undefined)}
+                disabled={pickingId === pickupModalConv.id}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-60"
+              >
+                <UserPlus className="w-4 h-4" />
+                Pick up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Changer</h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
             AI chatbot conversations. When a visitor requests a live agent, you&apos;ll get an email at changerfusions@gmail.com.
-            Click &quot;Pick up&quot; to join as {LIVE_AGENT_NAME}. Handoffs are recorded here.
+            Click &quot;Pick up&quot; to join a conversation and enter your name so the visitor knows who they&apos;re talking to. Handoffs are recorded below.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -321,12 +366,12 @@ export default function DashboardChangerPage() {
               {selected && selected.status !== "live_agent" && (
                 <button
                   type="button"
-                  onClick={() => pickUp(selected)}
+                  onClick={() => openPickupModal(selected)}
                   disabled={pickingId === selected.id}
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-60"
                 >
                   <UserPlus className="w-4 h-4" />
-                  Pick up as {LIVE_AGENT_NAME}
+                  Pick up
                 </button>
               )}
             </div>
@@ -370,7 +415,7 @@ export default function DashboardChangerPage() {
                             : "bg-gray-100 text-gray-900"
                         }`}
                       >
-                        <span className="text-xs opacity-75">{m.role === "live_agent" ? LIVE_AGENT_NAME : m.role}</span>
+                        <span className="text-xs opacity-75">{m.role === "live_agent" ? (selected?.live_agent_name || "Agent") : m.role}</span>
                         <p className="whitespace-pre-wrap">{m.content}</p>
                       </div>
                     </div>
@@ -383,7 +428,7 @@ export default function DashboardChangerPage() {
                       value={agentInput}
                       onChange={(e) => setAgentInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendAgentMessage()}
-                      placeholder="Type your reply as Alex..."
+                      placeholder={selected?.live_agent_name ? `Type your reply as ${selected.live_agent_name}...` : "Type your reply..."}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500"
                     />
                     <button
@@ -408,10 +453,10 @@ export default function DashboardChangerPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-200 font-semibold text-gray-900 flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              Handoff Log ({LIVE_AGENT_NAME})
+              Handoff Log
             </div>
             <p className="px-4 py-2 text-xs text-gray-500">
-              Record of when {LIVE_AGENT_NAME} picked up conversations. Admin dashboard only.
+              Record of when agents picked up conversations. Admin dashboard only.
             </p>
             <div className="divide-y divide-gray-100 max-h-[200px] overflow-y-auto">
               {handoffLogs.length === 0 ? (
