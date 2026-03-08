@@ -72,6 +72,7 @@ export function ReceiptEmail({
   const holderLabel = typeLabel === "Order" ? "Customer" : `${typeLabel} holder`;
   const isTicket = typeLabel === "Ticket";
   const qrData = `${ticketNumber}\n${reference}`;
+  const viewButtonText = typeLabel === "Vote" ? "View Vote" : typeLabel === "Ticket" ? "View Ticket" : "View Order";
 
   return (
     <Html>
@@ -107,7 +108,7 @@ export function ReceiptEmail({
                     <td style={buttonCell}>
                       {viewTicketsUrl && (
                         <Button href={viewTicketsUrl} style={{ ...viewTicketsButton, ...buttonStyles[variant] }}>
-                          View Tickets
+                          {viewButtonText}
                         </Button>
                       )}
                     </td>
