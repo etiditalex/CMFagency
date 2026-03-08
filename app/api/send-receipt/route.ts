@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
   const { data: tx, error } = await supabase
     .from("transactions")
-    .select("id,reference,email,payer_name,amount,currency,quantity,campaign_type,metadata")
+    .select("id,reference,email,payer_name,amount,currency,quantity,campaign_type,metadata,provider")
     .eq("reference", ref)
     .eq("status", "success")
     .maybeSingle();
@@ -34,6 +34,10 @@ export async function POST(req: Request) {
   if (!toEmail) return NextResponse.json({ error: "No email" }, { status: 400 });
 
   const meta = (typeof (tx as { metadata?: unknown }).metadata === "object" && (tx as { metadata?: Record<string, unknown> }).metadata) || {};
+  const provider = (tx as { provider?: string }).provider ?? "paystack";
+  const isMpesa = provider === "daraja";
+  const mpesaReceipt = (meta.mpesa_receipt as string)?.trim() || undefined;
+
   const holderName = (tx as { payer_name?: string }).payer_name?.trim?.() || toEmail;
   const ticketSuffix = ref.replace(/^cmf_/, "").slice(-8).toUpperCase();
   const slug = (meta.slug as string) || "event";
@@ -56,7 +60,8 @@ export async function POST(req: Request) {
     amount: `${currency} ${amount.toLocaleString()}`,
     quantity: `${quantity} ${quantityLabel}`,
     reference: ref,
-    variant: "paystack",
+    variant: isMpesa ? "mpesa" : "paystack",
+    mpesaReceipt: isMpesa ? mpesaReceipt : undefined,
   });
 
   if (!result.ok) {

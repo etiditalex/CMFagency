@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
 
       try {
-        await sendReceiptEmail({
+        const emailResult = await sendReceiptEmail({
           to: toEmail,
           campaignTitle,
           typeLabel,
@@ -198,8 +198,13 @@ export async function POST(req: Request) {
           mpesaReceipt: mpesaReceipt || undefined,
           variant: "mpesa",
         });
-      } catch {
-        /* non-fatal */
+        if (emailResult.ok) {
+          console.log(`[Daraja] Receipt email sent via Resend to ${toEmail} (ref: ${reference})`);
+        } else {
+          console.warn(`[Daraja] Receipt email failed for ${toEmail}:`, emailResult.error);
+        }
+      } catch (err) {
+        console.warn("[Daraja] Receipt email error:", err instanceof Error ? err.message : err);
       }
     }
 
