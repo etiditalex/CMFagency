@@ -145,10 +145,11 @@ export default function ChangerWidget() {
     };
   }, [open, loadConversation, pollInterval]);
 
-  // When a live agent is active: poll every 400ms so their messages show immediately
+  // When a live agent is active: refresh immediately, then every 200ms so messages feel instant
   useEffect(() => {
     if (!open || !liveAgentName) return;
-    const t = setInterval(() => loadConversation(false), 400);
+    loadConversation(false);
+    const t = setInterval(() => loadConversation(false), 200);
     return () => clearInterval(t);
   }, [open, liveAgentName, loadConversation]);
 
