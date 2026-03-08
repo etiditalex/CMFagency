@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { fromEmail } from "@/lib/resend";
+
+const RESEND_RATE_LIMIT_MS = 550; // Resend allows 2 requests/second; space sends to stay under limit
 
 type Body = { campaign_id?: string; subject?: string; body?: string };
 
@@ -70,7 +73,6 @@ export async function POST(req: NextRequest) {
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "CMF Agency <onboarding@resend.dev>";
     if (!resendApiKey) return NextResponse.json({ error: "Email service not configured" }, { status: 503 });
 
     const html = `
@@ -89,7 +91,9 @@ export async function POST(req: NextRequest) {
     let sent = 0;
     const errors: string[] = [];
 
-    for (const to of emails) {
+    for (let i = 0; i < emails.length; i++) {
+      const to = emails[i];
+      if (i > 0) await new Promise((r) => setTimeout(r, RESEND_RATE_LIMIT_MS));
       try {
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",

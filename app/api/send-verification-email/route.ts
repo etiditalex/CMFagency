@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { fromEmail } from '@/lib/resend';
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,16 +69,11 @@ export async function POST(request: NextRequest) {
     // Send email using Resend API (free tier available)
     // Get API key from environment variable: RESEND_API_KEY
     const resendApiKey = process.env.RESEND_API_KEY;
-    // NOTE: Resend requires domain verification to send to any email
-    // Using onboarding@resend.dev only sends to your verified email (changerfusions@gmail.com)
-    // To send to any email, verify a domain at https://resend.com/domains
-    const resendFromEmail = process.env.RESEND_FROM_EMAIL || 'CMF Agency <onboarding@resend.dev>';
-    
     console.log('Attempting to send email:', {
       email,
       hasApiKey: !!resendApiKey,
       apiKeyPrefix: resendApiKey ? resendApiKey.substring(0, 10) + '...' : 'none',
-      fromEmail: resendFromEmail,
+      fromEmail,
     });
     
     if (!resendApiKey) {
@@ -110,7 +106,7 @@ export async function POST(request: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: resendFromEmail,
+            from: fromEmail,
             to: email,
             subject: 'Verify Your Email - CMF Agency',
             html: emailHtml,

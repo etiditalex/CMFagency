@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { fromEmail } from "@/lib/resend";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -163,7 +164,6 @@ export async function POST(req: NextRequest) {
 
       // Send email to changerfusions@gmail.com (handoff notification)
       const resendApiKey = process.env.RESEND_API_KEY;
-      const fromEmail = process.env.RESEND_FROM_EMAIL || "CMF Agency <onboarding@resend.dev>";
       if (resendApiKey) {
         const { data: msgs } = await supabaseAdmin
           .from("changer_messages")
