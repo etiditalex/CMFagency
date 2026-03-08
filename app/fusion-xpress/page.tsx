@@ -231,26 +231,27 @@ export default function FusionXpressAdminLoginPage() {
         {/* Marketing / services section (like screenshot), then login at the end */}
         <section className="text-left">
           {/* Hero (image background) */}
-          <div className="relative overflow-hidden rounded-3xl border border-gray-200">
+          <div className="relative overflow-hidden rounded-3xl border border-gray-200 min-h-[320px] md:min-h-[380px]">
             <div
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{
                 backgroundImage:
                   "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg)",
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/10" />
+            {/* Lighter overlay so the image is clearly visible; darker only behind text for readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary-500/25 blur-3xl" />
-              <div className="absolute bottom-8 -right-24 w-80 h-80 rounded-full bg-secondary-500/25 blur-3xl" />
+              <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary-500/15 blur-3xl" />
+              <div className="absolute bottom-8 -right-24 w-80 h-80 rounded-full bg-secondary-500/15 blur-3xl" />
             </div>
 
             <div className="relative p-6 md:p-10">
               <div className="max-w-4xl">
-                <h1 className="mt-5 text-4xl md:text-5xl font-extrabold text-white leading-tight text-left">
+                <h1 className="mt-5 text-4xl md:text-5xl font-extrabold text-white leading-tight text-left drop-shadow-lg">
                   Changer Fusions helps creators run unforgettable experiences.
                 </h1>
-                <p className="mt-4 text-white/90 leading-relaxed max-w-3xl">
+                <p className="mt-4 text-white/95 leading-relaxed max-w-3xl drop-shadow-md">
                   We support event organizers, artists, talent brands, and entertainment businesses with campaign setup, ticketing,
                   voting programs, and marketing execution—built to be simple for audiences and reliable for admins.
                 </p>
