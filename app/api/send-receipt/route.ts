@@ -50,6 +50,8 @@ export async function POST(req: Request) {
   const currency = String((tx as { currency?: string }).currency || "KES").toUpperCase();
   const amount = Number((tx as { amount?: number }).amount || 0);
   const quantity = (tx as { quantity?: number }).quantity ?? 0;
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
+  const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(ref)}` : undefined;
 
   const result = await sendReceiptEmail({
     to: toEmail,
@@ -62,6 +64,7 @@ export async function POST(req: Request) {
     reference: ref,
     variant: isMpesa ? "mpesa" : "paystack",
     mpesaReceipt: isMpesa ? mpesaReceipt : undefined,
+    viewTicketsUrl,
   });
 
   if (!result.ok) {

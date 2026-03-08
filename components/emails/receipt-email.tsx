@@ -1,10 +1,13 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
   Hr,
   Html,
+  Img,
+  Link,
   Preview,
   Section,
   Text,
@@ -23,12 +26,30 @@ export type ReceiptEmailProps = {
   mpesaReceipt?: string;
   /** "mpesa" = green gradient, "paystack" = purple gradient */
   variant?: "mpesa" | "paystack";
+  /** Link to view ticket / event page (e.g. success page or event URL) */
+  viewTicketsUrl?: string;
+  /** Optional event details for ticket-type receipts */
+  eventDate?: string;
+  eventTime?: string;
+  eventLocation?: string;
+  /** Organizer contact for "Questions? Contact..." */
+  organizerName?: string;
+  organizerEmail?: string;
 };
 
 const headerStyles = {
   mpesa: { background: "linear-gradient(135deg, #00A651 0%, #007A3D 100%)" },
   paystack: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
 };
+
+const buttonStyles = {
+  mpesa: { background: "linear-gradient(135deg, #00A651 0%, #007A3D 100%)" },
+  paystack: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+};
+
+function qrCodeUrl(data: string, size = 150): string {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+}
 
 export function ReceiptEmail({
   campaignTitle,
@@ -41,8 +62,17 @@ export function ReceiptEmail({
   paymentLabel = "Payment confirmed",
   mpesaReceipt,
   variant = "paystack",
+  viewTicketsUrl,
+  eventDate,
+  eventTime,
+  eventLocation,
+  organizerName = "CMF Agency",
+  organizerEmail = "info@cmfagency.co.ke",
 }: ReceiptEmailProps) {
   const holderLabel = typeLabel === "Order" ? "Customer" : `${typeLabel} holder`;
+  const isTicket = typeLabel === "Ticket";
+  const qrData = `${ticketNumber}\n${reference}`;
+
   return (
     <Html>
       <Head />
@@ -53,7 +83,43 @@ export function ReceiptEmail({
             <Heading style={headerTitle}>{campaignTitle}</Heading>
             <Text style={headerSubtitle}>{paymentLabel}</Text>
           </Section>
+
           <Section style={content}>
+            <Heading as="h2" style={sectionTitle}>
+              Your {typeLabel.toLowerCase()}
+            </Heading>
+            <Text style={holderNameText}>{holderName}</Text>
+
+            {(viewTicketsUrl || isTicket) && (
+              <table style={buttonTable}>
+                <tbody>
+                  <tr>
+                    <td style={qrCell}>
+                      <Img
+                        src={qrCodeUrl(qrData)}
+                        width={120}
+                        height={120}
+                        alt="Ticket QR code"
+                        style={qrImage}
+                      />
+                      <Text style={qrLabel}>Show at entry</Text>
+                    </td>
+                    <td style={buttonCell}>
+                      {viewTicketsUrl && (
+                        <Button href={viewTicketsUrl} style={{ ...viewTicketsButton, ...buttonStyles[variant] }}>
+                          View Tickets
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+
+            <Text style={greeting}>
+              Hello {holderName}, we are happy to confirm your {typeLabel.toLowerCase()} for {campaignTitle}.
+            </Text>
+
             <table style={table}>
               <tr>
                 <td style={labelCell}>{typeLabel} number:</td>
@@ -81,9 +147,31 @@ export function ReceiptEmail({
             <Text style={referenceText}>
               Reference: <code style={code}>{reference}</code>
             </Text>
+
+            {(eventDate || eventTime || eventLocation) && (
+              <>
+                <Hr style={hr} />
+                <Text style={eventSectionTitle}>Event details</Text>
+                {eventDate && (
+                  <Text style={eventDetail}>📅 {eventDate}{eventTime ? ` · ${eventTime}` : ""}</Text>
+                )}
+                {eventLocation && (
+                  <Text style={eventDetail}>📍 {eventLocation}</Text>
+                )}
+              </>
+            )}
+
+            <Hr style={hr} />
+            <Text style={organizerLabel}>Questions about this event?</Text>
+            <Text style={organizerText}>
+              Please contact the organizer: {organizerName}
+              {organizerEmail && (
+                <> · <Link href={`mailto:${organizerEmail}`} style={organizerLink}>{organizerEmail}</Link></>
+              )}
+            </Text>
           </Section>
-          <Hr style={hr} />
-          <Text style={footer}>Sent by CMF Agency · Changer Fusions</Text>
+
+          <Text style={footer}>Sent by {organizerName} · Changer Fusions</Text>
         </Container>
       </Body>
     </Html>
@@ -127,7 +215,64 @@ const headerSubtitle = {
 
 const content = {
   padding: "24px",
-  backgroundColor: "#f8f9fa",
+  backgroundColor: "#fafafa",
+};
+
+const sectionTitle = {
+  margin: "0 0 4px",
+  fontSize: "18px",
+  fontWeight: "600",
+  color: "#333",
+};
+
+const holderNameText = {
+  margin: "0 0 16px",
+  fontSize: "20px",
+  fontWeight: "600",
+  color: "#111",
+};
+
+const buttonTable = {
+  width: "100%",
+  marginBottom: "20px",
+  borderCollapse: "collapse" as const,
+};
+
+const qrCell = {
+  width: "140px",
+  verticalAlign: "top" as const,
+  paddingRight: "16px",
+};
+
+const qrImage = {
+  display: "block",
+  borderRadius: "8px",
+};
+
+const qrLabel = {
+  margin: "4px 0 0",
+  fontSize: "11px",
+  color: "#666",
+};
+
+const buttonCell = {
+  verticalAlign: "top" as const,
+};
+
+const viewTicketsButton = {
+  color: "#fff",
+  padding: "12px 24px",
+  borderRadius: "8px",
+  fontWeight: "600",
+  fontSize: "14px",
+  textDecoration: "none",
+};
+
+const greeting = {
+  margin: "0 0 20px",
+  fontSize: "15px",
+  lineHeight: "1.5",
+  color: "#444",
 };
 
 const table = {
@@ -163,7 +308,38 @@ const code = {
 
 const hr = {
   borderColor: "#e9ecef",
-  margin: "20px 24px",
+  margin: "20px 0",
+};
+
+const eventSectionTitle = {
+  margin: "0 0 8px",
+  fontSize: "14px",
+  fontWeight: "600",
+  color: "#333",
+};
+
+const eventDetail = {
+  margin: "0 0 4px",
+  fontSize: "14px",
+  color: "#555",
+};
+
+const organizerLabel = {
+  margin: "0 0 4px",
+  fontSize: "13px",
+  fontWeight: "600",
+  color: "#333",
+};
+
+const organizerText = {
+  margin: "0",
+  fontSize: "13px",
+  color: "#555",
+};
+
+const organizerLink = {
+  color: "#667eea",
+  textDecoration: "none",
 };
 
 const footer = {

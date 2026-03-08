@@ -15,6 +15,12 @@ export type ReceiptParams = {
   reference: string;
   mpesaReceipt?: string;
   variant?: "mpesa" | "paystack";
+  viewTicketsUrl?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventLocation?: string;
+  organizerName?: string;
+  organizerEmail?: string;
 };
 
 const receiptProps = (
@@ -30,6 +36,12 @@ const receiptProps = (
   paymentLabel: params.variant === "mpesa" ? "M-Pesa payment confirmed" : "Payment confirmed",
   mpesaReceipt: params.mpesaReceipt,
   variant: params.variant ?? "paystack",
+  viewTicketsUrl: params.viewTicketsUrl,
+  eventDate: params.eventDate,
+  eventTime: params.eventTime,
+  eventLocation: params.eventLocation,
+  organizerName: params.organizerName,
+  organizerEmail: params.organizerEmail,
 });
 
 export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {

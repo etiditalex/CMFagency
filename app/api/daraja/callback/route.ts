@@ -184,6 +184,8 @@ export async function POST(req: Request) {
       const campaignTitle = String(meta.campaign_title || meta.slug || "Event");
       const typeLabel = (tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as "Ticket" | "Vote" | "Order";
       const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
+      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
+      const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(reference)}` : undefined;
 
       try {
         const emailResult = await sendReceiptEmail({
@@ -197,6 +199,7 @@ export async function POST(req: Request) {
           reference,
           mpesaReceipt: mpesaReceipt || undefined,
           variant: "mpesa",
+          viewTicketsUrl,
         });
         if (emailResult.ok) {
           console.log(`[Daraja] Receipt email sent via Resend to ${toEmail} (ref: ${reference})`);
