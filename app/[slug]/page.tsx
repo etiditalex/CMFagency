@@ -230,10 +230,14 @@ export default function CampaignPage() {
     };
   }, [ref]);
 
+  const effectiveMax = useMemo(() => {
+    if (!campaign) return 10;
+    return campaign.type === "vote" ? 1000000 : Math.min(campaign.max_per_txn, 10000);
+  }, [campaign]);
   const qty = useMemo(() => {
     if (!campaign) return 1;
-    return Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
-  }, [campaign, quantity]);
+    return Math.max(1, Math.min(effectiveMax, Math.trunc(quantity)));
+  }, [campaign, quantity, effectiveMax]);
   const total = useMemo(() => {
     if (!campaign) return 0;
     return qty * campaign.unit_amount;
@@ -251,7 +255,7 @@ export default function CampaignPage() {
     setError(null);
 
     try {
-      const q = Math.max(1, Math.min(campaign.max_per_txn, Math.trunc(quantity)));
+      const q = Math.max(1, Math.min(effectiveMax, Math.trunc(quantity)));
       if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
 
       if (paymentMethod === "mpesa" && isKes) {
@@ -685,13 +689,15 @@ export default function CampaignPage() {
                   <input
                     type="number"
                     min={1}
-                    max={campaign.max_per_txn}
+                    max={effectiveMax}
                     value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-2">Max per transaction: {campaign.max_per_txn}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {campaign.type === "vote" ? "No maximum — buy as many votes as you want (up to 1,000,000)" : `Max per transaction: ${effectiveMax.toLocaleString()}`}
+                  </p>
                 </div>
                 <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
                   <div className="border-t border-gray-200 pt-2">

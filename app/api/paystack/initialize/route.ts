@@ -81,7 +81,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const q = Math.max(1, Math.min(Number(campaign.max_per_txn), quantity));
+    const maxVotes = 1000000;
+    const maxTicketsPerTxn = 10000;
+    const effectiveMax = campaign.type === "vote" ? maxVotes : Math.min(Number(campaign.max_per_txn), maxTicketsPerTxn);
+    const q = Math.max(1, Math.min(effectiveMax, quantity));
 
     if (campaign.type === "vote") {
       if (!contestantId) return NextResponse.json({ error: "contestant_id is required for voting" }, { status: 400 });

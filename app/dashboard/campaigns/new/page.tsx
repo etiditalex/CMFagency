@@ -148,7 +148,7 @@ export default function NewCampaignPage() {
           image_url: finalImageUrl,
           currency: currency.trim().toUpperCase(),
           unit_amount: Math.trunc(unitAmount),
-          max_per_txn: Math.trunc(maxPerTxn),
+          max_per_txn: type === "vote" ? 1000000 : Math.trunc(maxPerTxn),
           is_active: isActive,
           created_by: user.id,
         })
