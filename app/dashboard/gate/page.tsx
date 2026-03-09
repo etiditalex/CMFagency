@@ -119,6 +119,29 @@ export default function DashboardGatePage() {
     setResult(null);
     setError(null);
 
+    const nav = navigator as Navigator & { mediaDevices?: MediaDevices };
+    if (!nav.mediaDevices?.getUserMedia) {
+      setCameraError("Camera not supported in this browser. Use Chrome or Safari.");
+      return;
+    }
+
+    // Request camera permission explicitly first so the browser shows the Allow/Block prompt
+    let testStream: MediaStream | null = null;
+    try {
+      testStream = await nav.mediaDevices.getUserMedia({ video: true });
+    } catch (permErr: unknown) {
+      const e = permErr instanceof Error ? permErr : new Error(String(permErr));
+      const name = (e as Error & { name?: string }).name || "";
+      let msg = e.message || "Camera access denied.";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError" || msg.toLowerCase().includes("permission"))
+        msg = "Camera permission denied. Allow camera access for this site and try again.";
+      else if (name === "NotFoundError") msg = "No camera found.";
+      setCameraError(msg);
+      return;
+    } finally {
+      if (testStream) testStream.getTracks().forEach((t) => t.stop());
+    }
+
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
@@ -268,6 +291,9 @@ export default function DashboardGatePage() {
               </div>
               <p className="text-gray-700 font-medium">Scan with your phone camera</p>
               <p className="mt-1 text-sm text-gray-500">Point at the receipt QR code. No need to type anything.</p>
+              <p className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                When you tap below, your browser will show an &quot;Allow camera&quot; prompt — tap <strong>Allow</strong> to continue.
+              </p>
               <button
                 type="button"
                 onClick={startCamera}
