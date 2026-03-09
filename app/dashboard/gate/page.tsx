@@ -21,6 +21,17 @@ type ScanResult = {
 
 const SCANNER_DIV_ID = "gate-qr-scanner";
 
+interface QrScanner {
+  start(
+    cameraIdOrConfig: string | MediaTrackConstraints,
+    config: { fps: number; qrbox: number; aspectRatio: number },
+    onSuccess: (decodedText: string) => void,
+    onError: () => void
+  ): Promise<null>;
+  stop(): Promise<void>;
+  clear(): void;
+}
+
 function parseRefFromInput(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
@@ -42,7 +53,7 @@ export default function DashboardGatePage() {
   const [manualMode, setManualMode] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const scannerRef = useRef<InstanceType<typeof import("html5-qrcode").Html5Qrcode> | null>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
   const lastScannedRef = useRef<string | null>(null);
   const lastScannedAt = useRef<number>(0);
 
@@ -144,18 +155,10 @@ export default function DashboardGatePage() {
       ];
 
       let started = false;
-      let scanner: InstanceType<typeof Html5Qrcode> | null = null;
+      let scanner: QrScanner | null = null;
 
       for (const constraints of constraintsToTry) {
-        if (scannerRef.current) {
-          try {
-            await scannerRef.current.stop();
-          } catch (_) {}
-          scannerRef.current.clear();
-          scannerRef.current = null;
-        }
-
-        scanner = new Html5Qrcode(SCANNER_DIV_ID, { verbose: false });
+        scanner = new Html5Qrcode(SCANNER_DIV_ID, { verbose: false }) as unknown as QrScanner;
         scannerRef.current = scanner;
 
         const onSuccess = (decodedText: string) => {
@@ -204,11 +207,12 @@ export default function DashboardGatePage() {
         msg = "Camera is in use by another app. Close other apps using the camera and try again.";
       setCameraError(msg);
       setCameraActive(false);
-      if (scannerRef.current) {
+      const scanner = scannerRef.current;
+      if (scanner) {
         try {
-          await scannerRef.current.stop();
+          await scanner.stop();
         } catch (_) {}
-        scannerRef.current.clear();
+        scanner.clear();
         scannerRef.current = null;
       }
     }
