@@ -278,11 +278,33 @@ export default function DashboardGatePage() {
                 {scanning ? "Checking…" : "Start camera & scan"}
               </button>
               {cameraError && (
-                <p className="mt-4 text-sm text-red-600">{cameraError}</p>
+                <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-left">
+                  <p className="text-sm font-medium text-amber-800">{cameraError}</p>
+                  {cameraError.toLowerCase().includes("permission") && (
+                    <div className="mt-3 text-xs text-amber-800 space-y-2">
+                      <p className="font-medium">How to allow camera:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-1">
+                        <li><strong>Chrome (Android/Desktop):</strong> Tap the lock or info icon in the address bar → Site settings → Camera → Allow. Then tap &quot;Try again&quot; below.</li>
+                        <li><strong>Safari (iPhone/iPad):</strong> Settings → Safari → Camera → Allow, or when prompted tap &quot;Allow&quot;. Reload this page and tap &quot;Start camera & scan&quot; again.</li>
+                        <li><strong>Chrome / Edge (Desktop):</strong> Click the lock or camera icon in the address bar → set Camera to Allow → reload and try again.</li>
+                      </ul>
+                      <p className="mt-2">Make sure you're on <strong>HTTPS</strong> (not HTTP). Camera does not work on insecure connections.</p>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setCameraError(null); startCamera(); }}
+                    className="mt-3 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700"
+                  >
+                    Try again
+                  </button>
+                </div>
               )}
-              <p className="mt-3 text-xs text-gray-500">
-                Use HTTPS (required for camera). If it fails, allow camera permission in your browser and reload.
-              </p>
+              {!cameraError && (
+                <p className="mt-3 text-xs text-gray-500">
+                  Use HTTPS (required for camera). Allow camera when the browser asks.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => setManualMode(true)}
