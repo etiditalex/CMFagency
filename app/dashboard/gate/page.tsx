@@ -108,33 +108,57 @@ export default function DashboardGatePage() {
     setResult(null);
     setError(null);
 
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+      } catch (_) {}
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+
+    // Show scanner div first so the video element is visible when we request the camera (required on some browsers)
+    setCameraActive(true);
+
+    // Allow React to paint the visible div before starting the camera
+    await new Promise((r) => setTimeout(r, 100));
+
+    const element = document.getElementById(SCANNER_DIV_ID);
+    if (!element) {
+      setCameraError("Scanner element not found.");
+      setCameraActive(false);
+      return;
+    }
+
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
-      const element = document.getElementById(SCANNER_DIV_ID);
-      if (!element) {
-        setCameraError("Scanner element not found.");
-        return;
-      }
+      const config = {
+        fps: 10,
+        qrbox: 280,
+        aspectRatio: 1,
+      };
 
-      if (scannerRef.current) {
-        try {
-          await scannerRef.current.stop();
-        } catch (_) {}
-        scannerRef.current.clear();
-        scannerRef.current = null;
-      }
+      const constraintsToTry: MediaTrackConstraints[] = [
+        { facingMode: "environment" }, // back camera on phone
+        { facingMode: "user" },       // front camera
+        {},                           // default
+      ];
 
-      const scanner = new Html5Qrcode(SCANNER_DIV_ID, { verbose: false });
-      scannerRef.current = scanner;
+      let started = false;
+      let scanner: InstanceType<typeof Html5Qrcode> | null = null;
 
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: 280,
-          aspectRatio: 1,
-        },
-        (decodedText) => {
+      for (const constraints of constraintsToTry) {
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+          } catch (_) {}
+          scannerRef.current.clear();
+          scannerRef.current = null;
+        }
+
+        scanner = new Html5Qrcode(SCANNER_DIV_ID, { verbose: false });
+        scannerRef.current = scanner;
+
+        const onSuccess = (decodedText: string) => {
           const ref = parseRefFromInput(decodedText);
           if (!ref || ref.length < 6) return;
           const now = Date.now();
@@ -142,27 +166,49 @@ export default function DashboardGatePage() {
           lastScannedRef.current = ref;
           lastScannedAt.current = now;
 
-          scanner
-            .stop()
+          scannerRef.current
+            ?.stop()
             .then(() => {
               setCameraActive(false);
-              scannerRef.current = null;
-              scanner.clear();
+              if (scannerRef.current) {
+                scannerRef.current.clear();
+                scannerRef.current = null;
+              }
               submitRef(ref);
             })
             .catch(() => {});
-        },
-        () => {}
-      );
-      setCameraActive(true);
+        };
+
+        try {
+          await scanner.start(constraints, config, onSuccess, () => {});
+          started = true;
+          break;
+        } catch (_) {
+          scanner.clear();
+          scannerRef.current = null;
+        }
+      }
+
+      if (!started) {
+        throw new Error("Camera access failed. Allow camera permission and use HTTPS (or localhost).");
+      }
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Could not start camera";
+      const err = e instanceof Error ? e : new Error(String(e));
+      const name = err.name || "";
+      let msg = err.message || "Could not start camera";
+      if (name === "NotAllowedError" || msg.toLowerCase().includes("permission"))
+        msg = "Camera permission denied. Allow camera access for this site and try again.";
+      else if (name === "NotFoundError" || msg.toLowerCase().includes("not found"))
+        msg = "No camera found. Connect a camera or use a device with a camera.";
+      else if (name === "NotReadableError")
+        msg = "Camera is in use by another app. Close other apps using the camera and try again.";
       setCameraError(msg);
       setCameraActive(false);
       if (scannerRef.current) {
         try {
           await scannerRef.current.stop();
         } catch (_) {}
+        scannerRef.current.clear();
         scannerRef.current = null;
       }
     }
@@ -230,6 +276,9 @@ export default function DashboardGatePage() {
               {cameraError && (
                 <p className="mt-4 text-sm text-red-600">{cameraError}</p>
               )}
+              <p className="mt-3 text-xs text-gray-500">
+                Use HTTPS (required for camera). If it fails, allow camera permission in your browser and reload.
+              </p>
               <button
                 type="button"
                 onClick={() => setManualMode(true)}
