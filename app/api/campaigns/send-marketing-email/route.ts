@@ -3,16 +3,33 @@ import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
 
 const RESEND_RATE_LIMIT_MS = 550;
+const MAX_RECIPIENTS = 500;
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BASE64_MB = 4;
 
 type Body = {
-  campaign_id?: string;
+  emails?: string[] | string;
   subject?: string;
   body?: string;
+  title?: string;
   image_url?: string;
   attachments?: { filename: string; content: string }[];
 };
+
+function parseEmails(input: string[] | string): string[] {
+  if (Array.isArray(input)) {
+    return input.flatMap((s) =>
+      String(s)
+        .split(/[\n,;]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+    );
+  }
+  return String(input ?? "")
+    .split(/[\n,;]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +50,6 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !user) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-    // Must be portal member with email feature
     const { data: pm } = await supabase.from("portal_members").select("role,features").eq("user_id", user.id).maybeSingle();
     const { data: au } = await supabase.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle();
     const isPortal = !!pm || !!au;
@@ -45,42 +61,22 @@ export async function POST(req: NextRequest) {
     }
 
     const body = (await req.json()) as Body;
-    const campaignId = (body.campaign_id ?? "").trim();
+    const rawEmails = body.emails;
     const subject = (body.subject ?? "").trim();
     const emailBody = (body.body ?? "").trim();
+    const title = (body.title ?? "").trim() || "CMF Agency";
     const imageUrl = (body.image_url ?? "").trim();
     const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
 
-    if (!campaignId) return NextResponse.json({ error: "Campaign ID required" }, { status: 400 });
+    const emails = [...new Set(parseEmails(rawEmails ?? []))];
+    if (emails.length === 0) {
+      return NextResponse.json({ error: "Add at least one valid email address (comma or newline separated)." }, { status: 400 });
+    }
+    if (emails.length > MAX_RECIPIENTS) {
+      return NextResponse.json({ error: `Maximum ${MAX_RECIPIENTS} recipients per send. You have ${emails.length}.` }, { status: 400 });
+    }
     if (!subject) return NextResponse.json({ error: "Subject required" }, { status: 400 });
     if (!emailBody) return NextResponse.json({ error: "Message body required" }, { status: 400 });
-
-    // Load campaign and verify access (RLS will enforce)
-    const { data: campaign, error: campErr } = await supabase
-      .from("campaigns")
-      .select("id,title,created_by")
-      .eq("id", campaignId)
-      .single();
-
-    if (campErr || !campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
-    if (!isAdmin && (campaign as { created_by?: string }).created_by !== user.id) {
-      return NextResponse.json({ error: "Access denied to this campaign" }, { status: 403 });
-    }
-
-    // Fetch unique emails from successful transactions
-    const { data: txRows, error: txErr } = await supabase
-      .from("transactions")
-      .select("email")
-      .eq("campaign_id", campaignId)
-      .eq("status", "success")
-      .not("email", "is", null);
-
-    if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
-
-    const emails = [...new Set((txRows ?? []).map((r: { email?: string }) => (r.email ?? "").trim().toLowerCase()).filter(Boolean))];
-    if (emails.length === 0) {
-      return NextResponse.json({ error: "No recipients found. This campaign has no successful transactions with email addresses." }, { status: 400 });
-    }
 
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) return NextResponse.json({ error: "Email service not configured" }, { status: 503 });
@@ -101,7 +97,7 @@ export async function POST(req: NextRequest) {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 1.5rem;">${(campaign as { title?: string }).title ?? "Campaign"}</h1>
+    <h1 style="color: white; margin: 0; font-size: 1.5rem;">${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h1>
   </div>
   ${bannerHtml}
   <div style="background: #f9f9f9; padding: 24px; border-radius: 0 0 8px 8px; white-space: pre-wrap;">${emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>
