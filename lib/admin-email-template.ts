@@ -11,9 +11,14 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Default Changer Fusions logo (used when logoUrl not provided). */
+const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg";
+
 export type AdminEmailTemplateOptions = {
-  /** Brand / logo text (e.g. "CMF Agency") */
+  /** Brand / logo text (e.g. "CMF Agency", "Changer Fusions") */
   brandName?: string;
+  /** Optional logo image URL (e.g. Changer Fusions logo). If not set, uses default Changer Fusions logo. */
+  logoUrl?: string;
   /** Greeting line, e.g. "Hello Inuka Afrika" or "Hello" */
   greeting?: string;
   /** Subtext under greeting, e.g. "We've discovered new events for you!" */
@@ -37,6 +42,7 @@ const DEFAULT_FOOTER = "Sent via Fusion Xpress · CMF Agency";
 export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string {
   const {
     brandName = DEFAULT_BRAND,
+    logoUrl,
     greeting = "Hello",
     greetingSubtext = "",
     bannerImageUrl,
@@ -56,10 +62,17 @@ export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string 
   const safeSectionLinkUrl =
     sectionLinkUrl.startsWith("https://") ? sectionLinkUrl.replace(/"/g, "&quot;").replace(/'/g, "&#39;") : "";
 
+  const validLogoUrl =
+    (logoUrl && logoUrl.startsWith("https://") ? logoUrl : DEFAULT_LOGO_URL).replace(/"/g, "&quot;");
   const validBannerUrl =
     bannerImageUrl && bannerImageUrl.startsWith("https://")
       ? bannerImageUrl.replace(/"/g, "&quot;")
       : "";
+
+  const logoBlock = `
+    <div style="margin-bottom: 12px;">
+      <img src="${validLogoUrl}" alt="${safeBrand}" width="140" height="48" style="height: 48px; width: auto; max-width: 180px; display: block;" />
+    </div>`;
 
   const bannerImageBlock = validBannerUrl
     ? `
@@ -68,13 +81,13 @@ export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string 
     </div>`
     : "";
 
-  /* CMF Agency brand: primary-600 #1e58ca, primary-200 #a3d1df, primary-800/900/950 for dark banner */
+  /* CMF Agency brand: primary-600 #1e58ca; section link larger for visibility (e.g. "Click here to view") */
   const sectionHeadingBlock =
     safeSectionHeading || (safeSectionLinkUrl && safeSectionLinkLabel)
       ? `
   <div style="margin: 24px 0 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
     ${safeSectionHeading ? `<h2 style="margin: 0; font-size: 1.125rem; font-weight: 700; color: #1f2937;">${safeSectionHeading}</h2>` : ""}
-    ${safeSectionLinkUrl && safeSectionLinkLabel ? `<a href="${safeSectionLinkUrl}" style="color: #1e58ca; font-size: 0.875rem; text-decoration: none;">${safeSectionLinkLabel}</a>` : ""}
+    ${safeSectionLinkUrl && safeSectionLinkLabel ? `<a href="${safeSectionLinkUrl}" style="color: #1e58ca; font-size: 1.0625rem; font-weight: 600; text-decoration: none;">${safeSectionLinkLabel}</a>` : ""}
   </div>`
       : "";
 
@@ -93,6 +106,7 @@ export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string 
       <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.08; background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.15) 8px, rgba(255,255,255,0.15) 10px);"></div>
       <div style="position: relative; z-index: 1; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;">
         <div style="flex: 1; min-width: 0;">
+          ${logoBlock}
           <p style="margin: 0 0 8px; font-size: 0.875rem; font-weight: 600; color: #a3d1df;">${safeBrand}</p>
           <h1 style="margin: 0 0 6px; font-size: 1.75rem; font-weight: 700; color: #ffffff; letter-spacing: -0.02em;">${safeGreeting}</h1>
           ${safeSubtext ? `<p style="margin: 0; font-size: 0.9375rem; color: rgba(255,255,255,0.9);">${safeSubtext}</p>` : ""}
