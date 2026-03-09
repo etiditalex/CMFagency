@@ -416,33 +416,45 @@ export default function CartPage() {
 
                     <div>
                       <span className="block text-sm font-medium text-gray-700 mb-2">Payment method</span>
-                      <div className="flex gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                      <div className="flex gap-3">
+                        <label
+                          className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                            paymentMethod === "paystack"
+                              ? "border-[#605CFF] bg-[#605CFF]/10"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          }`}
+                        >
                           <input
                             type="radio"
                             name="paymentMethod"
                             checked={paymentMethod === "paystack"}
                             onChange={() => setPaymentMethod("paystack")}
-                            className="text-primary-600 focus:ring-primary-500"
+                            className="sr-only"
                           />
-                          <span className="text-gray-700">Paystack (card / mobile money)</span>
+                          <span className="font-medium text-gray-900">Card</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label
+                          className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
+                            paymentMethod === "mpesa"
+                              ? "border-[#00A651] bg-[#00A651]/10"
+                              : "border-gray-200 bg-white hover:border-gray-300"
+                          }`}
+                        >
                           <input
                             type="radio"
                             name="paymentMethod"
                             checked={paymentMethod === "mpesa"}
                             onChange={() => setPaymentMethod("mpesa")}
-                            className="text-primary-600 focus:ring-primary-500"
+                            className="sr-only"
                           />
-                          <span className="text-gray-700">M-Pesa (STK Push)</span>
+                          <span className="font-medium text-gray-900">M-Pesa</span>
                         </label>
                       </div>
-                      {paymentMethod === "paystack" && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          Pay with card, M-Pesa, or Airtel Money via Paystack
-                        </p>
-                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        {paymentMethod === "paystack"
+                          ? "Pay with Visa, Mastercard, or Airtel Money via Paystack."
+                          : "You’ll receive an M-Pesa prompt on your phone to complete payment."}
+                      </p>
                     </div>
 
                     {paymentMethod === "mpesa" && (
