@@ -16,6 +16,7 @@ export type ReceiptParams = {
   mpesaReceipt?: string;
   variant?: "mpesa" | "paystack";
   viewTicketsUrl?: string;
+  downloadReceiptUrl?: string;
   eventDate?: string;
   eventTime?: string;
   eventLocation?: string;
@@ -37,6 +38,7 @@ const receiptProps = (
   mpesaReceipt: params.mpesaReceipt,
   variant: params.variant ?? "paystack",
   viewTicketsUrl: params.viewTicketsUrl,
+  downloadReceiptUrl: params.downloadReceiptUrl,
   eventDate: params.eventDate,
   eventTime: params.eventTime,
   eventLocation: params.eventLocation,

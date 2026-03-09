@@ -186,6 +186,26 @@ export async function POST(req: Request) {
       const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
       const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
       const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(reference)}` : undefined;
+      const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(reference)}`;
+
+      let eventLocation: string | undefined;
+      let eventDate: string | undefined;
+      let eventTime: string | undefined;
+      if (slug && slug !== "event") {
+        const { data: eventRow } = await supabase
+          .from("fusion_events")
+          .select("location, venue, event_date, time")
+          .eq("ticket_campaign_slug", slug)
+          .maybeSingle();
+        if (eventRow) {
+          const loc = (eventRow as { location?: string | null }).location;
+          const venue = (eventRow as { venue?: string | null }).venue;
+          eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
+          const ed = (eventRow as { event_date?: string | null }).event_date;
+          if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+          eventTime = (eventRow as { time?: string | null }).time ?? undefined;
+        }
+      }
 
       try {
         const emailResult = await sendReceiptEmail({
@@ -200,6 +220,10 @@ export async function POST(req: Request) {
           mpesaReceipt: mpesaReceipt || undefined,
           variant: "mpesa",
           viewTicketsUrl,
+          downloadReceiptUrl,
+          eventLocation,
+          eventDate,
+          eventTime,
         });
         if (emailResult.ok) {
           console.log(`[Daraja] Receipt email sent via Resend to ${toEmail} (ref: ${reference})`);

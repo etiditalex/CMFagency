@@ -28,6 +28,8 @@ export type ReceiptEmailProps = {
   variant?: "mpesa" | "paystack";
   /** Link to view ticket / event page (e.g. success page or event URL) */
   viewTicketsUrl?: string;
+  /** Link to download/print receipt (opens print-friendly page) */
+  downloadReceiptUrl?: string;
   /** Optional event details for ticket-type receipts */
   eventDate?: string;
   eventTime?: string;
@@ -38,12 +40,12 @@ export type ReceiptEmailProps = {
 };
 
 const headerStyles = {
-  mpesa: { background: "linear-gradient(135deg, #00A651 0%, #007A3D 100%)" },
+  mpesa: { background: "linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)" },
   paystack: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
 };
 
 const buttonStyles = {
-  mpesa: { background: "linear-gradient(135deg, #00A651 0%, #007A3D 100%)" },
+  mpesa: { background: "linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)" },
   paystack: { background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
 };
 
@@ -63,6 +65,7 @@ export function ReceiptEmail({
   mpesaReceipt,
   variant = "paystack",
   viewTicketsUrl,
+  downloadReceiptUrl,
   eventDate,
   eventTime,
   eventLocation,
@@ -121,6 +124,12 @@ export function ReceiptEmail({
               Hello {holderName}, we are happy to confirm your {typeLabel.toLowerCase()} for {campaignTitle}.
             </Text>
 
+            {eventLocation && (
+              <Text style={locationHighlight}>
+                {campaignTitle} will be happening at {eventLocation}.
+              </Text>
+            )}
+
             <table style={table}>
               <tr>
                 <td style={labelCell}>{typeLabel} number:</td>
@@ -148,6 +157,15 @@ export function ReceiptEmail({
             <Text style={referenceText}>
               Reference: <code style={code}>{reference}</code>
             </Text>
+
+            {downloadReceiptUrl && (
+              <Section style={downloadSection}>
+                <Button href={downloadReceiptUrl} style={{ ...downloadButton, ...buttonStyles[variant] }}>
+                  Download receipt
+                </Button>
+                <Text style={downloadHint}>Opens a print-friendly page — use your browser&apos;s Print or Save as PDF to save.</Text>
+              </Section>
+            )}
 
             {(eventDate || eventTime || eventLocation) && (
               <>
@@ -274,6 +292,36 @@ const greeting = {
   fontSize: "15px",
   lineHeight: "1.5",
   color: "#444",
+};
+
+const locationHighlight = {
+  margin: "0 0 20px",
+  padding: "12px 16px",
+  backgroundColor: "#fef9e7",
+  borderLeft: "4px solid #D4AF37",
+  fontSize: "15px",
+  lineHeight: "1.5",
+  color: "#333",
+  borderRadius: "0 8px 8px 0",
+};
+
+const downloadSection = {
+  margin: "24px 0",
+};
+
+const downloadButton = {
+  color: "#fff",
+  padding: "12px 24px",
+  borderRadius: "8px",
+  fontWeight: "600",
+  fontSize: "14px",
+  textDecoration: "none",
+};
+
+const downloadHint = {
+  margin: "8px 0 0",
+  fontSize: "12px",
+  color: "#666",
 };
 
 const table = {
