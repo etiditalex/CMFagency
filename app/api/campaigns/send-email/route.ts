@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildAdminEmailHtml } from "@/lib/admin-email-template";
 
 const RESEND_RATE_LIMIT_MS = 550;
 const MAX_ATTACHMENTS = 5;
@@ -11,6 +12,12 @@ type Body = {
   subject?: string;
   body?: string;
   image_url?: string;
+  /** e.g. "We've discovered new events for you!" */
+  greeting_subtext?: string;
+  /** e.g. "Events specially curated for you ✨" */
+  section_heading?: string;
+  section_link_label?: string;
+  section_link_url?: string;
   attachments?: { filename: string; content: string }[];
 };
 
@@ -49,6 +56,10 @@ export async function POST(req: NextRequest) {
     const subject = (body.subject ?? "").trim();
     const emailBody = (body.body ?? "").trim();
     const imageUrl = (body.image_url ?? "").trim();
+    const greetingSubtext = (body.greeting_subtext ?? "").trim();
+    const sectionHeading = (body.section_heading ?? "").trim();
+    const sectionLinkLabel = (body.section_link_label ?? "").trim();
+    const sectionLinkUrl = (body.section_link_url ?? "").trim();
     const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
 
     if (!campaignId) return NextResponse.json({ error: "Campaign ID required" }, { status: 400 });
@@ -67,17 +78,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Access denied to this campaign" }, { status: 403 });
     }
 
-    // Fetch unique emails from successful transactions
+    // Fetch emails and payer_name for personalization
     const { data: txRows, error: txErr } = await supabase
       .from("transactions")
-      .select("email")
+      .select("email, payer_name")
       .eq("campaign_id", campaignId)
       .eq("status", "success")
       .not("email", "is", null);
 
     if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
 
-    const emails = [...new Set((txRows ?? []).map((r: { email?: string }) => (r.email ?? "").trim().toLowerCase()).filter(Boolean))];
+    const emailSet = new Set<string>();
+    const emailToName = new Map<string, string>();
+    for (const r of txRows ?? []) {
+      const email = (r as { email?: string }).email ?? "";
+      const normalized = email.trim().toLowerCase();
+      if (!normalized) continue;
+      emailSet.add(normalized);
+      const name = (r as { payer_name?: string }).payer_name?.trim();
+      if (name && !emailToName.has(normalized)) emailToName.set(normalized, name);
+    }
+    const emails = [...emailSet];
     if (emails.length === 0) {
       return NextResponse.json({ error: "No recipients found. This campaign has no successful transactions with email addresses." }, { status: 400 });
     }
@@ -86,30 +107,29 @@ export async function POST(req: NextRequest) {
     if (!resendApiKey) return NextResponse.json({ error: "Email service not configured" }, { status: 503 });
 
     const validImageUrl = imageUrl.startsWith("https://") ? imageUrl : "";
-    const bannerHtml = validImageUrl
-      ? `<div style="margin: 0 0 16px;"><img src="${validImageUrl.replace(/"/g, "&quot;")}" alt="" style="max-width: 100%; height: auto; border-radius: 8px; display: block;" /></div>`
-      : "";
+    const bodyHtml = emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
 
     const attachments = rawAttachments
       .slice(0, MAX_ATTACHMENTS)
       .filter((a) => a?.filename && typeof a.content === "string" && a.content.length > 0 && a.content.length <= MAX_ATTACHMENT_BASE64_MB * 1024 * 1024 * (4 / 3))
       .map((a) => ({ filename: String(a.filename).replace(/[^a-zA-Z0-9._-]/g, "_") || "attachment", content: a.content }));
 
-    const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 1.5rem;">${(campaign as { title?: string }).title ?? "Campaign"}</h1>
-  </div>
-  ${bannerHtml}
-  <div style="background: #f9f9f9; padding: 24px; border-radius: 0 0 8px 8px; white-space: pre-wrap;">${emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>
-  <p style="color: #666; font-size: 11px; margin-top: 24px;">Sent via Fusion Xpress · CMF Agency</p>
-</body>
-</html>`;
+    const getHtmlForRecipient = (recipientEmail: string): string => {
+      const name = emailToName.get(recipientEmail) ?? "";
+      const greeting = name ? `Hello ${name}` : "Hello";
+      return buildAdminEmailHtml({
+        brandName: "CMF Agency",
+        greeting,
+        greetingSubtext: greetingSubtext || `Updates for ${(campaign as { title?: string }).title ?? "this campaign"}`,
+        bannerImageUrl: validImageUrl || undefined,
+        bodyHtml,
+        sectionHeading: sectionHeading || undefined,
+        sectionLinkLabel: sectionLinkLabel || undefined,
+        sectionLinkUrl: sectionLinkUrl || undefined,
+      });
+    };
 
-    const payload: Record<string, unknown> = { from: fromEmail, to: "", subject, html };
+    const payload: Record<string, unknown> = { from: fromEmail, to: "", subject };
     if (attachments.length > 0) payload.attachments = attachments;
 
     let sent = 0;
@@ -117,12 +137,13 @@ export async function POST(req: NextRequest) {
 
     for (let i = 0; i < emails.length; i++) {
       const to = emails[i];
+      const html = getHtmlForRecipient(to);
       if (i > 0) await new Promise((r) => setTimeout(r, RESEND_RATE_LIMIT_MS));
       try {
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, to }),
+          body: JSON.stringify({ ...payload, to, html }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {

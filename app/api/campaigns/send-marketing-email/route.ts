@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildAdminEmailHtml } from "@/lib/admin-email-template";
 
 const RESEND_RATE_LIMIT_MS = 550;
 const MAX_RECIPIENTS = 500;
@@ -13,6 +14,10 @@ type Body = {
   body?: string;
   title?: string;
   image_url?: string;
+  greeting_subtext?: string;
+  section_heading?: string;
+  section_link_label?: string;
+  section_link_url?: string;
   attachments?: { filename: string; content: string }[];
 };
 
@@ -66,6 +71,10 @@ export async function POST(req: NextRequest) {
     const emailBody = (body.body ?? "").trim();
     const title = (body.title ?? "").trim() || "CMF Agency";
     const imageUrl = (body.image_url ?? "").trim();
+    const greetingSubtext = (body.greeting_subtext ?? "").trim();
+    const sectionHeading = (body.section_heading ?? "").trim();
+    const sectionLinkLabel = (body.section_link_label ?? "").trim();
+    const sectionLinkUrl = (body.section_link_url ?? "").trim();
     const rawAttachments = Array.isArray(body.attachments) ? body.attachments : [];
 
     const emails = [...new Set(parseEmails(rawEmails ?? []))];
@@ -82,28 +91,23 @@ export async function POST(req: NextRequest) {
     if (!resendApiKey) return NextResponse.json({ error: "Email service not configured" }, { status: 503 });
 
     const validImageUrl = imageUrl.startsWith("https://") ? imageUrl : "";
-    const bannerHtml = validImageUrl
-      ? `<div style="margin: 0 0 16px;"><img src="${validImageUrl.replace(/"/g, "&quot;")}" alt="" style="max-width: 100%; height: auto; border-radius: 8px; display: block;" /></div>`
-      : "";
+    const bodyHtml = emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
 
     const attachments = rawAttachments
       .slice(0, MAX_ATTACHMENTS)
       .filter((a) => a?.filename && typeof a.content === "string" && a.content.length > 0 && a.content.length <= MAX_ATTACHMENT_BASE64_MB * 1024 * 1024 * (4 / 3))
       .map((a) => ({ filename: String(a.filename).replace(/[^a-zA-Z0-9._-]/g, "_") || "attachment", content: a.content }));
 
-    const html = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 1.5rem;">${title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h1>
-  </div>
-  ${bannerHtml}
-  <div style="background: #f9f9f9; padding: 24px; border-radius: 0 0 8px 8px; white-space: pre-wrap;">${emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div>
-  <p style="color: #666; font-size: 11px; margin-top: 24px;">Sent via Fusion Xpress · CMF Agency</p>
-</body>
-</html>`;
+    const html = buildAdminEmailHtml({
+      brandName: title,
+      greeting: "Hello",
+      greetingSubtext: greetingSubtext || "Here’s something we thought you’d like.",
+      bannerImageUrl: validImageUrl || undefined,
+      bodyHtml,
+      sectionHeading: sectionHeading || undefined,
+      sectionLinkLabel: sectionLinkLabel || undefined,
+      sectionLinkUrl: sectionLinkUrl || undefined,
+    });
 
     const payload: Record<string, unknown> = { from: fromEmail, to: "", subject, html };
     if (attachments.length > 0) payload.attachments = attachments;

@@ -27,6 +27,10 @@ export default function DashboardEmailPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [attachments, setAttachments] = useState<{ filename: string; content: string }[]>([]);
+  const [greetingSubtext, setGreetingSubtext] = useState("");
+  const [sectionHeading, setSectionHeading] = useState("");
+  const [sectionLinkLabel, setSectionLinkLabel] = useState("");
+  const [sectionLinkUrl, setSectionLinkUrl] = useState("");
 
   const [marketingEmails, setMarketingEmails] = useState("");
   const [marketingTitle, setMarketingTitle] = useState("");
@@ -37,6 +41,10 @@ export default function DashboardEmailPage() {
   const [marketingSuccess, setMarketingSuccess] = useState<string | null>(null);
   const [marketingImageUrl, setMarketingImageUrl] = useState("");
   const [marketingAttachments, setMarketingAttachments] = useState<{ filename: string; content: string }[]>([]);
+  const [marketingGreetingSubtext, setMarketingGreetingSubtext] = useState("");
+  const [marketingSectionHeading, setMarketingSectionHeading] = useState("");
+  const [marketingSectionLinkLabel, setMarketingSectionLinkLabel] = useState("");
+  const [marketingSectionLinkUrl, setMarketingSectionLinkUrl] = useState("");
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -165,6 +173,10 @@ export default function DashboardEmailPage() {
           body: marketingBody.trim(),
           title: marketingTitle.trim() || "CMF Agency",
           image_url: marketingImageUrl.trim() || undefined,
+          greeting_subtext: marketingGreetingSubtext.trim() || undefined,
+          section_heading: marketingSectionHeading.trim() || undefined,
+          section_link_label: marketingSectionLinkLabel.trim() || undefined,
+          section_link_url: marketingSectionLinkUrl.trim() || undefined,
           attachments: marketingAttachments.length ? marketingAttachments : undefined,
         }),
       });
@@ -201,6 +213,10 @@ export default function DashboardEmailPage() {
           subject: subject.trim(),
           body: body.trim(),
           image_url: imageUrl.trim() || undefined,
+          greeting_subtext: greetingSubtext.trim() || undefined,
+          section_heading: sectionHeading.trim() || undefined,
+          section_link_label: sectionLinkLabel.trim() || undefined,
+          section_link_url: sectionLinkUrl.trim() || undefined,
           attachments: attachments.length ? attachments : undefined,
         }),
       });
@@ -293,13 +309,58 @@ export default function DashboardEmailPage() {
           />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Greeting subtext (optional)</label>
+            <input
+              type="text"
+              value={greetingSubtext}
+              onChange={(e) => setGreetingSubtext(e.target.value)}
+              placeholder="e.g. We've discovered new events for you!"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Section heading (optional)</label>
+            <input
+              type="text"
+              value={sectionHeading}
+              onChange={(e) => setSectionHeading(e.target.value)}
+              placeholder="e.g. Events specially curated for you ✨"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Section link label (optional)</label>
+            <input
+              type="text"
+              value={sectionLinkLabel}
+              onChange={(e) => setSectionLinkLabel(e.target.value)}
+              placeholder="e.g. Explore all"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Section link URL (optional)</label>
+            <input
+              type="url"
+              value={sectionLinkUrl}
+              onChange={(e) => setSectionLinkUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Banner image URL (optional)</label>
           <input
             type="url"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="https://… (image will appear above the message)"
+            placeholder="https://… (image appears in the dark header, right side)"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
@@ -412,13 +473,58 @@ export default function DashboardEmailPage() {
             />
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Greeting subtext (optional)</label>
+              <input
+                type="text"
+                value={marketingGreetingSubtext}
+                onChange={(e) => setMarketingGreetingSubtext(e.target.value)}
+                placeholder="e.g. We've discovered new events for you!"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section heading (optional)</label>
+              <input
+                type="text"
+                value={marketingSectionHeading}
+                onChange={(e) => setMarketingSectionHeading(e.target.value)}
+                placeholder="e.g. Events specially curated for you ✨"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section link label (optional)</label>
+              <input
+                type="text"
+                value={marketingSectionLinkLabel}
+                onChange={(e) => setMarketingSectionLinkLabel(e.target.value)}
+                placeholder="e.g. Explore all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Section link URL (optional)</label>
+              <input
+                type="url"
+                value={marketingSectionLinkUrl}
+                onChange={(e) => setMarketingSectionLinkUrl(e.target.value)}
+                placeholder="https://…"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Banner image URL (optional)</label>
             <input
               type="url"
               value={marketingImageUrl}
               onChange={(e) => setMarketingImageUrl(e.target.value)}
-              placeholder="https://… (image will appear above the message)"
+              placeholder="https://… (image appears in the dark header, right side)"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
