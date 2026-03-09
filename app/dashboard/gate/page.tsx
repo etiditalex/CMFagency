@@ -131,7 +131,7 @@ export default function DashboardGatePage() {
         { facingMode: "environment" },
         {
           fps: 10,
-          qrbox: (w, h) => Math.min(280, w, h),
+          qrbox: 280,
           aspectRatio: 1,
         },
         (decodedText) => {
