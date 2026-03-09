@@ -52,6 +52,7 @@ export default function DashboardGatePage() {
   const [error, setError] = useState<string | null>(null);
   const [manualMode, setManualMode] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [requestingCamera, setRequestingCamera] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const lastScannedRef = useRef<string | null>(null);
@@ -115,6 +116,7 @@ export default function DashboardGatePage() {
   const startCamera = useCallback(async () => {
     if (typeof window === "undefined") return;
     setCameraError(null);
+    setRequestingCamera(true);
     setManualMode(false);
     setResult(null);
     setError(null);
@@ -122,6 +124,7 @@ export default function DashboardGatePage() {
     const nav = navigator as Navigator & { mediaDevices?: MediaDevices };
     if (!nav.mediaDevices?.getUserMedia) {
       setCameraError("Camera not supported in this browser. Use Chrome or Safari.");
+      setRequestingCamera(false);
       return;
     }
 
@@ -130,6 +133,7 @@ export default function DashboardGatePage() {
     try {
       testStream = await nav.mediaDevices.getUserMedia({ video: true });
     } catch (permErr: unknown) {
+      setRequestingCamera(false);
       const e = permErr instanceof Error ? permErr : new Error(String(permErr));
       const name = (e as Error & { name?: string }).name || "";
       let msg = e.message || "Camera access denied.";
@@ -141,6 +145,7 @@ export default function DashboardGatePage() {
     } finally {
       if (testStream) testStream.getTracks().forEach((t) => t.stop());
     }
+    setRequestingCamera(false);
 
     if (scannerRef.current) {
       try {
@@ -297,24 +302,28 @@ export default function DashboardGatePage() {
               <button
                 type="button"
                 onClick={startCamera}
-                disabled={scanning}
+                disabled={scanning || requestingCamera}
                 className="mt-6 inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 text-lg"
               >
-                {scanning ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
-                {scanning ? "Checking…" : "Start camera & scan"}
+                {requestingCamera ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : scanning ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <Camera className="w-6 h-6" />
+                )}
+                {requestingCamera ? "Requesting camera…" : scanning ? "Checking…" : "Start camera & scan"}
               </button>
               {cameraError && (
                 <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-left">
                   <p className="text-sm font-medium text-amber-800">{cameraError}</p>
                   {cameraError.toLowerCase().includes("permission") && (
                     <div className="mt-3 text-xs text-amber-800 space-y-2">
-                      <p className="font-medium">How to allow camera:</p>
-                      <ul className="list-disc list-inside space-y-1 ml-1">
-                        <li><strong>Chrome (Android/Desktop):</strong> Tap the lock or info icon in the address bar → Site settings → Camera → Allow. Then tap &quot;Try again&quot; below.</li>
-                        <li><strong>Safari (iPhone/iPad):</strong> Settings → Safari → Camera → Allow, or when prompted tap &quot;Allow&quot;. Reload this page and tap &quot;Start camera & scan&quot; again.</li>
-                        <li><strong>Chrome / Edge (Desktop):</strong> Click the lock or camera icon in the address bar → set Camera to Allow → reload and try again.</li>
-                      </ul>
-                      <p className="mt-2">Make sure you're on <strong>HTTPS</strong> (not HTTP). Camera does not work on insecure connections.</p>
+                      <p className="font-medium">No prompt appeared? Camera is blocked for this website.</p>
+                      <p><strong>Chrome on phone:</strong> Tap the <strong>lock icon</strong> or <strong>⋮</strong> (three dots) or <strong>i</strong> in the <strong>address bar at the top</strong> → <strong>Site settings</strong> → <strong>Camera</strong> → set to <strong>Allow</strong> → go back and <strong>reload this page</strong>, then tap &quot;Start camera & scan&quot; again.</p>
+                      <p><strong>Chrome on desktop:</strong> Click the lock or camera icon in the address bar → Camera → Allow → reload.</p>
+                      <p><strong>Safari (iPhone):</strong> Settings → Safari → Camera → Allow. Reload this page and try again.</p>
+                      <p className="mt-2">Use <strong>HTTPS</strong> (not HTTP). Then tap &quot;Try again&quot; below.</p>
                     </div>
                   )}
                   <button
