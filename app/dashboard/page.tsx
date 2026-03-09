@@ -8,6 +8,7 @@ import {
   Plus,
   RefreshCw,
   Shield,
+  ShoppingBag,
   Ticket,
   Vote,
   Wallet,
@@ -40,6 +41,9 @@ export default function DashboardHomePage() {
   const [totalTicketsIssued, setTotalTicketsIssued] = useState(0);
   const [successfulPayments, setSuccessfulPayments] = useState(0);
   const [revenueByCurrency, setRevenueByCurrency] = useState<Record<string, number>>({});
+  const [revenueByCurrencyTickets, setRevenueByCurrencyTickets] = useState<Record<string, number>>({});
+  const [revenueByCurrencyVotes, setRevenueByCurrencyVotes] = useState<Record<string, number>>({});
+  const [revenueByCurrencyMerchandise, setRevenueByCurrencyMerchandise] = useState<Record<string, number>>({});
   const [recentTransactions, setRecentTransactions] = useState<
     Array<{
       id: string;
@@ -60,19 +64,23 @@ export default function DashboardHomePage() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
 
-  const formatRevenue = useMemo(() => {
-    const entries = Object.entries(revenueByCurrency).filter(([, v]) => Number.isFinite(v) && v > 0);
+  const formatRevenueMap = (rev: Record<string, number>) => {
+    const entries = Object.entries(rev).filter(([, v]) => Number.isFinite(v) && v > 0);
     if (entries.length === 0) return "—";
     if (entries.length === 1) {
       const [cur, amt] = entries[0];
       return `${cur} ${Number(amt).toLocaleString()}`;
     }
-    // Multi-currency: compact list.
     return entries
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([cur, amt]) => `${cur} ${Number(amt).toLocaleString()}`)
       .join(" · ");
-  }, [revenueByCurrency]);
+  };
+
+  const formatRevenue = useMemo(() => formatRevenueMap(revenueByCurrency), [revenueByCurrency]);
+  const formatRevenueTickets = useMemo(() => formatRevenueMap(revenueByCurrencyTickets), [revenueByCurrencyTickets]);
+  const formatRevenueVotes = useMemo(() => formatRevenueMap(revenueByCurrencyVotes), [revenueByCurrencyVotes]);
+  const formatRevenueMerchandise = useMemo(() => formatRevenueMap(revenueByCurrencyMerchandise), [revenueByCurrencyMerchandise]);
 
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
@@ -87,7 +95,7 @@ export default function DashboardHomePage() {
       // Only full admins see all campaigns; managers and clients see only their own.
       let campaignsQuery = supabase
         .from("campaigns")
-        .select("id,title,type,is_active,created_at")
+        .select("id,title,type,slug,is_active,created_at")
         .order("created_at", { ascending: false });
 
       if (!isFullAdmin && user?.id) {
@@ -100,9 +108,11 @@ export default function DashboardHomePage() {
 
       const rows = campaigns ?? [];
       const campaignIds = (rows as any[]).map((c) => c.id);
-      setCampaignsCount(rows.length);
-      setActiveCampaignsCount(rows.filter((c) => c.is_active).length);
-      setInactiveCampaignsCount(rows.filter((c) => !c.is_active).length);
+      const merchandiseCampaignId = (rows as any[]).find((c) => String(c.slug ?? "").toLowerCase() === "merchandise")?.id ?? null;
+      const campaignRowsExcludingMerchandise = (rows as any[]).filter((c) => String(c.slug ?? "").toLowerCase() !== "merchandise");
+      setCampaignsCount(campaignRowsExcludingMerchandise.length);
+      setActiveCampaignsCount(campaignRowsExcludingMerchandise.filter((c) => c.is_active).length);
+      setInactiveCampaignsCount(campaignRowsExcludingMerchandise.filter((c) => !c.is_active).length);
 
       const titleMap: Record<string, { title: string; type: string }> = {};
       for (const c of rows as any[]) {
@@ -118,6 +128,9 @@ export default function DashboardHomePage() {
         setRecentTransactions([]);
         setSuccessfulPayments(0);
         setRevenueByCurrency({});
+        setRevenueByCurrencyTickets({});
+        setRevenueByCurrencyVotes({});
+        setRevenueByCurrencyMerchandise({});
         setTotalVotes(0);
         setTotalTicketsIssued(0);
       } else {
@@ -131,22 +144,37 @@ export default function DashboardHomePage() {
         if (txErr) throw txErr;
         setRecentTransactions((txRows ?? []) as any[]);
 
-        // Successful payments + revenue
+        // Successful payments + revenue (total, tickets, votes, merchandise as product not campaign)
         const { data: successTx, error: sErr } = await supabase
           .from("transactions")
-          .select("amount,currency")
+          .select("amount,currency,campaign_type,campaign_id")
           .eq("status", "success")
           .in("campaign_id", campaignIds);
         if (sErr) throw sErr;
         setSuccessfulPayments((successTx ?? []).length);
         const rev: Record<string, number> = {};
+        const revTickets: Record<string, number> = {};
+        const revVotes: Record<string, number> = {};
+        const revMerchandise: Record<string, number> = {};
         for (const t of (successTx ?? []) as any[]) {
           const cur = String(t.currency ?? "").toUpperCase() || "—";
           const amt = Number(t.amount ?? 0);
+          const ctype = String(t.campaign_type ?? "").toLowerCase();
+          const isMerchandise = merchandiseCampaignId && String(t.campaign_id ?? "") === String(merchandiseCampaignId);
           if (!Number.isFinite(amt)) continue;
           rev[cur] = (rev[cur] ?? 0) + amt;
+          if (isMerchandise) {
+            revMerchandise[cur] = (revMerchandise[cur] ?? 0) + amt;
+          } else if (ctype === "vote") {
+            revVotes[cur] = (revVotes[cur] ?? 0) + amt;
+          } else if (ctype === "ticket") {
+            revTickets[cur] = (revTickets[cur] ?? 0) + amt;
+          }
         }
         setRevenueByCurrency(rev);
+        setRevenueByCurrencyTickets(revTickets);
+        setRevenueByCurrencyVotes(revVotes);
+        setRevenueByCurrencyMerchandise(revMerchandise);
 
         // Votes: real-time total (idempotent via votes table)
         const { data: voteRows, error: vErr } = await supabase
@@ -343,7 +371,7 @@ export default function DashboardHomePage() {
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
       {/* KPI cards (styled like screenshot tiles) */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
@@ -361,6 +389,69 @@ export default function DashboardHomePage() {
               </div>
               <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
                 <Wallet className="w-5 h-5 text-gray-600" />
+              </span>
+            </div>
+        </div>
+
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns?type=ticket"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
+          </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (tickets)</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueTickets}</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded bg-primary-50 items-center justify-center">
+                <Ticket className="w-5 h-5 text-primary-700" />
+              </span>
+            </div>
+        </div>
+
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/dashboard/campaigns?type=vote"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View More
+            </Link>
+          </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (votes)</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueVotes}</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded bg-secondary-50 items-center justify-center">
+                <Vote className="w-5 h-5 text-secondary-700" />
+              </span>
+            </div>
+        </div>
+
+        <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
+          <div className="flex items-center justify-end">
+            <Link
+              href="/merchandise"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View
+            </Link>
+          </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (merchandise)</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueMerchandise}</div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded bg-amber-50 items-center justify-center">
+                <ShoppingBag className="w-5 h-5 text-amber-700" />
               </span>
             </div>
         </div>

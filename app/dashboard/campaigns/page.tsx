@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Trash2, Ticket, Vote } from "lucide-react";
+import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, Ticket, Vote } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -51,6 +51,7 @@ export default function DashboardCampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignWithStats[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -89,15 +90,17 @@ export default function DashboardCampaignsPage() {
           (!statsError ? (statsRows ?? []) : []).map((s) => [s.campaign_id, s])
         );
 
-        const merged: CampaignWithStats[] = (campaignRows ?? []).map((c: CampaignRow) => {
-          const s = statsById.get(c.id);
-          return {
-            ...c,
-            total_amount: s?.total_amount ?? 0,
-            total_votes: s?.total_votes ?? 0,
-            successful_transactions: s?.successful_transactions ?? 0,
-          };
-        });
+        const merged: CampaignWithStats[] = (campaignRows ?? [])
+          .filter((c: CampaignRow) => String(c.slug ?? "").toLowerCase() !== "merchandise")
+          .map((c: CampaignRow) => {
+            const s = statsById.get(c.id);
+            return {
+              ...c,
+              total_amount: s?.total_amount ?? 0,
+              total_votes: s?.total_votes ?? 0,
+              successful_transactions: s?.successful_transactions ?? 0,
+            };
+          });
 
         if (!cancelled) setCampaigns(merged);
       } catch (e: any) {
@@ -148,10 +151,18 @@ export default function DashboardCampaignsPage() {
   }, [campaigns]);
 
   const filtered = useMemo(() => {
-    if (filter === "drafts") return campaigns.filter((c) => !c.is_active);
-    if (filter === "all") return campaigns;
-    return campaigns.filter((c) => c.type === filter);
-  }, [campaigns, filter]);
+    let list = campaigns;
+    if (filter === "drafts") list = list.filter((c) => !c.is_active);
+    else if (filter !== "all") list = list.filter((c) => c.type === filter);
+
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.slug.toLowerCase().includes(q)
+    );
+  }, [campaigns, filter, searchQuery]);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -204,8 +215,37 @@ export default function DashboardCampaignsPage() {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="mt-5">
+        <label htmlFor="campaign-search" className="sr-only">
+          Search campaigns
+        </label>
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden />
+          <input
+            id="campaign-search"
+            type="search"
+            placeholder="Search by title or slug..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            aria-label="Search campaigns by title or slug"
+          />
+          {searchQuery.trim() && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <span className="text-sm font-semibold">×</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Type filters */}
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {[
           { id: "all", label: `All (${counts.all})`, icon: null },
           { id: "drafts", label: `Drafts (${counts.drafts})`, icon: FileEdit },
@@ -244,7 +284,9 @@ export default function DashboardCampaignsPage() {
         {filtered.length === 0 ? (
           <div className="bg-white rounded-md shadow-sm p-8 border border-gray-200">
             <p className="text-gray-700 text-left">
-              {filter === "drafts"
+              {searchQuery.trim()
+                ? `No campaigns match "${searchQuery.trim()}". Try a different search or clear the search.`
+                : filter === "drafts"
                 ? "You don't have any draft campaigns. Unpublished (inactive) campaigns appear here."
                 : filter === "vote"
                 ? "You don’t have any voting campaigns yet. Create one to start collecting votes."
