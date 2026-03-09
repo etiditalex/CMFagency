@@ -121,14 +121,36 @@ export default function DashboardGatePage() {
     setResult(null);
     setError(null);
 
-    const nav = navigator as Navigator & { mediaDevices?: MediaDevices };
+    const nav = navigator as Navigator & { mediaDevices?: MediaDevices; permissions?: { query: (o: { name: string }) => Promise<{ state: string }> } };
     if (!nav.mediaDevices?.getUserMedia) {
       setCameraError("Camera not supported in this browser. Use Chrome or Safari.");
       setRequestingCamera(false);
       return;
     }
 
-    // Request camera permission explicitly first so the browser shows the Allow/Block prompt
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setCameraError("Camera only works on HTTPS. Open this page using https:// (not http://).");
+      setRequestingCamera(false);
+      return;
+    }
+
+    // If the browser already has "denied" stored for this site, no Allow/Block prompt will ever show — we tell the user why
+    try {
+      if (nav.permissions?.query) {
+        const status = await nav.permissions.query({ name: "camera" });
+        if (status.state === "denied") {
+          setRequestingCamera(false);
+          setCameraError(
+            "Camera is already blocked for this site on this device. The browser will not show an Allow/Block prompt — you must change it in site settings (lock icon in address bar → Site settings → Camera → Allow), then reload and try again."
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // Permissions API not supported or failed; continue and try getUserMedia
+    }
+
+    // Request camera permission — first time for this site the browser should show Allow/Block prompt
     let testStream: MediaStream | null = null;
     try {
       testStream = await nav.mediaDevices.getUserMedia({ video: true });
@@ -297,7 +319,7 @@ export default function DashboardGatePage() {
               <p className="text-gray-700 font-medium">Scan with your phone camera</p>
               <p className="mt-1 text-sm text-gray-500">Point at the receipt QR code. No need to type anything.</p>
               <p className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-                When you tap below, your browser will show an &quot;Allow camera&quot; prompt — tap <strong>Allow</strong> to continue.
+                Tapping the button should trigger an <strong>Allow / Block</strong> popup from the browser. If no popup appears, the site is already set to Block on this device — use the steps below to change it to Allow.
               </p>
               <button
                 type="button"
