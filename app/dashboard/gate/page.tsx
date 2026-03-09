@@ -319,11 +319,17 @@ export default function DashboardGatePage() {
                   <p className="text-sm font-medium text-amber-800">{cameraError}</p>
                   {cameraError.toLowerCase().includes("permission") && (
                     <div className="mt-3 text-xs text-amber-800 space-y-2">
-                      <p className="font-medium">No prompt appeared? Camera is blocked for this website.</p>
-                      <p><strong>Chrome on phone:</strong> Tap the <strong>lock icon</strong> or <strong>⋮</strong> (three dots) or <strong>i</strong> in the <strong>address bar at the top</strong> → <strong>Site settings</strong> → <strong>Camera</strong> → set to <strong>Allow</strong> → go back and <strong>reload this page</strong>, then tap &quot;Start camera & scan&quot; again.</p>
-                      <p><strong>Chrome on desktop:</strong> Click the lock or camera icon in the address bar → Camera → Allow → reload.</p>
-                      <p><strong>Safari (iPhone):</strong> Settings → Safari → Camera → Allow. Reload this page and try again.</p>
-                      <p className="mt-2">Use <strong>HTTPS</strong> (not HTTP). Then tap &quot;Try again&quot; below.</p>
+                      <p className="font-semibold text-amber-900">Camera permission is per device.</p>
+                      <p>Allowing on desktop does not enable it on this phone. You must allow camera <strong>on this phone</strong> using the steps below.</p>
+                      <p className="font-medium mt-2">On this phone (Chrome):</p>
+                      <ul className="list-disc list-inside space-y-1 ml-1">
+                        <li>Open this page in <strong>Chrome</strong> (not in WhatsApp/Email in-app browser — use &quot;Open in Chrome&quot; or copy the link into Chrome).</li>
+                        <li>Use the <strong>HTTPS</strong> URL (address must start with <code className="bg-amber-100 px-1 rounded">https://</code>).</li>
+                        <li>Tap the <strong>lock icon</strong> or <strong>⋮</strong> or <strong>i</strong> in the <strong>address bar at the top</strong> → <strong>Site settings</strong> → <strong>Camera</strong> → <strong>Allow</strong>.</li>
+                        <li>Go back, <strong>reload this page</strong>, then tap &quot;Start camera & scan&quot; again.</li>
+                      </ul>
+                      <p><strong>Safari (iPhone):</strong> Settings → Safari → Camera → Allow. Reload and try again.</p>
+                      <p className="mt-2">Then tap &quot;Try again&quot; below.</p>
                     </div>
                   )}
                   <button
