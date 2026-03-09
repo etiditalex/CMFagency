@@ -63,6 +63,7 @@ export default function CampaignPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const receiptRequestedRef = useRef(false);
+  const reminderRequestedRef = useRef(false);
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
@@ -163,6 +164,7 @@ export default function CampaignPage() {
   useEffect(() => {
     if (!ref) return;
     receiptRequestedRef.current = false;
+    reminderRequestedRef.current = false;
 
     let cancelled = false;
     let interval: number | undefined;
@@ -205,6 +207,17 @@ export default function CampaignPage() {
           if (!receiptRequestedRef.current) {
             receiptRequestedRef.current = true;
             fetch(`/api/send-receipt?ref=${encodeURIComponent(ref)}`, { method: "POST" }).catch(() => {});
+          }
+        }
+
+        if (next.status === "failed" || next.status === "abandoned") {
+          if (!reminderRequestedRef.current) {
+            reminderRequestedRef.current = true;
+            fetch("/api/send-purchase-reminder", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ref }),
+            }).catch(() => {});
           }
         }
 

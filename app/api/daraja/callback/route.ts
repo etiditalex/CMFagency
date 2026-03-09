@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
+import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -85,6 +86,12 @@ export async function POST(req: Request) {
           },
         } as any)
         .eq("id", tx.id);
+      const toEmail = (tx as { email?: string | null }).email?.trim?.();
+      if (toEmail) {
+        sendPurchaseReminderByRef(tx.reference, supabase).catch((err) =>
+          console.warn("[Daraja] Purchase reminder email error:", err instanceof Error ? err.message : err)
+        );
+      }
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
@@ -111,6 +118,12 @@ export async function POST(req: Request) {
           },
         } as any)
         .eq("id", tx.id);
+      const toEmailMismatch = (tx as { email?: string | null }).email?.trim?.();
+      if (toEmailMismatch) {
+        sendPurchaseReminderByRef(tx.reference, supabase).catch((err) =>
+          console.warn("[Daraja] Purchase reminder email error:", err instanceof Error ? err.message : err)
+        );
+      }
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
