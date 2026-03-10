@@ -336,9 +336,6 @@ export default function DashboardGatePage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
-          <p className="mt-1 text-gray-600 text-left">
-            Scan the receipt QR with your phone camera. The system checks automatically—first scan = valid entry, duplicate = already used. Check-ins are saved for future records.
-          </p>
         </div>
         <button
           type="button"
