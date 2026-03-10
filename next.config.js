@@ -17,10 +17,10 @@ const nextConfig = {
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'X-XSS-Protection', value: '1; mode=block' },
       { key: 'X-DNS-Prefetch-Control', value: 'off' },
-      // Disable powerful browser features unless explicitly needed.
+      // Allow camera for same-origin (Gate scanner); disable other powerful features unless needed.
       {
         key: 'Permissions-Policy',
-        value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+        value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
       },
       ...(isProd
         ? [

@@ -134,23 +134,9 @@ export default function DashboardGatePage() {
       return;
     }
 
-    // If the browser already has "denied" stored for this site, no Allow/Block prompt will ever show — we tell the user why
-    try {
-      if (nav.permissions?.query) {
-        const status = await nav.permissions.query({ name: "camera" });
-        if (status.state === "denied") {
-          setRequestingCamera(false);
-          setCameraError(
-            "Camera is already blocked for this site on this device. The browser will not show an Allow/Block prompt — you must change it in site settings (lock icon in address bar → Site settings → Camera → Allow), then reload and try again."
-          );
-          return;
-        }
-      }
-    } catch (_) {
-      // Permissions API not supported or failed; continue and try getUserMedia
-    }
-
-    // Request camera permission — first time for this site the browser should show Allow/Block prompt
+    // Request camera immediately (no await before this). Browsers only show the Allow/Block
+    // prompt when getUserMedia is called; they cannot be forced. Calling it right after the
+    // button click (without awaiting permissions.query) gives the best chance for the prompt to appear.
     let testStream: MediaStream | null = null;
     try {
       testStream = await nav.mediaDevices.getUserMedia({ video: true });
@@ -160,7 +146,8 @@ export default function DashboardGatePage() {
       const name = (e as Error & { name?: string }).name || "";
       let msg = e.message || "Camera access denied.";
       if (name === "NotAllowedError" || name === "PermissionDeniedError" || msg.toLowerCase().includes("permission"))
-        msg = "Camera permission denied. Allow camera access for this site and try again.";
+        msg =
+          "Camera permission denied or the Allow/Block prompt did not appear. The browser controls the prompt and it cannot be forced. If you never saw a prompt, the site is likely already set to Block on this device.";
       else if (name === "NotFoundError") msg = "No camera found.";
       setCameraError(msg);
       return;
@@ -319,7 +306,7 @@ export default function DashboardGatePage() {
               <p className="text-gray-700 font-medium">Scan with your phone camera</p>
               <p className="mt-1 text-sm text-gray-500">Point at the receipt QR code. No need to type anything.</p>
               <p className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-                Tapping the button should trigger an <strong>Allow / Block</strong> popup from the browser. If no popup appears, the site is already set to Block on this device — use the steps below to change it to Allow.
+                The button asks the browser for camera access. The browser may show an <strong>Allow / Block</strong> prompt; that prompt cannot be forced by the page. If no prompt appears, the site is usually already set to Block — use the steps below, or try in an <strong>Incognito/Private</strong> window for a fresh prompt.
               </p>
               <button
                 type="button"
@@ -339,10 +326,10 @@ export default function DashboardGatePage() {
               {cameraError && (
                 <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-left">
                   <p className="text-sm font-medium text-amber-800">{cameraError}</p>
-                  {cameraError.toLowerCase().includes("permission") && (
+                  {(cameraError.toLowerCase().includes("permission") || cameraError.toLowerCase().includes("prompt")) && (
                     <div className="mt-3 text-xs text-amber-800 space-y-2">
-                      <p className="font-semibold text-amber-900">Camera permission is per device.</p>
-                      <p>Allowing on desktop does not enable it on this phone. You must allow camera <strong>on this phone</strong> using the steps below.</p>
+                      <p className="font-semibold text-amber-900">The Allow/Block prompt is controlled by the browser and cannot be forced.</p>
+                      <p>If the prompt never appeared, the site is likely already set to Block on this device. Fix it using the steps below, or open this page in an <strong>Incognito/Private</strong> window and tap &quot;Start camera & scan&quot; again to get a fresh prompt.</p>
                       <p className="font-medium mt-2">On this phone (Chrome):</p>
                       <ul className="list-disc list-inside space-y-1 ml-1">
                         <li>Open this page in <strong>Chrome</strong> (not in WhatsApp/Email in-app browser — use &quot;Open in Chrome&quot; or copy the link into Chrome).</li>
