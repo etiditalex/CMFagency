@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download } from "lucide-react";
+import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, ListChecks } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -337,15 +337,24 @@ export default function DashboardGatePage() {
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
         </div>
-        <button
-          type="button"
-          onClick={handleDownloadCheckIns}
-          disabled={downloadingCheckIns}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
-        >
-          <Download className={`w-4 h-4 ${downloadingCheckIns ? "animate-spin" : ""}`} />
-          {downloadingCheckIns ? "Preparing…" : "Download check-ins"}
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/gate/check-ins"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900"
+          >
+            <ListChecks className="w-4 h-4" />
+            View check-ins
+          </Link>
+          <button
+            type="button"
+            onClick={handleDownloadCheckIns}
+            disabled={downloadingCheckIns}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
+          >
+            <Download className={`w-4 h-4 ${downloadingCheckIns ? "animate-spin" : ""}`} />
+            {downloadingCheckIns ? "Preparing…" : "Download check-ins"}
+          </button>
+        </div>
       </div>
 
       {/* Scanner mount point: always in DOM so we can re-start camera after "Scan next" */}
