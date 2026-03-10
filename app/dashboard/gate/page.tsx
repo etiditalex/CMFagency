@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard } from "lucide-react";
+import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -75,6 +75,7 @@ export default function DashboardGatePage() {
   const [manualMode, setManualMode] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [requestingCamera, setRequestingCamera] = useState(false);
+  const [downloadingCheckIns, setDownloadingCheckIns] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
   const lastScannedRef = useRef<string | null>(null);
@@ -277,6 +278,34 @@ export default function DashboardGatePage() {
     }
   }, [submitRef]);
 
+  const handleDownloadCheckIns = useCallback(async () => {
+    setDownloadingCheckIns(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+      const res = await fetch("/api/gate/check-ins-export", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? `Download failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gate-check-ins-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloadingCheckIns(false);
+    }
+  }, []);
+
   const stopCamera = useCallback(async () => {
     if (scannerRef.current) {
       try {
@@ -304,11 +333,22 @@ export default function DashboardGatePage() {
 
   return (
     <div className="text-left max-w-2xl">
-      <div>
-        <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
-        <p className="mt-1 text-gray-600 text-left">
-          Scan the receipt QR with your phone camera. The system checks automatically—first scan = valid entry, duplicate = already used.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
+          <p className="mt-1 text-gray-600 text-left">
+            Scan the receipt QR with your phone camera. The system checks automatically—first scan = valid entry, duplicate = already used. Check-ins are saved for future records.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleDownloadCheckIns}
+          disabled={downloadingCheckIns}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
+        >
+          <Download className={`w-4 h-4 ${downloadingCheckIns ? "animate-spin" : ""}`} />
+          {downloadingCheckIns ? "Preparing…" : "Download check-ins"}
+        </button>
       </div>
 
       {/* Scanner mount point: always in DOM so we can re-start camera after "Scan next" */}
@@ -326,10 +366,6 @@ export default function DashboardGatePage() {
                 <Camera className="w-10 h-10 text-primary-600" />
               </div>
               <p className="text-gray-700 font-medium">Scan with your phone camera</p>
-              <p className="mt-1 text-sm text-gray-500">Point at the receipt QR code. No need to type anything.</p>
-              <p className="mt-2 text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-                The button asks the browser for camera access. The browser may show an <strong>Allow / Block</strong> prompt; that prompt cannot be forced by the page. If no prompt appears, the site is usually already set to Block — use the steps below, or try in an <strong>Incognito/Private</strong> window for a fresh prompt.
-              </p>
               <button
                 type="button"
                 onClick={startCamera}
@@ -371,11 +407,6 @@ export default function DashboardGatePage() {
                     Try again
                   </button>
                 </div>
-              )}
-              {!cameraError && (
-                <p className="mt-3 text-xs text-gray-500">
-                  Use HTTPS (required for camera). Allow camera when the browser asks.
-                </p>
               )}
               <button
                 type="button"
@@ -436,12 +467,6 @@ export default function DashboardGatePage() {
             Hide manual entry
           </button>
         </div>
-      )}
-
-      {!manualMode && !refInput && !cameraActive && (
-        <p className="mt-4 text-sm text-gray-500">
-          Open this page on your phone at <strong>Dashboard → Gate</strong>, tap &quot;Start camera & scan&quot;, then scan the attendee&apos;s receipt QR. Result appears automatically.
-        </p>
       )}
 
       {error && (
