@@ -40,7 +40,7 @@ export function proxy(request: NextRequest) {
     frame-ancestors 'none';
     object-src 'none';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""};
-    style-src 'self' 'nonce-${nonce}';
+    style-src 'self' 'nonce-${nonce}' 'unsafe-inline';
     img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com;
     font-src 'self' data: https:;
     connect-src 'self' https: wss:;
