@@ -85,9 +85,32 @@ You receive a user question and a set of fresh web search results.
       })),
     });
   } catch (error) {
-    console.error("Research API error:", error);
+    const err = error as { message?: string; response?: { status?: number }; code?: string };
+    const message = err?.message ?? "";
+    console.error("Research API error:", err);
+
+    // Sanitize for client: hint at cause without exposing internals
+    if (message.includes("401") || message.includes("Unauthorized") || (message.toLowerCase().includes("invalid") && message.toLowerCase().includes("key"))) {
+      return NextResponse.json(
+        { error: "Tavily or OpenAI API key is invalid or expired. Check TAVILY_API_KEY and OPENAI_API_KEY in your environment." },
+        { status: 500 },
+      );
+    }
+    if (message.includes("429") || message.includes("rate limit")) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Please try again in a moment." },
+        { status: 429 },
+      );
+    }
+    if (message.includes("ENOTFOUND") || message.includes("fetch") && message.toLowerCase().includes("fail")) {
+      return NextResponse.json(
+        { error: "Network error while contacting search or AI service. Please try again." },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json(
-      { error: "An error occurred while performing research." },
+      { error: "An error occurred while performing research. Check server logs for details." },
       { status: 500 },
     );
   }
