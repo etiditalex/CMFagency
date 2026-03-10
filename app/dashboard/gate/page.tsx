@@ -32,11 +32,33 @@ interface QrScanner {
   clear(): void;
 }
 
+/** Transaction ref pattern (e.g. cmf_xxx from Paystack or cmf-xxx from merchandise). */
+const REF_PATTERN = /^[A-Za-z0-9._-]{6,128}$/;
+/** Our transaction references start with cmf_ (Paystack) or cmf- (merchandise). */
+const TX_REF_PATTERN = /(cmf[_\-][A-Za-z0-9._-]+)/g;
+
 function parseRefFromInput(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
+
+  // URL with ?ref= or /ref=
   const urlMatch = trimmed.match(/[/?]ref=([A-Za-z0-9._-]+)/);
   if (urlMatch) return urlMatch[1];
+
+  // Single line that already looks like a ref
+  if (REF_PATTERN.test(trimmed)) return trimmed;
+
+  // Receipt email QR encodes "ticketNumber\nreference" — prefer the transaction ref (cmf_ or cmf-)
+  const txRefMatch = trimmed.match(TX_REF_PATTERN);
+  if (txRefMatch && txRefMatch[0]) return txRefMatch[0];
+
+  // Fallback: any token that matches ref pattern (e.g. QR with only the ref)
+  const tokens = trimmed.split(/\s+/);
+  for (const token of tokens) {
+    const cleaned = token.trim();
+    if (REF_PATTERN.test(cleaned)) return cleaned;
+  }
+
   return trimmed;
 }
 
