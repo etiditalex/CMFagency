@@ -245,12 +245,17 @@ export default function DashboardHomePage() {
     let cancelled = false;
 
     const init = async () => {
-      setLoading(true);
-      setError(null);
       try {
-        // If portal_members isn't installed yet, block access until configured.
-        // (Prevents non-portal users from entering /dashboard.)
+        // Require portal 2FA: code must have been verified this session.
+        const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
+        const status = (await statusRes.json().catch(() => ({}))) as { verified?: boolean };
+        if (!cancelled && !status.verified) {
+          router.replace("/fusion-xpress");
+          return;
+        }
         if (cancelled) return;
+        setLoading(true);
+        setError(null);
         await refreshData();
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Lock, Mail, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Lock, Mail, Shield, KeyRound } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -54,6 +54,14 @@ export default function FusionXpressAdminLoginPage() {
 
   const [resetSent, setResetSent] = useState(false);
 
+  // Two-step: after password sign-in, require email code before dashboard.
+  type Step = "login" | "code";
+  const [step, setStep] = useState<Step>("login");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [resendCodeLoading, setResendCodeLoading] = useState(false);
+
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
     if (!password) return false;
@@ -76,13 +84,13 @@ export default function FusionXpressAdminLoginPage() {
   };
 
   useEffect(() => {
-    // If already signed in and a portal member, go straight to dashboard.
+    // If already signed in and a portal member, check 2FA status; then redirect or show code step.
     const check = async () => {
       const { data } = await supabase.auth.getSession();
       const userId = data.session?.user?.id;
+      const userEmail = data.session?.user?.email ?? "";
       if (!userId) return;
 
-      // If this email is configured in the server allowlist, auto-claim admin access.
       await maybeClaimAdmin();
 
       const { data: memberRow, error: memberErr } = await supabase
@@ -91,7 +99,6 @@ export default function FusionXpressAdminLoginPage() {
         .eq("user_id", userId)
         .maybeSingle();
 
-      // Backward-compat: if portal_members isn't installed yet, allow legacy admins in.
       if (memberErr && isMissingPortalMembersTable(memberErr)) {
         const { data: adminRow, error: adminErr } = await supabase
           .from("admin_users")
@@ -108,13 +115,27 @@ export default function FusionXpressAdminLoginPage() {
         }
 
         if (adminRow) {
-          router.replace("/dashboard");
+          const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
+          const status = await statusRes.json().catch(() => ({ verified: false }));
+          if (status.verified) {
+            router.replace("/dashboard");
+          } else {
+            setStep("code");
+            setLoginEmail(userEmail);
+          }
         }
         return;
       }
 
       if (memberRow) {
-        router.replace("/dashboard");
+        const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
+        const status = await statusRes.json().catch(() => ({ verified: false }));
+        if (status.verified) {
+          router.replace("/dashboard");
+        } else {
+          setStep("code");
+          setLoginEmail(userEmail);
+        }
       }
     };
 
@@ -194,11 +215,85 @@ export default function FusionXpressAdminLoginPage() {
       await maybeClaimAdmin();
       await requirePortalMemberOrSignOut(userId);
 
-      router.replace("/dashboard");
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session missing. Please try again.");
+
+      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sendRes.ok) {
+        const err = await sendRes.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to send verification code to your email.");
+      }
+
+      setLoginEmail(email.trim());
+      setStep("code");
+      setCode("");
     } catch (e: any) {
       setError(e?.message ?? "Unable to sign in.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!code.trim() || code.trim().length !== 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setCodeLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError("Session expired. Please sign in again.");
+        setStep("login");
+        return;
+      }
+      const res = await fetch("/api/fusion-xpress/verify-login-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: code.trim() }),
+        credentials: "include",
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? "Invalid or expired code.");
+      router.replace("/dashboard");
+    } catch (e: any) {
+      setError(e?.message ?? "Invalid or expired code.");
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  const onResendCode = async () => {
+    setError(null);
+    setResendCodeLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError("Session expired. Please sign in again.");
+        setStep("login");
+        return;
+      }
+      const res = await fetch("/api/fusion-xpress/send-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to resend code.");
+      }
+      setError(null);
+      setCode("");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to resend code.");
+    } finally {
+      setResendCodeLoading(false);
     }
   };
 
@@ -381,7 +476,7 @@ export default function FusionXpressAdminLoginPage() {
           </div>
         </section>
 
-        {/* Admin login (towards the end) */}
+        {/* Admin login (towards the end) — step: login or email code */}
         <section className="mt-12 flex items-center justify-center">
           <div className="w-full max-w-md">
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
@@ -393,11 +488,11 @@ export default function FusionXpressAdminLoginPage() {
               <div className="p-8 border-b border-gray-100">
                 <div className="flex items-center justify-center">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white flex items-center justify-center shadow-lg">
-                    <Shield className="w-7 h-7" />
+                    {step === "code" ? <KeyRound className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
                   </div>
                 </div>
                 <h2 className="mt-5 text-3xl font-extrabold text-gray-900 text-center">
-                  Sign in
+                  {step === "code" ? "Enter verification code" : "Sign in"}
                 </h2>
               </div>
 
@@ -408,73 +503,127 @@ export default function FusionXpressAdminLoginPage() {
                   </div>
                 )}
 
-                <form onSubmit={onSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="admin@company.com"
-                      />
+                {step === "code" ? (
+                  <form onSubmit={onVerifyCode} className="space-y-4">
+                    <p className="text-gray-600 text-sm">
+                      We sent a 6-digit code to <strong>{loginEmail}</strong>. Enter it below to access the dashboard.
+                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Code</label>
+                      <div className="relative">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          maxLength={6}
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-lg tracking-widest"
+                          placeholder="000000"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        placeholder="Enter your password"
-                      />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="submit"
+                        disabled={codeLoading || code.length !== 6}
+                        className="flex-1 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {codeLoading ? "Verifying…" : "Verify and continue"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onResendCode}
+                        disabled={resendCodeLoading}
+                        className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60"
+                      >
+                        {resendCodeLoading ? "Sending…" : "Resend code"}
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={onForgotPassword}
-                      className="text-sm font-semibold text-primary-700 hover:text-primary-800"
-                      disabled={loading}
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setStep("login");
+                        setCode("");
+                        setLoginEmail("");
+                        setError(null);
+                      }}
+                      className="w-full text-sm text-gray-500 hover:text-gray-700"
                     >
-                      Forgot password
+                      Use a different account
                     </button>
-                    {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
-                  </div>
+                  </form>
+                ) : (
+                  <form onSubmit={onSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="email"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="admin@company.com"
+                        />
+                      </div>
+                    </div>
 
-                  <div className="flex items-center justify-between gap-3">
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      Keep me signed in
-                    </label>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <input
+                          type="password"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          placeholder="Enter your password"
+                        />
+                      </div>
+                    </div>
 
-                    <span className="text-xs text-gray-500">
-                      {rememberMe ? "Session saved" : "Session not saved"}
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={onForgotPassword}
+                        className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+                        disabled={loading}
+                      >
+                        Forgot password
+                      </button>
+                      {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
+                    </div>
 
-                  <button
-                    type="submit"
-                    disabled={loading || !canSubmit}
-                    className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Signing in..." : "Sign in"}
-                  </button>
-                </form>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
+                        <input
+                          type="checkbox"
+                          checked={rememberMe}
+                          onChange={(e) => setRememberMe(e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        Keep me signed in
+                      </label>
+
+                      <span className="text-xs text-gray-500">
+                        {rememberMe ? "Session saved" : "Session not saved"}
+                      </span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || !canSubmit}
+                      className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {loading ? "Signing in..." : "Sign in"}
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>

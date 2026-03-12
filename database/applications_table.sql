@@ -61,3 +61,18 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create indexes for users table
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Enable Row Level Security on users (required for Supabase security)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Users can read and update only their own row
+DROP POLICY IF EXISTS "users_own_row_select" ON users;
+CREATE POLICY "users_own_row_select"
+  ON users FOR SELECT TO authenticated
+  USING (id = auth.uid());
+
+DROP POLICY IF EXISTS "users_own_row_update" ON users;
+CREATE POLICY "users_own_row_update"
+  ON users FOR UPDATE TO authenticated
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
