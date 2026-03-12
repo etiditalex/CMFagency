@@ -139,6 +139,7 @@ export const metadata: Metadata = {
     "geo.placename": "Ambalal, Mombasa",
     "geo.position": "-4.0435;39.6682",
     "ICBM": "-4.0435, 39.6682",
+    "google-adsense-account": "ca-pub-7231529725117325",
   },
 };
 
