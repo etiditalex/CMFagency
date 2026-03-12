@@ -18,7 +18,8 @@ type PortalFeature =
   | "ticketing"
   | "voting"
   | "reports"
-  | "events";
+  | "events"
+  | "applications";
 
 type PortalContextValue = {
   loading: boolean;
@@ -109,7 +110,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
             setIsPortalMember(true);
             setRole("admin");
             setTier("enterprise");
-            setFeatures(["payouts", "coupons", "managers", "email", "create_campaign", "ticketing", "voting", "reports", "events"]);
+            setFeatures(["payouts", "coupons", "managers", "email", "create_campaign", "ticketing", "voting", "reports", "events", "applications"]);
           } else {
             setIsPortalMember(false);
             setRole(null);
@@ -145,7 +146,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           setIsPortalMember(true);
           setRole("admin");
           setTier("enterprise");
-          setFeatures(["payouts", "coupons", "managers", "email"]);
+          setFeatures(["payouts", "coupons", "managers", "email", "applications"]);
           return;
         }
 
@@ -170,6 +171,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         "voting",
         "reports",
         "events",
+        "applications",
       ] as const;
       const fs: PortalFeature[] = Array.isArray(rawFeatures)
         ? rawFeatures.filter((f: string) => allFeatureKeys.includes(f as PortalFeature))

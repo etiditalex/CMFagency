@@ -10,6 +10,8 @@ const ALLOWED_FEATURES = [
   "ticketing",
   "voting",
   "reports",
+  "events",
+  "applications",
 ] as const;
 
 type Body = {
