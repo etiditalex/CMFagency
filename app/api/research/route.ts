@@ -34,19 +34,30 @@ function getErrorMessage(error: unknown): string {
   return combined.replace(/\b(sk-[a-zA-Z0-9-]{20,}|tvly-[a-zA-Z0-9-]{20,})/gi, "[REDACTED]");
 }
 
-function toResearchError(error: unknown): { message: string; status: number } {
+function toResearchError(
+  error: unknown,
+  service?: "tavily" | "openai",
+): { message: string; status: number } {
   const msg = getErrorMessage(error);
   const lower = msg.toLowerCase();
   const status = (error as { response?: { status?: number } })?.response?.status;
 
   if (status === 401 || msg.includes("401") || lower.includes("unauthorized") || (lower.includes("invalid") && lower.includes("key"))) {
-    return { message: "Search or AI service reported an invalid API key. Check TAVILY_API_KEY and OPENAI_API_KEY in your environment.", status: 500 };
+    const who = service === "tavily" ? "Tavily" : service === "openai" ? "OpenAI" : "Search or AI service";
+    return { message: `${who} reported an invalid API key. Check ${service === "tavily" ? "TAVILY_API_KEY" : service === "openai" ? "OPENAI_API_KEY" : "TAVILY_API_KEY and OPENAI_API_KEY"} in your environment.`, status: 500 };
   }
   if (status === 402 || lower.includes("insufficient") || lower.includes("credit") || lower.includes("quota") || lower.includes("payment")) {
-    return { message: "Search or AI service quota or credits exceeded. Check your Tavily and OpenAI account limits.", status: 502 };
+    if (service === "tavily") {
+      return { message: "Tavily search quota or credits exceeded. Check your plan and usage at app.tavily.com (or tavily.com) and ensure TAVILY_API_KEY is set correctly.", status: 502 };
+    }
+    if (service === "openai") {
+      return { message: "OpenAI quota or usage limit exceeded. Check usage at platform.openai.com and ensure OPENAI_API_KEY has available credits.", status: 502 };
+    }
+    return { message: "Search or AI service quota or credits exceeded. Check your Tavily and OpenAI account limits (tavily.com and platform.openai.com).", status: 502 };
   }
   if (status === 403 || lower.includes("forbidden")) {
-    return { message: "Search or AI service access denied. Check your API keys and account permissions.", status: 502 };
+    const who = service === "tavily" ? "Tavily" : service === "openai" ? "OpenAI" : "Search or AI service";
+    return { message: `${who} access denied. Check your API key and account permissions.`, status: 502 };
   }
   if (status === 429 || msg.includes("429") || lower.includes("rate limit")) {
     return { message: "Rate limit exceeded. Please try again in a moment.", status: 429 };
@@ -55,7 +66,8 @@ function toResearchError(error: unknown): { message: string; status: number } {
     return { message: "Request took too long or connection was reset. Try a shorter query or try again.", status: 504 };
   }
   if (status === 502 || status === 503 || lower.includes("enotfound") || lower.includes("econnrefused") || lower.includes("econnreset") || (lower.includes("fetch") && lower.includes("fail"))) {
-    return { message: "Network or server error contacting search or AI service. Please try again.", status: 502 };
+    const who = service === "tavily" ? "Tavily search" : service === "openai" ? "OpenAI" : "Search or AI service";
+    return { message: `Network or server error contacting ${who}. Please try again.`, status: 502 };
   }
   // Include a short safe detail so user has a hint (e.g. "HTTP 500" or first part of message)
   const hint = status ? ` (HTTP ${status})` : msg.slice(0, 60).replace(/\s+/g, " ").trim();
@@ -108,7 +120,7 @@ export async function POST(req: NextRequest) {
     } catch (searchErr) {
       const extracted = getErrorMessage(searchErr);
       console.error("Research Tavily search error:", extracted, searchErr);
-      const { message, status } = toResearchError(searchErr);
+      const { message, status } = toResearchError(searchErr, "tavily");
       return NextResponse.json({ error: message }, { status });
     }
 
@@ -144,7 +156,7 @@ You receive a user question and a set of fresh web search results.
     } catch (aiErr) {
       const extracted = getErrorMessage(aiErr);
       console.error("Research OpenAI error:", extracted, aiErr);
-      const { message, status } = toResearchError(aiErr);
+      const { message, status } = toResearchError(aiErr, "openai");
       return NextResponse.json({ error: message }, { status });
     }
 

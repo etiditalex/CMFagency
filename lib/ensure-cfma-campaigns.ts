@@ -29,6 +29,7 @@ const CFMA_SLUGS = new Set(Object.keys(CFMA_TIERS));
 
 export type CampaignRow = {
   id: string;
+  created_by: string;
   type: "ticket" | "vote";
   slug: string;
   title: string;
@@ -50,7 +51,7 @@ export async function ensureCfmaCampaign(
 
   const { data: existing } = await supabaseAdmin
     .from("campaigns")
-    .select("id,type,slug,title,currency,unit_amount,max_per_txn")
+    .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
     .eq("slug", slugNorm)
     .maybeSingle();
 
@@ -101,7 +102,7 @@ export async function ensureCfmaCampaign(
       is_active: true,
       created_by: adminId,
     })
-    .select("id,type,slug,title,currency,unit_amount,max_per_txn")
+    .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
     .single();
 
   if (error) {

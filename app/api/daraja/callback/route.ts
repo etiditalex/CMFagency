@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     // Find transaction by checkout_request_id in metadata
     const { data: rows } = await supabase
       .from("transactions")
-      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name")
+      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id")
       .eq("provider", "daraja")
       .eq("status", "pending");
 
@@ -182,6 +182,15 @@ export async function POST(req: Request) {
         .update({ fulfilled_at: new Date().toISOString() } as any)
         .eq("id", tx.id)
         .is("fulfilled_at", null);
+
+      const couponId = (tx as { coupon_id?: string | null }).coupon_id;
+      if (couponId) {
+        const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+        if (cou) {
+          const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+          await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+        }
+      }
     }
 
     // Send receipt email (tickets, votes, and merchandise)

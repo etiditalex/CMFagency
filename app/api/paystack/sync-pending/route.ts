@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 
   const { data: pendingRows, error: fetchErr } = await supabase
     .from("transactions")
-    .select("id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at,metadata")
+    .select("id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at,metadata,coupon_id")
     .eq("provider", "paystack")
     .eq("status", "pending");
 
@@ -144,6 +144,15 @@ export async function GET(req: Request) {
           .update({ fulfilled_at: new Date().toISOString() } as any)
           .eq("id", tx.id)
           .is("fulfilled_at", null);
+
+        const couponId = (tx as { coupon_id?: string | null }).coupon_id;
+        if (couponId) {
+          const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+          if (cou) {
+            const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+            await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+          }
+        }
       }
 
       updated++;

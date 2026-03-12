@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
+import { validateCoupon } from "@/lib/validate-coupon";
 
 type InitBody = {
   slug?: string;
@@ -12,6 +13,8 @@ type InitBody = {
   payer_name?: string | null;
   /** When true, return ref/amount/email for Paystack Inline popup (card entry on-page) instead of redirect URL */
   inline?: boolean;
+  /** Coupon/promo code for discount */
+  coupon_code?: string | null;
 };
 
 /**
@@ -36,6 +39,7 @@ export async function POST(req: Request) {
     const quantity = Math.trunc(Number(body.quantity ?? 0));
     const contestantId = body.contestant_id ?? null;
     const payerName = (body.payer_name ?? "").trim() || null;
+    const couponCode = (body.coupon_code ?? "").trim() || null;
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -58,12 +62,12 @@ export async function POST(req: Request) {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } }) : null;
 
-    type CampaignRow = { id: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number };
+    type CampaignRow = { id: string; created_by: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number };
     let campaign: CampaignRow | null = null;
 
     const { data: campaignData } = await supabase
       .from("campaigns")
-      .select("id,type,slug,title,currency,unit_amount,max_per_txn")
+      .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -102,14 +106,33 @@ export async function POST(req: Request) {
     }
 
     // Reference used to reconcile webhook and DB. Must be unique.
-    // (No secrets here: it's ok to expose references publicly.)
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
 
-    const unitAmount = Number(campaign.unit_amount);
-    const amount = unitAmount * q;
+    let unitAmount = Number(campaign.unit_amount);
+    let amount = unitAmount * q;
+    let couponId: string | null = null;
+    let discountAmount = 0;
 
-    // Insert "pending" transaction. RLS restricts this to pending-only inserts.
-    const { error: insertErr } = await supabase.from("transactions").insert({
+    if (couponCode) {
+      if (!supabaseAdmin) {
+        return NextResponse.json({ error: "Coupon validation unavailable" }, { status: 500 });
+      }
+      const couponResult = await validateCoupon(
+        supabaseAdmin,
+        { id: campaign.id, created_by: campaign.created_by, unit_amount: campaign.unit_amount },
+        couponCode,
+        q
+      );
+      if (couponResult.valid) {
+        couponId = couponResult.coupon_id;
+        discountAmount = couponResult.discount_amount;
+        amount = couponResult.amount;
+      } else {
+        return NextResponse.json({ error: couponResult.error }, { status: 400 });
+      }
+    }
+
+    const insertPayload = {
       campaign_id: campaign.id,
       campaign_type: campaign.type,
       reference,
@@ -120,13 +143,18 @@ export async function POST(req: Request) {
       currency: campaign.currency,
       unit_amount: unitAmount,
       amount,
+      discount_amount: discountAmount,
+      coupon_id: couponId,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
       metadata: {
         slug: campaign.slug,
         campaign_title: campaign.title,
       },
-    });
+    };
+
+    const insertClient = couponId ? supabaseAdmin! : supabase;
+    const { error: insertErr } = await insertClient.from("transactions").insert(insertPayload);
 
     if (insertErr) {
       const msg = insertErr?.message ?? "";

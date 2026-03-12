@@ -54,6 +54,17 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    amount_after_discount: number;
+    discount_amount: number;
+    coupon_id: string;
+    quantity: number;
+    slug: string;
+  } | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   const lineItems = useMemo(() => {
     return TICKET_TIERS.filter((t) => (quantities[t.id] ?? 0) > 0).map((t) => ({
@@ -63,10 +74,11 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     }));
   }, [quantities]);
 
-  const totalWithVat = useMemo(
+  const subtotal = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.total, 0),
     [lineItems]
   );
+  const totalWithVat = appliedCoupon ? appliedCoupon.amount_after_discount : subtotal;
 
   const totalTickets = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.quantity, 0),
@@ -119,11 +131,65 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     setPaymentMethod("mpesa");
     setError(null);
     setSubmitting(false);
+    setPromoCode("");
+    setShowPromoInput(false);
+    setAppliedCoupon(null);
+    setPromoError(null);
   }, []);
 
   const goBack = () => {
     setError(null);
     if (step > 1) setStep((s) => (s - 1) as 1 | 2 | 3 | 4);
+  };
+
+  const applyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code || lineItems.length === 0) return;
+    const item = lineItems[0];
+    setValidatingPromo(true);
+    setPromoError(null);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: item.slug,
+          code,
+          quantity: item.quantity,
+        }),
+      });
+      const json = (await res.json()) as {
+        valid?: boolean;
+        amount_after_discount?: number;
+        discount_amount?: number;
+        coupon_id?: string;
+        error?: string;
+      };
+      if (json.valid && json.amount_after_discount != null && json.discount_amount != null && json.coupon_id) {
+        setAppliedCoupon({
+          amount_after_discount: json.amount_after_discount,
+          discount_amount: json.discount_amount,
+          coupon_id: json.coupon_id,
+          quantity: item.quantity,
+          slug: item.slug,
+        });
+        setPromoError(null);
+      } else {
+        setAppliedCoupon(null);
+        setPromoError(json.error ?? "Invalid or expired code");
+      }
+    } catch {
+      setAppliedCoupon(null);
+      setPromoError("Could not validate code");
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedCoupon(null);
+    setPromoError(null);
+    setPromoCode("");
   };
 
   const goNext = () => {
@@ -156,12 +222,13 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              slug: item.slug,
-              phone: phoneNorm,
-              email: details.email.trim(),
+          body: JSON.stringify({
+            slug: item.slug,
+            phone: phoneNorm,
+            email: details.email.trim(),
             payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
             quantity: item.quantity,
+            coupon_code: appliedCoupon ? promoCode.trim() : undefined,
           }),
         });
         const raw = await res.text();
@@ -189,6 +256,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
             quantity: item.quantity,
             inline: useInline,
+            coupon_code: appliedCoupon ? promoCode.trim() : undefined,
           }),
         });
 
@@ -254,6 +322,15 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
       reset();
     }
   }, [open, reset]);
+
+  useEffect(() => {
+    if (lineItems.length === 0) {
+      setAppliedCoupon(null);
+    } else if (appliedCoupon && (lineItems[0].quantity !== appliedCoupon.quantity || lineItems[0].slug !== appliedCoupon.slug)) {
+      setAppliedCoupon(null);
+      setPromoError(null);
+    }
+  }, [lineItems, appliedCoupon]);
 
   useEffect(() => {
     if (!open) return;
@@ -688,6 +765,12 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                       </span>
                     </div>
                   ))}
+                  {appliedCoupon && appliedCoupon.discount_amount > 0 && (
+                    <div className="flex justify-between text-sm text-green-700">
+                      <span>Discount (promo)</span>
+                      <span className="font-semibold">- KES {appliedCoupon.discount_amount.toLocaleString()}.00</span>
+                    </div>
+                  )}
                   <div className="pt-2 border-t border-gray-200 flex justify-between">
                     <span className="font-semibold text-gray-900">Total</span>
                     <span className="font-bold text-gray-900">
@@ -697,12 +780,45 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                 </div>
               )}
               <div className="mt-6">
-                <button
-                  type="button"
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                >
-                  Add promo code
-                </button>
+                {!showPromoInput && !appliedCoupon && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPromoInput(true)}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    Add promo code
+                  </button>
+                )}
+                {showPromoInput && !appliedCoupon && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="Enter code"
+                        className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={applyPromo}
+                        disabled={validatingPromo || !promoCode.trim()}
+                        className="px-3 py-2 rounded-md bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 inline-flex items-center gap-1"
+                      >
+                        {validatingPromo ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                      </button>
+                    </div>
+                    {promoError && <p className="text-xs text-red-600">{promoError}</p>}
+                  </div>
+                )}
+                {appliedCoupon && (
+                  <p className="text-sm text-green-700 font-medium">
+                    Promo applied. Total: KES {totalWithVat.toLocaleString()}.00
+                    <button type="button" onClick={removePromo} className="ml-2 text-primary-600 hover:underline">
+                      Remove
+                    </button>
+                  </p>
+                )}
               </div>
               <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
                 <div className="relative h-16 sm:aspect-video sm:h-auto rounded-lg overflow-hidden bg-gray-200">
