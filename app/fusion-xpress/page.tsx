@@ -54,13 +54,16 @@ export default function FusionXpressAdminLoginPage() {
 
   const [resetSent, setResetSent] = useState(false);
 
-  // Two-step: after password sign-in, require email code before dashboard.
+  // Two-step: after password sign-in, require email code or Google Authenticator.
   type Step = "login" | "code";
   const [step, setStep] = useState<Step>("login");
   const [loginEmail, setLoginEmail] = useState("");
   const [code, setCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
   const [resendCodeLoading, setResendCodeLoading] = useState(false);
+  const [hasTotp, setHasTotp] = useState(false);
+  type TwoFactorMethod = "email" | "totp";
+  const [twoFactorMethod, setTwoFactorMethod] = useState<TwoFactorMethod>("email");
 
   const canSubmit = useMemo(() => {
     if (!email.trim()) return false;
@@ -120,6 +123,12 @@ export default function FusionXpressAdminLoginPage() {
           if (status.verified) {
             router.replace("/dashboard");
           } else {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const t = sessionData.session?.access_token;
+            const methodRes = t ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } }) : null;
+            const methodData = methodRes?.ok ? (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean } : {};
+            setHasTotp(!!methodData.hasTotp);
+            setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
             setStep("code");
             setLoginEmail(userEmail);
           }
@@ -133,6 +142,12 @@ export default function FusionXpressAdminLoginPage() {
         if (status.verified) {
           router.replace("/dashboard");
         } else {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const t = sessionData.session?.access_token;
+          const methodRes = t ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } }) : null;
+          const methodData = methodRes?.ok ? (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean } : {};
+          setHasTotp(!!methodData.hasTotp);
+          setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
           setStep("code");
           setLoginEmail(userEmail);
         }
@@ -218,16 +233,24 @@ export default function FusionXpressAdminLoginPage() {
       const token = data.session?.access_token;
       if (!token) throw new Error("Session missing. Please try again.");
 
-      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!sendRes.ok) {
-        const err = await sendRes.json().catch(() => ({}));
-        throw new Error(err.error ?? "Failed to send verification code to your email.");
+      const methodRes = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });
+      const methodData = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean };
+      const useTotp = !!methodData.hasTotp;
+
+      if (!useTotp) {
+        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!sendRes.ok) {
+          const err = await sendRes.json().catch(() => ({}));
+          throw new Error(err.error ?? "Failed to send verification code to your email.");
+        }
       }
 
       setLoginEmail(email.trim());
+      setHasTotp(useTotp);
+      setTwoFactorMethod(useTotp ? "totp" : "email");
       setStep("code");
       setCode("");
     } catch (e: any) {
@@ -240,8 +263,9 @@ export default function FusionXpressAdminLoginPage() {
   const onVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!code.trim() || code.trim().length !== 6) {
-      setError("Enter the 6-digit code from your email.");
+    const codeDigits = code.trim().replace(/\D/g, "").slice(0, 6);
+    if (codeDigits.length !== 6) {
+      setError("Enter the 6-digit code from your email or authenticator app.");
       return;
     }
     setCodeLoading(true);
@@ -256,7 +280,7 @@ export default function FusionXpressAdminLoginPage() {
       const res = await fetch("/api/fusion-xpress/verify-login-code", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: codeDigits, method: twoFactorMethod }),
         credentials: "include",
       });
       const json = await res.json().catch(() => ({}));
@@ -288,6 +312,7 @@ export default function FusionXpressAdminLoginPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Failed to resend code.");
       }
+      setTwoFactorMethod("email");
       setError(null);
       setCode("");
     } catch (e: any) {
@@ -505,9 +530,15 @@ export default function FusionXpressAdminLoginPage() {
 
                 {step === "code" ? (
                   <form onSubmit={onVerifyCode} className="space-y-4">
-                    <p className="text-gray-600 text-sm">
-                      We sent a 6-digit code to <strong>{loginEmail}</strong>. Enter it below to access the dashboard.
-                    </p>
+                    {twoFactorMethod === "totp" ? (
+                      <p className="text-gray-600 text-sm">
+                        Enter the 6-digit code from your authenticator app (e.g. Google Authenticator).
+                      </p>
+                    ) : (
+                      <p className="text-gray-600 text-sm">
+                        We sent a 6-digit code to <strong>{loginEmail}</strong>. Enter it below to access the dashboard.
+                      </p>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Code</label>
                       <div className="relative">
@@ -527,19 +558,41 @@ export default function FusionXpressAdminLoginPage() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <button
                         type="submit"
-                        disabled={codeLoading || code.length !== 6}
+                        disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
                         className="flex-1 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {codeLoading ? "Verifying…" : "Verify and continue"}
                       </button>
-                      <button
-                        type="button"
-                        onClick={onResendCode}
-                        disabled={resendCodeLoading}
-                        className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60"
-                      >
-                        {resendCodeLoading ? "Sending…" : "Resend code"}
-                      </button>
+                      {twoFactorMethod === "email" ? (
+                        <button
+                          type="button"
+                          onClick={onResendCode}
+                          disabled={resendCodeLoading}
+                          className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60"
+                        >
+                          {resendCodeLoading ? "Sending…" : "Resend code"}
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                      {twoFactorMethod === "totp" ? (
+                        <button
+                          type="button"
+                          onClick={onResendCode}
+                          disabled={resendCodeLoading}
+                          className="text-primary-700 font-medium hover:underline"
+                        >
+                          Send code to email instead
+                        </button>
+                      ) : hasTotp ? (
+                        <button
+                          type="button"
+                          onClick={() => { setTwoFactorMethod("totp"); setError(null); setCode(""); }}
+                          className="text-primary-700 font-medium hover:underline"
+                        >
+                          Use authenticator app instead
+                        </button>
+                      ) : null}
                     </div>
                     <button
                       type="button"

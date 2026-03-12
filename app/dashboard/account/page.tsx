@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Lock } from "lucide-react";
+import { KeyRound, Lock, Shield, Smartphone } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -19,6 +20,14 @@ export default function DashboardAccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [totpSetupUrl, setTotpSetupUrl] = useState<string | null>(null);
+  const [totpSecret, setTotpSecret] = useState<string | null>(null);
+  const [totpConfirmCode, setTotpConfirmCode] = useState("");
+  const [totpSetupLoading, setTotpSetupLoading] = useState(false);
+  const [totpConfirmLoading, setTotpConfirmLoading] = useState(false);
+  const [totpDisableLoading, setTotpDisableLoading] = useState(false);
+
   const canSubmit = useMemo(() => {
     return (
       newPassword.length >= 6 &&
@@ -32,6 +41,98 @@ export default function DashboardAccountPage() {
       router.replace("/fusion-xpress");
     }
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, router, user]);
+
+  const fetchTotpStatus = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    const res = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });
+    const json = await res.json().catch(() => ({}));
+    setTotpEnabled(!!(json as { hasTotp?: boolean }).hasTotp);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isPortalMember) return;
+    fetchTotpStatus();
+  }, [isAuthenticated, isPortalMember, fetchTotpStatus]);
+
+  const onTotpSetup = async () => {
+    setError(null);
+    setTotpSetupLoading(true);
+    setTotpSetupUrl(null);
+    setTotpSecret(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/fusion-xpress/2fa/totp/setup", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? "Setup failed");
+      setTotpSetupUrl((json as { otpauthUrl: string }).otpauthUrl);
+      setTotpSecret((json as { secret?: string }).secret ?? null);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to start setup");
+    } finally {
+      setTotpSetupLoading(false);
+    }
+  };
+
+  const onTotpConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const code = totpConfirmCode.trim().replace(/\D/g, "").slice(0, 6);
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from your app");
+      return;
+    }
+    setTotpConfirmLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/fusion-xpress/2fa/totp/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? "Verification failed");
+      setTotpEnabled(true);
+      setTotpSetupUrl(null);
+      setTotpSecret(null);
+      setTotpConfirmCode("");
+      setSuccess("Google Authenticator enabled. You can use it at next login.");
+    } catch (e: any) {
+      setError(e?.message ?? "Invalid code");
+    } finally {
+      setTotpConfirmLoading(false);
+    }
+  };
+
+  const onTotpDisable = async () => {
+    if (!confirm("Disable Google Authenticator? You will use email codes only at login.")) return;
+    setError(null);
+    setTotpDisableLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/fusion-xpress/2fa/totp/disable", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to disable");
+      setTotpEnabled(false);
+      setSuccess("Google Authenticator disabled.");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to disable");
+    } finally {
+      setTotpDisableLoading(false);
+    }
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +243,90 @@ export default function DashboardAccountPage() {
           </button>
         </div>
       </form>
+
+      <div className="mt-10 bg-white rounded-md shadow-sm p-6 border border-gray-200 max-w-xl">
+        <div className="flex items-center gap-2 text-primary-700 font-extrabold">
+          <Shield className="w-5 h-5" />
+          Two-factor authentication
+        </div>
+        <p className="mt-2 text-sm text-gray-600">
+          Use an email code or Google Authenticator (or any TOTP app) when signing in to the portal.
+        </p>
+
+        {totpEnabled === null ? (
+          <p className="mt-4 text-sm text-gray-500">Loading…</p>
+        ) : totpSetupUrl ? (
+          <div className="mt-5 space-y-4">
+            <p className="text-sm font-medium text-gray-700">Scan with your authenticator app, then enter the code below.</p>
+            <div className="flex flex-wrap items-start gap-6">
+              <div className="bg-white p-3 rounded-lg border border-gray-200 inline-block">
+                <QRCodeSVG value={totpSetupUrl} size={180} level="M" />
+              </div>
+              {totpSecret && (
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-700">Or enter manually:</p>
+                  <code className="mt-1 block break-all font-mono text-xs bg-gray-100 p-2 rounded">{totpSecret}</code>
+                </div>
+              )}
+            </div>
+            <form onSubmit={onTotpConfirm} className="flex flex-wrap items-end gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={totpConfirmCode}
+                  onChange={(e) => setTotpConfirmCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className="w-32 px-3 py-2 border border-gray-300 rounded-lg font-mono tracking-widest"
+                  placeholder="000000"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={totpConfirmLoading || totpConfirmCode.replace(/\D/g, "").length !== 6}
+                className="px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
+              >
+                {totpConfirmLoading ? "Verifying…" : "Verify and enable"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTotpSetupUrl(null); setTotpSecret(null); setTotpConfirmCode(""); setError(null); }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        ) : totpEnabled ? (
+          <div className="mt-5 flex flex-wrap items-center gap-4">
+            <span className="inline-flex items-center gap-2 text-green-700 font-medium">
+              <Smartphone className="w-5 h-5" />
+              Google Authenticator is enabled
+            </span>
+            <button
+              type="button"
+              onClick={onTotpDisable}
+              disabled={totpDisableLoading}
+              className="px-4 py-2 border border-red-200 text-red-700 rounded-md hover:bg-red-50 disabled:opacity-60"
+            >
+              {totpDisableLoading ? "Disabling…" : "Disable"}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-5">
+            <button
+              type="button"
+              onClick={onTotpSetup}
+              disabled={totpSetupLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
+            >
+              <Smartphone className="w-4 h-4" />
+              {totpSetupLoading ? "Starting…" : "Enable Google Authenticator"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verify } from "otplib";
 
 const COOKIE_NAME = "portal_2fa_verified";
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
@@ -11,7 +12,8 @@ export async function POST(req: NextRequest) {
     if (!token) return NextResponse.json({ error: "Missing authorization" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const code = typeof body.code === "string" ? body.code.trim() : "";
+    const code = typeof body.code === "string" ? body.code.trim().replace(/\D/g, "").slice(0, 6) : "";
+    const method = (body.method === "totp" ? "totp" : "email") as "email" | "totp";
     if (!code || code.length !== 6) return NextResponse.json({ error: "Invalid code" }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,22 +28,29 @@ export async function POST(req: NextRequest) {
     if (userErr || !userData?.user) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-
     const userId = userData.user.id;
 
-    const { data: rows, error: selectErr } = await admin
-      .from("portal_login_codes")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("code", code)
-      .gt("expires_at", new Date().toISOString())
-      .limit(1);
-
-    if (selectErr || !rows?.length) {
-      return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+    if (method === "totp") {
+      const { data: totpRow, error: totpErr } = await admin
+        .from("portal_user_totp")
+        .select("secret")
+        .eq("user_id", userId)
+        .not("verified_at", "is", null)
+        .maybeSingle();
+      if (totpErr || !totpRow?.secret) return NextResponse.json({ error: "Authenticator not set up" }, { status: 400 });
+      const result = await verify({ secret: totpRow.secret, token: code });
+      if (!result.valid) return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+    } else {
+      const { data: rows, error: selectErr } = await admin
+        .from("portal_login_codes")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("code", code)
+        .gt("expires_at", new Date().toISOString())
+        .limit(1);
+      if (selectErr || !rows?.length) return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+      await admin.from("portal_login_codes").delete().eq("id", rows[0].id);
     }
-
-    await admin.from("portal_login_codes").delete().eq("id", rows[0].id);
 
     const res = NextResponse.json({ ok: true });
     res.cookies.set(COOKIE_NAME, "1", {
