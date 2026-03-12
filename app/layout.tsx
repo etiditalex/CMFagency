@@ -168,6 +168,12 @@ export default async function RootLayout({
             gtag('config', 'G-46VYE6KM7V');
           `}
         </Script>
+        {/* Google AdSense - loads once for the whole site */}
+        <Script
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7231529725117325"
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
         <SEOStructuredData />
         <CartProvider>
           <AuthProvider>
