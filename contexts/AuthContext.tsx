@@ -18,6 +18,10 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   resendVerificationCode: (email: string) => Promise<{ success: boolean; error?: string }>;
+  /** After user enters login verification code, call this to set user from session. */
+  completeLoginVerification: () => Promise<void>;
+  /** Send a new login verification code to the current session's email. */
+  sendLoginVerificationCode: () => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -29,32 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is logged in on mount
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const userData = {
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
-            emailVerified: session.user.email_confirmed_at !== null,
-          };
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
+  const applySessionIfVerified = async (session: { user: SupabaseUser } | null) => {
+    if (!session?.user) {
+      setUser(null);
+      return;
+    }
+    try {
+      const res = await fetch("/api/auth/check-verified", { credentials: "include" });
+      const json = (await res.json().catch(() => ({}))) as { verified?: boolean };
+      if (json.verified) {
         const userData = {
           id: session.user.id,
           email: session.user.email || "",
@@ -65,6 +52,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
+    } catch {
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await applySessionIfVerified(session);
+      } catch (error) {
+        console.error("Error checking session:", error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      await applySessionIfVerified(session);
     });
 
     return () => {
@@ -86,20 +95,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: error.message };
       }
 
-      if (data.user) {
-        const userData = {
-          id: data.user.id,
-          email: data.user.email || "",
-          name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "",
-          emailVerified: data.user.email_confirmed_at !== null,
-        };
-        setUser(userData);
-        return { success: true };
+      if (data.session?.user) {
+        const token = data.session.access_token;
+        const sendRes = await fetch("/api/send-login-verification-code", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const sendJson = (await sendRes.json().catch(() => ({}))) as { error?: string };
+        if (!sendRes.ok) {
+          return { success: false, error: sendJson.error ?? "Failed to send verification code to your email." };
+        }
+        return { success: true, requiresVerification: true };
       }
 
       return { success: false, error: "Login failed" };
     } catch (error: any) {
       return { success: false, error: error.message || "An error occurred during login" };
+    }
+  };
+
+  const sendLoginVerificationCode = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return { success: false, error: "Not signed in" };
+      const res = await fetch("/api/send-login-verification-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) return { success: false, error: json.error ?? "Failed to send code" };
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e?.message ?? "Failed to send code" };
+    }
+  };
+
+  const completeLoginVerification = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const userData = {
+        id: session.user.id,
+        email: session.user.email || "",
+        name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
+        emailVerified: session.user.email_confirmed_at !== null,
+      };
+      setUser(userData);
     }
   };
 
@@ -173,17 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Registration succeeds regardless - email verification is optional
         }
 
-        // Auto-login the user - they can access application immediately
-        // Email verification is optional and can be done later
-        const userData = {
-          id: data.user.id,
-          email: data.user.email || "",
-          name: data.user.user_metadata?.name || name,
-          emailVerified: false, // Will be set to true when verified
-        };
-        setUser(userData);
-
-        return { success: true, user: userData };
+        // Do not set user until they verify their email with the code we sent
+        return { success: true };
       }
 
       return { success: false, error: "Registration failed" };
@@ -359,11 +390,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       await supabase.auth.signOut();
       setUser(null);
-      // Clear any local storage items related to auth
       if (typeof window !== "undefined") {
-        // Clear verification codes and pending verifications
         const keys = Object.keys(localStorage);
         keys.forEach(key => {
           if (key.startsWith('verification_code_') || key.startsWith('pending_verification_')) {
@@ -387,8 +417,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithGoogle,
         verifyEmail,
         resendVerificationCode,
+        completeLoginVerification,
+        sendLoginVerificationCode,
         logout,
-        isAuthenticated: !!user, // Allow access even if email not verified
+        isAuthenticated: !!user,
         loading,
       }}
     >

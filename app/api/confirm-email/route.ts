@@ -53,11 +53,19 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Email confirmed successfully in Supabase for:', email);
-    return NextResponse.json({ 
+    const res = NextResponse.json({
       success: true,
       message: 'Email confirmed in Supabase',
-      user: data.user
+      user: data.user,
     });
+    res.cookies.set('login_verified', '1', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    return res;
 
   } catch (error: any) {
     console.error('Error in confirm-email route:', error);

@@ -4,24 +4,38 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, User, Facebook, ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Mail, Lock, User, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+type Step = "form" | "code";
+
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, login, register, signInWithGoogle, loading: authLoading } = useAuth();
+  const {
+    isAuthenticated,
+    login,
+    register,
+    verifyEmail,
+    resendVerificationCode,
+    completeLoginVerification,
+    sendLoginVerificationCode,
+    loading: authLoading,
+  } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [step, setStep] = useState<Step>("form");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+  const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push("/application");
@@ -35,7 +49,6 @@ export default function LoginPage() {
 
     try {
       if (mode === "signup") {
-        // Validation
         if (!formData.name || !formData.email || !formData.password) {
           setError("Please fill in all fields");
           setLoading(false);
@@ -52,62 +65,120 @@ export default function LoginPage() {
           return;
         }
 
-        // Register user
         const result = await register(formData.name, formData.email, formData.password);
         if (result.success) {
-          // Registration successful, redirect to track application
-          router.push("/track-application");
+          setStep("code");
         } else {
           setError(result.error || "Registration failed. Please try again.");
-          setLoading(false);
         }
-      } else {
-        // Login
-        if (!formData.email || !formData.password) {
-          setError("Please fill in all fields");
-          setLoading(false);
-          return;
-        }
+        setLoading(false);
+        return;
+      }
 
-        const result = await login(formData.email, formData.password);
-        if (result.success) {
-          // Login successful, redirect to track application
-          router.push("/track-application");
+      if (!formData.email || !formData.password) {
+        setError("Please fill in all fields");
+        setLoading(false);
+        return;
+      }
+
+      const result = await login(formData.email, formData.password);
+      if (result.success && result.requiresVerification) {
+        setStep("code");
+      } else if (result.success) {
+        router.push("/application");
+      } else {
+        if (result.requiresVerification) {
+          setStep("code");
         } else {
-          if (result.requiresVerification) {
-            // Redirect to verification page
-            router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-          } else {
-            setError(result.error || "Login failed. Please check your credentials.");
-            setLoading(false);
-          }
+          setError(result.error || "Login failed. Please check your credentials.");
         }
       }
+      setLoading(false);
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
+    const codeDigits = code.trim().replace(/\D/g, "").slice(0, 6);
+    if (codeDigits.length !== 6) {
+      setError("Please enter the 6-digit code from your email.");
+      return;
+    }
+    setLoading(true);
     try {
-      const result = await signInWithGoogle();
-      if (result.success) {
-        // Redirect will happen automatically via OAuth, but we'll set it to track-application
-        // Note: OAuth redirect is handled in AuthContext, but we can still set a fallback
-        setTimeout(() => {
-          router.push("/track-application");
-        }, 1000);
-      } else {
-        setError(result.error || "Google sign-in failed. Please try again.");
-        setLoading(false);
+      if (mode === "signup") {
+        const result = await verifyEmail(formData.email, codeDigits);
+        if (result.success) {
+          router.push("/application");
+        } else {
+          setError(result.error || "Invalid or expired code.");
+          setLoading(false);
+        }
+        return;
       }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setError("Session expired. Please sign in again.");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch("/api/verify-login-verification-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ code: codeDigits }),
+        credentials: "include",
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Invalid or expired code.");
+        setLoading(false);
+        return;
+      }
+      await completeLoginVerification();
+      router.push("/application");
     } catch (err: any) {
-      setError(err.message || "An error occurred during Google sign-in.");
+      setError(err.message ?? "Verification failed.");
       setLoading(false);
     }
+  };
+
+  const handleResendCode = async () => {
+    setError("");
+    setResending(true);
+    try {
+      if (mode === "signup") {
+        const result = await resendVerificationCode(formData.email);
+        if (result.success) {
+          setError("");
+        } else {
+          setError(result.error ?? "Failed to resend code.");
+        }
+      } else {
+        const result = await sendLoginVerificationCode();
+        if (result.success) {
+          setError("");
+        } else {
+          setError(result.error ?? "Failed to resend code.");
+        }
+      }
+    } catch (err: any) {
+      setError(err.message ?? "Failed to resend code.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const backToForm = () => {
+    setStep("form");
+    setCode("");
+    setError("");
   };
 
   if (authLoading) {
@@ -128,7 +199,6 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        {/* Back to Home Button */}
         <Link
           href="/"
           className="inline-flex items-center text-gray-600 hover:text-primary-600 mb-6 transition-colors"
@@ -137,9 +207,7 @@ export default function LoginPage() {
           Back to Home
         </Link>
 
-        {/* Login Card */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-8 text-white text-center">
             <div className="mb-4">
               <Image
@@ -152,180 +220,183 @@ export default function LoginPage() {
               />
             </div>
             <h2 className="text-3xl font-bold mb-2">
-              {mode === "login" ? "Welcome Back" : "Create Account"}
+              {step === "code"
+                ? "Verify your email"
+                : mode === "login"
+                  ? "Welcome Back"
+                  : "Create Account"}
             </h2>
             <p className="text-white/90">
-              {mode === "login"
-                ? "Sign in to your account to continue"
-                : "Create your account to get started"}
+              {step === "code"
+                ? "Enter the 6-digit code we sent to your email"
+                : mode === "login"
+                  ? "Sign in with your email and password"
+                  : "Create your account with email"}
             </p>
           </div>
 
-          {/* Content */}
           <div className="p-8">
-            {/* Social Login Buttons */}
-            <div className="space-y-3 mb-6">
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Continue with Google
-              </button>
-
-              <button
-                disabled={true}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#1877F2]/50 text-white rounded-lg transition-colors font-medium cursor-not-allowed opacity-50"
-                title="Facebook login coming soon"
-              >
-                <Facebook className="w-5 h-5" />
-                Continue with Facebook (Coming Soon)
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with email</span>
-              </div>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {mode === "signup" && (
+            {step === "code" ? (
+              <form onSubmit={handleVerifyCode} className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  We sent a code to <strong>{formData.email}</strong>
+                </p>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
+                    Verification code
                   </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-center text-xl font-mono tracking-widest"
+                    placeholder="000000"
+                    autoComplete="one-time-code"
+                  />
+                </div>
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {error}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading || code.trim().replace(/\D/g, "").length !== 6}
+                  className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? "Verifying…" : "Verify and continue"}
+                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={backToForm}
+                    className="text-sm text-gray-600 hover:text-primary-600"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={resending}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 flex items-center gap-1"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${resending ? "animate-spin" : ""}`} />
+                    Resend code
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        required={mode === "signup"}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
-                      type="text"
-                      required={mode === "signup"}
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="Enter your full name"
+                      placeholder="Enter your email"
                     />
                   </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter your email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    placeholder="Enter your password"
-                  />
-                </div>
-              </div>
-
-              {mode === "signup" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm Password *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                       type="password"
-                      required={mode === "signup"}
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      required
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="Confirm your password"
+                      placeholder="Enter your password"
                     />
                   </div>
                 </div>
-              )}
 
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {mode === "login" ? "Signing in..." : "Creating account..."}
-                  </span>
-                ) : (
-                  mode === "login" ? "Sign In" : "Create Account"
+                {mode === "signup" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="password"
+                        required={mode === "signup"}
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Confirm your password"
+                      />
+                    </div>
+                  </div>
                 )}
-              </button>
-            </form>
 
-            {/* Toggle Mode */}
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
-                {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                    {error}
+                  </div>
+                )}
+
                 <button
-                  onClick={() => {
-                    setMode(mode === "login" ? "signup" : "login");
-                    setError("");
-                    setFormData({ name: "", email: "", password: "", confirmPassword: "" });
-                  }}
-                  className="text-primary-600 hover:text-primary-700 font-semibold"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {mode === "login" ? "Sign Up" : "Sign In"}
+                  {loading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {mode === "login" ? "Signing in…" : "Create account…"}
+                    </span>
+                  ) : (
+                    mode === "login" ? "Sign In" : "Create Account"
+                  )}
                 </button>
-              </p>
-            </div>
+              </form>
+            )}
+
+            {step === "form" && (
+              <div className="mt-6 text-center">
+                <p className="text-gray-600">
+                  {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode(mode === "login" ? "signup" : "login");
+                      setError("");
+                      setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+                    }}
+                    className="text-primary-600 hover:text-primary-700 font-semibold"
+                  >
+                    {mode === "login" ? "Sign Up" : "Sign In"}
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
