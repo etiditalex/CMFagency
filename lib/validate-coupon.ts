@@ -29,7 +29,28 @@ export async function validateCoupon(
     .maybeSingle();
 
   if (couponErr || !coupon) return { valid: false, error: "Invalid or expired code" };
-  if (coupon.created_by !== campaign.created_by) return { valid: false, error: "Invalid or expired code" };
+
+  const couponOwnerId = coupon.created_by as string;
+  const campaignOwnerId = campaign.created_by;
+  const ownerMatch = couponOwnerId === campaignOwnerId;
+  if (!ownerMatch) {
+    const { data: pm } = await supabase
+      .from("portal_members")
+      .select("role")
+      .eq("user_id", couponOwnerId)
+      .maybeSingle();
+    const { data: au } = await supabase
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", couponOwnerId)
+      .maybeSingle();
+    const isCouponCreatorAdmin =
+      (pm && ((pm as { role?: string }).role === "admin" || (pm as { role?: string }).role === "manager")) || !!au;
+    if (!isCouponCreatorAdmin) {
+      return { valid: false, error: "Invalid or expired code" };
+    }
+  }
+
   if (coupon.campaign_id != null && coupon.campaign_id !== campaign.id) {
     return { valid: false, error: "This code is not valid for this event" };
   }
