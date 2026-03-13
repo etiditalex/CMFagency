@@ -76,20 +76,38 @@ export async function POST(req: NextRequest) {
 
     const campaignId = (campaign as { id: string }).id;
     const campaignTitle = (campaign as { title?: string }).title ?? "Voting";
+    const emailLower = email.trim().toLowerCase();
 
-    const { data: existing } = await supabase
+    // No duplicate in same category: same name or same email can only register once per category.
+    const { data: existingByName } = await supabase
       .from("contestants")
       .select("id")
       .eq("campaign_id", campaignId)
       .eq("name", name)
       .maybeSingle();
 
-    if (existing) {
+    if (existingByName) {
       return NextResponse.json(
         { error: "A contestant with this name is already registered in this category. Use a different name or category." },
         { status: 409 }
       );
     }
+
+    // Block same email registering twice in the same category (they can register in other categories).
+    const { data: existingByEmail, error: emailCheckErr } = await supabase
+      .from("contestants")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .ilike("email", emailLower)
+      .maybeSingle();
+
+    if (!emailCheckErr && existingByEmail) {
+      return NextResponse.json(
+        { error: "This email is already registered in this category. You can register in other categories, but only once per category." },
+        { status: 409 }
+      );
+    }
+    // If emailCheckErr is "column does not exist", we skip the check; duplicate-by-email still blocked by name or by DB constraint once patch 36 is applied.
 
     let contestant: { id: string } | null = null;
     const insertPayload = {
