@@ -162,8 +162,8 @@ function CfmaEventDetail() {
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      {/* Hero */}
-      <section className="relative overflow-hidden min-h-[500px] md:min-h-[600px]">
+      {/* Hero - overflow-visible so "Participate as" dropdown is not clipped */}
+      <section className="relative overflow-visible min-h-[500px] md:min-h-[600px]">
         <div className="absolute inset-0">
           <Image
             src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg"

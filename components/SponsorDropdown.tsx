@@ -62,7 +62,7 @@ export default function SponsorDropdown({
         <div
           role="menu"
           className={[
-            "absolute z-30 mt-2 w-[min(420px,calc(100vw-2rem))] max-h-[70vh] overflow-auto rounded-xl border border-gray-200 bg-white shadow-2xl",
+            "absolute z-[100] mt-2 w-[min(420px,calc(100vw-2rem))] max-h-[70vh] overflow-auto rounded-xl border border-gray-200 bg-white shadow-2xl",
             menuAlign === "right" ? "right-0" : "left-0",
           ].join(" ")}
         >
