@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
 import Image from "next/image";
-import AdSenseBlock from "@/components/AdSenseBlock";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -176,12 +175,6 @@ export default function Footer() {
               </button>
             </form>
           </div>
-        </div>
-
-        {/* Google AdSense - footer ad block */}
-        <div className="mt-10 pt-8 border-t border-gray-800">
-          <p className="text-xs text-gray-500 mb-3 text-center">Advertisement</p>
-          <AdSenseBlock />
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-8">
