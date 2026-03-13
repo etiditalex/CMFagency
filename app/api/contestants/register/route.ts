@@ -91,23 +91,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { data: contestant, error: insertErr } = await supabase
+    let contestant: { id: string } | null = null;
+    const insertPayload = {
+      campaign_id: campaignId,
+      name,
+      email: email.toLowerCase(),
+      image_url: imageUrl,
+      sort_order: 0,
+    };
+    const { data: inserted, error: insertErr } = await supabase
       .from("contestants")
-      .insert({
-        campaign_id: campaignId,
-        name,
-        email: email.toLowerCase(),
-        image_url: imageUrl,
-        sort_order: 0,
-      })
+      .insert(insertPayload)
       .select("id")
       .single();
 
     if (insertErr) {
-      return NextResponse.json(
-        { error: insertErr.message ?? "Registration failed. Please try again." },
-        { status: 500 }
-      );
+      const msg = String(insertErr.message ?? "").toLowerCase();
+      const missingEmailColumn = msg.includes("contestants.email") && (msg.includes("does not exist") || msg.includes("column"));
+      if (missingEmailColumn) {
+        const { data: fallback, error: fallbackErr } = await supabase
+          .from("contestants")
+          .insert({
+            campaign_id: campaignId,
+            name,
+            image_url: imageUrl,
+            sort_order: 0,
+          })
+          .select("id")
+          .single();
+        if (fallbackErr) {
+          return NextResponse.json(
+            { error: fallbackErr.message ?? "Registration failed. Please try again." },
+            { status: 500 }
+          );
+        }
+        contestant = fallback;
+      } else {
+        return NextResponse.json(
+          { error: insertErr.message ?? "Registration failed. Please try again." },
+          { status: 500 }
+        );
+      }
+    } else {
+      contestant = inserted;
     }
 
     const origin = req.headers.get("origin") || req.nextUrl.origin;
@@ -149,10 +175,12 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        await supabase
-          .from("contestants")
-          .update({ voting_link_sent_at: new Date().toISOString() })
-          .eq("id", (contestant as { id: string }).id);
+        if (contestant?.id) {
+          await supabase
+            .from("contestants")
+            .update({ voting_link_sent_at: new Date().toISOString() })
+            .eq("id", contestant.id);
+        }
       } catch {
         // Column may not exist until patch 34 is applied
       }

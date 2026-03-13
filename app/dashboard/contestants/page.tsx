@@ -25,11 +25,16 @@ type Contestant = {
   id: string;
   campaign_id: string;
   name: string;
-  email: string | null;
+  email?: string | null;
   image_url: string | null;
   created_at: string;
-  voting_link_sent_at: string | null;
+  voting_link_sent_at?: string | null;
 };
+
+function isMissingContestantEmailColumn(err: unknown) {
+  const msg = String((err as { message?: string })?.message ?? "").toLowerCase();
+  return msg.includes("contestants.email") && (msg.includes("does not exist") || msg.includes("column"));
+}
 
 type CategoryWithCount = Campaign & { contestant_count: number; contestants: Contestant[] };
 
@@ -40,6 +45,7 @@ export default function DashboardContestantsPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [missingEmailColumn, setMissingEmailColumn] = useState(false);
   const [categories, setCategories] = useState<CategoryWithCount[]>([]);
   const [totalContestants, setTotalContestants] = useState(0);
 
@@ -85,13 +91,27 @@ export default function DashboardContestantsPage() {
         }
 
         const campaignIds = campaigns.map((c) => c.id);
-        const { data: contestantRows, error: conErr } = await supabase
+        let contestantRows: unknown[] | null = null;
+
+        const { data: withEmail, error: errWithEmail } = await supabase
           .from("contestants")
           .select("id,campaign_id,name,email,image_url,created_at,voting_link_sent_at")
           .in("campaign_id", campaignIds)
           .order("created_at", { ascending: false });
 
-        if (conErr) throw conErr;
+        if (errWithEmail && isMissingContestantEmailColumn(errWithEmail)) {
+          setMissingEmailColumn(true);
+          const { data: withoutEmail, error: errWithout } = await supabase
+            .from("contestants")
+            .select("id,campaign_id,name,image_url,created_at")
+            .in("campaign_id", campaignIds)
+            .order("created_at", { ascending: false });
+          if (errWithout) throw errWithout;
+          contestantRows = withoutEmail;
+        } else {
+          if (errWithEmail) throw errWithEmail;
+          contestantRows = withEmail;
+        }
 
         const contestants = (contestantRows ?? []) as Contestant[];
         const byCampaign = new Map<string, Contestant[]>();
@@ -178,6 +198,18 @@ export default function DashboardContestantsPage() {
 
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
+      )}
+
+      {missingEmailColumn && (
+        <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-900">
+          <p className="font-semibold">Database update required</p>
+          <p className="mt-1 text-sm">
+            Run this in the Supabase SQL Editor to enable contestant email and voting link tracking (then refresh this page):
+          </p>
+          <p className="mt-2 text-xs font-mono bg-amber-100/80 p-2 rounded break-all">
+            database/ticketing_voting_mvp_patch_34_contestants_email_voting_link.sql
+          </p>
+        </div>
       )}
 
       <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 p-6">
