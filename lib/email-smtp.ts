@@ -40,11 +40,19 @@ export function isSmtpConfigured(): boolean {
   return useSmtp && !!apiKey?.trim();
 }
 
+export type SmtpAttachment = {
+  filename: string;
+  content: Buffer | string;
+  cid?: string;
+};
+
 export type SendEmailOptions = {
   to: string;
   subject: string;
   html: string;
   from: string;
+  /** Optional inline attachments (e.g. logo with cid for header) */
+  attachments?: SmtpAttachment[];
 };
 
 export async function sendEmailViaSmtp(
@@ -60,6 +68,11 @@ export async function sendEmailViaSmtp(
       to: options.to,
       subject: options.subject,
       html: options.html,
+      attachments: options.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        cid: a.cid,
+      })),
     });
     return { ok: true };
   } catch (e) {

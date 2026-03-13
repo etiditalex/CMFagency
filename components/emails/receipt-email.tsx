@@ -84,6 +84,13 @@ export function ReceiptEmail({
       <Body style={main}>
         <Container style={container}>
           <Section style={{ ...header, ...headerStyles[variant] }}>
+            <Img
+              src="cid:changer-logo"
+              alt="Changer Fusions"
+              width={140}
+              height={48}
+              style={{ height: 48, width: "auto", maxWidth: 180, display: "block", marginBottom: 12 }}
+            />
             <Heading style={headerTitle}>{campaignTitle}</Heading>
             <Text style={headerSubtitle}>{paymentLabel}</Text>
           </Section>

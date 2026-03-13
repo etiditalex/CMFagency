@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
-import { buildAdminEmailHtml } from "@/lib/admin-email-template";
+import { buildAdminEmailHtml, DEFAULT_LOGO_URL, CHANGER_LOGO_CID } from "@/lib/admin-email-template";
 
 const RESEND_RATE_LIMIT_MS = 550;
 const MAX_ATTACHMENTS = 5;
@@ -109,16 +109,20 @@ export async function POST(req: NextRequest) {
     const validImageUrl = imageUrl.startsWith("https://") ? imageUrl : "";
     const bodyHtml = emailBody.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
 
-    const attachments = rawAttachments
+    const userAttachments = rawAttachments
       .slice(0, MAX_ATTACHMENTS)
       .filter((a) => a?.filename && typeof a.content === "string" && a.content.length > 0 && a.content.length <= MAX_ATTACHMENT_BASE64_MB * 1024 * 1024 * (4 / 3))
       .map((a) => ({ filename: String(a.filename).replace(/[^a-zA-Z0-9._-]/g, "_") || "attachment", content: a.content }));
+
+    const logoAttachment = { path: DEFAULT_LOGO_URL, filename: "changer-logo.png", content_id: CHANGER_LOGO_CID } as const;
+    const attachments = [logoAttachment, ...userAttachments];
 
     const getHtmlForRecipient = (recipientEmail: string): string => {
       const name = emailToName.get(recipientEmail) ?? "";
       const greeting = name ? `Hello ${name}` : "Hello";
       return buildAdminEmailHtml({
         brandName: "CMF Agency",
+        logoContentId: CHANGER_LOGO_CID,
         greeting,
         greetingSubtext: greetingSubtext || `Updates for ${(campaign as { title?: string }).title ?? "this campaign"}`,
         bannerImageUrl: validImageUrl || undefined,
@@ -129,8 +133,7 @@ export async function POST(req: NextRequest) {
       });
     };
 
-    const payload: Record<string, unknown> = { from: fromEmail, to: "", subject };
-    if (attachments.length > 0) payload.attachments = attachments;
+    const payload: Record<string, unknown> = { from: fromEmail, to: "", subject, attachments };
 
     let sent = 0;
     const errors: string[] = [];

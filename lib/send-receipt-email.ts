@@ -2,6 +2,7 @@ import React from "react";
 import { render } from "@react-email/render";
 import { resend, fromEmail } from "./resend";
 import { isSmtpConfigured, sendEmailViaSmtp } from "./email-smtp";
+import { DEFAULT_LOGO_URL, CHANGER_LOGO_CID } from "./admin-email-template";
 import { ReceiptEmail } from "@/components/emails/receipt-email";
 
 export type ReceiptParams = {
@@ -63,13 +64,17 @@ export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boo
   const subject = `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
   const from = fromEmail;
 
+  const logoAttachmentResend = { path: DEFAULT_LOGO_URL, filename: "changer-logo.png", contentId: CHANGER_LOGO_CID };
+
   // Prefer Resend SMTP when configured (Resend dashboard → SMTP)
   if (isSmtpConfigured()) {
     try {
       const html = await render(
         React.createElement(ReceiptEmail, receiptProps(params))
       );
-      return sendEmailViaSmtp({ to, subject, html, from });
+      const logoBuf = await fetch(DEFAULT_LOGO_URL).then((r) => r.arrayBuffer()).then((ab) => Buffer.from(ab));
+      const smtpLogoAttachment = { filename: "changer-logo.png", content: logoBuf, cid: CHANGER_LOGO_CID };
+      return sendEmailViaSmtp({ to, subject, html, from, attachments: [smtpLogoAttachment] });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       return { ok: false, error: msg };
@@ -87,6 +92,7 @@ export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boo
       to: [to],
       subject,
       react: ReceiptEmail(receiptProps(params)),
+      attachments: [logoAttachmentResend],
     });
 
     if (error) {

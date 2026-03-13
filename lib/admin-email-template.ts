@@ -12,13 +12,18 @@ function escapeHtml(s: string): string {
 }
 
 /** Default Changer Fusions logo (used when logoUrl not provided). */
-const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg";
+export const DEFAULT_LOGO_URL = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg";
+
+/** Content-ID for inline logo attachment in email headers (use with Resend attachment contentId). */
+export const CHANGER_LOGO_CID = "changer-logo";
 
 export type AdminEmailTemplateOptions = {
   /** Brand / logo text (e.g. "CMF Agency", "Changer Fusions") */
   brandName?: string;
   /** Optional logo image URL (e.g. Changer Fusions logo). If not set, uses default Changer Fusions logo. */
   logoUrl?: string;
+  /** When set, logo is rendered from inline attachment via <img src="cid:...">. Use with attachments containing contentId. */
+  logoContentId?: string;
   /** Greeting line, e.g. "Hello Inuka Afrika" or "Hello" */
   greeting?: string;
   /** Subtext under greeting, e.g. "We've discovered new events for you!" */
@@ -43,6 +48,7 @@ export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string 
   const {
     brandName = DEFAULT_BRAND,
     logoUrl,
+    logoContentId,
     greeting = "Hello",
     greetingSubtext = "",
     bannerImageUrl,
@@ -69,9 +75,10 @@ export function buildAdminEmailHtml(options: AdminEmailTemplateOptions): string 
       ? bannerImageUrl.replace(/"/g, "&quot;")
       : "";
 
+  const logoSrc = logoContentId ? `cid:${logoContentId}` : validLogoUrl;
   const logoBlock = `
     <div style="margin-bottom: 12px;">
-      <img src="${validLogoUrl}" alt="${safeBrand}" width="140" height="48" style="height: 48px; width: auto; max-width: 180px; display: block;" />
+      <img src="${logoSrc}" alt="${safeBrand}" width="140" height="48" style="height: 48px; width: auto; max-width: 180px; display: block;" />
     </div>`;
 
   const bannerImageBlock = validBannerUrl
