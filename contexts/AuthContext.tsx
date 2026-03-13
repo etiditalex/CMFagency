@@ -38,23 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
-    try {
-      const res = await fetch("/api/auth/check-verified", { credentials: "include" });
-      const json = (await res.json().catch(() => ({}))) as { verified?: boolean };
-      if (json.verified) {
-        const userData = {
-          id: session.user.id,
-          email: session.user.email || "",
-          name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
-          emailVerified: session.user.email_confirmed_at !== null,
-        };
-        setUser(userData);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
+    // Set user from any valid Supabase session so Fusion Xpress users (portal_2fa_verified)
+    // are recognized. Main-site login_verified is only for main-site flows; dashboard
+    // enforces portal 2FA via /api/fusion-xpress/login-status.
+    const userData = {
+      id: session.user.id,
+      email: session.user.email || "",
+      name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "",
+      emailVerified: session.user.email_confirmed_at !== null,
+    };
+    setUser(userData);
   };
 
   useEffect(() => {
