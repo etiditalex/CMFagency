@@ -4,9 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 import { AlertCircle, CheckCircle2, Loader2, Upload, Vote } from "lucide-react";
 
-const DEFAULT_HERO =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
-
 // CFMA award categories – slugs must match campaigns in DB (run seed: ticketing_voting_mvp_patch_35_cfma_categories.sql)
 const REGISTRATION_CATEGORIES: { slug: string; title: string }[] = [
   { slug: "rising-star-model-of-the-year", title: "Rising Star Model of the Year" },
@@ -104,29 +101,7 @@ export default function RegisterAsModelPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <section className="relative w-full min-h-[55vh] overflow-hidden flex items-center py-16 md:py-20">
-        <div className="absolute inset-0">
-          <Image
-            src={DEFAULT_HERO}
-            alt="Register as a Model"
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
-        </div>
-        <div className="container-custom relative z-10 text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white drop-shadow-lg">
-            Register as a Model
-          </h1>
-          <p className="mt-4 text-lg text-white/95 max-w-2xl mx-auto">
-            Choose your category, add your details and photo. We&apos;ll send your voting campaign link to your email so you can share it with voters.
-          </p>
-        </div>
-      </section>
-
-      <section className="container-custom py-12 md:py-16">
+      <section className="container-custom pt-24 pb-12 md:pt-28 md:pb-16">
         <div className="max-w-xl mx-auto">
           {success ? (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
