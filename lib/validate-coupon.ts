@@ -65,20 +65,22 @@ export async function validateCoupon(
     return { valid: false, error: "This code has expired" };
   }
 
-  const unitAmount = Number(campaign.unit_amount);
+  const unitAmount = Math.round(Number(campaign.unit_amount));
   const subtotal = unitAmount * quantity;
   let discountAmount: number;
   if (coupon.discount_type === "percent") {
     discountAmount = Math.round((subtotal * Number(coupon.discount_value)) / 100);
   } else {
-    discountAmount = Math.min(Number(coupon.discount_value) * quantity, subtotal);
+    discountAmount = Math.round(Math.min(Number(coupon.discount_value) * quantity, subtotal));
   }
-  const amount = Math.max(0, subtotal - discountAmount);
+  discountAmount = Math.min(discountAmount, subtotal);
+  const amount = Math.round(Math.max(0, subtotal - discountAmount));
+  const finalDiscount = subtotal - amount;
 
   return {
     valid: true,
     coupon_id: coupon.id,
-    discount_amount: discountAmount,
+    discount_amount: finalDiscount,
     unit_amount: unitAmount,
     amount,
   };

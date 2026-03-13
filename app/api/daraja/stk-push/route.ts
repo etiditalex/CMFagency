@@ -160,6 +160,12 @@ export async function POST(req: Request) {
       }
     }
 
+    const amountInt = Math.round(Number(amount));
+    const discountInt = Math.round(Number(discountAmount));
+    if (couponId && amountInt + discountInt !== q * unitAmount) {
+      amount = q * unitAmount - discountInt;
+    }
+
     const insertPayload = {
       campaign_id: campaign.id,
       campaign_type: campaign.type,
@@ -170,8 +176,8 @@ export async function POST(req: Request) {
       quantity: q,
       currency: campaign.currency,
       unit_amount: unitAmount,
-      amount,
-      discount_amount: discountAmount,
+      amount: Math.round(Number(amount)),
+      discount_amount: discountInt,
       coupon_id: couponId,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
@@ -188,8 +194,15 @@ export async function POST(req: Request) {
     if (insertErr) {
       const msg = insertErr?.message ?? "";
       const isRls = /policy|RLS|row level security/i.test(msg) || msg.includes("violates");
+      const isConstraint = /check constraint|transactions_amount|23514/i.test(msg);
+      const isMissingColumn = /column.*does not exist|discount_amount|coupon_id/i.test(msg);
+      let userError = isRls ? "Unable to create transaction." : msg;
+      if (couponId && (isMissingColumn || isConstraint)) {
+        userError =
+          "Unable to create transaction with coupon. Ensure database patch 32 (coupons) has been run in Supabase.";
+      }
       return NextResponse.json(
-        { error: isRls ? "Unable to create transaction." : insertErr.message },
+        { error: userError, details: msg },
         { status: 400 }
       );
     }
