@@ -107,12 +107,13 @@ export default function Navbar() {
   const eventsLinks = [
     { href: "/events", label: "All Events" },
     { href: "/events/upcoming", label: "Upcoming Events" },
+    { href: "/events/register-as-model", label: "Register as a Model" },
     { href: "/events/past", label: "Past Events" },
   ];
 
   const eventsCol1 = [eventsLinks[0]];
-  const eventsCol2 = [eventsLinks[1]];
-  const eventsCol3 = [eventsLinks[2]];
+  const eventsCol2 = [eventsLinks[1], eventsLinks[2]]; // Upcoming + Register as a Model
+  const eventsCol3 = [eventsLinks[3]];
 
   // Quick actions for CFMA 2026 (no images)
   const cfmaGoogleCalendarUrl =
