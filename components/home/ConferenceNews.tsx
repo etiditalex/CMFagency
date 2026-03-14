@@ -57,7 +57,7 @@ export default function ConferenceNews() {
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
           {items.map((item) => {
-            const href = "href" in item ? item.href : getEventPathById(item.id) ?? "/events";
+            const href: string = "href" in item ? (item.href as string) : (getEventPathById(item.id) ?? "/events");
             return (
             <Link
               key={`${item.title}-${item.day}-${item.month}`}

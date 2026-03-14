@@ -1,8 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Login rate limiting (per-instance; use Redis in production for multi-instance)
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_LOGIN_ATTEMPTS = 10;
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  if (realIp) return realIp.trim();
+  return "unknown";
+}
+
+function isLoginRoute(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname.startsWith("/api/send-login-verification-code") ||
+    pathname.startsWith("/api/verify-login-verification-code")
+  );
+}
+
+function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return { allowed: true };
+  }
+  if (entry.resetAt < now) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return { allowed: true };
+  }
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+  entry.count += 1;
+  return { allowed: true };
+}
+
 /**
  * Strict CSP with per-request nonce (PCI-friendly).
  * Also includes lightweight edge WAF-style request blocking for common probes.
+ * Login rate limiting for POST to /login and login verification APIs.
  *
  * Next.js will automatically apply the nonce to:
  * - Framework/runtime scripts
@@ -12,6 +52,20 @@ import { NextRequest, NextResponse } from "next/server";
  * IMPORTANT: Pages must be dynamically rendered for nonce injection to work.
  */
 export function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Login rate limit: POST to login page or login verification APIs
+  if (request.method === "POST" && isLoginRoute(pathname)) {
+    const ip = getClientIp(request);
+    const { allowed, retryAfter } = checkLoginRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later.", retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter ?? 900) } }
+      );
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Lightweight WAF-style blocks (best-effort).
   // Note: A managed WAF (Cloudflare/AWS/Vercel) is still recommended for compliance
@@ -141,6 +195,10 @@ export const config = {
         { type: "header", key: "purpose", value: "prefetch" },
       ],
     },
+    // Login rate limiting: run proxy for these API routes
+    "/api/send-login-verification-code",
+    "/api/verify-login-verification-code",
+    "/login",
   ],
 };
 

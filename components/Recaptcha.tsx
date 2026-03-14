@@ -38,14 +38,15 @@ export function Recaptcha({ siteKey, onVerify, onExpire, className }: RecaptchaP
   useEffect(() => {
     if (!siteKey || !containerRef.current || !scriptReady || typeof window === "undefined" || !window.grecaptcha) return;
     try {
-      widgetIdRef.current = window.grecaptcha.render(containerRef.current, {
+      const options = {
         sitekey: siteKey,
         callback,
         "expired-callback": () => {
           onVerify("");
           onExpire?.();
         },
-      });
+      };
+      widgetIdRef.current = window.grecaptcha.render(containerRef.current, options as Parameters<NonNullable<Window["grecaptcha"]>["render"]>[1]);
     } catch (e) {
       console.warn("reCAPTCHA render error:", e);
     }
