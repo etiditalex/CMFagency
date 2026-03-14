@@ -431,7 +431,20 @@ export default function CartPage() {
                             onChange={() => setPaymentMethod("paystack")}
                             className="sr-only"
                           />
-                          <span className="font-medium text-gray-900">Card</span>
+                          <Image
+                            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/visa_x5rgq6.svg"
+                            alt="Visa"
+                            width={48}
+                            height={16}
+                            className="h-4 w-auto object-contain"
+                          />
+                          <Image
+                            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/mastercard_gvjys4.svg"
+                            alt="Mastercard"
+                            width={36}
+                            height={28}
+                            className="h-5 w-auto object-contain"
+                          />
                         </label>
                         <label
                           className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
@@ -447,7 +460,13 @@ export default function CartPage() {
                             onChange={() => setPaymentMethod("mpesa")}
                             className="sr-only"
                           />
-                          <span className="font-medium text-gray-900">M-Pesa</span>
+                          <Image
+                            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479160/M-PESA-logo-2_phv5ni.png"
+                            alt="M-Pesa"
+                            width={80}
+                            height={28}
+                            className="h-7 w-auto object-contain"
+                          />
                         </label>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">

@@ -578,8 +578,13 @@ export default function CampaignPage() {
                         onChange={() => setPaymentMethod("mpesa")}
                         className="sr-only"
                       />
-                      <span className="text-lg">📱</span>
-                      <span className="font-medium">Pay with M-Pesa</span>
+                      <Image
+                        src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479160/M-PESA-logo-2_phv5ni.png"
+                        alt="M-Pesa"
+                        width={80}
+                        height={28}
+                        className="h-7 w-auto object-contain"
+                      />
                     </label>
                     <label
                       className={`flex-1 cursor-pointer rounded-lg border p-3 flex items-center justify-center gap-2 ${
@@ -594,7 +599,20 @@ export default function CampaignPage() {
                         onChange={() => setPaymentMethod("paystack")}
                         className="sr-only"
                       />
-                      <span className="font-medium">Pay with Card</span>
+                      <Image
+                        src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/visa_x5rgq6.svg"
+                        alt="Visa"
+                        width={48}
+                        height={16}
+                        className="h-4 w-auto object-contain"
+                      />
+                      <Image
+                        src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/mastercard_gvjys4.svg"
+                        alt="Mastercard"
+                        width={36}
+                        height={28}
+                        className="h-5 w-auto object-contain"
+                      />
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
@@ -737,9 +755,32 @@ export default function CampaignPage() {
                         : "Redirecting to payment..."}
                   </>
                 ) : paymentMethod === "mpesa" && showMpesaOption ? (
-                  "Pay with M-Pesa"
+                  <>
+                    <Image
+                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479160/M-PESA-logo-2_phv5ni.png"
+                      alt="M-Pesa"
+                      width={64}
+                      height={22}
+                      className="h-[22px] w-auto object-contain brightness-0 invert"
+                    />
+                  </>
                 ) : (
-                  "Pay with Card"
+                  <>
+                    <Image
+                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/visa_x5rgq6.svg"
+                      alt="Visa"
+                      width={36}
+                      height={12}
+                      className="h-4 w-auto object-contain brightness-0 invert opacity-90"
+                    />
+                    <Image
+                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/mastercard_gvjys4.svg"
+                      alt="Mastercard"
+                      width={28}
+                      height={22}
+                      className="h-5 w-auto object-contain brightness-0 invert opacity-90"
+                    />
+                  </>
                 )}
               </button>
             </form>
