@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   const { data: contestant, error: contErr } = await supabase
     .from("contestants")
-    .select("id,name,certificate_approved_at")
+    .select("id,name,certificate_approved_at,certificate_downloaded_at")
     .eq("campaign_id", campaignId)
     .ilike("email", email)
     .maybeSingle();
@@ -66,11 +66,20 @@ export async function POST(req: NextRequest) {
     id: string;
     name: string;
     certificate_approved_at: string | null;
+    certificate_downloaded_at: string | null;
   };
 
   if (!c.certificate_approved_at) {
     return NextResponse.json(
       { error: "Certificate download is not yet approved. Please wait for admin approval." },
+      { status: 403 }
+    );
+  }
+
+  // One-time only: certificate may be sent by email on approval or downloaded once
+  if (c.certificate_downloaded_at) {
+    return NextResponse.json(
+      { error: "This certificate has already been issued (sent by email or downloaded). It can only be received once." },
       { status: 403 }
     );
   }

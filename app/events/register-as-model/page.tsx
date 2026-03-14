@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle, CheckCircle2, FileDown, Loader2, Upload, Vote } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileDown, Heart, Loader2, Upload, Vote } from "lucide-react";
 
 // CFMA award categories – slugs must match campaigns in DB (run seed: ticketing_voting_mvp_patch_35_cfma_categories.sql)
 const REGISTRATION_CATEGORIES: { slug: string; title: string }[] = [
@@ -64,6 +64,7 @@ export default function RegisterAsModelPage() {
   const [certChecking, setCertChecking] = useState(false);
   const [certDownloading, setCertDownloading] = useState(false);
   const [certError, setCertError] = useState<string | null>(null);
+  const [supportPaymentLoading, setSupportPaymentLoading] = useState(false);
 
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,6 +139,30 @@ export default function RegisterAsModelPage() {
       setCertError("Something went wrong. Please try again.");
     } finally {
       setCertChecking(false);
+    }
+  };
+
+  const onSupportPayment = async () => {
+    if (!certEmail.trim()) return;
+    setCertError(null);
+    setSupportPaymentLoading(true);
+    try {
+      const res = await fetch("/api/certificate/init-support-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: certEmail.trim().toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCertError((data as { error?: string }).error ?? "Payment could not be started.");
+        return;
+      }
+      const url = (data as { authorization_url?: string }).authorization_url;
+      if (url) window.location.href = url;
+    } catch {
+      setCertError("Something went wrong. Please try again.");
+    } finally {
+      setSupportPaymentLoading(false);
     }
   };
 
@@ -353,21 +378,34 @@ export default function RegisterAsModelPage() {
                     <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
                       {!certStatus.found ? (
                         <p className="text-gray-700">No registration found for this email and category.</p>
+                      ) : certStatus.approved && certStatus.downloaded_at ? (
+                        <p className="text-gray-700">Your certificate has already been issued (sent by email or downloaded). It can only be received once.</p>
                       ) : certStatus.approved ? (
                         <>
-                          <p className="text-green-800 font-medium">You can download your certificate.</p>
-                          <button
-                            type="button"
-                            onClick={onDownloadCertificate}
-                            disabled={certDownloading}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-60"
-                          >
-                            {certDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-                            Download certificate (e-signed)
-                          </button>
-                          {certStatus.downloaded_at && (
-                            <p className="text-xs text-gray-500">Last downloaded: {new Date(certStatus.downloaded_at).toLocaleString()}</p>
-                          )}
+                          <p className="text-green-800 font-medium">You can download your certificate once. No duplicates.</p>
+                          <div className="flex flex-wrap gap-3 items-center">
+                            <button
+                              type="button"
+                              onClick={onDownloadCertificate}
+                              disabled={certDownloading}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-60"
+                            >
+                              {certDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                              Download certificate (e-signed)
+                            </button>
+                          </div>
+                          <div className="pt-3 mt-3 border-t border-gray-200">
+                            <p className="text-sm text-gray-600 mb-2">Optional: Support our work with 200 Kenyan Shillings</p>
+                            <button
+                              type="button"
+                              onClick={onSupportPayment}
+                              disabled={supportPaymentLoading}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-600 text-primary-600 bg-white font-medium hover:bg-primary-50 disabled:opacity-60"
+                            >
+                              {supportPaymentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Heart className="w-4 h-4" />}
+                              Support with 200 KES (optional)
+                            </button>
+                          </div>
                         </>
                       ) : (
                         <p className="text-amber-800">Your certificate request is pending admin approval. You will be able to download once approved.</p>

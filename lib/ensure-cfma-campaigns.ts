@@ -113,6 +113,70 @@ export async function ensureCfmaCampaign(
   return inserted as CampaignRow;
 }
 
+const CERTIFICATE_SUPPORT_SLUG = "certificate-support";
+
+/**
+ * Ensures the optional certificate support payment campaign exists (200 KES).
+ * Used when contestant optionally pays to support the agency on certificate request.
+ */
+export async function ensureCertificateSupportCampaign(
+  supabaseAdmin: SupabaseClient
+): Promise<CampaignRow | null> {
+  const { data: existing } = await supabaseAdmin
+    .from("campaigns")
+    .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
+    .eq("slug", CERTIFICATE_SUPPORT_SLUG)
+    .maybeSingle();
+
+  if (existing) return existing as CampaignRow;
+
+  let adminId: string | null = null;
+  try {
+    const { data: pm } = await supabaseAdmin
+      .from("portal_members")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    if (pm?.user_id) adminId = pm.user_id as string;
+    if (!adminId) {
+      const { data: au } = await supabaseAdmin
+        .from("admin_users")
+        .select("user_id")
+        .limit(1)
+        .maybeSingle();
+      if (au?.user_id) adminId = au.user_id as string;
+    }
+  } catch (e) {
+    console.warn("ensureCertificateSupportCampaign: could not fetch admin", e);
+  }
+
+  if (!adminId) return null;
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("campaigns")
+    .insert({
+      type: "ticket",
+      slug: CERTIFICATE_SUPPORT_SLUG,
+      title: "Certificate of Participation – Optional Support",
+      description: "Optional 200 KES to support our work when requesting your participation certificate.",
+      currency: "KES",
+      unit_amount: 200,
+      max_per_txn: 1,
+      is_active: true,
+      created_by: adminId,
+    })
+    .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
+    .single();
+
+  if (error) {
+    console.error("ensureCertificateSupportCampaign: insert failed", error);
+    return null;
+  }
+
+  return inserted as CampaignRow;
+}
+
 const MERCHANDISE_SLUG = "merchandise";
 
 /**

@@ -141,7 +141,14 @@ export async function POST(req: NextRequest) {
               attachments: [{ filename, content: base64Pdf }],
             }),
           });
-          if (res.ok) emailSent = true;
+          if (res.ok) {
+            emailSent = true;
+            // Mark as issued so they cannot download again (one-time only)
+            await supabase
+              .from("contestants")
+              .update({ certificate_downloaded_at: new Date().toISOString() })
+              .eq("id", contestantId);
+          }
         }
       } catch {
         // Non-fatal: approval succeeded; email may be sent later or contestant can download from site
