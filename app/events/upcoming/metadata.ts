@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 export const metadata: Metadata = {
   title: "Upcoming Events | Coast Fashion & Modelling Awards | CMF Agency",
@@ -22,15 +23,18 @@ export const metadata: Metadata = {
     "event sponsorship Kenya",
   ],
   openGraph: {
+    type: "website",
     title: "CMF Awards 2026 Mombasa - Buy Tickets Online | CFMA 2026",
     description: "Buy tickets online for Coast Fashion & Modelling Awards 2026 in Mombasa, Kenya. 15th August 2026. Early bird from KES 500. Celebrate heritage, empower youth talent.",
     url: "https://cmfagency.co.ke/events/upcoming",
+    siteName: "Changer Fusions",
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Coast Fashion and Modelling Awards 2026 (CFMA 2026) - Upcoming Events",
+        url: EVENTS_BANNER_OG.url,
+        width: EVENTS_BANNER_OG.width,
+        height: EVENTS_BANNER_OG.height,
+        alt: EVENTS_BANNER_OG.alt,
+        type: EVENTS_BANNER_OG.type,
       },
     ],
   },
@@ -38,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CMF Awards 2026 Mombasa - Buy Tickets Online",
     description: "Buy tickets online for Coast Fashion & Modelling Awards 2026 in Mombasa. 15th August 2026. Early bird from KES 500.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg"],
+    images: [EVENTS_BANNER_OG.url],
   },
   alternates: {
     canonical: "https://cmfagency.co.ke/events/upcoming",

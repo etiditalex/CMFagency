@@ -95,7 +95,7 @@ export default function SEOStructuredData() {
     "@context": "https://schema.org",
     "@type": "Service",
     serviceType: "Marketing Agency Services",
-      provider: {
+    provider: {
         "@type": "Organization",
         name: "Changer Fusions",
       },
@@ -238,6 +238,43 @@ export default function SEOStructuredData() {
     ],
   };
 
+  const cfmaEventSchema = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "@id": "https://cmfagency.co.ke/events/upcoming/coast-fashion-modelling-awards-2026#event",
+    name: "Coast Fashion and Modelling Awards 2026 (CMFA)",
+    description:
+      "Coast Fashion & Modelling Awards 2026 in Mombasa, Kenya. Celebrating heritage, empowering youth talent, and advancing sustainable fashion and eco-tourism. Buy tickets online.",
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
+    startDate: "2026-08-15T18:50:00+03:00",
+    endDate: "2026-08-16T00:00:00+03:00",
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    location: {
+      "@type": "Place",
+      name: "Mombasa, Kenya",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Mombasa",
+        addressCountry: "KE",
+      },
+    },
+    organizer: {
+      "@type": "Organization",
+      "@id": "https://cmfagency.co.ke/#organization",
+      name: "Changer Fusions",
+      url: "https://cmfagency.co.ke",
+    },
+    offers: {
+      "@type": "Offer",
+      url: "https://cmfagency.co.ke/events/upcoming",
+      priceCurrency: "KES",
+      lowPrice: "500",
+      highPrice: "3500",
+      availability: "https://schema.org/InStock",
+    },
+  };
+
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -298,6 +335,7 @@ export default function SEOStructuredData() {
       <StructuredData data={organizationSchema} />
       <StructuredData data={websiteSchema} />
       <StructuredData data={serviceSchema} />
+      <StructuredData data={cfmaEventSchema} />
       <StructuredData data={faqSchema} />
       <StructuredData data={localBusinessSchema} />
       <StructuredData data={breadcrumbSchema} />
