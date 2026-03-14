@@ -1,11 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { checkLoginRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const CODE_EXPIRY_MINUTES = 10;
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const { allowed, retryAfter } = checkLoginRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later.", retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter ?? 900) } }
+      );
+    }
+
+    // Optional: verify Google reCAPTCHA when secret is configured
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (secretKey) {
+      const body = await req.json().catch(() => ({}));
+      const recaptchaToken = typeof body?.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
+      if (!recaptchaToken) {
+        return NextResponse.json({ error: "CAPTCHA verification required. Please complete the challenge." }, { status: 400 });
+      }
+      const verifyParams = new URLSearchParams({
+        secret: secretKey,
+        response: recaptchaToken,
+      });
+      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: verifyParams.toString(),
+      });
+      const verifyData = (await verifyRes.json().catch(() => ({}))) as { success?: boolean };
+      if (!verifyData?.success) {
+        return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
+      }
+    }
+
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace(/^Bearer\s+/i, "")?.trim();
     if (!token) return NextResponse.json({ error: "Missing authorization" }, { status: 401 });

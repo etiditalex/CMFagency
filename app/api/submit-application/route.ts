@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sanitizeText } from "@/lib/sanitize";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,32 +48,39 @@ export async function POST(request: NextRequest) {
     // Generate CMF Agency ID
     const cmfAgencyId = generateCMFAgencyId();
 
-    // Prepare application data for database
+    const first = sanitizeText(applicationData.firstName);
+    const second = sanitizeText(applicationData.secondName);
+    const email = sanitizeText(applicationData.email);
+    const phone = sanitizeText(applicationData.phone);
+    const idNumber = sanitizeText(applicationData.idNumber ?? applicationData.nationalId);
+    const name = sanitizeText(applicationData.name);
+    const jobPosition = sanitizeText(applicationData.jobPosition);
+    const county = sanitizeText(applicationData.county);
+
+    const fullName = first ? `${first} ${second}`.trim() : name || null;
+
+    // Prepare application data for database (sanitized to reduce XSS risk)
     const applicationRecord = {
       cmf_agency_id: cmfAgencyId,
       user_id: applicationData.userId || null,
-      national_id: applicationData.idNumber || applicationData.nationalId || null,
-      phone: applicationData.phone || null,
-      email: applicationData.email || null,
-      name: applicationData.firstName
-        ? `${applicationData.firstName} ${applicationData.secondName || ""}`.trim()
-        : applicationData.name || null,
-      full_name: applicationData.firstName
-        ? `${applicationData.firstName} ${applicationData.secondName || ""}`.trim()
-        : applicationData.name || null,
-      application_type: applicationData.applicationType || "job",
-      job_position: applicationData.jobPosition || null,
+      national_id: idNumber || null,
+      phone: phone || null,
+      email: email || null,
+      name: fullName || null,
+      full_name: fullName || null,
+      application_type: sanitizeText(applicationData.applicationType) || "job",
+      job_position: jobPosition || null,
       status: "pending",
       personal_details: {
-        firstName: applicationData.firstName,
-        secondName: applicationData.secondName,
-        email: applicationData.email,
-        phone: applicationData.phone,
-        idNumber: applicationData.idNumber,
-        gender: applicationData.gender,
+        firstName: first,
+        secondName: second,
+        email,
+        phone,
+        idNumber,
+        gender: sanitizeText(applicationData.gender),
         age: applicationData.age,
-        county: applicationData.county,
-        passport: applicationData.passport,
+        county,
+        passport: sanitizeText(applicationData.passport),
       },
       documents: {
         passportPhoto: applicationData.documents?.passportPhoto?.name || null,

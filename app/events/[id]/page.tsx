@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, Users, ArrowLeft, CheckCircle, Send } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { getEventPathById, getEventIdBySlug } from "@/lib/event-slugs";
 
 // All events data - matching the events page
 const featuredEvent = {
@@ -273,10 +273,14 @@ const getEventById = (id: number) => {
 };
 
 export default function EventDetailPage() {
+  const router = useRouter();
   const params = useParams<{ id?: string | string[] }>();
   const idParam = params?.id;
-  const eventId = Array.isArray(idParam) ? Number(idParam[0]) : Number(idParam);
-  const event = Number.isFinite(eventId) ? getEventById(eventId) : undefined;
+  const raw = Array.isArray(idParam) ? idParam[0] : idParam;
+  const eventIdFromParam = raw ? Number(raw) : NaN;
+  const isNumericId = Number.isFinite(eventIdFromParam);
+  const eventId = isNumericId ? eventIdFromParam : getEventIdBySlug(raw ?? "");
+  const event = eventId != null ? getEventById(eventId) : undefined;
   const [contactFormData, setContactFormData] = useState({
     name: "",
     email: "",
@@ -285,6 +289,27 @@ export default function EventDetailPage() {
     message: "",
   });
   const [contactSubmitted, setContactSubmitted] = useState(false);
+
+  // Redirect legacy integer URLs to slug-based URLs (avoids enumerable IDs)
+  useEffect(() => {
+    if (isNumericId && raw) {
+      const path = getEventPathById(Number(raw));
+      if (path) {
+        router.replace(path);
+      }
+    }
+  }, [isNumericId, raw, router]);
+
+  if (isNumericId && raw && getEventPathById(Number(raw))) {
+    return (
+      <div className="pt-20 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mx-auto mb-3" />
+          <p className="text-gray-600">Redirecting…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (

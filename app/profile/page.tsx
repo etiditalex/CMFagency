@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { getEventPathById } from "@/lib/event-slugs";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "orders" | "events" | "settings">("overview");
@@ -392,7 +393,7 @@ export default function ProfilePage() {
                             </div>
                           </div>
                           <Link
-                            href={`/events/${event.id}`}
+                            href={getEventPathById(event.id) ?? "/events"}
                             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
                           >
                             View Event

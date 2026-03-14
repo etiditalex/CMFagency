@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { Mail, Lock, User, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { Recaptcha } from "@/components/Recaptcha";
 
 type Step = "form" | "code";
 
@@ -35,6 +36,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
@@ -80,8 +83,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      if (recaptchaSiteKey && !recaptchaToken) {
+        setError("Please complete the security verification below.");
+        setLoading(false);
+        return;
+      }
 
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, recaptchaToken ?? undefined);
       if (result.success && result.requiresVerification) {
         setStep("code");
       } else if (result.success) {
@@ -353,6 +361,12 @@ export default function LoginPage() {
                   </div>
                 )}
 
+                {recaptchaSiteKey && mode === "login" && (
+                  <div className="flex justify-center">
+                    <Recaptcha siteKey={recaptchaSiteKey} onVerify={setRecaptchaToken} />
+                  </div>
+                )}
+
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                     {error}
@@ -361,7 +375,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (!!recaptchaSiteKey && mode === "login" && !recaptchaToken)}
                   className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (

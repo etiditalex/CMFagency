@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getEventPathById } from "@/lib/event-slugs";
 
 const items = [
   {
@@ -10,55 +11,13 @@ const items = [
     href: "/events/upcoming/coast-fashion-modelling-awards-2026",
     featured: true,
   },
-  {
-    title: "Marketing Campaign Launch",
-    day: "05",
-    month: "DEC",
-    meta: "Nairobi, Kenya",
-    href: "/events/11",
-  },
-  {
-    title: "Leadership Development Seminar",
-    day: "08",
-    month: "NOV",
-    meta: "University Campus",
-    href: "/events/15",
-  },
-  {
-    title: "Joint Promotional Launch",
-    day: "22",
-    month: "NOV",
-    meta: "Nairobi, Kenya",
-    href: "/events/13",
-  },
-  {
-    title: "Skill-Building Workshop Series",
-    day: "10",
-    month: "DEC",
-    meta: "University Campus",
-    href: "/events/17",
-  },
-  {
-    title: "Student Engagement Drive",
-    day: "15",
-    month: "DEC",
-    meta: "University Campus",
-    href: "/events/21",
-  },
-  {
-    title: "Mr and Miss Culture Subaland",
-    day: "05",
-    month: "NOV",
-    meta: "Subaland Region",
-    href: "/events/6",
-  },
-  {
-    title: "Marketing Society Networking Mixer",
-    day: "15",
-    month: "OCT",
-    meta: "Nairobi, Kenya",
-    href: "/events/8",
-  },
+  { title: "Marketing Campaign Launch", day: "05", month: "DEC", meta: "Nairobi, Kenya", id: 11 },
+  { title: "Leadership Development Seminar", day: "08", month: "NOV", meta: "University Campus", id: 15 },
+  { title: "Joint Promotional Launch", day: "22", month: "NOV", meta: "Nairobi, Kenya", id: 13 },
+  { title: "Skill-Building Workshop Series", day: "10", month: "DEC", meta: "University Campus", id: 17 },
+  { title: "Student Engagement Drive", day: "15", month: "DEC", meta: "University Campus", id: 21 },
+  { title: "Mr and Miss Culture Subaland", day: "05", month: "NOV", meta: "Subaland Region", id: 6 },
+  { title: "Marketing Society Networking Mixer", day: "15", month: "OCT", meta: "Nairobi, Kenya", id: 8 },
 ];
 
 export default function ConferenceNews() {
@@ -97,10 +56,12 @@ export default function ConferenceNews() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
-          {items.map((item) => (
+          {items.map((item) => {
+            const href = "href" in item ? item.href : getEventPathById(item.id) ?? "/events";
+            return (
             <Link
               key={`${item.title}-${item.day}-${item.month}`}
-              href={item.href}
+              href={href}
               className="group flex items-start gap-5"
             >
               {/* Date badge */}
@@ -139,7 +100,8 @@ export default function ConferenceNews() {
                 )}
               </div>
             </Link>
-          ))}
+          );
+          })}
         </div>
 
         <div className="mt-12 flex justify-center">

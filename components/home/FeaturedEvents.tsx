@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Calendar, MapPin, Clock, ArrowRight, Rocket, Briefcase, BookOpen, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { getEventPathById } from "@/lib/event-slugs";
 
 // Icon mapping for event categories
 const getEventIcon = (category: string) => {
@@ -101,7 +102,7 @@ export default function FeaturedEvents() {
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 group text-center md:text-center lg:text-left"
               >
-                <Link href={`/events/${event.id}`} className="block p-6">
+                <Link href={getEventPathById(event.id) ?? `/events`} className="block p-6">
                   {/* Icon Container */}
                   <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${iconGradient} flex items-center justify-center mb-4 mx-auto md:mx-auto lg:mx-0`}>
                     <EventIcon className="w-8 h-8 text-white" />

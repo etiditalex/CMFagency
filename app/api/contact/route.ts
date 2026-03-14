@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sanitizeText } from "@/lib/sanitize";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,19 +12,14 @@ const supabaseAdmin =
       })
     : null;
 
-function sanitize(str: unknown): string {
-  if (str == null || typeof str !== "string") return "";
-  return str.trim().slice(0, 2000);
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const name = sanitize(body.name);
-    const email = sanitize(body.email);
-    const phone = sanitize(body.phone);
-    const subject = sanitize(body.subject);
-    const message = sanitize(body.message);
+    const name = sanitizeText(body.name);
+    const email = sanitizeText(body.email);
+    const phone = sanitizeText(body.phone);
+    const subject = sanitizeText(body.subject);
+    const message = sanitizeText(body.message);
 
     if (!name || !email || !subject || !message) {
       return NextResponse.json(

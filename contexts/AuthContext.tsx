@@ -13,7 +13,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>;
+  login: (email: string, password: string, recaptchaToken?: string) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
+  const login = async (email: string, password: string, recaptchaToken?: string): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -92,7 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const token = data.session.access_token;
         const sendRes = await fetch("/api/send-login-verification-code", {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ recaptchaToken: recaptchaToken || null }),
         });
         const sendJson = (await sendRes.json().catch(() => ({}))) as { error?: string };
         if (!sendRes.ok) {
