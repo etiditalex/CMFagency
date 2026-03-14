@@ -8,7 +8,6 @@ import StatsSection from "@/components/home/StatsSection";
 
 const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
 const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarousel"), { ssr: true });
-const ConferenceNews = dynamic(() => import("@/components/home/ConferenceNews"), { ssr: true });
 const CTABanner = dynamic(() => import("@/components/home/CTABanner"), { ssr: true });
 
 export const metadata: Metadata = {
@@ -73,7 +72,6 @@ export default function Home() {
       <QuickLinks />
       <StatsSection />
       <PartnersCarousel />
-      <ConferenceNews />
       <CTABanner />
     </>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle, CheckCircle2, Loader2, Upload, Vote } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileDown, Loader2, Upload, Vote } from "lucide-react";
 
 // CFMA award categories – slugs must match campaigns in DB (run seed: ticketing_voting_mvp_patch_35_cfma_categories.sql)
 const REGISTRATION_CATEGORIES: { slug: string; title: string }[] = [
@@ -51,6 +51,20 @@ export default function RegisterAsModelPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ message: string; votingLink?: string } | null>(null);
 
+  // Certificate download section
+  const [certEmail, setCertEmail] = useState("");
+  const [certCategorySlug, setCertCategorySlug] = useState(REGISTRATION_CATEGORIES[0]?.slug ?? "");
+  const [certStatus, setCertStatus] = useState<{
+    found: boolean;
+    approved: boolean;
+    downloaded_at: string | null;
+    name?: string;
+    category_title?: string;
+  } | null>(null);
+  const [certChecking, setCertChecking] = useState(false);
+  const [certDownloading, setCertDownloading] = useState(false);
+  const [certError, setCertError] = useState<string | null>(null);
+
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setPhotoFile(file ?? null);
@@ -96,6 +110,67 @@ export default function RegisterAsModelPage() {
       setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onCheckCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCertError(null);
+    setCertStatus(null);
+    setCertChecking(true);
+    try {
+      const res = await fetch(
+        `/api/certificate/status?email=${encodeURIComponent(certEmail.trim().toLowerCase())}&campaign_slug=${encodeURIComponent(certCategorySlug)}`
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setCertError((data as { error?: string }).error ?? "Could not check status.");
+        return;
+      }
+      setCertStatus({
+        found: (data as { found?: boolean }).found ?? false,
+        approved: (data as { approved?: boolean }).approved ?? false,
+        downloaded_at: (data as { downloaded_at?: string | null }).downloaded_at ?? null,
+        name: (data as { name?: string }).name,
+        category_title: (data as { category_title?: string }).category_title,
+      });
+    } catch {
+      setCertError("Something went wrong. Please try again.");
+    } finally {
+      setCertChecking(false);
+    }
+  };
+
+  const onDownloadCertificate = async () => {
+    if (!certEmail.trim() || !certCategorySlug) return;
+    setCertError(null);
+    setCertDownloading(true);
+    try {
+      const res = await fetch("/api/certificate/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: certEmail.trim().toLowerCase(),
+          campaign_slug: certCategorySlug,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setCertError((data as { error?: string }).error ?? "Download failed.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CMFA-Certificate-${certStatus?.name?.replace(/[^a-zA-Z0-9-_]/g, "-") ?? "participation"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setCertStatus((prev) => (prev ? { ...prev, approved: true, downloaded_at: new Date().toISOString() } : null));
+    } catch {
+      setCertError("Download failed. Please try again.");
+    } finally {
+      setCertDownloading(false);
     }
   };
 
@@ -236,6 +311,79 @@ export default function RegisterAsModelPage() {
                     )}
                   </button>
                 </form>
+
+              {/* Certificate of participation — for past contestants */}
+              <div className="mt-10 pt-8 border-t border-gray-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="inline-flex w-10 h-10 rounded-lg bg-amber-50 items-center justify-center">
+                    <FileDown className="w-5 h-5 text-amber-700" />
+                  </span>
+                  <h3 className="text-lg font-bold text-gray-900">Certificate of participation</h3>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Already participated in a CMFA event? Request your e-signed certificate here. Download is available after admin approval.
+                </p>
+                <form onSubmit={onCheckCertificate} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email (as registered)</label>
+                    <input
+                      type="email"
+                      value={certEmail}
+                      onChange={(e) => { setCertEmail(e.target.value); setCertStatus(null); }}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select
+                      value={certCategorySlug}
+                      onChange={(e) => { setCertCategorySlug(e.target.value); setCertStatus(null); }}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {REGISTRATION_CATEGORIES.map((c) => (
+                        <option key={c.slug} value={c.slug}>{c.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {certError && (
+                    <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{certError}</div>
+                  )}
+                  {certStatus && (
+                    <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
+                      {!certStatus.found ? (
+                        <p className="text-gray-700">No registration found for this email and category.</p>
+                      ) : certStatus.approved ? (
+                        <>
+                          <p className="text-green-800 font-medium">You can download your certificate.</p>
+                          <button
+                            type="button"
+                            onClick={onDownloadCertificate}
+                            disabled={certDownloading}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-60"
+                          >
+                            {certDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                            Download certificate (e-signed)
+                          </button>
+                          {certStatus.downloaded_at && (
+                            <p className="text-xs text-gray-500">Last downloaded: {new Date(certStatus.downloaded_at).toLocaleString()}</p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-amber-800">Your certificate request is pending admin approval. You will be able to download once approved.</p>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={certChecking || !certEmail.trim()}
+                    className="w-full py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                  >
+                    {certChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                    Check status / Get certificate
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>

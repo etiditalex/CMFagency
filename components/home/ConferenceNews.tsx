@@ -134,7 +134,7 @@ export default function ConferenceNews() {
                 {item.featured && (
                   <div className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white bg-white/10 border border-white/20 rounded-full px-3 py-1">
                     Featured upcoming event
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-secondary-300" />
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400" />
                   </div>
                 )}
               </div>
