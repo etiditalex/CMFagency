@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { fromEmail } from "@/lib/resend";
+import { generateCertificatePdf } from "@/lib/certificate-pdf";
 
 /**
  * Dashboard admin: approve a contestant to download their participation certificate.
+ * On approval, the certificate PDF is generated and sent to the contestant's email.
  * Requires authenticated portal member with access to the contestant's campaign.
  */
 export async function POST(req: NextRequest) {
@@ -12,6 +15,7 @@ export async function POST(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const resendApiKey = process.env.RESEND_API_KEY;
 
   if (!supabaseUrl || !anonKey || !serviceKey) {
     return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
@@ -77,9 +81,78 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
+  // Fetch contestant name, email and campaign title for certificate and email
+  const { data: contestantRow, error: detailErr } = await supabase
+    .from("contestants")
+    .select("name,email,campaign_id")
+    .eq("id", contestantId)
+    .single();
+
+  let emailSent = false;
+  if (!detailErr && contestantRow) {
+    const name = (contestantRow as { name: string }).name ?? "";
+    const email = (contestantRow as { email?: string | null }).email?.trim();
+    const campaignId = (contestantRow as { campaign_id: string }).campaign_id;
+
+    if (email) {
+      const { data: campaignRow } = await supabase
+        .from("campaigns")
+        .select("title")
+        .eq("id", campaignId)
+        .single();
+      const categoryTitle = (campaignRow as { title?: string } | null)?.title ?? "CMFA";
+
+      const dateStr = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      try {
+        const pdfBytes = await generateCertificatePdf({
+          participantName: name,
+          categoryTitle,
+          date: dateStr,
+        });
+        const base64Pdf = Buffer.from(pdfBytes).toString("base64");
+        const filename = `CMFA-Certificate-${name.replace(/[^a-zA-Z0-9-_]/g, "-")}.pdf`;
+
+        if (resendApiKey) {
+          const res = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${resendApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: email,
+              subject: "Your Certificate of Participation – CMF Agency",
+              html: `
+                <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
+                  <h2 style="color: #111;">Your certificate is ready</h2>
+                  <p>Hi ${name.replace(/</g, "&lt;")},</p>
+                  <p>Your participation certificate for <strong>${categoryTitle.replace(/</g, "&lt;")}</strong> has been approved. Please find your e-signed certificate attached to this email.</p>
+                  <p>You can download and save the PDF from the attachment below.</p>
+                  <p style="margin-top: 32px; color: #666; font-size: 14px;">Thank you for participating.</p>
+                  <p style="color: #999; font-size: 12px;">CMF Agency</p>
+                </div>
+              `,
+              attachments: [{ filename, content: base64Pdf }],
+            }),
+          });
+          if (res.ok) emailSent = true;
+        }
+      } catch {
+        // Non-fatal: approval succeeded; email may be sent later or contestant can download from site
+      }
+    }
+  }
+
   return NextResponse.json({
     success: true,
     contestant_id: (updated as { id: string }).id,
     certificate_approved_at: (updated as { certificate_approved_at?: string }).certificate_approved_at,
+    email_sent: emailSent,
   });
 }

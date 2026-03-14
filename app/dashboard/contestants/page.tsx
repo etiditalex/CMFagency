@@ -355,7 +355,7 @@ export default function DashboardContestantsPage() {
                             <span className="font-semibold text-gray-800">Certificate of participation</span>
                           </div>
                           <p className="text-xs text-gray-600 mb-3">
-                            Approve contestants to allow them to download their e-signed certificate from the Register as a Model page. Below: who has been approved and who has downloaded.
+                            Approve contestants to send their e-signed certificate by email; they can also download it from the Register as a Model page. Below: who has been approved and who has downloaded.
                           </p>
                           <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden bg-white">
                             <thead className="bg-gray-100">
