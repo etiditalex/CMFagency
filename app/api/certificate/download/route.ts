@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 
   const filename = `CMFA-Certificate-${c.name.replace(/[^a-zA-Z0-9-_]/g, "-")}.pdf`;
 
-  return new NextResponse(pdfBytes, {
+  return new NextResponse(Buffer.from(pdfBytes), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
