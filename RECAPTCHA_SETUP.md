@@ -30,7 +30,7 @@ Use these **exact** names:
    - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` = your site key  
    - `RECAPTCHA_SECRET_KEY` = your secret key  
 3. **Redeploy** the project (e.g. Deployments → … → Redeploy).  
-   `NEXT_PUBLIC_*` values are baked in at **build time**, so a new deployment is required after adding or changing them.
+   The login page loads the site key at **runtime** from `/api/recaptcha-site-key`, so once the env var is set and you redeploy, the widget will appear (no need to worry about build-time inlining).
 
 ## 4. Local
 
@@ -47,5 +47,6 @@ Restart the dev server after changing env vars.
 
 - Confirm you’re on the **Sign In** form (not Sign Up); the widget only appears there.
 - Confirm the variable name is exactly `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` (no typo, no space).
-- After changing env vars on Vercel, trigger a **new deployment**.
+- After changing env vars on Vercel, trigger a **new deployment** so the server can read the new value.
+- Open DevTools → Network: check that `GET /api/recaptcha-site-key` returns `{ "siteKey": "your_key_here" }`. If `siteKey` is empty, the env var isn’t set or the deployment didn’t pick it up.
 - Check the browser console for CSP or script-load errors; the app allows `https://www.google.com`, `https://www.gstatic.com`, and `https://www.recaptcha.net` for reCAPTCHA.

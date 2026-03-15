@@ -37,13 +37,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY ?? "";
+  const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
 
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
       router.push("/application");
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // Fetch reCAPTCHA site key at runtime so it works even when env is added after build (e.g. Vercel)
+  useEffect(() => {
+    fetch("/api/recaptcha-site-key")
+      .then((r) => r.json())
+      .then((data: { siteKey?: string }) => setRecaptchaSiteKey(data?.siteKey ?? ""))
+      .catch(() => setRecaptchaSiteKey(""));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
