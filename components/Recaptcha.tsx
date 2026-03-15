@@ -66,10 +66,16 @@ export function Recaptcha({ siteKey, onVerify, onExpire, className }: RecaptchaP
     <>
       <Script
         src="https://www.google.com/recaptcha/api.js?render=explicit"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         onLoad={() => setScriptReady(true)}
       />
-      <div ref={containerRef} className={className} />
+      <div
+        ref={containerRef}
+        className={className}
+        style={{ minHeight: 78 }}
+        data-recaptcha-container
+        aria-label="Security verification"
+      />
     </>
   );
 }

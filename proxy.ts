@@ -93,11 +93,12 @@ export function proxy(request: NextRequest) {
     form-action 'self';
     frame-ancestors 'none';
     object-src 'none';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com${isDev ? " 'unsafe-eval'" : ""};
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net${isDev ? " 'unsafe-eval'" : ""};
     style-src 'self' 'nonce-${nonce}' 'unsafe-inline';
-    img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com;
+    img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
     font-src 'self' data: https:;
     connect-src 'self' https: wss:;
+    frame-src 'self' https://www.google.com https://www.recaptcha.net https://www.gstatic.com;
     upgrade-insecure-requests;
   `;
 
