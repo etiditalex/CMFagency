@@ -53,6 +53,7 @@ export async function POST(req: Request) {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
   const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(ref)}` : undefined;
   const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(ref)}`;
+  const rsvpUrl = `${baseUrl}/invite?ref=${encodeURIComponent(ref)}`;
 
   let eventLocation: string | undefined;
   let eventDate: string | undefined;
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
     eventLocation,
     eventDate,
     eventTime,
+    rsvpUrl: typeLabel === "Ticket" ? rsvpUrl : undefined,
   });
 
   if (!result.ok) {

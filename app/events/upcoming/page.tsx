@@ -24,6 +24,7 @@ type EventRow = {
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
   ticket_price_kes?: number | null;
+  image_focus?: string | null;
 };
 
 // CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
@@ -40,6 +41,7 @@ const CFMA_2026_EVENT: EventRow = {
   default_image_url: null,
   ticket_campaign_slug: null, // Uses CmfAwardsTicketModal
   ticket_price_kes: null,
+  image_focus: "center center",
 };
 
 export default function UpcomingEventsPage() {
@@ -53,7 +55,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,image_focus")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -121,6 +123,7 @@ export default function UpcomingEventsPage() {
             {events.map((event, index) => {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_HERO;
+              const objectPosition = (event.image_focus as string | null) || "center center";
               return (
               <motion.div
                 key={event.id}
@@ -137,6 +140,7 @@ export default function UpcomingEventsPage() {
                         alt={event.title}
                         fill
                         className="object-cover"
+                        style={{ objectPosition }}
                       />
                       <div className="absolute top-3 left-3 bg-primary-600 rounded-lg px-4 py-3 shadow-lg">
                         <div className="text-white font-bold text-lg leading-tight">{format(eventDate, "dd")}</div>

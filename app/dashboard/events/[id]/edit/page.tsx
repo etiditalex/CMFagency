@@ -57,6 +57,7 @@ export default function EditEventPage() {
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
+  const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -118,6 +119,7 @@ export default function EditEventPage() {
             ? String(ev.ticket_price_kes)
             : ""
         );
+        setImageFocus(String((ev as { image_focus?: string | null }).image_focus ?? "center center"));
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
         setImagePreviewUrl(img || null);
@@ -193,6 +195,7 @@ export default function EditEventPage() {
           document_label: documentLabel.trim() || null,
           map_url: mapUrl.trim() || null,
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
+          image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
         })
         .eq("id", eventId);
@@ -393,6 +396,21 @@ export default function EditEventPage() {
               />
             </label>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Image position (how it is cropped)</label>
+          <select
+            value={imageFocus}
+            onChange={(e) => setImageFocus(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="center center">Center center (default)</option>
+            <option value="top center">Center top</option>
+            <option value="bottom center">Center bottom</option>
+            <option value="center left">Center left</option>
+            <option value="center right">Center right</option>
+          </select>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -37,6 +37,8 @@ export type ReceiptEmailProps = {
   /** Organizer contact for "Questions? Contact..." */
   organizerName?: string;
   organizerEmail?: string;
+  /** Optional RSVP link so guests can confirm their details */
+  rsvpUrl?: string;
 };
 
 const headerStyles = {
@@ -71,6 +73,7 @@ export function ReceiptEmail({
   eventLocation,
   organizerName = "CMF Agency",
   organizerEmail = "info@cmfagency.co.ke",
+  rsvpUrl,
 }: ReceiptEmailProps) {
   const holderLabel = typeLabel === "Order" ? "Customer" : `${typeLabel} holder`;
   const isTicket = typeLabel === "Ticket";
@@ -171,6 +174,17 @@ export function ReceiptEmail({
             <Text style={referenceText}>
               Reference: <code style={code}>{reference}</code>
             </Text>
+
+            {isTicket && rsvpUrl && (
+              <Section style={downloadSection}>
+                <Button href={rsvpUrl} style={{ ...downloadButton, ...buttonStyles[variant] }}>
+                  Confirm your details / RSVP
+                </Button>
+                <Text style={downloadHint}>
+                  Use this link to share your preferred contact details with the organisers for this event.
+                </Text>
+              </Section>
+            )}
 
             {downloadReceiptUrl && (
               <Section style={downloadSection}>

@@ -23,6 +23,7 @@ export type ReceiptParams = {
   eventLocation?: string;
   organizerName?: string;
   organizerEmail?: string;
+  rsvpUrl?: string;
 };
 
 const receiptProps = (
@@ -45,6 +46,7 @@ const receiptProps = (
   eventLocation: params.eventLocation,
   organizerName: params.organizerName,
   organizerEmail: params.organizerEmail,
+  rsvpUrl: params.rsvpUrl,
 });
 
 export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {
@@ -61,7 +63,10 @@ export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boo
     variant = "paystack",
   } = params;
 
-  const subject = `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
+  const subject =
+    typeLabel === "Ticket"
+      ? `Your invitation & ticket – ${campaignTitle}`
+      : `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
   const from = fromEmail;
 
   const logoAttachmentResend = { path: DEFAULT_LOGO_URL, filename: "changer-logo.png", contentId: CHANGER_LOGO_CID };

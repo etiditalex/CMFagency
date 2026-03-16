@@ -49,6 +49,7 @@ export default function NewEventPage() {
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
+  const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -120,6 +121,7 @@ export default function NewEventPage() {
         document_label: documentLabel.trim() || null,
         map_url: mapUrl.trim() || null,
         ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
+        image_focus: imageFocus.trim() || null,
         image_url: imageUrl,
         created_by: user.id,
       });
@@ -327,6 +329,24 @@ export default function NewEventPage() {
               />
             </label>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Image position (how it is cropped)</label>
+          <select
+            value={imageFocus}
+            onChange={(e) => setImageFocus(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="center center">Center center (default)</option>
+            <option value="top center">Center top</option>
+            <option value="bottom center">Center bottom</option>
+            <option value="center left">Center left</option>
+            <option value="center right">Center right</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-2">
+            Controls how the image sits inside the card/hero when it is cropped.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

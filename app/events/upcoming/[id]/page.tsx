@@ -42,6 +42,7 @@ type DbEvent = {
   document_label: string | null;
   map_url: string | null;
   gallery: string[] | null;
+  image_focus?: string | null;
 };
 
 function buildGoogleCalendarUrl(event: Pick<DbEvent, "title" | "event_date" | "end_date" | "time" | "location" | "description">): string {
@@ -565,6 +566,7 @@ function CfmaEventDetail() {
 
 function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
+  const objectPosition = (event.image_focus as string | null) || "center center";
   const eventDate = new Date(event.event_date);
   const hasTicket = !!event.ticket_campaign_slug;
   const hasPayment = !!event.payment_link;
@@ -594,6 +596,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
               alt={event.title}
               fill
               className="object-cover"
+              style={{ objectPosition }}
               priority
             />
             <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
@@ -782,7 +785,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery,image_focus")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();
