@@ -65,6 +65,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
   } | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const lineItems = useMemo(() => {
     return TICKET_TIERS.filter((t) => (quantities[t.id] ?? 0) > 0).map((t) => ({
@@ -135,6 +136,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     setShowPromoInput(false);
     setAppliedCoupon(null);
     setPromoError(null);
+    setAgreedToTerms(false);
   }, []);
 
   const goBack = () => {
@@ -211,6 +213,12 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
 
     setSubmitting(true);
     setError(null);
+
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions before continuing.");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       if (!isSingleTier) {
@@ -724,7 +732,28 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
                         )}
                       </div>
                     </div>
-                    <form onSubmit={handlePay} className="space-y-3">
+                    <form onSubmit={handlePay} className="space-y-4">
+                      <div className="flex items-start gap-2">
+                        <input
+                          id="cfma-terms"
+                          type="checkbox"
+                          checked={agreedToTerms}
+                          onChange={(e) => setAgreedToTerms(e.target.checked)}
+                          className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                        <label htmlFor="cfma-terms" className="text-xs sm:text-sm text-gray-700">
+                          I agree to the{" "}
+                          <a
+                            href="/terms"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:text-primary-700 underline"
+                          >
+                            Terms and Conditions
+                          </a>
+                          .
+                        </label>
+                      </div>
                       <div className="flex gap-3">
                         <button
                           type="button"

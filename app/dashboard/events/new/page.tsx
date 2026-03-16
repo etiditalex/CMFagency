@@ -48,6 +48,7 @@ export default function NewEventPage() {
   const [documentUrl, setDocumentUrl] = useState("");
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
+  const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -118,6 +119,7 @@ export default function NewEventPage() {
         document_url: documentUrl.trim() || null,
         document_label: documentLabel.trim() || null,
         map_url: mapUrl.trim() || null,
+        ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
         image_url: imageUrl,
         created_by: user.id,
       });
@@ -349,6 +351,22 @@ export default function NewEventPage() {
             />
             <p className="text-xs text-gray-500 mt-2">External pay link (M-Pesa, PayPal, etc.)</p>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Ticket / entrance price (KES, optional)</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={ticketPriceKes}
+            onChange={(e) => setTicketPriceKes(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="e.g. 12000"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            Amount guests pay to attend (e.g. weddings or private events). Leave blank if not applicable.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

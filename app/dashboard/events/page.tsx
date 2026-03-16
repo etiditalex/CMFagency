@@ -20,6 +20,7 @@ type EventRow = {
   image_url: string | null;
   created_at: string;
   created_by?: string | null;
+  ticket_price_kes?: number | null;
 };
 
 export default function DashboardEventsPage() {
@@ -54,7 +55,7 @@ export default function DashboardEventsPage() {
       try {
         let query = supabase
           .from("fusion_events")
-          .select("id,slug,title,event_date,location,category,image_url,created_at,created_by")
+          .select("id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes")
           .order("event_date", { ascending: false });
 
         if (!isFullAdmin && user?.id) {
@@ -165,6 +166,7 @@ export default function DashboardEventsPage() {
                 <th className="px-6 py-3 font-bold text-gray-600">Event</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Date</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Location</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Price (KES)</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Status</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Actions</th>
               </tr>
@@ -200,6 +202,11 @@ export default function DashboardEventsPage() {
                         {format(new Date(e.event_date), "MMM d, yyyy")}
                       </td>
                       <td className="px-6 py-4 text-gray-700">{e.location ?? "—"}</td>
+                      <td className="px-6 py-4 text-gray-700">
+                        {e.ticket_price_kes != null
+                          ? `KES ${Number(e.ticket_price_kes).toLocaleString("en-KE")}`
+                          : "—"}
+                      </td>
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${

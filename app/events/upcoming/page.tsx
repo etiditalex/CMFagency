@@ -23,6 +23,7 @@ type EventRow = {
   image_url: string | null;
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
+  ticket_price_kes?: number | null;
 };
 
 // CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
@@ -38,6 +39,7 @@ const CFMA_2026_EVENT: EventRow = {
   image_url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
   default_image_url: null,
   ticket_campaign_slug: null, // Uses CmfAwardsTicketModal
+  ticket_price_kes: null,
 };
 
 export default function UpcomingEventsPage() {
@@ -51,7 +53,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -153,6 +155,11 @@ export default function UpcomingEventsPage() {
                         <MapPin className="w-4 h-4 flex-shrink-0" />
                         <span className="line-clamp-1">{event.location ?? "—"}</span>
                       </div>
+                      {event.ticket_price_kes != null && (
+                        <div className="text-sm font-semibold text-gray-900 mb-2">
+                          Entry: KES {Number(event.ticket_price_kes).toLocaleString("en-KE")}
+                        </div>
+                      )}
                       <p className="text-gray-600 text-sm line-clamp-2 mb-4">
                         {event.description ?? ""}
                       </p>

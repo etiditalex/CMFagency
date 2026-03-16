@@ -76,11 +76,15 @@ export function ReceiptEmail({
   const isTicket = typeLabel === "Ticket";
   const qrData = `${ticketNumber}\n${reference}`;
   const viewButtonText = typeLabel === "Vote" ? "View Vote" : typeLabel === "Ticket" ? "View Ticket" : "View Order";
+  const previewText =
+    isTicket && (eventDate || eventLocation)
+      ? `Your invitation & ticket – ${campaignTitle}`
+      : `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
 
   return (
     <Html>
       <Head />
-      <Preview>Your {typeLabel.toLowerCase()} receipt – {campaignTitle}</Preview>
+      <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={{ ...header, ...headerStyles[variant] }}>
@@ -97,7 +101,7 @@ export function ReceiptEmail({
 
           <Section style={content}>
             <Heading as="h2" style={sectionTitle}>
-              Your {typeLabel.toLowerCase()}
+              {isTicket ? "Your invitation & ticket" : `Your ${typeLabel.toLowerCase()}`}
             </Heading>
             <Text style={holderNameText}>{holderName}</Text>
 
@@ -128,7 +132,10 @@ export function ReceiptEmail({
             )}
 
             <Text style={greeting}>
-              Hello {holderName}, we are happy to confirm your {typeLabel.toLowerCase()} for {campaignTitle}.
+              Hello {holderName},{" "}
+              {isTicket
+                ? `your invitation and ticket for ${campaignTitle} is confirmed. Please keep this email safe and show the QR code at the entrance.`
+                : `we are happy to confirm your ${typeLabel.toLowerCase()} for ${campaignTitle}.`}
             </Text>
 
             {eventLocation && (

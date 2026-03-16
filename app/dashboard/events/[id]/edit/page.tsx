@@ -56,6 +56,7 @@ export default function EditEventPage() {
   const [documentUrl, setDocumentUrl] = useState("");
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
+  const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -112,6 +113,11 @@ export default function EditEventPage() {
         setDocumentUrl(String(ev.document_url ?? ""));
         setDocumentLabel(String(ev.document_label ?? ""));
         setMapUrl(String(ev.map_url ?? ""));
+        setTicketPriceKes(
+          ev.ticket_price_kes != null && ev.ticket_price_kes !== ""
+            ? String(ev.ticket_price_kes)
+            : ""
+        );
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
         setImagePreviewUrl(img || null);
@@ -186,6 +192,7 @@ export default function EditEventPage() {
           document_url: documentUrl.trim() || null,
           document_label: documentLabel.trim() || null,
           map_url: mapUrl.trim() || null,
+          ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           image_url: finalImageUrl,
         })
         .eq("id", eventId);
@@ -407,6 +414,19 @@ export default function EditEventPage() {
               placeholder="https://..."
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Ticket / entrance price (KES, optional)</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={ticketPriceKes}
+            onChange={(e) => setTicketPriceKes(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="e.g. 12000"
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

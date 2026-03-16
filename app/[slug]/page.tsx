@@ -76,6 +76,7 @@ export default function CampaignPage() {
   const [quantity, setQuantity] = useState(1);
   const [contestantId, setContestantId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,6 +267,12 @@ export default function CampaignPage() {
 
     setSubmitting(true);
     setError(null);
+
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms and Conditions before continuing.");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const q = Math.max(1, Math.min(effectiveMax, Math.trunc(quantity)));
@@ -738,6 +745,28 @@ export default function CampaignPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="terms" className="text-sm text-gray-700">
+                  I agree to the{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary-600 hover:text-primary-700 underline"
+                  >
+                    Terms and Conditions
+                  </a>
+                  .
+                </label>
               </div>
 
               <button
