@@ -592,12 +592,13 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden"
         >
-          <div className="relative w-full h-64 md:h-80">
+          {/* Hero image: show full image without cropping on detail page */}
+          <div className="relative w-full bg-black h-72 md:h-96">
             <Image
               src={imgUrl}
               alt={event.title}
               fill
-              className="object-cover"
+              className="object-contain"
               style={{ objectPosition }}
               priority
             />
@@ -635,7 +636,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
                 >
                   <Ticket className="w-5 h-5" />
-                  Register (Free)
+                  Register
                 </Link>
               )}
               {hasTicket && !hasFreeReg && (

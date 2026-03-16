@@ -184,7 +184,7 @@ export default function UpcomingEventsPage() {
                           className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 px-4 text-sm transition-colors"
                         >
                           <Ticket className="w-4 h-4" />
-                          Register (Free)
+                          Register
                         </Link>
                       ) : event.slug === "coast-fashion-modelling-awards-2026" ? (
                         <button
