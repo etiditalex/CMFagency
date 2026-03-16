@@ -57,6 +57,7 @@ export default function EditEventPage() {
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
+  const [freeRegistration, setFreeRegistration] = useState(false);
   const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -119,6 +120,7 @@ export default function EditEventPage() {
             ? String(ev.ticket_price_kes)
             : ""
         );
+        setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
         setImageFocus(String((ev as { image_focus?: string | null }).image_focus ?? "center center"));
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
@@ -195,6 +197,7 @@ export default function EditEventPage() {
           document_label: documentLabel.trim() || null,
           map_url: mapUrl.trim() || null,
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
+          free_registration: freeRegistration,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
         })
@@ -413,6 +416,19 @@ export default function EditEventPage() {
           </select>
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="free-reg-edit"
+            type="checkbox"
+            checked={freeRegistration}
+            onChange={(e) => setFreeRegistration(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="free-reg-edit" className="text-sm font-medium text-gray-700">
+            Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
@@ -420,6 +436,7 @@ export default function EditEventPage() {
               value={ticketCampaignSlug}
               onChange={(e) => setTicketCampaignSlug(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+              disabled={freeRegistration}
             />
           </div>
           <div>
@@ -430,6 +447,7 @@ export default function EditEventPage() {
               onChange={(e) => setPaymentLink(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="https://..."
+              disabled={freeRegistration}
             />
           </div>
         </div>

@@ -25,6 +25,7 @@ type EventRow = {
   ticket_campaign_slug: string | null;
   ticket_price_kes?: number | null;
   image_focus?: string | null;
+  free_registration?: boolean | null;
 };
 
 // CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
@@ -42,6 +43,7 @@ const CFMA_2026_EVENT: EventRow = {
   ticket_campaign_slug: null, // Uses CmfAwardsTicketModal
   ticket_price_kes: null,
   image_focus: "center center",
+  free_registration: false,
 };
 
 export default function UpcomingEventsPage() {
@@ -55,7 +57,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,image_focus")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,image_focus,free_registration")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -173,9 +175,18 @@ export default function UpcomingEventsPage() {
                       </span>
                     </div>
                   </Link>
-                  {(event.ticket_campaign_slug || event.slug === "coast-fashion-modelling-awards-2026") && (
+                  {(event.free_registration || event.ticket_campaign_slug || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
-                      {event.slug === "coast-fashion-modelling-awards-2026" ? (
+                      {event.free_registration ? (
+                        <Link
+                          href={`/events/register/${event.slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Register (Free)
+                        </Link>
+                      ) : event.slug === "coast-fashion-modelling-awards-2026" ? (
                         <button
                           type="button"
                           onClick={(e) => {

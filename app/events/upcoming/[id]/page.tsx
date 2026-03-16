@@ -43,6 +43,7 @@ type DbEvent = {
   map_url: string | null;
   gallery: string[] | null;
   image_focus?: string | null;
+  free_registration?: boolean | null;
 };
 
 function buildGoogleCalendarUrl(event: Pick<DbEvent, "title" | "event_date" | "end_date" | "time" | "location" | "description">): string {
@@ -570,6 +571,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const eventDate = new Date(event.event_date);
   const hasTicket = !!event.ticket_campaign_slug;
   const hasPayment = !!event.payment_link;
+  const hasFreeReg = !!event.free_registration;
   const hasDocument = !!event.document_url;
   const hasMap = !!event.map_url;
   const calendarUrl = buildGoogleCalendarUrl(event);
@@ -625,9 +627,18 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
               </p>
             </div>
 
-            {/* Action buttons grid: Payment/Ticket, Document, Map, Calendar */}
+            {/* Action buttons grid: Payment/Ticket, Free Register, Document, Map, Calendar */}
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {hasTicket && (
+              {hasFreeReg && (
+                <Link
+                  href={`/events/register/${event.slug}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <Ticket className="w-5 h-5" />
+                  Register (Free)
+                </Link>
+              )}
+              {hasTicket && !hasFreeReg && (
                 <Link
                   href={`/${event.ticket_campaign_slug}`}
                   target="_blank"
@@ -638,7 +649,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   Buy Ticket Online
                 </Link>
               )}
-              {hasPayment && (
+              {hasPayment && !hasFreeReg && (
                 <a
                   href={event.payment_link!}
                   target="_blank"
@@ -785,7 +796,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery,image_focus")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();

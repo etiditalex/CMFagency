@@ -49,6 +49,7 @@ export default function NewEventPage() {
   const [documentLabel, setDocumentLabel] = useState("");
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
+  const [freeRegistration, setFreeRegistration] = useState(false);
   const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -121,6 +122,7 @@ export default function NewEventPage() {
         document_label: documentLabel.trim() || null,
         map_url: mapUrl.trim() || null,
         ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
+        free_registration: freeRegistration,
         image_focus: imageFocus.trim() || null,
         image_url: imageUrl,
         created_by: user.id,
@@ -349,6 +351,19 @@ export default function NewEventPage() {
           </p>
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="free-reg"
+            type="checkbox"
+            checked={freeRegistration}
+            onChange={(e) => setFreeRegistration(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="free-reg" className="text-sm font-medium text-gray-700">
+            Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
@@ -357,8 +372,9 @@ export default function NewEventPage() {
               onChange={(e) => setTicketCampaignSlug(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
               placeholder="e.g. cfma-2026"
+              disabled={freeRegistration}
             />
-            <p className="text-xs text-gray-500 mt-2">Link to Fusion Xpress ticket campaign</p>
+            <p className="text-xs text-gray-500 mt-2">Link to Fusion Xpress ticket campaign. Leave empty if using free registration.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Payment link (optional)</label>
@@ -368,8 +384,9 @@ export default function NewEventPage() {
               onChange={(e) => setPaymentLink(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="https://..."
+              disabled={freeRegistration}
             />
-            <p className="text-xs text-gray-500 mt-2">External pay link (M-Pesa, PayPal, etc.)</p>
+            <p className="text-xs text-gray-500 mt-2">External pay link (M-Pesa, PayPal, etc.). Leave empty if using free registration.</p>
           </div>
         </div>
 

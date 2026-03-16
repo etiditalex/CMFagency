@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as { ref?: string };
     const ref = (body.ref ?? "").trim();
     if (!ref) return NextResponse.json({ error: "Missing ref" }, { status: 400 });
-    if (!/^[A-Za-z0-9._-]{6,128}$/.test(ref)) {
+    if (!/^[A-Za-z0-9._-]{5,160}$/.test(ref)) {
       return NextResponse.json({ error: "Invalid ref" }, { status: 400 });
     }
 
@@ -56,50 +56,100 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    if (!tx) return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
 
-    if ((tx as { status?: string }).status !== "success") {
-      return NextResponse.json({ error: "Transaction not paid" }, { status: 400 });
-    }
+    // Paid ticket: resolve from transactions
+    if (tx) {
 
-    const meta = (typeof (tx as { metadata?: unknown }).metadata === "object" && (tx as { metadata?: Record<string, unknown> }).metadata) || {};
-    const slug = (meta.slug as string) || "event";
-    const suffix = ref.replace(/^cmf_/, "").slice(-8).toUpperCase();
-    const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-    const typeCode = (tx as { campaign_type?: string }).campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
-    const ticketOrVoteId = `${prefix}-${typeCode}-${suffix}`;
-    const name = (tx as { payer_name?: string | null }).payer_name?.trim?.() || (tx as { email?: string | null }).email?.trim?.() || "—";
-    const checkedInAt = (tx as { checked_in_at?: string | null }).checked_in_at;
+      if ((tx as { status?: string }).status !== "success") {
+        return NextResponse.json({ error: "Transaction not paid" }, { status: 400 });
+      }
 
-    if (checkedInAt) {
+      const meta = (typeof (tx as { metadata?: unknown }).metadata === "object" && (tx as { metadata?: Record<string, unknown> }).metadata) || {};
+      const slug = (meta.slug as string) || "event";
+      const suffix = ref.replace(/^cmf_/, "").slice(-8).toUpperCase();
+      const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+      const typeCode = (tx as { campaign_type?: string }).campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
+      const ticketOrVoteId = `${prefix}-${typeCode}-${suffix}`;
+      const name = (tx as { payer_name?: string | null }).payer_name?.trim?.() || (tx as { email?: string | null }).email?.trim?.() || "—";
+      const checkedInAt = (tx as { checked_in_at?: string | null }).checked_in_at;
+
+      if (checkedInAt) {
+        return NextResponse.json(
+          {
+            valid: false,
+            duplicate: true,
+            name,
+            ticketId: ticketOrVoteId,
+            voteId: (tx as { campaign_type?: string }).campaign_type === "vote" ? ticketOrVoteId : undefined,
+            checked_in_at: checkedInAt,
+            message: "This receipt was already used. Do not allow entry.",
+          },
+          { headers: { "Cache-Control": "no-store" } }
+        );
+      }
+
+      const { error: updateErr } = await supabaseAdmin
+        .from("transactions")
+        .update({ checked_in_at: new Date().toISOString() })
+        .eq("id", (tx as { id: string }).id);
+
+      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+
       return NextResponse.json(
         {
-          valid: false,
-          duplicate: true,
+          valid: true,
+          duplicate: false,
           name,
           ticketId: ticketOrVoteId,
           voteId: (tx as { campaign_type?: string }).campaign_type === "vote" ? ticketOrVoteId : undefined,
-          checked_in_at: checkedInAt,
-          message: "This receipt was already used. Do not allow entry.",
+          message: "Valid. Allow entry.",
         },
         { headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    const { error: updateErr } = await supabaseAdmin
-      .from("transactions")
-      .update({ checked_in_at: new Date().toISOString() })
-      .eq("id", (tx as { id: string }).id);
+    // Free registration: resolve from event_attendees (no transaction)
+    const { data: attendee, error: attendeeErr } = await supabaseAdmin
+      .from("event_attendees")
+      .select("id, reference, name, email, checked_in_at")
+      .eq("reference", ref)
+      .is("transaction_id", null)
+      .maybeSingle();
 
-    if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    if (attendeeErr) return NextResponse.json({ error: attendeeErr.message }, { status: 500 });
+    if (!attendee) return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+
+    const regName = (attendee as { name?: string | null }).name?.trim?.() || (attendee as { email?: string | null }).email?.trim?.() || "—";
+    const regCheckedInAt = (attendee as { checked_in_at?: string | null }).checked_in_at;
+    const regId = `REG-${ref.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
+
+    if (regCheckedInAt) {
+      return NextResponse.json(
+        {
+          valid: false,
+          duplicate: true,
+          name: regName,
+          ticketId: regId,
+          checked_in_at: regCheckedInAt,
+          message: "This registration was already used. Do not allow entry.",
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    const { error: updateRegErr } = await supabaseAdmin
+      .from("event_attendees")
+      .update({ checked_in_at: new Date().toISOString() })
+      .eq("id", (attendee as { id: string }).id);
+
+    if (updateRegErr) return NextResponse.json({ error: updateRegErr.message }, { status: 500 });
 
     return NextResponse.json(
       {
         valid: true,
         duplicate: false,
-        name,
-        ticketId: ticketOrVoteId,
-        voteId: (tx as { campaign_type?: string }).campaign_type === "vote" ? ticketOrVoteId : undefined,
+        name: regName,
+        ticketId: regId,
         message: "Valid. Allow entry.",
       },
       { headers: { "Cache-Control": "no-store" } }
