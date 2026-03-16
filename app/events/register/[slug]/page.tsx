@@ -44,7 +44,7 @@ export default function EventRegisterPage() {
     (async () => {
       setLoading(true);
       setError(null);
-      const { data, err } = await supabase
+      const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,time,location,venue,description,free_registration")
         .eq("slug", slug)
@@ -52,7 +52,7 @@ export default function EventRegisterPage() {
         .gte("event_date", today)
         .maybeSingle();
       if (!cancelled) {
-        if (err || !data) {
+        if (error || !data) {
           setError("Event not found or registration is not open.");
           setEvent(null);
         } else {
