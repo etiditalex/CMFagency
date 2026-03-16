@@ -17,7 +17,7 @@ export type EventInviteParams = {
 };
 
 export async function sendEventInviteEmail(params: EventInviteParams): Promise<{ ok: boolean; error?: string }> {
-  const { to, eventTitle, holderName, reference } = params;
+  const { to, eventTitle } = params;
   const subject = `Your invitation – ${eventTitle}`;
   const from = fromEmail;
 
@@ -51,7 +51,7 @@ export async function sendEventInviteEmail(params: EventInviteParams): Promise<{
       from,
       to: [to],
       subject,
-      react: EventInviteEmail(props),
+      react: React.createElement(EventInviteEmail, props),
     });
     if (error) return { ok: false, error: error.message };
     return { ok: true };

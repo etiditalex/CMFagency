@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { sendEventInviteEmail } from "@/lib/send-event-invite-email";
 
+export const runtime = "nodejs";
+
 function generateRef(slug: string): string {
   const part = randomBytes(4).toString("hex");
   return `reg_${slug}_${part}`;
