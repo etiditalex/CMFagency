@@ -21,31 +21,58 @@ type FusionEventRow = {
   created_by: string | null;
 };
 
+/** Normalize to URL-safe campaign slug: lowercase, hyphens only, no leading/trailing hyphens. */
+export function normalizeSlug(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "";
+}
+
 /**
  * If no campaign exists for the given slug, look up a fusion_event that uses this slug
  * (ticket_campaign_slug or a tier slug) and create the campaign from the event.
  * Returns the campaign (existing or newly created) or null.
+ * Handles slugs with spaces (e.g. "old- is -gold vvip -roundtable" → "old-is-gold-vvip-roundtable").
  */
 export async function ensureCampaignFromEvent(
   supabaseAdmin: SupabaseClient,
   slug: string
 ): Promise<CampaignRow | null> {
-  const slugNorm = slug.trim().toLowerCase();
+  const slugNorm = normalizeSlug(slug);
   if (!slugNorm) return null;
 
-  // 1) Event with ticket_campaign_slug = slug
+  // 1) Event with ticket_campaign_slug matching (exact or normalized)
+  let event: FusionEventRow | null = null;
+  let unitAmountKes = 0;
+  let tierLabel = "";
+
   const { data: byCampaignSlug } = await supabaseAdmin
     .from("fusion_events")
     .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
     .eq("ticket_campaign_slug", slugNorm)
     .maybeSingle();
-
-  let event = byCampaignSlug as FusionEventRow | null;
-  let unitAmountKes = event?.ticket_price_kes ?? 0;
-  let tierLabel = "";
+  if (byCampaignSlug) {
+    event = byCampaignSlug as FusionEventRow;
+    unitAmountKes = Number(event.ticket_price_kes) || 0;
+  }
+  if (!event) {
+    const { data: withCampaignSlug } = await supabaseAdmin
+      .from("fusion_events")
+      .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
+      .not("ticket_campaign_slug", "is", null);
+    const rawList = (withCampaignSlug ?? []) as FusionEventRow[];
+    const byRaw = rawList.find((e) => normalizeSlug(e.ticket_campaign_slug ?? "") === slugNorm);
+    if (byRaw) {
+      event = byRaw;
+      unitAmountKes = Number(event.ticket_price_kes) || 0;
+    }
+  }
 
   if (!event) {
-    // 2) Event with slug in ticket_tiers
+    // 2) Event with slug in ticket_tiers (match normalized so "old is gold" = "old-is-gold")
     const { data: eventsWithTiers } = await supabaseAdmin
       .from("fusion_events")
       .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
@@ -54,7 +81,7 @@ export async function ensureCampaignFromEvent(
     const list = (eventsWithTiers ?? []) as FusionEventRow[];
     for (const e of list) {
       const tiers = Array.isArray(e.ticket_tiers) ? e.ticket_tiers : [];
-      const tier = tiers.find((t) => String(t?.slug ?? "").toLowerCase() === slugNorm);
+      const tier = tiers.find((t) => normalizeSlug(String(t?.slug ?? "")) === slugNorm);
       if (tier != null) {
         event = e;
         unitAmountKes = Number(tier.unit_amount_kes) || Number(e.ticket_price_kes) || 0;
@@ -68,7 +95,20 @@ export async function ensureCampaignFromEvent(
 
   if (!event) return null;
 
-  const ownerId = event.created_by;
+  let ownerId = event.created_by;
+  if (!ownerId) {
+    const { data: firstAdmin } = await supabaseAdmin
+      .from("portal_members")
+      .select("user_id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    ownerId = (firstAdmin as { user_id?: string } | null)?.user_id ?? null;
+    if (!ownerId) {
+      const { data: legacyAdmin } = await supabaseAdmin.from("admin_users").select("user_id").limit(1).maybeSingle();
+      ownerId = (legacyAdmin as { user_id?: string } | null)?.user_id ?? null;
+    }
+  }
   if (!ownerId) return null;
 
   const amount = Math.max(0, Math.trunc(Number(unitAmountKes)));

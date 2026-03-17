@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
-import { ensureCampaignFromEvent } from "@/lib/ensure-campaign-from-event";
+import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 
 type InitBody = {
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as InitBody;
 
-    const slug = (body.slug ?? "").trim().toLowerCase();
+    const slug = normalizeSlug(body.slug ?? "") || (body.slug ?? "").trim().toLowerCase();
     const email = (body.email ?? "").trim();
     const quantity = Math.trunc(Number(body.quantity ?? 0));
     const contestantId = body.contestant_id ?? null;

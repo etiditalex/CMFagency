@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
-import { ensureCampaignFromEvent } from "@/lib/ensure-campaign-from-event";
+import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 
 type StkPushBody = {
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as StkPushBody;
 
-    const slug = (body.slug ?? "").trim().toLowerCase();
+    const slug = normalizeSlug(body.slug ?? "") || (body.slug ?? "").trim().toLowerCase();
     const phoneRaw = (body.phone ?? "").trim().replace(/\s/g, "");
     const email = (body.email ?? "").trim();
     const quantity = Math.trunc(Number(body.quantity ?? 0));
