@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
+import { ensureCampaignFromEvent } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 
 type InitBody = {
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
     let campaign: CampaignRow | null = null;
 
     if (supabaseAdmin) {
+      // 1) Try existing campaign by slug (service role, ignores RLS)
       const { data: adminCampaign } = await supabaseAdmin
         .from("campaigns")
         .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn,is_active")
@@ -81,11 +83,19 @@ export async function POST(req: Request) {
         }
         campaign = row as CampaignRow;
       } else {
-        const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
-        if (ensured) campaign = ensured;
+        // 2) CFMA hard-coded tiers (legacy)
+        const ensuredCfma = await ensureCfmaCampaign(supabaseAdmin, slug);
+        if (ensuredCfma) {
+          campaign = ensuredCfma;
+        } else {
+          // 3) New: auto-create ticket campaign from fusion_events
+          const ensuredFromEvent = await ensureCampaignFromEvent(supabaseAdmin, slug);
+          if (ensuredFromEvent) campaign = ensuredFromEvent;
+        }
       }
     }
     if (!campaign) {
+      // Fallback: anon client (should work if public policy allows select)
       const { data: campaignData } = await supabase
         .from("campaigns")
         .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
