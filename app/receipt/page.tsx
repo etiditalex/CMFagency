@@ -35,17 +35,59 @@ export default async function ReceiptPage({ searchParams }: Props) {
   const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
   const { data: tx, error } = await supabase
     .from("transactions")
-    .select("reference, payer_name, amount, currency, quantity, campaign_type, metadata, provider")
+    .select("reference, status, payer_name, amount, currency, quantity, campaign_type, metadata, provider")
     .eq("reference", ref)
-    .eq("status", "success")
     .maybeSingle();
 
-  if (error || !tx) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
-          <h1 className="text-xl font-semibold text-gray-800 mb-2">Receipt not found</h1>
-          <p className="text-gray-600 mb-4">Invalid or expired reference. Use the link from your receipt email.</p>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Something went wrong</h1>
+          <p className="text-gray-600 mb-4">We couldn&apos;t load your receipt. Please try again or use the link from your email.</p>
+          <Link href="/" className="text-[#B8860B] font-medium hover:underline">Back to home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tx) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Payment processing</h1>
+          <p className="text-gray-600 mb-4">Your payment is being confirmed. A receipt will be sent to your email shortly. You can check back in a moment or use the link in the confirmation email.</p>
+          <Link href={`/receipt?ref=${encodeURIComponent(ref)}`} className="inline-block mt-2 text-[#B8860B] font-medium hover:underline">Check receipt again</Link>
+          <span className="mx-2">·</span>
+          <Link href="/" className="text-[#B8860B] font-medium hover:underline">Back to home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const status = (tx as { status?: string }).status ?? "pending";
+  if (status === "failed" || status === "abandoned") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Payment not completed</h1>
+          <p className="text-gray-600 mb-4">This payment did not go through. You have not been charged. You can try again from the event or ticket page.</p>
+          <Link href="/events/upcoming" className="text-[#B8860B] font-medium hover:underline">View events</Link>
+          <span className="mx-2">·</span>
+          <Link href="/" className="text-[#B8860B] font-medium hover:underline">Back to home</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (status !== "success") {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">Payment received</h1>
+          <p className="text-gray-600 mb-4">We&apos;re confirming your payment. A receipt will be sent to your email shortly. You can also check back in a moment to download it here.</p>
+          <Link href={`/receipt?ref=${encodeURIComponent(ref)}`} className="inline-block mt-2 text-[#B8860B] font-medium hover:underline">Check receipt again</Link>
+          <span className="mx-2">·</span>
           <Link href="/" className="text-[#B8860B] font-medium hover:underline">Back to home</Link>
         </div>
       </div>
@@ -90,6 +132,9 @@ export default async function ReceiptPage({ searchParams }: Props) {
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
       <div className="max-w-xl mx-auto py-8 px-4 print:py-4">
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-center text-green-800 text-sm print:hidden">
+          A copy of this receipt has been sent to your email. You can download or print it below.
+        </div>
         <div className="mb-6 flex justify-between items-center print:hidden">
           <Link href="/" className="text-[#B8860B] font-medium hover:underline">← Back to home</Link>
           <PrintButton />

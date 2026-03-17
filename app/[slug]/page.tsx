@@ -306,7 +306,7 @@ export default function CampaignPage() {
           throw new Error(json.error ?? "M-Pesa STK Push failed");
         }
         if (json.reference) {
-          router.replace(`/${campaign.slug}?ref=${encodeURIComponent(json.reference)}`);
+          router.replace(`/receipt?ref=${encodeURIComponent(json.reference)}`);
         }
         return;
       }
@@ -364,7 +364,7 @@ export default function CampaignPage() {
           reference: json.reference,
           channels: ["card", "mobile_money"],
           onSuccess: () => {
-            router.replace(`/${campaign.slug}?ref=${encodeURIComponent(json.reference!)}`);
+            router.replace(`/receipt?ref=${encodeURIComponent(json.reference!)}`);
           },
           onCancel: () => {
             setSubmitting(false);

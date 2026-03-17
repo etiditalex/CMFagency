@@ -280,7 +280,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
         if (!res.ok) throw new Error(json.error ?? "M-Pesa STK Push failed");
         if (json.reference) {
           onClose();
-          window.location.href = `/${item.slug}?ref=${encodeURIComponent(json.reference)}`;
+          window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
         }
         return;
       }
@@ -331,7 +331,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
             channels: ["card", "mobile_money"],
             onSuccess: () => {
               onClose();
-              window.location.href = `/${item.slug}?ref=${encodeURIComponent(json.reference!)}`;
+              window.location.href = `/receipt?ref=${encodeURIComponent(json.reference!)}`;
             },
             onCancel: () => setSubmitting(false),
             onError: (err: { message?: string }) => {
