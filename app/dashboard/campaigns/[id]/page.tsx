@@ -42,6 +42,7 @@ type TxRow = {
   id: string;
   reference: string;
   status: string;
+  provider?: string | null;
   email?: string | null;
   payer_name?: string | null;
   amount: number;
@@ -111,6 +112,7 @@ export default function CampaignReportPage() {
   const [range, setRange] = useState<RangePreset>("30d");
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
+  const [confirmingRef, setConfirmingRef] = useState<string | null>(null);
 
   const refreshInFlightRef = useRef(false);
 
@@ -232,7 +234,7 @@ export default function CampaignReportPage() {
       // Recent transactions (include payer identity for admin visibility)
       let txQuery = supabase
         .from("transactions")
-        .select("id,reference,status,amount,currency,quantity,created_at,email,payer_name")
+        .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
         .eq("campaign_id", campaignId);
       if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
       if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
@@ -738,8 +740,8 @@ export default function CampaignReportPage() {
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
             <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
-              Latest transactions in the selected range with payer name/email. Use{" "}
-              <span className="font-semibold">success</span> for revenue and issuance.
+              Latest transactions in the selected range. Pending M-Pesa payments may take a few minutes to confirm; admins can{" "}
+              <span className="font-semibold">Confirm payment</span> if the customer has paid but the callback did not run.
             </p>
           </div>
 
@@ -753,12 +755,13 @@ export default function CampaignReportPage() {
                   <th className="px-6 py-3 font-bold text-gray-600">Qty</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Amount</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Status</th>
+                  {isFullAdmin ? <th className="px-6 py-3 font-bold text-gray-600">Actions</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {recentTransactions.length === 0 ? (
                   <tr>
-                    <td className="px-6 py-6 text-gray-600" colSpan={6}>
+                    <td className="px-6 py-6 text-gray-600" colSpan={isFullAdmin ? 7 : 6}>
                       No transactions yet.
                     </td>
                   </tr>
@@ -777,6 +780,9 @@ export default function CampaignReportPage() {
                       : t.email?.trim()
                         ? String(t.email)
                         : "—";
+
+                    const canConfirm = isFullAdmin && status === "pending" && String(t.provider ?? "") === "daraja";
+                    const isConfirming = confirmingRef === t.reference;
 
                     return (
                       <tr key={t.id} className="border-b border-gray-200">
@@ -798,6 +804,41 @@ export default function CampaignReportPage() {
                             {status || "—"}
                           </span>
                         </td>
+                        {isFullAdmin ? (
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {canConfirm ? (
+                              <button
+                                type="button"
+                                disabled={isConfirming}
+                                onClick={async () => {
+                                  setConfirmingRef(t.reference);
+                                  try {
+                                    const { data: { session } } = await supabase.auth.getSession();
+                                    const res = await fetch("/api/daraja/confirm-transaction", {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                                      },
+                                      body: JSON.stringify({ reference: t.reference }),
+                                    });
+                                    const json = await res.json().catch(() => ({}));
+                                    if (res.ok && (json as { ok?: boolean }).ok) {
+                                      await refreshData();
+                                    } else {
+                                      alert((json as { error?: string }).error ?? "Failed to confirm payment");
+                                    }
+                                  } finally {
+                                    setConfirmingRef(null);
+                                  }
+                                }}
+                                className="text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
+                              >
+                                {isConfirming ? "Confirming…" : "Confirm payment"}
+                              </button>
+                            ) : null}
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })
