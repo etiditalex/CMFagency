@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: event, error: eventErr } = await supabase
     .from("fusion_events")
-    .select("id, slug, title, event_date, time, location, venue")
+    .select("id, slug, title, event_date, time, location, venue, map_url")
     .eq("slug", slug)
     .eq("free_registration", true)
     .gte("event_date", today)
@@ -63,9 +63,25 @@ export async function POST(req: NextRequest) {
   const loc = (event as { location?: string | null }).location;
   const venue = (event as { venue?: string | null }).venue;
   const eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
+  const rawMapUrl = (event as { map_url?: string | null }).map_url;
+  const mapUrl =
+    rawMapUrl || (eventLocation ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventLocation)}` : undefined);
   const eventDateFormatted = eventDate
     ? new Date(eventDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
     : undefined;
+
+  let calendarUrl: string | undefined;
+  if (eventDate) {
+    const d = eventDate.replace(/-/g, "");
+    const startStr = `${d}T090000`;
+    const endStr = `${d}T170000`;
+    calendarUrl =
+      "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+      `&text=${encodeURIComponent(eventTitle)}` +
+      `&dates=${startStr}/${endStr}` +
+      (eventLocation ? `&location=${encodeURIComponent(eventLocation)}` : "") +
+      `&details=${encodeURIComponent("Event details: " + (eventLocation || eventTitle))}`;
+  }
 
   const reference = generateRef(eventSlug);
 
@@ -92,6 +108,8 @@ export async function POST(req: NextRequest) {
     eventDate: eventDateFormatted,
     eventTime: eventTime ?? undefined,
     eventLocation,
+    calendarUrl,
+    mapUrl,
   });
 
   if (!result.ok) {

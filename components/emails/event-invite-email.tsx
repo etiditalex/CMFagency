@@ -22,6 +22,8 @@ export type EventInviteEmailProps = {
   eventLocation?: string;
   organizerName?: string;
   organizerEmail?: string;
+  calendarUrl?: string;
+  mapUrl?: string;
 };
 
 function qrCodeUrl(data: string, size = 150): string {
@@ -37,6 +39,8 @@ export function EventInviteEmail({
   eventLocation,
   organizerName = "CMF Agency",
   organizerEmail = "info@cmfagency.co.ke",
+  calendarUrl,
+  mapUrl,
 }: EventInviteEmailProps) {
   const ticketId = `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
   const qrData = `${ticketId}\n${reference}`;
@@ -86,18 +90,30 @@ export function EventInviteEmail({
             )}
 
             <Text style={referenceText}>
-              Reference: <code style={code}>{reference}</code>
+              Ticket ID: <code style={code}>{ticketId}</code>
             </Text>
 
-            {(eventDate || eventTime || eventLocation) && (
+            {(eventDate || eventTime || eventLocation || calendarUrl || mapUrl) && (
               <>
                 <Hr style={hr} />
                 <Text style={eventSectionTitle}>Event details</Text>
                 {eventDate && (
                   <Text style={eventDetail}>📅 {eventDate}{eventTime ? ` · ${eventTime}` : ""}</Text>
                 )}
-                {eventLocation && (
-                  <Text style={eventDetail}>📍 {eventLocation}</Text>
+                {eventLocation && <Text style={eventDetail}>📍 {eventLocation}</Text>}
+                {(calendarUrl || mapUrl) && (
+                  <div style={ctaRow}>
+                    {calendarUrl && (
+                      <Link href={calendarUrl} style={primaryButton}>
+                        Add to calendar
+                      </Link>
+                    )}
+                    {mapUrl && (
+                      <Link href={mapUrl} style={secondaryButton}>
+                        Open in Maps
+                      </Link>
+                    )}
+                  </div>
                 )}
               </>
             )}
@@ -200,6 +216,32 @@ const code = { backgroundColor: "#e9ecef", padding: "2px 6px", borderRadius: "4p
 const hr = { borderColor: "#e9ecef", margin: "20px 0" };
 const eventSectionTitle = { margin: "0 0 8px", fontSize: "14px", fontWeight: "600", color: "#333" };
 const eventDetail = { margin: "0 0 4px", fontSize: "14px", color: "#555" };
+const ctaRow = {
+  marginTop: "12px",
+  display: "flex",
+  gap: "8px",
+  flexWrap: "wrap" as const,
+};
+const primaryButton = {
+  display: "inline-block",
+  padding: "8px 14px",
+  borderRadius: "999px",
+  backgroundColor: "#2563eb",
+  color: "#ffffff",
+  fontSize: "13px",
+  fontWeight: 600,
+  textDecoration: "none",
+};
+const secondaryButton = {
+  display: "inline-block",
+  padding: "8px 14px",
+  borderRadius: "999px",
+  backgroundColor: "#e5e7eb",
+  color: "#111827",
+  fontSize: "13px",
+  fontWeight: 500,
+  textDecoration: "none",
+};
 const organizerLabel = { margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#333" };
 const organizerText = { margin: "0", fontSize: "13px", color: "#555" };
 const organizerLink = { color: "#059669", textDecoration: "none" };

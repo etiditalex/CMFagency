@@ -14,6 +14,8 @@ export type EventInviteParams = {
   eventLocation?: string;
   organizerName?: string;
   organizerEmail?: string;
+   calendarUrl?: string;
+   mapUrl?: string;
 };
 
 export async function sendEventInviteEmail(params: EventInviteParams): Promise<{ ok: boolean; error?: string }> {
@@ -30,6 +32,8 @@ export async function sendEventInviteEmail(params: EventInviteParams): Promise<{
     eventLocation: params.eventLocation,
     organizerName: params.organizerName,
     organizerEmail: params.organizerEmail,
+    calendarUrl: params.calendarUrl,
+    mapUrl: params.mapUrl,
   };
 
   if (isSmtpConfigured()) {
