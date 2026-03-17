@@ -226,11 +226,7 @@ export default function CampaignReportPage() {
         .single();
       if (cErr) throw cErr;
       const campaignData = c as Campaign;
-      // Clients can only view their own campaigns.
-      if (!isFullAdmin && user?.id && campaignData.created_by !== user.id) {
-        router.replace("/dashboard/campaigns?error=access");
-        return;
-      }
+      // RLS already restricts: clients see only campaigns they own or that are linked to their events.
       setCampaign(campaignData);
 
       // Recent transactions (include payer identity for admin visibility)

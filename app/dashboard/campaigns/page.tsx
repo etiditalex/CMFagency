@@ -73,17 +73,11 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        let campaignsQuery = supabase
+        // RLS returns: for admins = all campaigns; for clients = campaigns they created + campaigns for their events (fusion_events.created_by = user)
+        const { data: campaignRows, error: campaignsError } = await supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
           .order("created_at", { ascending: false });
-
-        // Only full admins see all campaigns; managers and clients see only their own.
-        if (!isFullAdmin && user?.id) {
-          campaignsQuery = campaignsQuery.eq("created_by", user.id);
-        }
-
-        const { data: campaignRows, error: campaignsError } = await campaignsQuery;
 
         if (campaignsError) throw campaignsError;
 
