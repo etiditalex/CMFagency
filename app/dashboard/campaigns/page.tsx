@@ -205,11 +205,17 @@ export default function DashboardCampaignsPage() {
     setAssignLoading(true);
     setError(null);
     try {
-      const { error: updateErr } = await supabase
-        .from("campaigns")
-        .update({ created_by: assignTargetUserId })
-        .eq("id", assignCampaign.id);
-      if (updateErr) throw updateErr;
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/fusion-xpress/campaigns/${assignCampaign.id}/assign`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ user_id: assignTargetUserId }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Assign failed");
       setAssignCampaign(null);
       setAssignTargetUserId("");
       setRefreshKey((k) => k + 1);
@@ -534,7 +540,7 @@ export default function DashboardCampaignsPage() {
               </button>
             </div>
             <p className="text-gray-600 text-sm mb-4">
-              <strong>{assignCampaign.title}</strong> will appear in the selected user&apos;s dashboard.
+              <strong>{assignCampaign.title}</strong> will appear in the selected client&apos;s dashboard with the same sales and transaction stats. The client may need to refresh their dashboard to see it.
             </p>
             {usersListLoading ? (
               <p className="text-gray-500 text-sm">Loading users…</p>
