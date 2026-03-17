@@ -94,32 +94,41 @@ export async function POST(req: Request) {
     type CampaignRow = { id: string; created_by: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number };
     let campaign: CampaignRow | null = null;
 
-    const { data: campaignData } = await supabase
-      .from("campaigns")
-      .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (campaignData) {
-      campaign = campaignData as CampaignRow;
-    } else if (supabaseAdmin) {
+    if (supabaseAdmin) {
       const { data: adminCampaign } = await supabaseAdmin
         .from("campaigns")
-        .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
+        .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn,is_active")
         .eq("slug", slug)
-        .eq("is_active", true)
         .maybeSingle();
       if (adminCampaign) {
-        campaign = adminCampaign as CampaignRow;
+        const row = adminCampaign as CampaignRow & { is_active?: boolean };
+        if (row.is_active === false) {
+          return NextResponse.json(
+            { error: "This ticket campaign is in draft. The event organizer needs to set it to Active in Dashboard → Campaigns." },
+            { status: 400 }
+          );
+        }
+        campaign = row as CampaignRow;
       } else {
         const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
         if (ensured) campaign = ensured;
       }
     }
+    if (!campaign) {
+      const { data: campaignData } = await supabase
+        .from("campaigns")
+        .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (campaignData) campaign = campaignData as CampaignRow;
+    }
 
     if (!campaign) {
+      const hint = !supabaseAdmin
+        ? " If the campaign exists in Dashboard → Campaigns, add SUPABASE_SERVICE_ROLE_KEY to your deployment (e.g. Vercel) environment variables."
+        : "";
       return NextResponse.json(
-        { error: "This ticket is not available. The event organizer needs to create a ticket campaign in Fusion Xpress (Dashboard → Campaigns) with the same slug and set it to Active." },
+        { error: `No ticket campaign found for "${slug}". Create a campaign in Fusion Xpress (Dashboard → Campaigns) with this exact slug and set it to Active.${hint}` },
         { status: 404 }
       );
     }
