@@ -166,7 +166,7 @@ export default function UpcomingEventsPage() {
                         <MapPin className="w-4 h-4 flex-shrink-0" />
                         <span className="line-clamp-1">{event.location ?? "—"}</span>
                       </div>
-                      {event.ticket_price_kes != null && (
+                      {event.ticket_price_kes != null && Number(event.ticket_price_kes) > 0 && (
                         <div className="text-sm font-semibold text-gray-900 mb-2">
                           Entry: KES {Number(event.ticket_price_kes).toLocaleString("en-KE")}
                         </div>
