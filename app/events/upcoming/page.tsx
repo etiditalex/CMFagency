@@ -11,6 +11,8 @@ import { supabase } from "@/lib/supabase";
 
 const DEFAULT_HERO = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
 
+type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number };
+
 type EventRow = {
   id: string;
   slug: string;
@@ -24,6 +26,7 @@ type EventRow = {
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
   ticket_price_kes?: number | null;
+  ticket_tiers?: TicketTierRow[] | null;
   image_focus?: string | null;
   free_registration?: boolean | null;
 };
@@ -40,14 +43,16 @@ const CFMA_2026_EVENT: EventRow = {
   description: "Theme: Celebrating Heritage, Empowering Youth Talent, and Advancing Sustainable Fashion & Eco-Tourism.",
   image_url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
   default_image_url: null,
-  ticket_campaign_slug: null, // Uses CmfAwardsTicketModal
+  ticket_campaign_slug: null,
   ticket_price_kes: null,
+  ticket_tiers: null,
   image_focus: "center center",
   free_registration: false,
 };
 
 export default function UpcomingEventsPage() {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [tieredEvent, setTieredEvent] = useState<EventRow | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +62,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,image_focus,free_registration")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -175,7 +180,7 @@ export default function UpcomingEventsPage() {
                       </span>
                     </div>
                   </Link>
-                  {(event.free_registration || event.ticket_campaign_slug || event.slug === "coast-fashion-modelling-awards-2026") && (
+                  {(event.free_registration || event.ticket_campaign_slug || event.ticket_tiers?.length || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
                       {event.free_registration ? (
                         <Link
@@ -186,12 +191,27 @@ export default function UpcomingEventsPage() {
                           <Ticket className="w-4 h-4" />
                           Register
                         </Link>
+                      ) : (event.ticket_tiers?.length ?? 0) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTieredEvent(event);
+                            setTicketModalOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Buy Ticket Online
+                        </button>
                       ) : event.slug === "coast-fashion-modelling-awards-2026" ? (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            setTieredEvent(null);
                             setTicketModalOpen(true);
                           }}
                           className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
@@ -220,7 +240,19 @@ export default function UpcomingEventsPage() {
         </div>
       </section>
 
-      <CmfAwardsTicketModal open={ticketModalOpen} onClose={() => setTicketModalOpen(false)} />
+      <CmfAwardsTicketModal
+        open={ticketModalOpen}
+        onClose={() => { setTicketModalOpen(false); setTieredEvent(null); }}
+        event={tieredEvent ? {
+          title: tieredEvent.title,
+          shortTitle: tieredEvent.title,
+          date: tieredEvent.event_date ? format(new Date(tieredEvent.event_date), "do MMMM yyyy") : "",
+          time: tieredEvent.time ?? undefined,
+          location: tieredEvent.location ?? undefined,
+          imageUrl: (tieredEvent.image_url || tieredEvent.default_image_url) ?? undefined,
+        } : undefined}
+        tiers={tieredEvent?.ticket_tiers ?? undefined}
+      />
     </div>
   );
 }

@@ -58,6 +58,8 @@ export default function EditEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [freeRegistration, setFreeRegistration] = useState(false);
+  const [useTieredTickets, setUseTieredTickets] = useState(false);
+  const [ticketTiers, setTicketTiers] = useState<Array<{ id: string; label: string; slug: string; unit_amount_kes: number }>>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -121,6 +123,10 @@ export default function EditEventPage() {
             : ""
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
+        const rawTiers = (ev as { ticket_tiers?: Array<{ id: string; label: string; slug: string; unit_amount_kes: number }> | null }).ticket_tiers;
+        const tiers = Array.isArray(rawTiers) && rawTiers.length > 0 ? rawTiers : [];
+        setUseTieredTickets(tiers.length > 0);
+        setTicketTiers(tiers.length > 0 ? tiers : [{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0 }]);
         setImageFocus(String((ev as { image_focus?: string | null }).image_focus ?? "center center"));
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
@@ -198,6 +204,7 @@ export default function EditEventPage() {
           map_url: mapUrl.trim() || null,
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           free_registration: freeRegistration,
+          ticket_tiers: useTieredTickets && ticketTiers.length > 0 ? ticketTiers : null,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
         })
@@ -429,6 +436,90 @@ export default function EditEventPage() {
           </label>
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="tiered-tickets-edit"
+            type="checkbox"
+            checked={useTieredTickets}
+            onChange={(e) => {
+              setUseTieredTickets(e.target.checked);
+              if (e.target.checked && ticketTiers.length === 0) setTicketTiers([{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0 }]);
+            }}
+            disabled={freeRegistration}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="tiered-tickets-edit" className="text-sm font-medium text-gray-700">
+            Tiered tickets (e.g. Regular, VIP, VVIP). Opens a ticket banner/modal on the upcoming events page with multiple categories.
+          </label>
+        </div>
+
+        {useTieredTickets && !freeRegistration && (
+          <div className="rounded-lg border border-gray-200 p-4 bg-gray-50 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">Ticket tiers</label>
+              <button
+                type="button"
+                onClick={() => setTicketTiers((t) => [...t, { id: `tier-${t.length}`, label: "", slug: "", unit_amount_kes: 0 }])}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                + Add tier
+              </button>
+            </div>
+            {ticketTiers.map((tier, i) => (
+              <div key={tier.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                <div className="sm:col-span-4">
+                  <label className="block text-xs text-gray-500 mb-1">Label (e.g. Regular, VIP)</label>
+                  <input
+                    value={tier.label}
+                    onChange={(e) =>
+                      setTicketTiers((prev) => prev.map((p, j) => (j === i ? { ...p, label: e.target.value } : p)))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder="e.g. Early bird - Regular"
+                  />
+                </div>
+                <div className="sm:col-span-4">
+                  <label className="block text-xs text-gray-500 mb-1">Campaign slug</label>
+                  <input
+                    value={tier.slug}
+                    onChange={(e) =>
+                      setTicketTiers((prev) => prev.map((p, j) => (j === i ? { ...p, slug: e.target.value.trim() } : p)))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                    placeholder="e.g. cfma-2026"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs text-gray-500 mb-1">Price (KES)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={tier.unit_amount_kes || ""}
+                    onChange={(e) =>
+                      setTicketTiers((prev) =>
+                        prev.map((p, j) => (j === i ? { ...p, unit_amount_kes: Number(e.target.value) || 0 } : p))
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setTicketTiers((prev) => prev.filter((_, j) => j !== i))}
+                    disabled={ticketTiers.length <= 1}
+                    className="w-full py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+            <p className="text-xs text-gray-500">Each tier must have a Fusion Xpress ticket campaign with the same slug.</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Ticket campaign slug (optional)</label>
@@ -436,7 +527,7 @@ export default function EditEventPage() {
               value={ticketCampaignSlug}
               onChange={(e) => setTicketCampaignSlug(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-              disabled={freeRegistration}
+              disabled={freeRegistration || useTieredTickets}
             />
           </div>
           <div>

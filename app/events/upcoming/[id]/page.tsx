@@ -24,6 +24,8 @@ import SponsorDropdown from "@/components/SponsorDropdown";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
+type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number };
+
 type DbEvent = {
   id: string;
   slug: string;
@@ -37,6 +39,7 @@ type DbEvent = {
   image_url: string | null;
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
+  ticket_tiers?: TicketTierRow[] | null;
   payment_link: string | null;
   document_url: string | null;
   document_label: string | null;
@@ -566,10 +569,12 @@ function CfmaEventDetail() {
 }
 
 function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
   const objectPosition = (event.image_focus as string | null) || "center center";
   const eventDate = new Date(event.event_date);
   const hasTicket = !!event.ticket_campaign_slug;
+  const hasTieredTickets = (event.ticket_tiers?.length ?? 0) > 0;
   const hasPayment = !!event.payment_link;
   const hasFreeReg = !!event.free_registration;
   const hasDocument = !!event.document_url;
@@ -639,7 +644,17 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   Register
                 </Link>
               )}
-              {hasTicket && !hasFreeReg && (
+              {hasTieredTickets && !hasFreeReg && (
+                <button
+                  type="button"
+                  onClick={() => setTicketModalOpen(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                >
+                  <Ticket className="w-5 h-5" />
+                  Buy Ticket Online
+                </button>
+              )}
+              {hasTicket && !hasFreeReg && !hasTieredTickets && (
                 <Link
                   href={`/${event.ticket_campaign_slug}`}
                   target="_blank"
@@ -772,6 +787,22 @@ function GenericUpcomingEventDetail({
           </div>
         </motion.div>
       </div>
+
+      {hasTieredTickets && (
+        <CmfAwardsTicketModal
+          open={ticketModalOpen}
+          onClose={() => setTicketModalOpen(false)}
+          event={{
+            title: event.title,
+            shortTitle: event.title,
+            date: format(eventDate, "do MMMM yyyy"),
+            time: event.time ?? undefined,
+            location: event.location ?? undefined,
+            imageUrl: event.image_url || event.default_image_url ?? undefined,
+          }}
+          tiers={event.ticket_tiers ?? undefined}
+        />
+      )}
     </div>
   );
 }
@@ -797,7 +828,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();

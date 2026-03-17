@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
-const EVENT = {
+const DEFAULT_EVENT = {
   title: "Coast Fashion and Modelling Awards 2026",
   shortTitle: "CFMA 2026",
   date: "15th August 2026",
@@ -16,13 +16,29 @@ const EVENT = {
   imageUrl: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg",
 };
 
-const TICKET_TIERS = [
+const DEFAULT_TIERS = [
   { id: "regular", label: "Early bird - Regular", slug: "cfma-2026", unitAmount: 500 },
   { id: "vip", label: "Early bird - VIP", slug: "cfma-2026-vip", unitAmount: 1500 },
   { id: "vvip", label: "Early bird - VVIP", slug: "cfma-2026-vvip", unitAmount: 3500 },
-] as const;
+];
 
 const STEPS = ["Select tickets", "Details", "Payment"] as const;
+
+export type TicketTierInput = {
+  id: string;
+  label: string;
+  slug: string;
+  unit_amount_kes: number;
+};
+
+export type EventTicketModalEvent = {
+  title: string;
+  shortTitle?: string;
+  date: string;
+  time?: string;
+  location?: string;
+  imageUrl?: string | null;
+};
 
 type FormDetails = {
   company: string;
@@ -37,11 +53,26 @@ type FormDetails = {
 type Props = {
   open: boolean;
   onClose: () => void;
+  /** When provided, modal shows this event and tiers (Fusion Xpress tiered events). Otherwise CFMA 2026 defaults. */
+  event?: EventTicketModalEvent | null;
+  tiers?: TicketTierInput[] | null;
 };
 
-export default function CmfAwardsTicketModal({ open, onClose }: Props) {
+function normalizeTiers(tiers: TicketTierInput[] | null | undefined): Array<{ id: string; label: string; slug: string; unitAmount: number }> {
+  if (!tiers?.length) return DEFAULT_TIERS;
+  return tiers.map((t) => ({ id: t.id, label: t.label, slug: t.slug, unitAmount: t.unit_amount_kes }));
+}
+
+export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, tiers: tiersProp }: Props) {
+  const EVENT = eventProp ?? DEFAULT_EVENT;
+  const TICKET_TIERS = useMemo(() => normalizeTiers(tiersProp), [tiersProp]);
+  const shortTitle = EVENT.shortTitle ?? EVENT.title;
+  const imageUrl = EVENT.imageUrl ?? DEFAULT_EVENT.imageUrl;
+
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
-  const [quantities, setQuantities] = useState<Record<string, number>>({ regular: 0, vip: 0, vvip: 0 });
+  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
+    Object.fromEntries(TICKET_TIERS.map((t) => [t.id, 0]))
+  );
   const [details, setDetails] = useState<FormDetails>({
     company: "",
     firstName: "",
@@ -119,7 +150,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
 
   const reset = useCallback(() => {
     setStep(1);
-    setQuantities({ regular: 0, vip: 0, vvip: 0 });
+    setQuantities(Object.fromEntries(TICKET_TIERS.map((t) => [t.id, 0])));
     setDetails({
       company: "",
       firstName: "",
@@ -137,7 +168,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
     setAppliedCoupon(null);
     setPromoError(null);
     setAgreedToTerms(false);
-  }, []);
+  }, [TICKET_TIERS]);
 
   const goBack = () => {
     setError(null);
@@ -360,7 +391,7 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
         exit={{ opacity: 0 }}
         role="dialog"
         aria-modal="true"
-        aria-label="CFMA 2026 ticket purchase"
+        aria-label={eventProp ? `${EVENT.title} ticket purchase` : "CFMA 2026 ticket purchase"}
         onMouseDown={(e) => e.target === e.currentTarget && onClose()}
       >
         <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
@@ -384,10 +415,10 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
             {/* Left: main content */}
             <div className="md:col-span-3 p-4 pt-12 sm:p-6 md:p-8">
               <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
-                <span>{EVENT.shortTitle}</span>
+                <span>{shortTitle}</span>
                 <span>·</span>
                 <span>{EVENT.date}</span>
-                <span>{EVENT.time}</span>
+                <span>{EVENT.time ?? ""}</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
@@ -894,13 +925,13 @@ export default function CmfAwardsTicketModal({ open, onClose }: Props) {
               <div className="mt-4 sm:mt-6 pt-4 border-t border-gray-200">
                 <div className="relative h-16 sm:aspect-video sm:h-auto rounded-lg overflow-hidden bg-gray-200">
                   <Image
-                    src={EVENT.imageUrl}
-                    alt={EVENT.shortTitle}
+                    src={imageUrl}
+                    alt={shortTitle}
                     fill
                     className="object-cover"
                   />
                 </div>
-                <div className="mt-3 font-semibold text-gray-900">{EVENT.shortTitle}</div>
+                <div className="mt-3 font-semibold text-gray-900">{shortTitle}</div>
                 <div className="text-sm text-gray-600">
                   {EVENT.date} {EVENT.time}
                 </div>
