@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, Ticket, Vote } from "lucide-react";
+import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, Ticket, UserPlus, Vote, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -52,6 +52,12 @@ export default function DashboardCampaignsPage() {
   const [error, setError] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignWithStats[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [assignCampaign, setAssignCampaign] = useState<CampaignWithStats | null>(null);
+  const [assignTargetUserId, setAssignTargetUserId] = useState("");
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [usersList, setUsersList] = useState<Array<{ user_id: string; email: string; role: string }>>([]);
+  const [usersListLoading, setUsersListLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -120,12 +126,55 @@ export default function DashboardCampaignsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user, isFullAdmin]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, router, user, isFullAdmin, refreshKey]);
 
   const origin = useMemo(() => {
     if (typeof window === "undefined") return "";
     return window.location.origin;
   }, []);
+
+  // When opening assign modal, fetch portal users (admin only).
+  useEffect(() => {
+    if (!assignCampaign || !isFullAdmin) return;
+    let cancelled = false;
+    const load = async () => {
+      setUsersListLoading(true);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) return;
+        const res = await fetch("/api/fusion-xpress/users", { headers: { Authorization: `Bearer ${token}` } });
+        const json = (await res.json()) as { users?: Array<{ user_id: string; email: string; role: string }>; error?: string };
+        if (!cancelled && res.ok && json.users) setUsersList(json.users);
+      } catch {
+        if (!cancelled) setUsersList([]);
+      } finally {
+        if (!cancelled) setUsersListLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [assignCampaign, isFullAdmin]);
+
+  const handleAssignToClient = async () => {
+    if (!assignCampaign || !assignTargetUserId) return;
+    setAssignLoading(true);
+    setError(null);
+    try {
+      const { error: updateErr } = await supabase
+        .from("campaigns")
+        .update({ created_by: assignTargetUserId })
+        .eq("id", assignCampaign.id);
+      if (updateErr) throw updateErr;
+      setAssignCampaign(null);
+      setAssignTargetUserId("");
+      setRefreshKey((k) => k + 1);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to assign campaign");
+    } finally {
+      setAssignLoading(false);
+    }
+  };
 
   const copyLink = async (slug: string) => {
     const url = `${origin}/${slug}`;
@@ -353,6 +402,17 @@ export default function DashboardCampaignsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2">
+                      {isFullAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => { setAssignCampaign(c); setAssignTargetUserId(""); }}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-primary-200 hover:bg-primary-50 text-primary-700 font-semibold"
+                          title="Assign this campaign to a client so it appears in their dashboard"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                          Assign to client
+                        </button>
+                      )}
                       {hasFeature("create_campaign") && (
                         <Link
                           href={`/dashboard/campaigns/${c.id}/edit`}
@@ -414,6 +474,63 @@ export default function DashboardCampaignsPage() {
             })
         )}
       </div>
+
+      {/* Assign campaign to client modal (admin only) */}
+      {assignCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-extrabold text-gray-900">Assign campaign to client</h3>
+              <button
+                type="button"
+                onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">
+              <strong>{assignCampaign.title}</strong> will appear in the selected user&apos;s dashboard.
+            </p>
+            {usersListLoading ? (
+              <p className="text-gray-500 text-sm">Loading users…</p>
+            ) : (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select user (client)</label>
+                <select
+                  value={assignTargetUserId}
+                  onChange={(e) => setAssignTargetUserId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
+                >
+                  <option value="">— Select —</option>
+                  {usersList.map((u) => (
+                    <option key={u.user_id} value={u.user_id}>
+                      {u.email} {u.role !== "client" ? `(${u.role})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-6 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
+                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignToClient}
+                    disabled={assignLoading || !assignTargetUserId}
+                    className="px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {assignLoading ? "Assigning…" : "Assign"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
