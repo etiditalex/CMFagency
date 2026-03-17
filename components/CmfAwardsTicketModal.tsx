@@ -29,6 +29,8 @@ export type TicketTierInput = {
   label: string;
   slug: string;
   unit_amount_kes: number;
+  /** Optional perks/inclusions for this tier (e.g. "Cocktail & Water", "Whiskey/Vodka/Gin + 2 Soda + 2 Water") */
+  inclusions?: string[];
 };
 
 export type EventTicketModalEvent = {
@@ -58,9 +60,15 @@ type Props = {
   tiers?: TicketTierInput[] | null;
 };
 
-function normalizeTiers(tiers: TicketTierInput[] | null | undefined): Array<{ id: string; label: string; slug: string; unitAmount: number }> {
+function normalizeTiers(tiers: TicketTierInput[] | null | undefined): Array<{ id: string; label: string; slug: string; unitAmount: number; inclusions?: string[] }> {
   if (!tiers?.length) return DEFAULT_TIERS;
-  return tiers.map((t) => ({ id: t.id, label: t.label, slug: t.slug, unitAmount: t.unit_amount_kes }));
+  return tiers.map((t) => ({
+    id: t.id,
+    label: t.label,
+    slug: t.slug,
+    unitAmount: t.unit_amount_kes,
+    inclusions: Array.isArray(t.inclusions) && t.inclusions.length > 0 ? t.inclusions : undefined,
+  }));
 }
 
 export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, tiers: tiersProp }: Props) {
@@ -458,11 +466,16 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                             key={tier.id}
                             className="flex items-center justify-between gap-4 py-3 border-b border-gray-100"
                           >
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <div className="font-semibold text-gray-900">{tier.label}</div>
                               <div className="text-primary-600 font-bold">
                                 KES {tier.unitAmount.toLocaleString()}.00
                               </div>
+                              {tier.inclusions?.length ? (
+                                <div className="mt-1 text-xs text-gray-600">
+                                  Includes: {tier.inclusions.join(" · ")}
+                                </div>
+                              ) : null}
                             </div>
                             <div className="flex items-center gap-2">
                               <button

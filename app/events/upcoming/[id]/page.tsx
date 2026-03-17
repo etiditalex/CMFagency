@@ -24,7 +24,7 @@ import SponsorDropdown from "@/components/SponsorDropdown";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
-type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number };
+type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] };
 
 type DbEvent = {
   id: string;

@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 
 const DEFAULT_HERO = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
 
-type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number };
+type TicketTierRow = { id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] };
 
 type EventRow = {
   id: string;
