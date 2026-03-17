@@ -7,6 +7,7 @@ import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, 
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { supabase } from "@/lib/supabase";
 
 function isMissingPortalMembersTable(err: any) {
@@ -73,13 +74,62 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        // RLS returns: for admins = all campaigns; for clients = campaigns they created + campaigns for their events (fusion_events.created_by = user)
-        const { data: campaignRows, error: campaignsError } = await supabase
+        let campaignsQuery = supabase
           .from("campaigns")
           .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
           .order("created_at", { ascending: false });
 
-        if (campaignsError) throw campaignsError;
+        // Admins see all campaigns. Clients see only: (1) campaigns they created, (2) campaigns for events they own.
+        let campaignRows: CampaignRow[] | null = null;
+        if (isFullAdmin) {
+          const { data, error: campaignsError } = await campaignsQuery;
+          if (campaignsError) throw campaignsError;
+          campaignRows = data;
+        } else if (user?.id) {
+          const [ownedRes, eventsRes] = await Promise.all([
+            supabase
+              .from("campaigns")
+              .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
+              .eq("created_by", user.id)
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("fusion_events")
+              .select("ticket_campaign_slug,ticket_tiers")
+              .eq("created_by", user.id),
+          ]);
+          if (ownedRes.error) throw ownedRes.error;
+          const byId = new Map<string, CampaignRow>((ownedRes.data ?? []).map((c) => [c.id, c as CampaignRow]));
+          const eventSlugs = new Set<string>();
+          for (const ev of eventsRes.data ?? []) {
+            const row = ev as { ticket_campaign_slug?: string | null; ticket_tiers?: Array<{ slug?: string }> | null };
+            const s = normalizeSlug(String(row.ticket_campaign_slug ?? ""));
+            if (s) eventSlugs.add(s);
+            const tiers = Array.isArray(row.ticket_tiers) ? row.ticket_tiers : [];
+            for (const t of tiers) {
+              const ts = normalizeSlug(String(t?.slug ?? ""));
+              if (ts) eventSlugs.add(ts);
+            }
+          }
+          if (eventSlugs.size > 0) {
+            const { data: eventCampaigns, error: eventErr } = await supabase
+              .from("campaigns")
+              .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
+              .in("slug", Array.from(eventSlugs))
+              .order("created_at", { ascending: false });
+            if (!eventErr && eventCampaigns?.length) {
+              for (const c of eventCampaigns as CampaignRow[]) {
+                if (!byId.has(c.id)) byId.set(c.id, c);
+              }
+            }
+          }
+          campaignRows = Array.from(byId.values()).sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        } else {
+          campaignRows = [];
+        }
+
+        if (campaignRows === null) campaignRows = [];
 
         // Stats view is optional; if it's missing, still show campaigns + links.
         const { data: statsRows, error: statsError } = await supabase
