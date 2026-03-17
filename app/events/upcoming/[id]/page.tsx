@@ -720,6 +720,22 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
           </div>
         </motion.div>
       </div>
+
+      {hasTieredTickets && (
+        <CmfAwardsTicketModal
+          open={ticketModalOpen}
+          onClose={() => setTicketModalOpen(false)}
+          event={{
+            title: event.title,
+            shortTitle: event.title,
+            date: format(eventDate, "do MMMM yyyy"),
+            time: event.time ?? undefined,
+            location: event.location ?? undefined,
+            imageUrl: (event.image_url || event.default_image_url) ?? undefined,
+          }}
+          tiers={event.ticket_tiers ?? undefined}
+        />
+      )}
     </div>
   );
 }
@@ -787,22 +803,6 @@ function GenericUpcomingEventDetail({
           </div>
         </motion.div>
       </div>
-
-      {hasTieredTickets && (
-        <CmfAwardsTicketModal
-          open={ticketModalOpen}
-          onClose={() => setTicketModalOpen(false)}
-          event={{
-            title: event.title,
-            shortTitle: event.title,
-            date: format(eventDate, "do MMMM yyyy"),
-            time: event.time ?? undefined,
-            location: event.location ?? undefined,
-            imageUrl: event.image_url || event.default_image_url ?? undefined,
-          }}
-          tiers={event.ticket_tiers ?? undefined}
-        />
-      )}
     </div>
   );
 }
