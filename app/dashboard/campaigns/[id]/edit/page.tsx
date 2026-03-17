@@ -208,6 +208,23 @@ export default function EditCampaignPage() {
       const normalizedSlug = slugify(slug);
       if (!normalizedSlug) throw new Error("Slug is required");
 
+      const titleTrim = title.trim();
+      const { data: otherBySlug } = await supabase
+        .from("campaigns")
+        .select("id")
+        .eq("slug", normalizedSlug)
+        .neq("id", campaignId)
+        .maybeSingle();
+      if (otherBySlug) throw new Error("Another campaign already uses this slug. Choose a different slug.");
+
+      const { data: othersByTitle } = await supabase
+        .from("campaigns")
+        .select("id,title")
+        .ilike("title", titleTrim)
+        .neq("id", campaignId);
+      const titleMatch = othersByTitle?.find((r: { title: string }) => r.title.trim().toLowerCase() === titleTrim.toLowerCase());
+      if (titleMatch) throw new Error("Another campaign already uses this title. Choose a different title.");
+
       let finalImageUrl: string | null = null;
       if (imageFile) {
         finalImageUrl = await uploadImageFile(imageFile);
@@ -219,7 +236,7 @@ export default function EditCampaignPage() {
         .from("campaigns")
         .update({
           type,
-          title: title.trim(),
+          title: titleTrim,
           slug: normalizedSlug,
           description: description.trim() || null,
           image_url: finalImageUrl,

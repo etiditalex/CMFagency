@@ -131,6 +131,17 @@ export default function NewCampaignPage() {
       const normalizedSlug = slugify(slug);
       if (!normalizedSlug) throw new Error("Slug is required");
 
+      const titleTrim = title.trim();
+      const { data: existingBySlug } = await supabase.from("campaigns").select("id").eq("slug", normalizedSlug).maybeSingle();
+      if (existingBySlug) throw new Error("A campaign with this slug already exists. Choose a different slug.");
+
+      const { data: existingByTitle } = await supabase
+        .from("campaigns")
+        .select("id,title")
+        .ilike("title", titleTrim);
+      const titleMatch = existingByTitle?.find((r: { title: string }) => r.title.trim().toLowerCase() === titleTrim.toLowerCase());
+      if (titleMatch) throw new Error("A campaign with this title already exists. Choose a different title.");
+
       let finalImageUrl: string | null = null;
       if (imageFile) {
         finalImageUrl = await uploadImageFile(imageFile);
@@ -142,7 +153,7 @@ export default function NewCampaignPage() {
         .from("campaigns")
         .insert({
           type,
-          title: title.trim(),
+          title: titleTrim,
           slug: normalizedSlug,
           description: description.trim() || null,
           image_url: finalImageUrl,

@@ -500,13 +500,13 @@ export default function DashboardCampaignsPage() {
                         <Copy className="w-4 h-4" />
                         Copy
                       </button>
-                      {hasFeature("create_campaign") && (
+                      {(hasFeature("create_campaign") || isFullAdmin) && (
                         <button
                           type="button"
                           onClick={() => handleDelete(c.id, c.title)}
                           disabled={deletingId === c.id}
                           className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-200 hover:bg-red-50 text-red-700 font-semibold disabled:opacity-50"
-                          title="Delete campaign"
+                          title={isFullAdmin ? "Delete campaign (admin: can remove duplicates)" : "Delete campaign"}
                         >
                           <Trash2 className="w-4 h-4" />
                           {deletingId === c.id ? "Deleting…" : "Delete"}
