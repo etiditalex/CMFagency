@@ -10,6 +10,7 @@ import {
   Pencil,
   Plus,
   Shield,
+  Smartphone,
   Ticket,
   UserCog,
   UserPlus,
@@ -17,6 +18,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -61,12 +63,19 @@ export default function DashboardUsersPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [users, setUsers] = useState<
-    Array<{ user_id: string; email: string; role: string; tier: string; features: string[]; created_at: string }>
+    Array<{ user_id: string; email: string; role: string; tier: string; features: string[]; created_at: string; has_totp?: boolean }>
   >([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
   const [editForm, setEditForm] = useState<{ role: string; tier: string; features: Record<string, boolean> } | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const [totpUser, setTotpUser] = useState<typeof users[0] | null>(null);
+  const [totpSetupUrl, setTotpSetupUrl] = useState<string | null>(null);
+  const [totpSecret, setTotpSecret] = useState<string | null>(null);
+  const [totpConfirmCode, setTotpConfirmCode] = useState("");
+  const [totpSetupLoading, setTotpSetupLoading] = useState(false);
+  const [totpConfirmLoading, setTotpConfirmLoading] = useState(false);
 
   const loadUsers = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -235,6 +244,72 @@ export default function DashboardUsersPage() {
       setError(err?.message ?? "Failed to update user");
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const openTotpSetup = (u: typeof users[0]) => {
+    setTotpUser(u);
+    setTotpSetupUrl(null);
+    setTotpSecret(null);
+    setTotpConfirmCode("");
+    setSuccess(null);
+    setError(null);
+  };
+
+  const startTotpSetup = async () => {
+    if (!totpUser) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    setTotpSetupLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/fusion-xpress/users/${totpUser.user_id}/2fa-totp-setup`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { otpauthUrl?: string; secret?: string; error?: string };
+      if (!res.ok) throw new Error(json?.error ?? "Setup failed");
+      setTotpSetupUrl(json.otpauthUrl ?? null);
+      setTotpSecret(json.secret ?? null);
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to start setup");
+    } finally {
+      setTotpSetupLoading(false);
+    }
+  };
+
+  const confirmTotpForUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!totpUser) return;
+    const code = totpConfirmCode.trim().replace(/\D/g, "").slice(0, 6);
+    if (code.length !== 6) {
+      setError("Enter the 6-digit code from your authenticator app");
+      return;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    setTotpConfirmLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/fusion-xpress/users/${totpUser.user_id}/2fa-totp-confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok) throw new Error(json?.error ?? "Invalid code");
+      setSuccess(`Google Authenticator enabled for ${totpUser.email}. You can sign in as them using the code from your app.`);
+      setTotpUser(null);
+      setTotpSetupUrl(null);
+      setTotpSecret(null);
+      setTotpConfirmCode("");
+      loadUsers();
+    } catch (e: any) {
+      setError(e?.message ?? "Verification failed");
+    } finally {
+      setTotpConfirmLoading(false);
     }
   };
 
@@ -488,16 +563,36 @@ export default function DashboardUsersPage() {
                             : "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {isFullAdmin && (
-                          <button
-                            type="button"
-                            onClick={() => openEdit(u)}
-                            className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Edit
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                          {isFullAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(u)}
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-gray-200 hover:bg-gray-100 text-gray-700 font-medium"
+                            >
+                              <Pencil className="w-4 h-4" />
+                              Edit
+                            </button>
+                          )}
+                          {(isFullAdmin || isAdmin) && (u.role === "client" || u.role === "manager") && (
+                            u.has_totp ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-50 text-green-700 text-xs font-medium">
+                                <Smartphone className="w-4 h-4" />
+                                2FA
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => openTotpSetup(u)}
+                                className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-primary-200 hover:bg-primary-50 text-primary-700 font-medium"
+                                title="Set up Google Authenticator so you can sign in as this user without email code"
+                              >
+                                <Smartphone className="w-4 h-4" />
+                                Set up 2FA
+                              </button>
+                            )
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -507,6 +602,87 @@ export default function DashboardUsersPage() {
           </div>
         )}
       </div>
+
+      {/* Set up Google Authenticator for another user (admin/manager) */}
+      {totpUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-extrabold text-gray-900">Set up Google Authenticator</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setTotpUser(null);
+                  setTotpSetupUrl(null);
+                  setTotpSecret(null);
+                  setTotpConfirmCode("");
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 mb-4">For <strong>{totpUser.email}</strong>. Scan with your authenticator app so you can sign in as them without needing the email code.</p>
+            {!totpSetupUrl ? (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={startTotpSetup}
+                  disabled={totpSetupLoading}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
+                >
+                  <Smartphone className="w-5 h-5" />
+                  {totpSetupLoading ? "Generating…" : "Generate QR code"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-gray-700">Scan with Google Authenticator (or any TOTP app), then enter the 6-digit code below.</p>
+                <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
+                  <QRCodeSVG value={totpSetupUrl} size={180} level="M" />
+                </div>
+                {totpSecret && (
+                  <p className="text-xs text-gray-500">
+                    Manual entry: <code className="break-all bg-gray-100 px-1 rounded">{totpSecret}</code>
+                  </p>
+                )}
+                <form onSubmit={confirmTotpForUser} className="space-y-3">
+                  <label className="block text-sm font-semibold text-gray-700">Verification code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    value={totpConfirmCode}
+                    onChange={(e) => setTotpConfirmCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTotpSetupUrl(null);
+                        setTotpSecret(null);
+                      }}
+                      className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={totpConfirmLoading || totpConfirmCode.replace(/\D/g, "").length !== 6}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
+                    >
+                      {totpConfirmLoading ? "Verifying…" : "Verify and enable"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Edit user modal */}
       {editingUser && editForm && (

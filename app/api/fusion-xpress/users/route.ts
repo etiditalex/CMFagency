@@ -46,6 +46,12 @@ export async function GET(req: NextRequest) {
     if (pmErr) return NextResponse.json({ error: pmErr.message }, { status: 500 });
     const rows = members ?? [];
 
+    const { data: totpRows } = await admin
+      .from("portal_user_totp")
+      .select("user_id")
+      .not("verified_at", "is", null);
+    const hasTotpById = new Set((totpRows ?? []).map((r: { user_id: string }) => r.user_id));
+
     const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const emailsById: Record<string, string> = {};
     for (const u of usersData?.users ?? []) {
@@ -59,6 +65,7 @@ export async function GET(req: NextRequest) {
       tier: m.tier,
       features: Array.isArray(m.features) ? m.features : [],
       created_at: (m as any).created_at,
+      has_totp: hasTotpById.has(m.user_id),
     }));
 
     return NextResponse.json({ users: list });
