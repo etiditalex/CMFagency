@@ -52,8 +52,11 @@ function parseRefFromInput(input: string): string {
   const txRefMatch = trimmed.match(TX_REF_PATTERN);
   if (txRefMatch && txRefMatch[0]) return txRefMatch[0];
 
-  // Fallback: any token that matches ref pattern (e.g. QR with only the ref)
+  // Free-reg invite QR may encode "REG-XXXX\nreg_slug_hex" — prefer reg_ so gate finds the attendee
   const tokens = trimmed.split(/\s+/);
+  const regToken = tokens.map((t) => t.trim()).find((t) => /^reg_[a-z0-9._-]+$/i.test(t) && REF_PATTERN.test(t));
+  if (regToken) return regToken;
+
   for (const token of tokens) {
     const cleaned = token.trim();
     if (REF_PATTERN.test(cleaned)) return cleaned;

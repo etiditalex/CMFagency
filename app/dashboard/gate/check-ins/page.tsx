@@ -13,6 +13,7 @@ type CheckInRow = {
   checked_in_at: string | null;
   reference: string;
   campaign: string;
+  event_slug?: string | null;
   type: string;
   payer_name: string;
   email: string;
@@ -21,11 +22,15 @@ type CheckInRow = {
   quantity: number;
 };
 
+type EventOption = { slug: string; title: string };
+
 export default function GateCheckInsPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
   const [checkIns, setCheckIns] = useState<CheckInRow[]>([]);
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [eventSlug, setEventSlug] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -41,6 +46,24 @@ export default function GateCheckInsPage() {
     if (!isAuthenticated || !user || !isPortalMember || !hasFeature("reports")) return;
 
     let cancelled = false;
+    const loadEvents = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/gate/events", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok || cancelled) return;
+      const data = (await res.json()) as { events?: EventOption[] };
+      if (!cancelled && data.events) setEvents(data.events);
+    };
+    loadEvents();
+    return () => { cancelled = true; };
+  }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature]);
+
+  useEffect(() => {
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user || !isPortalMember || !hasFeature("reports")) return;
+
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -48,9 +71,8 @@ export default function GateCheckInsPage() {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
         if (!token) throw new Error("Not logged in");
-        const res = await fetch("/api/gate/check-ins", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const url = eventSlug ? `/api/gate/check-ins?event_slug=${encodeURIComponent(eventSlug)}` : "/api/gate/check-ins";
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           throw new Error((j as { error?: string }).error ?? `Failed (${res.status})`);
@@ -65,7 +87,7 @@ export default function GateCheckInsPage() {
     };
     load();
     return () => { cancelled = true; };
-  }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature]);
+  }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature, eventSlug]);
 
   const handleDownload = async () => {
     setDownloading(true);
@@ -74,20 +96,24 @@ export default function GateCheckInsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Not logged in");
-      const res = await fetch("/api/gate/check-ins-export", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const url = eventSlug
+        ? `/api/gate/check-ins-export?event_slug=${encodeURIComponent(eventSlug)}`
+        : "/api/gate/check-ins-export";
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string }).error ?? `Download failed (${res.status})`);
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const disp = res.headers.get("Content-Disposition");
+      const match = disp?.match(/filename="?([^";\n]+)"?/);
+      const filename = match?.[1] ?? (eventSlug ? `gate-check-ins-${eventSlug}-${new Date().toISOString().slice(0, 10)}.csv` : `gate-check-ins-${new Date().toISOString().slice(0, 10)}.csv`);
+      const urlObj = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `gate-check-ins-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.href = urlObj;
+      a.download = filename;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(urlObj);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Download failed");
     } finally {
@@ -101,8 +127,8 @@ export default function GateCheckInsPage() {
 
   return (
     <div className="text-left max-w-5xl">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             href="/dashboard/gate"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium"
@@ -114,6 +140,20 @@ export default function GateCheckInsPage() {
             <ListChecks className="w-6 h-6 text-primary-600" />
             Check-ins
           </h2>
+          {events.length > 0 && (
+            <select
+              value={eventSlug}
+              onChange={(e) => setEventSlug(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-800 bg-white"
+            >
+              <option value="">All events</option>
+              {events.map((ev) => (
+                <option key={ev.slug} value={ev.slug}>
+                  {ev.title}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <button
           type="button"

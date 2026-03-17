@@ -109,15 +109,33 @@ export async function POST(req: NextRequest) {
     }
 
     // Free registration: resolve from event_attendees (no transaction)
-    const { data: attendee, error: attendeeErr } = await supabaseAdmin
+    let attendee: { id: string; reference?: string; name?: string | null; email?: string | null; checked_in_at?: string | null } | null = null;
+    let attendeeErr: { message: string } | null = null;
+
+    const byRef = await supabaseAdmin
       .from("event_attendees")
       .select("id, reference, name, email, checked_in_at")
       .eq("reference", ref)
       .is("transaction_id", null)
       .maybeSingle();
+    attendee = byRef.data;
+    attendeeErr = byRef.error;
+
+    // If QR contained REG-XXXXXXXX (ticket ID) instead of full reference, look up by suffix
+    if (!attendeeErr && !attendee && /^REG-[A-Z0-9]{8}$/i.test(ref)) {
+      const hex = ref.replace(/^REG-/i, "").toLowerCase();
+      const bySuffix = await supabaseAdmin
+        .from("event_attendees")
+        .select("id, reference, name, email, checked_in_at")
+        .is("transaction_id", null)
+        .filter("reference", "ilike", "%\\_" + hex)
+        .maybeSingle();
+      attendee = bySuffix.data;
+      attendeeErr = bySuffix.error;
+    }
 
     if (attendeeErr) return NextResponse.json({ error: attendeeErr.message }, { status: 500 });
-    if (!attendee) return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
+    if (!attendee) return NextResponse.json({ error: "Ticket or registration not found" }, { status: 404 });
 
     const regName = (attendee as { name?: string | null }).name?.trim?.() || (attendee as { email?: string | null }).email?.trim?.() || "—";
     const regCheckedInAt = (attendee as { checked_in_at?: string | null }).checked_in_at;

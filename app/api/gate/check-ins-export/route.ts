@@ -34,7 +34,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Gate access requires reports permission" }, { status: 403 });
   }
 
-  // RLS limits transactions to user's campaigns
+  const { searchParams } = new URL(req.url);
+  const eventSlug = searchParams.get("event_slug")?.trim() || null;
+
   const { data: rows, error } = await supabase
     .from("transactions")
     .select("reference,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status")
@@ -45,7 +47,7 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const txRows = (rows ?? []) as Array<{
+  let txRows = (rows ?? []) as Array<{
     reference: string;
     checked_in_at: string | null;
     payer_name?: string | null;
@@ -62,10 +64,49 @@ export async function GET(req: Request) {
   const { data: campaigns } = await supabase
     .from("campaigns")
     .select("id,title,slug")
-    .in("id", campaignIdsSeen);
+    .in("id", campaignIdsSeen.length ? campaignIdsSeen : ["__none__"]);
   const campaignTitleById: Record<string, string> = {};
-  for (const c of (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>) {
+  const campaignsList = (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>;
+  for (const c of campaignsList) {
     campaignTitleById[c.id] = String(c.title || c.slug || c.id);
+  }
+
+  if (eventSlug) {
+    const fe = await supabaseAdmin.from("fusion_events").select("ticket_campaign_slug").eq("slug", eventSlug).maybeSingle();
+    const ev = fe.data as { ticket_campaign_slug?: string | null } | null;
+    const campaignSlug = ev?.ticket_campaign_slug;
+    const campRow = campaignsList.find((c) => c.slug === campaignSlug);
+    const campId = campRow?.id ?? null;
+    if (campId) txRows = txRows.filter((t) => t.campaign_id === campId);
+    else txRows = [];
+  }
+
+  let attendeeQuery = supabaseAdmin
+    .from("event_attendees")
+    .select("reference,checked_in_at,name,email,event_slug")
+    .not("checked_in_at", "is", null)
+    .is("transaction_id", null)
+    .order("checked_in_at", { ascending: false })
+    .limit(10000);
+  if (eventSlug) attendeeQuery = attendeeQuery.eq("event_slug", eventSlug);
+  const { data: attendeeRows, error: attendeeErr } = await attendeeQuery;
+  if (attendeeErr) return NextResponse.json({ error: attendeeErr.message }, { status: 500 });
+
+  const regRows = (attendeeRows ?? []) as Array<{
+    reference: string;
+    checked_in_at: string | null;
+    name?: string | null;
+    email?: string | null;
+    event_slug?: string | null;
+  }>;
+  const eventSlugsSeen = [...new Set(regRows.map((r) => r.event_slug).filter(Boolean))] as string[];
+  const { data: events } = await supabaseAdmin
+    .from("fusion_events")
+    .select("slug,title")
+    .in("slug", eventSlugsSeen.length ? eventSlugsSeen : ["__none__"]);
+  const eventTitleBySlug: Record<string, string> = {};
+  for (const e of (events ?? []) as Array<{ slug: string; title?: string }>) {
+    eventTitleBySlug[e.slug] = String(e.title || e.slug);
   }
 
   const escapeCsv = (v: unknown): string => {
@@ -75,28 +116,55 @@ export async function GET(req: Request) {
     return s;
   };
 
-  const headers = ["Check-in time", "Reference", "Campaign", "Type", "Payer name", "Email", "Amount", "Currency", "Quantity"];
+  type CsvRow = { checked_in_at: string | null; reference: string; campaign: string; type: string; name: string; email: string; amount: number; currency: string; quantity: number };
+  const txCsvRows: CsvRow[] = txRows.map((t) => ({
+    checked_in_at: t.checked_in_at,
+    reference: t.reference,
+    campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
+    type: t.campaign_type === "vote" ? "Vote" : "Ticket",
+    name: (t.payer_name ?? "").trim() || "—",
+    email: (t.email ?? "").trim() || "—",
+    amount: t.amount,
+    currency: String(t.currency ?? "").toUpperCase(),
+    quantity: t.quantity ?? 0,
+  }));
+  const regCsvRows: CsvRow[] = regRows.map((a) => ({
+    checked_in_at: a.checked_in_at,
+    reference: a.reference,
+    campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
+    type: "Registration",
+    name: (a.name ?? "").trim() || "—",
+    email: (a.email ?? "").trim() || "—",
+    amount: 0,
+    currency: "",
+    quantity: 0,
+  }));
+
+  const allRows = [...txCsvRows, ...regCsvRows].sort((a, b) => {
+    const ta = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
+    const tb = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
+    return tb - ta;
+  });
+
+  const headers = ["Check-in time", "Reference", "Event/Campaign", "Type", "Name", "Email", "Amount", "Currency", "Quantity"];
   const lines = [
     headers.join(","),
-    ...txRows.map((t) => {
-      const typeLabel = t.campaign_type === "vote" ? "Vote" : "Ticket";
-      const campaignTitle = campaignTitleById[t.campaign_id] ?? t.campaign_id;
-      return [
-        escapeCsv(t.checked_in_at ? new Date(t.checked_in_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" }) : ""),
-        escapeCsv(t.reference),
-        escapeCsv(campaignTitle),
-        escapeCsv(typeLabel),
-        escapeCsv((t.payer_name ?? "").trim()),
-        escapeCsv((t.email ?? "").trim()),
-        escapeCsv(t.amount),
-        escapeCsv(String(t.currency ?? "").toUpperCase()),
-        escapeCsv(t.quantity ?? ""),
-      ].join(",");
-    }),
+    ...allRows.map((r) => [
+      escapeCsv(r.checked_in_at ? new Date(r.checked_in_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" }) : ""),
+      escapeCsv(r.reference),
+      escapeCsv(r.campaign),
+      escapeCsv(r.type),
+      escapeCsv(r.name),
+      escapeCsv(r.email),
+      escapeCsv(r.amount),
+      escapeCsv(r.currency),
+      escapeCsv(r.quantity),
+    ].join(",")),
   ];
 
   const csv = lines.join("\n");
-  const filename = `gate-check-ins-${new Date().toISOString().slice(0, 10)}.csv`;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = eventSlug ? `gate-check-ins-${eventSlug}-${dateStr}.csv` : `gate-check-ins-${dateStr}.csv`;
 
   return new NextResponse("\uFEFF" + csv, {
     status: 200,
