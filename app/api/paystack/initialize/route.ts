@@ -74,13 +74,23 @@ export async function POST(req: Request) {
     if (campaignData) {
       campaign = campaignData as CampaignRow;
     } else if (supabaseAdmin) {
-      const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
-      if (ensured) campaign = ensured;
+      const { data: adminCampaign } = await supabaseAdmin
+        .from("campaigns")
+        .select("id,created_by,type,slug,title,currency,unit_amount,max_per_txn")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (adminCampaign) {
+        campaign = adminCampaign as CampaignRow;
+      } else {
+        const ensured = await ensureCfmaCampaign(supabaseAdmin, slug);
+        if (ensured) campaign = ensured;
+      }
     }
 
     if (!campaign) {
       return NextResponse.json(
-        { error: "This ticket is not available yet. The event organizer needs to add an admin in Fusion Xpress—ticket campaigns are created automatically." },
+        { error: "This ticket is not available. The event organizer needs to create a ticket campaign in Fusion Xpress (Dashboard → Campaigns) with the same slug and set it to Active." },
         { status: 404 }
       );
     }
