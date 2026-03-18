@@ -117,9 +117,20 @@ export default function UpcomingEventsPage() {
                         className="object-cover"
                         style={{ objectPosition }}
                       />
-                      <div className="absolute top-3 left-3 bg-primary-600 rounded-lg px-4 py-3 shadow-lg">
-                        <div className="text-white font-bold text-lg leading-tight">{format(eventDate, "dd")}</div>
-                        <div className="text-white font-semibold text-xs uppercase tracking-wide">{format(eventDate, "MMM")}</div>
+                      {/* Readability: dim busy/light image areas behind the date */}
+                      <div
+                        className="absolute inset-0 pointer-events-none bg-gradient-to-br from-black/55 via-black/10 to-transparent"
+                        aria-hidden
+                      />
+                      <div
+                        className="absolute top-3 left-3 z-10 flex min-w-[4.25rem] flex-col items-center justify-center rounded-xl bg-primary-600 px-4 py-3 text-center shadow-[0_4px_24px_rgba(0,0,0,0.45)] ring-[3px] ring-white/95"
+                      >
+                        <span className="text-3xl font-extrabold leading-none tracking-tight text-white tabular-nums drop-shadow-sm">
+                          {format(eventDate, "d")}
+                        </span>
+                        <span className="mt-1 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/95">
+                          {format(eventDate, "MMM")}
+                        </span>
                       </div>
                     </div>
                     <div className="p-5">

@@ -50,7 +50,6 @@ export default function NewEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
   const [freeRegistration, setFreeRegistration] = useState(false);
-  const [freeRegistrationAskPartySize, setFreeRegistrationAskPartySize] = useState(false);
   const [useTieredTickets, setUseTieredTickets] = useState(false);
   const [ticketTiers, setTicketTiers] = useState<Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }>>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
@@ -126,7 +125,7 @@ export default function NewEventPage() {
         map_url: mapUrl.trim() || null,
         ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
         free_registration: freeRegistration,
-        free_registration_ask_party_size: freeRegistration ? freeRegistrationAskPartySize : false,
+        free_registration_ask_party_size: freeRegistration,
         ticket_tiers:
           useTieredTickets && ticketTiers.length > 0
             ? ticketTiers.map((t) => ({
@@ -370,31 +369,13 @@ export default function NewEventPage() {
             id="free-reg"
             type="checkbox"
             checked={freeRegistration}
-            onChange={(e) => {
-              setFreeRegistration(e.target.checked);
-              if (!e.target.checked) setFreeRegistrationAskPartySize(false);
-            }}
+            onChange={(e) => setFreeRegistration(e.target.checked)}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="free-reg" className="text-sm font-medium text-gray-700">
             Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
           </label>
         </div>
-        {freeRegistration && (
-          <div className="ml-7 flex items-start gap-2">
-            <input
-              id="ask-party-new"
-              type="checkbox"
-              checked={freeRegistrationAskPartySize}
-              onChange={(e) => setFreeRegistrationAskPartySize(e.target.checked)}
-              className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-            />
-            <label htmlFor="ask-party-new" className="text-sm font-medium text-gray-800">
-              Ask how many people are coming with each registrant (headcount for planners)
-            </label>
-          </div>
-        )}
-
         <div className="flex items-start gap-2">
           <input
             id="tiered-tickets"

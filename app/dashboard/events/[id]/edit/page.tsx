@@ -58,7 +58,6 @@ export default function EditEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [freeRegistration, setFreeRegistration] = useState(false);
-  const [freeRegistrationAskPartySize, setFreeRegistrationAskPartySize] = useState(false);
   const [registrations, setRegistrations] = useState<
     Array<{
       id: string;
@@ -139,9 +138,6 @@ export default function EditEventPage() {
             : ""
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
-        setFreeRegistrationAskPartySize(
-          Boolean((ev as { free_registration_ask_party_size?: boolean }).free_registration_ask_party_size)
-        );
         const rawTiers = (ev as { ticket_tiers?: Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }> | null }).ticket_tiers;
         const tiers = Array.isArray(rawTiers) && rawTiers.length > 0
           ? rawTiers.map((t) => ({ ...t, inclusions: Array.isArray(t.inclusions) ? t.inclusions : [] }))
@@ -269,7 +265,7 @@ export default function EditEventPage() {
           map_url: mapUrl.trim() || null,
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           free_registration: freeRegistration,
-          free_registration_ask_party_size: freeRegistration ? freeRegistrationAskPartySize : false,
+          free_registration_ask_party_size: freeRegistration,
           ticket_tiers:
           useTieredTickets && ticketTiers.length > 0
             ? ticketTiers.map((t) => ({
@@ -503,10 +499,7 @@ export default function EditEventPage() {
             id="free-reg-edit"
             type="checkbox"
             checked={freeRegistration}
-            onChange={(e) => {
-              setFreeRegistration(e.target.checked);
-              if (!e.target.checked) setFreeRegistrationAskPartySize(false);
-            }}
+            onChange={(e) => setFreeRegistration(e.target.checked)}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="free-reg-edit" className="text-sm font-medium text-gray-700">
@@ -516,22 +509,10 @@ export default function EditEventPage() {
 
         {freeRegistration && (
           <div className="ml-7 space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-4">
-            <div className="flex items-start gap-2">
-              <input
-                id="ask-party-edit"
-                type="checkbox"
-                checked={freeRegistrationAskPartySize}
-                onChange={(e) => setFreeRegistrationAskPartySize(e.target.checked)}
-                className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-              />
-              <label htmlFor="ask-party-edit" className="text-sm font-medium text-gray-800">
-                Ask how many people are coming with each registrant
-                <span className="block font-normal text-gray-600 mt-0.5">
-                  Useful for vow renewals, family events, etc. Organizers see total expected headcount (registrant + guests) on this page.
-                </span>
-              </label>
-            </div>
-            <div className="border-t border-amber-200/80 pt-3">
+            <p className="text-xs text-gray-600">
+              Registrants enter how many people attend with them (for headcount). Totals below include those guests.
+            </p>
+            <div>
               <h3 className="text-sm font-semibold text-gray-900 mb-2">Free registrations</h3>
               {regLoading ? (
                 <p className="text-sm text-gray-500">Loading…</p>
@@ -539,8 +520,7 @@ export default function EditEventPage() {
                 <>
                   <p className="text-sm text-gray-700 mb-2">
                     <span className="font-semibold">{regStats.count}</span> registration{regStats.count === 1 ? "" : "s"} ·{" "}
-                    <span className="font-semibold">{regStats.totalHeadcount}</span> expected people total
-                    {freeRegistrationAskPartySize ? " (including guests)" : ""}
+                    <span className="font-semibold">{regStats.totalHeadcount}</span> expected people total (including guests)
                   </p>
                   <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white text-xs">
                     <table className="w-full text-left">

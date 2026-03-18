@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const today = new Date().toISOString().slice(0, 10);
   const { data: event, error: eventErr } = await supabase
     .from("fusion_events")
-    .select("id, slug, title, event_date, time, location, venue, map_url, free_registration_ask_party_size")
+    .select("id, slug, title, event_date, time, location, venue, map_url")
     .eq("slug", slug)
     .eq("free_registration", true)
     .gte("event_date", today)
@@ -86,23 +86,20 @@ export async function POST(req: NextRequest) {
 
   const reference = generateRef(eventSlug);
 
-  const askParty = Boolean((event as { free_registration_ask_party_size?: boolean | null }).free_registration_ask_party_size);
   let additionalGuests = 0;
-  if (askParty) {
-    const raw = body?.additional_guests;
-    if (raw !== undefined && raw !== null && !(typeof raw === "string" && raw.trim() === "")) {
-      const n =
-        typeof raw === "number" && Number.isFinite(raw)
-          ? Math.floor(raw)
-          : Number.parseInt(String(raw).trim(), 10);
-      if (!Number.isFinite(n) || n < 0 || n > 50) {
-        return NextResponse.json(
-          { error: "People coming with you must be a number from 0 to 50." },
-          { status: 400 }
-        );
-      }
-      additionalGuests = n;
+  const raw = body?.additional_guests;
+  if (raw !== undefined && raw !== null && !(typeof raw === "string" && raw.trim() === "")) {
+    const n =
+      typeof raw === "number" && Number.isFinite(raw)
+        ? Math.floor(raw)
+        : Number.parseInt(String(raw).trim(), 10);
+    if (!Number.isFinite(n) || n < 0 || n > 50) {
+      return NextResponse.json(
+        { error: "People coming with you must be a number from 0 to 50." },
+        { status: 400 }
+      );
     }
+    additionalGuests = n;
   }
 
   const { error: insertErr } = await supabase.from("event_attendees").insert({
