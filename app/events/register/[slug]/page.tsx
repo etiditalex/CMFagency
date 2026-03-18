@@ -31,6 +31,7 @@ export default function EventRegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [additionalGuests, setAdditionalGuests] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 

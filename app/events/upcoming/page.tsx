@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, ArrowRight, Ticket } from "lucide-react";
+import { MapPin, ArrowRight, Ticket } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
@@ -60,13 +60,13 @@ export default function UpcomingEventsPage() {
     let cancelled = false;
     const today = format(new Date(), "yyyy-MM-dd");
     const load = async () => {
-      const { data, error } = await supabase
+      const { data, error: queryError } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
-        const dbEvents = (data ?? []) as EventRow[];
+        const dbEvents = (queryError ? [] : (data ?? [])) as EventRow[];
         const hasCfmaInDb = dbEvents.some((e) => e.slug === "coast-fashion-modelling-awards-2026");
         const merged = hasCfmaInDb
           ? dbEvents
@@ -81,39 +81,7 @@ export default function UpcomingEventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section - matching past events style */}
-      <section className="relative w-full min-h-[60vh] md:min-h-[70vh] overflow-hidden flex items-center py-20 md:py-24">
-        <div className="absolute inset-0 w-full h-full">
-          <Image
-            src={events[0]?.image_url || events[0]?.default_image_url || DEFAULT_HERO}
-            alt="Upcoming Events"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/60" />
-        </div>
-
-        <div className="container-custom relative z-10 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-              Upcoming Events
-            </h1>
-            <p className="text-lg text-white/90">
-              Discover our upcoming events. View details, get tickets, and be part
-              of the excitement.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Events List - horizontal card format matching past events */}
-      <section className="section-padding bg-white py-16">
+      <section className="section-padding bg-white pt-24 pb-16">
         <div className="container-custom max-w-6xl">
           {loading ? (
             <div className="text-center py-12">

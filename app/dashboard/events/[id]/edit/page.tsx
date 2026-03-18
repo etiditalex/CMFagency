@@ -152,8 +152,8 @@ export default function EditEventPage() {
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
         setImagePreviewUrl(img || null);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message ?? "Failed to load event");
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load event");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -287,8 +287,8 @@ export default function EditEventPage() {
 
       if (updateErr) throw updateErr;
       router.push("/dashboard/events");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to update event");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update event");
     } finally {
       setSaving(false);
     }

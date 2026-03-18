@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     email?: string;
     phone?: string;
     notes?: string;
-    additional_guests?: number;
+    additional_guests?: number | string;
   } | null;
   const slug = (body?.slug ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
   const name = (body?.name ?? "").trim();
@@ -90,8 +90,11 @@ export async function POST(req: NextRequest) {
   let additionalGuests = 0;
   if (askParty) {
     const raw = body?.additional_guests;
-    if (raw !== undefined && raw !== null && raw !== "") {
-      const n = typeof raw === "number" && !Number.isNaN(raw) ? Math.floor(raw) : Number(raw);
+    if (raw !== undefined && raw !== null && !(typeof raw === "string" && raw.trim() === "")) {
+      const n =
+        typeof raw === "number" && Number.isFinite(raw)
+          ? Math.floor(raw)
+          : Number.parseInt(String(raw).trim(), 10);
       if (!Number.isFinite(n) || n < 0 || n > 50) {
         return NextResponse.json(
           { error: "People coming with you must be a number from 0 to 50." },
