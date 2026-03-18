@@ -83,7 +83,7 @@ export async function GET(req: Request) {
 
   let attendeeQuery = supabaseAdmin
     .from("event_attendees")
-    .select("reference,checked_in_at,name,email,event_slug")
+    .select("reference,checked_in_at,name,email,event_slug,additional_guests")
     .not("checked_in_at", "is", null)
     .is("transaction_id", null)
     .order("checked_in_at", { ascending: false })
@@ -98,6 +98,7 @@ export async function GET(req: Request) {
     name?: string | null;
     email?: string | null;
     event_slug?: string | null;
+    additional_guests?: number | null;
   }>;
   const eventSlugsSeen = [...new Set(regRows.map((r) => r.event_slug).filter(Boolean))] as string[];
   const { data: events } = await supabaseAdmin
@@ -128,17 +129,20 @@ export async function GET(req: Request) {
     currency: String(t.currency ?? "").toUpperCase(),
     quantity: t.quantity ?? 0,
   }));
-  const regCsvRows: CsvRow[] = regRows.map((a) => ({
-    checked_in_at: a.checked_in_at,
-    reference: a.reference,
-    campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
-    type: "Registration",
-    name: (a.name ?? "").trim() || "—",
-    email: (a.email ?? "").trim() || "—",
-    amount: 0,
-    currency: "",
-    quantity: 0,
-  }));
+  const regCsvRows: CsvRow[] = regRows.map((a) => {
+    const g = Math.max(0, Number(a.additional_guests) || 0);
+    return {
+      checked_in_at: a.checked_in_at,
+      reference: a.reference,
+      campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
+      type: "Registration",
+      name: (a.name ?? "").trim() || "—",
+      email: (a.email ?? "").trim() || "—",
+      amount: 0,
+      currency: "",
+      quantity: 1 + g,
+    };
+  });
 
   const allRows = [...txCsvRows, ...regCsvRows].sort((a, b) => {
     const ta = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;

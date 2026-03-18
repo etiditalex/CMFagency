@@ -17,6 +17,7 @@ type EventInfo = {
   venue: string | null;
   description: string | null;
   free_registration: boolean;
+  free_registration_ask_party_size?: boolean | null;
 };
 
 export default function EventRegisterPage() {
@@ -46,7 +47,7 @@ export default function EventRegisterPage() {
       setError(null);
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,time,location,venue,description,free_registration")
+        .select("id,slug,title,event_date,time,location,venue,description,free_registration,free_registration_ask_party_size")
         .eq("slug", slug)
         .eq("free_registration", true)
         .gte("event_date", today)
@@ -79,6 +80,9 @@ export default function EventRegisterPage() {
           email: email.trim(),
           phone: phone.trim() || undefined,
           notes: notes.trim() || undefined,
+          ...(event?.free_registration_ask_party_size
+            ? { additional_guests: Math.min(50, Math.max(0, Math.floor(Number(additionalGuests)) || 0)) }
+            : {}),
         }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string; reference?: string };
@@ -192,6 +196,25 @@ export default function EventRegisterPage() {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                   />
                 </div>
+                {event.free_registration_ask_party_size && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      How many people are coming with you? *
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Not counting yourself — helps organizers plan seating and catering. Enter 0 if you&apos;re attending on your own.
+                    </p>
+                    <input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={additionalGuests}
+                      onChange={(e) => setAdditionalGuests(Math.min(50, Math.max(0, Number(e.target.value) || 0)))}
+                      required
+                      className="w-full max-w-[12rem] px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
                   <textarea

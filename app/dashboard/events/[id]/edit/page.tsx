@@ -58,6 +58,22 @@ export default function EditEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [freeRegistration, setFreeRegistration] = useState(false);
+  const [freeRegistrationAskPartySize, setFreeRegistrationAskPartySize] = useState(false);
+  const [registrations, setRegistrations] = useState<
+    Array<{
+      id: string;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      notes: string | null;
+      additional_guests?: number | null;
+      created_at: string;
+      checked_in_at: string | null;
+      reference: string;
+    }>
+  >([]);
+  const [regStats, setRegStats] = useState<{ count: number; totalHeadcount: number } | null>(null);
+  const [regLoading, setRegLoading] = useState(false);
   const [useTieredTickets, setUseTieredTickets] = useState(false);
   const [ticketTiers, setTicketTiers] = useState<Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }>>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
@@ -123,6 +139,9 @@ export default function EditEventPage() {
             : ""
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
+        setFreeRegistrationAskPartySize(
+          Boolean((ev as { free_registration_ask_party_size?: boolean }).free_registration_ask_party_size)
+        );
         const rawTiers = (ev as { ticket_tiers?: Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }> | null }).ticket_tiers;
         const tiers = Array.isArray(rawTiers) && rawTiers.length > 0
           ? rawTiers.map((t) => ({ ...t, inclusions: Array.isArray(t.inclusions) ? t.inclusions : [] }))
@@ -145,6 +164,50 @@ export default function EditEventPage() {
       cancelled = true;
     };
   }, [eventId, isFullAdmin, router, user?.id]);
+
+  useEffect(() => {
+    if (!eventId || !freeRegistration || loading || authLoading || portalLoading) {
+      if (!freeRegistration) {
+        setRegistrations([]);
+        setRegStats(null);
+      }
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setRegLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        if (!cancelled) setRegLoading(false);
+        return;
+      }
+      const res = await fetch(`/api/events/free-registrations?event_id=${encodeURIComponent(eventId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        registrations?: typeof registrations;
+        count?: number;
+        totalHeadcount?: number;
+      };
+      if (!cancelled) {
+        if (res.ok) {
+          setRegistrations(json.registrations ?? []);
+          setRegStats({
+            count: json.count ?? 0,
+            totalHeadcount: json.totalHeadcount ?? 0,
+          });
+        } else {
+          setRegistrations([]);
+          setRegStats(null);
+        }
+        setRegLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [eventId, freeRegistration, loading, authLoading, portalLoading]);
 
   const uploadImageFile = async (file: File): Promise<string | null> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -206,6 +269,7 @@ export default function EditEventPage() {
           map_url: mapUrl.trim() || null,
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           free_registration: freeRegistration,
+          free_registration_ask_party_size: freeRegistration ? freeRegistrationAskPartySize : false,
           ticket_tiers:
           useTieredTickets && ticketTiers.length > 0
             ? ticketTiers.map((t) => ({
@@ -439,13 +503,77 @@ export default function EditEventPage() {
             id="free-reg-edit"
             type="checkbox"
             checked={freeRegistration}
-            onChange={(e) => setFreeRegistration(e.target.checked)}
+            onChange={(e) => {
+              setFreeRegistration(e.target.checked);
+              if (!e.target.checked) setFreeRegistrationAskPartySize(false);
+            }}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="free-reg-edit" className="text-sm font-medium text-gray-700">
             Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
           </label>
         </div>
+
+        {freeRegistration && (
+          <div className="ml-7 space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-4">
+            <div className="flex items-start gap-2">
+              <input
+                id="ask-party-edit"
+                type="checkbox"
+                checked={freeRegistrationAskPartySize}
+                onChange={(e) => setFreeRegistrationAskPartySize(e.target.checked)}
+                className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              />
+              <label htmlFor="ask-party-edit" className="text-sm font-medium text-gray-800">
+                Ask how many people are coming with each registrant
+                <span className="block font-normal text-gray-600 mt-0.5">
+                  Useful for vow renewals, family events, etc. Organizers see total expected headcount (registrant + guests) on this page.
+                </span>
+              </label>
+            </div>
+            <div className="border-t border-amber-200/80 pt-3">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Free registrations</h3>
+              {regLoading ? (
+                <p className="text-sm text-gray-500">Loading…</p>
+              ) : regStats && regStats.count > 0 ? (
+                <>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-semibold">{regStats.count}</span> registration{regStats.count === 1 ? "" : "s"} ·{" "}
+                    <span className="font-semibold">{regStats.totalHeadcount}</span> expected people total
+                    {freeRegistrationAskPartySize ? " (including guests)" : ""}
+                  </p>
+                  <div className="max-h-64 overflow-auto rounded border border-gray-200 bg-white text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50 text-gray-600 sticky top-0">
+                        <tr>
+                          <th className="p-2 font-medium">Name</th>
+                          <th className="p-2 font-medium">Email</th>
+                          <th className="p-2 font-medium">+Guests</th>
+                          <th className="p-2 font-medium">Party</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {registrations.map((r) => {
+                          const g = Math.max(0, Number(r.additional_guests) || 0);
+                          return (
+                            <tr key={r.id} className="border-t border-gray-100">
+                              <td className="p-2">{r.name ?? "—"}</td>
+                              <td className="p-2 break-all">{r.email ?? "—"}</td>
+                              <td className="p-2">{g}</td>
+                              <td className="p-2 font-medium">{1 + g}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No registrations yet. Share the public event link so guests can register.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-start gap-2">
           <input
