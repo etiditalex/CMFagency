@@ -23,10 +23,12 @@ export default function LoginPage() {
     completeLoginVerification,
     sendLoginVerificationCode,
     loading: authLoading,
+    user,
   } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [step, setStep] = useState<Step>("form");
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [loginVerified, setLoginVerified] = useState<boolean | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,11 +42,36 @@ export default function LoginPage() {
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
 
+  // Only redirect to /application after the email/2FA code has been verified.
+  // Supabase `isAuthenticated` becomes true right after password sign-in, which is before verification.
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
+    if (authLoading) return;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/check-verified", { credentials: "include" });
+        const json = (await res.json().catch(() => ({}))) as { verified?: boolean };
+        setLoginVerified(!!json.verified);
+      } catch {
+        setLoginVerified(false);
+      }
+    })();
+  }, [authLoading]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (isAuthenticated && loginVerified) {
       router.push("/application");
+      return;
     }
-  }, [isAuthenticated, authLoading, router]);
+
+    // If user is signed in but not verified, ensure we show the code step.
+    if (isAuthenticated && loginVerified === false && user?.email) {
+      setMode("login");
+      setStep("code");
+      setFormData((prev) => ({ ...prev, email: user.email || prev.email }));
+    }
+  }, [authLoading, isAuthenticated, loginVerified, user?.email, router]);
 
   // Fetch reCAPTCHA site key at runtime so it works even when env is added after build (e.g. Vercel)
   useEffect(() => {
