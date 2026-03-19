@@ -47,8 +47,17 @@ export async function POST(req: NextRequest) {
       .eq("code", code)
       .gte("expires_at", new Date().toISOString());
 
-    if (selectErr || !rows?.length)
+    if (selectErr) {
+      // Surface the real underlying error (RLS/permissions/etc.) to debug verification failures.
+      return NextResponse.json(
+        { error: selectErr.message ?? "Failed to verify code" },
+        { status: 500 }
+      );
+    }
+
+    if (!rows?.length) {
       return NextResponse.json({ error: "Invalid or expired code" }, { status: 400 });
+    }
 
     await admin.from("site_login_codes").delete().eq("id", rows[0].id);
 
