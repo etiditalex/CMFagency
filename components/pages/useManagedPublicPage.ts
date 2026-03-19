@@ -8,6 +8,7 @@ export type ManagedPublicPage = {
   title: string;
   hero_label: string;
   description: string;
+  background_image_url?: string | null;
   features_title: string;
   features: unknown[];
   benefits_title: string;

@@ -7,6 +7,7 @@ type UpsertPayload = {
   title: string;
   hero_label: string;
   description: string;
+  background_image_url: string | null;
   features_title: string;
   features: string[];
   benefits_title: string;
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
     title: String(body.title ?? ""),
     hero_label: String(body.hero_label ?? ""),
     description: String(body.description ?? ""),
+    background_image_url: body.background_image_url ? String(body.background_image_url) : null,
     features_title: String(body.features_title ?? ""),
     features: Array.isArray(body.features) ? body.features.map((x) => String(x)) : [],
     benefits_title: String(body.benefits_title ?? ""),
@@ -99,26 +101,34 @@ export async function POST(req: NextRequest) {
   };
 
   // Postgres UPSERT by unique `route`.
-  const { error } = await admin
-    .from("fusion_managed_pages")
-    .upsert(
-      {
-        route: normalized.route,
-        section: normalized.section,
-        title: normalized.title,
-        hero_label: normalized.hero_label,
-        description: normalized.description,
-        features_title: normalized.features_title,
-        features: normalized.features,
-        benefits_title: normalized.benefits_title,
-        benefits: normalized.benefits,
-        cta_title: normalized.cta_title,
-        cta_description: normalized.cta_description,
-      },
-      { onConflict: "route" }
-    );
+  const payloadRow = {
+    route: normalized.route,
+    section: normalized.section,
+    title: normalized.title,
+    hero_label: normalized.hero_label,
+    description: normalized.description,
+    background_image_url: normalized.section === "services" ? normalized.background_image_url : null,
+    features_title: normalized.features_title,
+    features: normalized.features,
+    benefits_title: normalized.benefits_title,
+    benefits: normalized.benefits,
+    cta_title: normalized.cta_title,
+    cta_description: normalized.cta_description,
+  };
 
+  const { error } = await admin.from("fusion_managed_pages").upsert(payloadRow, { onConflict: "route" });
+
+  // Backward compat: background_image_url column may not exist until patch is applied.
   if (error) {
+    const msg = String(error.message ?? "").toLowerCase();
+    const missingCol = msg.includes("background_image_url") || msg.includes("does not exist");
+    if (missingCol) {
+      const payloadNoBg = { ...payloadRow };
+      delete (payloadNoBg as any).background_image_url;
+      const { error: err2 } = await admin.from("fusion_managed_pages").upsert(payloadNoBg as any, { onConflict: "route" });
+      if (err2) return NextResponse.json({ error: err2.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

@@ -26,9 +26,18 @@ const benefits = [
 export default function ContentCreationPage() {
   const route = "/services/content-creation";
   const { loading, page } = useManagedPublicPage(route);
+  const isManaged = !!page;
 
-  const featuresFinal = (page?.section === "services" && Array.isArray(page.features) ? (page.features as any[]).map((x) => String(x)) : features);
-  const benefitsFinal = (page?.section === "services" && Array.isArray(page.benefits) ? (page.benefits as any[]).map((x) => String(x)) : benefits);
+  const featuresFinal = isManaged
+    ? Array.isArray(page?.features)
+      ? (page!.features as any[]).map((x) => String(x))
+      : []
+    : features;
+  const benefitsFinal = isManaged
+    ? Array.isArray(page?.benefits)
+      ? (page!.benefits as any[]).map((x) => String(x))
+      : []
+    : benefits;
 
   return (
     loading && !page ? (
@@ -36,18 +45,20 @@ export default function ContentCreationPage() {
     ) : (
       <ServiceDetailTemplate
         activeHref={route}
-        title={page?.title || "Content Creation"}
-        heroLabel={page?.hero_label || "CONTENT CREATION"}
+        title={isManaged ? page?.title ?? "" : "Content Creation"}
+        heroLabel={isManaged ? page?.hero_label ?? "" : "CONTENT CREATION"}
         description={
-          page?.description ||
-          "Create engaging content that resonates with your audience, from videos and social posts to written campaigns."
+          isManaged
+            ? page?.description ?? ""
+            : "Create engaging content that resonates with your audience, from videos and social posts to written campaigns."
         }
-        featuresTitle={page?.features_title || "OUR CONTENT CREATION SERVICES"}
+        featuresTitle={isManaged ? page?.features_title ?? "" : "OUR CONTENT CREATION SERVICES"}
         features={featuresFinal}
-        benefitsTitle={page?.benefits_title || "WHY CHOOSE OUR CONTENT CREATION SERVICES?"}
+        benefitsTitle={isManaged ? page?.benefits_title ?? "" : "WHY CHOOSE OUR CONTENT CREATION SERVICES?"}
         benefits={benefitsFinal}
-        ctaTitle={page?.cta_title || "Ready to Create Compelling Content?"}
-        ctaDescription={page?.cta_description || "Let's create content that tells your story and engages your audience."}
+        ctaTitle={isManaged ? page?.cta_title ?? "" : "Ready to Create Compelling Content?"}
+        ctaDescription={isManaged ? page?.cta_description ?? "" : "Let's create content that tells your story and engages your audience."}
+        backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
         icon={Video}
       />
     )

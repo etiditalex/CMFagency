@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, ChevronLeft, Save, Trash2, Briefcase, GraduationCap, Users } from "lucide-react";
 
@@ -33,6 +33,8 @@ export default function ManagedPageEditor({ route }: { route: string }) {
   const [benefitsText, setBenefitsText] = useState("");
   const [ctaTitle, setCtaTitle] = useState("");
   const [ctaDescription, setCtaDescription] = useState("");
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState<string>("");
+  const [backgroundUploading, setBackgroundUploading] = useState(false);
   const [existing, setExisting] = useState(false);
 
   useEffect(() => {
@@ -72,20 +74,21 @@ export default function ManagedPageEditor({ route }: { route: string }) {
           setBenefitsText(Array.isArray(page.benefits) ? page.benefits.map((x: any) => String(x)).join("\n") : "");
           setCtaTitle(String(page.cta_title ?? ""));
           setCtaDescription(String(page.cta_description ?? ""));
+          setBackgroundImageUrl(String(page.background_image_url ?? ""));
         } else {
           if (cancelled) return;
           setExisting(false);
-          // Defaults for create.
-          const defaultTitle = managed.section === "services" ? "Services Page" : "Careers Page";
-          setTitle(defaultTitle);
-          setHeroLabel(managed.section.toUpperCase());
+          // Keep fields optional: leave empty if admin wants image-only.
+          setTitle("");
+          setHeroLabel("");
           setDescription("");
-          setFeaturesTitle("FEATURES");
+          setFeaturesTitle("");
           setFeaturesText("");
-          setBenefitsTitle("BENEFITS");
+          setBenefitsTitle("");
           setBenefitsText("");
-          setCtaTitle("Get Started");
-          setCtaDescription("Contact us for more information.");
+          setCtaTitle("");
+          setCtaDescription("");
+          setBackgroundImageUrl("");
         }
       } catch (e: any) {
         if (cancelled) return;
@@ -144,6 +147,7 @@ export default function ManagedPageEditor({ route }: { route: string }) {
           benefits: previewBenefits,
           cta_title: ctaTitle,
           cta_description: ctaDescription,
+          background_image_url: section === "services" ? backgroundImageUrl : null,
         }),
       });
 
@@ -183,6 +187,43 @@ export default function ManagedPageEditor({ route }: { route: string }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const onBackgroundFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!managed || managed.section !== "services") return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBackgroundUploading(true);
+    setError(null);
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+
+      const formData = new FormData();
+      formData.set("file", file);
+
+      const res = await fetch("/api/pages/background-image/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Image upload failed");
+      if (json.url) setBackgroundImageUrl(json.url);
+    } catch (e: any) {
+      setError(e?.message ?? "Image upload failed");
+    } finally {
+      setBackgroundUploading(false);
+      // allow re-uploading same file
+      e.target.value = "";
+    }
+  };
+
+  const onClearBackgroundImage = () => {
+    setBackgroundImageUrl("");
   };
 
   if (loading) {
@@ -241,6 +282,42 @@ export default function ManagedPageEditor({ route }: { route: string }) {
         <div className="xl:col-span-5">
           <div className="bg-white rounded-md shadow-sm border border-gray-200 p-5">
             <div className="space-y-4">
+              {managed?.section === "services" && (
+                <div className="space-y-3">
+                  <div className="text-sm font-bold text-gray-700">Hero background (optional)</div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload background image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={onBackgroundFileChange}
+                      disabled={backgroundUploading}
+                      className="w-full px-0"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Image is stored in the database as a data URL. Leave blank for gradient background.
+                    </p>
+                  </div>
+
+                  {backgroundUploading ? (
+                    <div className="text-sm text-primary-700 font-medium">Uploading...</div>
+                  ) : backgroundImageUrl ? (
+                    <div className="rounded-lg overflow-hidden border border-gray-200">
+                      <img src={backgroundImageUrl} alt="Background preview" className="w-full h-32 object-cover" />
+                      <div className="p-3 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={onClearBackgroundImage}
+                          className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50"
+                        >
+                          Remove image
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
@@ -328,29 +405,30 @@ export default function ManagedPageEditor({ route }: { route: string }) {
               {section === "services" ? (
                 <ServiceDetailTemplate
                   activeHref={route}
-                  title={title || "Untitled"}
-                  heroLabel={heroLabel || "LABEL"}
-                  description={description || "Add a description to see it here."}
-                  featuresTitle={featuresTitle || "FEATURES"}
-                  features={previewFeatures.length ? previewFeatures : ["Add features"]}
-                  benefitsTitle={benefitsTitle || "BENEFITS"}
-                  benefits={previewBenefits.length ? previewBenefits : ["Add benefits"]}
-                  ctaTitle={ctaTitle || "Get Started"}
-                  ctaDescription={ctaDescription || "CTA description goes here."}
+                  title={title}
+                  heroLabel={heroLabel}
+                  description={description}
+                  featuresTitle={featuresTitle}
+                  features={previewFeatures}
+                  benefitsTitle={benefitsTitle}
+                  benefits={previewBenefits}
+                  ctaTitle={ctaTitle}
+                  ctaDescription={ctaDescription}
+                  backgroundImageUrl={backgroundImageUrl || undefined}
                   icon={icon}
                 />
               ) : (
                 <CareerDetailTemplate
                   activeHref={route}
-                  title={title || "Untitled"}
-                  heroLabel={heroLabel || "LABEL"}
-                  description={description || "Add a description to see it here."}
-                  featuresTitle={featuresTitle || "FEATURES"}
-                  features={previewFeatures.length ? previewFeatures : ["Add features"]}
-                  benefitsTitle={benefitsTitle || "BENEFITS"}
-                  benefits={previewBenefits.length ? previewBenefits : ["Add benefits"]}
-                  ctaTitle={ctaTitle || "Get Started"}
-                  ctaDescription={ctaDescription || "CTA description goes here."}
+                  title={title}
+                  heroLabel={heroLabel}
+                  description={description}
+                  featuresTitle={featuresTitle}
+                  features={previewFeatures}
+                  benefitsTitle={benefitsTitle}
+                  benefits={previewBenefits}
+                  ctaTitle={ctaTitle}
+                  ctaDescription={ctaDescription}
                   icon={icon}
                 />
               )}

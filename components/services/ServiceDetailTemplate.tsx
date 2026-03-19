@@ -16,16 +16,17 @@ const SERVICES_NAV = [
 
 type ServiceDetailTemplateProps = {
   activeHref: string;
-  title: string;
-  heroLabel: string;
-  description: string;
-  featuresTitle: string;
-  features: string[];
-  benefitsTitle: string;
-  benefits: string[];
-  ctaTitle: string;
-  ctaDescription: string;
+  title?: string;
+  heroLabel?: string;
+  description?: string;
+  featuresTitle?: string;
+  features?: string[];
+  benefitsTitle?: string;
+  benefits?: string[];
+  ctaTitle?: string;
+  ctaDescription?: string;
   icon: LucideIcon;
+  backgroundImageUrl?: string;
 };
 
 export default function ServiceDetailTemplate({
@@ -40,7 +41,14 @@ export default function ServiceDetailTemplate({
   ctaTitle,
   ctaDescription,
   icon: Icon,
+  backgroundImageUrl,
 }: ServiceDetailTemplateProps) {
+  const titleText = title ?? "";
+  const heroLabelText = heroLabel ?? "";
+  const descriptionText = description ?? "";
+  const featuresArr = features ?? [];
+  const benefitsArr = benefits ?? [];
+
   return (
     <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
       <div className="bg-white border-b border-gray-200">
@@ -54,7 +62,7 @@ export default function ServiceDetailTemplate({
               SERVICES
             </Link>
             {" > "}
-            <span className="text-gray-900 font-semibold">{title.toUpperCase()}</span>
+            {titleText ? <span className="text-gray-900 font-semibold">{titleText.toUpperCase()}</span> : null}
           </div>
         </div>
       </div>
@@ -90,7 +98,20 @@ export default function ServiceDetailTemplate({
           <main className="lg:col-span-3">
             <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <div className="relative aspect-[16/7] min-h-[260px] bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800">
-                <div className="absolute inset-0 bg-black/15" />
+                {backgroundImageUrl ? (
+                  <>
+                    {/* Background image uploaded by admin (stored as data URL). */}
+                    <img
+                      src={backgroundImageUrl}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      loading="eager"
+                    />
+                    <div className="absolute inset-0 bg-black/40" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-black/15" />
+                )}
                 <div className="absolute inset-0 flex items-end p-6 md:p-8">
                   <motion.div
                     initial={{ opacity: 0, y: 16 }}
@@ -98,24 +119,33 @@ export default function ServiceDetailTemplate({
                     transition={{ duration: 0.55 }}
                     className="max-w-3xl"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-white/90 text-sm font-semibold tracking-wide">{heroLabel}</span>
-                    </div>
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-white">{title}</h1>
-                    <p className="mt-3 text-white/90 leading-relaxed">{description}</p>
+                    {(heroLabelText || titleText || descriptionText) && (
+                      <>
+                        {heroLabelText ? (
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center">
+                              <Icon className="w-6 h-6 text-white" />
+                            </div>
+                            <span className="text-white/90 text-sm font-semibold tracking-wide">{heroLabelText}</span>
+                          </div>
+                        ) : null}
+                        {titleText ? <h1 className="text-3xl md:text-4xl font-extrabold text-white">{titleText}</h1> : null}
+                        {descriptionText ? <p className="mt-3 text-white/90 leading-relaxed">{descriptionText}</p> : null}
+                      </>
+                    )}
                   </motion.div>
                 </div>
               </div>
             </div>
 
             <div className="mt-10 space-y-10">
-              <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">{featuresTitle}</h2>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {features.map((feature, index) => (
+              {featuresArr.length > 0 ? (
+                <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
+                  {featuresTitle ? (
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">{featuresTitle}</h2>
+                  ) : null}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {featuresArr.map((feature, index) => (
                     <motion.div
                       key={feature}
                       initial={{ opacity: 0, x: -10 }}
@@ -127,14 +157,18 @@ export default function ServiceDetailTemplate({
                       <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-800 font-medium">{feature}</span>
                     </motion.div>
-                  ))}
-                </div>
-              </section>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
-              <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">{benefitsTitle}</h2>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {benefits.map((benefit, index) => (
+              {benefitsArr.length > 0 ? (
+                <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
+                  {benefitsTitle ? (
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">{benefitsTitle}</h2>
+                  ) : null}
+                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {benefitsArr.map((benefit, index) => (
                     <motion.div
                       key={benefit}
                       initial={{ opacity: 0, y: 14 }}
@@ -145,23 +179,26 @@ export default function ServiceDetailTemplate({
                     >
                       <p className="text-gray-700 leading-relaxed">{benefit}</p>
                     </motion.div>
-                  ))}
-                </div>
-              </section>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
-              <section className="p-8 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl text-white">
-                <h2 className="text-2xl md:text-3xl font-extrabold mb-3">{ctaTitle}</h2>
-                <p className="text-white/90 leading-relaxed max-w-2xl">{ctaDescription}</p>
-                <div className="mt-6">
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-2 bg-white text-primary-700 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </section>
+              {ctaTitle || ctaDescription ? (
+                <section className="p-8 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl text-white">
+                  {ctaTitle ? <h2 className="text-2xl md:text-3xl font-extrabold mb-3">{ctaTitle}</h2> : null}
+                  {ctaDescription ? <p className="text-white/90 leading-relaxed max-w-2xl">{ctaDescription}</p> : null}
+                  <div className="mt-6">
+                    <Link
+                      href="/contact"
+                      className="inline-flex items-center gap-2 bg-white text-primary-700 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+                    >
+                      <span>Get Started</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </Link>
+                  </div>
+                </section>
+              ) : null}
             </div>
           </main>
         </div>

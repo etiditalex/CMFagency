@@ -7,6 +7,7 @@ type FusionManagedPage = {
   title: string;
   hero_label: string;
   description: string;
+  background_image_url: string | null;
   features_title: string;
   features: unknown[];
   benefits_title: string;
@@ -28,21 +29,28 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
 
-  const { data, error } = await supabase
-    .from("fusion_managed_pages")
-    .select(
-      "route,section,title,hero_label,description,features_title,features,benefits_title,benefits,cta_title,cta_description"
-    )
-    .eq("route", route)
-    .maybeSingle();
+  const selectWithBg =
+    "route,section,title,hero_label,description,background_image_url,features_title,features,benefits_title,benefits,cta_title,cta_description";
+  const selectWithoutBg =
+    "route,section,title,hero_label,description,features_title,features,benefits_title,benefits,cta_title,cta_description";
 
+  const { data, error } = await supabase.from("fusion_managed_pages").select(selectWithBg).eq("route", route).maybeSingle();
+
+  // Backward compat if background column doesn't exist yet.
   if (error) {
-    // If table/RLS not ready yet, keep public pages working.
     const msg = String(error.message ?? "").toLowerCase();
+    const missingCol = msg.includes("background_image_url") || msg.includes("does not exist");
     const missingTable =
       msg.includes("does not exist") || msg.includes("fusion_managed_pages") || String((error as any).code ?? "") === "42P01";
     if (missingTable) return NextResponse.json({ page: null });
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (missingCol) {
+      const { data: data2 } = await supabase
+        .from("fusion_managed_pages")
+        .select(selectWithoutBg)
+        .eq("route", route)
+        .maybeSingle();
+      return NextResponse.json({ page: (data2 as FusionManagedPage | null) ?? null });
+    }
   }
 
   return NextResponse.json({ page: (data as FusionManagedPage | null) ?? null });

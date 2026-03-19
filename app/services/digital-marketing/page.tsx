@@ -26,9 +26,18 @@ const benefits = [
 export default function DigitalMarketingPage() {
   const route = "/services/digital-marketing";
   const { loading, page } = useManagedPublicPage(route);
+  const isManaged = !!page;
 
-  const featuresFinal = (page?.section === "services" && Array.isArray(page.features) ? (page.features as any[]).map((x) => String(x)) : features);
-  const benefitsFinal = (page?.section === "services" && Array.isArray(page.benefits) ? (page.benefits as any[]).map((x) => String(x)) : benefits);
+  const featuresFinal = isManaged
+    ? Array.isArray(page?.features)
+      ? (page!.features as any[]).map((x) => String(x))
+      : []
+    : features;
+  const benefitsFinal = isManaged
+    ? Array.isArray(page?.benefits)
+      ? (page!.benefits as any[]).map((x) => String(x))
+      : []
+    : benefits;
 
   return (
     loading && !page ? (
@@ -36,18 +45,20 @@ export default function DigitalMarketingPage() {
     ) : (
       <ServiceDetailTemplate
         activeHref={route}
-        title={page?.title || "Digital Marketing"}
-        heroLabel={page?.hero_label || "DIGITAL MARKETING"}
+        title={isManaged ? page?.title ?? "" : "Digital Marketing"}
+        heroLabel={isManaged ? page?.hero_label ?? "" : "DIGITAL MARKETING"}
         description={
-          page?.description ||
-          "Reach your target audience effectively through social media marketing, email campaigns, and online reputation management. We help businesses establish a strong digital presence and drive meaningful engagement."
+          isManaged
+            ? page?.description ?? ""
+            : "Reach your target audience effectively through social media marketing, email campaigns, and online reputation management. We help businesses establish a strong digital presence and drive meaningful engagement."
         }
-        featuresTitle={page?.features_title || "OUR DIGITAL MARKETING SERVICES"}
+        featuresTitle={isManaged ? page?.features_title ?? "" : "OUR DIGITAL MARKETING SERVICES"}
         features={featuresFinal}
-        benefitsTitle={page?.benefits_title || "WHY CHOOSE OUR DIGITAL MARKETING SERVICES?"}
+        benefitsTitle={isManaged ? page?.benefits_title ?? "" : "WHY CHOOSE OUR DIGITAL MARKETING SERVICES?"}
         benefits={benefitsFinal}
-        ctaTitle={page?.cta_title || "Ready to Grow Your Digital Presence?"}
-        ctaDescription={page?.cta_description || "Let's discuss how our digital marketing services can help your business thrive in the digital landscape."}
+        ctaTitle={isManaged ? page?.cta_title ?? "" : "Ready to Grow Your Digital Presence?"}
+        ctaDescription={isManaged ? page?.cta_description ?? "" : "Let's discuss how our digital marketing services can help your business thrive in the digital landscape."}
+        backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
         icon={TrendingUp}
       />
     )

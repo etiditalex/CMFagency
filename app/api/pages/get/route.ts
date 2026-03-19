@@ -8,6 +8,7 @@ type ManagedPageRow = {
   title: string;
   hero_label: string;
   description: string;
+  background_image_url: string | null;
   features_title: string;
   features: unknown[];
   benefits_title: string;
@@ -77,15 +78,26 @@ export async function GET(req: NextRequest) {
   }
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  const { data, error } = await admin
-    .from("fusion_managed_pages")
-    .select(
-      "id,route,section,title,hero_label,description,features_title,features,benefits_title,benefits,cta_title,cta_description"
-    )
-    .eq("route", route)
-    .maybeSingle();
+  const selectWithBg =
+    "id,route,section,title,hero_label,description,background_image_url,features_title,features,benefits_title,benefits,cta_title,cta_description";
+  const selectWithoutBg =
+    "id,route,section,title,hero_label,description,features_title,features,benefits_title,benefits,cta_title,cta_description";
 
+  const { data, error } = await admin.from("fusion_managed_pages").select(selectWithBg).eq("route", route).maybeSingle();
+
+  // Backward compat: table may not have background_image_url column yet.
   if (error) {
+    const msg = String(error.message ?? "").toLowerCase();
+    const missingCol = msg.includes("background_image_url") || msg.includes("does not exist");
+    if (missingCol) {
+      const { data: data2, error: err2 } = await admin
+        .from("fusion_managed_pages")
+        .select(selectWithoutBg)
+        .eq("route", route)
+        .maybeSingle();
+      if (err2) return NextResponse.json({ error: err2.message }, { status: 500 });
+      return NextResponse.json({ page: (data2 as ManagedPageRow | null) ?? null });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
