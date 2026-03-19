@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import { GraduationCap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
+import CareerDetailTemplate from "@/components/careers/CareerDetailTemplate";
+
 const opportunities = [
   {
     title: "Marketing Opportunities",
@@ -28,6 +31,35 @@ const opportunities = [
 ];
 
 export default function InternshipsPage() {
+  const route = "/careers/internships";
+  const { loading, page } = useManagedPublicPage(route);
+
+  if (loading && !page) {
+    return (
+      <div className="pt-28 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  if (page?.section === "careers") {
+    return (
+      <CareerDetailTemplate
+        activeHref={route}
+        title={page.title || "Internship Opportunities"}
+        heroLabel={page.hero_label || "INTERNSHIPS"}
+        description={page.description || "Join our internship programs to develop skills and build your professional portfolio."}
+        featuresTitle={page.features_title || "FEATURES"}
+        features={(Array.isArray(page.features) ? page.features : []).map((x) => String(x))}
+        benefitsTitle={page.benefits_title || "BENEFITS"}
+        benefits={(Array.isArray(page.benefits) ? page.benefits : []).map((x) => String(x))}
+        ctaTitle={page.cta_title || "Get Started"}
+        ctaDescription={page.cta_description || "Contact us for more information."}
+        icon={GraduationCap}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="relative bg-gradient-to-br from-secondary-600 via-secondary-700 to-primary-700 text-white py-20 md:py-28">
