@@ -65,6 +65,17 @@ export async function GET(req: NextRequest) {
     certificate_downloaded_at: string | null;
   };
 
+  // Mark that the contestant has requested/checked certificate status.
+  // This powers admin notifications in Fusion Xpress dashboard.
+  try {
+    await supabase
+      .from("contestants")
+      .update({ certificate_requested_at: new Date().toISOString() })
+      .eq("id", c.id);
+  } catch {
+    // Column may not exist until patch is applied; keep endpoint non-blocking.
+  }
+
   return NextResponse.json({
     found: true,
     contestant_id: c.id,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
   ExternalLink,
   Plus,
   RefreshCw,
@@ -59,6 +60,9 @@ export default function DashboardHomePage() {
     }>
   >([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
+  const [certificateRequests, setCertificateRequests] = useState<
+    Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
+  >([]);
 
   const refreshInFlightRef = useRef(false);
   const [syncing, setSyncing] = useState(false);
@@ -133,6 +137,7 @@ export default function DashboardHomePage() {
         setRevenueByCurrencyMerchandise({});
         setTotalVotes(0);
         setTotalTicketsIssued(0);
+        setCertificateRequests([]);
       } else {
         // Recent transactions (money report). Include payer identity for admin visibility.
         const { data: txRows, error: txErr } = await supabase
@@ -195,6 +200,36 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(
           (tiRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
         );
+
+        // Certificate request notifications: show contestants who requested and are pending approval.
+        try {
+          const { data: certRows, error: certErr } = await supabase
+            .from("contestants")
+            .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
+            .in("campaign_id", campaignIds)
+            .not("certificate_requested_at", "is", null)
+            .is("certificate_approved_at", null)
+            .is("certificate_downloaded_at", null)
+            .order("certificate_requested_at", { ascending: false })
+            .limit(6);
+          if (certErr) {
+            const msg = String(certErr.message ?? "").toLowerCase();
+            if (!msg.includes("certificate_requested_at")) {
+              throw certErr;
+            }
+            setCertificateRequests([]);
+          } else {
+            const mapped = ((certRows ?? []) as any[]).map((r) => ({
+              id: String(r.id),
+              name: String(r.name ?? "Contestant"),
+              requested_at: String(r.certificate_requested_at),
+              campaign_title: titleMap[String(r.campaign_id)]?.title ?? "Voting category",
+            }));
+            setCertificateRequests(mapped);
+          }
+        } catch {
+          setCertificateRequests([]);
+        }
       }
 
       setLastUpdatedAt(new Date().toISOString());
@@ -278,6 +313,7 @@ export default function DashboardHomePage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => refreshData())
       .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, () => refreshData())
       .on("postgres_changes", { event: "*", schema: "public", table: "ticket_issues" }, () => refreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "contestants" }, () => refreshData())
       .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, () => refreshData())
       .subscribe();
 
@@ -348,6 +384,36 @@ export default function DashboardHomePage() {
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">
           {error}
+        </div>
+      )}
+
+      {certificateRequests.length > 0 && (
+        <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-extrabold inline-flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                Certificate requests pending approval
+              </div>
+              <p className="mt-1 text-sm">
+                {certificateRequests.length} contestant{certificateRequests.length !== 1 ? "s have" : " has"} requested a participation certificate.
+              </p>
+              <p className="mt-2 text-sm">
+                Latest:{" "}
+                {certificateRequests
+                  .slice(0, 3)
+                  .map((r) => `${r.name} (${r.campaign_title})`)
+                  .join(" • ")}
+              </p>
+            </div>
+            <Link
+              href="/dashboard/contestants"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 text-sm font-semibold"
+            >
+              Review
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       )}
 
