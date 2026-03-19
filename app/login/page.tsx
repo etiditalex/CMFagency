@@ -26,6 +26,7 @@ export default function LoginPage() {
   } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [step, setStep] = useState<Step>("form");
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -78,7 +79,11 @@ export default function LoginPage() {
 
         const result = await register(formData.name, formData.email, formData.password);
         if (result.success) {
-          setStep("code");
+          // After sign up, send the user back to sign-in flow.
+          setSignupSuccess(true);
+          setMode("login");
+          setStep("form");
+          setFormData({ name: "", email: "", password: "", confirmPassword: "" });
         } else {
           setError(result.error || "Registration failed. Please try again.");
         }
@@ -195,6 +200,7 @@ export default function LoginPage() {
     setStep("form");
     setCode("");
     setError("");
+    setSignupSuccess(false);
   };
 
   if (authLoading) {
@@ -305,6 +311,11 @@ export default function LoginPage() {
               </form>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                  {signupSuccess && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                      Account created. Please sign in to continue.
+                    </div>
+                  )}
                 {mode === "signup" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -410,6 +421,7 @@ export default function LoginPage() {
                     onClick={() => {
                       setMode(mode === "login" ? "signup" : "login");
                       setError("");
+                      setSignupSuccess(false);
                       setFormData({ name: "", email: "", password: "", confirmPassword: "" });
                     }}
                     className="text-primary-600 hover:text-primary-700 font-semibold"

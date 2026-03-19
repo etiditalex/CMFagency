@@ -146,16 +146,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string
   ): Promise<{ success: boolean; error?: string; user?: User }> => {
     try {
-      // Generate a 6-digit verification code
-      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
-            verification_code: verificationCode,
           },
           emailRedirectTo: `${window.location.origin}/verify-email`,
         },
@@ -169,51 +165,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data?.user) {
-        // Store verification code temporarily (in production, use a database)
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`verification_code_${email}`, verificationCode);
-          localStorage.setItem(`pending_verification_${email}`, JSON.stringify({
-            email,
-            name,
-            userId: data.user.id,
-            expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-          }));
-        }
-
-        // Send verification code via email (non-blocking - registration succeeds even if email fails)
-        console.log('Sending verification email to:', email);
+        // Requirement: after sign-up, user must come back to /login and verify after sign-in.
+        // Supabase may create a session depending on project config, so force sign-out.
         try {
-          const emailResponse = await fetch('/api/send-verification-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email,
-              code: verificationCode,
-              name,
-            }),
-          });
-
-          if (!emailResponse.ok) {
-            const emailResult = await emailResponse.json();
-            console.warn('⚠️ Email sending failed (non-critical):', {
-              status: emailResponse.status,
-              error: emailResult.error,
-            });
-            // Registration still succeeds - email verification is optional
-          } else {
-            const emailResult = await emailResponse.json();
-            console.log('✅ Verification email sent successfully to:', email, {
-              emailId: emailResult.emailId,
-            });
-          }
-        } catch (emailError: any) {
-          console.warn('⚠️ Email sending error (non-critical):', emailError.message);
-          // Registration succeeds regardless - email verification is optional
+          await supabase.auth.signOut();
+        } catch {
+          // Ignore signOut errors; we still return success and the next login step will be enforced.
         }
-
-        // Do not set user until they verify their email with the code we sent
+        setUser(null);
         return { success: true };
       }
 
