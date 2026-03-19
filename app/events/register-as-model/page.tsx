@@ -65,6 +65,7 @@ export default function RegisterAsModelPage() {
   const [certDownloading, setCertDownloading] = useState(false);
   const [certError, setCertError] = useState<string | null>(null);
   const [supportPaymentLoading, setSupportPaymentLoading] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const onPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -199,6 +200,17 @@ export default function RegisterAsModelPage() {
     }
   };
 
+  const onCopyVotingLink = async () => {
+    if (!success?.votingLink) return;
+    try {
+      await navigator.clipboard.writeText(success.votingLink);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      setError("Could not copy link automatically. Please copy it manually.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="container-custom pt-24 pb-12 md:pt-28 md:pb-16">
@@ -211,14 +223,27 @@ export default function RegisterAsModelPage() {
               <h2 className="text-2xl font-bold text-gray-900">You&apos;re registered!</h2>
               <p className="mt-2 text-gray-600">{success.message}</p>
               {success.votingLink && (
-                <p className="mt-4">
-                  <a
-                    href={success.votingLink}
-                    className="text-primary-600 font-semibold hover:underline"
-                  >
-                    Open your voting page
-                  </a>
-                </p>
+                <div className="mt-4 text-left">
+                  <p className="text-sm text-gray-700 font-medium mb-2">Your voting link (copy and share):</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={success.votingLink}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={onCopyVotingLink}
+                      className="px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 whitespace-nowrap"
+                    >
+                      {linkCopied ? "Copied!" : "Copy link"}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-amber-700">
+                    Voting page opens in April. Save this link now and share it when voting starts.
+                  </p>
+                </div>
               )}
               <button
                 type="button"

@@ -28,6 +28,8 @@ type Contestant = {
   sort_order: number;
 };
 
+const VOTING_UNLOCK_DATE = new Date("2026-04-01T00:00:00+03:00");
+
 export default function CampaignPage() {
   const router = useRouter();
   const routeParams = useParams<{ slug?: string | string[] }>();
@@ -430,7 +432,31 @@ export default function CampaignPage() {
   }
 
   const isVote = campaign.type === "vote";
+  const votingLocked = isVote && new Date() < VOTING_UNLOCK_DATE;
   const Icon = isVote ? Vote : Ticket;
+
+  if (votingLocked) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50">
+        <div className="container-custom py-10 max-w-2xl">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex w-10 h-10 rounded-lg bg-amber-50 items-center justify-center flex-shrink-0">
+                <Vote className="w-5 h-5 text-amber-700" />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Voting opens in April</h1>
+                <p className="text-gray-600 mt-2">
+                  This voting page is not open yet. Please come back in April when voting starts.
+                </p>
+                <p className="text-sm text-gray-500 mt-3">Link is valid and will work once voting opens.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 min-h-screen bg-gray-50">
