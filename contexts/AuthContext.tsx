@@ -161,11 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      if (error) {
+      // If Supabase fails to send its built-in confirmation email, it may still create the user.
+      // Since this app's verification flow is handled by our Resend code (`/api/send-verification-email`),
+      // don't block signup when a user was created.
+      if (error && !data?.user) {
         return { success: false, error: error.message };
       }
 
-      if (data.user) {
+      if (data?.user) {
         // Store verification code temporarily (in production, use a database)
         if (typeof window !== "undefined") {
           localStorage.setItem(`verification_code_${email}`, verificationCode);
