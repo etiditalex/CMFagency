@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search, Shield } from "lucide-react";
+import { Menu, X, Calendar, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search, Shield, PhoneCall } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -157,132 +157,78 @@ export default function Navbar() {
           : "bg-white/95 backdrop-blur-sm"
       }`}
     >
-      {/* Top Bar - Running Text, Buttons, and Social Media Icons */}
+      {/* Top bar: tagline + phone; Track + Login (icons on small screens) */}
       <div className="bg-primary-600 text-white overflow-hidden">
         <div className="container-custom">
-          <div className="flex items-center justify-between h-10 md:h-12 gap-3 md:gap-4">
-            {/* Running Text - Left Side */}
-            <div className="hidden md:flex items-center flex-1 min-w-0 overflow-hidden">
-              <div className="flex animate-marquee whitespace-nowrap">
-                <span className="text-xs md:text-sm font-medium mr-8">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs md:text-sm font-medium mr-8">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs md:text-sm font-medium mr-8">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs md:text-sm font-medium mr-8">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs md:text-sm font-medium mr-8">
-                  Market to thrive, Market to exist
-                </span>
-              </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 py-2 min-h-10 sm:min-h-0 sm:h-10 sm:py-0 md:h-12 md:gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-2 sm:gap-3 md:gap-4">
+              <p className="min-w-0 text-balance text-[10px] leading-snug min-[380px]:text-[11px] sm:text-xs md:text-sm font-medium text-white/95">
+                Market to thrive, Market to exist
+              </p>
+              <a
+                href="tel:+254797777347"
+                className="inline-flex w-fit max-w-full items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:gap-1.5 sm:px-2 sm:text-xs md:text-sm"
+              >
+                <PhoneCall className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+                <span className="break-all min-[360px]:break-normal">0797&nbsp;777&nbsp;347</span>
+              </a>
             </div>
-
-            {/* Mobile Running Text */}
-            <div className="md:hidden flex items-center flex-1 min-w-0 overflow-hidden">
-              <div className="flex animate-marquee whitespace-nowrap">
-                <span className="text-xs font-medium mr-6">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs font-medium mr-6">
-                  Market to thrive, Market to exist
-                </span>
-                <span className="text-xs font-medium mr-6">
-                  Market to thrive, Market to exist
-                </span>
-              </div>
-            </div>
-
-            {/* Right Side - Buttons and Social Icons */}
-            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-              {/* Track Application Button */}
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
               <Link
                 href="/track-application"
-                className="hidden md:flex items-center space-x-1 px-2 md:px-3 py-1 md:py-1.5 bg-white/20 hover:bg-white/30 rounded text-white text-xs md:text-sm font-semibold transition-colors"
+                className="flex items-center space-x-1 rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                aria-label="Track Application"
               >
-                <Search className="w-3 h-3 md:w-4 md:h-4" />
-                <span>Track Application</span>
+                <Search className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+                <span className="hidden md:inline">Track Application</span>
               </Link>
 
-              {/* Login/User Button */}
               {isAuthenticated ? (
-                <div className="relative group">
-                  <button className="hidden md:flex items-center space-x-1 px-2 md:px-3 py-1 md:py-1.5 bg-white/20 hover:bg-white/30 rounded text-white text-xs md:text-sm font-semibold transition-colors">
-                    <User className="w-3 h-3 md:w-4 md:h-4" />
-                    <span className="hidden lg:inline">{user?.name?.split(' ')[0] || "Account"}</span>
-                  </button>
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                    <Link
-                      href="/application"
-                      className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                    >
-                      <FileText className="w-4 h-4 inline mr-2" />
-                      My Application
-                    </Link>
+                <>
+                  <Link
+                    href="/application"
+                    className="flex items-center rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:hidden"
+                    aria-label="My Application"
+                  >
+                    <FileText className="h-4 w-4 shrink-0" />
+                  </Link>
+                  <div className="relative group hidden md:block">
                     <button
-                      onClick={logout}
-                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      type="button"
+                      className="flex items-center space-x-1 rounded-md px-2 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 lg:px-3"
                     >
-                      <LogOut className="w-4 h-4 inline mr-2" />
-                      Logout
+                      <User className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                      <span className="hidden lg:inline">{user?.name?.split(" ")[0] || "Account"}</span>
                     </button>
+                    <div className="invisible absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                      <Link
+                        href="/application"
+                        className="block px-4 py-2 font-medium text-gray-700 transition-colors duration-200 hover:bg-primary-50 hover:text-primary-600"
+                      >
+                        <FileText className="mr-2 inline h-4 w-4" />
+                        My Application
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className="w-full px-4 py-2 text-left font-medium text-gray-700 transition-colors duration-200 hover:bg-primary-50 hover:text-primary-600"
+                      >
+                        <LogOut className="mr-2 inline h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
                 <Link
                   href="/login"
-                  className="hidden md:flex items-center space-x-1 px-2 md:px-3 py-1 md:py-1.5 bg-white/20 hover:bg-white/30 rounded text-white text-xs md:text-sm font-semibold transition-colors"
+                  className="flex items-center space-x-1 rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                  aria-label="Login"
                 >
-                  <User className="w-3 h-3 md:w-4 md:h-4" />
-                  <span className="hidden lg:inline">Login</span>
+                  <User className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+                  <span className="hidden md:inline">Login</span>
                 </Link>
               )}
-
-            {/* Social Media Icons */}
-              <div className="flex items-center gap-1.5 md:gap-2">
-              <a
-                href="https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite"
-                target="_blank"
-                rel="noopener noreferrer"
-                  className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
-                aria-label="Follow us on Instagram"
-              >
-                  <Instagram className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-              <a
-                href="https://www.facebook.com/share/187Kse9GrQ/"
-                target="_blank"
-                rel="noopener noreferrer"
-                  className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
-                aria-label="Follow us on Facebook"
-              >
-                  <Facebook className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/changer-fusions-2262a53a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
-                target="_blank"
-                rel="noopener noreferrer"
-                  className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
-                aria-label="Follow us on LinkedIn"
-              >
-                  <Linkedin className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-              <a
-                href="https://x.com/ChangerFusions"
-                target="_blank"
-                rel="noopener noreferrer"
-                  className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors duration-200 group"
-                aria-label="Follow us on X"
-              >
-                  <svg className="w-3 h-3 md:w-3.5 md:h-3.5 text-white group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-              </a>
-              </div>
             </div>
           </div>
         </div>
