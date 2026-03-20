@@ -291,7 +291,7 @@ CV: ${jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
 Passport Photo: ${documents.passportPhoto ? documents.passportPhoto.name : "Not uploaded"}
 ID Front: ${documents.idFront ? documents.idFront.name : "Not uploaded"}
 ID Back: ${documents.idBack ? documents.idBack.name : "Not uploaded"}
-Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not uploaded"}
+Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not provided (optional)"}
 
 ${cmfAgencyId ? `\n*Track your application using ID: ${cmfAgencyId}*\n` : ""}
 ---
@@ -338,7 +338,7 @@ CV: ${jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
 Passport Photo: ${documents.passportPhoto ? documents.passportPhoto.name : "Not uploaded"}
 ID Front: ${documents.idFront ? documents.idFront.name : "Not uploaded"}
 ID Back: ${documents.idBack ? documents.idBack.name : "Not uploaded"}
-Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not uploaded"}
+Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not provided (optional)"}
 
 ---
 *Note: Please attach all document files to this WhatsApp message.*`;
@@ -719,7 +719,7 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Certificate of Good Conduct *
+              Certificate of Good Conduct (optional)
             </label>
             <label htmlFor="certificate" className="cursor-pointer block">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
@@ -731,7 +731,7 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                   or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">
-                  PDF, JPG, PNG (MAX. 5MB) - Must be actual certificate document
+                  PDF, JPG, PNG (MAX. 5MB) if you have one — not required to apply
                 </p>
                 {validatingFiles.certificateOfGoodConduct && (
                   <p className="text-sm text-blue-600 mt-2 flex items-center justify-center">
@@ -763,7 +763,6 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
                 type="file"
                 id="certificate"
                 accept=".pdf,image/*"
-                required
                 className="hidden"
                 ref={certificateRef}
                 onChange={(e) =>
@@ -922,12 +921,12 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
               </div>
               <div>
                 <span className="font-medium text-gray-700">
-                  Certificate of Good Conduct:
+                  Certificate of Good Conduct (optional):
                 </span>
                 <p className="text-gray-900">
                   {documents.certificateOfGoodConduct
                     ? documents.certificateOfGoodConduct.name
-                    : "Not uploaded"}
+                    : "Not provided"}
                 </p>
               </div>
             </div>
@@ -954,9 +953,9 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
               <strong>Note:</strong> After clicking "Submit Application", you
-              will be redirected to WhatsApp. Please attach all document files
-              (passport photo, ID photos, certificate, and CV) to the WhatsApp
-              message.
+              will be redirected to WhatsApp. Please attach your ID photos and CV;
+              also attach passport photo and certificate of good conduct if you
+              uploaded them.
             </p>
           </div>
         </div>
@@ -981,8 +980,9 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
             Application Submitted!
           </h2>
           <p className="text-gray-600 mb-6">
-            Your application has been sent to WhatsApp. Please attach all
-            document files in the WhatsApp chat.
+            Your application has been sent to WhatsApp. Please attach your ID
+            photos and CV in the chat; add passport photo or certificate if you
+            have them.
           </p>
           <Link href="/" className="btn-primary inline-flex items-center">
             Return to Home
@@ -1007,9 +1007,7 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
       );
     }
     if (currentStage === 2) {
-      return (
-        documents.idFront && documents.idBack && documents.certificateOfGoodConduct
-      );
+      return !!(documents.idFront && documents.idBack);
     }
     if (currentStage === 3) {
       return jobSelection.cv && jobSelection.jobPosition;
