@@ -6,7 +6,7 @@ This document summarizes security measures and recommendations for the CMF Agenc
 
 ### 1. Login brute-force protection (HIGH)
 - **Rate limiting**: Middleware and API routes limit login attempts per IP (5 attempts per 15 minutes for verification code APIs; 10 per 15 minutes in middleware).
-- **CAPTCHA**: Google reCAPTCHA **v3** (corner badge + score, **default**) or **v2** (checkbox) on login. Set a site key (`NEXT_PUBLIC_RECAPTCHA_SITE_KEY` or `RECAPTCHA_SITE_KEY`) and `RECAPTCHA_SECRET_KEY`. Set `NEXT_PUBLIC_RECAPTCHA_VERSION=v2` only if using v2 keys. When the secret is set, the send-login-verification-code API requires a valid token (and enforces v3 score when Google returns a score).
+- **CAPTCHA**: Google reCAPTCHA **v3** or **v2** on the **main-site login email-code step** for **Resend code** only (first code send after password matches Fusion Xpress: no client CAPTCHA). Set site key + `RECAPTCHA_SECRET_KEY`. Set `NEXT_PUBLIC_RECAPTCHA_VERSION=v2` for v2 keys. When the secret is set, the first send does not require a token; resend requires a verified token (and v3 score when applicable).
 
 ### 2. Non-enumerable event IDs (HIGH)
 - Public event URLs use **slugs** (e.g. `/events/upcoming/marketing-campaign-launch`) instead of sequential integer IDs.

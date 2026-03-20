@@ -39,7 +39,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  /** v2 token for “Resend code” on the login verification step only */
+  const [resendRecaptchaToken, setResendRecaptchaToken] = useState<string | null>(null);
   const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
   const [recaptchaVersion, setRecaptchaVersion] = useState<RecaptchaClientVersion>("v2");
 
@@ -69,6 +70,7 @@ export default function LoginPage() {
     // If user is signed in but not verified, ensure we show the code step.
     if (isAuthenticated && loginVerified === false && user?.email) {
       setMode("login");
+      setResendRecaptchaToken(null);
       setStep("code");
       setFormData((prev) => ({ ...prev, email: user.email || prev.email }));
     }
@@ -130,32 +132,15 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (recaptchaVersion === "v2" && recaptchaSiteKey && !recaptchaToken) {
-        setError("Please complete the security verification below.");
-        setLoading(false);
-        return;
-      }
-
-      let recaptchaForLogin: string | undefined;
-      if (recaptchaSiteKey && recaptchaVersion === "v3") {
-        try {
-          recaptchaForLogin = await executeRecaptchaV3(recaptchaSiteKey, "login");
-        } catch {
-          setError("Security check could not run. Please wait a moment and try again, or refresh the page.");
-          setLoading(false);
-          return;
-        }
-      } else if (recaptchaSiteKey && recaptchaVersion === "v2") {
-        recaptchaForLogin = recaptchaToken ?? undefined;
-      }
-
-      const result = await login(formData.email, formData.password, recaptchaForLogin);
+      const result = await login(formData.email, formData.password);
       if (result.success && result.requiresVerification) {
+        setResendRecaptchaToken(null);
         setStep("code");
       } else if (result.success) {
         router.push("/application");
       } else {
         if (result.requiresVerification) {
+          setResendRecaptchaToken(null);
           setStep("code");
         } else {
           setError(result.error || "Login failed. Please check your credentials.");
@@ -229,9 +214,29 @@ export default function LoginPage() {
           setError(result.error ?? "Failed to resend code.");
         }
       } else {
-        const result = await sendLoginVerificationCode();
+        let resendToken: string | null | undefined;
+        if (recaptchaSiteKey) {
+          if (recaptchaVersion === "v2") {
+            if (!resendRecaptchaToken) {
+              setError("Complete the security check below, then tap Resend code again.");
+              setResending(false);
+              return;
+            }
+            resendToken = resendRecaptchaToken;
+          } else {
+            try {
+              resendToken = await executeRecaptchaV3(recaptchaSiteKey, "resend_login_code");
+            } catch {
+              setError("Security check could not run. Wait a moment and try Resend again.");
+              setResending(false);
+              return;
+            }
+          }
+        }
+        const result = await sendLoginVerificationCode(resendToken ?? null);
         if (result.success) {
           setError("");
+          setResendRecaptchaToken(null);
         } else {
           setError(result.error ?? "Failed to resend code.");
         }
@@ -248,6 +253,7 @@ export default function LoginPage() {
     setCode("");
     setError("");
     setSignupSuccess(false);
+    setResendRecaptchaToken(null);
   };
 
   if (authLoading) {
@@ -325,6 +331,25 @@ export default function LoginPage() {
                     autoComplete="one-time-code"
                   />
                 </div>
+                {mode === "login" && recaptchaSiteKey && recaptchaVersion === "v2" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-500 text-center">
+                      To resend your code, complete the check below, then tap <strong>Resend code</strong>.
+                    </p>
+                    <div className="flex justify-center">
+                      <Recaptcha siteKey={recaptchaSiteKey} onVerify={setResendRecaptchaToken} />
+                    </div>
+                  </div>
+                )}
+                {mode === "login" && recaptchaSiteKey && recaptchaVersion === "v3" && (
+                  <>
+                    <RecaptchaV3Script siteKey={recaptchaSiteKey} />
+                    <p className="text-xs text-gray-500 text-center">
+                      Resending your code uses Google reCAPTCHA (badge at the bottom-right). Tap{" "}
+                      <strong>Resend code</strong> to run the check.
+                    </p>
+                  </>
+                )}
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                     {error}
@@ -348,7 +373,13 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={handleResendCode}
-                    disabled={resending}
+                    disabled={
+                      resending ||
+                      (!!recaptchaSiteKey &&
+                        mode === "login" &&
+                        recaptchaVersion === "v2" &&
+                        !resendRecaptchaToken)
+                    }
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50 flex items-center gap-1"
                   >
                     <RefreshCw className={`w-4 h-4 ${resending ? "animate-spin" : ""}`} />
@@ -427,20 +458,6 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {recaptchaSiteKey && mode === "login" && recaptchaVersion === "v2" && (
-                  <div className="flex justify-center">
-                    <Recaptcha siteKey={recaptchaSiteKey} onVerify={setRecaptchaToken} />
-                  </div>
-                )}
-                {recaptchaSiteKey && mode === "login" && recaptchaVersion === "v3" && (
-                  <>
-                    <RecaptchaV3Script siteKey={recaptchaSiteKey} />
-                    <p className="text-center text-xs text-gray-500">
-                      Sign-in is protected by Google reCAPTCHA. The badge appears at the bottom-right of the page.
-                    </p>
-                  </>
-                )}
-
                 {error && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                     {error}
@@ -449,10 +466,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={
-                    loading ||
-                    (!!recaptchaSiteKey && mode === "login" && recaptchaVersion === "v2" && !recaptchaToken)
-                  }
+                  disabled={loading}
                   className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (

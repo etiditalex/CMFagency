@@ -20,8 +20,8 @@ interface AuthContextType {
   resendVerificationCode: (email: string) => Promise<{ success: boolean; error?: string }>;
   /** After user enters login verification code, call this to set user from session. */
   completeLoginVerification: () => Promise<void>;
-  /** Send a new login verification code to the current session's email. */
-  sendLoginVerificationCode: () => Promise<{ success: boolean; error?: string }>;
+  /** Send a new login verification code to the current session's email (CAPTCHA token when server requires it on resend). */
+  sendLoginVerificationCode: (recaptchaToken?: string | null) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   loading: boolean;
@@ -111,7 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const sendLoginVerificationCode = async (): Promise<{ success: boolean; error?: string }> => {
+  const sendLoginVerificationCode = async (
+    recaptchaToken?: string | null
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) return { success: false, error: "Not signed in" };
@@ -121,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ recaptchaToken: recaptchaToken ?? null }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) return { success: false, error: json.error ?? "Failed to send code" };

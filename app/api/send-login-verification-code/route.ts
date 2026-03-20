@@ -5,6 +5,45 @@ import { checkLoginRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const CODE_EXPIRY_MINUTES = 10;
 
+async function verifyRecaptchaResponse(
+  secretKey: string,
+  recaptchaToken: string,
+  ip: string
+): Promise<NextResponse | null> {
+  const verifyParams = new URLSearchParams({
+    secret: secretKey,
+    response: recaptchaToken,
+  });
+  if (ip && ip !== "unknown") {
+    verifyParams.set("remoteip", ip);
+  }
+  const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: verifyParams.toString(),
+  });
+  const verifyData = (await verifyRes.json().catch(() => ({}))) as {
+    success?: boolean;
+    score?: number;
+    action?: string;
+  };
+  if (!verifyData?.success) {
+    return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
+  }
+  if (typeof verifyData.score === "number") {
+    const minRaw = process.env.RECAPTCHA_MIN_SCORE ?? "0.5";
+    const min = Number.parseFloat(minRaw);
+    const threshold = Number.isFinite(min) ? min : 0.5;
+    if (verifyData.score < threshold) {
+      return NextResponse.json(
+        { error: "Security verification could not be completed. Please try again." },
+        { status: 400 }
+      );
+    }
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
@@ -53,42 +92,26 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
     const isResend = !!existingCode;
 
+    // First code send after password: no client CAPTCHA (same idea as Fusion Xpress send-login-code).
+    // When RECAPTCHA_SECRET_KEY is set, resend requests must pass a verified token to limit email abuse.
     const secretKey = process.env.RECAPTCHA_SECRET_KEY?.trim();
-    if (secretKey && !isResend) {
-      const recaptchaToken = typeof body?.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
-      if (!recaptchaToken) {
-        return NextResponse.json({ error: "CAPTCHA verification required. Please complete the challenge." }, { status: 400 });
-      }
-      const verifyParams = new URLSearchParams({
-        secret: secretKey,
-        response: recaptchaToken,
-      });
-      if (ip && ip !== "unknown") {
-        verifyParams.set("remoteip", ip);
-      }
-      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: verifyParams.toString(),
-      });
-      const verifyData = (await verifyRes.json().catch(() => ({}))) as {
-        success?: boolean;
-        score?: number;
-        action?: string;
-      };
-      if (!verifyData?.success) {
-        return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
-      }
-      if (typeof verifyData.score === "number") {
-        const minRaw = process.env.RECAPTCHA_MIN_SCORE ?? "0.5";
-        const min = Number.parseFloat(minRaw);
-        const threshold = Number.isFinite(min) ? min : 0.5;
-        if (verifyData.score < threshold) {
+    const recaptchaToken = typeof body?.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
+    if (secretKey) {
+      if (isResend) {
+        if (!recaptchaToken) {
           return NextResponse.json(
-            { error: "Security verification could not be completed. Please try again." },
+            {
+              error:
+                "CAPTCHA verification required. Complete the security check on this page, then tap Resend code again.",
+            },
             { status: 400 }
           );
         }
+        const capErr = await verifyRecaptchaResponse(secretKey, recaptchaToken, ip);
+        if (capErr) return capErr;
+      } else if (recaptchaToken) {
+        const capErr = await verifyRecaptchaResponse(secretKey, recaptchaToken, ip);
+        if (capErr) return capErr;
       }
     }
 

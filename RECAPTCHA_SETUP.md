@@ -8,7 +8,7 @@ The login page can use **reCAPTCHA v3** (floating **Privacy – Terms** badge at
 |---|--------------------------|-------------------|
 | Google Admin type | **Score based** (v3) | **“I’m not a robot”** (v2) |
 | Env | **Default** — no variable needed | Set `NEXT_PUBLIC_RECAPTCHA_VERSION=v2` (or `RECAPTCHA_VERSION=v2`) |
-| UX | Badge + token on **Sign in** click | User ticks the box before sign-in |
+| UX | Badge + token when you tap **Resend code** on the code step | Checkbox on the code step before **Resend code** (Sign in needs no CAPTCHA) |
 
 ## 1. Create keys in Google reCAPTCHA
 
@@ -28,7 +28,7 @@ The login page can use **reCAPTCHA v3** (floating **Privacy – Terms** badge at
 | `NEXT_PUBLIC_RECAPTCHA_VERSION` **or** `RECAPTCHA_VERSION` (and aliases — see below) | Optional | Default **v3** (badge). Set **`v2`** if your Google keys are checkbox (v2) only. |
 | `RECAPTCHA_MIN_SCORE` | Optional (server) | v3 only; minimum score `0`–`1` (default **0.5**) |
 
-- If only the secret is set, the API will require a CAPTCHA token but the client will not load a widget—set a site key too.
+- **First** login verification email (right after password) is sent **without** client CAPTCHA (same idea as Fusion Xpress). If the secret is set, **Resend code** requires a valid CAPTCHA. If only the secret is set (no site key), resend will fail until you add a site key.
 - Paste keys in Vercel without extra spaces or quotes; the app trims the secret on the server.
 
 ### Example: v3 (floating badge) — usual setup
