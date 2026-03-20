@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -160,8 +161,13 @@ export async function POST(req: NextRequest) {
     if (resendApiKey) {
       const subject = `Your voting campaign link – ${campaignTitle}`;
       const html = `
-        <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
-          <h2 style="color: #111;">You're registered!</h2>
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+${buildResendEmailHeaderHtml({ subtitle: "Contestant registration" })}
+<div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #111; margin-top: 0;">You're registered!</h2>
           <p>Hi ${name.replace(/</g, "&lt;")},</p>
           <p>You're now registered as a contestant in <strong>${campaignTitle.replace(/</g, "&lt;")}</strong>.</p>
           <p>Share your voting link so people can vote for you:</p>
@@ -170,8 +176,10 @@ export async function POST(req: NextRequest) {
           </p>
           <p style="word-break: break-all; color: #666; font-size: 14px;">${votingLink}</p>
           <p style="margin-top: 32px; color: #666; font-size: 14px;">Good luck!</p>
-          <p style="color: #999; font-size: 12px;">CMF Agency</p>
-        </div>
+          <p style="color: #999; font-size: 12px;">CMF Agency · Changer Fusions</p>
+</div>
+</body>
+</html>
       `;
 
       try {

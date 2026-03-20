@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
 import { generateCertificatePdf } from "@/lib/certificate-pdf";
 
 /**
@@ -129,14 +130,21 @@ export async function POST(req: NextRequest) {
               to: email,
               subject: "Your Certificate of Participation – CMF Agency",
               html: `
-                <div style="font-family: system-ui, sans-serif; max-width: 560px; margin: 0 auto;">
-                  <h2 style="color: #111;">Your certificate is ready</h2>
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+${buildResendEmailHeaderHtml({ subtitle: "Certificate of participation" })}
+<div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px;">
+                  <h2 style="color: #111; margin-top: 0;">Your certificate is ready</h2>
                   <p>Hi ${name.replace(/</g, "&lt;")},</p>
                   <p>Your participation certificate for <strong>${categoryTitle.replace(/</g, "&lt;")}</strong> has been approved. Please find your e-signed certificate attached to this email.</p>
                   <p>You can download and save the PDF from the attachment below.</p>
                   <p style="margin-top: 32px; color: #666; font-size: 14px;">Thank you for participating.</p>
-                  <p style="color: #999; font-size: 12px;">CMF Agency</p>
-                </div>
+                  <p style="color: #999; font-size: 12px;">CMF Agency · Changer Fusions</p>
+</div>
+</body>
+</html>
               `,
               attachments: [{ filename, content: base64Pdf }],
             }),

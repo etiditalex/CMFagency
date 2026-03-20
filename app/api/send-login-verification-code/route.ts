@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
 import { checkLoginRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const CODE_EXPIRY_MINUTES = 10;
@@ -131,9 +132,7 @@ export async function POST(req: NextRequest) {
       <html>
       <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">CMF Agency</h1>
-        </div>
+        ${buildResendEmailHeaderHtml({ subtitle: "Secure sign-in" })}
         <div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px;">
           <h2 style="color: #111827; margin-top: 0;">Your login verification code</h2>
           <p>Hello ${name},</p>

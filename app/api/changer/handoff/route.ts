@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
+import { buildResendEmailHeaderHtml, RESEND_EMAIL_HEADER_BG } from "@/lib/resend-email-header";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -78,9 +79,7 @@ export async function POST(req: NextRequest) {
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 1.5rem;">Changer - Live Agent Request</h1>
-  </div>
+  ${buildResendEmailHeaderHtml({ subtitle: "Changer · Live agent request" })}
   <div style="background: #f9f9f9; padding: 24px; border-radius: 0 0 8px 8px;">
     <p><strong>A visitor has requested a live agent.</strong></p>
     <p>Please log in to Fusion Xpress and pick up this conversation in the Changer section.</p>
@@ -92,7 +91,7 @@ export async function POST(req: NextRequest) {
     <hr>
     <p><strong>Conversation summary:</strong></p>
     <pre style="background: white; padding: 12px; border: 1px solid #ddd; border-radius: 6px; overflow-x: auto; font-size: 12px;">${(summary || "No messages yet").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
-    <p style="margin-top: 20px;"><a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke"}/dashboard/changer" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Open Changer in Fusion Xpress</a></p>
+    <p style="margin-top: 20px;"><a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke"}/dashboard/changer" style="background: ${RESEND_EMAIL_HEADER_BG}; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Open Changer in Fusion Xpress</a></p>
   </div>
   <p style="color: #666; font-size: 11px; margin-top: 24px;">Changer · CMF Agency</p>
 </body>

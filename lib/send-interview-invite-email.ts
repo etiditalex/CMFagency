@@ -1,4 +1,5 @@
 import { fromEmail } from "@/lib/resend";
+import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
 import type { JobOpening } from "@/lib/job-openings";
 
 function escapeHtml(s: string): string {
@@ -53,9 +54,7 @@ export async function sendInterviewInviteEmail(params: {
       <html>
       <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 24px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">CMF Agency</h1>
-        </div>
+        ${buildResendEmailHeaderHtml({ subtitle: "Interview invitation" })}
         <div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px;">
           <h2 style="color: #111827; margin-top: 0;">Interview invitation</h2>
           <p>Hello ${first},</p>
