@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import DashboardShell from "@/components/dashboard/DashboardShell";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 
@@ -35,6 +36,8 @@ function linesFromJson(val: unknown): string {
 }
 
 export default function DashboardJobListingsPage() {
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isPortalMember, loading: portalLoading, isAdmin } = usePortal();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,13 +225,15 @@ export default function DashboardJobListingsPage() {
     }
   };
 
+  if (authLoading || portalLoading) return null;
+  if (!isAuthenticated || !user || !isPortalMember || !isAdmin) return null;
+
   return (
-    <DashboardShell>
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div className="text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Job board listings</h1>
-            <p className="text-gray-600 text-sm mt-1">
+            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Job board listings</h2>
+            <p className="mt-1 text-gray-600 text-sm max-w-3xl">
               Publish roles for members. Internship and industrial attachment posts are visible to everyone; other types
               require an active KES&nbsp;500/year job-board membership to view full details.
             </p>
@@ -252,7 +257,7 @@ export default function DashboardJobListingsPage() {
         )}
 
         {showForm && (
-          <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="mb-8 rounded-lg border border-gray-200 bg-gray-50/80 p-4 sm:p-6 space-y-4">
             <h2 className="text-lg font-bold text-gray-900">{editingId ? "Edit vacancy" : "Create vacancy"}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -381,7 +386,7 @@ export default function DashboardJobListingsPage() {
           </div>
         )}
 
-        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="rounded-lg border border-gray-200 overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-gray-500 flex items-center justify-center gap-2">
               <Loader2 className="w-6 h-6 animate-spin" /> Loading…
@@ -460,7 +465,6 @@ export default function DashboardJobListingsPage() {
             </div>
           )}
         </div>
-      </div>
-    </DashboardShell>
+    </div>
   );
 }
