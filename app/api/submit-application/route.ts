@@ -6,6 +6,7 @@ import {
   buildSubmissionMeta,
   type ClientFileValidation,
 } from "@/lib/application-documents";
+import { sendApplicationConfirmationEmail } from "@/lib/send-application-confirmation-email";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -265,11 +266,23 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const emailResult = await sendApplicationConfirmationEmail({
+        to: email,
+        firstName: first,
+        cmfAgencyId,
+        jobPosition,
+      });
+      const emailSent = emailResult.ok;
+      if (!emailSent) {
+        console.warn("Application confirmation email not sent:", emailResult.error);
+      }
+
       return NextResponse.json({
         success: true,
         applicationId: data.id,
-        cmfAgencyId,
         message: "Application submitted successfully",
+        emailSent,
+        ...(emailSent ? {} : { cmfAgencyId }),
       });
     }
 
@@ -342,11 +355,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const emailResult = await sendApplicationConfirmationEmail({
+      to: email,
+      firstName: first,
+      cmfAgencyId,
+      jobPosition,
+    });
+    const emailSent = emailResult.ok;
+    if (!emailSent) {
+      console.warn("Application confirmation email not sent:", emailResult.error);
+    }
+
     return NextResponse.json({
       success: true,
       applicationId: data.id,
-      cmfAgencyId,
       message: "Application submitted successfully",
+      emailSent,
+      ...(emailSent ? {} : { cmfAgencyId }),
     });
   } catch (error: unknown) {
     console.error("Submit application error:", error);

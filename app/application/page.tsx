@@ -72,6 +72,10 @@ export default function ApplicationPage() {
     jobPosition: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  /** When true, CMF ID was emailed; omit showing ID on-page. */
+  const [submitEmailSent, setSubmitEmailSent] = useState(false);
+  /** Shown only if email could not be sent (e.g. Resend down / no API key). */
+  const [submitIdFallback, setSubmitIdFallback] = useState<string | null>(null);
   const [fileValidations, setFileValidations] = useState<{
     [key: string]: ValidationResult;
   }>({});
@@ -277,6 +281,7 @@ export default function ApplicationPage() {
         error?: string;
         details?: string;
         cmfAgencyId?: string;
+        emailSent?: boolean;
       };
 
       if (!saveResponse.ok) {
@@ -288,15 +293,14 @@ export default function ApplicationPage() {
         return;
       }
 
-      const cmfAgencyId = saveResult.cmfAgencyId ?? "";
+      setSubmitEmailSent(saveResult.emailSent === true);
+      setSubmitIdFallback(
+        saveResult.emailSent === true ? null : (saveResult.cmfAgencyId ?? null)
+      );
       setSubmitted(true);
       if (user) {
         localStorage.removeItem(`application_${user.id}`);
       }
-
-      alert(
-        `Application submitted successfully!\n\nYour CMF Agency ID: ${cmfAgencyId}\n\nYour documents are stored securely. Our team will review your application in the dashboard. You can track status anytime using your ID on the Track Application page.`
-      );
     } catch (error: unknown) {
       console.error("Error submitting application:", error);
       alert("Something went wrong. Please try again in a moment.");
@@ -905,7 +909,7 @@ export default function ApplicationPage() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
               <strong>Note:</strong> When you submit, your application and files are sent securely to CMF
-              Agency. You will receive a CMF Agency ID to track your status—no WhatsApp step is required.
+              Agency. Your CMF Agency ID will be emailed to you for tracking—no WhatsApp step.
             </p>
           </div>
         </div>
@@ -929,13 +933,48 @@ export default function ApplicationPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Application Submitted!
           </h2>
-          <p className="text-gray-600 mb-6">
-            Your application and documents are on file. Use{" "}
-            <Link href="/track-application" className="text-primary-600 font-semibold underline">
-              Track Application
-            </Link>{" "}
-            with your CMF Agency ID anytime.
-          </p>
+          {submitEmailSent ? (
+            <p className="text-gray-600 mb-6">
+              Your CMF Agency ID has been sent to{" "}
+              {personalDetails.email ? (
+                <span className="font-medium text-gray-900">{personalDetails.email}</span>
+              ) : (
+                "your email address"
+              )}
+              . Check your inbox (and spam). Your documents are stored securely; our team will review your
+              application in the dashboard. Track status anytime on{" "}
+              <Link href="/track-application" className="text-primary-600 font-semibold underline">
+                Track Application
+              </Link>
+              .
+            </p>
+          ) : submitIdFallback ? (
+            <div className="text-gray-600 mb-6 space-y-3 text-left">
+              <p>
+                We couldn&apos;t send a confirmation email automatically (email service may be unavailable).
+                Please save your ID below.
+              </p>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm text-amber-900 font-medium mb-1">Your CMF Agency ID</p>
+                <p className="font-mono text-lg font-bold text-gray-900 tracking-wide">{submitIdFallback}</p>
+              </div>
+              <p>
+                Use{" "}
+                <Link href="/track-application" className="text-primary-600 font-semibold underline">
+                  Track Application
+                </Link>{" "}
+                with this ID anytime.
+              </p>
+            </div>
+          ) : (
+            <p className="text-gray-600 mb-6">
+              Your application and documents are on file. Use{" "}
+              <Link href="/track-application" className="text-primary-600 font-semibold underline">
+                Track Application
+              </Link>{" "}
+              with your CMF Agency ID anytime.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/track-application" className="btn-primary inline-flex items-center justify-center">
               Track application
