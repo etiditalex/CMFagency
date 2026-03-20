@@ -117,7 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!session?.access_token) return { success: false, error: "Not signed in" };
       const res = await fetch("/api/send-login-verification-code", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) return { success: false, error: json.error ?? "Failed to send code" };

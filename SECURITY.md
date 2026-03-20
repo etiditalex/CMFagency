@@ -50,6 +50,6 @@ This document summarizes security measures and recommendations for the CMF Agenc
 ## Env vars (security-sensitive)
 
 - `RECAPTCHA_SECRET_KEY` – Google reCAPTCHA secret (server-only). Enable CAPTCHA when set.
-- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` – Google reCAPTCHA site key (public). Required for login CAPTCHA widget.
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` or `RECAPTCHA_SITE_KEY` – site key served to the login page via `/api/recaptcha-site-key`.
 - `SUPABASE_SERVICE_ROLE_KEY` – Must never be exposed to the client.
 - All Supabase and Resend keys should remain server-side except the documented `NEXT_PUBLIC_*` ones.

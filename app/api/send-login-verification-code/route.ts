@@ -16,28 +16,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Optional: verify Google reCAPTCHA when secret is configured
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY;
-    if (secretKey) {
-      const body = await req.json().catch(() => ({}));
-      const recaptchaToken = typeof body?.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
-      if (!recaptchaToken) {
-        return NextResponse.json({ error: "CAPTCHA verification required. Please complete the challenge." }, { status: 400 });
-      }
-      const verifyParams = new URLSearchParams({
-        secret: secretKey,
-        response: recaptchaToken,
-      });
-      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: verifyParams.toString(),
-      });
-      const verifyData = (await verifyRes.json().catch(() => ({}))) as { success?: boolean };
-      if (!verifyData?.success) {
-        return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
-      }
-    }
+    const body = (await req.json().catch(() => ({}))) as { recaptchaToken?: string | null };
 
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace(/^Bearer\s+/i, "")?.trim();
@@ -45,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
     const resendApiKey = process.env.RESEND_API_KEY;
 
     if (!supabaseUrl || !anonKey || !serviceKey)
@@ -65,10 +44,41 @@ export async function POST(req: NextRequest) {
     const name = userData.user.user_metadata?.name || email?.split("@")[0] || "User";
     if (!email) return NextResponse.json({ error: "User has no email" }, { status: 400 });
 
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+    const { data: existingCode } = await admin
+      .from("site_login_codes")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const isResend = !!existingCode;
+
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY?.trim();
+    if (secretKey && !isResend) {
+      const recaptchaToken = typeof body?.recaptchaToken === "string" ? body.recaptchaToken.trim() : "";
+      if (!recaptchaToken) {
+        return NextResponse.json({ error: "CAPTCHA verification required. Please complete the challenge." }, { status: 400 });
+      }
+      const verifyParams = new URLSearchParams({
+        secret: secretKey,
+        response: recaptchaToken,
+      });
+      if (ip && ip !== "unknown") {
+        verifyParams.set("remoteip", ip);
+      }
+      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: verifyParams.toString(),
+      });
+      const verifyData = (await verifyRes.json().catch(() => ({}))) as { success?: boolean };
+      if (!verifyData?.success) {
+        return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
+      }
+    }
+
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
-
-    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     await admin.from("site_login_codes").delete().eq("user_id", userId);
     const { error: insertErr } = await admin.from("site_login_codes").insert({
       user_id: userId,
