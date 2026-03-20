@@ -73,12 +73,26 @@ export default function TrackApplicationPage() {
       case "rejected":
       case "declined":
         return <XCircle className="w-6 h-6 text-red-600" />;
+      case "interview_invited":
+        return <CheckCircle className="w-6 h-6 text-indigo-600" />;
+      case "no_open_role":
+        return <XCircle className="w-6 h-6 text-orange-600" />;
       case "pending":
       case "under review":
+      case "qualified":
         return <Clock className="w-6 h-6 text-yellow-600" />;
       default:
         return <Clock className="w-6 h-6 text-gray-600" />;
     }
+  };
+
+  const formatStatusLabel = (status: string) => {
+    if (!status) return "Pending";
+    const s = status.toLowerCase();
+    if (s === "no_open_role") return "No matching open role";
+    if (s === "interview_invited") return "Interview invited";
+    if (s === "under review") return "Under review";
+    return status;
   };
 
   const getStatusColor = (status: string) => {
@@ -89,8 +103,13 @@ export default function TrackApplicationPage() {
       case "rejected":
       case "declined":
         return "bg-red-100 text-red-800 border-red-300";
+      case "interview_invited":
+        return "bg-indigo-100 text-indigo-900 border-indigo-300";
+      case "no_open_role":
+        return "bg-orange-100 text-orange-900 border-orange-300";
       case "pending":
       case "under review":
+      case "qualified":
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
@@ -206,7 +225,7 @@ export default function TrackApplicationPage() {
                                 </div>
                               </div>
                               <div className={`text-sm font-medium px-3 py-1 rounded-full border ${getStatusColor(app.status)}`}>
-                                {app.status || "Pending"}
+                                {formatStatusLabel(app.status)}
                               </div>
                             </div>
                           </motion.div>
@@ -414,7 +433,7 @@ export default function TrackApplicationPage() {
                         <div>
                           <div className="font-semibold text-gray-900">Status</div>
                           <div className={`text-sm font-medium px-3 py-1 rounded-full border inline-block mt-1 ${getStatusColor(applicationData.status)}`}>
-                            {applicationData.status || "Pending"}
+                            {formatStatusLabel(applicationData.status)}
                           </div>
                         </div>
                       </div>

@@ -23,6 +23,9 @@ export type SubmissionMeta = {
     | "client_validation_failed"
     | "pending_review_with_warnings"
     | "pending_review";
+  /** Set on server: role matched `lib/job-openings` catalog. */
+  job_opening_match?: "listed" | "none";
+  job_opening_id?: string;
 };
 
 export function buildSubmissionMeta(

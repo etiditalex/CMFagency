@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { validateDocument, getDocumentTypeName, type ValidationResult } from "@/lib/documentValidator";
+import { officialJobTitleSuggestions } from "@/lib/job-openings";
 
 interface PersonalDetails {
   firstName: string;
@@ -76,6 +77,9 @@ export default function ApplicationPage() {
   const [submitEmailSent, setSubmitEmailSent] = useState(false);
   /** Shown only if email could not be sent (e.g. Resend down / no API key). */
   const [submitIdFallback, setSubmitIdFallback] = useState<string | null>(null);
+  const [submitApplicationStatus, setSubmitApplicationStatus] = useState<string | null>(null);
+
+  const jobTitleSuggestions = useMemo(() => officialJobTitleSuggestions(), []);
   const [fileValidations, setFileValidations] = useState<{
     [key: string]: ValidationResult;
   }>({});
@@ -282,6 +286,8 @@ export default function ApplicationPage() {
         details?: string;
         cmfAgencyId?: string;
         emailSent?: boolean;
+        applicationStatus?: string;
+        jobListed?: boolean;
       };
 
       if (!saveResponse.ok) {
@@ -296,6 +302,9 @@ export default function ApplicationPage() {
       setSubmitEmailSent(saveResult.emailSent === true);
       setSubmitIdFallback(
         saveResult.emailSent === true ? null : (saveResult.cmfAgencyId ?? null)
+      );
+      setSubmitApplicationStatus(
+        typeof saveResult.applicationStatus === "string" ? saveResult.applicationStatus : null
       );
       setSubmitted(true);
       if (user) {
@@ -779,9 +788,13 @@ export default function ApplicationPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Job Position *
             </label>
+            <p className="text-xs text-gray-500 mb-2">
+              Choose a title close to our open roles (suggestions below) so we can route your application correctly.
+            </p>
             <input
               type="text"
               required
+              list="cmf-job-openings"
               value={jobSelection.jobPosition}
               onChange={(e) =>
                 setJobSelection({
@@ -790,8 +803,13 @@ export default function ApplicationPage() {
                 })
               }
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="e.g., Marketing Manager, Event Coordinator"
+              placeholder="e.g., IT Support, Marketing Manager"
             />
+            <datalist id="cmf-job-openings">
+              {jobTitleSuggestions.map((t) => (
+                <option key={t} value={t} />
+              ))}
+            </datalist>
           </div>
         </div>
       ),
@@ -909,7 +927,8 @@ export default function ApplicationPage() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
               <strong>Note:</strong> When you submit, your application and files are sent securely to CMF
-              Agency. Your CMF Agency ID will be emailed to you for tracking—no WhatsApp step.
+              Agency. Your CMF Agency ID will be emailed to you for tracking. If your role does not match a current
+              opening, you will also be notified by email—no WhatsApp step.
             </p>
           </div>
         </div>
@@ -933,6 +952,16 @@ export default function ApplicationPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Application Submitted!
           </h2>
+          {submitApplicationStatus === "no_open_role" && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+              <p className="font-semibold">No matching open role</p>
+              <p className="mt-1 text-amber-900">
+                The position you entered does not match our current job catalog. Check your email—we sent details
+                there too. You can still track this submission with your CMF Agency ID; feel free to apply again when
+                we advertise a suitable role.
+              </p>
+            </div>
+          )}
           {submitEmailSent ? (
             <p className="text-gray-600 mb-6">
               Your CMF Agency ID has been sent to{" "}

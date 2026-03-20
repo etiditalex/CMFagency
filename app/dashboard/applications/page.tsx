@@ -12,6 +12,7 @@ import {
   Phone,
   RefreshCw,
   FileText,
+  Send,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 type DocMeta = {
   documents_complete?: boolean;
   qualification_hint?: string;
+  job_opening_match?: "listed" | "none";
   client_validation?: Record<string, { isValid?: boolean; warnings?: string[] }>;
 };
 
@@ -70,7 +72,15 @@ type Application = {
   updated_at: string;
 };
 
-const STATUS_OPTIONS = ["pending", "under review", "qualified", "accepted", "rejected"] as const;
+const STATUS_OPTIONS = [
+  "pending",
+  "under review",
+  "qualified",
+  "accepted",
+  "rejected",
+  "interview_invited",
+  "no_open_role",
+] as const;
 const TYPE_OPTIONS = ["job", "internship", "attachment", "event"] as const;
 
 export default function DashboardApplicationsPage() {
@@ -88,18 +98,27 @@ export default function DashboardApplicationsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkInterviewDate, setBulkInterviewDate] = useState("");
+  const [bulkInterviewTime, setBulkInterviewTime] = useState("");
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [bulkInviting, setBulkInviting] = useState(false);
 
   const stats = useMemo(() => {
     let complete = 0;
     let validationFailed = 0;
     let withWarnings = 0;
+    let listedRole = 0;
+    let unlistedRole = 0;
     for (const a of applications) {
       const m = getDocumentsMeta(a.documents as Record<string, unknown> | null);
       if (m?.documents_complete) complete++;
       if (m?.qualification_hint === "client_validation_failed") validationFailed++;
       if (m?.qualification_hint === "pending_review_with_warnings") withWarnings++;
+      if (m?.job_opening_match === "listed") listedRole++;
+      if (m?.job_opening_match === "none") unlistedRole++;
     }
-    return { complete, validationFailed, withWarnings };
+    return { complete, validationFailed, withWarnings, listedRole, unlistedRole };
   }, [applications]);
 
   const downloadFile = useCallback(async (appId: string, field: string) => {
@@ -184,6 +203,129 @@ export default function DashboardApplicationsPage() {
     user,
   ]);
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(applications.map((a) => a.id)));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const sendInterviewInvite = async (id: string) => {
+    setInvitingId(id);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      const res = await fetch(
+        `/api/fusion-xpress/applications/${encodeURIComponent(id)}/invite-interview`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            interviewDate: bulkInterviewDate.trim() || undefined,
+            interviewTime: bulkInterviewTime.trim() || undefined,
+          }),
+        }
+      );
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        application?: Application;
+      };
+
+      if (!res.ok) {
+        alert(json.error ?? "Could not send interview invite");
+        return;
+      }
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                status: "interview_invited",
+                updated_at: json.application?.updated_at ?? a.updated_at,
+              }
+            : a
+        )
+      );
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    } catch (e: unknown) {
+      console.error(e);
+      alert("Could not send interview invite");
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  const bulkSendInterviewInvites = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkInviting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      const res = await fetch("/api/fusion-xpress/applications/bulk-invite", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+          interviewDate: bulkInterviewDate.trim() || undefined,
+          interviewTime: bulkInterviewTime.trim() || undefined,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        results?: { id: string; ok: boolean; error?: string }[];
+        okCount?: number;
+        total?: number;
+      };
+
+      if (!res.ok) {
+        alert(json.error ?? "Bulk invite failed");
+        return;
+      }
+
+      const failed = (json.results ?? []).filter((r) => !r.ok);
+      await loadApplications();
+      clearSelection();
+      if (failed.length > 0) {
+        alert(
+          `Sent ${json.okCount ?? 0} of ${json.total ?? 0}.\n\nFailed:\n${failed
+            .map((f) => `• ${f.id.slice(0, 8)}… ${f.error ?? ""}`)
+            .join("\n")}`
+        );
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      alert("Bulk invite failed");
+    } finally {
+      setBulkInviting(false);
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
     setUpdatingId(id);
     try {
@@ -265,6 +407,31 @@ export default function DashboardApplicationsPage() {
     });
   };
 
+  const jobListingBadge = (meta: DocMeta | null) => {
+    const jm = meta?.job_opening_match;
+    if (jm === "listed") {
+      return (
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-emerald-50 text-emerald-900 border-emerald-200"
+          title="Role matches the job catalog (lib/job-openings.ts)"
+        >
+          Listed role
+        </span>
+      );
+    }
+    if (jm === "none") {
+      return (
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-orange-50 text-orange-900 border-orange-200"
+          title="No catalog match — applicant was notified by email"
+        >
+          No listing match
+        </span>
+      );
+    }
+    return null;
+  };
+
   const qualificationBadge = (hint: string | undefined) => {
     if (!hint) return null;
     const labels: Record<string, string> = {
@@ -297,6 +464,8 @@ export default function DashboardApplicationsPage() {
       qualified: "bg-teal-100 text-teal-900 border-teal-200",
       accepted: "bg-green-100 text-green-800 border-green-200",
       rejected: "bg-red-100 text-red-800 border-red-200",
+      interview_invited: "bg-indigo-100 text-indigo-900 border-indigo-200",
+      no_open_role: "bg-orange-100 text-orange-900 border-orange-200",
     };
     const s = styles[status] ?? "bg-gray-100 text-gray-700 border-gray-200";
     return (
@@ -317,20 +486,67 @@ export default function DashboardApplicationsPage() {
             Job Applications
           </h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
-            Applications submitted from the website are stored here with documents. Use status and notes to qualify
-            candidates; download links use a short-lived secure URL.
+            Documents are auto-triaged to <strong>under review</strong> when files are complete and the role matches
+            the job catalog. Use <strong>Invite to interview</strong> to email office details from{" "}
+            <code className="text-xs bg-gray-100 px-1 rounded">lib/job-openings.ts</code>. Unlisted roles get status{" "}
+            <strong>no_open_role</strong> and applicants are emailed automatically.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => loadApplications()}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+        <div className="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              placeholder="Interview date (e.g. 15 April 2026)"
+              value={bulkInterviewDate}
+              onChange={(e) => setBulkInterviewDate(e.target.value)}
+              className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm min-w-[200px]"
+            />
+            <input
+              type="text"
+              placeholder="Time (e.g. 10:00 AM)"
+              value={bulkInterviewTime}
+              onChange={(e) => setBulkInterviewTime(e.target.value)}
+              className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm w-36"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => loadApplications()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            {applications.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  disabled={selectedIds.size === 0}
+                  className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void bulkSendInterviewInvites()}
+                  disabled={bulkInviting || selectedIds.size === 0}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  <Send className="w-4 h-4" />
+                  {bulkInviting ? "Sending…" : `Invite selected (${selectedIds.size})`}
+                </button>
+              </>
+            )}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -351,11 +567,12 @@ export default function DashboardApplicationsPage() {
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
+          </div>
         </div>
       </div>
 
       {!loading && !error && applications.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total (filtered)</div>
             <div className="mt-1 text-2xl font-extrabold text-gray-900">{total}</div>
@@ -365,6 +582,16 @@ export default function DashboardApplicationsPage() {
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full submission</div>
             <div className="mt-1 text-2xl font-extrabold text-emerald-800">{stats.complete}</div>
             <div className="text-xs text-gray-500 mt-0.5">Required ID + CV present</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Listed role</div>
+            <div className="mt-1 text-2xl font-extrabold text-emerald-900">{stats.listedRole}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Matches job catalog</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">No listing</div>
+            <div className="mt-1 text-2xl font-extrabold text-orange-800">{stats.unlistedRole}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Applicant notified</div>
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Flagged (invalid)</div>
@@ -413,7 +640,15 @@ export default function DashboardApplicationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {applications.map((app) => (
+            {applications.map((app) => {
+              const docMeta = getDocumentsMeta(app.documents as Record<string, unknown> | null);
+              const canInvite =
+                !!app.email &&
+                app.status !== "interview_invited" &&
+                app.status !== "rejected" &&
+                app.status !== "no_open_role" &&
+                docMeta?.job_opening_match === "listed";
+              return (
               <div
                 key={app.id}
                 className="p-4 sm:p-5 hover:bg-gray-50/50 transition-colors"
@@ -421,13 +656,20 @@ export default function DashboardApplicationsPage() {
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <label className="inline-flex items-center cursor-pointer shrink-0" title="Select for bulk interview invite">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(app.id)}
+                          onChange={() => toggleSelect(app.id)}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </label>
                       <span className="font-mono text-sm font-semibold text-gray-900">
                         {app.cmf_agency_id}
                       </span>
                       {statusBadge(app.status)}
-                      {qualificationBadge(
-                        getDocumentsMeta(app.documents as Record<string, unknown> | null)?.qualification_hint
-                      )}
+                      {qualificationBadge(docMeta?.qualification_hint)}
+                      {jobListingBadge(docMeta)}
                       <span className="text-xs text-gray-500 capitalize">
                         {app.application_type}
                       </span>
@@ -461,6 +703,20 @@ export default function DashboardApplicationsPage() {
                         <ExternalLink className="w-3.5 h-3.5" />
                         Track
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => void sendInterviewInvite(app.id)}
+                        disabled={!canInvite || invitingId === app.id}
+                        title={
+                          canInvite
+                            ? "Email interview invitation with office location"
+                            : "Requires listed role, email on file, and status other than rejected / no open role / already invited"
+                        }
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-900 text-xs font-semibold hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        {invitingId === app.id ? "Sending…" : "Invite"}
+                      </button>
                       <button
                         type="button"
                         onClick={() => setExpandedId((x) => (x === app.id ? null : app.id))}
@@ -607,7 +863,8 @@ export default function DashboardApplicationsPage() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

@@ -7,6 +7,8 @@ import {
   type ClientFileValidation,
 } from "@/lib/application-documents";
 import { sendApplicationConfirmationEmail } from "@/lib/send-application-confirmation-email";
+import { matchJobOpening } from "@/lib/job-openings";
+import type { SubmissionMeta } from "@/lib/application-documents";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -30,6 +32,18 @@ const FILE_FIELDS = [
 ] as const;
 
 type FileField = (typeof FILE_FIELDS)[number];
+
+/** Auto-triage: listed role + clean docs → under review; unlisted → no_open_role; doc issues → pending. */
+function deriveInitialStatus(
+  jobListed: boolean,
+  qualificationHint: SubmissionMeta["qualification_hint"]
+): string {
+  if (!jobListed) return "no_open_role";
+  if (qualificationHint === "incomplete_documents" || qualificationHint === "client_validation_failed") {
+    return "pending";
+  }
+  return "under review";
+}
 
 function generateCMFAgencyId(): string {
   const prefix = "CMF";
@@ -106,6 +120,7 @@ async function insertApplication(
     applicationType: string;
     personal_details: Record<string, unknown>;
     documents: Record<string, unknown>;
+    status: string;
   }
 ) {
   const fullName = params.first ? `${params.first} ${params.second}`.trim() : null;
@@ -119,7 +134,7 @@ async function insertApplication(
     full_name: fullName,
     application_type: params.applicationType || "job",
     job_position: params.jobPosition || null,
-    status: "pending",
+    status: params.status,
     personal_details: params.personal_details,
     documents: params.documents,
     notes: null,
@@ -220,7 +235,6 @@ export async function POST(request: NextRequest) {
 
       const validations = meta.fileValidations ?? {};
       const submissionMeta = buildSubmissionMeta(present, validations);
-      documents._meta = submissionMeta;
 
       const first = sanitizeText(meta.firstName);
       const second = sanitizeText(meta.secondName);
@@ -230,6 +244,14 @@ export async function POST(request: NextRequest) {
       const jobPosition = sanitizeText(meta.jobPosition);
       const county = sanitizeText(meta.county);
       const applicationType = sanitizeText(meta.applicationType) || "job";
+
+      const jobMatch = matchJobOpening(jobPosition);
+      documents._meta = {
+        ...submissionMeta,
+        job_opening_match: jobMatch.matched ? "listed" : "none",
+        ...(jobMatch.matched ? { job_opening_id: jobMatch.opening.id } : {}),
+      };
+      const initialStatus = deriveInitialStatus(jobMatch.matched, submissionMeta.qualification_hint);
 
       const personal_details = {
         firstName: first,
@@ -256,6 +278,7 @@ export async function POST(request: NextRequest) {
         applicationType,
         personal_details,
         documents,
+        status: initialStatus,
       });
 
       if (error) {
@@ -271,6 +294,7 @@ export async function POST(request: NextRequest) {
         firstName: first,
         cmfAgencyId,
         jobPosition,
+        jobOpeningUnlisted: !jobMatch.matched,
       });
       const emailSent = emailResult.ok;
       if (!emailSent) {
@@ -282,6 +306,8 @@ export async function POST(request: NextRequest) {
         applicationId: data.id,
         message: "Application submitted successfully",
         emailSent,
+        jobListed: jobMatch.matched,
+        applicationStatus: initialStatus,
         ...(emailSent ? {} : { cmfAgencyId }),
       });
     }
@@ -300,6 +326,10 @@ export async function POST(request: NextRequest) {
     const county = sanitizeText(applicationData.county);
     const fullName = first ? `${first} ${second}`.trim() : name || null;
 
+    const jobMatch = matchJobOpening(jobPosition);
+    const legacyHint: SubmissionMeta["qualification_hint"] = "incomplete_documents";
+    const legacyStatus = deriveInitialStatus(jobMatch.matched, legacyHint);
+
     const applicationRecord = {
       cmf_agency_id: cmfAgencyId,
       user_id: applicationData.userId || null,
@@ -310,7 +340,7 @@ export async function POST(request: NextRequest) {
       full_name: fullName || null,
       application_type: sanitizeText(applicationData.applicationType) || "job",
       job_position: jobPosition || null,
-      status: "pending",
+      status: legacyStatus,
       personal_details: {
         firstName: first,
         secondName: second,
@@ -334,7 +364,9 @@ export async function POST(request: NextRequest) {
           documents_complete: false,
           required_present: { id_front: false, id_back: false, cv: false },
           client_validation: {},
-          qualification_hint: "pending_review" as const,
+          qualification_hint: legacyHint,
+          job_opening_match: jobMatch.matched ? "listed" : "none",
+          ...(jobMatch.matched ? { job_opening_id: jobMatch.opening.id } : {}),
         },
       },
       notes: null,
@@ -360,6 +392,7 @@ export async function POST(request: NextRequest) {
       firstName: first,
       cmfAgencyId,
       jobPosition,
+      jobOpeningUnlisted: !jobMatch.matched,
     });
     const emailSent = emailResult.ok;
     if (!emailSent) {
@@ -371,6 +404,8 @@ export async function POST(request: NextRequest) {
       applicationId: data.id,
       message: "Application submitted successfully",
       emailSent,
+      jobListed: jobMatch.matched,
+      applicationStatus: legacyStatus,
       ...(emailSent ? {} : { cmfAgencyId }),
     });
   } catch (error: unknown) {

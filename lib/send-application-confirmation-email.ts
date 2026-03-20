@@ -16,6 +16,8 @@ export async function sendApplicationConfirmationEmail(params: {
   firstName: string;
   cmfAgencyId: string;
   jobPosition?: string;
+  /** Role did not match any opening in the job catalog */
+  jobOpeningUnlisted?: boolean;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
@@ -35,6 +37,19 @@ export async function sendApplicationConfirmationEmail(params: {
     ? `<p style="margin: 0 0 16px;"><strong>Position applied for:</strong> ${escapeHtml(params.jobPosition.trim())}</p>`
     : "";
 
+  const unlisted =
+    params.jobOpeningUnlisted && params.jobPosition?.trim()
+      ? `<div style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 0 0 20px;">
+          <p style="margin: 0; color: #92400e;"><strong>No matching open role</strong></p>
+          <p style="margin: 8px 0 0; color: #78350f;">We do not currently have an opening that matches &ldquo;${escapeHtml(params.jobPosition.trim())}&rdquo;. Your application is on file with your CMF Agency ID below; you may apply again when a suitable role is advertised.</p>
+        </div>`
+      : params.jobOpeningUnlisted
+        ? `<div style="background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin: 0 0 20px;">
+          <p style="margin: 0; color: #92400e;"><strong>No matching open role</strong></p>
+          <p style="margin: 8px 0 0; color: #78350f;">We do not currently have a listed opening for the role you selected. You may try again in the future when we advertise new positions.</p>
+        </div>`
+        : "";
+
   const html = `
       <!DOCTYPE html>
       <html>
@@ -48,6 +63,7 @@ export async function sendApplicationConfirmationEmail(params: {
           <p>Hello ${first},</p>
           <p>Thank you for applying. Your application and documents are stored securely. Our team will review your submission in the dashboard.</p>
           ${position}
+          ${unlisted}
           <p style="margin: 0 0 8px;"><strong>Your CMF Agency ID</strong> (save this to track your status):</p>
           <div style="background: white; border: 2px solid #667eea; border-radius: 8px; padding: 16px; text-align: center; margin: 0 0 20px;">
             <p style="font-size: 22px; font-weight: bold; letter-spacing: 2px; color: #111827; margin: 0; font-family: monospace;">${id}</p>
