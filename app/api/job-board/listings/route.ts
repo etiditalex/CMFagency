@@ -20,7 +20,7 @@ export async function GET() {
     const { data: rows, error } = await supabase
       .from("job_listings")
       .select(
-        "id,title,company_name,location,employment_type,salary_text,summary,status,published_at,created_at"
+        "id,title,company_name,location,employment_type,salary_text,summary,poster_url,status,published_at,created_at"
       )
       .eq("status", "published")
       .order("created_at", { ascending: false });
@@ -40,6 +40,7 @@ export async function GET() {
       employment_type: r.employment_type,
       salary_text: r.salary_text,
       summary: r.summary,
+      poster_url: typeof r.poster_url === "string" && r.poster_url.trim() ? r.poster_url.trim() : null,
       published_at: r.published_at,
       requires_paid_membership: listingRequiresPaidMembership(String(r.employment_type ?? "")),
     }));

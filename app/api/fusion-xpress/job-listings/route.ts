@@ -88,6 +88,12 @@ export async function POST(req: NextRequest) {
       benefits = parseLines(body.benefits_text);
     }
 
+    let poster_url: string | null = null;
+    if (typeof body.poster_url === "string") {
+      const p = body.poster_url.trim();
+      poster_url = p.length > 0 ? p.slice(0, 4_000_000) : null;
+    }
+
     const nowIso = new Date().toISOString();
     const row = {
       title,
@@ -100,6 +106,7 @@ export async function POST(req: NextRequest) {
       requirements,
       benefits,
       contact_email: String(body.contact_email ?? "").trim() || null,
+      poster_url,
       status,
       posted_by: userId,
       published_at: status === "published" ? nowIso : null,

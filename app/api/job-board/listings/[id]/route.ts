@@ -69,6 +69,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
     const unlocked = !needsMembership || hasMembership;
 
+    const poster =
+      typeof r.poster_url === "string" && r.poster_url.trim() ? String(r.poster_url).trim() : null;
+
     if (unlocked) {
       return NextResponse.json({
         listing: {
@@ -79,6 +82,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
           employment_type: r.employment_type,
           salary_text: r.salary_text,
           summary: r.summary,
+          poster_url: poster,
           description: r.description,
           requirements: r.requirements,
           benefits: r.benefits,
@@ -99,6 +103,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
         employment_type: r.employment_type,
         salary_text: r.salary_text,
         summary: r.summary,
+        poster_url: poster,
         published_at: r.published_at,
       },
       locked: true,

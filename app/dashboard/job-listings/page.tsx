@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
-import { Plus, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Loader2, Upload } from "lucide-react";
 
 type Listing = {
   id: string;
@@ -18,6 +18,7 @@ type Listing = {
   requirements: unknown;
   benefits: unknown;
   contact_email: string | null;
+  poster_url?: string | null;
   status: string;
   created_at: string;
 };
@@ -44,6 +45,7 @@ export default function DashboardJobListingsPage() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [posterUploading, setPosterUploading] = useState(false);
 
   const emptyForm = {
     title: "",
@@ -56,6 +58,7 @@ export default function DashboardJobListingsPage() {
     requirements_text: "",
     benefits_text: "",
     contact_email: "",
+    poster_url: "",
     status: "draft" as "draft" | "published" | "closed",
   };
 
@@ -109,8 +112,44 @@ export default function DashboardJobListingsPage() {
       requirements_text: linesFromJson(row.requirements),
       benefits_text: linesFromJson(row.benefits),
       contact_email: row.contact_email ?? "",
+      poster_url: typeof row.poster_url === "string" ? row.poster_url : "",
       status: (row.status as "draft" | "published" | "closed") || "draft",
     });
+  };
+
+  const handlePosterFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setPosterUploading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setError("Not signed in");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/fusion-xpress/job-listings/poster-upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof j.error === "string" ? j.error : "Poster upload failed");
+        return;
+      }
+      if (typeof j.url === "string") setForm((f) => ({ ...f, poster_url: j.url }));
+    } catch {
+      setError("Poster upload failed");
+    } finally {
+      setPosterUploading(false);
+    }
   };
 
   const resetForm = () => {
@@ -146,6 +185,7 @@ export default function DashboardJobListingsPage() {
         requirements,
         benefits,
         contact_email: form.contact_email || null,
+        poster_url: form.poster_url.trim() || null,
         status: form.status,
       };
 
@@ -325,6 +365,49 @@ export default function DashboardJobListingsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
               />
             </div>
+
+            <div className="md:col-span-2 rounded-lg border border-dashed border-gray-300 bg-white p-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Poster / advert image (optional)</label>
+                <p className="text-xs text-gray-500 mb-2">
+                  Shown on the public job board card. JPG, PNG, WebP or GIF — max 2MB. You can upload from your device or
+                  paste an image URL.
+                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-sm font-medium text-gray-800 cursor-pointer hover:bg-gray-100">
+                    <Upload className="w-4 h-4" />
+                    {posterUploading ? "Uploading…" : "Choose file"}
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handlePosterFile} disabled={posterUploading} />
+                  </label>
+                  {posterUploading && <Loader2 className="w-5 h-5 animate-spin text-primary-600" />}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Or image URL</label>
+                <input
+                  type="url"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="https://…"
+                  value={form.poster_url.startsWith("data:") ? "" : form.poster_url}
+                  onChange={(e) => setForm((f) => ({ ...f, poster_url: e.target.value }))}
+                />
+              </div>
+              {form.poster_url ? (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="relative rounded-lg border border-gray-200 overflow-hidden max-w-xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={form.poster_url} alt="Poster preview" className="max-h-36 w-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, poster_url: "" }))}
+                    className="text-sm font-semibold text-red-600 hover:underline"
+                  >
+                    Remove poster
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Full description *</label>
               <textarea
@@ -410,7 +493,7 @@ export default function DashboardJobListingsPage() {
                     <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
                       <td className="p-3 font-medium text-gray-900">{row.title}</td>
                       <td className="p-3 text-gray-700">{row.company_name}</td>
-                      <td className="p-3 text-gray-600">{row.employment_type.replace("_", " ")}</td>
+                      <td className="p-3 text-gray-600">{row.employment_type.replace(/_/g, " ")}</td>
                       <td className="p-3">
                         <span
                           className={

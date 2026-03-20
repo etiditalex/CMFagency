@@ -67,6 +67,15 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       patch.benefits = body.benefits.map((x) => String(x).trim()).filter(Boolean);
     }
 
+    if ("poster_url" in body) {
+      if (body.poster_url === null) {
+        patch.poster_url = null;
+      } else if (typeof body.poster_url === "string") {
+        const p = body.poster_url.trim();
+        patch.poster_url = p.length > 0 ? p.slice(0, 4_000_000) : null;
+      }
+    }
+
     if (typeof body.status === "string") {
       const st = body.status.trim();
       if (!STATUSES.has(st)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });

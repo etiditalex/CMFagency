@@ -16,6 +16,7 @@ type ListingFull = {
   employment_type: string;
   salary_text: string | null;
   summary: string | null;
+  poster_url: string | null;
   description: string;
   requirements: string[];
   benefits: string[];
@@ -73,6 +74,8 @@ export default function JobDetailPage() {
             employment_type: String(L.employment_type ?? ""),
             salary_text: L.salary_text != null ? String(L.salary_text) : null,
             summary: L.summary != null ? String(L.summary) : null,
+            poster_url:
+              typeof L.poster_url === "string" && L.poster_url.trim() ? String(L.poster_url).trim() : null,
             description: String(L.description ?? ""),
             requirements: req,
             benefits: ben,
@@ -144,6 +147,22 @@ export default function JobDetailPage() {
               <span>Back to Jobs</span>
             </Link>
           </motion.div>
+
+          {listing.poster_url && (
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-6 rounded-xl overflow-hidden border border-gray-200 shadow-md bg-gray-100 aspect-[21/9] max-h-[min(40vh,420px)]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- data URLs and arbitrary hosts */}
+              <img
+                src={listing.poster_url}
+                alt=""
+                className="w-full h-full object-cover object-center"
+              />
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
