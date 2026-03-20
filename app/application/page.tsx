@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import {
   Send,
   AlertCircle,
   CheckCircle2,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -45,6 +46,8 @@ interface JobSelection {
   cv: File | null;
   jobPosition: string;
 }
+
+type JobSeekerFocus = "paid_roles" | "internship_attachment" | "mixed";
 
 export default function ApplicationPage() {
   const router = useRouter();
@@ -78,6 +81,14 @@ export default function ApplicationPage() {
   /** Shown only if email could not be sent (e.g. Resend down / no API key). */
   const [submitIdFallback, setSubmitIdFallback] = useState<string | null>(null);
   const [submitApplicationStatus, setSubmitApplicationStatus] = useState<string | null>(null);
+  const [jobSeekerFocus, setJobSeekerFocus] = useState<JobSeekerFocus>("mixed");
+  const [membershipPhone, setMembershipPhone] = useState("");
+  const [membershipBusy, setMembershipBusy] = useState(false);
+  const [membershipErr, setMembershipErr] = useState<string | null>(null);
+  const [membershipActive, setMembershipActive] = useState(false);
+  const [membershipUntil, setMembershipUntil] = useState<string | null>(null);
+  const [membershipPolling, setMembershipPolling] = useState(false);
+  const membershipPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const jobTitleSuggestions = useMemo(() => officialJobTitleSuggestions(), []);
   const [fileValidations, setFileValidations] = useState<{
@@ -122,6 +133,9 @@ export default function ApplicationPage() {
       if (savedData) {
         const parsed = JSON.parse(savedData);
         setPersonalDetails(parsed.personalDetails || personalDetails);
+        if (parsed.jobSeekerFocus === "paid_roles" || parsed.jobSeekerFocus === "internship_attachment" || parsed.jobSeekerFocus === "mixed") {
+          setJobSeekerFocus(parsed.jobSeekerFocus);
+        }
         // Note: Files can't be stored in localStorage, so we only restore form data
       }
     }
@@ -132,6 +146,7 @@ export default function ApplicationPage() {
     if (typeof window !== "undefined" && user) {
       const dataToSave = {
         personalDetails,
+        jobSeekerFocus,
         jobSelection: {
           ...jobSelection,
           cv: null, // Can't save file to localStorage
@@ -139,7 +154,111 @@ export default function ApplicationPage() {
       };
       localStorage.setItem(`application_${user.id}`, JSON.stringify(dataToSave));
     }
-  }, [personalDetails, jobSelection, user]);
+  }, [personalDetails, jobSelection, jobSeekerFocus, user]);
+
+  useEffect(() => {
+    return () => {
+      if (membershipPollRef.current) {
+        clearInterval(membershipPollRef.current);
+        membershipPollRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!submitted || !user) return;
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      const res = await fetch("/api/job-board/membership/status", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const j = await res.json().catch(() => ({}));
+      if (cancelled) return;
+      if (j.active === true) {
+        setMembershipActive(true);
+        setMembershipUntil(typeof j.valid_until === "string" ? j.valid_until : null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [submitted, user]);
+
+  useEffect(() => {
+    if (submitted && personalDetails.phone && !membershipPhone) {
+      setMembershipPhone(personalDetails.phone.replace(/\s/g, ""));
+    }
+  }, [submitted, personalDetails.phone, membershipPhone]);
+
+  const startMembershipPayment = useCallback(async () => {
+    setMembershipErr(null);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setMembershipErr("Please sign in again.");
+      return;
+    }
+    const phoneDigits = membershipPhone.trim().replace(/\s/g, "");
+    if (!phoneDigits) {
+      setMembershipErr("Enter the M-Pesa phone number to bill.");
+      return;
+    }
+    setMembershipBusy(true);
+    try {
+      const res = await fetch("/api/job-board/membership/stk-push", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: phoneDigits,
+          email: personalDetails.email,
+          payer_name: `${personalDetails.firstName} ${personalDetails.secondName}`.trim(),
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMembershipErr(typeof j.error === "string" ? j.error : "Payment could not be started.");
+        return;
+      }
+      if (membershipPollRef.current) {
+        clearInterval(membershipPollRef.current);
+        membershipPollRef.current = null;
+      }
+      setMembershipPolling(true);
+      const token = session.access_token;
+      const start = Date.now();
+      membershipPollRef.current = setInterval(async () => {
+        if (Date.now() - start > 120000) {
+          if (membershipPollRef.current) clearInterval(membershipPollRef.current);
+          membershipPollRef.current = null;
+          setMembershipPolling(false);
+          return;
+        }
+        const st = await fetch("/api/job-board/membership/status", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const sj = await st.json().catch(() => ({}));
+        if (sj.active === true) {
+          if (membershipPollRef.current) clearInterval(membershipPollRef.current);
+          membershipPollRef.current = null;
+          setMembershipPolling(false);
+          setMembershipActive(true);
+          setMembershipUntil(typeof sj.valid_until === "string" ? sj.valid_until : null);
+        }
+      }, 4000);
+    } catch {
+      setMembershipErr("Something went wrong. Try again.");
+    } finally {
+      setMembershipBusy(false);
+    }
+  }, [membershipPhone, personalDetails.email, personalDetails.firstName, personalDetails.secondName]);
 
   // Show loading state while checking authentication
   if (loading) {
@@ -257,6 +376,7 @@ export default function ApplicationPage() {
         passport: personalDetails.passport,
         applicationType: "job",
         jobPosition: jobSelection.jobPosition,
+        jobSeekerFocus,
         fileValidations: {
           passportPhoto: fileValidations.passportPhoto,
           idFront: fileValidations.idFront,
@@ -811,6 +931,53 @@ export default function ApplicationPage() {
               ))}
             </datalist>
           </div>
+
+          <fieldset className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <legend className="text-sm font-semibold text-gray-800 px-1">
+              What are you mainly looking for next? *
+            </legend>
+            <p className="text-xs text-gray-500 -mt-1 mb-2">
+              Internship and industrial attachment vacancies stay free on our job board. Full-time and contract listings
+              need a small annual membership (KES&nbsp;500) after you apply.
+            </p>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="jobSeekerFocus"
+                className="mt-1"
+                checked={jobSeekerFocus === "paid_roles"}
+                onChange={() => setJobSeekerFocus("paid_roles")}
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-900">Paid roles</span> — full-time, part-time, or contract
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="jobSeekerFocus"
+                className="mt-1"
+                checked={jobSeekerFocus === "internship_attachment"}
+                onChange={() => setJobSeekerFocus("internship_attachment")}
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-900">Internship or attachment only</span> — no fee to browse those
+                listings
+              </span>
+            </label>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="jobSeekerFocus"
+                className="mt-1"
+                checked={jobSeekerFocus === "mixed"}
+                onChange={() => setJobSeekerFocus("mixed")}
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-900">Both</span> — open to paid roles and internship/attachment
+              </span>
+            </label>
+          </fieldset>
         </div>
       ),
     },
@@ -921,6 +1088,16 @@ export default function ApplicationPage() {
                   {jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
                 </p>
               </div>
+              <div className="md:col-span-2">
+                <span className="font-medium text-gray-700">Job search focus:</span>
+                <p className="text-gray-900">
+                  {jobSeekerFocus === "paid_roles"
+                    ? "Paid roles (full-time / part-time / contract)"
+                    : jobSeekerFocus === "internship_attachment"
+                      ? "Internship or industrial attachment only"
+                      : "Paid roles and internship / attachment"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -946,7 +1123,7 @@ export default function ApplicationPage() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full text-center"
+          className="bg-white p-8 rounded-xl shadow-lg max-w-3xl w-full text-center"
         >
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -1004,6 +1181,116 @@ export default function ApplicationPage() {
               with your CMF Agency ID anytime.
             </p>
           )}
+
+          <div className="mt-8 pt-6 border-t border-gray-200 text-left space-y-4">
+            <h3 className="text-lg font-bold text-gray-900 text-center">Job board access</h3>
+            {membershipActive ? (
+              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 text-center">
+                <p className="font-semibold">You have active job-board membership.</p>
+                {membershipUntil && (
+                  <p className="mt-1">
+                    Valid until{" "}
+                    {new Date(membershipUntil).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                    .
+                  </p>
+                )}
+                <Link href="/jobs" className="inline-block mt-2 text-primary-700 font-semibold underline">
+                  Browse all listings
+                </Link>
+              </div>
+            ) : jobSeekerFocus === "internship_attachment" ? (
+              <div className="space-y-3 text-sm text-gray-700">
+                <p>
+                  You indicated you&apos;re focused on <strong>internship or attachment</strong>. Those listings are{" "}
+                  <strong>free</strong> for everyone — no KES&nbsp;500 fee.
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Link
+                    href="/jobs"
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700"
+                  >
+                    Browse internships &amp; attachments
+                  </Link>
+                </div>
+                <details className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <summary className="cursor-pointer font-medium text-gray-800">
+                    Also want paid job listings? (optional)
+                  </summary>
+                  <p className="mt-2 text-gray-600">
+                    Pay KES&nbsp;500 once for <strong>one year</strong> of access to full-time, part-time, and contract
+                    vacancies. M-Pesa STK push — same number you use on your phone.
+                  </p>
+                  <div className="mt-3 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                    <div className="flex items-center gap-2 flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                      <Phone className="w-4 h-4 text-gray-500 shrink-0" />
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        placeholder="07XX XXX XXX"
+                        className="flex-1 outline-none text-sm"
+                        value={membershipPhone}
+                        onChange={(e) => setMembershipPhone(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={membershipBusy || membershipPolling}
+                      onClick={startMembershipPayment}
+                      className="px-4 py-2 rounded-lg bg-gray-900 text-white font-semibold hover:bg-black disabled:opacity-50"
+                    >
+                      {membershipBusy ? "Starting…" : membershipPolling ? "Waiting for payment…" : "Pay KES 500"}
+                    </button>
+                  </div>
+                  {membershipErr && <p className="text-red-600 text-xs mt-2">{membershipErr}</p>}
+                </details>
+              </div>
+            ) : (
+              <div className="space-y-3 text-sm text-gray-700">
+                <p>
+                  Unlock <strong>full-time, part-time, and contract</strong> vacancies on our job board for{" "}
+                  <strong>KES&nbsp;500 / year</strong> (M-Pesa). Renews whenever you pay again; we extend from your
+                  current expiry if you&apos;re already a member.
+                </p>
+                <p className="text-gray-600">
+                  <strong>Internship</strong> and <strong>industrial attachment</strong> posts stay free to read — visit{" "}
+                  <Link href="/jobs" className="text-primary-600 font-semibold underline">
+                    Job board
+                  </Link>{" "}
+                  anytime.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center pt-1">
+                  <div className="flex items-center gap-2 flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50">
+                    <Phone className="w-4 h-4 text-gray-500 shrink-0" />
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="M-Pesa number (07XX XXX XXX)"
+                      className="flex-1 outline-none text-sm bg-transparent"
+                      value={membershipPhone}
+                      onChange={(e) => setMembershipPhone(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={membershipBusy || membershipPolling}
+                    onClick={startMembershipPayment}
+                    className="px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {membershipBusy ? "Sending prompt…" : membershipPolling ? "Complete on phone…" : "Pay with M-Pesa"}
+                  </button>
+                </div>
+                {membershipErr && <p className="text-red-600 text-xs">{membershipErr}</p>}
+                {membershipPolling && (
+                  <p className="text-xs text-gray-500 text-center">Checking payment — keep this tab open for up to 2 minutes.</p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/track-application" className="btn-primary inline-flex items-center justify-center">
               Track application

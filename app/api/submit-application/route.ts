@@ -102,6 +102,8 @@ type MetaPayload = {
   passport?: string;
   applicationType?: string;
   jobPosition?: string;
+  /** paid_roles | internship_attachment | mixed — used for job-board upsell copy only */
+  jobSeekerFocus?: string;
   fileValidations?: Record<string, ClientFileValidation>;
 };
 
@@ -253,6 +255,14 @@ export async function POST(request: NextRequest) {
       };
       const initialStatus = deriveInitialStatus(jobMatch.matched, submissionMeta.qualification_hint);
 
+      const jobSeekerFocusRaw = typeof meta.jobSeekerFocus === "string" ? meta.jobSeekerFocus.trim() : "";
+      const jobSeekerFocus =
+        jobSeekerFocusRaw === "paid_roles" ||
+        jobSeekerFocusRaw === "internship_attachment" ||
+        jobSeekerFocusRaw === "mixed"
+          ? jobSeekerFocusRaw
+          : "mixed";
+
       const personal_details = {
         firstName: first,
         secondName: second,
@@ -263,6 +273,7 @@ export async function POST(request: NextRequest) {
         age: meta.age,
         county,
         passport: sanitizeText(meta.passport),
+        jobSeekerFocus,
       };
 
       const { data, error } = await insertApplication(supabaseAdmin, {

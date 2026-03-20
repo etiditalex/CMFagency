@@ -148,6 +148,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
+    // Job board annual membership (KES 500) — extend valid_until by 1 year
+    if (meta.job_board_membership === true && meta.job_board_user_id) {
+      const userId = String(meta.job_board_user_id);
+      const { data: existingRow } = await supabase
+        .from("job_board_memberships")
+        .select("valid_until")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const now = new Date();
+      let base = now;
+      const existingUntil = existingRow && (existingRow as { valid_until?: string }).valid_until;
+      if (existingUntil) {
+        const prev = new Date(existingUntil);
+        if (!Number.isNaN(prev.getTime()) && prev > now) base = prev;
+      }
+      const newUntil = new Date(base);
+      newUntil.setFullYear(newUntil.getFullYear() + 1);
+
+      await supabase.from("job_board_memberships").upsert(
+        {
+          user_id: userId,
+          valid_until: newUntil.toISOString(),
+          last_transaction_id: tx.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as any)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    }
+
     // Merchandise: just mark fulfilled (email sent below)
     if (meta.merchandise_cart === true) {
       await supabase
