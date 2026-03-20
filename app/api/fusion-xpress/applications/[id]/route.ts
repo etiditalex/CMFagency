@@ -88,9 +88,12 @@ export async function PATCH(
     const status = typeof body.status === "string" ? body.status.trim() : undefined;
     const notes = typeof body.notes === "string" ? body.notes : body.notes === null ? null : undefined;
 
-    const allowedStatuses = ["pending", "under review", "accepted", "rejected"];
+    const allowedStatuses = ["pending", "under review", "qualified", "accepted", "rejected"];
     if (status !== undefined && !allowedStatuses.includes(status)) {
-      return NextResponse.json({ error: "Invalid status. Use: pending, under review, accepted, rejected" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid status. Use: pending, under review, qualified, accepted, rejected" },
+        { status: 400 }
+      );
     }
 
     const updates: Record<string, unknown> = {};

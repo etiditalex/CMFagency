@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,6 +17,39 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+
+type DocMeta = {
+  documents_complete?: boolean;
+  qualification_hint?: string;
+  client_validation?: Record<string, { isValid?: boolean; warnings?: string[] }>;
+};
+
+const DOC_FIELDS = [
+  { key: "idFront", label: "ID front" },
+  { key: "idBack", label: "ID back" },
+  { key: "passportPhoto", label: "Passport photo" },
+  { key: "certificateOfGoodConduct", label: "Good conduct" },
+  { key: "cv", label: "CV" },
+] as const;
+
+function getDocFileInfo(raw: unknown): { fileName?: string; storagePath?: string } | null {
+  if (raw == null) return null;
+  if (typeof raw === "string") return { fileName: raw };
+  if (typeof raw === "object" && raw !== null) {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.storagePath === "string")
+      return { fileName: typeof o.fileName === "string" ? o.fileName : undefined, storagePath: o.storagePath };
+    if (typeof o.fileName === "string") return { fileName: o.fileName };
+  }
+  return null;
+}
+
+function getDocumentsMeta(documents: Record<string, unknown> | null): DocMeta | null {
+  if (!documents || typeof documents !== "object") return null;
+  const m = documents._meta;
+  if (!m || typeof m !== "object") return null;
+  return m as DocMeta;
+}
 
 type Application = {
   id: string;
@@ -37,7 +70,7 @@ type Application = {
   updated_at: string;
 };
 
-const STATUS_OPTIONS = ["pending", "under review", "accepted", "rejected"] as const;
+const STATUS_OPTIONS = ["pending", "under review", "qualified", "accepted", "rejected"] as const;
 const TYPE_OPTIONS = ["job", "internship", "attachment", "event"] as const;
 
 export default function DashboardApplicationsPage() {
@@ -55,6 +88,38 @@ export default function DashboardApplicationsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+
+  const stats = useMemo(() => {
+    let complete = 0;
+    let validationFailed = 0;
+    let withWarnings = 0;
+    for (const a of applications) {
+      const m = getDocumentsMeta(a.documents as Record<string, unknown> | null);
+      if (m?.documents_complete) complete++;
+      if (m?.qualification_hint === "client_validation_failed") validationFailed++;
+      if (m?.qualification_hint === "pending_review_with_warnings") withWarnings++;
+    }
+    return { complete, validationFailed, withWarnings };
+  }, [applications]);
+
+  const downloadFile = useCallback(async (appId: string, field: string) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch(
+        `/api/fusion-xpress/applications/${encodeURIComponent(appId)}/file?field=${encodeURIComponent(field)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (json.url) window.open(json.url, "_blank", "noopener,noreferrer");
+      else alert(json.error ?? "Could not open file");
+    } catch {
+      alert("Could not open file");
+    }
+  }, []);
 
   const loadApplications = useCallback(async () => {
     setLoading(true);
@@ -200,10 +265,36 @@ export default function DashboardApplicationsPage() {
     });
   };
 
+  const qualificationBadge = (hint: string | undefined) => {
+    if (!hint) return null;
+    const labels: Record<string, string> = {
+      incomplete_documents: "Incomplete docs",
+      client_validation_failed: "Validation failed",
+      pending_review_with_warnings: "Has warnings",
+      pending_review: "Ready for review",
+    };
+    const styles: Record<string, string> = {
+      incomplete_documents: "bg-gray-100 text-gray-800 border-gray-200",
+      client_validation_failed: "bg-red-100 text-red-800 border-red-200",
+      pending_review_with_warnings: "bg-amber-100 text-amber-900 border-amber-200",
+      pending_review: "bg-emerald-100 text-emerald-900 border-emerald-200",
+    };
+    const s = styles[hint] ?? "bg-gray-100 text-gray-700 border-gray-200";
+    return (
+      <span
+        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${s}`}
+        title="Automated hint from applicant upload checks (not a final decision)"
+      >
+        {labels[hint] ?? hint}
+      </span>
+    );
+  };
+
   const statusBadge = (status: string) => {
     const styles: Record<string, string> = {
       pending: "bg-amber-100 text-amber-800 border-amber-200",
       "under review": "bg-blue-100 text-blue-800 border-blue-200",
+      qualified: "bg-teal-100 text-teal-900 border-teal-200",
       accepted: "bg-green-100 text-green-800 border-green-200",
       rejected: "bg-red-100 text-red-800 border-red-200",
     };
@@ -226,7 +317,8 @@ export default function DashboardApplicationsPage() {
             Job Applications
           </h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
-            View and manage job, internship, and attachment applications. Update status and add internal notes.
+            Applications submitted from the website are stored here with documents. Use status and notes to qualify
+            candidates; download links use a short-lived secure URL.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -262,6 +354,31 @@ export default function DashboardApplicationsPage() {
         </div>
       </div>
 
+      {!loading && !error && applications.length > 0 && (
+        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total (filtered)</div>
+            <div className="mt-1 text-2xl font-extrabold text-gray-900">{total}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{applications.length} loaded</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full submission</div>
+            <div className="mt-1 text-2xl font-extrabold text-emerald-800">{stats.complete}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Required ID + CV present</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Flagged (invalid)</div>
+            <div className="mt-1 text-2xl font-extrabold text-red-800">{stats.validationFailed}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Client checks failed</div>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Warnings only</div>
+            <div className="mt-1 text-2xl font-extrabold text-amber-800">{stats.withWarnings}</div>
+            <div className="text-xs text-gray-500 mt-0.5">Review document names / quality</div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-gray-500">
@@ -285,7 +402,7 @@ export default function DashboardApplicationsPage() {
             <Briefcase className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p className="font-medium">No applications yet</p>
             <p className="mt-1 text-sm">
-              Applications submitted via the careers form will appear here.
+              Applications submitted from the site (after sign-in) appear here with uploaded files.
             </p>
             <Link
               href="/application"
@@ -308,6 +425,9 @@ export default function DashboardApplicationsPage() {
                         {app.cmf_agency_id}
                       </span>
                       {statusBadge(app.status)}
+                      {qualificationBadge(
+                        getDocumentsMeta(app.documents as Record<string, unknown> | null)?.qualification_hint
+                      )}
                       <span className="text-xs text-gray-500 capitalize">
                         {app.application_type}
                       </span>
@@ -385,10 +505,48 @@ export default function DashboardApplicationsPage() {
                       )}
                       {app.documents && Object.keys(app.documents).length > 0 && (
                         <div>
-                          <div className="font-semibold text-gray-700 mb-1">Documents</div>
-                          <pre className="bg-gray-50 p-3 rounded text-xs overflow-auto max-h-24 whitespace-pre-wrap font-sans">
-                            {JSON.stringify(app.documents, null, 2)}
-                          </pre>
+                          <div className="font-semibold text-gray-700 mb-2">Documents</div>
+                          <ul className="space-y-2 text-sm">
+                            {DOC_FIELDS.map(({ key, label }) => {
+                              const raw = (app.documents as Record<string, unknown>)[key];
+                              const info = getDocFileInfo(raw);
+                              if (!info?.fileName && !info?.storagePath) return null;
+                              return (
+                                <li
+                                  key={key}
+                                  className="flex flex-wrap items-center justify-between gap-2 bg-gray-50 rounded-md px-3 py-2"
+                                >
+                                  <span className="text-gray-700">
+                                    <span className="font-medium">{label}:</span>{" "}
+                                    {info.fileName ?? "—"}
+                                  </span>
+                                  {info.storagePath ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => downloadFile(app.id, key)}
+                                      className="text-primary-600 hover:text-primary-800 font-semibold text-xs"
+                                    >
+                                      Open / download
+                                    </button>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">Legacy (name only)</span>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {getDocumentsMeta(app.documents as Record<string, unknown> | null)?.client_validation && (
+                            <details className="mt-2 text-xs">
+                              <summary className="cursor-pointer text-gray-600 font-medium">Client validation details</summary>
+                              <pre className="mt-2 bg-gray-50 p-2 rounded overflow-auto max-h-32 whitespace-pre-wrap font-sans">
+                                {JSON.stringify(
+                                  getDocumentsMeta(app.documents as Record<string, unknown> | null)?.client_validation,
+                                  null,
+                                  2
+                                )}
+                              </pre>
+                            </details>
+                          )}
                         </div>
                       )}
                       <div>

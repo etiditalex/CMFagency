@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 import { validateDocument, getDocumentTypeName, type ValidationResult } from "@/lib/documentValidator";
 
 interface PersonalDetails {
@@ -227,127 +228,78 @@ export default function ApplicationPage() {
 
   const handleSubmit = async () => {
     try {
-      // Save application to database first
-      const applicationPayload = {
-        userId: user?.id || null,
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        alert("Please sign in to submit your application.");
+        return;
+      }
+
+      const meta = {
+        userId: user?.id,
         firstName: personalDetails.firstName,
         secondName: personalDetails.secondName,
         email: personalDetails.email,
         phone: personalDetails.phone,
         idNumber: personalDetails.idNumber,
-        nationalId: personalDetails.idNumber,
         gender: personalDetails.gender,
         age: personalDetails.age,
         county: personalDetails.county,
         passport: personalDetails.passport,
         applicationType: "job",
         jobPosition: jobSelection.jobPosition,
-        documents: {
-          passportPhoto: documents.passportPhoto,
-          idFront: documents.idFront,
-          idBack: documents.idBack,
-          certificateOfGoodConduct: documents.certificateOfGoodConduct,
-        },
-        jobSelection: {
-          cv: jobSelection.cv,
+        fileValidations: {
+          passportPhoto: fileValidations.passportPhoto,
+          idFront: fileValidations.idFront,
+          idBack: fileValidations.idBack,
+          certificateOfGoodConduct: fileValidations.certificateOfGoodConduct,
         },
       };
 
+      const fd = new FormData();
+      fd.append("meta", JSON.stringify(meta));
+      if (documents.idFront) fd.append("idFront", documents.idFront);
+      if (documents.idBack) fd.append("idBack", documents.idBack);
+      if (documents.passportPhoto) fd.append("passportPhoto", documents.passportPhoto);
+      if (documents.certificateOfGoodConduct) {
+        fd.append("certificateOfGoodConduct", documents.certificateOfGoodConduct);
+      }
+      if (jobSelection.cv) fd.append("cv", jobSelection.cv);
+
       const saveResponse = await fetch("/api/submit-application", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(applicationPayload),
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: fd,
       });
 
-      const saveResult = await saveResponse.json();
-      let cmfAgencyId = "";
+      const saveResult = (await saveResponse.json().catch(() => ({}))) as {
+        error?: string;
+        details?: string;
+        cmfAgencyId?: string;
+      };
 
-      if (saveResponse.ok && saveResult.cmfAgencyId) {
-        cmfAgencyId = saveResult.cmfAgencyId;
+      if (!saveResponse.ok) {
+        alert(
+          saveResult.error ??
+            (typeof saveResult.details === "string" ? saveResult.details : null) ??
+            "Submission failed. Please try again."
+        );
+        return;
       }
 
-      // Format application data for WhatsApp
-      const whatsappMessage = `*Job Application Submission*
-${cmfAgencyId ? `\n*CMF Agency ID: ${cmfAgencyId}*\n` : ""}
-
-*Personal Details:*
-First Name: ${personalDetails.firstName}
-Second Name: ${personalDetails.secondName}
-Email: ${personalDetails.email}
-Phone: ${personalDetails.phone}
-ID Number: ${personalDetails.idNumber}
-Gender: ${personalDetails.gender}
-Age: ${personalDetails.age}
-County: ${personalDetails.county}
-Passport: ${personalDetails.passport || "Not provided"}
-
-*Job Selection:*
-Position: ${jobSelection.jobPosition}
-CV: ${jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
-
-*Documents:*
-Passport Photo: ${documents.passportPhoto ? documents.passportPhoto.name : "Not uploaded"}
-ID Front: ${documents.idFront ? documents.idFront.name : "Not uploaded"}
-ID Back: ${documents.idBack ? documents.idBack.name : "Not uploaded"}
-Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not provided (optional)"}
-
-${cmfAgencyId ? `\n*Track your application using ID: ${cmfAgencyId}*\n` : ""}
----
-*Note: Please attach all document files to this WhatsApp message.*`;
-
-      const encodedMessage = encodeURIComponent(whatsappMessage);
-      const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
-
-      window.open(whatsappUrl, "_blank");
+      const cmfAgencyId = saveResult.cmfAgencyId ?? "";
       setSubmitted(true);
-
-      // Clear saved data after submission
       if (user) {
         localStorage.removeItem(`application_${user.id}`);
       }
 
-      // Show success message with CMF Agency ID if available
-      if (cmfAgencyId) {
-        alert(
-          `Application submitted successfully!\n\nYour CMF Agency ID: ${cmfAgencyId}\n\nYou can track your application status using this ID.`
-        );
-      }
-    } catch (error: any) {
+      alert(
+        `Application submitted successfully!\n\nYour CMF Agency ID: ${cmfAgencyId}\n\nYour documents are stored securely. Our team will review your application in the dashboard. You can track status anytime using your ID on the Track Application page.`
+      );
+    } catch (error: unknown) {
       console.error("Error submitting application:", error);
-      // Still allow WhatsApp submission even if database save fails
-      const whatsappMessage = `*Job Application Submission*
-
-*Personal Details:*
-First Name: ${personalDetails.firstName}
-Second Name: ${personalDetails.secondName}
-Email: ${personalDetails.email}
-Phone: ${personalDetails.phone}
-ID Number: ${personalDetails.idNumber}
-Gender: ${personalDetails.gender}
-Age: ${personalDetails.age}
-County: ${personalDetails.county}
-Passport: ${personalDetails.passport || "Not provided"}
-
-*Job Selection:*
-Position: ${jobSelection.jobPosition}
-CV: ${jobSelection.cv ? jobSelection.cv.name : "Not uploaded"}
-
-*Documents:*
-Passport Photo: ${documents.passportPhoto ? documents.passportPhoto.name : "Not uploaded"}
-ID Front: ${documents.idFront ? documents.idFront.name : "Not uploaded"}
-ID Back: ${documents.idBack ? documents.idBack.name : "Not uploaded"}
-Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.certificateOfGoodConduct.name : "Not provided (optional)"}
-
----
-*Note: Please attach all document files to this WhatsApp message.*`;
-
-      const encodedMessage = encodeURIComponent(whatsappMessage);
-      const whatsappUrl = `https://wa.me/254755933829?text=${encodedMessage}`;
-
-      window.open(whatsappUrl, "_blank");
-      setSubmitted(true);
+      alert("Something went wrong. Please try again in a moment.");
     }
   };
 
@@ -952,10 +904,8 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> After clicking "Submit Application", you
-              will be redirected to WhatsApp. Please attach your ID photos and CV;
-              also attach passport photo and certificate of good conduct if you
-              uploaded them.
+              <strong>Note:</strong> When you submit, your application and files are sent securely to CMF
+              Agency. You will receive a CMF Agency ID to track your status—no WhatsApp step is required.
             </p>
           </div>
         </div>
@@ -980,13 +930,20 @@ Certificate of Good Conduct: ${documents.certificateOfGoodConduct ? documents.ce
             Application Submitted!
           </h2>
           <p className="text-gray-600 mb-6">
-            Your application has been sent to WhatsApp. Please attach your ID
-            photos and CV in the chat; add passport photo or certificate if you
-            have them.
+            Your application and documents are on file. Use{" "}
+            <Link href="/track-application" className="text-primary-600 font-semibold underline">
+              Track Application
+            </Link>{" "}
+            with your CMF Agency ID anytime.
           </p>
-          <Link href="/" className="btn-primary inline-flex items-center">
-            Return to Home
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/track-application" className="btn-primary inline-flex items-center justify-center">
+              Track application
+            </Link>
+            <Link href="/" className="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-gray-300 text-gray-800 font-medium hover:bg-gray-50">
+              Return to Home
+            </Link>
+          </div>
         </motion.div>
       </div>
     );

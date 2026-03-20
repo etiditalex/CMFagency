@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
+  Briefcase,
   ExternalLink,
   Plus,
   RefreshCw,
@@ -28,7 +29,7 @@ function isMissingPortalMembersTable(err: any) {
 export default function DashboardHomePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, isAdmin, hasFeature } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +64,39 @@ export default function DashboardHomePage() {
   const [certificateRequests, setCertificateRequests] = useState<
     Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
   >([]);
+  const [pendingJobApplications, setPendingJobApplications] = useState(0);
 
   const refreshInFlightRef = useRef(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setPendingJobApplications(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token || cancelled) return;
+        const res = await fetch("/api/fusion-xpress/applications?status=pending&limit=1", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok && typeof j.total === "number") setPendingJobApplications(j.total);
+        else if (!cancelled) setPendingJobApplications(0);
+      } catch {
+        if (!cancelled) setPendingJobApplications(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, lastUpdatedAt]);
 
   const formatRevenueMap = (rev: Record<string, number>) => {
     const entries = Object.entries(rev).filter(([, v]) => Number.isFinite(v) && v > 0);
@@ -384,6 +414,30 @@ export default function DashboardHomePage() {
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">
           {error}
+        </div>
+      )}
+
+      {isAdmin && pendingJobApplications > 0 && (
+        <div className="mt-6 rounded-md border border-primary-200 bg-primary-50 p-4 text-primary-950">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-extrabold inline-flex items-center gap-2">
+                <Briefcase className="w-4 h-4" />
+                New job applications to review
+              </div>
+              <p className="mt-1 text-sm">
+                {pendingJobApplications} application{pendingJobApplications !== 1 ? "s are" : " is"} in{" "}
+                <strong>pending</strong> status (submitted from the website with documents).
+              </p>
+            </div>
+            <Link
+              href="/dashboard/applications"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-primary-300 bg-white hover:bg-primary-100 text-primary-950 text-sm font-semibold shrink-0"
+            >
+              Open Applications
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       )}
 

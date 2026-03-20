@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { APPLICATION_DOCS_BUCKET } from "@/lib/application-documents";
 
-/**
- * Ensures the request is from an admin or manager (Fusion Xpress).
- */
+const ALLOWED_FIELDS = new Set([
+  "idFront",
+  "idBack",
+  "passportPhoto",
+  "certificateOfGoodConduct",
+  "cv",
+]);
+
 async function requireAdminOrManager(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
@@ -40,57 +46,53 @@ async function requireAdminOrManager(req: NextRequest) {
 }
 
 /**
- * GET: List job applications. Query: status, application_type, limit, offset.
+ * GET: short-lived signed URL to download one application file (private bucket).
+ * Query: field=idFront|idBack|passportPhoto|certificateOfGoodConduct|cv
  */
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const auth = await requireAdminOrManager(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status")?.trim() || undefined;
-    const applicationType = searchParams.get("application_type")?.trim() || undefined;
-    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "50", 10) || 50, 1), 200);
-    const offset = Math.max(parseInt(searchParams.get("offset") ?? "0", 10), 0);
+    const { id } = await params;
+    const field = req.nextUrl.searchParams.get("field")?.trim() ?? "";
+    if (!id || !ALLOWED_FIELDS.has(field)) {
+      return NextResponse.json(
+        { error: "Missing or invalid field (use idFront, idBack, passportPhoto, certificateOfGoodConduct, cv)" },
+        { status: 400 }
+      );
+    }
 
-    let query = admin
-      .from("applications")
-      .select("id,cmf_agency_id,user_id,national_id,phone,email,name,full_name,application_type,job_position,status,personal_details,documents,notes,created_at,updated_at", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+    const { data: row, error: fetchErr } = await admin.from("applications").select("documents").eq("id", id).single();
+    if (fetchErr || !row) {
+      return NextResponse.json({ error: "Application not found" }, { status: 404 });
+    }
 
-    if (status) query = query.eq("status", status);
-    if (applicationType) query = query.eq("application_type", applicationType);
+    const docs = row.documents as Record<string, { storagePath?: string } | undefined> | null;
+    const entry = docs?.[field];
+    const storagePath = entry?.storagePath;
+    if (!storagePath || typeof storagePath !== "string") {
+      return NextResponse.json({ error: "No stored file for this field" }, { status: 404 });
+    }
 
-    const { data: rows, error, count } = await query;
+    const { data: signed, error: signErr } = await admin.storage
+      .from(APPLICATION_DOCS_BUCKET)
+      .createSignedUrl(storagePath, 3600);
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-    const applications = (rows ?? []).map((r: Record<string, unknown>) => ({
-      id: r.id,
-      cmf_agency_id: r.cmf_agency_id,
-      user_id: r.user_id,
-      national_id: r.national_id,
-      phone: r.phone,
-      email: r.email,
-      name: r.name,
-      full_name: r.full_name,
-      application_type: r.application_type,
-      job_position: r.job_position,
-      status: r.status,
-      personal_details: r.personal_details,
-      documents: r.documents,
-      notes: r.notes,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-    }));
+    if (signErr || !signed?.signedUrl) {
+      return NextResponse.json(
+        { error: signErr?.message ?? "Could not create download link" },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
-      applications,
-      total: count ?? applications.length,
-      limit,
-      offset,
+      url: signed.signedUrl,
+      expiresIn: 3600,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";

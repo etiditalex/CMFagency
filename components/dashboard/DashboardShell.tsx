@@ -33,6 +33,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { supabase } from "@/lib/supabase";
 
 type PortalTier = "basic" | "pro" | "enterprise";
 
@@ -172,6 +173,35 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isPortalMember || !isAdmin) {
+      setPendingApplicationsCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token || cancelled) return;
+        const res = await fetch("/api/fusion-xpress/applications?status=pending&limit=1", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok && typeof j.total === "number") setPendingApplicationsCount(j.total);
+        else if (!cancelled) setPendingApplicationsCount(0);
+      } catch {
+        if (!cancelled) setPendingApplicationsCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isPortalMember, isAdmin, pathname]);
 
   const active = useMemo(() => {
     return NAV.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";
@@ -225,7 +255,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                       }`}
                     >
                       <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                      <span className="text-sm font-semibold">{item.label}</span>
+                      <span className="text-sm font-semibold flex items-center gap-2">
+                        {item.label}
+                        {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
+                          <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
+                            {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
+                          </span>
+                        )}
+                      </span>
                     </Link>
                   );
                 })}
@@ -303,7 +340,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                           }`}
                         >
                           <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                          <span className="text-sm font-semibold">{item.label}</span>
+                          <span className="text-sm font-semibold flex items-center gap-2">
+                            {item.label}
+                            {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
+                              <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
+                                {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
+                              </span>
+                            )}
+                          </span>
                         </Link>
                       );
                     })}
