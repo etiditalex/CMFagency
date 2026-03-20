@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { Mail, Lock, User, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Recaptcha } from "@/components/Recaptcha";
+import { Recaptcha, RecaptchaV3Script, executeRecaptchaV3, type RecaptchaClientVersion } from "@/components/Recaptcha";
 
 type Step = "form" | "code";
 
@@ -41,6 +41,7 @@ export default function LoginPage() {
   const [resending, setResending] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [recaptchaSiteKey, setRecaptchaSiteKey] = useState("");
+  const [recaptchaVersion, setRecaptchaVersion] = useState<RecaptchaClientVersion>("v2");
 
   // Only redirect to /application after the email/2FA code has been verified.
   // Supabase `isAuthenticated` becomes true right after password sign-in, which is before verification.
@@ -77,8 +78,14 @@ export default function LoginPage() {
   useEffect(() => {
     fetch("/api/recaptcha-site-key")
       .then((r) => r.json())
-      .then((data: { siteKey?: string }) => setRecaptchaSiteKey(data?.siteKey ?? ""))
-      .catch(() => setRecaptchaSiteKey(""));
+      .then((data: { siteKey?: string; version?: string }) => {
+        setRecaptchaSiteKey(data?.siteKey ?? "");
+        setRecaptchaVersion(data?.version === "v3" ? "v3" : "v2");
+      })
+      .catch(() => {
+        setRecaptchaSiteKey("");
+        setRecaptchaVersion("v2");
+      });
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,13 +130,26 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (recaptchaSiteKey && !recaptchaToken) {
+      if (recaptchaVersion === "v2" && recaptchaSiteKey && !recaptchaToken) {
         setError("Please complete the security verification below.");
         setLoading(false);
         return;
       }
 
-      const result = await login(formData.email, formData.password, recaptchaToken ?? undefined);
+      let recaptchaForLogin: string | undefined;
+      if (recaptchaSiteKey && recaptchaVersion === "v3") {
+        try {
+          recaptchaForLogin = await executeRecaptchaV3(recaptchaSiteKey, "login");
+        } catch {
+          setError("Security check could not run. Please wait a moment and try again, or refresh the page.");
+          setLoading(false);
+          return;
+        }
+      } else if (recaptchaSiteKey && recaptchaVersion === "v2") {
+        recaptchaForLogin = recaptchaToken ?? undefined;
+      }
+
+      const result = await login(formData.email, formData.password, recaptchaForLogin);
       if (result.success && result.requiresVerification) {
         setStep("code");
       } else if (result.success) {
@@ -407,10 +427,18 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {recaptchaSiteKey && mode === "login" && (
+                {recaptchaSiteKey && mode === "login" && recaptchaVersion === "v2" && (
                   <div className="flex justify-center">
                     <Recaptcha siteKey={recaptchaSiteKey} onVerify={setRecaptchaToken} />
                   </div>
+                )}
+                {recaptchaSiteKey && mode === "login" && recaptchaVersion === "v3" && (
+                  <>
+                    <RecaptchaV3Script siteKey={recaptchaSiteKey} />
+                    <p className="text-center text-xs text-gray-500">
+                      Sign-in is protected by Google reCAPTCHA. The badge appears at the bottom-right of the page.
+                    </p>
+                  </>
                 )}
 
                 {error && (
@@ -421,7 +449,10 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || (!!recaptchaSiteKey && mode === "login" && !recaptchaToken)}
+                  disabled={
+                    loading ||
+                    (!!recaptchaSiteKey && mode === "login" && recaptchaVersion === "v2" && !recaptchaToken)
+                  }
                   className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 text-white py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (

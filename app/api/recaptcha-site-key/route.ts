@@ -14,9 +14,20 @@ function siteKeyFromEnv(): string {
   return typeof raw === "string" ? raw.trim() : "";
 }
 
+/** v3 shows the floating bottom-right badge; v2 uses the checkbox widget. Keys must match the type in Google Admin. */
+function recaptchaVersionFromEnv(): "v2" | "v3" {
+  const raw =
+    process.env.NEXT_PUBLIC_RECAPTCHA_VERSION ??
+    process.env.RECAPTCHA_VERSION ??
+    "v2";
+  const v = typeof raw === "string" ? raw.toLowerCase().trim() : "v2";
+  return v === "v3" ? "v3" : "v2";
+}
+
 export async function GET() {
   const siteKey = siteKeyFromEnv();
-  return NextResponse.json({ siteKey }, {
+  const version = recaptchaVersionFromEnv();
+  return NextResponse.json({ siteKey, version }, {
     headers: {
       "Cache-Control": "private, no-store, max-age=0",
     },

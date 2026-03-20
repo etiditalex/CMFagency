@@ -71,9 +71,24 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: verifyParams.toString(),
       });
-      const verifyData = (await verifyRes.json().catch(() => ({}))) as { success?: boolean };
+      const verifyData = (await verifyRes.json().catch(() => ({}))) as {
+        success?: boolean;
+        score?: number;
+        action?: string;
+      };
       if (!verifyData?.success) {
         return NextResponse.json({ error: "CAPTCHA verification failed. Please try again." }, { status: 400 });
+      }
+      if (typeof verifyData.score === "number") {
+        const minRaw = process.env.RECAPTCHA_MIN_SCORE ?? "0.5";
+        const min = Number.parseFloat(minRaw);
+        const threshold = Number.isFinite(min) ? min : 0.5;
+        if (verifyData.score < threshold) {
+          return NextResponse.json(
+            { error: "Security verification could not be completed. Please try again." },
+            { status: 400 }
+          );
+        }
       }
     }
 
