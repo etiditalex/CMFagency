@@ -80,7 +80,10 @@ export function Recaptcha({ siteKey, onVerify, onExpire, className }: RecaptchaP
           onExpire?.();
         },
       };
-      widgetIdRef.current = window.grecaptcha.render(containerRef.current, options as NonNullable<Parameters<NonNullable<Window["grecaptcha"]>["render"]>[1]>);
+      widgetIdRef.current = window.grecaptcha.render(
+        containerRef.current,
+        options as { sitekey: string; callback?: (token: string) => void; "expired-callback"?: () => void }
+      );
     } catch (e) {
       console.warn("reCAPTCHA render error:", e);
     }
