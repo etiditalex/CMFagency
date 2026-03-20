@@ -20,22 +20,37 @@ declare global {
   }
 }
 
-/** reCAPTCHA v3: run after `RecaptchaV3Script` has loaded. */
-export function executeRecaptchaV3(siteKey: string, action: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") {
-      reject(new Error("reCAPTCHA not available"));
-      return;
-    }
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * reCAPTCHA v3: run after `RecaptchaV3Script` has loaded.
+ * Waits briefly for the Google script (users often submit before `onLoad` finishes).
+ */
+export async function executeRecaptchaV3(
+  siteKey: string,
+  action: string,
+  options?: { maxWaitMs?: number }
+): Promise<string> {
+  if (typeof window === "undefined") {
+    throw new Error("reCAPTCHA not available");
+  }
+  const maxWaitMs = options?.maxWaitMs ?? 12_000;
+  const deadline = Date.now() + maxWaitMs;
+
+  while (Date.now() < deadline) {
     const g = window.grecaptcha;
-    if (!g?.ready || !g.execute) {
-      reject(new Error("reCAPTCHA v3 not loaded"));
-      return;
+    const readyFn = g?.ready;
+    const executeFn = g?.execute;
+    if (readyFn && executeFn) {
+      return new Promise((resolve, reject) => {
+        readyFn(() => {
+          executeFn(siteKey, { action }).then(resolve).catch(reject);
+        });
+      });
     }
-    g.ready(() => {
-      g.execute!(siteKey, { action }).then(resolve).catch(reject);
-    });
-  });
+    await sleep(80);
+  }
+  throw new Error("reCAPTCHA v3 not loaded");
 }
 
 /** Loads reCAPTCHA v3 — shows the bottom-right “Privacy - Terms” badge automatically. */

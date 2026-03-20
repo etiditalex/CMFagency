@@ -6,7 +6,7 @@ This document summarizes security measures and recommendations for the CMF Agenc
 
 ### 1. Login brute-force protection (HIGH)
 - **Rate limiting**: Middleware and API routes limit login attempts per IP (5 attempts per 15 minutes for verification code APIs; 10 per 15 minutes in middleware).
-- **CAPTCHA**: Google reCAPTCHA **v3** (corner badge + score) or **v2** (checkbox) on login. Set a site key (`NEXT_PUBLIC_RECAPTCHA_SITE_KEY` or `RECAPTCHA_SITE_KEY`) and `RECAPTCHA_SECRET_KEY`. Use `NEXT_PUBLIC_RECAPTCHA_VERSION=v3` for v3. When the secret is set, the send-login-verification-code API requires a valid token (and enforces v3 score when Google returns a score).
+- **CAPTCHA**: Google reCAPTCHA **v3** (corner badge + score, **default**) or **v2** (checkbox) on login. Set a site key (`NEXT_PUBLIC_RECAPTCHA_SITE_KEY` or `RECAPTCHA_SITE_KEY`) and `RECAPTCHA_SECRET_KEY`. Set `NEXT_PUBLIC_RECAPTCHA_VERSION=v2` only if using v2 keys. When the secret is set, the send-login-verification-code API requires a valid token (and enforces v3 score when Google returns a score).
 
 ### 2. Non-enumerable event IDs (HIGH)
 - Public event URLs use **slugs** (e.g. `/events/upcoming/marketing-campaign-launch`) instead of sequential integer IDs.
@@ -51,7 +51,7 @@ This document summarizes security measures and recommendations for the CMF Agenc
 
 - `RECAPTCHA_SECRET_KEY` – Google reCAPTCHA secret (server-only). Enable CAPTCHA when set.
 - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` or `RECAPTCHA_SITE_KEY` – site key served via `/api/recaptcha-site-key`.
-- `NEXT_PUBLIC_RECAPTCHA_VERSION` or `RECAPTCHA_VERSION` – `v3` (badge) or `v2` (default, checkbox).
+- `NEXT_PUBLIC_RECAPTCHA_VERSION` or `RECAPTCHA_VERSION` (plus `GOOGLE_RECAPTCHA_*` / `RECAPTCHA_V3` aliases) – default **v3**; set **`v2`** for checkbox keys.
 - `RECAPTCHA_MIN_SCORE` – optional v3 threshold (default `0.5`).
 - `SUPABASE_SERVICE_ROLE_KEY` – Must never be exposed to the client.
 - All Supabase and Resend keys should remain server-side except the documented `NEXT_PUBLIC_*` ones.
