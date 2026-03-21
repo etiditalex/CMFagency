@@ -84,21 +84,22 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const nonce = randomBase64Nonce(16);
   const isDev = process.env.NODE_ENV === "development";
 
+  const scriptSrcExtras = isDev ? " 'unsafe-eval'" : "";
   const cspHeader = `
     default-src 'self';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'none';
+    frame-ancestors 'self';
     object-src 'none';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net${isDev ? " 'unsafe-eval'" : ""};
-    style-src 'self' 'nonce-${nonce}' 'unsafe-inline';
-    img-src 'self' blob: data: https://res.cloudinary.com https://images.unsplash.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
-    font-src 'self' data: https:;
-    connect-src 'self' https: wss:;
-    frame-src 'self' https://www.google.com https://www.recaptcha.net https://www.gstatic.com;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://js.paystack.co https://www.google.com https://www.gstatic.com https://www.recaptcha.net${scriptSrcExtras};
+    style-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com;
+    img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://ui-avatars.com https://*.supabase.co https://*.supabase.in https://upload.wikimedia.org https://www.google.com https://www.gstatic.com https://www.recaptcha.net;
+    font-src 'self' data: https://fonts.gstatic.com;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://www.google-analytics.com https://analytics.google.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://api.paystack.co https://js.paystack.co https://checkout.paystack.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://tpc.googlesyndication.com;
+    frame-src 'self' https://*.supabase.co https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com https://checkout.paystack.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com;
     upgrade-insecure-requests;
   `;
 
@@ -182,21 +183,24 @@ function decodeSafe(s: string) {
   }
 }
 
+/** CSP nonce; Edge-safe (no Node Buffer). */
+function randomBase64Nonce(byteLength: number): string {
+  const bytes = new Uint8Array(byteLength);
+  crypto.getRandomValues(bytes);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+  return btoa(bin);
+}
+
 export const config = {
   matcher: [
     {
-      // Match all request paths except for:
-      // - api (API routes)
-      // - _next/static (static files)
-      // - _next/image (image optimization files)
-      // - favicon.ico (favicon file)
       source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },
       ],
     },
-    // Login rate limiting: run proxy for these API routes
     "/api/send-login-verification-code",
     "/api/verify-login-verification-code",
     "/login",

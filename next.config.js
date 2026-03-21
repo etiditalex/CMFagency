@@ -30,23 +30,7 @@ const nextConfig = {
             },
           ]
         : []),
-      // Content-Security-Policy: restrict resource loading to trusted sources.
-      {
-        key: 'Content-Security-Policy',
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net",
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-          "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://ui-avatars.com https://*.supabase.co https://*.supabase.in https://upload.wikimedia.org https://www.google.com https://www.gstatic.com https://www.recaptcha.net",
-          "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://www.google-analytics.com https://www.google.com https://www.recaptcha.net",
-          "frame-src 'self' https://*.supabase.co https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com",
-          "frame-ancestors 'self'",
-          "base-uri 'self'",
-          "form-action 'self'",
-          "object-src 'none'",
-        ].join('; '),
-      },
+      // CSP is set per-request in middleware (proxy.ts) with nonce + strict-dynamic — no unsafe-inline/unsafe-eval on scripts in production.
     ]
 
     return [

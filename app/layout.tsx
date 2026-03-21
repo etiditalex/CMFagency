@@ -174,6 +174,7 @@ export default async function RootLayout({
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7231529725117325"
           strategy="afterInteractive"
           crossOrigin="anonymous"
+          nonce={nonce}
         />
         <SEOStructuredData />
         <CartProvider>
