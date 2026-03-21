@@ -88,7 +88,8 @@ export default function UpcomingEventsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <section className="section-padding bg-white pt-24 pb-16">
+      {/* Gray page background shows above the grid (like listing sites); extra top padding clears the nav + adds breathing room before cards */}
+      <section className="pt-28 pb-16 sm:pt-32 md:pt-40 md:pb-20">
         <div className="container-custom max-w-6xl">
           {loading ? (
             <div className="text-center py-12">
@@ -101,7 +102,7 @@ export default function UpcomingEventsPage() {
               <p className="mt-2 text-sm">Check back soon or explore our past events.</p>
             </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="mt-2 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
             {events.map((event, index) => {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_HERO;
@@ -114,30 +115,24 @@ export default function UpcomingEventsPage() {
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 className="group"
               >
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                <div className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
                   <Link href={`/events/upcoming/${event.slug}`} className="block flex-1">
-                    <div className="relative w-full aspect-[16/10]">
+                    <div className="relative aspect-[16/10] w-full bg-gray-100">
                       <Image
                         src={imgUrl}
                         alt={event.title}
                         fill
-                        className="object-cover"
+                        className="object-contain object-center"
                         style={{ objectPosition }}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
-                      {/* Readability: dim busy/light image areas behind the date */}
-                      <div
-                        className="absolute inset-0 pointer-events-none bg-gradient-to-br from-black/55 via-black/10 to-transparent"
-                        aria-hidden
-                      />
-                      <div
-                        className="absolute top-3 left-3 z-10 flex min-w-[4.25rem] flex-col items-center justify-center rounded-xl bg-primary-600 px-4 py-3 text-center shadow-[0_4px_24px_rgba(0,0,0,0.45)] ring-[3px] ring-white/95"
-                      >
-                        <span className="text-3xl font-extrabold leading-none tracking-tight text-white tabular-nums drop-shadow-sm">
+                      <div className="absolute left-3 top-3 z-10 rounded-lg bg-primary-600 px-4 py-3 shadow-lg">
+                        <div className="text-lg font-bold leading-tight text-white">
                           {format(eventDate, "d")}
-                        </span>
-                        <span className="mt-1 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-white/95">
+                        </div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-white">
                           {format(eventDate, "MMM")}
-                        </span>
+                        </div>
                       </div>
                     </div>
                     <div className="p-5">

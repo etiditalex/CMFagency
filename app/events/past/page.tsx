@@ -112,12 +112,12 @@ export default function PastEventsPage() {
               >
                 <Link href={`/events/past/${event.slug}`} className="block h-full">
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                    <div className="relative w-full aspect-[16/10]">
+                    <div className="relative aspect-[16/10] w-full bg-gray-100">
                       <Image
                         src={imgUrl}
                         alt={event.title}
                         fill
-                        className="object-cover"
+                        className="object-contain object-center"
                       />
                       <div className="absolute top-3 left-3 bg-primary-600 rounded-lg px-4 py-3 shadow-lg">
                         <div className="text-white font-bold text-lg leading-tight">{format(eventDate, "dd")}</div>
