@@ -39,6 +39,9 @@ function isMissingContestantEmailColumn(err: unknown) {
 
 type CategoryWithCount = Campaign & { contestant_count: number; contestants: Contestant[] };
 
+/** Supabase nested select shape (client generics don’t infer embedded `contestants` reliably). */
+type CampaignRowWithContestants = Campaign & { contestants: Contestant[] | null };
+
 /** Newest first (matches prior `.order("created_at", { ascending: false })` on contestants). */
 function sortContestantsByCreatedDesc(list: Contestant[]): Contestant[] {
   return [...list].sort(
@@ -46,9 +49,7 @@ function sortContestantsByCreatedDesc(list: Contestant[]): Contestant[] {
   );
 }
 
-function mapRowsToCategories(
-  rows: Array<Campaign & { contestants: Contestant[] | null }>
-): CategoryWithCount[] {
+function mapRowsToCategories(rows: CampaignRowWithContestants[]): CategoryWithCount[] {
   return rows.map((c) => {
     const list = sortContestantsByCreatedDesc(c.contestants ?? []);
     return {
@@ -146,9 +147,7 @@ export default function DashboardContestantsPage() {
           return q;
         };
 
-        const applyEmbeddedResult = (
-          rows: Array<Campaign & { contestants: Contestant[] | null }> | null
-        ) => {
+        const applyEmbeddedResult = (rows: CampaignRowWithContestants[] | null) => {
           const list = rows ?? [];
           if (list.length === 0) {
             return { categories: [] as CategoryWithCount[], total: 0 };
@@ -159,14 +158,14 @@ export default function DashboardContestantsPage() {
         };
 
         // Prefer one HTTP round-trip (campaigns + nested contestants).
-        let embeddedRows: Array<Campaign & { contestants: Contestant[] | null }> | null = null;
+        let embeddedRows: CampaignRowWithContestants[] | null = null;
 
         const tryFull = await baseCampaignsQuery(SELECT_EMBEDDED_FULL);
         if (tryFull.error && isMissingContestantEmailColumn(tryFull.error)) {
           setMissingEmailColumn(true);
           const r = await baseCampaignsQuery(SELECT_EMBEDDED_MIN);
           if (r.error) throw r.error;
-          embeddedRows = r.data as typeof embeddedRows;
+          embeddedRows = r.data as unknown as CampaignRowWithContestants[];
         } else if (
           tryFull.error &&
           String(tryFull.error.message ?? "").toLowerCase().includes("certificate")
@@ -174,7 +173,7 @@ export default function DashboardContestantsPage() {
           setMissingCertificateColumns(true);
           const r = await baseCampaignsQuery(SELECT_EMBEDDED_NO_CERT);
           if (r.error) throw r.error;
-          embeddedRows = r.data as typeof embeddedRows;
+          embeddedRows = r.data as unknown as CampaignRowWithContestants[];
         } else if (tryFull.error) {
           const msg = String(tryFull.error.message ?? "").toLowerCase();
           const maybeNoEmbed =
@@ -185,7 +184,7 @@ export default function DashboardContestantsPage() {
           if (!maybeNoEmbed) throw tryFull.error;
           embeddedRows = null;
         } else {
-          embeddedRows = (tryFull.data ?? []) as typeof embeddedRows;
+          embeddedRows = (tryFull.data ?? []) as unknown as CampaignRowWithContestants[];
         }
 
         if (embeddedRows !== null) {
