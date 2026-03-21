@@ -341,7 +341,7 @@ export default function DashboardContestantsPage() {
         const msg = String(delErr.message ?? "");
         if (code === "23503" || msg.toLowerCase().includes("foreign key") || msg.toLowerCase().includes("violates")) {
           setError(
-            "This contestant cannot be deleted because they are linked to vote payment records. Contact support if you need to clean up test payments."
+            "Delete blocked by a database rule (foreign key). Run database/ticketing_voting_mvp_patch_56_transactions_contestant_delete_cascade.sql in the Supabase SQL Editor, then try again."
           );
         } else {
           setError(msg || "Failed to delete contestant.");

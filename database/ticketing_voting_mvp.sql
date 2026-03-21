@@ -117,7 +117,7 @@ create table if not exists public.transactions (
   amount integer not null check (amount = quantity * unit_amount),
 
   -- Voting MVP: one contestant per transaction
-  contestant_id uuid references public.contestants(id) on delete restrict,
+  contestant_id uuid references public.contestants(id) on delete cascade,
 
   status public.transaction_status not null default 'pending',
   paid_at timestamptz,
