@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, FileCheck, UserPlus } from "lucide-react";
+import { Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -26,7 +26,6 @@ type Contestant = {
   campaign_id: string;
   name: string;
   email?: string | null;
-  image_url: string | null;
   created_at: string;
   voting_link_sent_at?: string | null;
   certificate_approved_at?: string | null;
@@ -39,6 +38,71 @@ function isMissingContestantEmailColumn(err: unknown) {
 }
 
 type CategoryWithCount = Campaign & { contestant_count: number; contestants: Contestant[] };
+
+/** Newest first (matches prior `.order("created_at", { ascending: false })` on contestants). */
+function sortContestantsByCreatedDesc(list: Contestant[]): Contestant[] {
+  return [...list].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
+function mapRowsToCategories(
+  rows: Array<Campaign & { contestants: Contestant[] | null }>
+): CategoryWithCount[] {
+  return rows.map((c) => {
+    const list = sortContestantsByCreatedDesc(c.contestants ?? []);
+    return {
+      id: c.id,
+      slug: c.slug,
+      title: c.title,
+      contestant_count: list.length,
+      contestants: list,
+    };
+  });
+}
+
+/** One round-trip: campaigns + nested contestants (faster than sequential queries). */
+const SELECT_EMBEDDED_FULL = `
+  id,
+  slug,
+  title,
+  contestants (
+    id,
+    campaign_id,
+    name,
+    email,
+    created_at,
+    voting_link_sent_at,
+    certificate_approved_at,
+    certificate_downloaded_at
+  )
+`;
+
+const SELECT_EMBEDDED_NO_CERT = `
+  id,
+  slug,
+  title,
+  contestants (
+    id,
+    campaign_id,
+    name,
+    email,
+    created_at,
+    voting_link_sent_at
+  )
+`;
+
+const SELECT_EMBEDDED_MIN = `
+  id,
+  slug,
+  title,
+  contestants (
+    id,
+    campaign_id,
+    name,
+    created_at
+  )
+`;
 
 export default function DashboardContestantsPage() {
   const router = useRouter();
@@ -53,6 +117,7 @@ export default function DashboardContestantsPage() {
   const [totalContestants, setTotalContestants] = useState(0);
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -73,6 +138,66 @@ export default function DashboardContestantsPage() {
       setMissingCertificateColumns(false);
 
       try {
+        const baseCampaignsQuery = (select: string) => {
+          let q = supabase.from("campaigns").select(select).eq("type", "vote").order("title");
+          if (!isFullAdmin && user?.id) {
+            q = q.eq("created_by", user.id);
+          }
+          return q;
+        };
+
+        const applyEmbeddedResult = (
+          rows: Array<Campaign & { contestants: Contestant[] | null }> | null
+        ) => {
+          const list = rows ?? [];
+          if (list.length === 0) {
+            return { categories: [] as CategoryWithCount[], total: 0 };
+          }
+          const categories = mapRowsToCategories(list);
+          const total = categories.reduce((acc, c) => acc + c.contestant_count, 0);
+          return { categories, total };
+        };
+
+        // Prefer one HTTP round-trip (campaigns + nested contestants).
+        let embeddedRows: Array<Campaign & { contestants: Contestant[] | null }> | null = null;
+
+        const tryFull = await baseCampaignsQuery(SELECT_EMBEDDED_FULL);
+        if (tryFull.error && isMissingContestantEmailColumn(tryFull.error)) {
+          setMissingEmailColumn(true);
+          const r = await baseCampaignsQuery(SELECT_EMBEDDED_MIN);
+          if (r.error) throw r.error;
+          embeddedRows = r.data as typeof embeddedRows;
+        } else if (
+          tryFull.error &&
+          String(tryFull.error.message ?? "").toLowerCase().includes("certificate")
+        ) {
+          setMissingCertificateColumns(true);
+          const r = await baseCampaignsQuery(SELECT_EMBEDDED_NO_CERT);
+          if (r.error) throw r.error;
+          embeddedRows = r.data as typeof embeddedRows;
+        } else if (tryFull.error) {
+          const msg = String(tryFull.error.message ?? "").toLowerCase();
+          const maybeNoEmbed =
+            msg.includes("relationship") ||
+            msg.includes("schema cache") ||
+            msg.includes("could not find") ||
+            tryFull.error.code === "PGRST200";
+          if (!maybeNoEmbed) throw tryFull.error;
+          embeddedRows = null;
+        } else {
+          embeddedRows = (tryFull.data ?? []) as typeof embeddedRows;
+        }
+
+        if (embeddedRows !== null) {
+          const { categories, total } = applyEmbeddedResult(embeddedRows);
+          if (!cancelled) {
+            setCategories(categories);
+            setTotalContestants(total);
+          }
+          return;
+        }
+
+        // Fallback: two queries (older DB clients / missing FK embed).
         let campaignsQuery = supabase
           .from("campaigns")
           .select("id,slug,title")
@@ -92,7 +217,6 @@ export default function DashboardContestantsPage() {
             setCategories([]);
             setTotalContestants(0);
           }
-          setLoading(false);
           return;
         }
 
@@ -101,7 +225,7 @@ export default function DashboardContestantsPage() {
 
         const { data: withCert, error: errWithCert } = await supabase
           .from("contestants")
-          .select("id,campaign_id,name,email,image_url,created_at,voting_link_sent_at,certificate_approved_at,certificate_downloaded_at")
+          .select("id,campaign_id,name,email,created_at,voting_link_sent_at,certificate_approved_at,certificate_downloaded_at")
           .in("campaign_id", campaignIds)
           .order("created_at", { ascending: false });
 
@@ -109,7 +233,7 @@ export default function DashboardContestantsPage() {
           setMissingEmailColumn(true);
           const { data: withoutEmail, error: errWithout } = await supabase
             .from("contestants")
-            .select("id,campaign_id,name,image_url,created_at")
+            .select("id,campaign_id,name,created_at")
             .in("campaign_id", campaignIds)
             .order("created_at", { ascending: false });
           if (errWithout) throw errWithout;
@@ -118,7 +242,7 @@ export default function DashboardContestantsPage() {
           setMissingCertificateColumns(true);
           const { data: withEmail, error: errWithEmail } = await supabase
             .from("contestants")
-            .select("id,campaign_id,name,email,image_url,created_at,voting_link_sent_at")
+            .select("id,campaign_id,name,email,created_at,voting_link_sent_at")
             .in("campaign_id", campaignIds)
             .order("created_at", { ascending: false });
           if (errWithEmail) throw errWithEmail;
@@ -137,7 +261,7 @@ export default function DashboardContestantsPage() {
         }
 
         const withCounts: CategoryWithCount[] = campaigns.map((c) => {
-          const list = byCampaign.get(c.id) ?? [];
+          const list = sortContestantsByCreatedDesc(byCampaign.get(c.id) ?? []);
           return {
             ...c,
             contestant_count: list.length,
@@ -200,6 +324,45 @@ export default function DashboardContestantsPage() {
       );
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const deleteContestant = async (campaignId: string, contestant: Contestant) => {
+    const ok = window.confirm(
+      `Remove registration for "${contestant.name}"?\n\nThis cannot be undone. They will disappear from the voting page.`
+    );
+    if (!ok) return;
+
+    setDeletingId(contestant.id);
+    setError(null);
+    try {
+      const { error: delErr } = await supabase.from("contestants").delete().eq("id", contestant.id);
+      if (delErr) {
+        const code = String((delErr as { code?: string }).code ?? "");
+        const msg = String(delErr.message ?? "");
+        if (code === "23503" || msg.toLowerCase().includes("foreign key") || msg.toLowerCase().includes("violates")) {
+          setError(
+            "This contestant cannot be deleted because they are linked to vote payment records. Contact support if you need to clean up test payments."
+          );
+        } else {
+          setError(msg || "Failed to delete contestant.");
+        }
+        return;
+      }
+      setCategories((prev) =>
+        prev.map((cat) =>
+          cat.id === campaignId
+            ? {
+                ...cat,
+                contestant_count: Math.max(0, cat.contestant_count - 1),
+                contestants: cat.contestants.filter((c) => c.id !== contestant.id),
+              }
+            : cat
+        )
+      );
+      setTotalContestants((n) => Math.max(0, n - 1));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -364,7 +527,8 @@ export default function DashboardContestantsPage() {
                                 <th className="px-4 py-2 font-medium text-gray-700">Email</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Approved</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Downloaded</th>
-                                <th className="px-4 py-2 font-medium text-gray-700">Action</th>
+                                <th className="px-4 py-2 font-medium text-gray-700">Certificate</th>
+                                <th className="px-4 py-2 font-medium text-gray-700">Remove</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -386,7 +550,7 @@ export default function DashboardContestantsPage() {
                                     {!c.certificate_approved_at ? (
                                       <button
                                         type="button"
-                                        disabled={approvingId === c.id}
+                                        disabled={approvingId === c.id || deletingId === c.id}
                                         onClick={() => approveCertificate(c.id)}
                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 disabled:opacity-60"
                                       >
@@ -395,6 +559,18 @@ export default function DashboardContestantsPage() {
                                     ) : (
                                       <span className="text-green-600 text-xs font-medium">Approved</span>
                                     )}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <button
+                                      type="button"
+                                      disabled={deletingId === c.id || approvingId === c.id}
+                                      onClick={() => deleteContestant(cat.id, c)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-700 text-xs font-medium hover:bg-red-50 disabled:opacity-60"
+                                      title="Delete this registration (e.g. test data)"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                                      {deletingId === c.id ? "…" : "Delete"}
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
