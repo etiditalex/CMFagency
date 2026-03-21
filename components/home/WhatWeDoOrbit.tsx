@@ -169,74 +169,66 @@ export default function WhatWeDoOrbit() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <motion.div
-              className="absolute inset-[5%]"
-              animate={reduceMotion ? undefined : { rotate: [0, 360] }}
-              transition={
-                reduceMotion
-                  ? undefined
-                  : { duration: 100, repeat: Infinity, ease: "linear" }
-              }
-            >
-              <div
-                className="pointer-events-none absolute inset-0 rounded-full border-2 border-dashed border-white/35"
+            {/* Rotate only the dashed ring — cards stay static to avoid nested-transform ghosting in production */}
+            <div className="pointer-events-none absolute inset-[5%]">
+              <motion.div
+                className="h-full w-full rounded-full border-2 border-dashed border-white/35"
+                style={{ transformOrigin: "50% 50%" }}
+                animate={reduceMotion ? undefined : { rotate: [0, 360] }}
+                transition={
+                  reduceMotion
+                    ? undefined
+                    : { duration: 100, repeat: Infinity, ease: "linear" }
+                }
                 aria-hidden
               />
-              {services.map((service, index) => {
-                const total = services.length;
-                const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
-                const r = 42;
-                const x = 50 + r * Math.cos(angle);
-                const y = 50 + r * Math.sin(angle);
-                const depth = (Math.cos(angle) + 1) / 2;
-                const scale = 0.92 + depth * 0.1;
-                const z = Math.round(10 + depth * 20);
+            </div>
 
-                return (
-                  <motion.div
-                    key={service.label}
-                    className="absolute w-[38%] max-w-[10.5rem] sm:max-w-[11rem]"
-                    style={{
-                      left: `${x}%`,
-                      top: `${y}%`,
-                      zIndex: z,
-                      transform: `translate(-50%, -50%) scale(${scale})`,
-                    }}
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.06 * index }}
+            {services.map((service, index) => {
+              const total = services.length;
+              const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+              const r = 42;
+              const x = 50 + r * Math.cos(angle);
+              const y = 50 + r * Math.sin(angle);
+              const depth = (Math.cos(angle) + 1) / 2;
+              const scale = 0.92 + depth * 0.1;
+              const z = Math.round(10 + depth * 20);
+
+              return (
+                <motion.div
+                  key={service.label}
+                  className="absolute w-[38%] max-w-[10.5rem] sm:max-w-[11rem]"
+                  style={{
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    zIndex: z,
+                    transform: `translate(-50%, -50%) scale(${scale})`,
+                  }}
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.06 * index }}
+                >
+                  <Link
+                    href={service.href}
+                    title={service.label}
+                    className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1.5 py-2 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5 [backface-visibility:hidden] [transform:translateZ(0)]"
                   >
-                    <motion.div
-                      animate={reduceMotion ? undefined : { rotate: [0, -360] }}
-                      transition={
-                        reduceMotion
-                          ? undefined
-                          : { duration: 100, repeat: Infinity, ease: "linear" }
-                      }
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent} sm:h-10 sm:w-10`}
                     >
-                      <Link
-                        href={service.href}
-                        title={service.label}
-                        className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1.5 py-2 text-center shadow-md transition-all hover:border-primary-200 hover:shadow-lg sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5"
-                      >
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent} shadow-md sm:h-10 sm:w-10`}
-                        >
-                          <service.icon
-                            className="h-[1.15rem] w-[1.15rem] text-white sm:h-5 sm:w-5"
-                            strokeWidth={2}
-                          />
-                        </div>
-                        <span className="line-clamp-3 text-[0.58rem] font-semibold leading-tight text-gray-900 group-hover:text-primary-600 sm:line-clamp-none sm:text-[0.68rem]">
-                          {service.label}
-                        </span>
-                      </Link>
-                    </motion.div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                      <service.icon
+                        className="h-[1.15rem] w-[1.15rem] text-white sm:h-5 sm:w-5"
+                        strokeWidth={2}
+                      />
+                    </div>
+                    <span className="line-clamp-3 text-[0.58rem] font-semibold leading-tight text-gray-900 group-hover:text-primary-600 sm:line-clamp-none sm:text-[0.68rem]">
+                      {service.label}
+                    </span>
+                  </Link>
+                </motion.div>
+              );
+            })}
 
             <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
               <HumanBuildingHub reduceMotion={reduceMotion} />

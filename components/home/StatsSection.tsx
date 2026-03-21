@@ -2,7 +2,11 @@
 
 import { motion } from "framer-motion";
 import { Users, Globe, Handshake, Heart } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
+
+const STATS_BG_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892260/IMG_00521_kil1g0.jpg";
 
 const stats = [
   {
@@ -87,22 +91,27 @@ export default function StatsSection() {
   };
 
   return (
-    <section ref={sectionRef} className="relative min-h-[500px] flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
+    <section
+      ref={sectionRef}
+      className="relative flex min-h-[500px] items-center justify-center overflow-hidden"
+    >
+      {/* Full-bleed photo background (Next Image — reliable on Vercel vs inline CSS bg) */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src={STATS_BG_IMAGE}
+          alt=""
+          fill
+          className="object-cover object-center"
+          sizes="100vw"
+          priority={false}
+          aria-hidden
+        />
         <div
-          className="w-full h-full bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892260/IMG_00521_kil1g0.jpg)",
-          }}
-        >
-          {/* Overlay with website colors */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"></div>
-        </div>
+          className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-800/70 to-primary-900/80"
+          aria-hidden
+        />
       </div>
 
-      {/* Stats Content */}
       <div className="container-custom relative z-10">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
