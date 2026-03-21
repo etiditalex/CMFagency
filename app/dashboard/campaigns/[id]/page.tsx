@@ -220,70 +220,22 @@ export default function CampaignReportPage() {
     setError(null);
 
     try {
-      // Campaign
-      const { data: c, error: cErr } = await supabase
-        .from("campaigns")
-        .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at,created_by")
-        .eq("id", campaignId)
-        .single();
-      if (cErr) throw cErr;
-      const campaignData = c as Campaign;
-      // RLS already restricts: clients see only campaigns they own or that are linked to their events.
-      setCampaign(campaignData);
-
-      // Recent transactions (include payer identity for admin visibility)
       let txQuery = supabase
         .from("transactions")
         .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
         .eq("campaign_id", campaignId);
       if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
       if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
-      const { data: txRows, error: txErr } = await txQuery.order("created_at", { ascending: false }).limit(50);
-      if (txErr) throw txErr;
-      setRecentTransactions((txRows ?? []) as TxRow[]);
+      const txLimited = txQuery.order("created_at", { ascending: false }).limit(50);
 
-      // Revenue + successful payments (from successful transactions only)
-      const success = (txRows ?? []).filter((t: any) => t.status === "success");
-      setSuccessfulPayments(success.length);
-      const rev: Record<string, number> = {};
-      for (const t of success as any[]) {
-        const cur = String(t.currency ?? "").toUpperCase() || "—";
-        const amt = Number(t.amount ?? 0);
-        if (!Number.isFinite(amt)) continue;
-        rev[cur] = (rev[cur] ?? 0) + amt;
-      }
-      setRevenueByCurrency(rev);
-
-      // Tickets issued (idempotent ticket_issues table)
       let tiQuery = supabase.from("ticket_issues").select("quantity,issued_at").eq("campaign_id", campaignId);
       if (rangeBounds.start) tiQuery = tiQuery.gte("issued_at", rangeBounds.start);
       if (rangeBounds.end) tiQuery = tiQuery.lte("issued_at", rangeBounds.end);
-      const { data: tiRows, error: tiErr } = await tiQuery;
-      if (tiErr) throw tiErr;
-      setTotalTicketsIssued(
-        (tiRows ?? []).reduce((acc: number, r: TicketIssueRow) => acc + (Number(r.quantity ?? 0) || 0), 0)
-      );
 
-      // Votes counted (idempotent votes table)
       let vQuery = supabase.from("votes").select("contestant_id,votes,created_at").eq("campaign_id", campaignId);
       if (rangeBounds.start) vQuery = vQuery.gte("created_at", rangeBounds.start);
       if (rangeBounds.end) vQuery = vQuery.lte("created_at", rangeBounds.end);
-      const { data: vRows, error: vErr } = await vQuery;
-      if (vErr) throw vErr;
-      const total = (vRows ?? []).reduce((acc: number, r: VoteRow) => acc + (Number(r.votes ?? 0) || 0), 0);
-      setTotalVotes(total);
 
-      const byContestant: Record<string, number> = {};
-      for (const r of (vRows ?? []) as VoteRow[]) {
-        const id = String(r.contestant_id ?? "");
-        const v = Number(r.votes ?? 0) || 0;
-        if (!id) continue;
-        byContestant[id] = (byContestant[id] ?? 0) + v;
-      }
-      setVotesByContestant(byContestant);
-
-      // Revenue by contestant (for vote campaigns: successful transactions grouped by contestant_id)
-      const revByContestant: Record<string, number> = {};
       let revTxQuery = supabase
         .from("transactions")
         .select("contestant_id,amount,currency")
@@ -292,8 +244,72 @@ export default function CampaignReportPage() {
         .eq("status", "success");
       if (rangeBounds.start) revTxQuery = revTxQuery.gte("created_at", rangeBounds.start);
       if (rangeBounds.end) revTxQuery = revTxQuery.lte("created_at", rangeBounds.end);
-      const { data: revTxRows } = await revTxQuery;
-      for (const t of (revTxRows ?? []) as { contestant_id: string | null; amount: number; currency: string }[]) {
+
+      const conQuery = supabase
+        .from("contestants")
+        .select("id,name,sort_order")
+        .eq("campaign_id", campaignId)
+        .order("sort_order", { ascending: true });
+
+      const [cRes, txRes, tiRes, vRes, revTxRes, conRes] = await Promise.all([
+        supabase
+          .from("campaigns")
+          .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at,created_by")
+          .eq("id", campaignId)
+          .single(),
+        txLimited,
+        tiQuery,
+        vQuery,
+        revTxQuery,
+        conQuery,
+      ]);
+
+      if (cRes.error) throw cRes.error;
+      const campaignData = cRes.data as Campaign;
+      setCampaign(campaignData);
+
+      if (txRes.error) throw txRes.error;
+      const txRows = txRes.data ?? [];
+      setRecentTransactions(txRows as TxRow[]);
+
+      const success = txRows.filter((t: TxRow) => t.status === "success");
+      setSuccessfulPayments(success.length);
+      const rev: Record<string, number> = {};
+      for (const t of success) {
+        const cur = String(t.currency ?? "").toUpperCase() || "—";
+        const amt = Number(t.amount ?? 0);
+        if (!Number.isFinite(amt)) continue;
+        rev[cur] = (rev[cur] ?? 0) + amt;
+      }
+      setRevenueByCurrency(rev);
+
+      if (tiRes.error) throw tiRes.error;
+      const tiRows = tiRes.data ?? [];
+      setTotalTicketsIssued(
+        tiRows.reduce((acc: number, r: TicketIssueRow) => acc + (Number(r.quantity ?? 0) || 0), 0)
+      );
+
+      if (vRes.error) throw vRes.error;
+      const vRows = (vRes.data ?? []) as VoteRow[];
+      const total = vRows.reduce((acc: number, r: VoteRow) => acc + (Number(r.votes ?? 0) || 0), 0);
+      setTotalVotes(total);
+
+      const byContestant: Record<string, number> = {};
+      for (const r of vRows) {
+        const id = String(r.contestant_id ?? "");
+        const v = Number(r.votes ?? 0) || 0;
+        if (!id) continue;
+        byContestant[id] = (byContestant[id] ?? 0) + v;
+      }
+      setVotesByContestant(byContestant);
+
+      const revByContestant: Record<string, number> = {};
+      const revTxRows = (revTxRes.error ? [] : revTxRes.data ?? []) as {
+        contestant_id: string | null;
+        amount: number;
+        currency: string;
+      }[];
+      for (const t of revTxRows) {
         const id = String(t.contestant_id ?? "");
         const amt = Number(t.amount ?? 0) || 0;
         if (!id) continue;
@@ -301,17 +317,10 @@ export default function CampaignReportPage() {
       }
       setRevenueByContestant(revByContestant);
 
-      // Contestants (for vote breakdown)
-      const { data: contestantsRows, error: conErr } = await supabase
-        .from("contestants")
-        .select("id,name,sort_order")
-        .eq("campaign_id", campaignId)
-        .order("sort_order", { ascending: true });
-      if (conErr) {
-        // If not a vote campaign, or no contestants, just ignore silently.
+      if (conRes.error) {
         setContestants([]);
       } else {
-        setContestants((contestantsRows ?? []) as ContestantRow[]);
+        setContestants((conRes.data ?? []) as ContestantRow[]);
       }
 
       setLastUpdatedAt(new Date().toISOString());

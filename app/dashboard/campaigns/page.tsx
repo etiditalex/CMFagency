@@ -74,22 +74,44 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        let campaignsQuery = supabase
-          .from("campaigns")
-          .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
-          .order("created_at", { ascending: false });
+        const campaignsSelect =
+          "id,type,slug,title,currency,unit_amount,is_active,created_at,created_by";
 
         // Admins see all campaigns. Clients see only: (1) campaigns they created, (2) campaigns for events they own.
         let campaignRows: CampaignRow[] | null = null;
         if (isFullAdmin) {
-          const { data, error: campaignsError } = await campaignsQuery;
-          if (campaignsError) throw campaignsError;
-          campaignRows = data;
+          const [campRes, statsRes] = await Promise.all([
+            supabase.from("campaigns").select(campaignsSelect).order("created_at", { ascending: false }),
+            supabase
+              .from("campaign_stats")
+              .select("campaign_id,total_amount,total_votes,successful_transactions"),
+          ]);
+          if (campRes.error) throw campRes.error;
+          campaignRows = campRes.data as CampaignRow[];
+
+          const statsById = new Map<string, CampaignStatsRow>(
+            (!statsRes.error ? (statsRes.data ?? []) : []).map((s) => [s.campaign_id, s as CampaignStatsRow])
+          );
+
+          const merged: CampaignWithStats[] = (campaignRows ?? [])
+            .filter((c: CampaignRow) => String(c.slug ?? "").toLowerCase() !== "merchandise")
+            .map((c: CampaignRow) => {
+              const s = statsById.get(c.id);
+              return {
+                ...c,
+                total_amount: s?.total_amount ?? 0,
+                total_votes: s?.total_votes ?? 0,
+                successful_transactions: s?.successful_transactions ?? 0,
+              };
+            });
+
+          if (!cancelled) setCampaigns(merged);
+          return;
         } else if (user?.id) {
           const [ownedRes, eventsRes] = await Promise.all([
             supabase
               .from("campaigns")
-              .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
+              .select(campaignsSelect)
               .eq("created_by", user.id)
               .order("created_at", { ascending: false }),
             supabase
@@ -113,7 +135,7 @@ export default function DashboardCampaignsPage() {
           if (eventSlugs.size > 0) {
             const { data: eventCampaigns, error: eventErr } = await supabase
               .from("campaigns")
-              .select("id,type,slug,title,currency,unit_amount,is_active,created_at,created_by")
+              .select(campaignsSelect)
               .in("slug", Array.from(eventSlugs))
               .order("created_at", { ascending: false });
             if (!eventErr && eventCampaigns?.length) {
@@ -131,10 +153,17 @@ export default function DashboardCampaignsPage() {
 
         if (campaignRows === null) campaignRows = [];
 
-        // Stats view is optional; if it's missing, still show campaigns + links.
-        const { data: statsRows, error: statsError } = await supabase
-          .from("campaign_stats")
-          .select("campaign_id,total_amount,total_votes,successful_transactions");
+        const ids = (campaignRows ?? []).map((c) => c.id).filter(Boolean);
+        let statsRows: CampaignStatsRow[] | null = null;
+        let statsError: { message?: string } | null = null;
+        if (ids.length > 0) {
+          const statsRes = await supabase
+            .from("campaign_stats")
+            .select("campaign_id,total_amount,total_votes,successful_transactions")
+            .in("campaign_id", ids);
+          statsRows = statsRes.data as CampaignStatsRow[] | null;
+          statsError = statsRes.error;
+        }
 
         const statsById = new Map<string, CampaignStatsRow>(
           (!statsError ? (statsRows ?? []) : []).map((s) => [s.campaign_id, s])

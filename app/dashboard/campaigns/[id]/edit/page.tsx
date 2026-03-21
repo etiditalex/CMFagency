@@ -94,13 +94,21 @@ export default function EditCampaignPage() {
       setError(null);
 
       try {
-        const { data: campaign, error: cErr } = await supabase
-          .from("campaigns")
-          .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn,is_active,created_by")
-          .eq("id", campaignId)
-          .single();
+        const [campRes, conRes] = await Promise.all([
+          supabase
+            .from("campaigns")
+            .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn,is_active,created_by")
+            .eq("id", campaignId)
+            .single(),
+          supabase
+            .from("contestants")
+            .select("id,name,image_url,sort_order")
+            .eq("campaign_id", campaignId)
+            .order("sort_order", { ascending: true }),
+        ]);
 
-        if (cErr) throw cErr;
+        if (campRes.error) throw campRes.error;
+        const campaign = campRes.data;
         if (!campaign || cancelled) return;
 
         // Clients can only edit their own campaigns.
@@ -121,23 +129,15 @@ export default function EditCampaignPage() {
         setMaxPerTxn(Number(campaign.max_per_txn) ?? 10);
         setIsActive(Boolean(campaign.is_active));
 
-        if (campaign.type === "vote") {
-          const { data: conRows, error: conErr } = await supabase
-            .from("contestants")
-            .select("id,name,image_url,sort_order")
-            .eq("campaign_id", campaignId)
-            .order("sort_order", { ascending: true });
-
-          if (!conErr && conRows && conRows.length > 0) {
-            const mapped = (conRows as ContestantRow[]).map((c) => ({
-              name: c.name ?? "",
-              image_url: c.image_url ?? "",
-              imageFile: null as File | null,
-              imagePreviewUrl: (c.image_url ?? "") || null,
-            }));
-            const empty: ContestantDraft = { name: "", image_url: "", imageFile: null, imagePreviewUrl: null };
-            setContestants(mapped.length >= 2 ? mapped : [...mapped, empty]);
-          }
+        if (campaign.type === "vote" && !conRes.error && conRes.data && conRes.data.length > 0) {
+          const mapped = (conRes.data as ContestantRow[]).map((c) => ({
+            name: c.name ?? "",
+            image_url: c.image_url ?? "",
+            imageFile: null as File | null,
+            imagePreviewUrl: (c.image_url ?? "") || null,
+          }));
+          const empty: ContestantDraft = { name: "", image_url: "", imageFile: null, imagePreviewUrl: null };
+          setContestants(mapped.length >= 2 ? mapped : [...mapped, empty]);
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load campaign");
