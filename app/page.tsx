@@ -4,6 +4,7 @@ import Hero from "@/components/home/Hero";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
+import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
 import StatsSection from "@/components/home/StatsSection";
 
 const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
@@ -70,6 +71,7 @@ export default function Home() {
       <CoreValues />
       <HomeGalleryCarousel />
       <QuickLinks />
+      <WhatWeDoOrbit />
       <StatsSection />
       <PartnersCarousel />
       <CTABanner />
