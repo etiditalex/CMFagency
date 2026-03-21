@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
+import { normalizePeoplePerPackage } from "@/lib/fusion-event-ticket-tier";
 
 const DEFAULT_EVENT = {
   title: "Coast Fashion and Modelling Awards 2026",
@@ -31,6 +32,8 @@ export type TicketTierInput = {
   unit_amount_kes: number;
   /** Optional perks/inclusions for this tier (e.g. "Cocktail & Water", "Whiskey/Vodka/Gin + 2 Soda + 2 Water") */
   inclusions?: string[];
+  /** Guests covered by one purchase (e.g. 4 for a round table). Omitted or 1 = single guest. */
+  people_per_package?: number;
 };
 
 export type EventTicketModalEvent = {
@@ -60,14 +63,26 @@ type Props = {
   tiers?: TicketTierInput[] | null;
 };
 
-function normalizeTiers(tiers: TicketTierInput[] | null | undefined): Array<{ id: string; label: string; slug: string; unitAmount: number; inclusions?: string[] }> {
-  if (!tiers?.length) return DEFAULT_TIERS;
+function normalizeTiers(
+  tiers: TicketTierInput[] | null | undefined
+): Array<{
+  id: string;
+  label: string;
+  slug: string;
+  unitAmount: number;
+  inclusions?: string[];
+  peoplePerPackage: number;
+}> {
+  if (!tiers?.length) {
+    return DEFAULT_TIERS.map((t) => ({ ...t, peoplePerPackage: 1 }));
+  }
   return tiers.map((t) => ({
     id: t.id,
     label: t.label,
     slug: t.slug,
     unitAmount: t.unit_amount_kes,
     inclusions: Array.isArray(t.inclusions) && t.inclusions.length > 0 ? t.inclusions : undefined,
+    peoplePerPackage: normalizePeoplePerPackage(t.people_per_package),
   }));
 }
 
@@ -107,12 +122,16 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const lineItems = useMemo(() => {
-    return TICKET_TIERS.filter((t) => (quantities[t.id] ?? 0) > 0).map((t) => ({
-      ...t,
-      quantity: quantities[t.id] ?? 0,
-      total: (quantities[t.id] ?? 0) * t.unitAmount,
-    }));
-  }, [quantities]);
+    return TICKET_TIERS.filter((t) => (quantities[t.id] ?? 0) > 0).map((t) => {
+      const quantity = quantities[t.id] ?? 0;
+      return {
+        ...t,
+        quantity,
+        total: quantity * t.unitAmount,
+        guestsCovered: quantity * t.peoplePerPackage,
+      };
+    });
+  }, [quantities, TICKET_TIERS]);
 
   const subtotal = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.total, 0),
@@ -122,6 +141,11 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
 
   const totalTickets = useMemo(
     () => lineItems.reduce((sum, i) => sum + i.quantity, 0),
+    [lineItems]
+  );
+
+  const totalGuestsCovered = useMemo(
+    () => lineItems.reduce((sum, i) => sum + i.guestsCovered, 0),
     [lineItems]
   );
 
@@ -471,6 +495,11 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                               <div className="text-primary-600 font-bold">
                                 KES {tier.unitAmount.toLocaleString()}.00
                               </div>
+                              {tier.peoplePerPackage > 1 ? (
+                                <div className="mt-0.5 text-xs font-medium text-gray-700">
+                                  Covers {tier.peoplePerPackage} people per package
+                                </div>
+                              ) : null}
                               {tier.inclusions?.length ? (
                                 <div className="mt-1 text-xs text-gray-600">
                                   Includes: {tier.inclusions.join(" · ")}
@@ -740,9 +769,16 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                         <div className="text-primary-600 font-bold mt-1">
                           Kes. {totalWithVat.toLocaleString()}
                         </div>
-                        <div className="flex items-center gap-2 mt-3">
-                          <span className="text-sm text-gray-600">Quantity</span>
-                          <span className="font-semibold">{totalTickets}</span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-gray-600">
+                          <span>
+                            Packages: <span className="font-semibold text-gray-900">{totalTickets}</span>
+                          </span>
+                          {totalGuestsCovered > totalTickets ? (
+                            <span>
+                              Guests covered:{" "}
+                              <span className="font-semibold text-gray-900">{totalGuestsCovered}</span>
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-xs text-gray-500 mt-2">
                           Total: KES {totalWithVat.toLocaleString()}
@@ -870,12 +906,17 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                   {lineItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex justify-between text-sm"
+                      className="flex justify-between text-sm gap-2"
                     >
-                      <span className="text-gray-700">
+                      <span className="text-gray-700 min-w-0">
                         {item.label} × {item.quantity}
+                        {item.peoplePerPackage > 1 ? (
+                          <span className="block text-xs text-gray-500 mt-0.5">
+                            {item.peoplePerPackage} people / package · {item.guestsCovered} guests total
+                          </span>
+                        ) : null}
                       </span>
-                      <span className="font-semibold">
+                      <span className="font-semibold shrink-0">
                         KES {item.total.toLocaleString()}.00
                       </span>
                     </div>

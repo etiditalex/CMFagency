@@ -8,6 +8,7 @@ import { Upload, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { type FusionTicketTier, normalizeTierFromDb, tierToStoredJson } from "@/lib/fusion-event-ticket-tier";
 
 function slugify(input: string) {
   return input
@@ -74,7 +75,7 @@ export default function EditEventPage() {
   const [regStats, setRegStats] = useState<{ count: number; totalHeadcount: number } | null>(null);
   const [regLoading, setRegLoading] = useState(false);
   const [useTieredTickets, setUseTieredTickets] = useState(false);
-  const [ticketTiers, setTicketTiers] = useState<Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }>>([]);
+  const [ticketTiers, setTicketTiers] = useState<FusionTicketTier[]>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -138,12 +139,15 @@ export default function EditEventPage() {
             : ""
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
-        const rawTiers = (ev as { ticket_tiers?: Array<{ id: string; label: string; slug: string; unit_amount_kes: number; inclusions?: string[] }> | null }).ticket_tiers;
-        const tiers = Array.isArray(rawTiers) && rawTiers.length > 0
-          ? rawTiers.map((t) => ({ ...t, inclusions: Array.isArray(t.inclusions) ? t.inclusions : [] }))
-          : [];
+        const rawTiers = (ev as { ticket_tiers?: unknown[] | null }).ticket_tiers;
+        const tiers =
+          Array.isArray(rawTiers) && rawTiers.length > 0
+            ? rawTiers.map((t) => normalizeTierFromDb(t as Partial<FusionTicketTier>))
+            : [];
         setUseTieredTickets(tiers.length > 0);
-        setTicketTiers(tiers.length > 0 ? tiers : [{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0, inclusions: [] }]);
+        setTicketTiers(
+          tiers.length > 0 ? tiers : [{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0, inclusions: [], people_per_package: 1 }]
+        );
         setImageFocus(String((ev as { image_focus?: string | null }).image_focus ?? "center center"));
         const img = ev.image_url ? String(ev.image_url) : "";
         setImageUrl(img);
@@ -266,16 +270,7 @@ export default function EditEventPage() {
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           free_registration: freeRegistration,
           free_registration_ask_party_size: freeRegistration,
-          ticket_tiers:
-          useTieredTickets && ticketTiers.length > 0
-            ? ticketTiers.map((t) => ({
-                id: t.id,
-                label: t.label,
-                slug: t.slug,
-                unit_amount_kes: t.unit_amount_kes,
-                inclusions: Array.isArray(t.inclusions) && t.inclusions.length > 0 ? t.inclusions : undefined,
-              }))
-            : null,
+          ticket_tiers: useTieredTickets && ticketTiers.length > 0 ? ticketTiers.map((t) => tierToStoredJson(t)) : null,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
         })
@@ -562,7 +557,8 @@ export default function EditEventPage() {
             checked={useTieredTickets}
             onChange={(e) => {
               setUseTieredTickets(e.target.checked);
-              if (e.target.checked && ticketTiers.length === 0) setTicketTiers([{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0, inclusions: [] }]);
+              if (e.target.checked && ticketTiers.length === 0)
+                setTicketTiers([{ id: "regular", label: "Regular", slug: "", unit_amount_kes: 0, inclusions: [], people_per_package: 1 }]);
             }}
             disabled={freeRegistration}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
@@ -578,7 +574,12 @@ export default function EditEventPage() {
               <label className="block text-sm font-medium text-gray-700">Ticket tiers</label>
               <button
                 type="button"
-                onClick={() => setTicketTiers((t) => [...t, { id: `tier-${t.length}`, label: "", slug: "", unit_amount_kes: 0, inclusions: [] }])}
+                onClick={() =>
+                  setTicketTiers((t) => [
+                    ...t,
+                    { id: `tier-${t.length}`, label: "", slug: "", unit_amount_kes: 0, inclusions: [], people_per_package: 1 },
+                  ])
+                }
                 className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 + Add tier
@@ -587,7 +588,7 @@ export default function EditEventPage() {
             {ticketTiers.map((tier, i) => (
               <div key={tier.id} className="space-y-2 rounded border border-gray-100 p-3 bg-white">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-3">
                     <label className="block text-xs text-gray-500 mb-1">Label (e.g. Regular, VIP)</label>
                     <input
                       value={tier.label}
@@ -598,7 +599,7 @@ export default function EditEventPage() {
                       placeholder="e.g. Early bird - Regular"
                     />
                   </div>
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-3">
                     <label className="block text-xs text-gray-500 mb-1">Campaign slug</label>
                     <input
                       value={tier.slug}
@@ -622,6 +623,24 @@ export default function EditEventPage() {
                       }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                       placeholder="0"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs text-gray-500 mb-1">People / package</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={tier.people_per_package ?? 1}
+                      onChange={(e) =>
+                        setTicketTiers((prev) =>
+                          prev.map((p, j) =>
+                            j === i ? { ...p, people_per_package: Math.max(1, Math.min(500, Number(e.target.value) || 1)) } : p
+                          )
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      title="Guests covered by one purchase (e.g. 4 for a VVIP round table)"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -660,6 +679,9 @@ export default function EditEventPage() {
                   />
                   <p className="text-xs text-gray-500 mt-1">Shown on the ticket modal to help sell (e.g. VIP: cocktail and water; VVIP: spirits + soda + water).</p>
                 </div>
+                <p className="text-xs text-gray-500">
+                  <strong>People / package</strong>: guests one payment covers (default 1). E.g. <strong>4</strong> for a VVIP round table package.
+                </p>
               </div>
             ))}
             <p className="text-xs text-gray-500">Each tier must have a Fusion Xpress ticket campaign with the same slug.</p>
