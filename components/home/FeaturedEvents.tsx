@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { getEventPathById } from "@/lib/event-slugs";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import { montserrat } from "@/lib/fonts";
@@ -83,11 +82,6 @@ export default function FeaturedEvents() {
           transition={{ duration: 0.5 }}
           className="mb-10 text-center md:mb-12"
         >
-          <p
-            className={`${montserrat.className} mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary-600`}
-          >
-            Events
-          </p>
           <h2
             className={`${montserrat.className} text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl lg:text-[2.35rem]`}
           >
@@ -140,19 +134,6 @@ export default function FeaturedEvents() {
             );
           })}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-          className="mt-12 text-center"
-        >
-          <Link href="/events" className="btn-primary inline-flex items-center">
-            View all events
-            <ArrowRight className="ml-2 h-5 w-5" aria-hidden />
-          </Link>
-        </motion.div>
       </div>
     </section>
   );
