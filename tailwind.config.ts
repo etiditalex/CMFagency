@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        montserrat: ["var(--font-montserrat)", "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         primary: {
           50: "#e5f3f7",
