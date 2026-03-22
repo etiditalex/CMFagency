@@ -1,105 +1,212 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Calendar, Image as ImageIcon, Briefcase, Users, BookOpen, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { montserrat } from "@/lib/fonts";
 
-const quickLinks = [
+type QuickLinkItem = {
+  id: string;
+  title: string;
+  href: string;
+  body: React.ReactNode;
+};
+
+const quickLinks: QuickLinkItem[] = [
   {
-    icon: Calendar,
-    title: "Events Calendar",
-    description: "Browse upcoming and past events",
+    id: "events",
+    title: "Events calendar",
     href: "/events/upcoming",
-    color: "from-primary-500 to-primary-600",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          Use this when you need <strong>real dates and venues</strong>, not a vague “we do events” line. We list what&apos;s
+          coming up—launches, trainings, shows—and keep <strong>past runs</strong> available so you can see how we actually
+          show up on the ground.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          Open a listing for details, ticket or registration links where they&apos;re live, and a short sense of who each day
+          is for before you commit your calendar.
+        </p>
+      </>
+    ),
   },
   {
-    icon: ImageIcon,
+    id: "portfolios",
     title: "Portfolios",
-    description: "Explore creative showcases",
     href: "/portfolios",
-    color: "from-secondary-500 to-secondary-600",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          This is the <strong>visual proof</strong>: campaigns, stages, branding moments, and creative work we&apos;ve been
+          part of. Handy if you&apos;re comparing agencies, chasing a <strong>look and feel</strong>, or just want to see
+          what “Changer Fusions on site” looks like in photos, not slides.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          Skim by project type, then dig into the pieces that match what you&apos;re trying to build next.
+        </p>
+      </>
+    ),
   },
   {
-    icon: Briefcase,
-    title: "Job Board",
-    description: "Find career opportunities",
+    id: "jobs",
+    title: "Job board",
     href: "/jobs",
-    color: "from-accent-500 to-accent-600",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          Roles we&apos;re helping surface—<strong>open positions</strong>, how to apply, and plain-language summaries so you
+          don&apos;t have to decode a PDF at midnight. If you&apos;re hiring through our network, it&apos;s also the place
+          listings land when we&apos;re amplifying them.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          Check back when you&apos;re ready to move; we refresh as partners and programmes change.
+        </p>
+      </>
+    ),
   },
   {
-    icon: Users,
-    title: "Talent Showcase",
-    description: "Discover talented professionals",
-    href: "/portfolios",
-    color: "from-primary-500 to-secondary-600",
+    id: "talent",
+    title: "Talent showcase",
+    href: "/talent",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          People we&apos;ve worked with in front of the room and on the runway—<strong>models, hosts, and creatives</strong>{" "}
+          we&apos;re comfortable putting forward by name. Casting teams and brands use it to get a first pass on faces and
+          bios before a call, not to replace a proper brief.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          If you&apos;re talent, it&apos;s a window into how we present the community we build with—not a guarantee of every
+          gig, but a serious shop window.
+        </p>
+      </>
+    ),
   },
   {
-    icon: BookOpen,
-    title: "Training Programs",
-    description: "Enhance your skills",
+    id: "training",
+    title: "Training programmes",
     href: "/training",
-    color: "from-secondary-500 to-accent-600",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          Workshops and <strong>skills blocks</strong> we run or stand behind—what the day covers, who it&apos;s for, and how
+          to get on the list when a cohort opens. We avoid stuffing this with generic “leadership 101” fluff; if it&apos;s
+          listed, we intend to run it properly.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          Read the outline first, then reach out if you need a version for your team or organisation.
+        </p>
+      </>
+    ),
   },
   {
-    icon: TrendingUp,
-    title: "Career Development",
-    description: "Grow your professional network",
-    href: "/jobs",
-    color: "from-accent-500 to-primary-600",
+    id: "careers",
+    title: "Career development",
+    href: "/careers",
+    body: (
+      <>
+        <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
+          The wider lane: <strong>internships</strong>, attachment tracks, and the longer arc beyond a single vacancy. Use it
+          when you&apos;re asking “what else exists here?” rather than “is there one job open today?”—it points you to
+          structured paths and back to the <strong>job board</strong> when something concrete is live.
+        </p>
+        <p className="text-[0.95rem] leading-relaxed text-gray-700">
+          Students and career switchers usually start here; hiring managers can see how we funnel people into real roles.
+        </p>
+      </>
+    ),
   },
 ];
 
 export default function QuickLinks() {
-  return (
-    <section className="section-padding bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container-custom">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-            Quick Links
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Quick access to all sections of our platform
-          </p>
-        </motion.div>
+  const [activeId, setActiveId] = useState(quickLinks[0].id);
+  const active = quickLinks.find((l) => l.id === activeId) ?? quickLinks[0];
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quickLinks.map((link, index) => (
-            <motion.div
-              key={link.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              whileHover={{ y: -5 }}
-            >
-              <Link
-                href={link.href}
-                className="block bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 group text-center md:text-center lg:text-left"
-              >
-                <div className={`w-14 h-14 rounded-lg bg-gradient-to-r ${link.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform mx-auto md:mx-auto lg:mx-0`}>
-                  <link.icon className="w-7 h-7 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2 text-gray-900 group-hover:text-primary-600 transition-colors">
-                  {link.title}
-                </h3>
-                <p className="text-gray-600">{link.description}</p>
-              </Link>
-            </motion.div>
-          ))}
+  return (
+    <section
+      className="bg-gray-50 py-20 md:py-28 lg:py-36"
+      aria-labelledby="quick-links-heading"
+    >
+      <div className="container-custom">
+        <h2 id="quick-links-heading" className="sr-only">
+          Quick links
+        </h2>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-stretch lg:gap-10">
+          {/* Sidebar — tab list */}
+          <nav
+            className="lg:col-span-4 xl:col-span-3"
+            aria-label="Quick links sections"
+          >
+            <ul className="flex flex-col gap-2 sm:gap-2.5" role="tablist">
+              {quickLinks.map((link) => {
+                const isActive = link.id === activeId;
+                return (
+                  <li key={link.id} role="none">
+                    <button
+                      type="button"
+                      role="tab"
+                      id={`tab-${link.id}`}
+                      aria-selected={isActive}
+                      aria-controls={`panel-${link.id}`}
+                      tabIndex={0}
+                      onClick={() => setActiveId(link.id)}
+                      className={`flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3.5 text-left text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 sm:py-3 ${
+                        isActive
+                          ? "border-secondary-600 bg-secondary-600 text-white shadow-sm"
+                          : "border-gray-200 bg-white text-gray-900 hover:border-secondary-300 hover:bg-gray-50/80"
+                      }`}
+                    >
+                      <span>{link.title}</span>
+                      <ChevronRight
+                        className={`h-4 w-4 shrink-0 ${isActive ? "text-white" : "text-gray-500"}`}
+                        aria-hidden
+                      />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+
+          {/* Content pane */}
+          <div className="lg:col-span-8 xl:col-span-9 lg:flex lg:flex-col">
+            <div className="flex min-h-[28rem] flex-1 flex-col rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:min-h-[32rem] sm:p-8 lg:min-h-[36rem]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={active.id}
+                  id={`panel-${active.id}`}
+                  role="tabpanel"
+                  aria-labelledby={`tab-${active.id}`}
+                  className="flex flex-1 flex-col"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <h3
+                    className={`${montserrat.className} mb-5 text-lg font-semibold text-gray-900 sm:text-xl`}
+                  >
+                    {active.title}
+                  </h3>
+                  <div className="flex-1 text-left">{active.body}</div>
+                  <div className="mt-auto border-t border-gray-100 pt-6">
+                    <Link
+                      href={active.href}
+                      className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
+                    >
+                      Go to {active.title}
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    </Link>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
-
-
-
-
-
-
