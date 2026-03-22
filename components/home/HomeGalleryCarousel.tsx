@@ -93,9 +93,6 @@ export default function HomeGalleryCarousel() {
             </h2>
             <div className="hidden sm:block h-px w-24 bg-gray-200" />
           </div>
-          <p className="mt-3 text-gray-600">
-            Highlights from our events, campaigns, and creative work.
-          </p>
         </motion.div>
       </div>
 

@@ -17,17 +17,16 @@ const quickLinks: QuickLinkItem[] = [
   {
     id: "events",
     title: "Events calendar",
-    href: "/events/upcoming",
+    href: "/events/calendar",
     body: (
       <>
         <p className="mb-4 text-[0.95rem] leading-relaxed text-gray-700">
-          Use this when you need <strong>real dates and venues</strong>, not a vague “we do events” line. We list what&apos;s
-          coming up—launches, trainings, shows—and keep <strong>past runs</strong> available so you can see how we actually
-          show up on the ground.
+          Opens our <strong>full calendar view</strong>—month, week, or day—so you can see what sits on which date before you
+          dive into a single listing. Past and upcoming items from our programme both appear when they have a date.
         </p>
         <p className="text-[0.95rem] leading-relaxed text-gray-700">
-          Open a listing for details, ticket or registration links where they&apos;re live, and a short sense of who each day
-          is for before you commit your calendar.
+          Click an event block to go straight to that event&apos;s page for <strong>details and tickets</strong> where
+          they&apos;re available.
         </p>
       </>
     ),

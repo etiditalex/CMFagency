@@ -131,18 +131,6 @@ export default function Hero() {
         <div className="relative z-10 h-full flex items-center">
           <div className="container-custom w-full">
             <div className="max-w-2xl">
-              {/* Tagline */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                className="mb-4"
-              >
-                <span className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold">
-                  <span>Changer Fusions</span>
-                </span>
-              </motion.div>
-
               {/* Title */}
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}

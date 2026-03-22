@@ -41,12 +41,9 @@ export default function PartnersCarousel() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
             Our Partners
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Trusted by leading brands and organizations
-          </p>
         </motion.div>
 
         {/* Infinite Scrolling Carousel */}

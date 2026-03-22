@@ -87,9 +87,6 @@ export default function FeaturedEvents() {
           >
             Featured events
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-base text-gray-600">
-            Real rooms, real audiences—highlights from the experiences we build with our community.
-          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
