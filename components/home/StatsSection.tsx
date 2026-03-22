@@ -95,8 +95,7 @@ export default function StatsSection() {
       ref={sectionRef}
       className="relative flex min-h-[500px] items-center justify-center overflow-hidden"
     >
-      {/* Full-bleed photo background (Next Image — reliable on Vercel vs inline CSS bg) */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 min-h-[500px]">
         <Image
           src={STATS_BG_IMAGE}
           alt=""

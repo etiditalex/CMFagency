@@ -63,10 +63,9 @@ function HumanBuildingHub({ reduceMotion }: { reduceMotion: boolean | null }) {
   return (
     <motion.div
       className="relative z-10 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44"
-      initial={{ opacity: 0, scale: 0.92 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      initial={false}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <motion.div
         className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/25 via-white/5 to-secondary-400/20 blur-xl"
@@ -143,34 +142,28 @@ export default function WhatWeDoOrbit() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative isolate z-0 overflow-hidden bg-primary-600 py-16 text-white md:py-20">
+    <section className="relative z-0 bg-primary-600 py-16 text-white md:py-20">
+      {/* Soft radial highlight behind the hub (matches reference) */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_48%,rgba(255,255,255,0.14),transparent_72%)]"
+        aria-hidden
+      />
+
       <div className="container-custom relative z-10">
-        <motion.div
-          className="mx-auto mb-10 max-w-3xl text-center md:mb-12"
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55 }}
-        >
+        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
           <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-white/90">
             What we&apos;re building
           </p>
           <h2 className="text-3xl font-bold text-white md:text-4xl lg:text-5xl">
             People, platforms &amp; experiences — together
           </h2>
-        </motion.div>
+        </div>
 
         {/* Flat 2D orbit (no rotateX / perspective) so nothing paints into the stats section below */}
-        <div className="mx-auto max-w-lg px-2 sm:max-w-xl md:max-w-2xl">
-          <motion.div
-            className="relative mx-auto aspect-square w-full max-w-[min(92vw,440px)] sm:max-w-[480px]"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
+        <div className="mx-auto max-w-xl px-3 sm:max-w-2xl md:max-w-3xl">
+          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(92vw,520px)] md:max-w-[580px]">
             {/* Rotate only the dashed ring — cards stay static to avoid nested-transform ghosting in production */}
-            <div className="pointer-events-none absolute inset-[5%]">
+            <div className="pointer-events-none absolute inset-[5%] z-[1]">
               <motion.div
                 className="h-full w-full rounded-full border-2 border-dashed border-white/35"
                 style={{ transformOrigin: "50% 50%" }}
@@ -185,34 +178,29 @@ export default function WhatWeDoOrbit() {
             </div>
 
             {services.map((service, index) => {
-              const total = services.length;
-              const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
-              const r = 42;
-              const x = 50 + r * Math.cos(angle);
-              const y = 50 + r * Math.sin(angle);
-              const depth = (Math.cos(angle) + 1) / 2;
-              const scale = 0.92 + depth * 0.1;
-              const z = Math.round(10 + depth * 20);
+              /* r≈44% from center; literals here so Tailwind JIT always emits utilities (no dynamic class strings). */
+              const slotClass =
+                index === 0
+                  ? "left-[50%] top-[6%]"
+                  : index === 1
+                    ? "left-[88.1%] top-[28%]"
+                    : index === 2
+                      ? "left-[88.1%] top-[72%]"
+                      : index === 3
+                        ? "left-[50%] top-[94%]"
+                        : index === 4
+                          ? "left-[11.9%] top-[72%]"
+                          : "left-[11.9%] top-[28%]";
 
               return (
-                <motion.div
+                <div
                   key={service.label}
-                  className="absolute w-[38%] max-w-[10.5rem] sm:max-w-[11rem]"
-                  style={{
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    zIndex: z,
-                    transform: `translate(-50%, -50%) scale(${scale})`,
-                  }}
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.06 * index }}
+                  className={`absolute z-30 w-[26%] min-w-[6.75rem] max-w-[8.5rem] -translate-x-1/2 -translate-y-1/2 sm:max-w-[9rem] md:max-w-[9.5rem] ${slotClass}`}
                 >
                   <Link
                     href={service.href}
                     title={service.label}
-                    className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1.5 py-2 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5 [backface-visibility:hidden] [transform:translateZ(0)]"
+                    className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1.5 py-2 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5"
                   >
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent} sm:h-10 sm:w-10`}
@@ -226,14 +214,14 @@ export default function WhatWeDoOrbit() {
                       {service.label}
                     </span>
                   </Link>
-                </motion.div>
+                </div>
               );
             })}
 
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 z-[8] -translate-x-1/2 -translate-y-1/2">
               <HumanBuildingHub reduceMotion={reduceMotion} />
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

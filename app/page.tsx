@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import Hero from "@/components/home/Hero";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
@@ -7,9 +7,12 @@ import QuickLinks from "@/components/home/QuickLinks";
 import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
 import StatsSection from "@/components/home/StatsSection";
 
-const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
-const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarousel"), { ssr: true });
-const CTABanner = dynamic(() => import("@/components/home/CTABanner"), { ssr: true });
+/** Avoid stale static HTML on refresh (Vercel/CDN serving an old prerender of this page). */
+export const dynamic = "force-dynamic";
+
+const HomeGalleryCarousel = nextDynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
+const PartnersCarousel = nextDynamic(() => import("@/components/home/PartnersCarousel"), { ssr: true });
+const CTABanner = nextDynamic(() => import("@/components/home/CTABanner"), { ssr: true });
 
 export const metadata: Metadata = {
   title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",

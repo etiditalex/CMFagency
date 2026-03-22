@@ -1,83 +1,42 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function CTABanner() {
   return (
-    <section className="section-padding bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.2, 1],
-            x: [0, 50, 0],
-            y: [0, -50, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            x: [0, -50, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-
+    <section className="section-padding relative overflow-hidden bg-primary-600 text-white">
       <div className="container-custom relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-4xl mx-auto"
+          className="mx-auto max-w-4xl text-center"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold mb-6"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Ready to Get Started?</span>
-          </motion.div>
-
-          <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          <h2 className="mb-6 text-4xl font-bold md:text-6xl">
             Fuse Change & Excellence
           </h2>
-          <p className="text-xl text-white/90 mb-8 leading-relaxed">
+          <p className="mb-8 text-xl leading-relaxed text-white/90">
             Join thousands of professionals who trust Changer Fusions for transformative event planning,
             strategic marketing solutions, and comprehensive career development. Experience the fusion of innovation and professional excellence.
           </p>
 
-          <div className="flex flex-row items-center justify-center gap-4">
+          <div className="flex flex-row flex-wrap items-center justify-center gap-4">
             <Link
               href="/contact"
-              className="w-full sm:w-auto bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center justify-center group"
+              className="group inline-flex w-full items-center justify-center rounded-lg bg-white px-8 py-4 font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:bg-gray-100 hover:shadow-xl sm:w-auto"
             >
               Contact Us
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               href="/events"
-              className="w-full sm:w-auto bg-white/10 backdrop-blur-sm text-white border-2 border-white hover:bg-white/20 font-semibold py-4 px-8 rounded-lg transition-all duration-300 inline-flex items-center justify-center group"
+              className="group inline-flex w-full items-center justify-center rounded-lg border-2 border-white bg-white/10 px-8 py-4 font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/20 sm:w-auto"
             >
               Explore Events
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
         </motion.div>
@@ -85,4 +44,3 @@ export default function CTABanner() {
     </section>
   );
 }
-
