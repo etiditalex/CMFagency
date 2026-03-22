@@ -27,6 +27,11 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Match DB uniqueness: same campaign cannot have two rows that only differ by spacing/case. */
+function normalizeContestantNameKey(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 type ContestantRow = {
   id: string;
   name: string;
@@ -152,6 +157,30 @@ export default function EditCampaignPage() {
     };
   }, [campaignId]);
 
+  /** Same category cannot store two contestants whose names only differ by case/spacing (DB + UX). */
+  const duplicateContestantPeers = useMemo(() => {
+    const keyToIndices = new Map<string, number[]>();
+    contestants.forEach((c, idx) => {
+      const key = normalizeContestantNameKey(c.name);
+      if (!key) return;
+      const arr = keyToIndices.get(key) ?? [];
+      arr.push(idx);
+      keyToIndices.set(key, arr);
+    });
+    const peers = new Map<number, number[]>();
+    for (const indices of keyToIndices.values()) {
+      if (indices.length < 2) continue;
+      const sorted = [...indices].sort((a, b) => a - b);
+      for (const idx of sorted) {
+        peers.set(
+          idx,
+          sorted.filter((i) => i !== idx)
+        );
+      }
+    }
+    return peers;
+  }, [contestants]);
+
   const canSubmit = useMemo(() => {
     if (!title.trim()) return false;
     if (!slugify(slug).trim()) return false;
@@ -159,10 +188,11 @@ export default function EditCampaignPage() {
     if (!Number.isFinite(maxPerTxn) || maxPerTxn <= 0) return false;
     const effectiveType = hasFeature("ticketing") && hasFeature("voting") ? type : hasFeature("ticketing") ? "ticket" : "vote";
     if (effectiveType === "vote") {
-      return contestants.some((c) => c.name.trim().length > 0);
+      if (!contestants.some((c) => c.name.trim().length > 0)) return false;
+      if (duplicateContestantPeers.size > 0) return false;
     }
     return true;
-  }, [contestants, hasFeature, maxPerTxn, slug, title, type, unitAmount]);
+  }, [contestants, duplicateContestantPeers, hasFeature, maxPerTxn, slug, title, type, unitAmount]);
 
   const addContestant = () => {
     setContestants((prev) => [...prev, { name: "", image_url: "", imageFile: null, imagePreviewUrl: null }]);
@@ -205,6 +235,15 @@ export default function EditCampaignPage() {
     setError(null);
 
     try {
+      if (type === "vote" && duplicateContestantPeers.size > 0) {
+        const first = [...duplicateContestantPeers.keys()].sort((a, b) => a - b)[0];
+        const others = duplicateContestantPeers.get(first) ?? [];
+        const labels = others.map((i) => `Contestant ${i + 1}`).join(", ");
+        throw new Error(
+          `Duplicate contestant names in this category. Contestant ${first + 1} matches ${labels}. Rename or remove duplicates before saving.`
+        );
+      }
+
       const normalizedSlug = slugify(slug);
       if (!normalizedSlug) throw new Error("Slug is required");
 
@@ -504,8 +543,16 @@ export default function EditCampaignPage() {
             </div>
 
             <div className="space-y-4">
-              {contestants.map((c, idx) => (
-                <div key={idx} className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+              {contestants.map((c, idx) => {
+                const dupPeers = duplicateContestantPeers.get(idx);
+                const isDup = dupPeers !== undefined && dupPeers.length > 0;
+                return (
+                <div
+                  key={idx}
+                  className={`rounded-lg border p-4 bg-gray-50 ${
+                    isDup ? "border-amber-500 ring-2 ring-amber-200/80" : "border-gray-200"
+                  }`}
+                >
                   <div className="flex items-center justify-between gap-4">
                     <div className="font-semibold text-gray-900">Contestant {idx + 1}</div>
                     {contestants.length > 1 && (
@@ -526,9 +573,20 @@ export default function EditCampaignPage() {
                       <input
                         value={c.name}
                         onChange={(e) => updateContestant(idx, { name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                          isDup ? "border-amber-500 bg-amber-50/50" : "border-gray-300"
+                        }`}
                         placeholder="e.g. Contestant A"
                       />
+                      {isDup && dupPeers && (
+                        <p className="mt-2 text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                          Duplicate in this category: same name as{" "}
+                          <span className="font-semibold">
+                            {dupPeers.map((i) => `Contestant ${i + 1}`).join(", ")}
+                          </span>
+                          . Only one entry per name is allowed here; change the name or remove the extra row.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Image (optional)</label>
@@ -568,7 +626,8 @@ export default function EditCampaignPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           </div>
         )}
