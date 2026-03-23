@@ -12,10 +12,14 @@ import { supabase } from "@/lib/supabase";
 type CampaignType = "ticket" | "vote";
 
 type ContestantDraft = {
+  /** Existing DB row; null = added in this form session (insert on save). */
+  id: string | null;
   name: string;
   image_url: string;
   imageFile: File | null;
   imagePreviewUrl: string | null;
+  /** From public registration; preserved on save when row is updated by id. */
+  email: string | null;
 };
 
 function slugify(input: string) {
@@ -37,6 +41,7 @@ type ContestantRow = {
   name: string;
   image_url: string | null;
   sort_order: number;
+  email: string | null;
 };
 
 export default function EditCampaignPage() {
@@ -65,8 +70,8 @@ export default function EditCampaignPage() {
   const [isActive, setIsActive] = useState(true);
 
   const [contestants, setContestants] = useState<ContestantDraft[]>([
-    { name: "", image_url: "", imageFile: null, imagePreviewUrl: null },
-    { name: "", image_url: "", imageFile: null, imagePreviewUrl: null },
+    { id: null, name: "", image_url: "", imageFile: null, imagePreviewUrl: null, email: null },
+    { id: null, name: "", image_url: "", imageFile: null, imagePreviewUrl: null, email: null },
   ]);
 
   const [saving, setSaving] = useState(false);
@@ -107,7 +112,7 @@ export default function EditCampaignPage() {
             .single(),
           supabase
             .from("contestants")
-            .select("id,name,image_url,sort_order")
+            .select("id,name,image_url,sort_order,email")
             .eq("campaign_id", campaignId)
             .order("sort_order", { ascending: true }),
         ]);
@@ -134,15 +139,25 @@ export default function EditCampaignPage() {
         setMaxPerTxn(Number(campaign.max_per_txn) ?? 10);
         setIsActive(Boolean(campaign.is_active));
 
-        if (campaign.type === "vote" && !conRes.error && conRes.data && conRes.data.length > 0) {
-          const mapped = (conRes.data as ContestantRow[]).map((c) => ({
+        if (campaign.type === "vote" && !conRes.error && conRes.data) {
+          const list = conRes.data as ContestantRow[];
+          const mapped: ContestantDraft[] = list.map((c) => ({
+            id: c.id,
             name: c.name ?? "",
             image_url: c.image_url ?? "",
             imageFile: null as File | null,
             imagePreviewUrl: (c.image_url ?? "") || null,
+            email: c.email ?? null,
           }));
-          const empty: ContestantDraft = { name: "", image_url: "", imageFile: null, imagePreviewUrl: null };
-          setContestants(mapped.length >= 2 ? mapped : [...mapped, empty]);
+          const empty: ContestantDraft = {
+            id: null,
+            name: "",
+            image_url: "",
+            imageFile: null,
+            imagePreviewUrl: null,
+            email: null,
+          };
+          setContestants(mapped.length === 0 ? [empty, { ...empty }] : mapped.length >= 2 ? mapped : [...mapped, empty]);
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load campaign");
@@ -195,7 +210,10 @@ export default function EditCampaignPage() {
   }, [contestants, duplicateContestantPeers, hasFeature, maxPerTxn, slug, title, type, unitAmount]);
 
   const addContestant = () => {
-    setContestants((prev) => [...prev, { name: "", image_url: "", imageFile: null, imagePreviewUrl: null }]);
+    setContestants((prev) => [
+      ...prev,
+      { id: null, name: "", image_url: "", imageFile: null, imagePreviewUrl: null, email: null },
+    ]);
   };
 
   const removeContestant = (idx: number) => {
@@ -289,26 +307,52 @@ export default function EditCampaignPage() {
       if (updateErr) throw updateErr;
 
       if (type === "vote") {
-        const { error: delErr } = await supabase.from("contestants").delete().eq("campaign_id", campaignId);
-        if (delErr) throw delErr;
+        const filled = contestants.filter((c) => c.name.trim().length > 0);
+        if (filled.length === 0) {
+          throw new Error("Add at least 1 contestant for a voting campaign.");
+        }
 
-        const cleaned: { campaign_id: string; name: string; image_url: string | null; sort_order: number }[] = [];
-        for (let i = 0; i < contestants.length; i++) {
-          const c = contestants[i];
-          if (!c.name.trim()) continue;
+        const keptIds = filled.map((c) => c.id).filter((id): id is string => Boolean(id));
+        const { data: existingRows, error: listErr } = await supabase
+          .from("contestants")
+          .select("id")
+          .eq("campaign_id", campaignId);
+        if (listErr) throw listErr;
+        const toRemove = (existingRows ?? []).map((r) => r.id).filter((id) => !keptIds.includes(id));
+        if (toRemove.length > 0) {
+          const { error: delErr } = await supabase.from("contestants").delete().in("id", toRemove);
+          if (delErr) throw delErr;
+        }
+
+        for (let i = 0; i < filled.length; i++) {
+          const c = filled[i];
           let imgUrl: string | null = null;
           if (c.imageFile) {
             imgUrl = await uploadImageFile(c.imageFile);
           } else if (c.image_url.trim()) {
             imgUrl = c.image_url.trim();
           }
-          cleaned.push({ campaign_id: campaignId, name: c.name.trim(), image_url: imgUrl, sort_order: cleaned.length });
+          if (c.id) {
+            const { error: upErr } = await supabase
+              .from("contestants")
+              .update({
+                name: c.name.trim(),
+                image_url: imgUrl,
+                sort_order: i,
+              })
+              .eq("id", c.id)
+              .eq("campaign_id", campaignId);
+            if (upErr) throw upErr;
+          } else {
+            const { error: insErr } = await supabase.from("contestants").insert({
+              campaign_id: campaignId,
+              name: c.name.trim(),
+              image_url: imgUrl,
+              sort_order: i,
+            });
+            if (insErr) throw insErr;
+          }
         }
-        if (cleaned.length === 0) {
-          throw new Error("Add at least 1 contestant for a voting campaign.");
-        }
-        const { error: contestantsErr } = await supabase.from("contestants").insert(cleaned);
-        if (contestantsErr) throw contestantsErr;
       } else {
         const { error: delErr } = await supabase.from("contestants").delete().eq("campaign_id", campaignId);
         if (delErr) throw delErr;
@@ -587,6 +631,11 @@ export default function EditCampaignPage() {
                           . Only one entry per name is allowed here; change the name or remove the extra row.
                         </p>
                       )}
+                      {c.email?.trim() ? (
+                        <p className="mt-2 text-xs text-gray-600">
+                          Registered via public link: <span className="font-mono">{c.email.trim()}</span> (kept when you save)
+                        </p>
+                      ) : null}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Image (optional)</label>
