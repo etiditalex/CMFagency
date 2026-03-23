@@ -11,7 +11,7 @@ Follow these steps to enable Google authentication:
 ### Step 1: Go to Supabase Dashboard
 
 1. Visit: https://app.supabase.com
-2. Select your project (jgroawmmjuhdjtdvnlxa)
+2. Select your project (YOUR_PROJECT_REF)
 3. Navigate to **Authentication** → **Providers**
 
 ### Step 2: Enable Google Provider
@@ -48,7 +48,7 @@ Make sure your Google Cloud Console has the correct redirect URI:
 4. Click **Edit**
 5. Under **Authorized redirect URIs**, make sure you have:
    ```
-   https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback
+   https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
    ```
 6. If it's not there, add it and click **Save**
 
@@ -77,7 +77,7 @@ After configuration:
 
 ### "Redirect URI mismatch" error
 - **Solution**: Verify the redirect URI in Google Cloud Console matches exactly:
-  - `https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback`
+  - `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 - Make sure there are no trailing slashes or extra characters
 
 ### "Invalid client" error
@@ -95,8 +95,8 @@ After configuration:
 ## 📝 Summary
 
 ✅ **Environment Variables**: Configured in `.env.local`
-✅ **Supabase URL**: https://jgroawmmjuhdjtdvnlxa.supabase.co
-✅ **Callback URL**: https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback
+✅ **Supabase URL**: https://YOUR_PROJECT_REF.supabase.co
+✅ **Callback URL**: https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
 ⏳ **Next Step**: Add Google OAuth credentials in Supabase Dashboard (see Step 3 above)
 
 ## 🚀 After Configuration

@@ -30,7 +30,7 @@ The login page now supports Google authentication. Users can sign in or create a
    - Application type: **Web application**
    - Name: **CMF Agency Web**
    - Authorized redirect URIs: Add these:
-     - `https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback`
+     - `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
      - `http://localhost:3000/auth/callback` (for local development)
    - Click **Create**
 7. Copy the **Client ID** and **Client Secret**

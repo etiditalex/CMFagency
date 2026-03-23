@@ -11,7 +11,7 @@ When clicking "Sign in with Google" on production, it redirects to `localhost:30
 
 1. **Go to Supabase Dashboard**
    - Visit: https://app.supabase.com
-   - Select project: **jgroawmmjuhdjtdvnlxa**
+   - Select project: **YOUR_PROJECT_REF**
 
 2. **Update Site URL**
    - Navigate to: **Authentication** → **URL Configuration**
@@ -45,4 +45,4 @@ Supabase uses the **Site URL** setting to determine where to redirect users afte
 1. Clear your browser cache
 2. Try in an incognito/private window
 3. Check that the Site URL in Supabase exactly matches your production domain
-4. Verify Google Cloud Console has the correct redirect URI: `https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback`
+4. Verify Google Cloud Console has the correct redirect URI: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`

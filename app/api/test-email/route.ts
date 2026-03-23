@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
+  // Public repo: unauthenticated email trigger must not be reachable in production.
+  const isVercelProduction = process.env.VERCEL_ENV === "production";
+  const isSelfHostedProduction =
+    !process.env.VERCEL &&
+    process.env.NODE_ENV === "production" &&
+    process.env.ALLOW_TEST_EMAIL_API !== "true";
+  if (isVercelProduction || isSelfHostedProduction) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   try {
     const resendApiKey = process.env.RESEND_API_KEY;
     // NOTE: Resend requires domain verification to send to any email

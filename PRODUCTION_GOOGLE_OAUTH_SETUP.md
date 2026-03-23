@@ -7,7 +7,7 @@ This guide will help you configure Google OAuth to work on your live website.
 You already have:
 - ✅ Google OAuth Client ID: `[Your Client ID from Google Cloud Console]`
 - ✅ Google OAuth Client Secret: `[Your Client Secret from Google Cloud Console]`
-- ✅ Supabase Project: `jgroawmmjuhdjtdvnlxa`
+- ✅ Supabase Project: `YOUR_PROJECT_REF` (Dashboard → Settings → General)
 
 ## 🚀 Step-by-Step Setup
 
@@ -16,7 +16,7 @@ You already have:
 **This is the most important step to fix the localhost redirect issue!**
 
 1. Go to: https://app.supabase.com
-2. Select your project: **jgroawmmjuhdjtdvnlxa**
+2. Select your Supabase project
 3. Navigate to **Authentication** → **URL Configuration**
 4. Under **Site URL**, change from `http://localhost:3000` to your production URL:
    ```
@@ -37,19 +37,19 @@ You already have:
 3. Find **Google** in the list
 4. Click **Enable** toggle to turn it on
 5. Enter the credentials:
-   - **Client ID (for OAuth)**: `837082169242-5pu8of4utofhnapbkvp8kag5po2v3ghu`
-   - **Client Secret (for OAuth)**: `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`
+   - **Client ID (for OAuth)**: paste from Google Cloud Console → Credentials
+   - **Client Secret (for OAuth)**: paste from the same OAuth client (never commit this value)
 6. Click **Save**
 
 ### Step 3: Update Google Cloud Console Redirect URIs
 
 1. Go to: https://console.cloud.google.com
 2. Navigate to **APIs & Services** → **Credentials**
-3. Find your OAuth 2.0 Client ID: `837082169242-5pu8of4utofhnapbkvp8kag5po2v3ghu`
+3. Open your OAuth 2.0 Client ID (the one used for Supabase Google sign-in)
 4. Click **Edit** (pencil icon)
 5. Under **Authorized redirect URIs**, add these URLs:
    ```
-   https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback
+   https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
    https://cm-fagency.vercel.app/auth/callback
    https://cmfagency.co.ke/auth/callback
    ```
@@ -65,9 +65,9 @@ You already have:
 
    **Required Variables:**
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://jgroawmmjuhdjtdvnlxa.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4iZ3_t7mI9AEyjI98VhAPw_oFQxa02Q
-   SUPABASE_SERVICE_ROLE_KEY=sb_secret_LInH07sUitnqEusE_FOzdQ_BlQV6AIL
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+   SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
    ```
 
 5. For each variable:
@@ -121,7 +121,7 @@ After setup, verify:
 
 **Solution**:
 1. Check Google Cloud Console → Credentials → OAuth 2.0 Client ID
-2. Verify the redirect URI is exactly: `https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback`
+2. Verify the redirect URI is exactly: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 3. Make sure there are no trailing slashes
 4. If using a custom domain, add that redirect URI too
 
@@ -177,10 +177,10 @@ After setup, verify:
 |------|-------|----------|
 | **Client ID** | `[Your Google OAuth Client ID]` | Supabase Dashboard → Auth → Providers → Google |
 | **Client Secret** | `[Your Google OAuth Client Secret]` | Supabase Dashboard → Auth → Providers → Google |
-| **Redirect URI** | `https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback` | Google Cloud Console → Credentials |
-| **Supabase URL** | `https://jgroawmmjuhdjtdvnlxa.supabase.co` | Vercel Environment Variables |
-| **Supabase Anon Key** | `sb_publishable_4iZ3_t7mI9AEyjI98VhAPw_oFQxa02Q` | Vercel Environment Variables |
-| **Service Role Key** | `sb_secret_LInH07sUitnqEusE_FOzdQ_BlQV6AIL` | Vercel Environment Variables |
+| **Redirect URI** | `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback` | Google Cloud Console → Credentials |
+| **Supabase URL** | From Supabase → Settings → API | Vercel Environment Variables |
+| **Supabase Anon Key** | publishable/anon key from same page | Vercel Environment Variables |
+| **Service Role Key** | service_role secret (server only; never in client or docs) | Vercel Environment Variables |
 
 ## 🚀 After Setup
 

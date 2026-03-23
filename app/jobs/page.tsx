@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Briefcase, Lock } from "lucide-react";
+import { Briefcase, Lock } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatEmploymentType } from "@/lib/job-board-access";
 
 type ListingSummary = {
@@ -57,58 +56,9 @@ export default function JobsPage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
               Job Board
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Career opportunities from Changer Fusions and partners. Internships and industrial attachments are free to
-              browse; full-time and contract roles need an active annual membership (KES&nbsp;500) after you apply.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="mb-12 bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200"
-          >
-            <div className="flex flex-col md:flex-row">
-              <div className="relative w-full md:w-1/2 min-h-[240px] md:min-h-[320px] bg-gray-100 flex items-center justify-center">
-                <Image
-                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg"
-                  alt="Career opportunities"
-                  width={800}
-                  height={600}
-                  className="w-full h-full object-contain"
-                  priority
-                />
-              </div>
-              <div className="w-full md:w-1/2 p-6 md:p-8 flex flex-col justify-center">
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Grow with us</h3>
-                <div className="flex items-center text-gray-600 mb-4">
-                  <MapPin className="w-5 h-5 mr-3 text-primary-600 flex-shrink-0" />
-                  <span>Mombasa &amp; remote-friendly roles</span>
-                </div>
-                <p className="text-gray-700 mb-6 leading-relaxed">
-                  Applied through our portal? Unlock paid listings for one year with M-Pesa. Prefer internship or
-                  attachment only? Those posts stay open to everyone at no charge.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <Link
-                    href="/application"
-                    className="inline-flex items-center justify-center px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Apply to join the talent pool
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Sign in
-                  </Link>
-                </div>
-              </div>
-            </div>
           </motion.div>
 
           {loadError && (

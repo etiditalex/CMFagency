@@ -44,26 +44,27 @@ This is typically a **webpack chunk loading issue** caused by:
 Make sure these are set in Vercel **Production** environment:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://jgroawmmjuhdjtdvnlxa.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_4iZ3_t7mI9AEyjI98VhAPw_oFQxa02Q
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_LInH07sUitnqEusE_FOzdQ_BlQV6AIL
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
 ```
+(Set values from Supabase → Project Settings → API. Never commit real keys.)
 
 ### Solution 4: Check OAuth Redirect Configuration
 
 1. **Supabase Dashboard**:
    - Go to: https://app.supabase.com
-   - Project: **jgroawmmjuhdjtdvnlxa**
+   - Project: **your project**
    - **Authentication** → **Providers** → **Google**
    - Verify it's enabled and credentials are saved
 
 2. **Google Cloud Console**:
    - Go to: https://console.cloud.google.com
    - **APIs & Services** → **Credentials**
-   - Find OAuth Client ID: `837082169242-5pu8of4utofhnapbkvp8kag5po2v3ghu`
+   - Find your OAuth 2.0 Client ID (Google Cloud Console → Credentials)
    - **Authorized redirect URIs** must include:
      ```
-     https://jgroawmmjuhdjtdvnlxa.supabase.co/auth/v1/callback
+     https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
      ```
 
 ### Solution 5: Check Production Domain

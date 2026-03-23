@@ -46,10 +46,9 @@
 ## ⚠️ Items to Review Before Deployment
 
 ### 1. Google Maps API Key
-- **Location**: `app/contact/page.tsx` (line 29, 122)
-- **Current**: Hardcoded API key `AIzaSyBFw0Qbyq9zTFTd-tUY6d-s6V4qO3gJ`
-- **Recommendation**: Move to environment variable for security
-- **Action**: Create `.env.local` with `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key`
+- **Location**: `app/contact/page.tsx` — use `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` from environment
+- **Recommendation**: Restrict the key in Google Cloud Console (HTTP referrers / APIs used)
+- **Action**: Set the variable in `.env.local` (local) and in Vercel (production); do not commit real keys
 
 ### 2. Environment Variables
 - Create `.env.local` file (already in .gitignore)
