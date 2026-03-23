@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { resolveContestantForCertificate } from "@/lib/contestant-certificate-lookup";
 
 /**
- * Public: check certificate status for a contestant by email + campaign_slug.
- * Used on register-as-model page so contestants can see if they can download.
+ * Public: certificate status by full name (as in database) + email + category slug.
+ * Email must match the registration when we have it on file; otherwise it is saved for delivery.
  */
 export async function GET(req: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -13,12 +14,13 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const email = searchParams.get("email")?.trim().toLowerCase();
+  const name = searchParams.get("name")?.trim() ?? "";
+  const email = searchParams.get("email")?.trim().toLowerCase() ?? "";
   const campaignSlug = searchParams.get("campaign_slug")?.trim();
 
-  if (!email || !campaignSlug) {
+  if (!name || !email || !campaignSlug) {
     return NextResponse.json(
-      { error: "email and campaign_slug are required" },
+      { error: "name, email, and campaign_slug are required" },
       { status: 400 }
     );
   }
@@ -33,40 +35,28 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (campErr || !campaign) {
-    return NextResponse.json({ found: false, error: "Category not found" }, { status: 200 });
+    return NextResponse.json(
+      { found: false, approved: false, downloaded_at: null, error: "Category not found" },
+      { status: 200 }
+    );
   }
 
   const campaignId = (campaign as { id: string }).id;
+  const categoryTitle = (campaign as { title?: string }).title ?? "";
 
-  const { data: contestant, error } = await supabase
-    .from("contestants")
-    .select("id,name,certificate_approved_at,certificate_downloaded_at")
-    .eq("campaign_id", campaignId)
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!contestant) {
+  const resolved = await resolveContestantForCertificate(supabase, campaignId, name, email);
+  if (!resolved.ok) {
     return NextResponse.json({
       found: false,
       approved: false,
       downloaded_at: null,
-      category_title: (campaign as { title?: string }).title ?? undefined,
+      category_title: categoryTitle,
+      error: resolved.message,
     });
   }
 
-  const c = contestant as {
-    id: string;
-    name: string;
-    certificate_approved_at: string | null;
-    certificate_downloaded_at: string | null;
-  };
+  const c = resolved.contestant;
 
-  // Mark that the contestant has requested/checked certificate status.
-  // This powers admin notifications in Fusion Xpress dashboard.
   try {
     await supabase
       .from("contestants")
@@ -82,6 +72,6 @@ export async function GET(req: NextRequest) {
     name: c.name,
     approved: !!c.certificate_approved_at,
     downloaded_at: c.certificate_downloaded_at ?? null,
-    category_title: (campaign as { title?: string }).title ?? undefined,
+    category_title: categoryTitle,
   });
 }

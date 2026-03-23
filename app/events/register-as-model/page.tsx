@@ -51,7 +51,8 @@ export default function RegisterAsModelPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ message: string; votingLink?: string } | null>(null);
 
-  // Certificate download section
+  // Certificate download section (name must match database; email = registration match or where we send the PDF)
+  const [certName, setCertName] = useState("");
   const [certEmail, setCertEmail] = useState("");
   const [certCategorySlug, setCertCategorySlug] = useState(REGISTRATION_CATEGORIES[0]?.slug ?? "");
   const [certStatus, setCertStatus] = useState<{
@@ -121,12 +122,22 @@ export default function RegisterAsModelPage() {
     setCertStatus(null);
     setCertChecking(true);
     try {
-      const res = await fetch(
-        `/api/certificate/status?email=${encodeURIComponent(certEmail.trim().toLowerCase())}&campaign_slug=${encodeURIComponent(certCategorySlug)}`
-      );
+      const params = new URLSearchParams({
+        name: certName.trim(),
+        email: certEmail.trim().toLowerCase(),
+        campaign_slug: certCategorySlug,
+      });
+      const res = await fetch(`/api/certificate/status?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setCertError((data as { error?: string }).error ?? "Could not check status.");
+        return;
+      }
+      if (!(data as { found?: boolean }).found) {
+        setCertStatus(null);
+        setCertError(
+          (data as { error?: string }).error ?? "No registration found for this name and category."
+        );
         return;
       }
       setCertStatus({
@@ -168,7 +179,7 @@ export default function RegisterAsModelPage() {
   };
 
   const onDownloadCertificate = async () => {
-    if (!certEmail.trim() || !certCategorySlug) return;
+    if (!certName.trim() || !certEmail.trim() || !certCategorySlug) return;
     setCertError(null);
     setCertDownloading(true);
     try {
@@ -176,6 +187,7 @@ export default function RegisterAsModelPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          name: certName.trim(),
           email: certEmail.trim().toLowerCase(),
           campaign_slug: certCategorySlug,
         }),
@@ -371,15 +383,26 @@ export default function RegisterAsModelPage() {
                   <h3 className="text-lg font-bold text-gray-900">Certificate of participation</h3>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  Already participated in a CMFA event? Request your e-signed certificate here. Download is available after admin approval.
+                  Enter your name exactly as it appears in our records for that category, and the email we should use (must match the one you registered with when we have it on file). Your PDF uses the official Coast Fashion Awards artwork; only your name and category are added. Download is available after admin approval.
                 </p>
                 <form onSubmit={onCheckCertificate} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email (as registered)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Full name (as in database)</label>
+                    <input
+                      type="text"
+                      value={certName}
+                      onChange={(e) => { setCertName(e.target.value); setCertStatus(null); setCertError(null); }}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="e.g. Jane Doe"
+                      autoComplete="name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email (registered address; certificate is sent here)</label>
                     <input
                       type="email"
                       value={certEmail}
-                      onChange={(e) => { setCertEmail(e.target.value); setCertStatus(null); }}
+                      onChange={(e) => { setCertEmail(e.target.value); setCertStatus(null); setCertError(null); }}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                       placeholder="you@example.com"
                     />
@@ -388,7 +411,7 @@ export default function RegisterAsModelPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                     <select
                       value={certCategorySlug}
-                      onChange={(e) => { setCertCategorySlug(e.target.value); setCertStatus(null); }}
+                      onChange={(e) => { setCertCategorySlug(e.target.value); setCertStatus(null); setCertError(null); }}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       {REGISTRATION_CATEGORIES.map((c) => (
@@ -402,7 +425,7 @@ export default function RegisterAsModelPage() {
                   {certStatus && (
                     <div className="p-4 rounded-lg bg-gray-50 border border-gray-200 space-y-2">
                       {!certStatus.found ? (
-                        <p className="text-gray-700">No registration found for this email and category.</p>
+                        <p className="text-gray-700">No match for this name, email, and category.</p>
                       ) : certStatus.approved && certStatus.downloaded_at ? (
                         <p className="text-gray-700">Your certificate has already been issued (sent by email or downloaded). It can only be received once.</p>
                       ) : certStatus.approved ? (
@@ -439,7 +462,7 @@ export default function RegisterAsModelPage() {
                   )}
                   <button
                     type="submit"
-                    disabled={certChecking || !certEmail.trim()}
+                    disabled={certChecking || !certEmail.trim() || !certName.trim()}
                     className="w-full py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                   >
                     {certChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
