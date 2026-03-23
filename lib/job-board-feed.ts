@@ -1,6 +1,8 @@
+import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { listingRequiresPaidMembership } from "@/lib/job-board-access";
-import type { AggregatorSource } from "@/lib/job-aggregators/types";
+import { runAllCollectors } from "@/lib/job-aggregators/collect-all";
+import type { AggregatorSource, CollectedJob } from "@/lib/job-aggregators/types";
 
 export type UnifiedJobSource = "employer" | AggregatorSource;
 
@@ -51,6 +53,45 @@ function parseTs(row: Record<string, unknown>, keys: string[]): string | null {
     if (v != null && String(v)) return String(v);
   }
   return null;
+}
+
+/** Shown when DB has no aggregated rows yet; cached to avoid hammering partner APIs on every request. */
+const getLiveCollectedJobsCached = unstable_cache(
+  async (): Promise<CollectedJob[]> => {
+    const results = await runAllCollectors();
+    return results.flatMap((r) => r.jobs);
+  },
+  ["job-board-live-collected-v1"],
+  { revalidate: 900 }
+);
+
+function collectedToUnified(j: CollectedJob): UnifiedJobListing {
+  return {
+    source: j.source,
+    id: `${j.source}:${j.external_id}`,
+    title: j.title,
+    company_name: j.company_name,
+    location: j.location,
+    employment_type: j.employment_type,
+    salary_text: j.salary_text,
+    summary: j.summary,
+    poster_url: j.company_logo_url,
+    industry: j.industry,
+    seniority: j.seniority,
+    published_at: j.posted_at,
+    requires_paid_membership: false,
+    apply_url: j.apply_url,
+    attribution: attributionLabel(j.source),
+    detail_path: j.apply_url,
+  };
+}
+
+function collectedMatchesQuery(j: CollectedJob, q: string): boolean {
+  const needle = q.trim().toLowerCase();
+  if (needle.length < 2) return true;
+  const hay = `${j.title} ${j.company_name} ${j.summary ?? ""} ${j.description} ${j.location ?? ""} ${j.industry ?? ""}`
+    .toLowerCase();
+  return hay.includes(needle);
 }
 
 /**
@@ -124,6 +165,8 @@ export async function getUnifiedJobBoardFeed(options?: {
   }
 
   let aggregatedErr: string | null = null;
+  let aggregatedTableMissing = false;
+  let externalFromDbCount = 0;
   {
     let aq = supabase
       .from("aggregated_jobs")
@@ -141,6 +184,7 @@ export async function getUnifiedJobBoardFeed(options?: {
     const { data: rows, error } = await aq;
     if (error) {
       if (/relation|does not exist/i.test(error.message)) {
+        aggregatedTableMissing = true;
         aggregatedErr = null;
       } else {
         aggregatedErr = error.message;
@@ -150,6 +194,7 @@ export async function getUnifiedJobBoardFeed(options?: {
         const row = r as Record<string, unknown>;
         const source = String(row.source ?? "") as AggregatorSource;
         if (!["remoteok", "remotive", "jobicy", "adzuna"].includes(source)) continue;
+        externalFromDbCount += 1;
         const logo =
           typeof row.company_logo_url === "string" && row.company_logo_url.trim()
             ? row.company_logo_url.trim()
@@ -172,6 +217,33 @@ export async function getUnifiedJobBoardFeed(options?: {
           attribution: attributionLabel(source),
           detail_path: `/jobs/external/${row.id}`,
         });
+      }
+    }
+  }
+
+  // No rows from DB (sync not run yet or empty table): pull partner APIs once per cache window.
+  if (externalFromDbCount === 0 && !aggregatedErr) {
+    let useLive = false;
+    if (q.length < 2) {
+      useLive = true;
+    } else if (aggregatedTableMissing) {
+      useLive = true;
+    } else {
+      const { count, error: cErr } = await supabase
+        .from("aggregated_jobs")
+        .select("*", { count: "exact", head: true });
+      if (!cErr && (count === 0 || count == null)) useLive = true;
+    }
+
+    if (useLive) {
+      try {
+        const live = await getLiveCollectedJobsCached();
+        for (const cj of live) {
+          if (q.length >= 2 && !collectedMatchesQuery(cj, q)) continue;
+          jobs.push(collectedToUnified(cj));
+        }
+      } catch {
+        // ignore — board still shows employer jobs if any
       }
     }
   }

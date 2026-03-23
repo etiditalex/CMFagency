@@ -504,9 +504,17 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Pro
           )}
 
           {activeTab === "find" && !loadError && jobs.length === 0 && (
-            <p className="py-12 text-center text-gray-500">
-              No jobs to show yet. If you expect remote listings, run the aggregate sync (see deployment docs) or check back
-              after the cron job runs. Employer posts appear here as soon as they are published from the dashboard.
+            <p className="py-12 text-center text-gray-500 max-w-xl mx-auto">
+              {initialQuery.trim().length >= 2 ? (
+                <>
+                  No jobs match &quot;{initialQuery.trim()}&quot;. Try different keywords, or clear search to see all listings.
+                </>
+              ) : (
+                <>
+                  No listings right now—no published employer posts and remote feeds did not return data (check network or
+                  try again shortly). After you run the database sync, jobs are stored in Supabase for faster loads.
+                </>
+              )}
             </p>
           )}
         </div>
