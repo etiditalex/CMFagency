@@ -29,7 +29,8 @@ function isMissingPortalMembersTable(err: any) {
 export default function DashboardHomePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, isAdmin, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, isAdmin, hasFeature, isEmployer } =
+    usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +119,11 @@ export default function DashboardHomePage() {
 
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
+    if (isEmployer) {
+      setDataLoading(false);
+      refreshInFlightRef.current = false;
+      return;
+    }
     if (refreshInFlightRef.current) return;
     refreshInFlightRef.current = true;
 
@@ -270,7 +276,7 @@ export default function DashboardHomePage() {
       setDataLoading(false);
       refreshInFlightRef.current = false;
     }
-  }, [user?.id, isFullAdmin]);
+  }, [user?.id, isFullAdmin, isEmployer]);
 
   const syncPendingPaystack = useCallback(async () => {
     if (!user) return;
@@ -336,7 +342,7 @@ export default function DashboardHomePage() {
   }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
 
   useEffect(() => {
-    if (!isPortalMember || !user?.id) return;
+    if (!isPortalMember || !user?.id || isEmployer) return;
 
     const channel = supabase
       .channel(`fusion-xpress-dashboard-${user.id}`)
@@ -353,7 +359,7 @@ export default function DashboardHomePage() {
       window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [isPortalMember, refreshData, user?.id]);
+  }, [isPortalMember, refreshData, user?.id, isEmployer]);
 
   if (authLoading || portalLoading || loading) {
     return (
@@ -368,6 +374,30 @@ export default function DashboardHomePage() {
 
   // Avoid flashing private UI while redirecting.
   if (!isAuthenticated || !user || !isPortalMember) return null;
+
+  if (isEmployer) {
+    return (
+      <div className="text-left max-w-2xl">
+        <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Employer hub</h2>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            href="/dashboard/job-listings"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 font-semibold text-white hover:bg-primary-700"
+          >
+            <Briefcase className="w-5 h-5" />
+            Job listings
+          </Link>
+          <Link
+            href="/jobs"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 font-semibold text-gray-800 hover:bg-gray-50"
+          >
+            View public board
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
 

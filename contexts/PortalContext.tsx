@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
-type PortalRole = "admin" | "manager" | "client";
+type PortalRole = "admin" | "manager" | "client" | "employer";
 type PortalTier = "basic" | "pro" | "enterprise";
 
 type PortalFeature =
@@ -63,6 +63,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isAdmin = useMemo(() => role === "admin" || role === "manager", [role]);
   const isManager = useMemo(() => role === "manager", [role]);
   const isFullAdmin = useMemo(() => role === "admin", [role]);
+  const isEmployer = useMemo(() => role === "employer", [role]);
   const hasFeature = useMemo(
     () => (key: PortalFeature) => isAdmin || features.includes(key),
     [isAdmin, features]
@@ -180,13 +181,19 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const derivedFeatures: PortalFeature[] =
         fs.length > 0 ? fs : validTier === "pro" || validTier === "enterprise" ? [...allFeatureKeys] : [];
       setIsPortalMember(true);
-      setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
-      setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);
-      setFeatures(
-        r === "admin" || r === "manager"
-          ? ([...allFeatureKeys] as PortalFeature[])
-          : derivedFeatures
-      );
+      if (r === "employer") {
+        setRole("employer");
+        setTier("basic");
+        setFeatures([]);
+      } else {
+        setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
+        setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);
+        setFeatures(
+          r === "admin" || r === "manager"
+            ? ([...allFeatureKeys] as PortalFeature[])
+            : derivedFeatures
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -216,9 +223,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isManager,
       isFullAdmin,
+      isEmployer,
       refresh,
     }),
-    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin]
+    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin, isEmployer]
   );
 
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;

@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import { Plus, Trash2, Pencil, Loader2, Upload } from "lucide-react";
+import { JOB_INDUSTRY_OPTIONS, JOB_SENIORITY_OPTIONS } from "@/lib/job-listing-taxonomy";
 
 type Listing = {
   id: string;
@@ -19,6 +20,8 @@ type Listing = {
   benefits: unknown;
   contact_email: string | null;
   poster_url?: string | null;
+  industry?: string | null;
+  seniority?: string | null;
   status: string;
   created_at: string;
 };
@@ -38,7 +41,7 @@ function linesFromJson(val: unknown): string {
 
 export default function DashboardJobListingsPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, isEmployer } = usePortal();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +62,8 @@ export default function DashboardJobListingsPage() {
     benefits_text: "",
     contact_email: "",
     poster_url: "",
+    industry: "",
+    seniority: "",
     status: "draft" as "draft" | "published" | "closed",
   };
 
@@ -113,6 +118,8 @@ export default function DashboardJobListingsPage() {
       benefits_text: linesFromJson(row.benefits),
       contact_email: row.contact_email ?? "",
       poster_url: typeof row.poster_url === "string" ? row.poster_url : "",
+      industry: typeof row.industry === "string" ? row.industry : "",
+      seniority: typeof row.seniority === "string" ? row.seniority : "",
       status: (row.status as "draft" | "published" | "closed") || "draft",
     });
   };
@@ -186,6 +193,8 @@ export default function DashboardJobListingsPage() {
         benefits,
         contact_email: form.contact_email || null,
         poster_url: form.poster_url.trim() || null,
+        industry: form.industry.trim() || null,
+        seniority: form.seniority.trim() || null,
         status: form.status,
       };
 
@@ -266,7 +275,7 @@ export default function DashboardJobListingsPage() {
   };
 
   if (authLoading || portalLoading) return null;
-  if (!isAuthenticated || !user || !isPortalMember || !isAdmin) return null;
+  if (!isAuthenticated || !user || !isPortalMember || (!isAdmin && !isEmployer)) return null;
 
   return (
     <div className="text-left">
@@ -274,8 +283,9 @@ export default function DashboardJobListingsPage() {
           <div>
             <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Job board listings</h2>
             <p className="mt-1 text-gray-600 text-sm max-w-3xl">
-              Publish roles for members. Internship and industrial attachment posts are visible to everyone; other types
-              require an active KES&nbsp;500/year job-board membership to view full details.
+              {isEmployer && !isAdmin
+                ? "Create and manage your vacancies. After you publish, roles appear on the public job board subject to our listing rules."
+                : "Publish roles for members. Internship and industrial attachment posts are visible to everyone; other types require an active KES\u00a0500/year job-board membership to view full details."}
             </p>
           </div>
           <button
@@ -333,6 +343,34 @@ export default function DashboardJobListingsPage() {
                 >
                   {EMPLOYMENT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                <select
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  value={form.industry}
+                  onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+                >
+                  {JOB_INDUSTRY_OPTIONS.map((o) => (
+                    <option key={o.value || "none"} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                <select
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  value={form.seniority}
+                  onChange={(e) => setForm((f) => ({ ...f, seniority: e.target.value }))}
+                >
+                  {JOB_SENIORITY_OPTIONS.map((o) => (
+                    <option key={o.value || "none"} value={o.value}>
                       {o.label}
                     </option>
                   ))}

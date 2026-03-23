@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireEmployerOrAdminForJobBoard } from "@/lib/require-employer-or-admin";
 
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB — same budget as managed page backgrounds
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -9,7 +9,7 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
 
     const formData = await req.formData();

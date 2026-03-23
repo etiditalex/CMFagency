@@ -19,6 +19,34 @@ function cleanup(): void {
   }
 }
 
+const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const REGISTER_MAX_ATTEMPTS = 5;
+
+/** Rate limit public employer self-registration by IP. */
+export function checkEmployerRegisterRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  cleanup();
+  const key = getKey(ip, "employer-register");
+  const now = Date.now();
+  const entry = store.get(key);
+
+  if (!entry) {
+    store.set(key, { count: 1, resetAt: now + REGISTER_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.resetAt < now) {
+    store.set(key, { count: 1, resetAt: now + REGISTER_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= REGISTER_MAX_ATTEMPTS) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count += 1;
+  return { allowed: true };
+}
+
 export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   cleanup();
   const key = getKey(ip, "login");

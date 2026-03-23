@@ -112,7 +112,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const currentType = sp?.get("type") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature } = usePortal();
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer } = usePortal();
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);
@@ -164,6 +164,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }, [isAuthenticated, isPortalMember]);
 
   const canSeeItem = (item: NavItem) => {
+    if (isEmployer) {
+      if (item.href === "/dashboard/job-listings") return true;
+      return item.href === "/dashboard" || item.href === "/dashboard/account";
+    }
     if (item.adminOnly && !isAdmin) return false;
     if (item.featureKey) return hasFeature(item.featureKey);
     if (item.featureKeysAny?.length)

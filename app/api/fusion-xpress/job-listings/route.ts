@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireEmployerOrAdminForJobBoard } from "@/lib/require-employer-or-admin";
+import { readIndustryFromBody, readSeniorityFromBody } from "@/lib/job-listing-taxonomy";
 
 const EMPLOYMENT_TYPES = new Set([
   "full_time",
@@ -22,14 +23,13 @@ function parseLines(text: string): string[] {
  */
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
-    const { admin } = auth;
+    const { admin, userId, mode } = auth;
 
-    const { data: rows, error } = await admin
-      .from("job_listings")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let q = admin.from("job_listings").select("*").order("created_at", { ascending: false });
+    if (mode === "employer") q = q.eq("posted_by", userId);
+    const { data: rows, error } = await q;
 
     if (error) {
       if (/relation|does not exist/i.test(error.message)) {
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
     const { admin, userId } = auth;
 
@@ -94,6 +94,17 @@ export async function POST(req: NextRequest) {
       poster_url = p.length > 0 ? p.slice(0, 4_000_000) : null;
     }
 
+    const industryRaw = readIndustryFromBody(body);
+    if (industryRaw === "invalid") {
+      return NextResponse.json({ error: "Invalid industry" }, { status: 400 });
+    }
+    const seniorityRaw = readSeniorityFromBody(body);
+    if (seniorityRaw === "invalid") {
+      return NextResponse.json({ error: "Invalid seniority" }, { status: 400 });
+    }
+    const industry = industryRaw === undefined ? null : industryRaw;
+    const seniority = seniorityRaw === undefined ? null : seniorityRaw;
+
     const nowIso = new Date().toISOString();
     const row = {
       title,
@@ -107,6 +118,8 @@ export async function POST(req: NextRequest) {
       benefits,
       contact_email: String(body.contact_email ?? "").trim() || null,
       poster_url,
+      industry,
+      seniority,
       status,
       posted_by: userId,
       published_at: status === "published" ? nowIso : null,

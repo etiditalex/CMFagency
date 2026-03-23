@@ -46,7 +46,7 @@ export default function FusionXpressAdminLoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(
     initialError === "unauthorized"
-      ? "Access denied. Ask an admin to add your account to the portal."
+      ? "Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal."
       : initialError === "setup"
         ? "Fusion Xpress portal is not configured yet. Run the database setup SQL in Supabase."
         : null
@@ -181,7 +181,7 @@ export default function FusionXpressAdminLoginPage() {
       if (adminErr) throw adminErr;
       if (!adminRow) {
         await supabase.auth.signOut();
-        throw new Error("Access denied. Ask an admin to add your account to the portal.");
+        throw new Error("Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal.");
       }
       return;
     }
@@ -206,7 +206,7 @@ export default function FusionXpressAdminLoginPage() {
 
       // Keep job-applicant sessions from lingering on the portal.
       await supabase.auth.signOut();
-      throw new Error("Access denied. Ask an admin to add your account to the portal.");
+      throw new Error("Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal.");
     }
   };
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireEmployerOrAdminForJobBoard } from "@/lib/require-employer-or-admin";
+import { readIndustryFromBody, readSeniorityFromBody } from "@/lib/job-listing-taxonomy";
 
 const EMPLOYMENT_TYPES = new Set([
   "full_time",
@@ -14,14 +15,17 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, ctx: Ctx) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
-    const { admin } = auth;
+    const { admin, userId, mode } = auth;
     const { id } = await ctx.params;
 
     const { data: row, error } = await admin.from("job_listings").select("*").eq("id", id).maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (mode === "employer" && String((row as { posted_by?: string }).posted_by) !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     return NextResponse.json({ listing: row });
   } catch (e: unknown) {
     return NextResponse.json(
@@ -33,16 +37,23 @@ export async function GET(req: NextRequest, ctx: Ctx) {
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
-    const { admin } = auth;
+    const { admin, userId, mode } = auth;
     const { id } = await ctx.params;
 
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
-    const { data: existing } = await admin.from("job_listings").select("id,status,published_at").eq("id", id).maybeSingle();
+    const { data: existing } = await admin
+      .from("job_listings")
+      .select("id,status,published_at,posted_by")
+      .eq("id", id)
+      .maybeSingle();
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (mode === "employer" && String((existing as { posted_by?: string }).posted_by) !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const patch: Record<string, unknown> = {};
 
@@ -76,6 +87,18 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       }
     }
 
+    const industryRaw = readIndustryFromBody(body);
+    if (industryRaw === "invalid") {
+      return NextResponse.json({ error: "Invalid industry" }, { status: 400 });
+    }
+    if (industryRaw !== undefined) patch.industry = industryRaw;
+
+    const seniorityRaw = readSeniorityFromBody(body);
+    if (seniorityRaw === "invalid") {
+      return NextResponse.json({ error: "Invalid seniority" }, { status: 400 });
+    }
+    if (seniorityRaw !== undefined) patch.seniority = seniorityRaw;
+
     if (typeof body.status === "string") {
       const st = body.status.trim();
       if (!STATUSES.has(st)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -108,12 +131,14 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
 export async function DELETE(req: NextRequest, ctx: Ctx) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireEmployerOrAdminForJobBoard(req);
     if ("error" in auth) return auth.error;
-    const { admin } = auth;
+    const { admin, userId, mode } = auth;
     const { id } = await ctx.params;
 
-    const { error } = await admin.from("job_listings").delete().eq("id", id);
+    let del = admin.from("job_listings").delete().eq("id", id);
+    if (mode === "employer") del = del.eq("posted_by", userId);
+    const { error } = await del;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

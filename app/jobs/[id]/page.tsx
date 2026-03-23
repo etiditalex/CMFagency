@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { formatEmploymentType } from "@/lib/job-board-access";
+import { industryLabel, seniorityLabel } from "@/lib/job-listing-taxonomy";
 
 type ListingFull = {
   id: string;
@@ -17,6 +18,8 @@ type ListingFull = {
   salary_text: string | null;
   summary: string | null;
   poster_url: string | null;
+  industry: string | null;
+  seniority: string | null;
   description: string;
   requirements: string[];
   benefits: string[];
@@ -76,6 +79,8 @@ export default function JobDetailPage() {
             summary: L.summary != null ? String(L.summary) : null,
             poster_url:
               typeof L.poster_url === "string" && L.poster_url.trim() ? String(L.poster_url).trim() : null,
+            industry: typeof L.industry === "string" && L.industry.trim() ? String(L.industry).trim() : null,
+            seniority: typeof L.seniority === "string" && L.seniority.trim() ? String(L.seniority).trim() : null,
             description: String(L.description ?? ""),
             requirements: req,
             benefits: ben,
@@ -187,6 +192,18 @@ export default function JobDetailPage() {
                 <Calendar className="w-5 h-5 mr-2 text-primary-600" />
                 <span>{formatEmploymentType(listing.employment_type)}</span>
               </div>
+              {industryLabel(listing.industry) && (
+                <div className="flex items-start text-gray-600 md:col-span-2">
+                  <span className="font-semibold text-gray-700 mr-2 shrink-0">Industry:</span>
+                  <span>{industryLabel(listing.industry)}</span>
+                </div>
+              )}
+              {seniorityLabel(listing.seniority) && (
+                <div className="flex items-center text-gray-600">
+                  <span className="font-semibold text-gray-700 mr-2">Level:</span>
+                  <span>{seniorityLabel(listing.seniority)}</span>
+                </div>
+              )}
               {listing.salary_text && (
                 <div className="flex items-center text-gray-600 md:col-span-2">
                   <span className="font-semibold text-gray-700 mr-2">Compensation:</span>
