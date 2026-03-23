@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle, CheckCircle2, FileDown, Heart, Loader2, Upload, Vote } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileDown, Heart, Loader2, Upload } from "lucide-react";
 
 // CFMA award categories – slugs must match campaigns in DB (run seed: ticketing_voting_mvp_patch_35_cfma_categories.sql)
 const REGISTRATION_CATEGORIES: { slug: string; title: string }[] = [
@@ -267,12 +267,7 @@ export default function RegisterAsModelPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center">
-                  <Vote className="w-5 h-5 text-primary-700" />
-                </span>
-                <h2 className="text-xl font-bold text-gray-900">Contestant registration</h2>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Contestant registration</h2>
 
               <form onSubmit={onSubmit} className="space-y-6">
                 {error && (
