@@ -1,19 +1,21 @@
-import { NextResponse } from "next/server";
-import { getPublishedJobListings } from "@/lib/job-board-listings";
+import { NextRequest, NextResponse } from "next/server";
+import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 
 /**
- * Public list of published job listings (summary fields only).
+ * Unified job board feed: employer listings + aggregated remote APIs.
+ * Query: ?q=keyword (optional). Same data as server-rendered /jobs.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { listings, error } = await getPublishedJobListings();
+    const q = req.nextUrl.searchParams.get("q");
+    const { jobs, error } = await getUnifiedJobBoardFeed({ search: q });
     if (error === "Server configuration error") {
-      return NextResponse.json({ error: error }, { status: 500 });
-    }
-    if (error) {
       return NextResponse.json({ error }, { status: 500 });
     }
-    return NextResponse.json({ listings });
+    if (error) {
+      return NextResponse.json({ jobs, warning: error }, { status: 200 });
+    }
+    return NextResponse.json({ jobs });
   } catch (e: unknown) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Unexpected error" },

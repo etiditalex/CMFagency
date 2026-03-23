@@ -17,7 +17,8 @@ export type JobListingSummary = {
 };
 
 /**
- * Published job listings for the public job board (same shape as GET /api/job-board/listings).
+ * Employer-published listings only (legacy helper). The live board uses getUnifiedJobBoardFeed
+ * and GET /api/job-board/listings returns the merged feed.
  * Use from Server Components so the first paint includes listings instead of a client fetch waterfall.
  */
 export async function getPublishedJobListings(): Promise<{

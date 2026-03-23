@@ -1,24 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { Briefcase, Loader2, Lock, UserCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Briefcase, Loader2, Lock, Search, Sparkles, UserCircle, X } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatEmploymentType } from "@/lib/job-board-access";
-import type { JobListingSummary } from "@/lib/job-board-listings";
+import type { UnifiedJobListing } from "@/lib/job-board-feed";
 import { industryLabel, seniorityLabel } from "@/lib/job-listing-taxonomy";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 
 type JobTab = "find" | "saved" | "applications" | "preferences" | "seekers" | "employers";
 
 type Props = {
-  initialListings: JobListingSummary[];
+  initialJobs: UnifiedJobListing[];
   initialError: string | null;
+  initialQuery: string;
 };
 
-export function JobsBoardClient({ initialListings, initialError }: Props) {
-  const [listings] = useState<JobListingSummary[]>(initialListings);
+function displayIndustry(industry: string | null) {
+  if (!industry?.trim()) return null;
+  return industryLabel(industry) || industry;
+}
+
+function displaySeniority(seniority: string | null) {
+  if (!seniority?.trim()) return null;
+  return seniorityLabel(seniority) || seniority;
+}
+
+export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Props) {
+  const router = useRouter();
+  const [jobs] = useState<UnifiedJobListing[]>(initialJobs);
   const [loadError] = useState<string | null>(initialError);
+  const [searchInput, setSearchInput] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<JobTab>("find");
+
+  const [profileText, setProfileText] = useState("");
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [matchError, setMatchError] = useState<string | null>(null);
+  const [matchOrder, setMatchOrder] = useState<string[] | null>(null);
+  const [matchReasons, setMatchReasons] = useState<Record<string, string>>({});
 
   const [empCompany, setEmpCompany] = useState("");
   const [empContact, setEmpContact] = useState("");
@@ -28,6 +48,18 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
   const [empLoading, setEmpLoading] = useState(false);
   const [empError, setEmpError] = useState<string | null>(null);
   const [empSuccess, setEmpSuccess] = useState<string | null>(null);
+
+  const displayJobs = useMemo(() => {
+    if (!matchOrder?.length) return jobs;
+    const set = new Set(matchOrder);
+    const first: UnifiedJobListing[] = [];
+    for (const id of matchOrder) {
+      const j = jobs.find((x) => x.id === id);
+      if (j) first.push(j);
+    }
+    const rest = jobs.filter((j) => !set.has(j.id));
+    return [...first, ...rest];
+  }, [jobs, matchOrder]);
 
   const submitEmployerRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +104,60 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
     }
   };
 
+  const applySearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchInput.trim();
+    const url = q ? `/jobs?q=${encodeURIComponent(q)}` : "/jobs";
+    router.push(url);
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    router.push("/jobs");
+  };
+
+  const runAiMatch = async () => {
+    setMatchError(null);
+    setMatchLoading(true);
+    try {
+      const res = await fetch("/api/job-board/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileText }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMatchError(typeof j.error === "string" ? j.error : "Could not run matcher.");
+        setMatchOrder(null);
+        setMatchReasons({});
+        return;
+      }
+      const matches = Array.isArray(j.matches) ? j.matches : [];
+      const order: string[] = [];
+      const reasons: Record<string, string> = {};
+      for (const m of matches) {
+        if (m && typeof m.id === "string") {
+          order.push(m.id);
+          if (typeof m.reason === "string") reasons[m.id] = m.reason;
+        }
+      }
+      setMatchOrder(order.length ? order : null);
+      setMatchReasons(reasons);
+    } catch {
+      setMatchError("Network error.");
+      setMatchOrder(null);
+      setMatchReasons({});
+    } finally {
+      setMatchLoading(false);
+    }
+  };
+
+  const clearMatch = () => {
+    setMatchOrder(null);
+    setMatchReasons({});
+    setMatchError(null);
+  };
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
@@ -111,10 +197,81 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
           </div>
 
           {activeTab === "find" && (
-            <p className="mb-6 text-sm text-gray-600 text-left max-w-2xl">
-              Published roles appear here. Employers add and edit listings in the dashboard after signing in under{" "}
-              <strong>For employers</strong>.
-            </p>
+            <div className="mb-6 space-y-4 text-left">
+              <form onSubmit={applySearch} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 max-w-2xl">
+                <label className="relative flex min-w-0 flex-1">
+                  <span className="sr-only">Search jobs</span>
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                    aria-hidden
+                  />
+                  <input
+                    type="search"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search title, company, keywords…"
+                    className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-primary-700"
+                  >
+                    Search
+                  </button>
+                  {initialQuery ? (
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      <X className="h-4 w-4" aria-hidden />
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm max-w-3xl">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary-600" aria-hidden />
+                  AI job match
+                </div>
+                <textarea
+                  value={profileText}
+                  onChange={(e) => setProfileText(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Mid-level React developer in Nairobi; open to remote; interested in fintech…"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 mb-2"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={matchLoading}
+                    onClick={runAiMatch}
+                    className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
+                  >
+                    {matchLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Suggest matches
+                  </button>
+                  {matchOrder ? (
+                    <button
+                      type="button"
+                      onClick={clearMatch}
+                      className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Reset order
+                    </button>
+                  ) : null}
+                </div>
+                {matchError && (
+                  <p className="mt-2 text-sm text-red-600" role="alert">
+                    {matchError}
+                  </p>
+                )}
+              </div>
+            </div>
           )}
 
           {(activeTab === "saved" || activeTab === "applications" || activeTab === "preferences") && (
@@ -144,7 +301,10 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
               </h2>
               <ul className="list-disc pl-5 space-y-2 text-sm md:text-base">
                 <li>
-                  Use <strong>Find job</strong> to browse open roles published by employers.
+                  Use <strong>Find job</strong> to search aggregated listings and employer posts on one board.
+                </li>
+                <li>
+                  Try <strong>AI job match</strong> with a short profile to reorder suggestions.
                 </li>
                 <li>
                   Apply to our talent pool anytime:{" "}
@@ -260,16 +420,16 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
           )}
 
           {activeTab === "find" && loadError && (
-            <p className="mb-6 text-sm text-red-600" role="alert">
+            <p className="mb-6 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2" role="status">
               {loadError}
             </p>
           )}
 
           {activeTab === "find" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
-              {listings.map((job) => (
+              {displayJobs.map((job) => (
                 <article
-                  key={job.id}
+                  key={`${job.source}-${job.id}`}
                   className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="relative aspect-[4/3] w-full shrink-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50">
@@ -286,6 +446,9 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
                         <Briefcase className="h-12 w-12 text-primary-200" aria-hidden />
                       </div>
                     )}
+                    <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-800 shadow-sm border border-gray-200">
+                      {job.attribution}
+                    </span>
                     {job.requires_paid_membership && (
                       <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-100/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 shadow-sm">
                         <Lock className="h-3 w-3" /> Member
@@ -293,6 +456,12 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
                     )}
                   </div>
                   <div className="flex min-h-0 flex-1 flex-col p-4">
+                    {matchReasons[job.id] && (
+                      <p className="mb-2 rounded-md bg-primary-50 px-2 py-1.5 text-[11px] leading-snug text-primary-950 border border-primary-100">
+                        <span className="font-semibold">Match: </span>
+                        {matchReasons[job.id]}
+                      </p>
+                    )}
                     <h2 className="mb-1 line-clamp-2 text-base font-bold leading-snug text-gray-900">{job.title}</h2>
                     <p className="mb-2 line-clamp-1 text-sm font-medium text-gray-600">{job.company_name}</p>
                     <div className="mb-3 flex-1 space-y-1 text-xs text-gray-500">
@@ -305,14 +474,14 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
                         <span className="font-medium text-gray-700">Type:</span>{" "}
                         {formatEmploymentType(job.employment_type)}
                       </p>
-                      {industryLabel(job.industry) && (
+                      {displayIndustry(job.industry) && (
                         <p className="line-clamp-2">
-                          <span className="font-medium text-gray-700">Industry:</span> {industryLabel(job.industry)}
+                          <span className="font-medium text-gray-700">Industry:</span> {displayIndustry(job.industry)}
                         </p>
                       )}
-                      {seniorityLabel(job.seniority) && (
+                      {displaySeniority(job.seniority) && (
                         <p className="line-clamp-1">
-                          <span className="font-medium text-gray-700">Level:</span> {seniorityLabel(job.seniority)}
+                          <span className="font-medium text-gray-700">Level:</span> {displaySeniority(job.seniority)}
                         </p>
                       )}
                       {job.salary_text && (
@@ -323,10 +492,10 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
                       {job.summary && <p className="line-clamp-2 pt-0.5 text-gray-600">{job.summary}</p>}
                     </div>
                     <Link
-                      href={`/jobs/${job.id}`}
+                      href={job.detail_path}
                       className="mt-auto inline-flex w-full items-center justify-center rounded-lg bg-gray-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
                     >
-                      View details
+                      {job.source === "employer" ? "View details" : "View & apply"}
                     </Link>
                   </div>
                 </article>
@@ -334,9 +503,10 @@ export function JobsBoardClient({ initialListings, initialError }: Props) {
             </div>
           )}
 
-          {activeTab === "find" && !loadError && listings.length === 0 && (
+          {activeTab === "find" && !loadError && jobs.length === 0 && (
             <p className="py-12 text-center text-gray-500">
-              No published vacancies right now. Check back soon or submit an application so we can match you when roles open.
+              No jobs to show yet. If you expect remote listings, run the aggregate sync (see deployment docs) or check back
+              after the cron job runs. Employer posts appear here as soon as they are published from the dashboard.
             </p>
           )}
         </div>

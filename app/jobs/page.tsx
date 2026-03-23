@@ -1,10 +1,18 @@
-import { getPublishedJobListings } from "@/lib/job-board-listings";
+import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 import { JobsBoardClient } from "./JobsBoardClient";
 
-/** Listings load on the server so refresh/navigation is not blocked by client JS + a second fetch. */
+/** Unified feed loads on the server (employer listings + aggregated APIs). */
 export const dynamic = "force-dynamic";
 
-export default async function JobsPage() {
-  const { listings, error } = await getPublishedJobListings();
-  return <JobsBoardClient initialListings={listings} initialError={error} />;
+type PageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function JobsPage({ searchParams }: PageProps) {
+  const { q } = await searchParams;
+  const query = typeof q === "string" ? q : "";
+  const { jobs, error } = await getUnifiedJobBoardFeed({ search: query || null });
+  return (
+    <JobsBoardClient key={query || "__all"} initialJobs={jobs} initialError={error} initialQuery={query} />
+  );
 }
