@@ -27,6 +27,29 @@ function displaySeniority(seniority: string | null) {
   return seniorityLabel(seniority) || seniority;
 }
 
+/** Poster / company logo with CSP-safe loading and fallback if URL fails or hotlink blocks. */
+function JobCardPoster({ posterUrl }: { posterUrl: string | null }) {
+  const [broken, setBroken] = useState(false);
+  if (!posterUrl?.trim() || broken) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Briefcase className="h-12 w-12 text-primary-200" aria-hidden />
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote employer data URLs + partner logos
+    <img
+      src={posterUrl.trim()}
+      alt=""
+      className="absolute inset-0 h-full w-full object-cover"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setBroken(true)}
+    />
+  );
+}
+
 export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Props) {
   const router = useRouter();
   const [jobs] = useState<UnifiedJobListing[]>(initialJobs);
@@ -433,19 +456,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Pro
                   className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="relative aspect-[4/3] w-full shrink-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50">
-                    {job.poster_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- data URLs and arbitrary hosts
-                      <img
-                        src={job.poster_url}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Briefcase className="h-12 w-12 text-primary-200" aria-hidden />
-                      </div>
-                    )}
+                    <JobCardPoster posterUrl={job.poster_url} />
                     <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-800 shadow-sm border border-gray-200">
                       {job.attribution}
                     </span>
