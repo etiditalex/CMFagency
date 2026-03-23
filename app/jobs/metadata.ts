@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site-url";
 
+/** Used for Open Graph / Twitter when `/jobs` (or job search) links are shared. */
+export const JOBS_BOARD_OG_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1774271030/job-search-magnifier-glass-symbol_1_nzfudf.jpg";
+
 const title =
   "Jobs in Kenya & Remote | Hire & Find Work | Changer Fusions Job Board";
 const description =
@@ -56,10 +60,10 @@ export const metadata: Metadata = {
     description,
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg",
+        url: JOBS_BOARD_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Changer Fusions job board — careers in Kenya and remote",
+        alt: "Job search — Changer Fusions job board (Kenya & remote)",
       },
     ],
   },
@@ -67,7 +71,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title,
     description,
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg"],
+    images: [JOBS_BOARD_OG_IMAGE],
   },
   alternates: {
     canonical: `${SITE_URL}/jobs`,

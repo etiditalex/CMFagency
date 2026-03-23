@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site-url";
+import { JOBS_BOARD_OG_IMAGE } from "./metadata";
 import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
 import { JobsBoardClient } from "./JobsBoardClient";
@@ -25,6 +26,11 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
       openGraph: {
         url: `${SITE_URL}/jobs`,
         title: `Search: ${short} | Changer Fusions jobs`,
+        images: [{ url: JOBS_BOARD_OG_IMAGE, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        images: [JOBS_BOARD_OG_IMAGE],
       },
     };
   }
