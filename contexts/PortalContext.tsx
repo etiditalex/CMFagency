@@ -35,6 +35,8 @@ type PortalContextValue = {
   isManager: boolean;
   /** Full admin only (not manager). */
   isFullAdmin: boolean;
+  /** Hiring account: job board in dashboard only. */
+  isEmployer: boolean;
   refresh: () => Promise<void>;
 };
 
