@@ -4,7 +4,7 @@ import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
  * Self-serve employer signup: Supabase auth user + portal_members.role = employer.
- * After signup, user signs in at /fusion-xpress; email 2FA uses Resend via /api/fusion-xpress/send-login-code.
+ * After signup, user signs in on /jobs under “For employers”; email 2FA uses Resend via /api/fusion-xpress/send-login-code.
  */
 export async function POST(req: NextRequest) {
   try {

@@ -1,356 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Lock, Mail, Shield, KeyRound } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowLeft, CheckCircle2 } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
-
-function isMissingPortalMembersTable(err: any) {
-  const msg = String(err?.message ?? "");
-  const code = String(err?.code ?? "");
-  // Postgres: 42P01 = undefined_table
-  return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
-}
-
-function isMissingAdminUsersTable(err: any) {
-  const msg = String(err?.message ?? "");
-  const code = String(err?.code ?? "");
-  // Postgres: 42P01 = undefined_table
-  return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
-}
+import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 
 /**
  * Fusion Xpress (Portal Login)
  * -----------------------------------------------------------------------------
- * This is intentionally separate from the job-application login UI/flow.
- *
- * Security:
- * - Uses Supabase Auth.
- * - Requires the signed-in user to exist in `portal_members` (RBAC).
- * - Admins have role `admin`; clients have role `client`.
- * - Backward-compatible fallback: if `portal_members` isn't installed yet, `admin_users` is treated as admin access.
- *
- * DB requirement:
- * - Run `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql` in Supabase.
+ * Marketing landing + portal sign-in. Employers normally sign in from /jobs (For employers).
+ * Same auth stack: Supabase + portal_members + 2FA APIs.
  */
 export default function FusionXpressAdminLoginPage() {
-  const router = useRouter();
   const sp = useSearchParams();
-  const initialError = sp?.get("error") ?? null;
+  const initialErrorKey = sp?.get("error") ?? null;
+  const fromEmployer = sp?.get("from") === "employer";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState<string | null>(
-    initialError === "unauthorized"
-      ? "Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal."
-      : initialError === "setup"
-        ? "Fusion Xpress portal is not configured yet. Run the database setup SQL in Supabase."
-        : null
-  );
-
-  const [resetSent, setResetSent] = useState(false);
-
-  // Two-step: after password sign-in, require email code or Google Authenticator.
-  type Step = "login" | "code";
-  const [step, setStep] = useState<Step>("login");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [codeLoading, setCodeLoading] = useState(false);
-  const [resendCodeLoading, setResendCodeLoading] = useState(false);
-  const [hasTotp, setHasTotp] = useState(false);
-  type TwoFactorMethod = "email" | "totp";
-  const [twoFactorMethod, setTwoFactorMethod] = useState<TwoFactorMethod>("email");
-
-  const canSubmit = useMemo(() => {
-    if (!email.trim()) return false;
-    if (!password) return false;
-    return true;
-  }, [email, password]);
-
-  const maybeClaimAdmin = async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      await fetch("/api/fusion-xpress/claim-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: token }),
-      });
-    } catch {
-      // non-blocking
+  const initialErrorMessage = useMemo(() => {
+    if (initialErrorKey === "unauthorized") {
+      return "Access denied. Hiring managers can register from the job board under “For employers”, then sign in there or here. Otherwise ask an admin to add your account to the portal.";
     }
-  };
-
-  useEffect(() => {
-    // If already signed in and a portal member, check 2FA status; then redirect or show code step.
-    const check = async () => {
-      const { data } = await supabase.auth.getSession();
-      const userId = data.session?.user?.id;
-      const userEmail = data.session?.user?.email ?? "";
-      if (!userId) return;
-
-      await maybeClaimAdmin();
-
-      const { data: memberRow, error: memberErr } = await supabase
-        .from("portal_members")
-        .select("user_id,role")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (memberErr && isMissingPortalMembersTable(memberErr)) {
-        const { data: adminRow, error: adminErr } = await supabase
-          .from("admin_users")
-          .select("user_id")
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (adminErr && isMissingAdminUsersTable(adminErr)) {
-          await supabase.auth.signOut();
-          setError(
-            "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
-          );
-          return;
-        }
-
-        if (adminRow) {
-          const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
-          const status = await statusRes.json().catch(() => ({ verified: false }));
-          if (status.verified) {
-            router.replace("/dashboard");
-          } else {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const t = sessionData.session?.access_token;
-            const methodRes = t ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } }) : null;
-            const methodData = methodRes?.ok ? (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean } : {};
-            setHasTotp(!!methodData.hasTotp);
-            setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
-            setStep("code");
-            setLoginEmail(userEmail);
-          }
-        }
-        return;
-      }
-
-      if (memberRow) {
-        const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
-        const status = await statusRes.json().catch(() => ({ verified: false }));
-        if (status.verified) {
-          router.replace("/dashboard");
-        } else {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const t = sessionData.session?.access_token;
-          const methodRes = t ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } }) : null;
-          const methodData = methodRes?.ok ? (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean } : {};
-          setHasTotp(!!methodData.hasTotp);
-          setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
-          setStep("code");
-          setLoginEmail(userEmail);
-        }
-      }
-    };
-
-    check();
-  }, [router]);
-
-  const requirePortalMemberOrSignOut = async (userId: string) => {
-    const { data: memberRow, error: memberErr } = await supabase
-      .from("portal_members")
-      .select("user_id,role")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (memberErr && isMissingPortalMembersTable(memberErr)) {
-      // Backward-compat: if portal_members isn't installed yet, allow legacy admins in.
-      const { data: adminRow, error: adminErr } = await supabase
-        .from("admin_users")
-        .select("user_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (adminErr && isMissingAdminUsersTable(adminErr)) {
-        await supabase.auth.signOut();
-        throw new Error(
-          "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
-        );
-      }
-      if (adminErr) throw adminErr;
-      if (!adminRow) {
-        await supabase.auth.signOut();
-        throw new Error("Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal.");
-      }
-      return;
+    if (initialErrorKey === "setup") {
+      return "Fusion Xpress portal is not configured yet. Run the database setup SQL in Supabase.";
     }
-    if (memberErr) throw memberErr;
-
-    if (!memberRow) {
-      // Backward-compat: portal_members exists, but allow legacy admins via admin_users.
-      const { data: adminRow, error: adminErr } = await supabase
-        .from("admin_users")
-        .select("user_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (adminErr && isMissingAdminUsersTable(adminErr)) {
-        await supabase.auth.signOut();
-        throw new Error(
-          "Fusion Xpress portal is not configured yet. Run `database/ticketing_voting_mvp.sql` and `database/ticketing_voting_mvp_patch_04_portal_members_rbac.sql`."
-        );
-      }
-      if (adminErr) throw adminErr;
-      if (adminRow) return;
-
-      // Keep job-applicant sessions from lingering on the portal.
-      await supabase.auth.signOut();
-      throw new Error("Access denied. Hiring managers can register from the job board under “For employers”, then sign in here. Otherwise ask an admin to add your account to the portal.");
-    }
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    setResetSent(false);
-
-    try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (signInErr) throw signInErr;
-
-      const userId = data.user?.id;
-      if (!userId) throw new Error("Sign in failed. Please try again.");
-
-      await maybeClaimAdmin();
-      await requirePortalMemberOrSignOut(userId);
-
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Session missing. Please try again.");
-
-      const methodRes = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });
-      const methodData = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean };
-      const useTotp = !!methodData.hasTotp;
-
-      if (!useTotp) {
-        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!sendRes.ok) {
-          const err = await sendRes.json().catch(() => ({}));
-          throw new Error(err.error ?? "Failed to send verification code to your email.");
-        }
-      }
-
-      setLoginEmail(email.trim());
-      setHasTotp(useTotp);
-      setTwoFactorMethod(useTotp ? "totp" : "email");
-      setStep("code");
-      setCode("");
-    } catch (e: any) {
-      setError(e?.message ?? "Unable to sign in.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const codeDigits = code.trim().replace(/\D/g, "").slice(0, 6);
-    if (codeDigits.length !== 6) {
-      setError("Enter the 6-digit code from your email or authenticator app.");
-      return;
-    }
-    setCodeLoading(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        setError("Session expired. Please sign in again.");
-        setStep("login");
-        return;
-      }
-      const res = await fetch("/api/fusion-xpress/verify-login-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ code: codeDigits, method: twoFactorMethod }),
-        credentials: "include",
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error ?? "Invalid or expired code.");
-      router.replace("/dashboard");
-    } catch (e: any) {
-      setError(e?.message ?? "Invalid or expired code.");
-    } finally {
-      setCodeLoading(false);
-    }
-  };
-
-  const onResendCode = async () => {
-    setError(null);
-    setResendCodeLoading(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        setError("Session expired. Please sign in again.");
-        setStep("login");
-        return;
-      }
-      const res = await fetch("/api/fusion-xpress/send-login-code", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Failed to resend code.");
-      }
-      setTwoFactorMethod("email");
-      setError(null);
-      setCode("");
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to resend code.");
-    } finally {
-      setResendCodeLoading(false);
-    }
-  };
-
-  const onForgotPassword = async () => {
-    setError(null);
-    setResetSent(false);
-    const e = email.trim();
-    if (!e) {
-      setError("Enter your email first, then click “Forgot password”.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(e, {
-        redirectTo: `${window.location.origin}/fusion-xpress/reset-password`,
-      });
-      if (resetErr) throw resetErr;
-      setResetSent(true);
-    } catch (err: any) {
-      setError(err?.message ?? "Unable to send reset link.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    return null;
+  }, [initialErrorKey]);
 
   return (
     <div className="min-h-screen pt-28 md:pt-32 bg-white">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
-        {/* Marketing / services section (like screenshot), then login at the end */}
         <section className="text-left">
-          {/* Hero (image background) */}
           <div className="relative overflow-hidden rounded-3xl border border-gray-200 min-h-[320px] md:min-h-[380px]">
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -359,7 +40,6 @@ export default function FusionXpressAdminLoginPage() {
                   "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg)",
               }}
             />
-            {/* Lighter overlay so the image is clearly visible; darker only behind text for readability */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent" />
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-primary-500/15 blur-3xl" />
@@ -372,8 +52,9 @@ export default function FusionXpressAdminLoginPage() {
                   Changer Fusions helps creators run unforgettable experiences.
                 </h1>
                 <p className="mt-4 text-white/95 leading-relaxed max-w-3xl drop-shadow-md">
-                  We support event organizers, artists, talent brands, and entertainment businesses with campaign setup, ticketing,
-                  voting programs, and marketing execution—built to be simple for audiences and reliable for admins.
+                  We support event organizers, artists, talent brands, and entertainment businesses with campaign setup,
+                  ticketing, voting programs, and marketing execution—built to be simple for audiences and reliable for
+                  admins.
                 </p>
               </div>
             </div>
@@ -451,7 +132,6 @@ export default function FusionXpressAdminLoginPage() {
             </div>
           </div>
 
-          {/* Pricing section (like screenshot) */}
           <div className="mt-10 rounded-3xl border border-secondary-200 bg-gradient-to-r from-secondary-50 via-white to-white overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 p-6 md:p-10 items-center">
               <div className="lg:col-span-3">
@@ -462,9 +142,7 @@ export default function FusionXpressAdminLoginPage() {
                   <br />
                   in Kenya
                 </h2>
-                <div className="mt-4 font-extrabold text-gray-900">
-                  Contracts, No monthly fees, no worries
-                </div>
+                <div className="mt-4 font-extrabold text-gray-900">Contracts, No monthly fees, no worries</div>
                 <p className="mt-3 text-gray-600 leading-relaxed max-w-xl">
                   Our fees are affordable and make sense. We only charge when you successfully sell tickets or collect paid
                   votes—so you can launch confidently and scale as your audience grows.
@@ -477,18 +155,14 @@ export default function FusionXpressAdminLoginPage() {
                     <div className="text-5xl font-extrabold">5%</div>
                   </div>
                   <div className="mt-5 font-extrabold text-lg">Per ticket sold</div>
-                  <div className="mt-1 text-sm text-white/80">
-                    Includes payment processing fees and webhook verification.
-                  </div>
+                  <div className="mt-1 text-sm text-white/80">Includes payment processing fees and webhook verification.</div>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mt-10 rounded-2xl border border-gray-200 bg-gray-50 p-6">
-            <div className="text-2xl md:text-3xl font-extrabold text-secondary-800 text-left">
-              Payments to Organisers
-            </div>
+            <div className="text-2xl md:text-3xl font-extrabold text-secondary-800 text-left">Payments to Organisers</div>
             <p className="mt-4 text-gray-600 leading-relaxed">
               In terms of event funds payout, we try to make it as much pleasing for the Organiser as for the ticket buyer in
               cases where the event might be canceled. Funds are available for withdrawal to organisers as soon as 2 days from
@@ -501,7 +175,6 @@ export default function FusionXpressAdminLoginPage() {
           </div>
         </section>
 
-        {/* Admin login (towards the end) — step: login or email code */}
         <section className="mt-12 flex items-center justify-center">
           <div className="w-full max-w-md">
             <Link href="/" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
@@ -509,180 +182,14 @@ export default function FusionXpressAdminLoginPage() {
               Back to Home
             </Link>
 
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
-              <div className="p-8 border-b border-gray-100">
-                <div className="flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white flex items-center justify-center shadow-lg">
-                    {step === "code" ? <KeyRound className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
-                  </div>
-                </div>
-                <h2 className="mt-5 text-3xl font-extrabold text-gray-900 text-center">
-                  {step === "code" ? "Enter verification code" : "Sign in"}
-                </h2>
-              </div>
-
-              <div className="p-8">
-                {error && (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {step === "code" ? (
-                  <form onSubmit={onVerifyCode} className="space-y-4">
-                    {twoFactorMethod === "totp" ? (
-                      <p className="text-gray-600 text-sm">
-                        Enter the 6-digit code from your authenticator app (e.g. Google Authenticator).
-                      </p>
-                    ) : (
-                      <p className="text-gray-600 text-sm">
-                        We sent a 6-digit code to <strong>{loginEmail}</strong>. Enter it below to access the dashboard.
-                      </p>
-                    )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Code</label>
-                      <div className="relative">
-                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          maxLength={6}
-                          value={code}
-                          onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-lg tracking-widest"
-                          placeholder="000000"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button
-                        type="submit"
-                        disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
-                        className="flex-1 bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {codeLoading ? "Verifying…" : "Verify and continue"}
-                      </button>
-                      {twoFactorMethod === "email" ? (
-                        <button
-                          type="button"
-                          onClick={onResendCode}
-                          disabled={resendCodeLoading}
-                          className="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-60"
-                        >
-                          {resendCodeLoading ? "Sending…" : "Resend code"}
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                      {twoFactorMethod === "totp" ? (
-                        <button
-                          type="button"
-                          onClick={onResendCode}
-                          disabled={resendCodeLoading}
-                          className="text-primary-700 font-medium hover:underline"
-                        >
-                          Send code to email instead
-                        </button>
-                      ) : hasTotp ? (
-                        <button
-                          type="button"
-                          onClick={() => { setTwoFactorMethod("totp"); setError(null); setCode(""); }}
-                          className="text-primary-700 font-medium hover:underline"
-                        >
-                          Use authenticator app instead
-                        </button>
-                      ) : null}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await supabase.auth.signOut();
-                        setStep("login");
-                        setCode("");
-                        setLoginEmail("");
-                        setError(null);
-                      }}
-                      className="w-full text-sm text-gray-500 hover:text-gray-700"
-                    >
-                      Use a different account
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={onSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          placeholder="admin@company.com"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="password"
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          placeholder="Enter your password"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <button
-                        type="button"
-                        onClick={onForgotPassword}
-                        className="text-sm font-semibold text-primary-700 hover:text-primary-800"
-                        disabled={loading}
-                      >
-                        Forgot password
-                      </button>
-                      {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3">
-                      <label className="inline-flex items-center gap-2 text-sm text-gray-600 select-none">
-                        <input
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={(e) => setRememberMe(e.target.checked)}
-                          className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                        />
-                        Keep me signed in
-                      </label>
-
-                      <span className="text-xs text-gray-500">
-                        {rememberMe ? "Session saved" : "Session not saved"}
-                      </span>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading || !canSubmit}
-                      className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-black hover:to-gray-900 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {loading ? "Signing in..." : "Sign in"}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
+            <PortalLoginForm
+              initialErrorMessage={initialErrorMessage}
+              showEmployerBanner={fromEmployer}
+              layout="standalone"
+            />
           </div>
         </section>
       </div>
     </div>
   );
 }
-
