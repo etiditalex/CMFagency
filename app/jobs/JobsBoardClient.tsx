@@ -185,6 +185,13 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Pro
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
         <div className="container-custom">
+          <header className="mb-6 text-left">
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Jobs in Kenya &amp; remote</h1>
+            <p className="mt-1 max-w-3xl text-sm text-gray-600">
+              Changer Fusions job board — employer vacancies, Nairobi &amp; Mombasa roles, work-from-home and international
+              remote listings in one search.
+            </p>
+          </header>
           <div className="mb-6 border-b border-gray-200">
             <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8" role="tablist" aria-label="Job board sections">
               {(

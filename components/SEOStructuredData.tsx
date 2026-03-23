@@ -85,7 +85,7 @@ export default function SEOStructuredData() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://cmfagency.co.ke/search?q={search_term_string}",
+        urlTemplate: "https://cmfagency.co.ke/jobs?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },

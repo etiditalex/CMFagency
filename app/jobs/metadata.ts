@@ -1,42 +1,75 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site-url";
+
+const title =
+  "Jobs in Kenya & Remote | Hire & Find Work | Changer Fusions Job Board";
+const description =
+  "Browse jobs in Kenya, remote Africa roles, and global listings in one place. Employers post vacancies; job seekers search tech, marketing, events, and creative roles. Changer Fusions (CMF Agency) job board—Nairobi, Mombasa, and work-from-home opportunities updated regularly.";
 
 export const metadata: Metadata = {
-  title: "Job Board - Career Opportunities at Changer Fusions | Apply Now",
-  description: "Explore exciting career opportunities with Changer Fusions. Join our team and be part of creating impactful experiences and innovative solutions. Multiple positions available.",
+  title,
+  description,
+  applicationName: "Changer Fusions",
+  authors: [{ name: "Changer Fusions", url: SITE_URL }],
+  creator: "Changer Fusions",
+  publisher: "Changer Fusions",
+  category: "jobs",
   keywords: [
-    "jobs at Changer Fusions",
-    "career opportunities Kenya",
-    "marketing jobs Kenya",
-    "event management jobs",
-    "digital marketing careers",
+    "jobs Kenya",
+    "Kenya job board",
+    "remote jobs Africa",
+    "work from home Kenya",
+    "Nairobi jobs",
     "Mombasa jobs",
-    "Nairobi marketing jobs",
+    "tech jobs Kenya",
+    "marketing jobs Kenya",
+    "creative jobs Kenya",
+    "events jobs Kenya",
+    "internships Kenya",
+    "graduate jobs Kenya",
+    "employer hiring Kenya",
+    "post a job Kenya",
+    "Changer Fusions careers",
+    "CMF Agency jobs",
+    "cmfagency jobs",
+    "find jobs online Kenya",
+    "software developer jobs Kenya",
+    "digital marketing careers Kenya",
   ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
-    title: "Job Board - Career Opportunities at Changer Fusions",
-    description: "Explore exciting career opportunities with Changer Fusions. Join our team and be part of creating impactful experiences.",
-    url: "https://cmfagency.co.ke/jobs",
+    type: "website",
+    locale: "en_KE",
+    url: `${SITE_URL}/jobs`,
+    siteName: "Changer Fusions",
+    title,
+    description,
     images: [
       {
         url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg",
         width: 1200,
         height: 630,
-        alt: "Job Board - Career Opportunities at Changer Fusions",
+        alt: "Changer Fusions job board — careers in Kenya and remote",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Job Board - Career Opportunities at Changer Fusions",
-    description: "Explore exciting career opportunities with Changer Fusions. Join our team and be part of creating impactful experiences.",
+    title,
+    description,
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767691548/opportunity_dzeqxh.jpg"],
   },
   alternates: {
-    canonical: "https://cmfagency.co.ke/jobs",
+    canonical: `${SITE_URL}/jobs`,
   },
 };
-
-
-
-
-
