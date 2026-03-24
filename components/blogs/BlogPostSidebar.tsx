@@ -15,8 +15,8 @@ type Props = {
 export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
   return (
     <aside className="space-y-8 lg:sticky lg:top-28 self-start">
-      {/* Newsletter — matches site primary → secondary gradient */}
-      <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-primary-600 to-secondary-600 text-white p-6 ring-1 ring-white/10">
+      {/* Newsletter — same blue as navbar top bar (bg-primary-600) */}
+      <div className="rounded-xl overflow-hidden shadow-md bg-primary-600 text-white p-6 ring-1 ring-white/15">
         <div className="flex items-start gap-3 mb-4">
           <div className="rounded-lg bg-white/15 p-2 shrink-0">
             <Mail className="w-5 h-5 text-white" aria-hidden />
@@ -31,10 +31,10 @@ export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
         <NewsletterSubscribeForm variant="blogSidebar" />
       </div>
 
-      {/* Remote / local jobs — on-brand gradient */}
+      {/* Job board — same blue as navbar top bar */}
       <Link
         href="/jobs"
-        className="block rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-primary-800 via-primary-700 to-secondary-700 text-white p-6 ring-1 ring-white/10 hover:brightness-[1.03] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
+        className="block rounded-xl overflow-hidden shadow-md bg-primary-600 text-white p-6 ring-1 ring-white/15 hover:bg-primary-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50"
       >
         <div className="flex items-start gap-3 mb-3">
           <div className="rounded-lg bg-white/15 p-2 shrink-0">
@@ -52,19 +52,19 @@ export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
         </span>
       </Link>
 
-      <div className="rounded-xl overflow-hidden shadow-md bg-gradient-to-br from-primary-700 to-secondary-600 text-white p-6 ring-1 ring-white/10">
+      <div className="rounded-xl overflow-hidden shadow-md bg-primary-600 text-white p-6 ring-1 ring-white/15">
         <h3 className="text-lg font-bold mb-4 text-white">Why Changer Fusions</h3>
         <ul className="space-y-3 text-sm leading-relaxed text-white/95">
           <li className="flex gap-2">
-            <Check className="w-5 h-5 shrink-0 text-secondary-200" aria-hidden />
+            <Check className="w-5 h-5 shrink-0 text-primary-200" aria-hidden />
             <span>Keep your data local for maximum control and protection.</span>
           </li>
           <li className="flex gap-2">
-            <Check className="w-5 h-5 shrink-0 text-secondary-200" aria-hidden />
+            <Check className="w-5 h-5 shrink-0 text-primary-200" aria-hidden />
             <span>Foster growth in Africa&apos;s digital economy.</span>
           </li>
           <li className="flex gap-2">
-            <Check className="w-5 h-5 shrink-0 text-secondary-200" aria-hidden />
+            <Check className="w-5 h-5 shrink-0 text-primary-200" aria-hidden />
             <span>Marketing, events, and branding that fits your market.</span>
           </li>
         </ul>
