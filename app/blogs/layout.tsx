@@ -1,5 +1,3 @@
-export { metadata } from "./metadata";
-
 export default function BlogsLayout({
   children,
 }: {
