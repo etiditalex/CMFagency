@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Returns check-in records (transactions with checked_in_at set) as JSON for the Gate check-ins list.
- * Same auth as Gate: portal member with reports. RLS limits to user's campaigns.
+ * Returns gate attendance data as JSON: paid tickets/votes only after scan (checked_in_at set).
+ * Free registrations appear as soon as they register; checked_in_at is set at the gate (confirmation).
+ * Same auth as Gate: portal member with reports. RLS limits transactions to user's campaigns.
  */
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -70,6 +71,7 @@ export async function GET(req: Request) {
   }
 
   const txCheckIns = txRows.map((t) => ({
+    registered_at: null as string | null,
     checked_in_at: t.checked_in_at,
     reference: t.reference,
     campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
@@ -84,10 +86,9 @@ export async function GET(req: Request) {
 
   let attendeeQuery = supabaseAdmin
     .from("event_attendees")
-    .select("reference,checked_in_at,name,email,event_slug")
-    .not("checked_in_at", "is", null)
+    .select("reference,checked_in_at,created_at,name,email,event_slug,additional_guests")
     .is("transaction_id", null)
-    .order("checked_in_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1000);
   if (eventSlug) attendeeQuery = attendeeQuery.eq("event_slug", eventSlug);
   const { data: attendeeRows, error: attendeeErr } = await attendeeQuery;
@@ -96,9 +97,11 @@ export async function GET(req: Request) {
   const regRows = (attendeeRows ?? []) as Array<{
     reference: string;
     checked_in_at: string | null;
+    created_at?: string | null;
     name?: string | null;
     email?: string | null;
     event_slug?: string | null;
+    additional_guests?: number | null;
   }>;
   const eventSlugsSeen = [...new Set(regRows.map((r) => r.event_slug).filter(Boolean))] as string[];
   const { data: events } = await supabaseAdmin
@@ -110,20 +113,25 @@ export async function GET(req: Request) {
     eventTitleBySlug[e.slug] = String(e.title || e.slug);
   }
 
-  const regCheckIns = regRows.map((a) => ({
-    checked_in_at: a.checked_in_at,
-    reference: a.reference,
-    campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
-    event_slug: a.event_slug ?? null,
-    type: "Registration",
-    payer_name: (a.name ?? "").trim() || "—",
-    email: (a.email ?? "").trim() || "—",
-    amount: 0,
-    currency: "",
-    quantity: 0,
-  }));
+  const regCheckIns = regRows.map((a) => {
+    const g = Math.max(0, Number(a.additional_guests) || 0);
+    return {
+      registered_at: a.created_at ?? null,
+      checked_in_at: a.checked_in_at,
+      reference: a.reference,
+      campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
+      event_slug: a.event_slug ?? null,
+      type: "Registration",
+      payer_name: (a.name ?? "").trim() || "—",
+      email: (a.email ?? "").trim() || "—",
+      amount: 0,
+      currency: "",
+      quantity: 1 + g,
+    };
+  });
 
   let combined: Array<{
+    registered_at: string | null;
     checked_in_at: string | null;
     reference: string;
     campaign: string;
@@ -143,6 +151,7 @@ export async function GET(req: Request) {
     const campId = campRow?.id ?? null;
     const txForEvent = campId ? txRows.filter((t) => t.campaign_id === campId) : [];
     const txCheckInsForEvent = txForEvent.map((t) => ({
+      registered_at: null as string | null,
       checked_in_at: t.checked_in_at,
       reference: t.reference,
       campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
@@ -158,11 +167,12 @@ export async function GET(req: Request) {
   } else {
     combined = [...txCheckIns, ...regCheckIns];
   }
-  combined.sort((a, b) => {
-    const ta = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
-    const tb = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
-    return tb - ta;
-  });
+  const sortTs = (row: (typeof combined)[0]) => {
+    const gate = row.checked_in_at ? new Date(row.checked_in_at).getTime() : 0;
+    const reg = row.registered_at ? new Date(row.registered_at).getTime() : 0;
+    return Math.max(gate, reg);
+  };
+  combined.sort((a, b) => sortTs(b) - sortTs(a));
 
   return NextResponse.json({ check_ins: combined.slice(0, 1000) });
 }

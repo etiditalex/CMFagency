@@ -10,6 +10,7 @@ import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
 type CheckInRow = {
+  registered_at?: string | null;
   checked_in_at: string | null;
   reference: string;
   campaign: string;
@@ -136,10 +137,16 @@ export default function GateCheckInsPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to Gate
           </Link>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-            <ListChecks className="w-6 h-6 text-primary-600" />
-            Check-ins
-          </h2>
+          <div>
+            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+              <ListChecks className="w-6 h-6 text-primary-600" />
+              Check-ins & registrations
+            </h2>
+            <p className="mt-1 text-sm text-gray-600 max-w-2xl">
+              Free event registrations appear here as soon as someone signs up. Scanning their QR at the gate records the
+              confirmation time. Paid tickets still only show after the first successful scan.
+            </p>
+          </div>
           {events.length > 0 && (
             <select
               value={eventSlug}
@@ -179,14 +186,17 @@ export default function GateCheckInsPage() {
           </div>
         ) : checkIns.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
-            No check-ins yet. Scan receipts at Gate to record attendance.
+            No registrations or gate scans yet. Free registrations will list here immediately after signup; scan at Gate to
+            confirm entry.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Check-in time</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Registered</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Gate confirmed</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Reference</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Campaign</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
@@ -197,24 +207,42 @@ export default function GateCheckInsPage() {
                 </tr>
               </thead>
               <tbody>
-                {checkIns.map((row, i) => (
-                  <tr key={`${row.reference}-${row.checked_in_at}-${i}`} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="py-3 px-4 text-gray-700 whitespace-nowrap">
-                      {row.checked_in_at
-                        ? new Date(row.checked_in_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" })
-                        : "—"}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-gray-800">{row.reference}</td>
-                    <td className="py-3 px-4 text-gray-800">{row.campaign}</td>
-                    <td className="py-3 px-4 text-gray-700">{row.type}</td>
-                    <td className="py-3 px-4 text-gray-800">{row.payer_name}</td>
-                    <td className="py-3 px-4 text-gray-700">{row.email}</td>
-                    <td className="py-3 px-4 text-right text-gray-800">
-                      {row.currency} {Number(row.amount).toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-right text-gray-700">{row.quantity}</td>
-                  </tr>
-                ))}
+                {checkIns.map((row, i) => {
+                  const isReg = row.type === "Registration";
+                  const regAt = row.registered_at
+                    ? new Date(row.registered_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" })
+                    : "—";
+                  const gateAt = row.checked_in_at
+                    ? new Date(row.checked_in_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" })
+                    : "—";
+                  const pendingReg = isReg && !row.checked_in_at;
+                  return (
+                    <tr key={`${row.reference}-${row.checked_in_at ?? ""}-${row.registered_at ?? ""}-${i}`} className="border-b border-gray-100 hover:bg-gray-50/50">
+                      <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{isReg ? regAt : "—"}</td>
+                      <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{gateAt}</td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {pendingReg ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                            Awaiting gate
+                          </span>
+                        ) : (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-green-800 border border-green-100">
+                            Confirmed
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-gray-800">{row.reference}</td>
+                      <td className="py-3 px-4 text-gray-800">{row.campaign}</td>
+                      <td className="py-3 px-4 text-gray-700">{row.type}</td>
+                      <td className="py-3 px-4 text-gray-800">{row.payer_name}</td>
+                      <td className="py-3 px-4 text-gray-700">{row.email}</td>
+                      <td className="py-3 px-4 text-right text-gray-800">
+                        {row.currency} {Number(row.amount).toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right text-gray-700">{row.quantity}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Export check-in records (transactions with checked_in_at set) as CSV for gate/attendance records.
- * Same auth as Gate: portal member with reports. RLS limits to user's campaigns.
+ * Export gate attendance CSV: paid entries after scan; free registrations from signup with optional gate time.
+ * Same auth as Gate: portal member with reports. RLS limits transactions to user's campaigns.
  */
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -83,10 +83,9 @@ export async function GET(req: Request) {
 
   let attendeeQuery = supabaseAdmin
     .from("event_attendees")
-    .select("reference,checked_in_at,name,email,event_slug,additional_guests")
-    .not("checked_in_at", "is", null)
+    .select("reference,checked_in_at,created_at,name,email,event_slug,additional_guests")
     .is("transaction_id", null)
-    .order("checked_in_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(10000);
   if (eventSlug) attendeeQuery = attendeeQuery.eq("event_slug", eventSlug);
   const { data: attendeeRows, error: attendeeErr } = await attendeeQuery;
@@ -95,6 +94,7 @@ export async function GET(req: Request) {
   const regRows = (attendeeRows ?? []) as Array<{
     reference: string;
     checked_in_at: string | null;
+    created_at?: string | null;
     name?: string | null;
     email?: string | null;
     event_slug?: string | null;
@@ -117,9 +117,23 @@ export async function GET(req: Request) {
     return s;
   };
 
-  type CsvRow = { checked_in_at: string | null; reference: string; campaign: string; type: string; name: string; email: string; amount: number; currency: string; quantity: number };
+  type CsvRow = {
+    registered_at: string | null;
+    gate_confirmed_at: string | null;
+    reference: string;
+    campaign: string;
+    type: string;
+    name: string;
+    email: string;
+    amount: number;
+    currency: string;
+    quantity: number;
+  };
+  const fmt = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" }) : "";
   const txCsvRows: CsvRow[] = txRows.map((t) => ({
-    checked_in_at: t.checked_in_at,
+    registered_at: null,
+    gate_confirmed_at: t.checked_in_at,
     reference: t.reference,
     campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
     type: t.campaign_type === "vote" ? "Vote" : "Ticket",
@@ -132,7 +146,8 @@ export async function GET(req: Request) {
   const regCsvRows: CsvRow[] = regRows.map((a) => {
     const g = Math.max(0, Number(a.additional_guests) || 0);
     return {
-      checked_in_at: a.checked_in_at,
+      registered_at: a.created_at ?? null,
+      gate_confirmed_at: a.checked_in_at,
       reference: a.reference,
       campaign: a.event_slug ? eventTitleBySlug[a.event_slug] ?? a.event_slug : "—",
       type: "Registration",
@@ -144,17 +159,30 @@ export async function GET(req: Request) {
     };
   });
 
-  const allRows = [...txCsvRows, ...regCsvRows].sort((a, b) => {
-    const ta = a.checked_in_at ? new Date(a.checked_in_at).getTime() : 0;
-    const tb = b.checked_in_at ? new Date(b.checked_in_at).getTime() : 0;
-    return tb - ta;
-  });
+  const sortTs = (r: CsvRow) => {
+    const g = r.gate_confirmed_at ? new Date(r.gate_confirmed_at).getTime() : 0;
+    const reg = r.registered_at ? new Date(r.registered_at).getTime() : 0;
+    return Math.max(g, reg);
+  };
+  const allRows = [...txCsvRows, ...regCsvRows].sort((a, b) => sortTs(b) - sortTs(a));
 
-  const headers = ["Check-in time", "Reference", "Event/Campaign", "Type", "Name", "Email", "Amount", "Currency", "Quantity"];
+  const headers = [
+    "Registered time",
+    "Gate confirmed",
+    "Reference",
+    "Event/Campaign",
+    "Type",
+    "Name",
+    "Email",
+    "Amount",
+    "Currency",
+    "Quantity",
+  ];
   const lines = [
     headers.join(","),
     ...allRows.map((r) => [
-      escapeCsv(r.checked_in_at ? new Date(r.checked_in_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" }) : ""),
+      escapeCsv(fmt(r.registered_at)),
+      escapeCsv(fmt(r.gate_confirmed_at)),
       escapeCsv(r.reference),
       escapeCsv(r.campaign),
       escapeCsv(r.type),

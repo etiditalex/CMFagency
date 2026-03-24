@@ -346,7 +346,7 @@ export default function DashboardGatePage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900"
           >
             <ListChecks className="w-4 h-4" />
-            View check-ins
+            View check-ins & registrations
           </Link>
           <button
             type="button"
