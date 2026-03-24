@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
+import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 
 type BlogPost = {
   id: string;
@@ -174,22 +175,7 @@ export default function BlogsPageClient() {
             <p className="text-xl text-white/90 mb-8">
               Subscribe to our newsletter to receive the latest articles, insights, and updates directly in your inbox.
             </p>
-            <form className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                id="newsletter-email"
-                name="newsletter-email"
-                placeholder="Enter your email"
-                className="flex-1 px-6 py-4 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white"
-                required
-              />
-              <button
-                type="submit"
-                className="px-8 py-4 bg-white text-primary-600 font-bold rounded-lg hover:bg-gray-100 transition-colors duration-200 whitespace-nowrap"
-              >
-                Subscribe
-              </button>
-            </form>
+            <NewsletterSubscribeForm variant="blogs" />
           </motion.div>
         </div>
       </section>

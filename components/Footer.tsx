@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
 import Image from "next/image";
 import AdSenseBlock from "@/components/AdSenseBlock";
+import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -160,21 +161,7 @@ export default function Footer() {
               </div>
             </div>
 
-            <form className="space-y-2">
-              <input
-                type="email"
-                id="newsletter-email"
-                name="newsletterEmail"
-                placeholder="Your email"
-                className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-primary-500"
-              />
-              <button
-                type="submit"
-                className="w-full btn-primary text-sm"
-              >
-                Subscribe
-              </button>
-            </form>
+            <NewsletterSubscribeForm variant="footer" />
           </div>
         </div>
 
