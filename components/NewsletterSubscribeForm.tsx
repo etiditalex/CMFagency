@@ -44,7 +44,11 @@ export default function NewsletterSubscribeForm({ variant }: { variant: Variant 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim() }),
       });
-      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        alreadySubscribed?: boolean;
+      };
       if (!res.ok || !data.ok) {
         setFeedback({
           type: "error",
@@ -53,6 +57,13 @@ export default function NewsletterSubscribeForm({ variant }: { variant: Variant 
         return;
       }
       setEmail("");
+      if (data.alreadySubscribed) {
+        setFeedback({
+          type: "success",
+          text: "You're already on our list — you'll get updates when we publish new articles.",
+        });
+        return;
+      }
       setFeedback({
         type: "success",
         text: "Thanks! Check your inbox for a confirmation from us.",

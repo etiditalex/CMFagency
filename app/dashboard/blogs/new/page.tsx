@@ -104,6 +104,17 @@ export default function NewBlogPage() {
         created_by: user.id,
       });
       if (insertErr) throw insertErr;
+      if (publishNow) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (token) {
+          void fetch("/api/newsletter/notify-blog-published", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ slug: normalizedSlug }),
+          });
+        }
+      }
       router.push("/dashboard/blogs");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to create blog");

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar, ExternalLink, Mail, Pencil, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,7 @@ export default function DashboardBlogsPage() {
   const [blogs, setBlogs] = useState<BlogRow[]>([]);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [notifySlug, setNotifySlug] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -71,6 +72,41 @@ export default function DashboardBlogsPage() {
     return true;
   });
 
+  const notifySubscribers = async (slug: string, title: string) => {
+    if (!confirm(`Send a "new article" email about "${title}" to all newsletter subscribers?`)) return;
+    setNotifySlug(slug);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Sign in again.");
+      const res = await fetch("/api/newsletter/notify-blog-published", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        sent?: number;
+        failed?: number;
+        total?: number;
+        message?: string;
+      };
+      if (!res.ok || !j.ok) throw new Error(j.error || "Notify failed");
+      if (j.message) {
+        setError(null);
+        alert(j.message);
+      } else {
+        alert(`Queued: ${j.sent ?? 0} sent${typeof j.failed === "number" && j.failed > 0 ? `, ${j.failed} failed` : ""} (${j.total ?? 0} subscribers).`);
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Notify failed");
+    } finally {
+      setNotifySlug(null);
+    }
+  };
+
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete blog "${title}"? This cannot be undone.`)) return;
     setDeletingId(id);
@@ -107,7 +143,9 @@ export default function DashboardBlogsPage() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Blogs</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
-            Create and manage blog posts shown on the public Blogs & News page.
+            Create and manage blog posts shown on the public Blogs & News page. The first time you publish a post,
+            subscribers on the newsletter list get an email (Resend + Supabase service role required). For posts that
+            were already published, use <strong>Email subscribers</strong> on that row to send the announcement again.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -194,15 +232,27 @@ export default function DashboardBlogsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {b.published_at && (
-                          <Link
-                            href={`/blogs/${b.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-semibold"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            View
-                          </Link>
+                          <>
+                            <Link
+                              href={`/blogs/${b.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-semibold"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              View
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => notifySubscribers(b.slug, b.title)}
+                              disabled={notifySlug === b.slug}
+                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold disabled:opacity-50"
+                              title="Email all newsletter subscribers about this post"
+                            >
+                              <Mail className="w-4 h-4" />
+                              {notifySlug === b.slug ? "Sending…" : "Email subscribers"}
+                            </button>
+                          </>
                         )}
                         <Link
                           href={`/dashboard/blogs/${b.id}/edit`}

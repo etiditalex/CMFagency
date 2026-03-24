@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getBlogBySlug } from "@/lib/blog-server";
+import { getApprovedBlogSidebarAds, getBlogBySlug, getBlogTrendingExcluding } from "@/lib/blog-server";
 import { resolveBlogShareImageUrl } from "@/lib/blog-share-image";
 import BlogSlugContent from "./BlogSlugContent";
 
@@ -85,5 +85,10 @@ export default async function BlogSlugPage({ params }: Props) {
     );
   }
 
-  return <BlogSlugContent post={post} />;
+  const [trending, sidebarAds] = await Promise.all([
+    getBlogTrendingExcluding(slug, 6),
+    getApprovedBlogSidebarAds(),
+  ]);
+
+  return <BlogSlugContent post={post} trending={trending} sidebarAds={sidebarAds} />;
 }

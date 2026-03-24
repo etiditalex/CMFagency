@@ -31,3 +31,37 @@ export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | n
   if (error) return null;
   return data as BlogPostRow | null;
 });
+
+export type BlogTrendingRow = { slug: string; title: string };
+
+export type BlogSidebarAdRow = {
+  id: string;
+  title: string;
+  image_url: string | null;
+  href: string | null;
+};
+
+/** Other recent posts for the blog article sidebar (excludes current slug). */
+export const getBlogTrendingExcluding = cache(async (excludeSlug: string, limit = 6): Promise<BlogTrendingRow[]> => {
+  if (!supabase || !excludeSlug) return [];
+  const { data, error } = await supabase
+    .from("fusion_blogs")
+    .select("slug, title")
+    .neq("slug", excludeSlug)
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []) as BlogTrendingRow[];
+});
+
+/** Approved sidebar promos (RLS returns only approved rows). */
+export const getApprovedBlogSidebarAds = cache(async (): Promise<BlogSidebarAdRow[]> => {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("fusion_blog_sidebar_ads")
+    .select("id, title, image_url, href")
+    .order("sort_order", { ascending: true });
+  if (error) return [];
+  return (data ?? []) as BlogSidebarAdRow[];
+});

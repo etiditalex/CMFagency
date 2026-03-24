@@ -54,6 +54,8 @@ export default function EditBlogPage() {
   const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Set once when post loads; used to detect first-time publish → newsletter notify */
+  const [publishedAtOnLoad, setPublishedAtOnLoad] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -89,6 +91,7 @@ export default function EditBlogPage() {
         setImageUrl(img);
         setImagePreviewUrl(img || null);
         setPublishNow(!!row.published_at);
+        setPublishedAtOnLoad(row.published_at ? String(row.published_at) : null);
         const links = row.external_links;
         setExternalLinks(
           Array.isArray(links) && links.length > 0
@@ -155,6 +158,18 @@ export default function EditBlogPage() {
         .eq("id", blogId);
 
       if (updateErr) throw updateErr;
+      const shouldNotifyNewsletter = publishNow && publishedAtOnLoad === null;
+      if (shouldNotifyNewsletter) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (token) {
+          void fetch("/api/newsletter/notify-blog-published", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ slug: normalizedSlug }),
+          });
+        }
+      }
       router.push("/dashboard/blogs");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to update blog");
