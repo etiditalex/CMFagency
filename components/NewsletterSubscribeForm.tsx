@@ -2,11 +2,12 @@
 
 import { useId, useState } from "react";
 
-type Variant = "blogs" | "footer";
+type Variant = "blogs" | "footer" | "blogSidebar";
 
 const formClass: Record<Variant, string> = {
   blogs: "flex flex-col sm:flex-row gap-4 max-w-md mx-auto",
   footer: "space-y-2",
+  blogSidebar: "space-y-3 w-full",
 };
 
 const inputClass: Record<Variant, string> = {
@@ -14,17 +15,22 @@ const inputClass: Record<Variant, string> = {
     "flex-1 px-6 py-4 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-white placeholder:text-gray-500",
   footer:
     "w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-primary-500",
+  blogSidebar:
+    "w-full px-3 py-2.5 rounded-lg bg-white text-gray-900 placeholder:text-gray-500 shadow-sm border border-white/20 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-600",
 };
 
 const buttonClass: Record<Variant, string> = {
   blogs:
     "px-8 py-4 bg-white text-primary-600 font-bold rounded-lg hover:bg-gray-100 transition-colors duration-200 whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed shrink-0",
   footer: "w-full btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed",
+  blogSidebar:
+    "w-full py-2.5 rounded-lg bg-white text-primary-700 font-bold text-sm hover:bg-primary-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-sm",
 };
 
 const placeholder: Record<Variant, string> = {
   blogs: "Enter your email",
   footer: "Your email",
+  blogSidebar: "Your email",
 };
 
 export default function NewsletterSubscribeForm({ variant }: { variant: Variant }) {
@@ -76,7 +82,7 @@ export default function NewsletterSubscribeForm({ variant }: { variant: Variant 
   }
 
   const msgColor =
-    variant === "blogs"
+    variant === "blogs" || variant === "blogSidebar"
       ? feedback?.type === "success"
         ? "text-white/95"
         : "text-amber-200"
@@ -120,6 +126,19 @@ export default function NewsletterSubscribeForm({ variant }: { variant: Variant 
         <div className={formClass.blogs}>{inner}</div>
         {feedback ? (
           <p className={`mt-4 text-center text-sm ${msgColor}`} role="status">
+            {feedback.text}
+          </p>
+        ) : null}
+      </form>
+    );
+  }
+
+  if (variant === "blogSidebar") {
+    return (
+      <form className={formClass.blogSidebar} onSubmit={onSubmit} noValidate>
+        {inner}
+        {feedback ? (
+          <p className={`text-xs leading-snug ${msgColor}`} role="status">
             {feedback.text}
           </p>
         ) : null}
