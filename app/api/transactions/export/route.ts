@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+async function isAdminOrManager(userId: string, serviceKey: string, supabaseUrl: string): Promise<boolean> {
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const { data: pm } = await admin.from("portal_members").select("role").eq("user_id", userId).maybeSingle();
+  if (pm?.role === "admin" || pm?.role === "manager") return true;
+  const { data: au } = await admin.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
+  return !!au;
+}
+
 /**
  * Exports all transactions (for user's campaigns) as CSV for reconciliation.
  * Uses authenticated Supabase client - RLS limits to user's campaigns.
+ * Failed / abandoned rows are omitted for campaign owners (not admin/manager).
  * Max 10,000 rows to avoid timeouts.
  */
 export async function GET(req: Request) {
@@ -15,6 +24,7 @@ export async function GET(req: Request) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: "Server config missing" }, { status: 500 });
   }
@@ -22,6 +32,16 @@ export async function GET(req: Request) {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
+
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let showIncomplete = false;
+  if (serviceKey) {
+    showIncomplete = await isAdminOrManager(userData.user.id, serviceKey, supabaseUrl);
+  }
 
   const { data: txRows, error: txErr } = await supabase
     .from("transactions")
@@ -33,7 +53,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: txErr.message }, { status: 500 });
   }
 
-  const rows = (txRows ?? []) as Array<{
+  let rows = (txRows ?? []) as Array<{
     id: string;
     reference: string;
     created_at: string;
@@ -51,6 +71,10 @@ export async function GET(req: Request) {
     metadata?: Record<string, unknown>;
     campaign_id: string;
   }>;
+
+  if (!showIncomplete) {
+    rows = rows.filter((r) => r.status !== "failed" && r.status !== "abandoned");
+  }
 
   // Fetch campaign titles for lookup (RLS filters to user's campaigns)
   const campaignIds = [...new Set(rows.map((r) => r.campaign_id))];

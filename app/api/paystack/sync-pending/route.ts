@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
+
 /**
  * Syncs pending Paystack transactions by verifying each with Paystack's API.
  * Use when webhook misses events and transactions stay "pending".
@@ -62,7 +64,9 @@ export async function GET(req: Request) {
 
   const { data: pendingRows, error: fetchErr } = await supabase
     .from("transactions")
-    .select("id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at,metadata,coupon_id")
+    .select(
+      "id,reference,campaign_id,campaign_type,contestant_id,quantity,amount,currency,fulfilled_at,metadata,coupon_id,email,payer_name"
+    )
     .eq("provider", "paystack")
     .eq("status", "pending");
 
@@ -102,6 +106,16 @@ export async function GET(req: Request) {
             metadata: { webhook_error: "amount_or_currency_mismatch", paystack_amount: paidAmountSubunit, paystack_currency: paidCurrency },
           } as any)
           .eq("id", tx.id);
+        void notifyCampaignOwnerPaymentIncomplete(supabase, {
+          campaignId: String(tx.campaign_id),
+          reference: String(tx.reference),
+          amount: Number(tx.amount),
+          currency: String(tx.currency ?? "KES"),
+          provider: "Paystack",
+          payerEmail: (tx as { email?: string | null }).email,
+          payerName: (tx as { payer_name?: string | null }).payer_name,
+          reason: "Paystack verify: amount or currency did not match the checkout",
+        });
         updated++;
         continue;
       }

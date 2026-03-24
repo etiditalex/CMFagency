@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
@@ -86,6 +87,16 @@ export async function POST(req: Request) {
           },
         } as any)
         .eq("id", tx.id);
+      void notifyCampaignOwnerPaymentIncomplete(supabase, {
+        campaignId: String(tx.campaign_id),
+        reference: String(tx.reference),
+        amount: Number(tx.amount),
+        currency: String(tx.currency ?? "KES"),
+        provider: "M-Pesa (Daraja)",
+        payerEmail: (tx as { email?: string | null }).email,
+        payerName: (tx as { payer_name?: string | null }).payer_name,
+        reason: resultDesc ? `M-Pesa: ${resultDesc}` : `M-Pesa result code ${resultCode}`,
+      });
       const toEmail = (tx as { email?: string | null }).email?.trim?.();
       if (toEmail) {
         sendPurchaseReminderByRef(tx.reference, supabase).catch((err) =>
@@ -118,6 +129,16 @@ export async function POST(req: Request) {
           },
         } as any)
         .eq("id", tx.id);
+      void notifyCampaignOwnerPaymentIncomplete(supabase, {
+        campaignId: String(tx.campaign_id),
+        reference: String(tx.reference),
+        amount: Number(tx.amount),
+        currency: String(tx.currency ?? "KES"),
+        provider: "M-Pesa (Daraja)",
+        payerEmail: (tx as { email?: string | null }).email,
+        payerName: (tx as { payer_name?: string | null }).payer_name,
+        reason: `Amount mismatch (paid ${paidAmount}, expected ${expectedAmount})`,
+      });
       const toEmailMismatch = (tx as { email?: string | null }).email?.trim?.();
       if (toEmailMismatch) {
         sendPurchaseReminderByRef(tx.reference, supabase).catch((err) =>

@@ -92,7 +92,7 @@ export default function CampaignReportPage() {
   }, [params?.id]);
 
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
@@ -270,7 +270,11 @@ export default function CampaignReportPage() {
 
       if (txRes.error) throw txRes.error;
       const txRows = txRes.data ?? [];
-      setRecentTransactions(txRows as TxRow[]);
+      let displayTx = txRows as TxRow[];
+      if (!isAdmin) {
+        displayTx = displayTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
+      }
+      setRecentTransactions(displayTx);
 
       const success = txRows.filter((t: TxRow) => t.status === "success");
       setSuccessfulPayments(success.length);
@@ -374,7 +378,7 @@ export default function CampaignReportPage() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id, isFullAdmin]);
+  }, [authLoading, portalLoading, isPortalMember, hasFeature, campaignId, isAuthenticated, router, user?.id, isFullAdmin, isAdmin]);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -751,6 +755,12 @@ export default function CampaignReportPage() {
             <p className="mt-2 text-gray-600 text-sm">
               Latest transactions in the selected range. Pending M-Pesa payments may take a few minutes to confirm; admins can{" "}
               <span className="font-semibold">Confirm payment</span> if the customer has paid but the callback did not run.
+              {!isAdmin && (
+                <>
+                  {" "}
+                  Incomplete checkouts are hidden from this table; you&apos;ll be emailed if a payer doesn&apos;t finish.
+                </>
+              )}
             </p>
           </div>
 

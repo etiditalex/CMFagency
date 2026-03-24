@@ -27,7 +27,7 @@ type TxRow = {
 export default function TransactionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +82,10 @@ export default function TransactionsPage() {
       if (txErr) throw txErr;
 
       const rows = (txRows ?? []) as TxRow[];
-      setTransactions((prev) => (append ? [...prev, ...rows] : rows));
+      const visible = isAdmin
+        ? rows
+        : rows.filter((t) => t.status !== "failed" && t.status !== "abandoned");
+      setTransactions((prev) => (append ? [...prev, ...visible] : visible));
       setHasMore(rows.length === PAGE_SIZE);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to load transactions";
@@ -91,7 +94,7 @@ export default function TransactionsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, isFullAdmin]);
+  }, [user?.id, isFullAdmin, isAdmin]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -157,6 +160,13 @@ export default function TransactionsPage() {
           <h2 className="text-xl font-bold text-gray-900">All Transactions</h2>
           <p className="mt-1 text-sm text-gray-600">
             View and download all transactions for reconciliation.
+            {!isAdmin && (
+              <>
+                {" "}
+                Incomplete checkouts (failed or abandoned) are hidden here and in your CSV; you&apos;ll get an email when a
+                payer doesn&apos;t finish.
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">

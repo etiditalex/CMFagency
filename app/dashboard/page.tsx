@@ -183,7 +183,11 @@ export default function DashboardHomePage() {
           .order("created_at", { ascending: false })
           .limit(10);
         if (txErr) throw txErr;
-        setRecentTransactions((txRows ?? []) as any[]);
+        const rawTx = (txRows ?? []) as any[];
+        const visibleTx = isAdmin
+          ? rawTx
+          : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
+        setRecentTransactions(visibleTx);
 
         // Successful payments + revenue (total, tickets, votes, merchandise as product not campaign)
         const { data: successTx, error: sErr } = await supabase
@@ -276,7 +280,7 @@ export default function DashboardHomePage() {
       setDataLoading(false);
       refreshInFlightRef.current = false;
     }
-  }, [user?.id, isFullAdmin, isEmployer]);
+  }, [user?.id, isFullAdmin, isEmployer, isAdmin]);
 
   const syncPendingPaystack = useCallback(async () => {
     if (!user) return;
@@ -718,6 +722,12 @@ export default function DashboardHomePage() {
         <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="text-sm font-extrabold text-gray-700 text-left">Recent Payments</div>
+            {!isAdmin && (
+              <p className="mt-2 text-xs text-gray-500 max-w-xl text-left">
+                Incomplete checkouts are hidden here. You&apos;ll get an email when a payer doesn&apos;t finish — successful
+                payments still show as usual.
+              </p>
+            )}
             {syncResult && (
               <p className={`mt-2 text-sm font-medium ${syncResult.error ? "text-red-600" : "text-green-700"}`}>
                 {syncResult.error ?? `Synced ${syncResult.updated} transaction(s).`}
