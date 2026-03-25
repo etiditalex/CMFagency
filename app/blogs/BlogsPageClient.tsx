@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, User, ArrowRight, BookOpen } from "lucide-react";
+import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
-import { supabase } from "@/lib/supabase";
+
+import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
+import type { BlogSidebarAdRow } from "@/lib/blog-server";
+import { supabase } from "@/lib/supabase";
 
 type BlogPost = {
   id: string;
@@ -20,25 +23,43 @@ type BlogPost = {
   published_at: string | null;
 };
 
-const DEFAULT_HERO_IMAGE = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
+const DEFAULT_CARD_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
 
 export default function BlogsPageClient() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [sidebarAds, setSidebarAds] = useState<BlogSidebarAdRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const { data, error } = await supabase
-          .from("fusion_blogs")
-          .select("id, slug, title, excerpt, author, category, image_url, published_at")
-          .not("published_at", "is", null)
-          .order("published_at", { ascending: false });
-        if (error) throw error;
-        if (!cancelled) setPosts((data ?? []) as BlogPost[]);
+        const [postsRes, adsRes] = await Promise.all([
+          supabase
+            .from("fusion_blogs")
+            .select("id, slug, title, excerpt, author, category, image_url, published_at")
+            .not("published_at", "is", null)
+            .order("published_at", { ascending: false }),
+          supabase
+            .from("fusion_blog_sidebar_ads")
+            .select("id, title, image_url, href")
+            .order("sort_order", { ascending: true }),
+        ]);
+        if (postsRes.error) throw postsRes.error;
+        if (!cancelled) {
+          setPosts((postsRes.data ?? []) as BlogPost[]);
+          if (!adsRes.error && adsRes.data) {
+            setSidebarAds(adsRes.data as BlogSidebarAdRow[]);
+          } else {
+            setSidebarAds([]);
+          }
+        }
       } catch {
-        if (!cancelled) setPosts([]);
+        if (!cancelled) {
+          setPosts([]);
+          setSidebarAds([]);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -50,130 +71,91 @@ export default function BlogsPageClient() {
   }, []);
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg"
-            alt="Blogs & News"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          {/* Gradient Overlay */}
-          {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/65"></div>
-        </div>
-
-        <div className="container-blog relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white drop-shadow-lg">
-              Blogs & News
-            </h1>
-            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md">
-              Stay updated with the latest insights, trends, and news from the world of marketing, events, and business
-              growth.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Blog Posts Section */}
-      <section className="section-padding bg-white">
-        <div className="container-blog">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Latest Articles
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Explore our collection of articles covering marketing strategies, event planning, branding, and more.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {loading ? (
-              <div className="col-span-full py-12 text-center text-gray-500">Loading articles…</div>
-            ) : posts.length === 0 ? (
-              <div className="col-span-full py-12 text-center text-gray-500">No published articles yet. Check back soon.</div>
-            ) : (
-              posts.map((post, index) => (
-                <motion.article
-                  key={post.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden group"
-                >
-                  <div className="relative h-48 overflow-hidden">
-                    <Image
-                      src={post.image_url || DEFAULT_HERO_IMAGE}
-                      alt={post.title}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        {post.category || "Blog"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center text-sm text-gray-500 mb-3">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>{post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}</span>
-                      <span className="mx-2">•</span>
-                      <User className="w-4 h-4 mr-2" />
-                      <span>{post.author || "Changer Fusions Team"}</span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors duration-200">
-                      {post.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt || ""}</p>
-                    <Link
-                      href={`/blogs/${post.slug}`}
-                      className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 transition-colors duration-200 group/link"
-                    >
-                      <span>Read More</span>
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover/link:translate-x-1 transition-transform duration-200" />
-                    </Link>
-                  </div>
-                </motion.article>
-              ))
-            )}
+    <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
+      <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-6 md:pb-10">
+        {sidebarAds.length > 0 && (
+          <div className="w-full max-w-full mb-5 sm:mb-8">
+            <BlogPromoCarousel
+              ads={sidebarAds}
+              className="w-full"
+              imageMaxClass="max-h-[min(200px,36dvh)] sm:max-h-[min(260px,42dvh)] md:max-h-[min(300px,48vh)]"
+            />
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* Newsletter Section */}
-      <section className="section-padding bg-gradient-to-br from-primary-600 to-secondary-600 text-white">
-        <div className="container-blog text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 md:gap-6 lg:gap-8 w-full">
+          {loading ? (
+            <div className="col-span-full py-10 text-center text-gray-500 text-sm sm:text-base">Loading articles…</div>
+          ) : posts.length === 0 ? (
+            <div className="col-span-full py-10 text-center text-gray-500 text-sm sm:text-base">
+              No published articles yet. Check back soon.
+            </div>
+          ) : (
+            posts.map((post, index) => (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.45, delay: Math.min(index * 0.05, 0.4) }}
+                className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
+              >
+                <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden">
+                  <Image
+                    src={post.image_url || DEFAULT_CARD_IMAGE}
+                    alt={post.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                  <div className="absolute top-3 left-3">
+                    <span className="bg-primary-600 text-white px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold">
+                      {post.category || "Blog"}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 sm:p-4 md:p-5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                      {post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}
+                    </span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="inline-flex items-center gap-1 min-w-0">
+                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                      <span className="truncate">{post.author || "Changer Fusions Team"}</span>
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">
+                    {post.title}
+                  </h3>
+                  <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{post.excerpt || ""}</p>
+                  <Link
+                    href={`/blogs/${post.slug}`}
+                    className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 text-sm sm:text-base group/link"
+                  >
+                    <span>Read more</span>
+                    <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
+                  </Link>
+                </div>
+              </motion.article>
+            ))
+          )}
+        </div>
+      </div>
+
+      <section className="py-12 md:py-16 bg-gradient-to-br from-primary-600 to-secondary-600 text-white w-full">
+        <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="max-w-2xl mx-auto"
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">Stay Updated</h2>
-            <p className="text-xl text-white/90 mb-8">
-              Subscribe to our newsletter to receive the latest articles, insights, and updates directly in your inbox.
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">Stay updated</h2>
+            <p className="text-base sm:text-lg text-white/90 mb-6 sm:mb-8 px-1">
+              Subscribe to receive new articles and updates in your inbox.
             </p>
             <NewsletterSubscribeForm variant="blogs" />
           </motion.div>
