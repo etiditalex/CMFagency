@@ -92,11 +92,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, failed: 0, message: "No subscribers yet" });
   }
 
+  const { data: promoRows } = await admin
+    .from("fusion_blog_sidebar_ads")
+    .select("title, image_url, href")
+    .eq("approved", true)
+    .order("sort_order", { ascending: true })
+    .limit(8);
+
+  const sidebarPromos = (promoRows ?? []).map((r: { title?: unknown; image_url?: unknown; href?: unknown }) => ({
+    title: String(r.title ?? ""),
+    image_url: r.image_url != null && String(r.image_url).trim() ? String(r.image_url).trim() : null,
+    href: r.href != null && String(r.href).trim() ? String(r.href).trim() : null,
+  }));
+
   const { sent, failed } = await sendNewBlogPostNotificationEmails({
     recipients: list.emails,
     postTitle: String(post.title ?? ""),
     postExcerpt: post.excerpt ? String(post.excerpt) : null,
     postSlug: String(post.slug ?? slug),
+    sidebarPromos,
   });
 
   return NextResponse.json({ ok: true, sent, failed, total: list.emails.length });

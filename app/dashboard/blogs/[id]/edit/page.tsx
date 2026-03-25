@@ -248,10 +248,10 @@ export default function EditBlogPage() {
             onChange={(e) => setBody(e.target.value)}
             rows={12}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Use ## for subtitles (bold), ### for subheadings, **bold**, [text](https://...) for links."
+            placeholder="## subtitles, ### subheadings, **bold**, [label](https://…) or paste https://… for auto-links."
           />
           <p className="text-xs text-gray-500 mt-2">
-            SEO: <strong>## Subtitle</strong>, <strong>### Section</strong>, <strong>[label](url)</strong> for outbound links.
+            SEO: <strong>##</strong> / <strong>###</strong>, <strong>[label](https://…)</strong> or plain <strong>https://…</strong> in text. Add structured references in the section below if you like.
           </p>
         </div>
 

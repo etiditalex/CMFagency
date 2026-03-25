@@ -9,6 +9,48 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function isSafeHref(url: string): boolean {
+  const t = url.trim().toLowerCase();
+  return t.startsWith("https://") || t.startsWith("http://");
+}
+
+function isHttpsImageSrc(url: string): boolean {
+  return url.trim().toLowerCase().startsWith("https://");
+}
+
+export type NewBlogEmailPromo = {
+  title: string;
+  image_url: string | null;
+  href: string | null;
+};
+
+function buildSidebarPromosEmailBlock(promos: NewBlogEmailPromo[], blogsListingUrl: string): string {
+  const rows = promos.filter((p) => p.title?.trim() || p.image_url?.trim() || p.href?.trim());
+  if (rows.length === 0) return "";
+
+  const cards = rows.slice(0, 6).map((p) => {
+    const titleText = escapeHtml((p.title ?? "").trim() || "Featured");
+    const hrefRaw = (p.href ?? "").trim();
+    const href = isSafeHref(hrefRaw) ? hrefRaw : blogsListingUrl;
+    const hrefEsc = escapeHtml(href);
+    const imgRaw = (p.image_url ?? "").trim();
+    const showImg = imgRaw && isHttpsImageSrc(imgRaw);
+    const imgEsc = showImg ? escapeHtml(imgRaw) : "";
+    const imgBlock = showImg
+      ? `<a href="${hrefEsc}" style="text-decoration:none;display:block;"><img src="${imgEsc}" alt="" width="520" style="max-width:100%;height:auto;display:block;border:0;border-radius:8px;background:#f3f4f6;" /></a>`
+      : "";
+    const titleLine = `<p style="margin:${showImg ? "10px" : "0"} 0 0;font-size:14px;line-height:1.4;"><a href="${hrefEsc}" style="color:#1a4f8c;font-weight:600;text-decoration:underline;">${titleText}</a></p>`;
+    return `<div style="margin:0 0 16px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;">${imgBlock}${titleLine}</div>`;
+  });
+
+  return `
+      <div style="margin: 24px 0 0; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+        <p style="margin: 0 0 12px; font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em;">Also on the blog (sidebar promos)</p>
+        ${cards.join("")}
+        <p style="margin: 0; font-size: 12px; color: #9ca3af;">These are the same promotions shown beside articles on our website.</p>
+      </div>`;
+}
+
 /**
  * Sends one new-article notification per recipient via Resend (individual emails for privacy).
  */
@@ -17,6 +59,8 @@ export async function sendNewBlogPostNotificationEmails(params: {
   postTitle: string;
   postExcerpt: string | null;
   postSlug: string;
+  /** Approved sidebar ads (same as blog article sidebar); optional */
+  sidebarPromos?: NewBlogEmailPromo[];
 }): Promise<{ sent: number; failed: number }> {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey || params.recipients.length === 0) {
@@ -30,6 +74,9 @@ export async function sendNewBlogPostNotificationEmails(params: {
   const excerptBlock = excerptRaw
     ? `<p style="margin: 0 0 20px; font-size: 15px; color: #4b5563;">${escapeHtml(excerptRaw)}</p>`
     : "";
+
+  const blogsListingUrl = `${base}/blogs`;
+  const promosBlock = buildSidebarPromosEmailBlock(params.sidebarPromos ?? [], blogsListingUrl);
 
   const html = `
 <!DOCTYPE html>
@@ -47,7 +94,8 @@ export async function sendNewBlogPostNotificationEmails(params: {
       <div style="text-align: center; margin: 0 0 16px;">
         <a href="${escapeHtml(postUrl)}" style="display: inline-block; background: #1a4f8c; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 12px 24px; border-radius: 8px;">Read the article</a>
       </div>
-      <p style="margin: 0; font-size: 13px; color: #9ca3af;">
+      ${promosBlock}
+      <p style="margin: 16px 0 0; font-size: 13px; color: #9ca3af;">
         You are receiving this because you subscribed to updates from Changer Fusions.
       </p>
     </div>

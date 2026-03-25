@@ -144,8 +144,9 @@ export default function DashboardBlogsPage() {
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Blogs</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Create and manage blog posts shown on the public Blogs & News page. The first time you publish a post,
-            subscribers on the newsletter list get an email (Resend + Supabase service role required). For posts that
-            were already published, use <strong>Email subscribers</strong> on that row to send the announcement again.
+            subscribers get an email with the excerpt and a link to the article; <strong>approved blog sidebar promos</strong> are
+            included in that email too (Resend + Supabase service role required). For posts already published, use{" "}
+            <strong>Email subscribers</strong> on that row to send the announcement again.
           </p>
         </div>
         <div className="flex items-center gap-3">

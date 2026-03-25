@@ -21,7 +21,7 @@ type Props = {
 export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-10 md:py-12">
+      <div className="container-blog py-10 md:py-12">
         <Link
           href="/blogs"
           className="inline-flex items-center gap-2 text-primary-600 font-semibold hover:text-primary-700 mb-8"
@@ -31,7 +31,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
         </Link>
 
         <div className="flex flex-col gap-10 lg:gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-          <main className="min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm px-6 py-8 md:px-10 md:py-10">
+          <main className="min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-8 sm:px-6 md:py-10 lg:px-8">
             <motion.header
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

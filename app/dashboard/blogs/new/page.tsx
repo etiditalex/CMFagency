@@ -196,10 +196,10 @@ export default function NewBlogPage() {
             onChange={(e) => setBody(e.target.value)}
             rows={12}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Full post content. Use ## for subtitles (bold), ### for subheadings, **bold text**, and [link text](https://...) for outbound links."
+            placeholder="Full post content. Use ## for subtitles, ### for subheadings, **bold**, [label](https://...) for links, or paste https://… and it becomes clickable."
           />
           <p className="text-xs text-gray-500 mt-2">
-            SEO tip: use <strong>## Subtitle</strong> and <strong>### Section</strong> for bold headings. Use <strong>[label](https://example.com)</strong> to link to other sites (backlinks).
+            SEO tip: <strong>## Subtitle</strong>, <strong>### Section</strong>. Links: <strong>[label](https://example.com)</strong> or a plain <strong>https://…</strong> URL in a paragraph. Use &quot;References&quot; below for a dedicated link list on the article.
           </p>
         </div>
 

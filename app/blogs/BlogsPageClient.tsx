@@ -67,7 +67,7 @@ export default function BlogsPageClient() {
           <div className="absolute inset-0 bg-black/65"></div>
         </div>
 
-        <div className="container-custom relative z-10">
+        <div className="container-blog relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -90,7 +90,7 @@ export default function BlogsPageClient() {
 
       {/* Blog Posts Section */}
       <section className="section-padding bg-white">
-        <div className="container-custom">
+        <div className="container-blog">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -163,7 +163,7 @@ export default function BlogsPageClient() {
 
       {/* Newsletter Section */}
       <section className="section-padding bg-gradient-to-br from-primary-600 to-secondary-600 text-white">
-        <div className="container-custom text-center">
+        <div className="container-blog text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

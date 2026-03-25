@@ -3,7 +3,8 @@
  * - ## Subtitle -> <h2> (bold)
  * - ### Subheading -> <h3> (bold)
  * - **text** -> <strong>
- * - [label](url) -> outbound link (backlinks); only https? URLs allowed
+ * - [label](url) -> outbound link; only http(s) URLs allowed
+ * - Bare https:// or http:// in text -> clickable link (after markdown links are parsed)
  * - Paragraphs preserved
  */
 
@@ -20,10 +21,20 @@ function isSafeUrl(url: string): boolean {
   return t.startsWith("http://") || t.startsWith("https://");
 }
 
+/** Strip trailing punctuation often pasted after URLs (keeps href clean). */
+function splitUrlAndTrailingPunct(raw: string): { href: string; tail: string } {
+  const punctEnd = /[.,;:!?)\]'"\u201d\u2019]+$/;
+  let href = raw;
+  while (punctEnd.test(href)) {
+    href = href.replace(punctEnd, "");
+  }
+  return { href, tail: raw.slice(href.length) };
+}
+
 const PLACEHOLDER_LINK = "\uFEFF\uFEFFL";
 const PLACEHOLDER_BOLD = "\uFEFF\uFEFFB";
 
-/** Process inline elements: **bold** and [text](url). Outputs safe HTML. */
+/** Process inline elements: [text](url), **bold**, bare http(s) URLs. Outputs safe HTML. */
 function processInline(raw: string): string {
   const replacements: string[] = [];
   // Replace [text](url) with placeholder; store safe <a> in replacements
@@ -44,8 +55,19 @@ function processInline(raw: string): string {
     replacements.push(`<strong class="font-bold">${escapeHtml(inner)}</strong>`);
     return `${PLACEHOLDER_BOLD}${idx}\uFEFF`;
   });
+  // Bare URLs (not already markdown); trim trailing .,)! etc. from href
+  const withBareUrls = withBold.replace(/\b(https?:\/\/[^\s<>\[\]"']+)/gi, (full) => {
+    const { href, tail } = splitUrlAndTrailingPunct(full);
+    if (!isSafeUrl(href)) return full;
+    const idx = replacements.length;
+    const display = href.length > 52 ? `${href.slice(0, 49)}…` : href;
+    replacements.push(
+      `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold hover:underline break-all">${escapeHtml(display)}</a>`
+    );
+    return `${PLACEHOLDER_LINK}${idx}\uFEFF${tail}`;
+  });
   // Escape remaining content
-  let out = escapeHtml(withBold);
+  let out = escapeHtml(withBareUrls);
   // Restore placeholders (indices are safe: 0,1,2,...)
   replacements.forEach((html, i) => {
     out = out.replace(`${PLACEHOLDER_LINK}${i}\uFEFF`, html).replace(`${PLACEHOLDER_BOLD}${i}\uFEFF`, html);
