@@ -101,11 +101,15 @@ export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
         const inner = (
           <>
             {ad.image_url ? (
-              <img
-                src={ad.image_url}
-                alt=""
-                className="w-full h-auto rounded-lg object-cover max-h-[280px]"
-              />
+              <div className="w-full flex justify-center items-center rounded-lg overflow-hidden bg-gray-100 min-h-0">
+                <img
+                  src={ad.image_url}
+                  alt={ad.title ? `${ad.title} (promo)` : "Promotional image"}
+                  className="block max-w-full w-auto h-auto max-h-[min(280px,55vh)] object-contain object-center"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             ) : null}
             {ad.title ? (
               <p className={`text-sm font-semibold text-gray-900 ${ad.image_url ? "mt-3" : ""}`}>{ad.title}</p>
