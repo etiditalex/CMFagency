@@ -97,40 +97,57 @@ export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
         </div>
       )}
 
-      {sidebarAds.map((ad) => {
-        const inner = (
-          <>
-            {ad.image_url ? (
-              <div className="w-full flex justify-center items-center rounded-lg overflow-hidden bg-gray-100 min-h-0">
-                <img
-                  src={ad.image_url}
-                  alt={ad.title ? `${ad.title} (promo)` : "Promotional image"}
-                  className="block max-w-full w-auto h-auto max-h-[min(280px,55vh)] object-contain object-center"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-            ) : null}
-            {ad.title ? (
-              <p className={`text-sm font-semibold text-gray-900 ${ad.image_url ? "mt-3" : ""}`}>{ad.title}</p>
-            ) : null}
-          </>
-        );
-        return (
+      {sidebarAds.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-0.5">
+            Promotions {sidebarAds.length > 1 ? `(${sidebarAds.length})` : ""}
+          </p>
           <div
-            key={ad.id}
-            className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm"
+            className="max-h-[min(72vh,36rem)] overflow-y-auto overscroll-y-contain space-y-4 pr-1 -mr-0.5 [scrollbar-width:thin] [scrollbar-color:rgba(156,163,175,0.7)_transparent]"
+            aria-label="Scrollable promotional items"
           >
-            {ad.href ? (
-              <a href={ad.href} target="_blank" rel="noopener noreferrer" className="block p-4 hover:bg-gray-50/80 transition-colors">
-                {inner}
-              </a>
-            ) : (
-              <div className="p-4">{inner}</div>
-            )}
+            {sidebarAds.map((ad) => {
+              const inner = (
+                <>
+                  {ad.image_url ? (
+                    <div className="w-full flex justify-center items-center rounded-lg overflow-hidden bg-gray-100 min-h-0">
+                      <img
+                        src={ad.image_url}
+                        alt={ad.title ? `${ad.title} (promo)` : "Promotional image"}
+                        className="block max-w-full w-auto h-auto max-h-[min(280px,55vh)] object-contain object-center"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  ) : null}
+                  {ad.title ? (
+                    <p className={`text-sm font-semibold text-gray-900 ${ad.image_url ? "mt-3" : ""}`}>{ad.title}</p>
+                  ) : null}
+                </>
+              );
+              return (
+                <div
+                  key={ad.id}
+                  className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm shrink-0"
+                >
+                  {ad.href ? (
+                    <a
+                      href={ad.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 hover:bg-gray-50/80 transition-colors"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div className="p-4">{inner}</div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      )}
 
       <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 p-4 min-h-[120px]">
         <p className="text-xs text-gray-500 mb-2 text-center">Advertisement</p>
