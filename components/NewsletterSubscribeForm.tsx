@@ -122,7 +122,7 @@ export default function NewsletterSubscribeForm({ variant }: { variant: Variant 
 
   if (variant === "blogs") {
     return (
-      <form className="w-full max-w-md mx-auto" onSubmit={onSubmit} noValidate>
+      <form className="w-full max-w-none mx-auto" onSubmit={onSubmit} noValidate>
         <div className={formClass.blogs}>{inner}</div>
         {feedback ? (
           <p className={`mt-4 text-center text-sm ${msgColor}`} role="status">

@@ -18,19 +18,19 @@ export default function ProgressBar() {
 
     const interval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) {
+        if (prev >= 92) {
           clearInterval(interval);
-          return 90;
+          return 92;
         }
-        const increment = prev < 50 ? 20 : prev < 80 ? 10 : 4;
-        return Math.min(prev + increment, 90);
+        const increment = prev < 55 ? 28 : prev < 85 ? 12 : 5;
+        return Math.min(prev + increment, 92);
       });
-    }, 80);
+    }, 45);
 
     const timer = setTimeout(() => {
       setProgress(100);
-      setTimeout(() => setLoading(false), 150);
-    }, 400);
+      setTimeout(() => setLoading(false), 100);
+    }, 220);
 
     return () => {
       clearInterval(interval);

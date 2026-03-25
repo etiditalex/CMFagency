@@ -1,14 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 
-import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
-import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
+import BlogPromoHorizontalScroll from "@/components/blogs/BlogPromoHorizontalScroll";
+
+const BlogNewsletterBannerPopup = dynamic(
+  () => import("@/components/blogs/BlogNewsletterBannerPopup"),
+  { ssr: false }
+);
 import type { BlogSidebarAdRow } from "@/lib/blog-server";
 import { supabase } from "@/lib/supabase";
 
@@ -72,10 +76,11 @@ export default function BlogsPageClient() {
 
   return (
     <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
-      <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-6 md:pb-10">
+      <BlogNewsletterBannerPopup />
+      <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
         {sidebarAds.length > 0 && (
           <div className="w-full max-w-full mb-5 sm:mb-8">
-            <BlogPromoCarousel
+            <BlogPromoHorizontalScroll
               ads={sidebarAds}
               className="w-full"
               imageMaxClass="max-h-[min(200px,36dvh)] sm:max-h-[min(260px,42dvh)] md:max-h-[min(300px,48vh)]"
@@ -91,13 +96,9 @@ export default function BlogsPageClient() {
               No published articles yet. Check back soon.
             </div>
           ) : (
-            posts.map((post, index) => (
-              <motion.article
+            posts.map((post) => (
+              <article
                 key={post.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: Math.min(index * 0.05, 0.4) }}
                 className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
               >
                 <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden">
@@ -138,29 +139,11 @@ export default function BlogsPageClient() {
                     <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
                   </Link>
                 </div>
-              </motion.article>
+              </article>
             ))
           )}
         </div>
       </div>
-
-      <section className="py-12 md:py-16 bg-gradient-to-br from-primary-600 to-secondary-600 text-white w-full">
-        <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="max-w-2xl mx-auto"
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">Stay updated</h2>
-            <p className="text-base sm:text-lg text-white/90 mb-6 sm:mb-8 px-1">
-              Subscribe to receive new articles and updates in your inbox.
-            </p>
-            <NewsletterSubscribeForm variant="blogs" />
-          </motion.div>
-        </div>
-      </section>
     </div>
   );
 }

@@ -3,7 +3,15 @@
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import CookieBanner from "@/components/CookieBanner";
-import DashboardShell from "@/components/dashboard/DashboardShell";
+
+const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShell"), {
+  ssr: true,
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50" aria-busy="true" aria-label="Loading dashboard">
+      <div className="h-9 w-9 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  ),
+});
 
 const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: true });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });

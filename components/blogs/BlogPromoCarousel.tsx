@@ -6,12 +6,15 @@ import type { BlogSidebarAdRow } from "@/lib/blog-server";
 
 const PROMO_ROTATE_MS = 5500;
 
-function PromoSlide({
+export function PromoSlideCard({
   ad,
   imageMaxClass,
+  className = "",
 }: {
   ad: BlogSidebarAdRow;
   imageMaxClass: string;
+  /** Extra classes on outer card */
+  className?: string;
 }) {
   const inner = (
     <>
@@ -32,7 +35,7 @@ function PromoSlide({
     </>
   );
   return (
-    <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+    <div className={`rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm ${className}`}>
       {ad.href ? (
         <a
           href={ad.href}
@@ -115,7 +118,7 @@ export default function BlogPromoCarousel({
                   active ? "opacity-100" : "opacity-0"
                 }`}
               >
-                <PromoSlide ad={ad} imageMaxClass={imageMaxClass} />
+                <PromoSlideCard ad={ad} imageMaxClass={imageMaxClass} />
               </div>
             );
           })}
