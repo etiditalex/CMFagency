@@ -7,6 +7,7 @@ import { Upload, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 import { supabase } from "@/lib/supabase";
 
 function slugify(input: string) {
@@ -23,6 +24,7 @@ const BLOG_CATEGORIES = [
   "Events",
   "Branding",
   "Content",
+  "Trends",
   "Market Research",
   "Web Development",
   "Other",
@@ -37,7 +39,7 @@ export default function NewBlogPage() {
   const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
-  const [author, setAuthor] = useState("Changer Fusions Team");
+  const [author, setAuthor] = useState(DEFAULT_BLOG_AUTHOR);
   const [category, setCategory] = useState("Digital Marketing");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export default function NewBlogPage() {
         title: title.trim(),
         excerpt: excerpt.trim() || null,
         body: body.trim() || null,
-        author: author.trim() || "Changer Fusions Team",
+        author: author.trim() || DEFAULT_BLOG_AUTHOR,
         category: category.trim() || null,
         image_url: imageUrl,
         external_links: linksPayload.length ? linksPayload : [],
@@ -196,11 +198,32 @@ export default function NewBlogPage() {
             onChange={(e) => setBody(e.target.value)}
             rows={12}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            placeholder="Full post content. Use ## for subtitles, ### for subheadings, **bold**, [label](https://...) for links, or paste https://… and it becomes clickable."
+            placeholder="News-style body: headings, links, italics, images — see tips below."
           />
-          <p className="text-xs text-gray-500 mt-2">
-            SEO tip: <strong>## Subtitle</strong>, <strong>### Section</strong>. Links: <strong>[label](https://example.com)</strong> or a plain <strong>https://…</strong> URL in a paragraph. Use &quot;References&quot; below for a dedicated link list on the article.
-          </p>
+          <div className="text-xs text-gray-500 mt-2 space-y-1.5 leading-relaxed">
+            <p>
+              <strong>Structure:</strong> <code className="bg-gray-100 px-1 rounded">## Subtitle</code>,{" "}
+              <code className="bg-gray-100 px-1 rounded">### Section</code>. <strong>Bold:</strong>{" "}
+              <code className="bg-gray-100 px-1 rounded">**like this**</code>. <strong>Italic:</strong>{" "}
+              <code className="bg-gray-100 px-1 rounded">*like this*</code>.
+            </p>
+            <p>
+              <strong>Link with your own words:</strong>{" "}
+              <code className="bg-gray-100 px-1 rounded text-[11px]">[click here](https://example.com/article)</code> — readers
+              see &quot;click here&quot;, not the long URL. Plain <code className="bg-gray-100 px-1 rounded">https://…</code> in
+              text also becomes clickable.
+            </p>
+            <p>
+              <strong>Image + caption (own line):</strong>{" "}
+              <code className="bg-gray-100 px-1 rounded text-[11px]">
+                ![This photo was from our meeting with…](https://yoursite.com/image.jpg)
+              </code>
+            </p>
+            <p>
+              Body text uses a slightly taller line height for easier reading. Use <strong>References</strong> below for a
+              separate link list on the article.
+            </p>
+          </div>
         </div>
 
         <div>
@@ -256,7 +279,7 @@ export default function NewBlogPage() {
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Changer Fusions Team"
+              placeholder={DEFAULT_BLOG_AUTHOR}
             />
           </div>
           <div>

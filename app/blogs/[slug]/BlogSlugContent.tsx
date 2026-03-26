@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Calendar, User, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { renderBlogBodyToHtml } from "@/lib/blog-body";
+import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 import type { BlogPostRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
 import BlogPostSidebar from "@/components/blogs/BlogPostSidebar";
 
@@ -53,7 +54,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
                 </span>
                 <span className="inline-flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  {post.author || "Changer Fusions Team"}
+                  {post.author || DEFAULT_BLOG_AUTHOR}
                 </span>
               </div>
             </motion.header>
@@ -82,12 +83,12 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
               className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-primary-600"
             >
               {post.excerpt && (
-                <p className="text-xl text-gray-600 border-l-4 border-primary-600 pl-4 mb-8 not-italic">
+                <p className="text-xl text-gray-600 border-l-4 border-primary-600 pl-4 mb-8 not-italic leading-[1.75]">
                   {post.excerpt}
                 </p>
               )}
               <div
-                className="blog-body text-gray-700 leading-relaxed"
+                className="blog-body text-gray-800 [&_figure]:mx-auto [&_figcaption_a]:text-primary-600"
                 dangerouslySetInnerHTML={{ __html: renderBlogBodyToHtml(post.body) }}
               />
               {Array.isArray(post.external_links) && post.external_links.length > 0 && (

@@ -8,6 +8,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 
 import BlogPromoHorizontalScroll from "@/components/blogs/BlogPromoHorizontalScroll";
+import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 
 const BlogNewsletterBannerPopup = dynamic(
   () => import("@/components/blogs/BlogNewsletterBannerPopup"),
@@ -124,7 +125,7 @@ export default function BlogsPageClient() {
                     <span className="hidden sm:inline">•</span>
                     <span className="inline-flex items-center gap-1 min-w-0">
                       <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      <span className="truncate">{post.author || "Changer Fusions Team"}</span>
+                      <span className="truncate">{post.author || DEFAULT_BLOG_AUTHOR}</span>
                     </span>
                   </div>
                   <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">

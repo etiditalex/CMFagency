@@ -1,11 +1,11 @@
 /**
- * Simple blog body parser for SEO-friendly output:
- * - ## Subtitle -> <h2> (bold)
- * - ### Subheading -> <h3> (bold)
- * - **text** -> <strong>
- * - [label](url) -> outbound link; only http(s) URLs allowed
- * - Bare https:// or http:// in text -> clickable link (after markdown links are parsed)
- * - Paragraphs preserved
+ * Blog / news body → safe HTML:
+ * - ## Subtitle → h2, ### → h3
+ * - **bold**, *italic* (single asterisks; ** processed first)
+ * - [visible text](https://url) — e.g. [click here](https://…) without showing the raw URL
+ * - Bare https://… in prose → link
+ * - ![Caption below image](https://image.jpg) on its own line → figure + caption (news-style)
+ * - Paragraphs: comfortable line height for reading
  */
 
 function escapeHtml(s: string): string {
@@ -33,11 +33,11 @@ function splitUrlAndTrailingPunct(raw: string): { href: string; tail: string } {
 
 const PLACEHOLDER_LINK = "\uFEFF\uFEFFL";
 const PLACEHOLDER_BOLD = "\uFEFF\uFEFFB";
+const PLACEHOLDER_ITALIC = "\uFEFF\uFEFFI";
 
-/** Process inline elements: [text](url), **bold**, bare http(s) URLs. Outputs safe HTML. */
+/** Inline: [text](url), **bold**, *italic*, bare URLs. */
 function processInline(raw: string): string {
   const replacements: string[] = [];
-  // Replace [text](url) with placeholder; store safe <a> in replacements
   const withLinks = raw.replace(
     /\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/gi,
     (_, label: string, url: string) => {
@@ -49,14 +49,18 @@ function processInline(raw: string): string {
       return `${PLACEHOLDER_LINK}${idx}\uFEFF`;
     }
   );
-  // Replace **bold** with placeholder
   const withBold = withLinks.replace(/\*\*([^*]+)\*\*/g, (_, inner) => {
     const idx = replacements.length;
     replacements.push(`<strong class="font-bold">${escapeHtml(inner)}</strong>`);
     return `${PLACEHOLDER_BOLD}${idx}\uFEFF`;
   });
-  // Bare URLs (not already markdown); trim trailing .,)! etc. from href
-  const withBareUrls = withBold.replace(/\b(https?:\/\/[^\s<>\[\]"']+)/gi, (full) => {
+  const withItalic = withBold.replace(/\*(?!\*)([^*]+?)\*(?!\*)/g, (full, inner: string) => {
+    if (!inner.trim()) return full;
+    const idx = replacements.length;
+    replacements.push(`<em class="italic text-gray-800">${escapeHtml(inner)}</em>`);
+    return `${PLACEHOLDER_ITALIC}${idx}\uFEFF`;
+  });
+  const withBareUrls = withItalic.replace(/\b(https?:\/\/[^\s<>\[\]"']+)/gi, (full) => {
     const { href, tail } = splitUrlAndTrailingPunct(full);
     if (!isSafeUrl(href)) return full;
     const idx = replacements.length;
@@ -66,21 +70,23 @@ function processInline(raw: string): string {
     );
     return `${PLACEHOLDER_LINK}${idx}\uFEFF${tail}`;
   });
-  // Escape remaining content
   let out = escapeHtml(withBareUrls);
-  // Restore placeholders (indices are safe: 0,1,2,...)
   replacements.forEach((html, i) => {
-    out = out.replace(`${PLACEHOLDER_LINK}${i}\uFEFF`, html).replace(`${PLACEHOLDER_BOLD}${i}\uFEFF`, html);
+    out = out
+      .replace(`${PLACEHOLDER_LINK}${i}\uFEFF`, html)
+      .replace(`${PLACEHOLDER_BOLD}${i}\uFEFF`, html)
+      .replace(`${PLACEHOLDER_ITALIC}${i}\uFEFF`, html);
   });
   return out;
 }
 
-const H2_CLASS = "font-bold text-xl md:text-2xl text-gray-900 mt-8 mb-2";
-const H3_CLASS = "font-bold text-lg md:text-xl text-gray-900 mt-6 mb-2";
+const H2_CLASS = "font-bold text-xl md:text-2xl text-gray-900 mt-10 mb-3";
+const H3_CLASS = "font-bold text-lg md:text-xl text-gray-900 mt-8 mb-3";
+const P_CLASS =
+  "text-gray-800 text-[1.0625rem] sm:text-lg leading-[1.85] mb-6 [word-spacing:0.02em]";
 
 /**
- * Convert plain body text with simple markdown to safe HTML.
- * Use in blog post view with dangerouslySetInnerHTML inside a container that has prose styles.
+ * Markdown-like body → HTML for article view.
  */
 export function renderBlogBodyToHtml(body: string | null | undefined): string {
   if (!body || typeof body !== "string") return "";
@@ -90,18 +96,37 @@ export function renderBlogBodyToHtml(body: string | null | undefined): string {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    const trimmed = line.trimEnd();
-    if (trimmed.startsWith("### ")) {
-      blocks.push(`<h3 class="${H3_CLASS}">${processInline(trimmed.slice(4))}</h3>`);
+    const trimmed = line.trim();
+    const trimmedEnd = line.trimEnd();
+
+    const standaloneImg = trimmed.match(/^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)\s*$/);
+    if (standaloneImg) {
+      const capRaw = standaloneImg[1].trim();
+      const url = standaloneImg[2].trim();
+      if (isSafeUrl(url)) {
+        const alt = capRaw || "Article image";
+        const figcaption = capRaw
+          ? `<figcaption class="mt-3 text-sm sm:text-base text-gray-600 leading-[1.75] border-l-4 border-primary-200 pl-3 not-italic">${processInline(capRaw)}</figcaption>`
+          : "";
+        blocks.push(
+          `<figure class="my-8 not-prose max-w-full"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" class="w-full rounded-xl border border-gray-100 shadow-md object-contain max-h-[min(560px,70vh)] mx-auto bg-gray-50" loading="lazy" decoding="async" referrerpolicy="no-referrer-when-downgrade" />${figcaption}</figure>`
+        );
+        i += 1;
+        continue;
+      }
+    }
+
+    if (trimmedEnd.startsWith("### ")) {
+      blocks.push(`<h3 class="${H3_CLASS}">${processInline(trimmedEnd.slice(4))}</h3>`);
       i += 1;
       continue;
     }
-    if (trimmed.startsWith("## ")) {
-      blocks.push(`<h2 class="${H2_CLASS}">${processInline(trimmed.slice(3))}</h2>`);
+    if (trimmedEnd.startsWith("## ")) {
+      blocks.push(`<h2 class="${H2_CLASS}">${processInline(trimmedEnd.slice(3))}</h2>`);
       i += 1;
       continue;
     }
-    // Paragraph: collect consecutive non-empty lines (or single empty as paragraph break)
+
     const paraLines: string[] = [];
     while (i < lines.length) {
       const ln = lines[i];
@@ -114,13 +139,14 @@ export function renderBlogBodyToHtml(body: string | null | undefined): string {
         i += 1;
         continue;
       }
+      if (ln.trim().match(/^!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)\s*$/)) break;
       if (ln.startsWith("## ") || ln.startsWith("### ")) break;
       paraLines.push(ln);
       i += 1;
     }
     if (paraLines.length > 0) {
       const text = paraLines.join(" ");
-      blocks.push(`<p class="text-gray-700 leading-relaxed mb-4">${processInline(text)}</p>`);
+      blocks.push(`<p class="${P_CLASS}">${processInline(text)}</p>`);
     }
   }
 
