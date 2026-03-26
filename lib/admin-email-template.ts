@@ -13,7 +13,7 @@ function escapeHtml(s: string): string {
 
 /** Default Changer Fusions logo (used when logoUrl not provided). */
 export const DEFAULT_LOGO_URL =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1774077348/Changer_fusions_logo_izdxjo.png";
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1774528895/changer_logo_mynoa2.png";
 
 /** Content-ID for inline logo attachment in email headers (use with Resend attachment contentId). */
 export const CHANGER_LOGO_CID = "changer-logo";
