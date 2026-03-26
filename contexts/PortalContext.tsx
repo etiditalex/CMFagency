@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { supabase } from "@/lib/supabase";
@@ -61,6 +61,8 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<PortalRole | null>(null);
   const [tier, setTier] = useState<PortalTier | null>(null);
   const [features, setFeatures] = useState<PortalFeature[]>([]);
+  /** Avoid resetting `loading` on every `refresh()` when the same user re-fetches portal row. */
+  const lastPortalFetchUserIdRef = useRef<string | null>(null);
 
   const isAdmin = useMemo(() => role === "admin" || role === "manager", [role]);
   const isManager = useMemo(() => role === "manager", [role]);
@@ -73,6 +75,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     if (!user?.id) {
+      lastPortalFetchUserIdRef.current = null;
       setIsPortalMember(false);
       setRole(null);
       setTier(null);
@@ -80,7 +83,9 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    setLoading(true);
+    const userChanged = lastPortalFetchUserIdRef.current !== user.id;
+    lastPortalFetchUserIdRef.current = user.id;
+    if (userChanged) setLoading(true);
     try {
       // Prefer portal_members table (new RBAC model).
       const { data: memberRow, error: memberErr } = await supabase
@@ -204,6 +209,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !user) {
+      lastPortalFetchUserIdRef.current = null;
       setIsPortalMember(false);
       setRole(null);
       setTier(null);

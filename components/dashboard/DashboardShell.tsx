@@ -211,7 +211,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isPortalMember, isAdmin, pathname]);
+  }, [isAuthenticated, isPortalMember, isAdmin]);
 
   const active = useMemo(() => {
     return NAV.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";

@@ -32,7 +32,8 @@ export default function DashboardHomePage() {
   const { isPortalMember, loading: portalLoading, isFullAdmin, isManager, isAdmin, hasFeature, isEmployer } =
     usePortal();
 
-  const [loading, setLoading] = useState(true);
+  /** Until Fusion Xpress session (/login-status) is verified — keep brief shell spinner only for this gate, not for stats fetch. */
+  const [sessionChecking, setSessionChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [dataLoading, setDataLoading] = useState(false);
@@ -175,27 +176,36 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(0);
         setCertificateRequests([]);
       } else {
-        // Recent transactions (money report). Include payer identity for admin visibility.
-        const { data: txRows, error: txErr } = await supabase
-          .from("transactions")
-          .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
-          .in("campaign_id", campaignIds)
-          .order("created_at", { ascending: false })
-          .limit(10);
-        if (txErr) throw txErr;
-        const rawTx = (txRows ?? []) as any[];
+        const [txRes, successTxRes, voteRes, tiRes, certRes] = await Promise.all([
+          supabase
+            .from("transactions")
+            .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
+            .in("campaign_id", campaignIds)
+            .order("created_at", { ascending: false })
+            .limit(10),
+          supabase.from("transactions").select("amount,currency,campaign_type,campaign_id").eq("status", "success").in("campaign_id", campaignIds),
+          supabase.from("votes").select("votes,campaign_id").in("campaign_id", campaignIds),
+          supabase.from("ticket_issues").select("quantity,campaign_id").in("campaign_id", campaignIds),
+          supabase
+            .from("contestants")
+            .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
+            .in("campaign_id", campaignIds)
+            .not("certificate_requested_at", "is", null)
+            .is("certificate_approved_at", null)
+            .is("certificate_downloaded_at", null)
+            .order("certificate_requested_at", { ascending: false })
+            .limit(6),
+        ]);
+
+        if (txRes.error) throw txRes.error;
+        const rawTx = (txRes.data ?? []) as any[];
         const visibleTx = isAdmin
           ? rawTx
           : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
         setRecentTransactions(visibleTx);
 
-        // Successful payments + revenue (total, tickets, votes, merchandise as product not campaign)
-        const { data: successTx, error: sErr } = await supabase
-          .from("transactions")
-          .select("amount,currency,campaign_type,campaign_id")
-          .eq("status", "success")
-          .in("campaign_id", campaignIds);
-        if (sErr) throw sErr;
+        if (successTxRes.error) throw successTxRes.error;
+        const successTx = successTxRes.data;
         setSuccessfulPayments((successTx ?? []).length);
         const rev: Record<string, number> = {};
         const revTickets: Record<string, number> = {};
@@ -221,54 +231,26 @@ export default function DashboardHomePage() {
         setRevenueByCurrencyVotes(revVotes);
         setRevenueByCurrencyMerchandise(revMerchandise);
 
-        // Votes: real-time total (idempotent via votes table)
-        const { data: voteRows, error: vErr } = await supabase
-          .from("votes")
-          .select("votes,campaign_id")
-          .in("campaign_id", campaignIds);
-        if (vErr) throw vErr;
-        setTotalVotes(
-          (voteRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0)
-        );
+        if (voteRes.error) throw voteRes.error;
+        setTotalVotes((voteRes.data ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0));
 
-        // Tickets issued: real-time total (idempotent via ticket_issues table)
-        const { data: tiRows, error: tiErr } = await supabase
-          .from("ticket_issues")
-          .select("quantity,campaign_id")
-          .in("campaign_id", campaignIds);
-        if (tiErr) throw tiErr;
+        if (tiRes.error) throw tiRes.error;
         setTotalTicketsIssued(
-          (tiRows ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
+          (tiRes.data ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
         );
 
-        // Certificate request notifications: show contestants who requested and are pending approval.
-        try {
-          const { data: certRows, error: certErr } = await supabase
-            .from("contestants")
-            .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
-            .in("campaign_id", campaignIds)
-            .not("certificate_requested_at", "is", null)
-            .is("certificate_approved_at", null)
-            .is("certificate_downloaded_at", null)
-            .order("certificate_requested_at", { ascending: false })
-            .limit(6);
-          if (certErr) {
-            const msg = String(certErr.message ?? "").toLowerCase();
-            if (!msg.includes("certificate_requested_at")) {
-              throw certErr;
-            }
-            setCertificateRequests([]);
-          } else {
-            const mapped = ((certRows ?? []) as any[]).map((r) => ({
-              id: String(r.id),
-              name: String(r.name ?? "Contestant"),
-              requested_at: String(r.certificate_requested_at),
-              campaign_title: titleMap[String(r.campaign_id)]?.title ?? "Voting category",
-            }));
-            setCertificateRequests(mapped);
-          }
-        } catch {
+        if (certRes.error) {
+          const msg = String(certRes.error.message ?? "").toLowerCase();
+          if (!msg.includes("certificate_requested_at")) throw certRes.error;
           setCertificateRequests([]);
+        } else {
+          const mapped = ((certRes.data ?? []) as any[]).map((r) => ({
+            id: String(r.id),
+            name: String(r.name ?? "Contestant"),
+            requested_at: String(r.certificate_requested_at),
+            campaign_title: titleMap[String(r.campaign_id)]?.title ?? "Voting category",
+          }));
+          setCertificateRequests(mapped);
         }
       }
 
@@ -320,6 +302,7 @@ export default function DashboardHomePage() {
     let cancelled = false;
 
     const init = async () => {
+      setSessionChecking(true);
       try {
         // Require portal 2FA: code must have been verified this session.
         const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
@@ -329,13 +312,12 @@ export default function DashboardHomePage() {
           return;
         }
         if (cancelled) return;
-        setLoading(true);
         setError(null);
+        setSessionChecking(false);
         await refreshData();
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setSessionChecking(false);
       }
     };
 
@@ -365,7 +347,7 @@ export default function DashboardHomePage() {
     };
   }, [isPortalMember, refreshData, user?.id, isEmployer]);
 
-  if (authLoading || portalLoading || loading) {
+  if (authLoading || portalLoading || sessionChecking) {
     return (
       <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -530,7 +512,9 @@ export default function DashboardHomePage() {
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
       {/* KPI cards (styled like screenshot tiles) */}
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div
+        className={`mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
+      >
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
           <div className="flex items-center justify-end">
             <Link
@@ -680,7 +664,7 @@ export default function DashboardHomePage() {
       </div>
 
       {/* Summary tiles */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}>
         <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -718,7 +702,9 @@ export default function DashboardHomePage() {
       </div>
 
       {/* Money report: recent transactions */}
-      <div className="mt-8 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+      <div
+        className={`mt-8 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden ${dataLoading ? "animate-pulse opacity-[0.65]" : ""}`}
+      >
         <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="text-sm font-extrabold text-gray-700 text-left">Recent Payments</div>

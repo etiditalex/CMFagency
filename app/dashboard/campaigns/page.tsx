@@ -74,6 +74,9 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
+        /** Client path: set when event slugs are loaded in parallel with stats for owned campaigns. */
+        let statsOwnedRes: { data: unknown; error: unknown } | null = null;
+
         const campaignsSelect =
           "id,type,slug,title,currency,unit_amount,is_active,created_at,created_by";
 
@@ -132,14 +135,25 @@ export default function DashboardCampaignsPage() {
               if (ts) eventSlugs.add(ts);
             }
           }
+          const ownedOnlyIds = Array.from(byId.keys());
+
           if (eventSlugs.size > 0) {
-            const { data: eventCampaigns, error: eventErr } = await supabase
-              .from("campaigns")
-              .select(campaignsSelect)
-              .in("slug", Array.from(eventSlugs))
-              .order("created_at", { ascending: false });
-            if (!eventErr && eventCampaigns?.length) {
-              for (const c of eventCampaigns as CampaignRow[]) {
+            const [eventCampaignsRes, statsParallelRes] = await Promise.all([
+              supabase
+                .from("campaigns")
+                .select(campaignsSelect)
+                .in("slug", Array.from(eventSlugs))
+                .order("created_at", { ascending: false }),
+              ownedOnlyIds.length > 0
+                ? supabase
+                    .from("campaign_stats")
+                    .select("campaign_id,total_amount,total_votes,successful_transactions")
+                    .in("campaign_id", ownedOnlyIds)
+                : Promise.resolve({ data: [], error: null }),
+            ]);
+            statsOwnedRes = statsParallelRes;
+            if (!eventCampaignsRes.error && eventCampaignsRes.data?.length) {
+              for (const c of eventCampaignsRes.data as CampaignRow[]) {
                 if (!byId.has(c.id)) byId.set(c.id, c);
               }
             }
@@ -157,12 +171,43 @@ export default function DashboardCampaignsPage() {
         let statsRows: CampaignStatsRow[] | null = null;
         let statsError: { message?: string } | null = null;
         if (ids.length > 0) {
-          const statsRes = await supabase
-            .from("campaign_stats")
-            .select("campaign_id,total_amount,total_votes,successful_transactions")
-            .in("campaign_id", ids);
-          statsRows = statsRes.data as CampaignStatsRow[] | null;
-          statsError = statsRes.error;
+          if (statsOwnedRes) {
+            const err = statsOwnedRes.error as { message?: string } | null;
+            if (err) {
+              statsError = err;
+            } else {
+              statsRows = (statsOwnedRes.data ?? []) as CampaignStatsRow[];
+              const have = new Set((statsRows ?? []).map((s) => s.campaign_id));
+              const missing = ids.filter((id) => !have.has(id));
+              if (missing.length > 0) {
+                const extraRes = await supabase
+                  .from("campaign_stats")
+                  .select("campaign_id,total_amount,total_votes,successful_transactions")
+                  .in("campaign_id", missing);
+                if (extraRes.error) {
+                  statsError = extraRes.error;
+                  statsRows = null;
+                } else {
+                  statsRows = [...(statsRows ?? []), ...((extraRes.data ?? []) as CampaignStatsRow[])];
+                }
+              }
+            }
+            if (statsError && ids.length > 0) {
+              const statsRes = await supabase
+                .from("campaign_stats")
+                .select("campaign_id,total_amount,total_votes,successful_transactions")
+                .in("campaign_id", ids);
+              statsRows = statsRes.data as CampaignStatsRow[] | null;
+              statsError = statsRes.error;
+            }
+          } else {
+            const statsRes = await supabase
+              .from("campaign_stats")
+              .select("campaign_id,total_amount,total_votes,successful_transactions")
+              .in("campaign_id", ids);
+            statsRows = statsRes.data as CampaignStatsRow[] | null;
+            statsError = statsRes.error;
+          }
         }
 
         const statsById = new Map<string, CampaignStatsRow>(
