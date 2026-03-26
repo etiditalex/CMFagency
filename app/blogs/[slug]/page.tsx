@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getApprovedBlogSidebarAds, getBlogBySlug, getBlogTrendingExcluding } from "@/lib/blog-server";
+import {
+  getApprovedBlogSidebarAds,
+  getBlogBySlug,
+  getBlogTrendingExcluding,
+  getPublishedBlogSlugsForStatic,
+} from "@/lib/blog-server";
 import { resolveBlogShareImageUrl } from "@/lib/blog-share-image";
 import BlogSlugContent from "./BlogSlugContent";
 
@@ -11,6 +16,17 @@ const BASE_URL =
 type Props = {
   params: Promise<{ slug: string }>;
 };
+
+/** Cache rendered pages; speeds repeat visits (CDN + incremental static). */
+export const revalidate = 120;
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  try {
+    return await getPublishedBlogSlugsForStatic();
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

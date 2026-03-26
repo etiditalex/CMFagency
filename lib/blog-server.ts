@@ -19,6 +19,17 @@ export type BlogPostRow = {
   external_links?: { label: string; url: string }[] | null;
 };
 
+/** All published slugs — for `generateStaticParams` so article pages can be prerendered at build. */
+export async function getPublishedBlogSlugsForStatic(): Promise<{ slug: string }[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("fusion_blogs")
+    .select("slug")
+    .not("published_at", "is", null);
+  if (error || !data) return [];
+  return data.map((r: { slug: string }) => ({ slug: r.slug }));
+}
+
 /** Cached server-side fetch for a single published blog by slug. Dedupes when used in generateMetadata + page. */
 export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | null> => {
   if (!slug || !supabase) return null;
