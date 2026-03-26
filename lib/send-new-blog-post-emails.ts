@@ -18,6 +18,21 @@ function isHttpsImageSrc(url: string): boolean {
   return url.trim().toLowerCase().startsWith("https://");
 }
 
+/** Wider promo art for retina-friendly ~280px layout width without upscaling blur. */
+const EMAIL_PROMO_MAX_W = 560;
+
+/**
+ * If the asset is on Cloudinary, request a bounded-width, auto-format delivery so
+ * email clients are not forced to upscale tiny originals (reduces blocky/pixelated promos).
+ */
+function optimizePromoImageUrlForEmail(url: string): string {
+  const u = url.trim();
+  if (!u.includes("res.cloudinary.com/") || !u.includes("/upload/")) return u;
+  if (/\bc_limit,w_\d+/.test(u) || /\/upload\/f_auto[,/]/.test(u)) return u;
+  const insertion = `f_auto,q_auto,c_limit,w_${EMAIL_PROMO_MAX_W}`;
+  return u.replace("/upload/", `/upload/${insertion}/`);
+}
+
 export type NewBlogEmailPromo = {
   title: string;
   image_url: string | null;
@@ -35,9 +50,12 @@ function buildSidebarPromosEmailBlock(promos: NewBlogEmailPromo[], blogsListingU
     const hrefEsc = escapeHtml(href);
     const imgRaw = (p.image_url ?? "").trim();
     const showImg = imgRaw && isHttpsImageSrc(imgRaw);
-    const imgEsc = showImg ? escapeHtml(imgRaw) : "";
+    const imgForEmail = showImg ? optimizePromoImageUrlForEmail(imgRaw) : "";
+    const imgEsc = showImg ? escapeHtml(imgForEmail) : "";
+    const imgAlt = escapeHtml((p.title ?? "").trim() || "Promotion");
+    // Do not use a large HTML width= (e.g. 520): clients upscale small images → blurry. Cap display ~280px wide, ~240px tall.
     const imgBlock = showImg
-      ? `<a href="${hrefEsc}" style="text-decoration:none;display:block;"><img src="${imgEsc}" alt="" width="520" style="max-width:100%;height:auto;display:block;border:0;border-radius:8px;background:#f3f4f6;" /></a>`
+      ? `<a href="${hrefEsc}" style="text-decoration:none;display:block;text-align:center;line-height:0;"><img src="${imgEsc}" alt="${imgAlt}" style="display:block;max-width:280px;width:auto;height:auto;max-height:240px;margin:0 auto;border:0;border-radius:8px;background:#f3f4f6;object-fit:contain;object-position:center;vertical-align:middle;-ms-interpolation-mode:bicubic;" /></a>`
       : "";
     const titleLine = `<p style="margin:${showImg ? "10px" : "0"} 0 0;font-size:14px;line-height:1.4;"><a href="${hrefEsc}" style="color:#1a4f8c;font-weight:600;text-decoration:underline;">${titleText}</a></p>`;
     return `<div style="margin:0 0 16px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;">${imgBlock}${titleLine}</div>`;
