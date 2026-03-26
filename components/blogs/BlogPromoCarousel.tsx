@@ -6,31 +6,55 @@ import type { BlogSidebarAdRow } from "@/lib/blog-server";
 
 const PROMO_ROTATE_MS = 5500;
 
+/** Protocol-relative and http URLs often break on HTTPS pages or hotlink checks; prefer https. */
+function normalizePromoImageSrc(url: string | null | undefined): string | null {
+  const u = url?.trim();
+  if (!u) return null;
+  if (u.startsWith("//")) return `https:${u}`;
+  if (u.startsWith("http://")) return `https://${u.slice(7)}`;
+  return u;
+}
+
 export function PromoSlideCard({
   ad,
   imageMaxClass,
   className = "",
+  imagePriority = false,
 }: {
   ad: BlogSidebarAdRow;
   imageMaxClass: string;
   /** Extra classes on outer card */
   className?: string;
+  /** First visible promo: eager load for LCP. */
+  imagePriority?: boolean;
 }) {
+  const src = normalizePromoImageSrc(ad.image_url);
+  const [imageFailed, setImageFailed] = useState(false);
+
   const inner = (
     <>
-      {ad.image_url ? (
+      {src && !imageFailed ? (
         <div className="w-full flex justify-center items-center rounded-lg overflow-hidden bg-gray-100 min-h-0">
           <img
-            src={ad.image_url}
+            src={src}
             alt={ad.title ? `${ad.title} (promo)` : "Promotional image"}
             className={`block max-w-full w-auto h-auto object-contain object-center ${imageMaxClass}`}
-            loading="lazy"
+            loading={imagePriority ? "eager" : "lazy"}
             decoding="async"
+            referrerPolicy="no-referrer"
+            fetchPriority={imagePriority ? "high" : "auto"}
+            onError={() => setImageFailed(true)}
           />
+        </div>
+      ) : src || ad.image_url ? (
+        <div
+          className={`w-full flex justify-center items-center rounded-lg bg-gray-200/90 text-gray-500 text-xs sm:text-sm font-medium text-center px-3 py-8 ${imageMaxClass}`}
+        >
+          Image unavailable — check the promo URL (use HTTPS).
         </div>
       ) : null}
       {ad.title ? (
-        <p className={`text-sm font-semibold text-gray-900 ${ad.image_url ? "mt-3" : ""}`}>{ad.title}</p>
+        <p className={`text-sm font-semibold text-gray-900 ${src || ad.image_url ? "mt-3" : ""}`}>{ad.title}</p>
       ) : null}
     </>
   );
@@ -118,7 +142,7 @@ export default function BlogPromoCarousel({
                   active ? "opacity-100" : "opacity-0"
                 }`}
               >
-                <PromoSlideCard ad={ad} imageMaxClass={imageMaxClass} />
+                <PromoSlideCard ad={ad} imageMaxClass={imageMaxClass} imagePriority={idx === 0} />
               </div>
             );
           })}

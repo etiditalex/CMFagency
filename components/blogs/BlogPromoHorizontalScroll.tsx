@@ -30,12 +30,17 @@ export default function BlogPromoHorizontalScroll({
         aria-label="Scrollable promotions"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {ads.map((ad) => (
+        {ads.map((ad, i) => (
           <div
             key={ad.id}
             className="snap-center shrink-0 w-[min(88vw,380px)] sm:w-[min(72vw,400px)] md:w-[min(400px,45vw)]"
           >
-            <PromoSlideCard ad={ad} imageMaxClass={imageMaxClass} className="h-full" />
+            <PromoSlideCard
+              ad={ad}
+              imageMaxClass={imageMaxClass}
+              className="h-full"
+              imagePriority={i === 0}
+            />
           </div>
         ))}
       </div>

@@ -1,6 +1,37 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
 
+function supabaseImageHostPattern() {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!raw) return null
+  try {
+    const h = new URL(raw).hostname
+    return h ? { protocol: 'https', hostname: h, pathname: '/**' } : null
+  } catch {
+    return null
+  }
+}
+
+const supabasePattern = supabaseImageHostPattern()
+const imageRemotePatterns = [
+  {
+    protocol: 'https',
+    hostname: 'res.cloudinary.com',
+    pathname: '/**',
+  },
+  {
+    protocol: 'https',
+    hostname: 'images.unsplash.com',
+    pathname: '/**',
+  },
+  {
+    protocol: 'https',
+    hostname: 'upload.wikimedia.org',
+    pathname: '/**',
+  },
+  ...(supabasePattern ? [supabasePattern] : []),
+]
+
 const nextConfig = {
   // Ensure Turbopack uses this project root (we have another lockfile on disk).
   turbopack: {
@@ -41,23 +72,7 @@ const nextConfig = {
     ]
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'upload.wikimedia.org',
-        pathname: '/**',
-      },
-    ],
+    remotePatterns: imageRemotePatterns,
   },
 }
 

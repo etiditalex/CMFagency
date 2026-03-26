@@ -65,3 +65,40 @@ export const getApprovedBlogSidebarAds = cache(async (): Promise<BlogSidebarAdRo
   if (error) return [];
   return (data ?? []) as BlogSidebarAdRow[];
 });
+
+/** Published posts for /blogs listing (no body — smaller payload). */
+export type BlogListingRow = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  author: string | null;
+  category: string | null;
+  image_url: string | null;
+  published_at: string | null;
+};
+
+/** Server-only index data: cached, parallel fetch (faster than client double round-trip). */
+export const getBlogIndexData = cache(
+  async (): Promise<{ posts: BlogListingRow[]; sidebarAds: BlogSidebarAdRow[] }> => {
+    if (!supabase) return { posts: [], sidebarAds: [] };
+    const [postsRes, adsRes] = await Promise.all([
+      supabase
+        .from("fusion_blogs")
+        .select("id, slug, title, excerpt, author, category, image_url, published_at")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false }),
+      supabase
+        .from("fusion_blog_sidebar_ads")
+        .select("id, title, image_url, href")
+        .order("sort_order", { ascending: true }),
+    ]);
+
+    const posts =
+      !postsRes.error && postsRes.data ? (postsRes.data as BlogListingRow[]) : [];
+    const sidebarAds =
+      !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
+
+    return { posts, sidebarAds };
+  }
+);

@@ -121,18 +121,48 @@ export default function DashboardBlogsPage() {
     }
   };
 
-  if (authLoading || portalLoading || loading) {
+  if (authLoading || portalLoading) {
     return (
-      <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
+      <div className="min-h-[40vh] bg-transparent flex items-center justify-center" aria-busy="true">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading blogs...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4" />
+          <p className="text-gray-600">Checking access…</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated || !user || !isPortalMember || !isAdmin) return null;
+
+  if (loading) {
+    return (
+      <div className="text-left" aria-busy="true">
+        <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+          <div className="min-w-0 space-y-2">
+            <div className="h-8 w-40 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 max-w-xl bg-gray-100 rounded animate-pulse" />
+            <div className="h-4 max-w-lg bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded-md animate-pulse shrink-0" />
+        </div>
+        <div className="mt-5 flex gap-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-10 w-28 bg-gray-100 rounded-lg animate-pulse" />
+          ))}
+        </div>
+        <div className="mt-6 rounded-md border border-gray-200 overflow-hidden bg-white">
+          <div className="h-11 bg-gray-50 border-b border-gray-200" />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-14 border-b border-gray-100 flex items-center px-6 gap-4">
+              <div className="h-10 flex-1 max-w-md bg-gray-100 rounded animate-pulse" />
+              <div className="h-4 w-20 bg-gray-100 rounded animate-pulse hidden sm:block" />
+              <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const publishedCount = blogs.filter((b) => b.published_at != null).length;
   const draftCount = blogs.filter((b) => b.published_at == null).length;

@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { format } from "date-fns";
 import { Calendar, User, ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
 import { renderBlogBodyToHtml } from "@/lib/blog-body";
 import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 import type { BlogPostRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
@@ -20,6 +18,13 @@ type Props = {
 };
 
 export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
+  const heroSrc =
+    post.image_url?.trim().startsWith("//")
+      ? `https:${post.image_url.trim()}`
+      : post.image_url?.trim().startsWith("http://")
+        ? `https://${post.image_url.trim().slice(7)}`
+        : post.image_url || DEFAULT_IMAGE;
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <div className="container-blog py-10 md:py-12">
@@ -33,12 +38,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
 
         <div className="flex flex-col gap-10 lg:gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
           <main className="min-w-0 bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-8 sm:px-6 md:py-10 lg:px-8">
-            <motion.header
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-8"
-            >
+            <header className="mb-8">
               {post.category && (
                 <span className="inline-block bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold mb-4">
                   {post.category}
@@ -57,31 +57,22 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
                   {post.author || DEFAULT_BLOG_AUTHOR}
                 </span>
               </div>
-            </motion.header>
+            </header>
 
             {(post.image_url || DEFAULT_IMAGE) && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="relative w-full aspect-video rounded-xl overflow-hidden mb-10 shadow-md"
-              >
-                <Image
-                  src={post.image_url || DEFAULT_IMAGE}
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-10 shadow-md bg-gray-100">
+                <img
+                  src={heroSrc}
                   alt={post.title}
-                  fill
-                  className="object-cover"
-                  priority
+                  className="absolute inset-0 w-full h-full object-cover"
+                  fetchPriority="high"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
                 />
-              </motion.div>
+              </div>
             )}
 
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-primary-600"
-            >
+            <div className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-primary-600">
               {post.excerpt && (
                 <p className="text-xl text-gray-600 border-l-4 border-primary-600 pl-4 mb-8 not-italic leading-[1.75]">
                   {post.excerpt}
@@ -116,7 +107,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
                   </ul>
                 </section>
               )}
-            </motion.div>
+            </div>
           </main>
 
           <BlogPostSidebar trending={trending} sidebarAds={sidebarAds} />
