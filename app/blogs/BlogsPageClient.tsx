@@ -5,7 +5,7 @@ import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
-import BlogPromoHorizontalScroll from "@/components/blogs/BlogPromoHorizontalScroll";
+import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 import type { BlogListingRow, BlogSidebarAdRow } from "@/lib/blog-server";
 
@@ -28,12 +28,8 @@ export default function BlogsPageClient({ initialPosts, initialSidebarAds }: Pro
       <BlogNewsletterBannerPopup />
       <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
         {initialSidebarAds.length > 0 && (
-          <div className="w-full max-w-full mb-5 sm:mb-8">
-            <BlogPromoHorizontalScroll
-              ads={initialSidebarAds}
-              className="w-full"
-              imageMaxClass="max-h-[min(200px,36dvh)] sm:max-h-[min(260px,42dvh)] md:max-h-[min(300px,48vh)]"
-            />
+          <div className="w-full max-w-xl mx-auto mb-6 sm:mb-10">
+            <BlogPromoCarousel ads={initialSidebarAds} />
           </div>
         )}
 
