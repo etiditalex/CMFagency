@@ -80,8 +80,12 @@ export type BlogListingRow = {
 
 /** Server-only index data: cached, parallel fetch (faster than client double round-trip). */
 export const getBlogIndexData = cache(
-  async (): Promise<{ posts: BlogListingRow[]; sidebarAds: BlogSidebarAdRow[] }> => {
-    if (!supabase) return { posts: [], sidebarAds: [] };
+  async (): Promise<{
+    posts: BlogListingRow[];
+    sidebarAds: BlogSidebarAdRow[];
+    trending: BlogTrendingRow[];
+  }> => {
+    if (!supabase) return { posts: [], sidebarAds: [], trending: [] };
     const [postsRes, adsRes] = await Promise.all([
       supabase
         .from("fusion_blogs")
@@ -98,7 +102,8 @@ export const getBlogIndexData = cache(
       !postsRes.error && postsRes.data ? (postsRes.data as BlogListingRow[]) : [];
     const sidebarAds =
       !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
+    const trending = posts.slice(0, 6).map(({ slug, title }) => ({ slug, title }));
 
-    return { posts, sidebarAds };
+    return { posts, sidebarAds, trending };
   }
 );

@@ -6,8 +6,9 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
+import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
 import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
-import type { BlogListingRow, BlogSidebarAdRow } from "@/lib/blog-server";
+import type { BlogListingRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
 
 const BlogNewsletterBannerPopup = dynamic(
   () => import("@/components/blogs/BlogNewsletterBannerPopup"),
@@ -20,73 +21,84 @@ const DEFAULT_CARD_IMAGE =
 type Props = {
   initialPosts: BlogListingRow[];
   initialSidebarAds: BlogSidebarAdRow[];
+  initialTrending: BlogTrendingRow[];
 };
 
-export default function BlogsPageClient({ initialPosts, initialSidebarAds }: Props) {
+export default function BlogsPageClient({
+  initialPosts,
+  initialSidebarAds,
+  initialTrending,
+}: Props) {
   return (
     <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
       <BlogNewsletterBannerPopup />
       <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
-        {initialSidebarAds.length > 0 && (
-          <div className="w-full max-w-xl mx-auto mb-6 sm:mb-10">
-            <BlogPromoCarousel ads={initialSidebarAds} />
-          </div>
-        )}
+        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:gap-10">
+          <div className="min-w-0 space-y-6 sm:space-y-8">
+            {initialSidebarAds.length > 0 && (
+              <div className="w-full max-w-xl lg:max-w-none mx-auto lg:mx-0">
+                <BlogPromoCarousel ads={initialSidebarAds} />
+              </div>
+            )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 md:gap-6 lg:gap-8 w-full">
-          {initialPosts.length === 0 ? (
-            <div className="col-span-full py-10 text-center text-gray-500 text-sm sm:text-base">
-              No published articles yet. Check back soon.
-            </div>
-          ) : (
-            initialPosts.map((post, idx) => (
-              <article
-                key={post.id}
-                className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
-              >
-                <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
-                  <img
-                    src={post.image_url || DEFAULT_CARD_IMAGE}
-                    alt={post.title}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading={idx < 3 ? "eager" : "lazy"}
-                    decoding="async"
-                    fetchPriority={idx === 0 ? "high" : "auto"}
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-primary-600 text-white px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold">
-                      {post.category || "Blog"}
-                    </span>
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 md:gap-6 lg:gap-8 w-full">
+              {initialPosts.length === 0 ? (
+                <div className="col-span-full py-10 text-center text-gray-500 text-sm sm:text-base">
+                  No published articles yet. Check back soon.
                 </div>
-                <div className="p-3 sm:p-4 md:p-5">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
-                    <span className="inline-flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      {post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}
-                    </span>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="inline-flex items-center gap-1 min-w-0">
-                      <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      <span className="truncate">{post.author || DEFAULT_BLOG_AUTHOR}</span>
-                    </span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">
-                    {post.title}
-                  </h3>
-                  <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{post.excerpt || ""}</p>
-                  <Link
-                    href={`/blogs/${post.slug}`}
-                    className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 text-sm sm:text-base group/link"
+              ) : (
+                initialPosts.map((post, idx) => (
+                  <article
+                    key={post.id}
+                    className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
                   >
-                    <span>Read more</span>
-                    <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
-                  </Link>
-                </div>
-              </article>
-            ))
-          )}
+                    <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
+                      <img
+                        src={post.image_url || DEFAULT_CARD_IMAGE}
+                        alt={post.title}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading={idx < 3 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={idx === 0 ? "high" : "auto"}
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-primary-600 text-white px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold">
+                          {post.category || "Blog"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 sm:p-4 md:p-5">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                          {post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}
+                        </span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="inline-flex items-center gap-1 min-w-0">
+                          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                          <span className="truncate">{post.author || DEFAULT_BLOG_AUTHOR}</span>
+                        </span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{post.excerpt || ""}</p>
+                      <Link
+                        href={`/blogs/${post.slug}`}
+                        className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 text-sm sm:text-base group/link"
+                      >
+                        <span>Read more</span>
+                        <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
+                      </Link>
+                    </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </div>
+
+          <BlogListingSidebar trending={initialTrending} />
         </div>
       </div>
     </div>

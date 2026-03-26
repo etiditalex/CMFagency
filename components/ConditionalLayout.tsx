@@ -16,6 +16,7 @@ const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShe
 const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: true });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });
 const ChangerWidget = dynamic(() => import("@/components/ChangerWidget"), { ssr: false });
+const ScrollToTopButton = dynamic(() => import("@/components/ScrollToTopButton"), { ssr: false });
 
 export default function ConditionalLayout({
   children,
@@ -36,6 +37,7 @@ export default function ConditionalLayout({
         {children}
         <CookieBanner />
         <ChangerWidget />
+        <ScrollToTopButton />
       </div>
     );
   }
@@ -46,6 +48,7 @@ export default function ConditionalLayout({
       <>
         <DashboardShell>{children}</DashboardShell>
         <CookieBanner />
+        <ScrollToTopButton />
       </>
     );
   }
@@ -56,6 +59,7 @@ export default function ConditionalLayout({
       <main className="min-h-screen">{children}</main>
       <Footer />
       <CookieBanner />
+      <ScrollToTopButton />
       {/* Changer AI chatbot - avoid on About pages to match design */}
       {!isAboutSection && <ChangerWidget />}
     </>

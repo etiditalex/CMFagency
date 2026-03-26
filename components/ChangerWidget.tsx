@@ -287,9 +287,9 @@ export default function ChangerWidget() {
   return (
     <>
       <motion.div
-        className="fixed right-6 bottom-6 z-40"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
+        className="fixed left-4 sm:left-6 top-1/2 -translate-y-1/2 z-40"
+        initial={{ opacity: 0, scale: 0.8, x: -12 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 1 }}
       >
         <button
@@ -319,11 +319,23 @@ export default function ChangerWidget() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed right-6 bottom-20 w-[380px] max-w-[calc(100vw-3rem)] h-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden"
+            key="changer-panel-shell"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Changer chat"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed z-50 left-3 right-3 top-20 bottom-24 sm:left-20 sm:right-auto sm:top-1/2 sm:-translate-y-1/2 sm:bottom-auto sm:h-[min(520px,85vh)] sm:w-[min(380px,calc(100vw-6rem))]"
           >
+            <motion.div
+              initial={{ x: -20, scale: 0.97 }}
+              animate={{ x: 0, scale: 1 }}
+              exit={{ x: -20, scale: 0.97 }}
+              transition={{ type: "spring", damping: 28, stiffness: 320 }}
+              className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+            >
             <div className="bg-gradient-to-r from-primary-600 to-secondary-600 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-6 h-6 text-white" />
@@ -487,6 +499,7 @@ export default function ChangerWidget() {
                 )}
               </div>
             )}
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
