@@ -9,6 +9,7 @@ import { Mail, Lock, User, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Recaptcha, RecaptchaV3Script, executeRecaptchaV3, type RecaptchaClientVersion } from "@/components/Recaptcha";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 type Step = "form" | "code";
 
@@ -286,7 +287,7 @@ export default function LoginPage() {
           <div className="bg-gradient-to-r from-primary-600 to-secondary-600 p-8 text-white text-center">
             <div className="mb-4">
               <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                src={BRAND_LOGO_URL}
                 alt="Changer Fusions Logo"
                 width={120}
                 height={60}

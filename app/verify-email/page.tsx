@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, ArrowLeft, CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import Image from "next/image";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -130,9 +131,10 @@ export default function VerifyEmailPage() {
           <Link href="/" className="inline-block mb-4">
             <div className="relative w-48 h-16 mx-auto">
               <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                src={BRAND_LOGO_URL}
                 alt="Changer Fusions Logo"
                 fill
+                sizes="192px"
                 className="object-contain filter brightness-0 invert"
               />
             </div>

@@ -1,5 +1,6 @@
 import type { UnifiedJobListing } from "@/lib/job-board-feed";
 import { SITE_URL } from "@/lib/site-url";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 type Props = {
   jobs: UnifiedJobListing[];
@@ -49,7 +50,7 @@ export function JobsStructuredData({ jobs, includeJobList }: Props) {
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        url: BRAND_LOGO_URL,
       },
     },
     {

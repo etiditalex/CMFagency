@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -240,10 +241,10 @@ export default function Navbar() {
             {/* Logo - Left; matches bar height, no overflow */}
             <Link href="/" className="flex-shrink-0 flex items-center h-full py-2">
               <Image
-                src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                src={BRAND_LOGO_URL}
                 alt="Changer Fusions Logo"
-                width={180}
-                height={72}
+                width={200}
+                height={56}
                 className="h-full max-h-[56px] sm:max-h-[64px] md:max-h-[72px] w-auto object-contain object-left"
                 priority
               />

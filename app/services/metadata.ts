@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export const metadata: Metadata = {
   title: "Marketing Services Kenya - Digital Marketing, Web Development, Branding | Changer Fusions",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     url: "https://cmfagency.co.ke/services",
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        url: BRAND_LOGO_URL,
         width: 1200,
         height: 630,
         alt: "Marketing Services Kenya - Changer Fusions",
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Marketing Services Kenya - Changer Fusions",
     description: "Comprehensive marketing services in Kenya for business growth and success.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+    images: [BRAND_LOGO_URL],
   },
   alternates: {
     canonical: "https://cmfagency.co.ke/services",

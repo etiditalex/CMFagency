@@ -2,6 +2,7 @@
  * Shared HTML template for admin dashboard emails (campaign + marketing).
  * Banner uses CMF Agency brand colors (primary blue, secondary green).
  */
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 function escapeHtml(s: string): string {
   return s
@@ -12,8 +13,7 @@ function escapeHtml(s: string): string {
 }
 
 /** Default Changer Fusions logo (used when logoUrl not provided). */
-export const DEFAULT_LOGO_URL =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1774528895/changer_logo_mynoa2.png";
+export const DEFAULT_LOGO_URL = BRAND_LOGO_URL;
 
 /** Content-ID for inline logo attachment in email headers (use with Resend attachment contentId). */
 export const CHANGER_LOGO_CID = "changer-logo";

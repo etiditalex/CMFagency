@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export const metadata: Metadata = {
   title: "About Changer Fusions - Marketing Agency Kenya | Our Story & Mission",
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     url: "https://cmfagency.co.ke/about",
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        url: BRAND_LOGO_URL,
         width: 1200,
         height: 630,
         alt: "About Changer Fusions - Marketing Agency Kenya",
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About Changer Fusions - Marketing Agency Kenya",
     description: "Learn about Changer Fusions, a forward-thinking marketing agency in Kenya helping businesses grow.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+    images: [BRAND_LOGO_URL],
   },
   alternates: {
     canonical: "https://cmfagency.co.ke/about",

@@ -6,6 +6,7 @@ import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
 import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
 import StatsSection from "@/components/home/StatsSection";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 /** Avoid stale static HTML on refresh (Vercel/CDN serving an old prerender of this page). */
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
     siteName: "Changer Fusions",
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        url: BRAND_LOGO_URL,
         width: 1200,
         height: 630,
         alt: "Changer Fusions Marketing Agency",
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Changer Fusions - Leading Marketing Agency in Kenya",
     description: "Premier marketing agency in Kenya offering digital marketing, website development, branding, and event management services.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+    images: [BRAND_LOGO_URL],
   },
   alternates: {
     canonical: "https://cmfagency.co.ke",

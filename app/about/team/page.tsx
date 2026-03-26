@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import StructuredData from "@/components/StructuredData";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 const executiveMembers = [
   {
@@ -251,7 +252,7 @@ export default function OurTeamPage() {
     "@type": "Organization",
     name: "Changer Fusions",
     url: "https://cmfagency.co.ke",
-    logo: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    logo: BRAND_LOGO_URL,
     description: "Kenya's leading marketing agency specializing in digital marketing, website development, branding, event management, and market research.",
     address: {
       "@type": "PostalAddress",

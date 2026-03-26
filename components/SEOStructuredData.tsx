@@ -1,6 +1,7 @@
 "use client";
 
 import StructuredData from "./StructuredData";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export default function SEOStructuredData() {
   const organizationSchema = {
@@ -16,11 +17,9 @@ export default function SEOStructuredData() {
     url: "https://cmfagency.co.ke",
     logo: {
       "@type": "ImageObject",
-      url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
-      width: 1200,
-      height: 630,
+      url: BRAND_LOGO_URL,
     },
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    image: BRAND_LOGO_URL,
     description: "Changer Fusions is Kenya's premier marketing agency specializing in digital marketing, website development, branding, event management, and market research. We help businesses across Kenya grow with innovative marketing strategies, cutting-edge technologies, and data-driven solutions. Market to thrive, Market to exist.",
     slogan: "Market to Thrive, Market to Exist",
     foundingDate: "2020",
@@ -295,7 +294,7 @@ export default function SEOStructuredData() {
     name: "Changer Fusions - Marketing Agency in Ambalal",
     alternateName: ["Changer Fusions", "Marketing agency in Ambalal", "CMF Agency"],
     description: "Changer Fusions is a marketing agency in Ambalal, Mombasa, Kenya. Offering digital marketing, website development, branding, event management, and market research. Based at Ambalal Building, Nkruma Road.",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+    image: BRAND_LOGO_URL,
     url: "https://cmfagency.co.ke",
     telephone: "+254-797-777347",
     priceRange: "$$",

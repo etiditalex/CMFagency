@@ -12,8 +12,11 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Professional solid blue (similar to public-sector portal headers) */
+/** Primary brand blue — buttons/links in emails (keep strong contrast with white text). */
 export const RESEND_EMAIL_HEADER_BG = "#1a4f8c";
+
+/** Light header banner behind the logo (easier to read full-color logo than on deep blue). */
+export const RESEND_EMAIL_HEADER_BANNER_BG = "#e8eef7";
 
 export type ResendEmailHeaderOptions = {
   /** Shown under the logo, e.g. "Email verification", "Careers & applications" */
@@ -39,9 +42,9 @@ export function buildResendEmailHeaderHtml(options: ResendEmailHeaderOptions): s
         : DEFAULT_LOGO_URL;
   const logo = raw.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-  return `<div style="background: ${RESEND_EMAIL_HEADER_BG}; padding: 28px 24px 26px; text-align: center; border-radius: 10px 10px 0 0;">
+  return `<div style="background: ${RESEND_EMAIL_HEADER_BANNER_BG}; padding: 28px 24px 26px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 1px solid #d1dce8;">
     <img src="${logo}" alt="Changer Fusions" width="220" height="80" style="max-height: 80px; max-width: 240px; width: auto; height: auto; display: block; margin: 0 auto 18px; border: 0; outline: none;" />
-    <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">${primary}</h1>
-    <p style="color: rgba(255,255,255,0.95); margin: 12px 0 0; font-size: 15px; font-weight: 400; font-family: Arial, Helvetica, sans-serif; line-height: 1.4;">${subtitle}</p>
+    <h1 style="color: #132a46; margin: 0; font-size: 22px; font-weight: 700; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">${primary}</h1>
+    <p style="color: #475569; margin: 12px 0 0; font-size: 15px; font-weight: 400; font-family: Arial, Helvetica, sans-serif; line-height: 1.4;">${subtitle}</p>
   </div>`;
 }

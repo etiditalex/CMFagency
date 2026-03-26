@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react
 import Image from "next/image";
 import AdSenseBlock from "@/components/AdSenseBlock";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -36,9 +37,10 @@ export default function Footer() {
             <div className="flex items-center space-x-3 mb-4">
               <div className="relative w-10 h-10">
                 <Image
-                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"
+                  src={BRAND_LOGO_URL}
                   alt="Changer Fusions Logo"
                   fill
+                  sizes="40px"
                   className="object-contain"
                 />
               </div>

@@ -10,6 +10,7 @@ import ConditionalLayout from "@/components/ConditionalLayout";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PortalProvider } from "@/contexts/PortalContext";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cmfagency.co.ke"),
@@ -98,11 +99,11 @@ export const metadata: Metadata = {
     images: [
       {
         // If you later add `app/opengraph-image.tsx`, switch this to `/opengraph-image`.
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg",
+        url: BRAND_LOGO_URL,
         width: 1200,
         height: 630,
         alt: "Changer Fusions - Leading Marketing Agency in Kenya | Digital Marketing, Web Development, Branding Services",
-        type: "image/jpeg",
+        type: "image/png",
       },
     ],
   },
@@ -110,7 +111,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Changer Fusions - Leading Marketing Agency in Kenya | Market to Thrive, Market to Exist",
     description: "Premier marketing agency in Kenya offering digital marketing, website development, branding, event management, and market research. Helping businesses grow with innovative strategies.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1766134130/changer_fusions_dyb52h.jpg"],
+    images: [BRAND_LOGO_URL],
     creator: "@changerfusions",
     site: "@changerfusions",
   },
