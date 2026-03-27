@@ -4,6 +4,7 @@ import { JOBS_BOARD_OG_IMAGE } from "./metadata";
 import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
 import { JobsBoardClient } from "./JobsBoardClient";
+import { JobsEditorialIntro } from "@/components/jobs/JobsEditorialIntro";
 
 /** Unified feed loads on the server (employer listings + aggregated APIs). */
 export const dynamic = "force-dynamic";
@@ -46,7 +47,13 @@ export default async function JobsPage({ searchParams }: PageProps) {
   return (
     <>
       <JobsStructuredData jobs={jobs} includeJobList={includeJobList} />
-      <JobsBoardClient key={query || "__all"} initialJobs={jobs} initialError={error} initialQuery={query} />
+      <JobsBoardClient
+        key={query || "__all"}
+        initialJobs={jobs}
+        initialError={error}
+        initialQuery={query}
+        intro={query.trim().length === 0 ? <JobsEditorialIntro /> : undefined}
+      />
     </>
   );
 }

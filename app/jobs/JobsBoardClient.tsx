@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Briefcase, Loader2, Lock, Search, Sparkles, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,8 @@ type Props = {
   initialJobs: UnifiedJobListing[];
   initialError: string | null;
   initialQuery: string;
+  /** Crawlable editorial copy rendered above the board (recommended for AdSense-style quality signals). */
+  intro?: ReactNode;
 };
 
 function displayIndustry(industry: string | null) {
@@ -50,7 +52,7 @@ function JobCardPoster({ posterUrl }: { posterUrl: string | null }) {
   );
 }
 
-export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Props) {
+export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro }: Props) {
   const router = useRouter();
   const [jobs] = useState<UnifiedJobListing[]>(initialJobs);
   const [loadError] = useState<string | null>(initialError);
@@ -185,6 +187,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery }: Pro
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
         <div className="container-custom">
+          {intro ? <div className="mb-8">{intro}</div> : null}
           <header className="mb-6 text-left">
             <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Jobs in Kenya &amp; remote</h1>
             <p className="mt-1 max-w-3xl text-sm text-gray-600">
