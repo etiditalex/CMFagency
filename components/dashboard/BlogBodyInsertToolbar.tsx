@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { BookMarked, ImagePlus, Megaphone, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookMarked, ImagePlus, Megaphone } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -9,7 +9,6 @@ type Props = {
   body: string;
   setBody: (v: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  uploadImageFile: (file: File) => Promise<string | null>;
   /** When editing, exclude current post from the related-articles picker. */
   excludeBlogId?: string;
 };
@@ -47,35 +46,21 @@ function escapeMarkdownAlt(s: string): string {
   return s.replace(/[\[\]]/g, "").slice(0, 240);
 }
 
-/** Must match `/api/campaign-image/upload` — only these types are accepted from the device. */
-const DEVICE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
-
-function isDeviceImageFile(f: File): boolean {
-  return (DEVICE_IMAGE_TYPES as readonly string[]).includes(f.type);
-}
-
 function isHttpUrl(s: string): boolean {
   const t = s.trim();
   return t.startsWith("http://") || t.startsWith("https://");
 }
 
-export default function BlogBodyInsertToolbar({
-  body,
-  setBody,
-  textareaRef,
-  uploadImageFile,
-  excludeBlogId,
-}: Props) {
-  const inlineFileRef = useRef<HTMLInputElement>(null);
+export default function BlogBodyInsertToolbar({ body, setBody, textareaRef, excludeBlogId }: Props) {
   const [posts, setPosts] = useState<{ slug: string; title: string }[]>([]);
   const [selectedRelated, setSelectedRelated] = useState<Set<string>>(new Set());
+  const [inlineImageUrl, setInlineImageUrl] = useState("");
+  const [inlineCaption, setInlineCaption] = useState("");
+  const [inlineError, setInlineError] = useState<string | null>(null);
   const [adImageUrl, setAdImageUrl] = useState("");
   const [adLink, setAdLink] = useState("");
   const [adAlt, setAdAlt] = useState("");
   const [adError, setAdError] = useState<string | null>(null);
-  const [inlineUploading, setInlineUploading] = useState(false);
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const inlineInFlightRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,54 +88,21 @@ export default function BlogBodyInsertToolbar({
 
   const insert = (snippet: string) => insertSnippet(body, setBody, textareaRef.current, snippet);
 
-  const processInlineDeviceFile = async (f: File) => {
-    if (inlineInFlightRef.current) return;
-    inlineInFlightRef.current = true;
+  const insertInlineFromUrl = () => {
     setInlineError(null);
-    if (!isDeviceImageFile(f)) {
-      setInlineError("Use a JPG, PNG, GIF, or WebP file from your device (max 5MB).");
-      inlineInFlightRef.current = false;
+    const url = inlineImageUrl.trim();
+    if (!url) {
+      setInlineError("Paste the direct image URL (https://…).");
       return;
     }
-    setInlineUploading(true);
-    try {
-      const url = await uploadImageFile(f);
-      if (!url) {
-        setInlineError("Upload did not return an image URL. Try again.");
-        return;
-      }
-      const cap =
-        typeof window !== "undefined"
-          ? window.prompt("Caption below image (optional):", "") ?? ""
-          : "";
-      const capEsc = escapeMarkdownAlt(cap) || "Article image";
-      insert(`![${capEsc}](${url})`);
-    } catch (err) {
-      setInlineError(err instanceof Error ? err.message : "Upload failed. Check your connection and try again.");
-    } finally {
-      setInlineUploading(false);
-      inlineInFlightRef.current = false;
+    if (!isHttpUrl(url)) {
+      setInlineError("Image URL must start with https:// or http://.");
+      return;
     }
-  };
-
-  const onInlineFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    await processInlineDeviceFile(f);
-  };
-
-  const onInlineDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const onInlineDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const f = e.dataTransfer.files?.[0];
-    if (!f) return;
-    await processInlineDeviceFile(f);
+    const cap = escapeMarkdownAlt(inlineCaption.trim()) || "Article image";
+    insert(`![${cap}](${url})`);
+    setInlineImageUrl("");
+    setInlineCaption("");
   };
 
   const insertPromoFromUrls = () => {
@@ -191,45 +143,47 @@ export default function BlogBodyInsertToolbar({
     <div className="rounded-lg border border-primary-100 bg-primary-50/40 p-4 space-y-4">
       <div className="text-sm font-semibold text-gray-900">Rich inserts (cursor position in body)</div>
       <div className="space-y-3">
-        <input
-          ref={inlineFileRef}
-          id="blog-body-inline-image-upload"
-          type="file"
-          accept={DEVICE_IMAGE_TYPES.join(",")}
-          className="sr-only"
-          onChange={onInlineFileInput}
-        />
-        <label
-          htmlFor="blog-body-inline-image-upload"
-          onDragOver={onInlineDragOver}
-          onDrop={onInlineDrop}
-          className={`flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-4 cursor-pointer hover:border-primary-400 hover:bg-primary-50/30 transition-colors ${inlineUploading ? "pointer-events-none opacity-70" : ""}`}
-        >
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-              <Upload className="w-5 h-5" aria-hidden />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <ImagePlus className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
-                Upload inline image from your device
-              </div>
-              <p className="text-xs text-gray-600 mt-0.5">
-                Click to choose a file, or drag and drop here. JPG, PNG, GIF, WebP · max 5MB. Inserts at the cursor in the body.
-              </p>
-            </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <ImagePlus className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
+            Inline image (image link only)
           </div>
-        </label>
-        {inlineUploading && (
-          <p className="text-xs font-medium text-primary-700" role="status">
-            Uploading from your device…
+          <p className="text-xs text-gray-600">
+            Paste a <strong>direct image URL</strong> (hosted JPG/PNG/GIF/WebP). Optional caption appears below the image on the article.
           </p>
-        )}
-        {inlineError && (
-          <p className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2" role="alert">
-            {inlineError}
-          </p>
-        )}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Image URL *</label>
+            <input
+              type="url"
+              value={inlineImageUrl}
+              onChange={(e) => setInlineImageUrl(e.target.value)}
+              placeholder="https://cdn.example.com/photo.jpg"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-mono text-[13px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Caption (optional)</label>
+            <input
+              type="text"
+              value={inlineCaption}
+              onChange={(e) => setInlineCaption(e.target.value)}
+              placeholder="Shown under the image"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+            />
+          </div>
+          {inlineError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2" role="alert">
+              {inlineError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={insertInlineFromUrl}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-600 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700"
+          >
+            Insert inline image at cursor
+          </button>
+        </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
@@ -332,6 +286,9 @@ export default function BlogBodyInsertToolbar({
       </div>
 
       <div className="text-xs text-gray-600 space-y-1 border-t border-gray-200/80 pt-3 font-mono leading-relaxed">
+        <p>
+          Manual inline: <code className="bg-white px-1 rounded border border-gray-200">![caption](https://…)</code> on its own line.
+        </p>
         <p>
           Manual: <code className="bg-white px-1 rounded border border-gray-200">:::related</code> then one slug per line,
           then <code className="bg-white px-1 rounded border border-gray-200">:::</code>.

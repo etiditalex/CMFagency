@@ -21,6 +21,9 @@ function slugify(input: string) {
 }
 
 const BLOG_CATEGORIES = [
+  "News",
+  "Business",
+  "Startups",
   "Digital Marketing",
   "Events",
   "Branding",
@@ -195,12 +198,7 @@ export default function NewBlogPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Body</label>
-          <BlogBodyInsertToolbar
-            body={body}
-            setBody={setBody}
-            textareaRef={bodyTextareaRef}
-            uploadImageFile={uploadImageFile}
-          />
+          <BlogBodyInsertToolbar body={body} setBody={setBody} textareaRef={bodyTextareaRef} />
           <textarea
             ref={bodyTextareaRef}
             value={body}
@@ -227,7 +225,7 @@ export default function NewBlogPage() {
               <code className="bg-gray-100 px-1 rounded text-[11px]">
                 ![This photo was from our meeting with…](https://yoursite.com/image.jpg)
               </code>{" "}
-              — or use <strong>Inline image</strong> above to upload and insert after a few paragraphs.
+              — or use <strong>Inline image</strong> above to paste an image URL after a few paragraphs.
             </p>
             <p>
               <strong>Between paragraphs:</strong> use the toolbar for a <strong>promo / ad</strong> (paste a hosted image URL) or a{" "}
