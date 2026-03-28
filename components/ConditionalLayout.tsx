@@ -15,7 +15,6 @@ const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShe
 
 const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: true });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });
-const ChangerWidget = dynamic(() => import("@/components/ChangerWidget"), { ssr: false });
 const ScrollToTopButton = dynamic(() => import("@/components/ScrollToTopButton"), { ssr: false });
 
 export default function ConditionalLayout({
@@ -25,10 +24,7 @@ export default function ConditionalLayout({
 }) {
   const pathname = usePathname();
   const isVerifyEmailPage = pathname === "/verify-email";
-  const isTeamPage = pathname === "/about/team";
-  const isFusionXpress = pathname === "/fusion-xpress";
   const isDashboard = pathname?.startsWith("/dashboard");
-  const isAboutSection = pathname?.startsWith("/about");
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -36,7 +32,6 @@ export default function ConditionalLayout({
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
         {children}
         <CookieBanner />
-        <ChangerWidget />
         <ScrollToTopButton />
       </div>
     );
@@ -60,8 +55,6 @@ export default function ConditionalLayout({
       <Footer />
       <CookieBanner />
       <ScrollToTopButton />
-      {/* Changer AI chatbot - avoid on About pages to match design */}
-      {!isAboutSection && <ChangerWidget />}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Bell,
   Briefcase,
+  Calendar,
   ExternalLink,
   Plus,
   RefreshCw,
@@ -24,6 +25,38 @@ function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
   return code === "42P01" || (msg.includes("portal_members") && msg.includes("does not exist"));
+}
+
+function isoToNairobiDateInput(iso: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Nairobi",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(iso));
+    const y = parts.find((p) => p.type === "year")?.value;
+    const m = parts.find((p) => p.type === "month")?.value;
+    const d = parts.find((p) => p.type === "day")?.value;
+    if (!y || !m || !d) return "";
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "";
+  }
+}
+
+function formatVotingOpensInNairobi(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Nairobi",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
 }
 
 export default function DashboardHomePage() {
@@ -68,6 +101,12 @@ export default function DashboardHomePage() {
   >([]);
   const [pendingJobApplications, setPendingJobApplications] = useState(0);
 
+  const [votingScheduleDate, setVotingScheduleDate] = useState("2026-04-01");
+  const [votingScheduleDisplay, setVotingScheduleDisplay] = useState("");
+  const [votingScheduleLoading, setVotingScheduleLoading] = useState(false);
+  const [votingScheduleSaving, setVotingScheduleSaving] = useState(false);
+  const [votingScheduleMessage, setVotingScheduleMessage] = useState<string | null>(null);
+
   const refreshInFlightRef = useRef(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
@@ -99,6 +138,39 @@ export default function DashboardHomePage() {
       cancelled = true;
     };
   }, [isAdmin, lastUpdatedAt]);
+
+  useEffect(() => {
+    if (authLoading || portalLoading || isEmployer) return;
+    if (!hasFeature("voting")) return;
+    if (!isFullAdmin && !isManager) return;
+
+    let cancelled = false;
+    (async () => {
+      setVotingScheduleLoading(true);
+      setVotingScheduleMessage(null);
+      try {
+        const res = await fetch("/api/voting-schedule");
+        const j = (await res.json()) as { voting_starts_at?: string | null };
+        if (cancelled) return;
+        const iso = j?.voting_starts_at;
+        const fallback = "2026-04-01T00:00:00+03:00";
+        const effective = iso || fallback;
+        const ymd = isoToNairobiDateInput(effective);
+        setVotingScheduleDate(ymd || "2026-04-01");
+        setVotingScheduleDisplay(formatVotingOpensInNairobi(effective));
+      } catch {
+        if (!cancelled) {
+          setVotingScheduleDate("2026-04-01");
+          setVotingScheduleDisplay(formatVotingOpensInNairobi("2026-04-01T00:00:00+03:00"));
+        }
+      } finally {
+        if (!cancelled) setVotingScheduleLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, portalLoading, isEmployer, isFullAdmin, isManager, hasFeature]);
 
   const formatRevenueMap = (rev: Record<string, number>) => {
     const entries = Object.entries(rev).filter(([, v]) => Number.isFinite(v) && v > 0);
@@ -292,6 +364,45 @@ export default function DashboardHomePage() {
     }
   }, [user, refreshData]);
 
+  const saveVotingSchedule = useCallback(async () => {
+    if (!votingScheduleDate || !/^\d{4}-\d{2}-\d{2}$/.test(votingScheduleDate)) {
+      setVotingScheduleMessage("Use a valid date (YYYY-MM-DD).");
+      return;
+    }
+    setVotingScheduleSaving(true);
+    setVotingScheduleMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setVotingScheduleMessage("Not logged in.");
+        return;
+      }
+      const res = await fetch("/api/fusion-xpress/voting-schedule", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ date: votingScheduleDate }),
+      });
+      const j = (await res.json().catch(() => ({}))) as { error?: string; voting_starts_at?: string };
+      if (!res.ok) {
+        setVotingScheduleMessage(String(j?.error ?? `HTTP ${res.status}`));
+        return;
+      }
+      const iso = j.voting_starts_at;
+      if (iso) setVotingScheduleDisplay(formatVotingOpensInNairobi(iso));
+      setVotingScheduleMessage("Saved. Public voting pages unlock at 00:00 East Africa Time on that date.");
+    } catch (e: any) {
+      setVotingScheduleMessage(e?.message ?? "Save failed");
+    } finally {
+      setVotingScheduleSaving(false);
+    }
+  }, [votingScheduleDate]);
+
   useEffect(() => {
     if (authLoading || portalLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
@@ -423,6 +534,51 @@ export default function DashboardHomePage() {
           <div className="font-extrabold">Manager access</div>
           <div className="mt-1 text-sm">
             You can add clients and manage campaigns. Only full admins can add other admins or managers.
+          </div>
+        </div>
+      )}
+
+      {(isFullAdmin || isManager) && hasFeature("voting") && (
+        <div className="mt-6 rounded-md border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center flex-shrink-0">
+              <Calendar className="w-5 h-5 text-primary-700" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="font-extrabold text-gray-900 inline-flex items-center gap-2">
+                <Vote className="w-4 h-4 text-gray-600" />
+                Voting start date
+              </div>
+              <p className="mt-1 text-sm text-gray-600">
+                Public voting links stay on a &ldquo;not open yet&rdquo; screen until this calendar day (midnight East Africa Time).
+                {votingScheduleDisplay && !votingScheduleLoading ? (
+                  <span className="block mt-1 font-medium text-gray-800">Currently: {votingScheduleDisplay}</span>
+                ) : null}
+              </p>
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-end gap-3">
+                <label className="block text-sm">
+                  <span className="font-semibold text-gray-700">First day voting is open</span>
+                  <input
+                    type="date"
+                    value={votingScheduleDate}
+                    onChange={(e) => setVotingScheduleDate(e.target.value)}
+                    disabled={votingScheduleLoading || votingScheduleSaving}
+                    className="mt-1 block w-full sm:w-56 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void saveVotingSchedule()}
+                  disabled={votingScheduleLoading || votingScheduleSaving}
+                  className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2.5 font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                >
+                  {votingScheduleSaving ? "Saving…" : "Save schedule"}
+                </button>
+              </div>
+              {votingScheduleMessage && (
+                <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{votingScheduleMessage}</p>
+              )}
+            </div>
           </div>
         </div>
       )}

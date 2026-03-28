@@ -28,7 +28,22 @@ type Contestant = {
   sort_order: number;
 };
 
-const VOTING_UNLOCK_DATE = new Date("2026-04-01T00:00:00+03:00");
+/** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
+const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
+
+function formatVotingOpensInNairobi(isoMs: number): string {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Africa/Nairobi",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(isoMs));
+  } catch {
+    return "soon";
+  }
+}
 
 export default function CampaignPage() {
   const router = useRouter();
@@ -79,6 +94,28 @@ export default function CampaignPage() {
   const [contestantId, setContestantId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [votingStartMs, setVotingStartMs] = useState<number>(FALLBACK_VOTING_START_MS);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/voting-schedule");
+        const j = (await res.json()) as { voting_starts_at?: string | null };
+        const iso = j?.voting_starts_at;
+        if (cancelled) return;
+        if (iso) {
+          const t = Date.parse(iso);
+          if (!Number.isNaN(t)) setVotingStartMs(t);
+        }
+      } catch {
+        // keep fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,7 +469,8 @@ export default function CampaignPage() {
   }
 
   const isVote = campaign.type === "vote";
-  const votingLocked = isVote && new Date() < VOTING_UNLOCK_DATE;
+  const votingLocked = isVote && Date.now() < votingStartMs;
+  const votingOpensLabel = formatVotingOpensInNairobi(votingStartMs);
   const Icon = isVote ? Vote : Ticket;
 
   if (votingLocked) {
@@ -445,9 +483,9 @@ export default function CampaignPage() {
                 <Vote className="w-5 h-5 text-amber-700" />
               </span>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Voting opens in April</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Voting opens {votingOpensLabel}</h1>
                 <p className="text-gray-600 mt-2">
-                  This voting page is not open yet. Please come back in April when voting starts.
+                  This voting page is not open yet. Please come back when voting starts (East Africa Time).
                 </p>
                 <p className="text-sm text-gray-500 mt-3">Link is valid and will work once voting opens.</p>
               </div>
