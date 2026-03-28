@@ -67,11 +67,12 @@ export default function BlogBodyInsertToolbar({
   excludeBlogId,
 }: Props) {
   const inlineFileRef = useRef<HTMLInputElement>(null);
-  const adFileRef = useRef<HTMLInputElement>(null);
   const [posts, setPosts] = useState<{ slug: string; title: string }[]>([]);
   const [selectedRelated, setSelectedRelated] = useState<Set<string>>(new Set());
+  const [adImageUrl, setAdImageUrl] = useState("");
   const [adLink, setAdLink] = useState("");
   const [adAlt, setAdAlt] = useState("");
+  const [adError, setAdError] = useState<string | null>(null);
   const [inlineUploading, setInlineUploading] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const inlineInFlightRef = useRef(false);
