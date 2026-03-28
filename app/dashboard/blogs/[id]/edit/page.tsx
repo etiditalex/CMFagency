@@ -282,7 +282,7 @@ export default function EditBlogPage() {
               — or use <strong>Inline image</strong> above to upload after a few paragraphs.
             </p>
             <p>
-              <strong>Between paragraphs:</strong> toolbar — <strong>promo / ad</strong> banner or <strong>Related articles</strong>.
+              <strong>Between paragraphs:</strong> toolbar — <strong>promo / ad</strong> (image URL) or <strong>Related articles</strong>.
             </p>
             <p>Taller line height is applied on the live article for readability.</p>
           </div>

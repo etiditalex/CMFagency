@@ -54,6 +54,11 @@ function isDeviceImageFile(f: File): boolean {
   return (DEVICE_IMAGE_TYPES as readonly string[]).includes(f.type);
 }
 
+function isHttpUrl(s: string): boolean {
+  const t = s.trim();
+  return t.startsWith("http://") || t.startsWith("https://");
+}
+
 export default function BlogBodyInsertToolbar({
   body,
   setBody,
@@ -147,27 +152,31 @@ export default function BlogBodyInsertToolbar({
     await processInlineDeviceFile(f);
   };
 
-  const onAdFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    try {
-      const url = await uploadImageFile(f);
-      if (!url) return;
-      const lines = [":::embed-ad", url];
-      const link = adLink.trim();
-      if (link && (link.startsWith("http://") || link.startsWith("https://"))) {
-        lines.push(link);
-      }
-      const alt = adAlt.trim();
-      if (alt) lines.push(alt);
-      lines.push(":::");
-      insert(lines.join("\n"));
-      setAdLink("");
-      setAdAlt("");
-    } catch {
-      /* noop */
+  const insertPromoFromUrls = () => {
+    setAdError(null);
+    const image = adImageUrl.trim();
+    if (!image) {
+      setAdError("Paste the banner image URL (https://…).");
+      return;
     }
+    if (!isHttpUrl(image)) {
+      setAdError("Image URL must start with https:// or http://.");
+      return;
+    }
+    const link = adLink.trim();
+    if (link && !isHttpUrl(link)) {
+      setAdError("Click URL must start with https:// or http://.");
+      return;
+    }
+    const lines = [":::embed-ad", image];
+    if (link) lines.push(link);
+    const alt = adAlt.trim();
+    if (alt) lines.push(alt);
+    lines.push(":::");
+    insert(lines.join("\n"));
+    setAdImageUrl("");
+    setAdLink("");
+    setAdAlt("");
   };
 
   const insertRelated = () => {
@@ -221,43 +230,60 @@ export default function BlogBodyInsertToolbar({
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <input ref={adFileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={onAdFile} />
+        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <Megaphone className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
+            Promo / ad banner (image link only)
+          </div>
+          <p className="text-xs text-gray-600">
+            Host the graphic elsewhere (CDN, drive public link, etc.), then paste its <strong>direct image URL</strong> here — no file upload.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Banner image URL *</label>
+            <input
+              type="url"
+              value={adImageUrl}
+              onChange={(e) => setAdImageUrl(e.target.value)}
+              placeholder="https://example.com/banners/your-ad.png"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-mono text-[13px]"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Click-through URL (optional)</label>
+              <input
+                type="url"
+                value={adLink}
+                onChange={(e) => setAdLink(e.target.value)}
+                placeholder="https://event-or-partner…"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Alt text (optional)</label>
+              <input
+                type="text"
+                value={adAlt}
+                onChange={(e) => setAdAlt(e.target.value)}
+                placeholder="Describe banner for accessibility"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+              />
+            </div>
+          </div>
+          {adError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2" role="alert">
+              {adError}
+            </p>
+          )}
           <button
             type="button"
-            onClick={() => adFileRef.current?.click()}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-800 hover:bg-gray-50"
+            onClick={insertPromoFromUrls}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-600 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700"
           >
-            <Megaphone className="w-4 h-4 shrink-0 text-primary-600" />
-            Upload promo / ad banner from device
+            Insert promo block at cursor
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Promo — click URL (optional)</label>
-          <input
-            type="url"
-            value={adLink}
-            onChange={(e) => setAdLink(e.target.value)}
-            placeholder="https://event-or-partner-link…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Promo — alt text (optional)</label>
-          <input
-            type="text"
-            value={adAlt}
-            onChange={(e) => setAdAlt(e.target.value)}
-            placeholder="Describe banner for accessibility"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
-          />
-        </div>
-      </div>
-      <p className="text-xs text-gray-600">
-        Use <strong>Promo / ad banner</strong> after filling URL/alt: uploads the graphic and inserts a full-width block (like a sponsor strip between paragraphs).
-      </p>
 
       <div className="border-t border-primary-100/80 pt-4 space-y-2">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-900">

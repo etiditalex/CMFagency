@@ -230,7 +230,7 @@ export default function NewBlogPage() {
               — or use <strong>Inline image</strong> above to upload and insert after a few paragraphs.
             </p>
             <p>
-              <strong>Between paragraphs:</strong> use the toolbar for a full-width <strong>promo / ad</strong> graphic or a{" "}
+              <strong>Between paragraphs:</strong> use the toolbar for a <strong>promo / ad</strong> (paste a hosted image URL) or a{" "}
               <strong>Related articles</strong> block (headline + links to other posts).
             </p>
             <p>
