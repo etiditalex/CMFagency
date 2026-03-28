@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { parseBlogBodyParts } from "@/lib/blog-body";
 import {
   getApprovedBlogSidebarAds,
   getBlogBySlug,
+  getBlogRelatedCardsBySlugs,
   getBlogTrendingExcluding,
   getPublishedBlogSlugsForStatic,
 } from "@/lib/blog-server";
@@ -101,10 +103,25 @@ export default async function BlogSlugPage({ params }: Props) {
     );
   }
 
-  const [trending, sidebarAds] = await Promise.all([
+  const bodyParts = parseBlogBodyParts(post.body);
+  const relatedSlugs = [...new Set(bodyParts.flatMap((p) => (p.type === "related" ? p.slugs : [])))];
+
+  const [trending, sidebarAds, relatedRows] = await Promise.all([
     getBlogTrendingExcluding(slug, 6),
     getApprovedBlogSidebarAds(),
+    getBlogRelatedCardsBySlugs(relatedSlugs),
   ]);
 
-  return <BlogSlugContent post={post} trending={trending} sidebarAds={sidebarAds} />;
+  const relatedBySlug: Record<string, (typeof relatedRows)[number]> = {};
+  for (const r of relatedRows) relatedBySlug[r.slug] = r;
+
+  return (
+    <BlogSlugContent
+      post={post}
+      trending={trending}
+      sidebarAds={sidebarAds}
+      bodyParts={bodyParts}
+      relatedBySlug={relatedBySlug}
+    />
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Upload, X } from "lucide-react";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
 import { supabase } from "@/lib/supabase";
+import BlogBodyInsertToolbar from "@/components/dashboard/BlogBodyInsertToolbar";
 
 function slugify(input: string) {
   return input
@@ -47,6 +48,7 @@ export default function NewBlogPage() {
   const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -193,11 +195,18 @@ export default function NewBlogPage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Body</label>
+          <BlogBodyInsertToolbar
+            body={body}
+            setBody={setBody}
+            textareaRef={bodyTextareaRef}
+            uploadImageFile={uploadImageFile}
+          />
           <textarea
+            ref={bodyTextareaRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={12}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full mt-3 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="News-style body: headings, links, italics, images — see tips below."
           />
           <div className="text-xs text-gray-500 mt-2 space-y-1.5 leading-relaxed">
@@ -217,11 +226,16 @@ export default function NewBlogPage() {
               <strong>Image + caption (own line):</strong>{" "}
               <code className="bg-gray-100 px-1 rounded text-[11px]">
                 ![This photo was from our meeting with…](https://yoursite.com/image.jpg)
-              </code>
+              </code>{" "}
+              — or use <strong>Inline image</strong> above to upload and insert after a few paragraphs.
             </p>
             <p>
-              Body text uses a slightly taller line height for easier reading. Use <strong>References</strong> below for a
-              separate link list on the article.
+              <strong>Between paragraphs:</strong> use the toolbar for a full-width <strong>promo / ad</strong> graphic or a{" "}
+              <strong>Related articles</strong> block (headline + links to other posts).
+            </p>
+            <p>
+              Body text uses a slightly taller line height on the live site. Use <strong>References</strong> below for a
+              separate link list at the end of the article.
             </p>
           </div>
         </div>

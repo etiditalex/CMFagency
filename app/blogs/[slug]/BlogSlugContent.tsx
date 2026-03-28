@@ -1,27 +1,95 @@
 import Link from "next/link";
 import { format } from "date-fns";
-import { Calendar, User, ArrowLeft } from "lucide-react";
-import { renderBlogBodyToHtml } from "@/lib/blog-body";
-import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
-import type { BlogPostRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
+import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
+import type { BlogBodyPart } from "@/lib/blog-body";
+import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
+import type { BlogPostRow, BlogRelatedCard, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
 import BlogPostSidebar from "@/components/blogs/BlogPostSidebar";
-
-const DEFAULT_IMAGE =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
 
 type Props = {
   post: BlogPostRow;
   trending: BlogTrendingRow[];
   sidebarAds: BlogSidebarAdRow[];
+  bodyParts: BlogBodyPart[];
+  relatedBySlug: Record<string, BlogRelatedCard>;
 };
 
-export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
-  const heroSrc =
-    post.image_url?.trim().startsWith("//")
-      ? `https:${post.image_url.trim()}`
-      : post.image_url?.trim().startsWith("http://")
-        ? `https://${post.image_url.trim().slice(7)}`
-        : post.image_url || DEFAULT_IMAGE;
+function heroSrcFor(post: BlogPostRow): string {
+  const u = post.image_url?.trim() ?? "";
+  if (u.startsWith("//")) return `https:${u}`;
+  if (u.startsWith("http://")) return `https://${u.slice(7)}`;
+  return u || DEFAULT_BLOG_CARD_IMAGE;
+}
+
+function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relatedBySlug: Record<string, BlogRelatedCard> }) {
+  const resolved = slugs.map((s) => relatedBySlug[s]).filter(Boolean) as BlogRelatedCard[];
+  if (resolved.length === 0) return null;
+
+  return (
+    <section className="my-10 not-prose font-sans" aria-label="Related articles">
+      <h2 className="font-bold text-lg md:text-xl text-gray-900">Related Articles</h2>
+      <hr className="mt-2 mb-6 border-gray-200" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
+        {resolved.map((p) => (
+          <Link
+            key={p.slug}
+            href={`/blogs/${p.slug}`}
+            className="flex gap-3 sm:gap-4 group text-left items-start"
+          >
+            <div className="relative w-28 h-20 sm:w-32 sm:h-[4.5rem] shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
+              <img
+                src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
+                alt={p.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="text-primary-600 font-semibold text-base leading-snug group-hover:underline line-clamp-3">
+                {p.title}
+              </div>
+              {p.published_at && (
+                <div className="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                  <span>{format(new Date(p.published_at), "MMMM d, yyyy")}</span>
+                </div>
+              )}
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function EmbedAdBlock({ imageUrl, href, alt }: { imageUrl: string; href: string | null; alt: string }) {
+  const img = (
+    <img
+      src={imageUrl}
+      alt={alt}
+      className="w-full rounded-xl border border-gray-100 shadow-md object-cover max-h-[min(520px,75vh)] bg-gray-50"
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer-when-downgrade"
+    />
+  );
+  return (
+    <figure className="my-10 not-prose max-w-full">
+      {href ? (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden">
+          {img}
+        </a>
+      ) : (
+        img
+      )}
+    </figure>
+  );
+}
+
+export default function BlogSlugContent({ post, trending, sidebarAds, bodyParts, relatedBySlug }: Props) {
+  const heroSrc = heroSrcFor(post);
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
@@ -57,7 +125,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
               </div>
             </header>
 
-            {(post.image_url || DEFAULT_IMAGE) && (
+            {(post.image_url || DEFAULT_BLOG_CARD_IMAGE) && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-10 shadow-md bg-gray-100">
                 <img
                   src={heroSrc}
@@ -76,10 +144,36 @@ export default function BlogSlugContent({ post, trending, sidebarAds }: Props) {
                   {post.excerpt}
                 </p>
               )}
-              <div
-                className="blog-body text-gray-800 [&_figure]:mx-auto [&_figcaption_a]:text-primary-600"
-                dangerouslySetInnerHTML={{ __html: renderBlogBodyToHtml(post.body) }}
-              />
+              <div className="blog-body text-gray-800 [&_figure]:mx-auto [&_figcaption_a]:text-primary-600">
+                {bodyParts.map((part, idx) => {
+                  if (part.type === "html") {
+                    if (!part.html.trim()) return null;
+                    return (
+                      <div
+                        key={`h-${idx}`}
+                        dangerouslySetInnerHTML={{ __html: part.html }}
+                      />
+                    );
+                  }
+                  if (part.type === "related") {
+                    return (
+                      <RelatedArticlesBlock
+                        key={`r-${idx}`}
+                        slugs={part.slugs}
+                        relatedBySlug={relatedBySlug}
+                      />
+                    );
+                  }
+                  return (
+                    <EmbedAdBlock
+                      key={`a-${idx}`}
+                      imageUrl={part.imageUrl}
+                      href={part.href}
+                      alt={part.alt}
+                    />
+                  );
+                })}
+              </div>
               {Array.isArray(post.external_links) && post.external_links.length > 0 && (
                 <section className="mt-10 pt-8 border-t border-gray-200">
                   <h2 className="font-bold text-xl text-gray-900 mb-4">References &amp; further reading</h2>

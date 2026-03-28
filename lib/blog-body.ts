@@ -1,11 +1,12 @@
 /**
- * Blog / news body → safe HTML:
+ * Blog / news body → safe HTML and structured embeds:
  * - ## Subtitle → h2, ### → h3
  * - **bold**, *italic* (single asterisks; ** processed first)
- * - [visible text](https://url) — e.g. [click here](https://…) without showing the raw URL
+ * - [visible text](https://url)
  * - Bare https://… in prose → link
- * - ![Caption below image](https://image.jpg) on its own line → figure + caption (news-style)
- * - Paragraphs: comfortable line height for reading
+ * - ![Caption](https://image.jpg) on its own line → figure + caption
+ * - :::related … ::: — list of post slugs (one per line), rendered as “Related Articles” on the article page
+ * - :::embed-ad … ::: — banner image; line 1 = image URL, line 2 optional clickable URL, rest = alt text
  */
 
 function escapeHtml(s: string): string {
@@ -85,12 +86,10 @@ const H3_CLASS = "font-bold text-lg md:text-xl text-gray-900 mt-8 mb-3";
 const P_CLASS =
   "text-gray-800 text-[1.0625rem] sm:text-lg leading-[1.85] mb-6 [word-spacing:0.02em]";
 
-/**
- * Markdown-like body → HTML for article view.
- */
-export function renderBlogBodyToHtml(body: string | null | undefined): string {
-  if (!body || typeof body !== "string") return "";
-  const lines = body.split(/\r?\n/);
+/** Markdown fragment (no ::: fences) → HTML blocks. */
+function renderBlogMarkdownToHtml(markdown: string): string {
+  if (!markdown || typeof markdown !== "string") return "";
+  const lines = markdown.split(/\r?\n/);
   const blocks: string[] = [];
 
   let i = 0;
@@ -151,6 +150,89 @@ export function renderBlogBodyToHtml(body: string | null | undefined): string {
   }
 
   return blocks.join("\n");
+}
+
+export type BlogBodyPart =
+  | { type: "html"; html: string }
+  | { type: "related"; slugs: string[] }
+  | { type: "embed-ad"; imageUrl: string; href: string | null; alt: string };
+
+/**
+ * Split body into ordered segments: markdown HTML, related-article slugs, and inline promo banners.
+ * Fences must start lines (after trim): :::related / :::embed-ad / :::ad, closed by a line containing only :::.
+ */
+export function parseBlogBodyParts(body: string | null | undefined): BlogBodyPart[] {
+  if (!body || typeof body !== "string") return [];
+  const lines = body.split(/\r?\n/);
+  const parts: BlogBodyPart[] = [];
+  const mdBuf: string[] = [];
+
+  const flushMd = () => {
+    if (mdBuf.length === 0) return;
+    const chunk = mdBuf.join("\n");
+    mdBuf.length = 0;
+    const html = renderBlogMarkdownToHtml(chunk);
+    if (html.trim()) parts.push({ type: "html", html });
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const t = lines[i].trim();
+    if (t === ":::related") {
+      flushMd();
+      i += 1;
+      const slugs: string[] = [];
+      while (i < lines.length) {
+        if (lines[i].trim() === ":::") break;
+        const s = lines[i].trim();
+        if (s) slugs.push(s);
+        i += 1;
+      }
+      if (i < lines.length && lines[i].trim() === ":::") i += 1;
+      parts.push({ type: "related", slugs });
+      continue;
+    }
+    if (t === ":::embed-ad" || t === ":::ad") {
+      flushMd();
+      i += 1;
+      const inner: string[] = [];
+      while (i < lines.length) {
+        if (lines[i].trim() === ":::") break;
+        inner.push(lines[i]);
+        i += 1;
+      }
+      if (i < lines.length && lines[i].trim() === ":::") i += 1;
+      const trimmedInner = inner.map((l) => l.trim()).filter((l) => l.length > 0);
+      const imageUrl = trimmedInner[0] ?? "";
+      if (isSafeUrl(imageUrl)) {
+        const second = trimmedInner[1];
+        let href: string | null = null;
+        let alt = "Promotional banner";
+        if (second && isSafeUrl(second)) {
+          href = second;
+          alt = trimmedInner.slice(2).join(" ").trim() || alt;
+        } else if (second) {
+          alt = trimmedInner.slice(1).join(" ").trim() || alt;
+        }
+        parts.push({ type: "embed-ad", imageUrl, href, alt });
+      }
+      continue;
+    }
+    mdBuf.push(lines[i]);
+    i += 1;
+  }
+  flushMd();
+  return parts;
+}
+
+/**
+ * Markdown-like body → HTML for simple previews (omits :::related and :::embed-ad blocks).
+ */
+export function renderBlogBodyToHtml(body: string | null | undefined): string {
+  return parseBlogBodyParts(body)
+    .filter((p): p is { type: "html"; html: string } => p.type === "html")
+    .map((p) => p.html)
+    .join("\n");
 }
 
 export type ExternalLink = { label: string; url: string };

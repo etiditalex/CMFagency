@@ -45,6 +45,30 @@ export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | n
 
 export type BlogTrendingRow = { slug: string; title: string };
 
+export type BlogRelatedCard = {
+  slug: string;
+  title: string;
+  image_url: string | null;
+  published_at: string | null;
+};
+
+/** Resolve published posts for :::related blocks (order matches requested slugs; skips missing). */
+export const getBlogRelatedCardsBySlugs = cache(async (slugs: string[]): Promise<BlogRelatedCard[]> => {
+  const unique = [...new Set(slugs.map((s) => s.trim()).filter(Boolean))];
+  if (!supabase || unique.length === 0) return [];
+  const { data, error } = await supabase
+    .from("fusion_blogs")
+    .select("slug, title, image_url, published_at")
+    .in("slug", unique)
+    .not("published_at", "is", null);
+  if (error || !data) return [];
+  const bySlug = new Map((data as BlogRelatedCard[]).map((r) => [r.slug, r]));
+  return unique.flatMap((s) => {
+    const row = bySlug.get(s);
+    return row ? [row] : [];
+  });
+});
+
 export type BlogSidebarAdRow = {
   id: string;
   title: string;

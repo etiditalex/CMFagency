@@ -7,16 +7,13 @@ import { format } from "date-fns";
 
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
-import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
+import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
 import type { BlogListingRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
 
 const BlogNewsletterBannerPopup = dynamic(
   () => import("@/components/blogs/BlogNewsletterBannerPopup"),
   { ssr: false }
 );
-
-const DEFAULT_CARD_IMAGE =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
 
 type Props = {
   initialPosts: BlogListingRow[];
@@ -54,7 +51,7 @@ export default function BlogsPageClient({
                   >
                     <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
                       <img
-                        src={post.image_url || DEFAULT_CARD_IMAGE}
+                        src={post.image_url || DEFAULT_BLOG_CARD_IMAGE}
                         alt={post.title}
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading={idx < 3 ? "eager" : "lazy"}
