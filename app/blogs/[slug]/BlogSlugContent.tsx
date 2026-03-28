@@ -26,7 +26,7 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
   if (resolved.length === 0) return null;
 
   return (
-    <section className="my-10 not-prose font-sans" aria-label="Related articles">
+    <section className="my-10 not-prose font-sans clear-both" aria-label="Related articles">
       <h2 className="font-bold text-lg md:text-xl text-gray-900">Related Articles</h2>
       <hr className="mt-2 mb-6 border-gray-200" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8">
@@ -64,21 +64,24 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
   );
 }
 
+/** In-article promo: float-left + natural aspect ratio so copy wraps beside it (news-style), not a stretched full-width strip. */
 function EmbedAdBlock({ imageUrl, href, alt }: { imageUrl: string; href: string | null; alt: string }) {
   const img = (
     <img
       src={imageUrl}
       alt={alt}
-      className="w-full rounded-xl border border-gray-100 shadow-md object-cover max-h-[min(520px,75vh)] bg-gray-50"
+      className="block w-full h-auto max-w-full rounded-lg border border-gray-100 shadow-sm bg-gray-50"
       loading="lazy"
       decoding="async"
       referrerPolicy="no-referrer-when-downgrade"
     />
   );
   return (
-    <figure className="my-10 not-prose max-w-full">
+    <figure
+      className="blog-embed-ad-figure not-prose clear-left float-none sm:float-left w-full sm:w-[42%] sm:max-w-md min-w-0 sm:min-w-[10rem] max-w-xl mx-auto sm:mx-0 sm:mr-5 sm:mb-3 mt-2 mb-4"
+    >
       {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden">
+        <a href={href} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden">
           {img}
         </a>
       ) : (
@@ -144,7 +147,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds, bodyParts,
                   {post.excerpt}
                 </p>
               )}
-              <div className="blog-body text-gray-800 [&_figure]:mx-auto [&_figcaption_a]:text-primary-600">
+              <div className="blog-body flow-root text-gray-800 [&_figure:not(.blog-embed-ad-figure)]:mx-auto [&_figcaption_a]:text-primary-600">
                 {bodyParts.map((part, idx) => {
                   if (part.type === "html") {
                     if (!part.html.trim()) return null;
