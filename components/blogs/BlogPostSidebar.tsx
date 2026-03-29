@@ -6,14 +6,16 @@ import { Briefcase, Check, Mail, TrendingUp } from "lucide-react";
 import AdSenseBlock from "@/components/AdSenseBlock";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
-import type { BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
+import BlogColumnsWidget from "@/components/blogs/BlogColumnsWidget";
+import type { BlogColumnSidebarRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
 
 type Props = {
   trending: BlogTrendingRow[];
   sidebarAds: BlogSidebarAdRow[];
+  columnPosts: BlogColumnSidebarRow[];
 };
 
-export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
+export default function BlogPostSidebar({ trending, sidebarAds, columnPosts }: Props) {
   return (
     <aside className="space-y-8 lg:sticky lg:top-28 self-start">
       {/* Newsletter — same blue as navbar top bar (bg-primary-600) */}
@@ -104,6 +106,8 @@ export default function BlogPostSidebar({ trending, sidebarAds }: Props) {
         <p className="text-xs text-gray-500 mb-2 text-center">Advertisement</p>
         <AdSenseBlock />
       </div>
+
+      <BlogColumnsWidget posts={columnPosts} />
     </aside>
   );
 }

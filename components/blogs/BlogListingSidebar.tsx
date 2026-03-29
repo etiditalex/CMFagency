@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import type { BlogTrendingRow } from "@/lib/blog-server";
+import BlogColumnsWidget from "@/components/blogs/BlogColumnsWidget";
+import type { BlogColumnSidebarRow, BlogTrendingRow } from "@/lib/blog-server";
 
 const CMFA_EVENT_HREF = "/events/upcoming/coast-fashion-modelling-awards-2026";
 const UPCOMING_EVENTS_HREF = "/events/upcoming";
@@ -21,13 +22,14 @@ function whatsappCommunityHref(): string {
 
 type Props = {
   trending: BlogTrendingRow[];
+  columnPosts: BlogColumnSidebarRow[];
   className?: string;
 };
 
 /**
  * Sidebar for the main /blogs listing: trending posts + CTAs for events, WhatsApp, and Fusion Xpress.
  */
-export default function BlogListingSidebar({ trending, className = "" }: Props) {
+export default function BlogListingSidebar({ trending, columnPosts, className = "" }: Props) {
   const communityUrl = whatsappCommunityHref();
 
   return (
@@ -140,6 +142,8 @@ export default function BlogListingSidebar({ trending, className = "" }: Props) 
           </Link>
         </div>
       </div>
+
+      <BlogColumnsWidget posts={columnPosts} />
     </aside>
   );
 }

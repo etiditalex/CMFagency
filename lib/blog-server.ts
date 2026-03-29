@@ -45,6 +45,35 @@ export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | n
 
 export type BlogTrendingRow = { slug: string; title: string };
 
+/** News & Business stories for the editorial "Columns" sidebar block. */
+export type BlogColumnSidebarRow = {
+  slug: string;
+  title: string;
+  image_url: string | null;
+  published_at: string | null;
+  category: string | null;
+};
+
+const COLUMN_SIDEBAR_CATEGORIES = ["News", "Business"] as const;
+
+/** Published News/Business posts for article sidebar; optionally exclude the current article. */
+export const getBlogColumnsSidebarPosts = cache(
+  async (excludeSlug?: string, limit = 5): Promise<BlogColumnSidebarRow[]> => {
+    if (!supabase) return [];
+    let q = supabase
+      .from("fusion_blogs")
+      .select("slug, title, image_url, published_at, category")
+      .not("published_at", "is", null)
+      .in("category", [...COLUMN_SIDEBAR_CATEGORIES])
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    if (excludeSlug) q = q.neq("slug", excludeSlug);
+    const { data, error } = await q;
+    if (error || !data) return [];
+    return data as BlogColumnSidebarRow[];
+  }
+);
+
 export type BlogRelatedCard = {
   slug: string;
   title: string;
@@ -119,8 +148,9 @@ export const getBlogIndexData = cache(
     posts: BlogListingRow[];
     sidebarAds: BlogSidebarAdRow[];
     trending: BlogTrendingRow[];
+    columnPosts: BlogColumnSidebarRow[];
   }> => {
-    if (!supabase) return { posts: [], sidebarAds: [], trending: [] };
+    if (!supabase) return { posts: [], sidebarAds: [], trending: [], columnPosts: [] };
     const [postsRes, adsRes] = await Promise.all([
       supabase
         .from("fusion_blogs")
@@ -139,6 +169,18 @@ export const getBlogIndexData = cache(
       !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
     const trending = posts.slice(0, 6).map(({ slug, title }) => ({ slug, title }));
 
-    return { posts, sidebarAds, trending };
+    const catSet = new Set<string>(COLUMN_SIDEBAR_CATEGORIES);
+    const columnPosts: BlogColumnSidebarRow[] = posts
+      .filter((p) => p.category != null && catSet.has(p.category))
+      .slice(0, 5)
+      .map((p) => ({
+        slug: p.slug,
+        title: p.title,
+        image_url: p.image_url,
+        published_at: p.published_at,
+        category: p.category,
+      }));
+
+    return { posts, sidebarAds, trending, columnPosts };
   }
 );

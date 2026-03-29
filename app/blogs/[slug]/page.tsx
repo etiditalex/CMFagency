@@ -5,6 +5,7 @@ import { parseBlogBodyParts } from "@/lib/blog-body";
 import {
   getApprovedBlogSidebarAds,
   getBlogBySlug,
+  getBlogColumnsSidebarPosts,
   getBlogRelatedCardsBySlugs,
   getBlogTrendingExcluding,
   getPublishedBlogSlugsForStatic,
@@ -106,10 +107,11 @@ export default async function BlogSlugPage({ params }: Props) {
   const bodyParts = parseBlogBodyParts(post.body);
   const relatedSlugs = [...new Set(bodyParts.flatMap((p) => (p.type === "related" ? p.slugs : [])))];
 
-  const [trending, sidebarAds, relatedRows] = await Promise.all([
+  const [trending, sidebarAds, relatedRows, columnPosts] = await Promise.all([
     getBlogTrendingExcluding(slug, 6),
     getApprovedBlogSidebarAds(),
     getBlogRelatedCardsBySlugs(relatedSlugs),
+    getBlogColumnsSidebarPosts(slug, 5),
   ]);
 
   const relatedBySlug: Record<string, (typeof relatedRows)[number]> = {};
@@ -120,6 +122,7 @@ export default async function BlogSlugPage({ params }: Props) {
       post={post}
       trending={trending}
       sidebarAds={sidebarAds}
+      columnPosts={columnPosts}
       bodyParts={bodyParts}
       relatedBySlug={relatedBySlug}
     />

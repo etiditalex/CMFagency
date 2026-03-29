@@ -8,7 +8,12 @@ import { format } from "date-fns";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
 import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
-import type { BlogListingRow, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
+import type {
+  BlogColumnSidebarRow,
+  BlogListingRow,
+  BlogSidebarAdRow,
+  BlogTrendingRow,
+} from "@/lib/blog-server";
 
 const BlogNewsletterBannerPopup = dynamic(
   () => import("@/components/blogs/BlogNewsletterBannerPopup"),
@@ -19,12 +24,14 @@ type Props = {
   initialPosts: BlogListingRow[];
   initialSidebarAds: BlogSidebarAdRow[];
   initialTrending: BlogTrendingRow[];
+  initialColumnPosts: BlogColumnSidebarRow[];
 };
 
 export default function BlogsPageClient({
   initialPosts,
   initialSidebarAds,
   initialTrending,
+  initialColumnPosts,
 }: Props) {
   return (
     <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
@@ -95,7 +102,7 @@ export default function BlogsPageClient({
             </div>
           </div>
 
-          <BlogListingSidebar trending={initialTrending} />
+          <BlogListingSidebar trending={initialTrending} columnPosts={initialColumnPosts} />
         </div>
       </div>
     </div>

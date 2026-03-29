@@ -3,13 +3,20 @@ import { format } from "date-fns";
 import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import type { BlogBodyPart } from "@/lib/blog-body";
 import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
-import type { BlogPostRow, BlogRelatedCard, BlogSidebarAdRow, BlogTrendingRow } from "@/lib/blog-server";
+import type {
+  BlogColumnSidebarRow,
+  BlogPostRow,
+  BlogRelatedCard,
+  BlogSidebarAdRow,
+  BlogTrendingRow,
+} from "@/lib/blog-server";
 import BlogPostSidebar from "@/components/blogs/BlogPostSidebar";
 
 type Props = {
   post: BlogPostRow;
   trending: BlogTrendingRow[];
   sidebarAds: BlogSidebarAdRow[];
+  columnPosts: BlogColumnSidebarRow[];
   bodyParts: BlogBodyPart[];
   relatedBySlug: Record<string, BlogRelatedCard>;
 };
@@ -91,7 +98,14 @@ function EmbedAdBlock({ imageUrl, href, alt }: { imageUrl: string; href: string 
   );
 }
 
-export default function BlogSlugContent({ post, trending, sidebarAds, bodyParts, relatedBySlug }: Props) {
+export default function BlogSlugContent({
+  post,
+  trending,
+  sidebarAds,
+  columnPosts,
+  bodyParts,
+  relatedBySlug,
+}: Props) {
   const heroSrc = heroSrcFor(post);
 
   return (
@@ -205,7 +219,7 @@ export default function BlogSlugContent({ post, trending, sidebarAds, bodyParts,
             </div>
           </main>
 
-          <BlogPostSidebar trending={trending} sidebarAds={sidebarAds} />
+          <BlogPostSidebar trending={trending} sidebarAds={sidebarAds} columnPosts={columnPosts} />
         </div>
       </div>
     </div>
