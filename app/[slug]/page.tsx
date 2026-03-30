@@ -55,6 +55,7 @@ export default function CampaignPage() {
   }, [routeParams?.slug]);
   const searchParams = useSearchParams();
   const ref = searchParams?.get("ref") ?? null;
+  const contestantPresetId = searchParams?.get("c") ?? null;
 
   const [txStatus, setTxStatus] = useState<
     null | {
@@ -159,8 +160,13 @@ export default function CampaignPage() {
 
           if (rErr) throw rErr;
           if (!cancelled) {
-            setContestants((rows ?? []) as Contestant[]);
-            setContestantId((rows?.[0]?.id as string) ?? "");
+            const list = (rows ?? []) as Contestant[];
+            setContestants(list);
+            const pick =
+              contestantPresetId && list.some((x) => x.id === contestantPresetId)
+                ? contestantPresetId
+                : (list[0]?.id as string) ?? "";
+            setContestantId(pick);
           }
         }
       } catch (e: any) {
@@ -177,7 +183,7 @@ export default function CampaignPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, contestantPresetId]);
 
   // Fetch vote counts for vote campaigns (for competition visibility)
   const fetchVoteCounts = useMemo(() => {

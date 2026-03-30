@@ -7,6 +7,7 @@ import {
   Bell,
   Briefcase,
   Calendar,
+  Copy,
   ExternalLink,
   Plus,
   RefreshCw,
@@ -106,8 +107,15 @@ export default function DashboardHomePage() {
   const [votingScheduleLoading, setVotingScheduleLoading] = useState(false);
   const [votingScheduleSaving, setVotingScheduleSaving] = useState(false);
   const [votingScheduleMessage, setVotingScheduleMessage] = useState<string | null>(null);
+  const [allVotingCopied, setAllVotingCopied] = useState(false);
+  const [allVotingPublicUrl, setAllVotingPublicUrl] = useState("");
 
   const refreshInFlightRef = useRef(false);
+
+  useEffect(() => {
+    const base = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+    setAllVotingPublicUrl(base ? `${base}/voting/all` : `${window.location.origin}/voting/all`);
+  }, []);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
 
@@ -555,6 +563,51 @@ export default function DashboardHomePage() {
                   <span className="block mt-1 font-medium text-gray-800">Currently: {votingScheduleDisplay}</span>
                 ) : null}
               </p>
+              <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="font-semibold text-gray-900">Master voting link (all categories)</div>
+                <p className="mt-1 text-sm text-gray-600">
+                  Share one URL that lists every open voting category and contestant. Category-specific voting URLs are
+                  unchanged; this page unlocks on the same schedule as those links.
+                </p>
+                <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <input
+                    type="text"
+                    readOnly
+                    value={allVotingPublicUrl}
+                    placeholder="Building link…"
+                    className="flex-1 min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 font-mono"
+                  />
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      disabled={!allVotingPublicUrl}
+                      onClick={async () => {
+                        if (!allVotingPublicUrl) return;
+                        try {
+                          await navigator.clipboard.writeText(allVotingPublicUrl);
+                          setAllVotingCopied(true);
+                          window.setTimeout(() => setAllVotingCopied(false), 2000);
+                        } catch {
+                          setVotingScheduleMessage("Could not copy link. Select the URL and copy manually.");
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <Copy className="w-4 h-4" />
+                      {allVotingCopied ? "Copied" : "Copy"}
+                    </button>
+                    <Link
+                      href="/voting/all"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                    >
+                      Preview
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <div className="mt-4 flex flex-col sm:flex-row sm:items-end gap-3">
                 <label className="block text-sm">
                   <span className="font-semibold text-gray-700">First day voting is open</span>
