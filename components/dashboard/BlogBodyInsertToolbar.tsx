@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookMarked, ImagePlus, Megaphone } from "lucide-react";
+import { BookMarked, ImagePlus, Link2, Megaphone } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -12,6 +12,38 @@ type Props = {
   /** When editing, exclude current post from the related-articles picker. */
   excludeBlogId?: string;
 };
+
+function insertExternalLinkAtCursor(
+  body: string,
+  setBody: (v: string) => void,
+  el: HTMLTextAreaElement | null,
+  url: string,
+  linkLabelFallback: string
+): boolean {
+  const urlTrim = url.trim();
+  if (!isHttpUrl(urlTrim)) return false;
+  if (!el) {
+    const label = (linkLabelFallback.trim() || "link").replace(/\]/g, "");
+    const snippet = `[${label}](${urlTrim})`;
+    const gap = body.length > 0 && !body.endsWith("\n\n") ? (body.endsWith("\n") ? "\n" : "\n\n") : "";
+    setBody(body + gap + snippet);
+    return true;
+  }
+  const start = el.selectionStart ?? 0;
+  const end = el.selectionEnd ?? 0;
+  const selected = body.slice(start, end);
+  const label = (selected.trim() || linkLabelFallback.trim() || "link").replace(/\]/g, "");
+  const snippet = `[${label}](${urlTrim})`;
+  const prefix = body.slice(0, start);
+  const suffix = body.slice(end);
+  setBody(prefix + snippet + suffix);
+  requestAnimationFrame(() => {
+    el.focus();
+    const pos = start + snippet.length;
+    el.setSelectionRange(pos, pos);
+  });
+  return true;
+}
 
 function insertSnippet(
   body: string,
@@ -61,6 +93,9 @@ export default function BlogBodyInsertToolbar({ body, setBody, textareaRef, excl
   const [adLink, setAdLink] = useState("");
   const [adAlt, setAdAlt] = useState("");
   const [adError, setAdError] = useState<string | null>(null);
+  const [extLinkUrl, setExtLinkUrl] = useState("");
+  const [extLinkLabel, setExtLinkLabel] = useState("");
+  const [extLinkError, setExtLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +122,26 @@ export default function BlogBodyInsertToolbar({ body, setBody, textareaRef, excl
   }, [excludeBlogId]);
 
   const insert = (snippet: string) => insertSnippet(body, setBody, textareaRef.current, snippet);
+
+  const insertExternalLink = () => {
+    setExtLinkError(null);
+    const url = extLinkUrl.trim();
+    if (!url) {
+      setExtLinkError("Paste the full URL (https://…).");
+      return;
+    }
+    if (!isHttpUrl(url)) {
+      setExtLinkError("URL must start with https:// or http://.");
+      return;
+    }
+    const ok = insertExternalLinkAtCursor(body, setBody, textareaRef.current, url, extLinkLabel);
+    if (!ok) {
+      setExtLinkError("Could not insert link.");
+      return;
+    }
+    setExtLinkUrl("");
+    setExtLinkLabel("");
+  };
 
   const insertInlineFromUrl = () => {
     setInlineError(null);
@@ -143,6 +198,51 @@ export default function BlogBodyInsertToolbar({ body, setBody, textareaRef, excl
     <div className="rounded-lg border border-primary-100 bg-primary-50/40 p-4 space-y-4">
       <div className="text-sm font-semibold text-gray-900">Rich inserts (cursor position in body)</div>
       <div className="space-y-3">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+            <Link2 className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
+            External link in text
+          </div>
+          <p className="text-xs text-gray-600">
+            Turns words into a clickable link (opens in a new tab). <strong>Tip:</strong> highlight text in the body first,
+            then paste the URL — the selection becomes the link label (e.g. &quot;last week&quot; → article).
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">URL *</label>
+            <input
+              type="url"
+              value={extLinkUrl}
+              onChange={(e) => setExtLinkUrl(e.target.value)}
+              placeholder="https://example.com/article"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white font-mono text-[13px]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Link text (optional if text is selected in body)
+            </label>
+            <input
+              type="text"
+              value={extLinkLabel}
+              onChange={(e) => setExtLinkLabel(e.target.value)}
+              placeholder="e.g. last week"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+            />
+          </div>
+          {extLinkError && (
+            <p className="text-xs text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2" role="alert">
+              {extLinkError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={insertExternalLink}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-600 bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700"
+          >
+            Insert link at cursor
+          </button>
+        </div>
+
         <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
             <ImagePlus className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
@@ -286,6 +386,11 @@ export default function BlogBodyInsertToolbar({ body, setBody, textareaRef, excl
       </div>
 
       <div className="text-xs text-gray-600 space-y-1 border-t border-gray-200/80 pt-3 font-mono leading-relaxed">
+        <p>
+          Inline link in a sentence:{" "}
+          <code className="bg-white px-1 rounded border border-gray-200">[visible words](https://…)</code> — same as the
+          toolbar above.
+        </p>
         <p>
           Manual inline: <code className="bg-white px-1 rounded border border-gray-200">![caption](https://…)</code> on its own line.
         </p>

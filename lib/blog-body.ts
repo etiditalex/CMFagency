@@ -2,7 +2,7 @@
  * Blog / news body → safe HTML and structured embeds:
  * - ## Subtitle → h2, ### → h3
  * - **bold**, *italic* (single asterisks; ** processed first)
- * - [visible text](https://url)
+ * - [visible text](https://url) → inline external link (dashboard: “External link in text” or type manually)
  * - Bare https://… in prose → link
  * - ![Caption](https://image.jpg) on its own line → figure + caption
  * - :::related … ::: — list of post slugs (one per line), rendered as “Related Articles” on the article page
@@ -45,7 +45,7 @@ function processInline(raw: string): string {
       if (!isSafeUrl(url)) return escapeHtml(_);
       const idx = replacements.length;
       replacements.push(
-        `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold hover:underline">${escapeHtml(label)}</a>`
+        `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold underline underline-offset-[3px] decoration-primary-600/50 hover:text-primary-700 hover:decoration-primary-600">${escapeHtml(label)}</a>`
       );
       return `${PLACEHOLDER_LINK}${idx}\uFEFF`;
     }
@@ -67,7 +67,7 @@ function processInline(raw: string): string {
     const idx = replacements.length;
     const display = href.length > 52 ? `${href.slice(0, 49)}…` : href;
     replacements.push(
-      `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold hover:underline break-all">${escapeHtml(display)}</a>`
+      `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-primary-600 font-semibold underline underline-offset-[3px] decoration-primary-600/50 hover:text-primary-700 hover:decoration-primary-600 break-all">${escapeHtml(display)}</a>`
     );
     return `${PLACEHOLDER_LINK}${idx}\uFEFF${tail}`;
   });
