@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 
 type Variant = "blogs" | "footer" | "blogSidebar";
 
@@ -34,8 +34,8 @@ const placeholder: Record<Variant, string> = {
 };
 
 export default function NewsletterSubscribeForm({ variant }: { variant: Variant }) {
-  const id = useId();
-  const inputId = `${id}-newsletter-email`;
+  /** Stable ids (not `useId`): lazy/dynamic siblings can change hook order and break SSR hydration. */
+  const inputId = `newsletter-subscribe-${variant}`;
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);

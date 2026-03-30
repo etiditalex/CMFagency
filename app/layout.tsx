@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { inter, montserrat } from "@/lib/fonts";
 import "./globals.css";
 import PageLoader from "@/components/PageLoader";
+import AdSenseLoader from "@/components/AdSenseLoader";
 import SEOStructuredData from "@/components/SEOStructuredData";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import { CartProvider } from "@/contexts/CartContext";
@@ -170,13 +171,8 @@ export default async function RootLayout({
             gtag('config', 'G-46VYE6KM7V');
           `}
         </Script>
-        {/* Google AdSense - loads once for the whole site */}
-        <Script
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7231529725117325"
-          strategy="afterInteractive"
-          crossOrigin="anonymous"
-          nonce={nonce}
-        />
+        {/* AdSense: client inject avoids Next.js `data-nscript` (AdSense warns on that). */}
+        <AdSenseLoader />
         <SEOStructuredData />
         <CartProvider>
           <AuthProvider>

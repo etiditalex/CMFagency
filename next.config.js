@@ -61,7 +61,7 @@ const nextConfig = {
             },
           ]
         : []),
-      // CSP is set per-request in middleware (proxy.ts) with nonce + strict-dynamic — no unsafe-inline/unsafe-eval on scripts in production.
+      // CSP nonce + strict-dynamic are set in `proxy.ts` (Next.js 16+ edge entry). Production script-src omits unsafe-eval.
     ]
 
     return [
