@@ -8,13 +8,14 @@ export { metadata };
 export const revalidate = 60;
 
 export default async function BlogsPage() {
-  const { posts, sidebarAds, trending, columnPosts } = await getBlogIndexData();
+  const { posts, sidebarAds, trending, columnPosts, listingTruncated } = await getBlogIndexData();
   return (
     <BlogsPageClient
       initialPosts={posts}
       initialSidebarAds={sidebarAds}
       initialTrending={trending}
       initialColumnPosts={columnPosts}
+      listingTruncated={listingTruncated}
     />
   );
 }

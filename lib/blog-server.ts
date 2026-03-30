@@ -142,45 +142,69 @@ export type BlogListingRow = {
   published_at: string | null;
 };
 
-/** Server-only index data: cached, parallel fetch (faster than client double round-trip). */
-export const getBlogIndexData = cache(
-  async (): Promise<{
-    posts: BlogListingRow[];
-    sidebarAds: BlogSidebarAdRow[];
-    trending: BlogTrendingRow[];
-    columnPosts: BlogColumnSidebarRow[];
-  }> => {
-    if (!supabase) return { posts: [], sidebarAds: [], trending: [], columnPosts: [] };
-    const [postsRes, adsRes] = await Promise.all([
-      supabase
-        .from("fusion_blogs")
-        .select("id, slug, title, excerpt, author, category, image_url, published_at")
-        .not("published_at", "is", null)
-        .order("published_at", { ascending: false }),
-      supabase
-        .from("fusion_blog_sidebar_ads")
-        .select("id, title, image_url, href")
-        .order("sort_order", { ascending: true }),
-    ]);
+/** Cap listing grid payload; trending/columns use separate small queries so older News/Business posts still appear in sidebars. */
+export const BLOG_LISTING_PAGE_SIZE = 150;
 
-    const posts =
-      !postsRes.error && postsRes.data ? (postsRes.data as BlogListingRow[]) : [];
-    const sidebarAds =
-      !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
-    const trending = posts.slice(0, 6).map(({ slug, title }) => ({ slug, title }));
+/** Keeps `unstable_cache` payload under Next.js ~2MB data cache limit; cards only show a short preview. */
+const LISTING_EXCERPT_MAX_CHARS = 400;
 
-    const catSet = new Set<string>(COLUMN_SIDEBAR_CATEGORIES);
-    const columnPosts: BlogColumnSidebarRow[] = posts
-      .filter((p) => p.category != null && catSet.has(p.category))
-      .slice(0, 5)
-      .map((p) => ({
-        slug: p.slug,
-        title: p.title,
-        image_url: p.image_url,
-        published_at: p.published_at,
-        category: p.category,
-      }));
+function trimListingExcerpt(post: BlogListingRow): BlogListingRow {
+  const ex = post.excerpt;
+  if (ex == null || ex.length <= LISTING_EXCERPT_MAX_CHARS) return post;
+  return {
+    ...post,
+    excerpt: `${ex.slice(0, LISTING_EXCERPT_MAX_CHARS).trimEnd()}…`,
+  };
+}
 
-    return { posts, sidebarAds, trending, columnPosts };
+async function loadBlogIndexData(): Promise<{
+  posts: BlogListingRow[];
+  sidebarAds: BlogSidebarAdRow[];
+  trending: BlogTrendingRow[];
+  columnPosts: BlogColumnSidebarRow[];
+  listingTruncated: boolean;
+}> {
+  if (!supabase) {
+    return { posts: [], sidebarAds: [], trending: [], columnPosts: [], listingTruncated: false };
   }
-);
+
+  const [postsRes, trendingRes, adsRes, columnPosts] = await Promise.all([
+    supabase
+      .from("fusion_blogs")
+      .select("id, slug, title, excerpt, author, category, image_url, published_at")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: false })
+      .limit(BLOG_LISTING_PAGE_SIZE + 1),
+    supabase
+      .from("fusion_blogs")
+      .select("slug, title")
+      .not("published_at", "is", null)
+      .order("published_at", { ascending: false })
+      .limit(6),
+    supabase
+      .from("fusion_blog_sidebar_ads")
+      .select("id, title, image_url, href")
+      .order("sort_order", { ascending: true }),
+    getBlogColumnsSidebarPosts(undefined, 5),
+  ]);
+
+  const rawPosts =
+    !postsRes.error && postsRes.data ? (postsRes.data as BlogListingRow[]) : [];
+  const listingTruncated = rawPosts.length > BLOG_LISTING_PAGE_SIZE;
+  const capped = listingTruncated ? rawPosts.slice(0, BLOG_LISTING_PAGE_SIZE) : rawPosts;
+  const posts = capped.map(trimListingExcerpt);
+
+  const sidebarAds =
+    !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
+  const trending =
+    !trendingRes.error && trendingRes.data ? (trendingRes.data as BlogTrendingRow[]) : [];
+
+  return { posts, sidebarAds, trending, columnPosts, listingTruncated };
+}
+
+/**
+ * Server-only index data: parallel bounded queries. Deduped per request with React `cache()`.
+ * Cross-request caching uses `/blogs` ISR (`export const revalidate = 60`); `unstable_cache` is not used here because
+ * large excerpt HTML can exceed Next.js’s ~2MB data cache limit.
+ */
+export const getBlogIndexData = cache(loadBlogIndexData);

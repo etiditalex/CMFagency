@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
 
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
@@ -20,11 +19,20 @@ const BlogNewsletterBannerPopup = dynamic(
   { ssr: false }
 );
 
+function formatBlogCardDate(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
 type Props = {
   initialPosts: BlogListingRow[];
   initialSidebarAds: BlogSidebarAdRow[];
   initialTrending: BlogTrendingRow[];
   initialColumnPosts: BlogColumnSidebarRow[];
+  listingTruncated: boolean;
 };
 
 export default function BlogsPageClient({
@@ -32,6 +40,7 @@ export default function BlogsPageClient({
   initialSidebarAds,
   initialTrending,
   initialColumnPosts,
+  listingTruncated,
 }: Props) {
   return (
     <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
@@ -76,7 +85,7 @@ export default function BlogsPageClient({
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
                         <span className="inline-flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                          {post.published_at ? format(new Date(post.published_at), "MMMM d, yyyy") : ""}
+                          {post.published_at ? formatBlogCardDate(post.published_at) : ""}
                         </span>
                         <span className="hidden sm:inline">•</span>
                         <span className="inline-flex items-center gap-1 min-w-0">
@@ -100,6 +109,12 @@ export default function BlogsPageClient({
                 ))
               )}
             </div>
+            {listingTruncated && initialPosts.length > 0 && (
+              <p className="text-center text-sm text-gray-600 max-w-2xl mx-auto">
+                Showing the {initialPosts.length} most recent articles. Older posts stay available at their usual article
+                URLs.
+              </p>
+            )}
           </div>
 
           <BlogListingSidebar trending={initialTrending} columnPosts={initialColumnPosts} />

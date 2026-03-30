@@ -14,7 +14,6 @@ type BlogRow = {
   id: string;
   slug: string;
   title: string;
-  excerpt: string | null;
   author: string | null;
   category: string | null;
   image_url: string | null;
@@ -44,7 +43,9 @@ export default function DashboardBlogsPage() {
   }, [authLoading, isAuthenticated, isPortalMember, isAdmin, portalLoading, router, user]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (authLoading || portalLoading) return;
+    if (!isAuthenticated || !user?.id || !isPortalMember || !isAdmin) return;
+
     let cancelled = false;
     const load = async () => {
       setLoading(true);
@@ -52,8 +53,9 @@ export default function DashboardBlogsPage() {
       try {
         const { data, error: err } = await supabase
           .from("fusion_blogs")
-          .select("id,slug,title,excerpt,author,category,image_url,published_at,created_at")
-          .order("created_at", { ascending: false });
+          .select("id,slug,title,author,category,image_url,published_at,created_at")
+          .order("created_at", { ascending: false })
+          .limit(400);
         if (err) throw err;
         if (!cancelled) setBlogs((data ?? []) as BlogRow[]);
       } catch (e: unknown) {
@@ -62,9 +64,11 @@ export default function DashboardBlogsPage() {
         if (!cancelled) setLoading(false);
       }
     };
-    load();
-    return () => { cancelled = true; };
-  }, [isAdmin]);
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, portalLoading, isAuthenticated, user?.id, isPortalMember, isAdmin]);
 
   const filtered = blogs.filter((b) => {
     if (filter === "published") return b.published_at != null;
