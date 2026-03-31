@@ -10,7 +10,10 @@ import type {
   BlogSidebarAdRow,
   BlogTrendingRow,
 } from "@/lib/blog-server";
+import BlogBodyWithDoubleClickShare from "@/components/blogs/BlogBodyWithDoubleClickShare";
 import BlogPostSidebar from "@/components/blogs/BlogPostSidebar";
+import BlogShareBar from "@/components/blogs/BlogShareBar";
+import { SITE_URL } from "@/lib/site-url";
 
 type Props = {
   post: BlogPostRow;
@@ -107,6 +110,7 @@ export default function BlogSlugContent({
   relatedBySlug,
 }: Props) {
   const heroSrc = heroSrcFor(post);
+  const shareUrl = `${SITE_URL}/blogs/${post.slug}`;
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
@@ -161,7 +165,11 @@ export default function BlogSlugContent({
                   {post.excerpt}
                 </p>
               )}
-              <div className="blog-body flow-root text-gray-800 [&_figure:not(.blog-embed-ad-figure)]:mx-auto [&_figcaption_a]:text-primary-600">
+              <BlogBodyWithDoubleClickShare
+                pageUrl={shareUrl}
+                pageTitle={post.title}
+                className="blog-body flow-root text-gray-800 [&_figure:not(.blog-embed-ad-figure)]:mx-auto [&_figcaption_a]:text-primary-600"
+              >
                 {bodyParts.map((part, idx) => {
                   if (part.type === "html") {
                     if (!part.html.trim()) return null;
@@ -190,7 +198,7 @@ export default function BlogSlugContent({
                     />
                   );
                 })}
-              </div>
+              </BlogBodyWithDoubleClickShare>
               {Array.isArray(post.external_links) && post.external_links.length > 0 && (
                 <section className="mt-10 pt-8 border-t border-gray-200">
                   <h2 className="font-bold text-xl text-gray-900 mb-4">References &amp; further reading</h2>
@@ -216,6 +224,7 @@ export default function BlogSlugContent({
                   </ul>
                 </section>
               )}
+              <BlogShareBar url={shareUrl} title={post.title} />
             </div>
           </main>
 
