@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { Mail, X } from "lucide-react";
 import {
   buildFacebookSharerUrl,
@@ -37,9 +38,10 @@ export default function BlogBodyWithDoubleClickShare({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
-    const onPointer = (e: MouseEvent) => {
+    const onPointer = (e: Event) => {
       const node = popupRef.current;
-      if (node && !node.contains(e.target as Node)) close();
+      const tgt = e.target;
+      if (node && tgt instanceof Node && !node.contains(tgt)) close();
     };
 
     window.addEventListener("keydown", onKey);
@@ -51,7 +53,7 @@ export default function BlogBodyWithDoubleClickShare({
   }, [open, close]);
 
   const handleDoubleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
+    (e: ReactMouseEvent<HTMLDivElement>) => {
       const t = e.target as HTMLElement;
       if (t.closest("a, button, [role='button'], input, textarea, select, iframe, video, audio")) {
         return;
