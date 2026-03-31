@@ -12,6 +12,8 @@ import type {
 } from "@/lib/blog-server";
 import BlogBodyWithDoubleClickShare from "@/components/blogs/BlogBodyWithDoubleClickShare";
 import BlogPostSidebar from "@/components/blogs/BlogPostSidebar";
+import BlogCmfaInlineBanner from "@/components/blogs/BlogCmfaInlineBanner";
+import BlogEditorialDesk from "@/components/blogs/BlogEditorialDesk";
 import BlogShareBar from "@/components/blogs/BlogShareBar";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -225,6 +227,8 @@ export default function BlogSlugContent({
                 </section>
               )}
               <BlogShareBar url={shareUrl} title={post.title} />
+              <BlogCmfaInlineBanner />
+              <BlogEditorialDesk />
             </div>
           </main>
 
