@@ -16,6 +16,8 @@ export type BlogPostRow = {
   category: string | null;
   image_url: string | null;
   published_at: string | null;
+  /** Set when row exists; used for sitemaps, JSON-LD dateModified, and OG article freshness. */
+  updated_at: string | null;
   external_links?: { label: string; url: string }[] | null;
 };
 
@@ -35,7 +37,7 @@ export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | n
   if (!slug || !supabase) return null;
   const { data, error } = await supabase
     .from("fusion_blogs")
-    .select("id, slug, title, excerpt, body, author, category, image_url, published_at, external_links")
+    .select("id, slug, title, excerpt, body, author, category, image_url, published_at, updated_at, external_links")
     .eq("slug", slug)
     .not("published_at", "is", null)
     .maybeSingle();
@@ -208,3 +210,41 @@ async function loadBlogIndexData(): Promise<{
  * large excerpt HTML can exceed Next.js’s ~2MB data cache limit.
  */
 export const getBlogIndexData = cache(loadBlogIndexData);
+
+export type BlogSitemapRow = { slug: string; published_at: string; updated_at: string | null };
+
+/** Latest meaningful modification time for SEO (sitemap lastmod, article modified, JSON-LD). */
+export function blogLastModifiedDate(publishedAt: string | null, updatedAt: string | null): Date | undefined {
+  if (!publishedAt) return undefined;
+  const pub = new Date(publishedAt).getTime();
+  const upd = updatedAt ? new Date(updatedAt).getTime() : pub;
+  return new Date(Math.max(pub, upd));
+}
+
+/** Published posts for sitemap URLs and lastmod (SEO / crawlers). */
+export async function getPublishedBlogsForSitemap(limit = 500): Promise<BlogSitemapRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("fusion_blogs")
+    .select("slug, published_at, updated_at")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data as BlogSitemapRow[];
+}
+
+export type BlogFeedRow = { slug: string; title: string; excerpt: string | null; published_at: string };
+
+/** Recent published posts for RSS (discovery / aggregators). */
+export async function getPublishedBlogsForFeed(limit = 50): Promise<BlogFeedRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("fusion_blogs")
+    .select("slug, title, excerpt, published_at")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data as BlogFeedRow[];
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import { requestBlogPublicRevalidate } from "@/lib/request-blog-public-revalidate";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Upload, X } from "lucide-react";
@@ -63,6 +65,7 @@ export default function EditBlogPage() {
   /** Set once when post loads; used to detect first-time publish → newsletter notify */
   const [publishedAtOnLoad, setPublishedAtOnLoad] = useState<string | null>(null);
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialSlugRef = useRef("");
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -89,7 +92,9 @@ export default function EditBlogPage() {
         if (!data || cancelled) return;
         const row = data as Record<string, unknown>;
         setTitle(String(row.title ?? ""));
-        setSlug(String(row.slug ?? ""));
+        const loadedSlug = String(row.slug ?? "");
+        setSlug(loadedSlug);
+        initialSlugRef.current = loadedSlug;
         setExcerpt(String(row.excerpt ?? ""));
         setBody(String(row.body ?? ""));
         setAuthor(String(row.author ?? DEFAULT_BLOG_AUTHOR));
@@ -166,15 +171,23 @@ export default function EditBlogPage() {
 
       if (updateErr) throw updateErr;
       const shouldNotifyNewsletter = publishNow && publishedAtOnLoad === null;
-      if (shouldNotifyNewsletter) {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (token) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (token) {
+        if (shouldNotifyNewsletter) {
           void fetch("/api/newsletter/notify-blog-published", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             body: JSON.stringify({ slug: normalizedSlug }),
           });
+        }
+        const needsPublicPurge = publishNow || publishedAtOnLoad !== null;
+        if (needsPublicPurge) {
+          const previousSlug =
+            initialSlugRef.current && initialSlugRef.current !== normalizedSlug
+              ? initialSlugRef.current
+              : undefined;
+          void requestBlogPublicRevalidate(token, { slug: normalizedSlug, previousSlug });
         }
       }
       router.push("/dashboard/blogs");

@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-server";
 import { getPublishedJobListings } from "@/lib/job-board-listings";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -82,6 +83,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // aggregated_jobs may not exist yet
   }
 
-  return [...staticEntries, ...jobEntries];
+  const blogEntries: MetadataRoute.Sitemap = [];
+  try {
+    const blogRows = await getPublishedBlogsForSitemap();
+    for (const row of blogRows) {
+      if (!row.slug || !row.published_at) continue;
+      const lastMod = blogLastModifiedDate(row.published_at, row.updated_at) ?? now;
+      blogEntries.push({
+        url: `${baseUrl}/blogs/${row.slug}`,
+        lastModified: lastMod,
+        changeFrequency: "weekly" as const,
+        priority: 0.84,
+      });
+    }
+  } catch {
+    // Supabase unavailable during build
+  }
+
+  return [...staticEntries, ...jobEntries, ...blogEntries];
 }
 

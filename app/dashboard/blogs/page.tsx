@@ -8,6 +8,7 @@ import { format } from "date-fns";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { requestBlogPublicRevalidate } from "@/lib/request-blog-public-revalidate";
 import { supabase } from "@/lib/supabase";
 
 type BlogRow = {
@@ -113,11 +114,19 @@ export default function DashboardBlogsPage() {
 
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`Delete blog "${title}"? This cannot be undone.`)) return;
+    const row = blogs.find((b) => b.id === id);
+    const wasPublished = row?.published_at != null;
+    const slug = row?.slug ?? "";
     setDeletingId(id);
     try {
       const { error: err } = await supabase.from("fusion_blogs").delete().eq("id", id);
       if (err) throw err;
       setBlogs((prev) => prev.filter((b) => b.id !== id));
+      if (wasPublished && slug) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (token) void requestBlogPublicRevalidate(token, { slug });
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to delete");
     } finally {

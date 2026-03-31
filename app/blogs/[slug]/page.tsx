@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { parseBlogBodyParts } from "@/lib/blog-body";
 import {
+  blogLastModifiedDate,
   getApprovedBlogSidebarAds,
   getBlogBySlug,
   getBlogColumnsSidebarPosts,
@@ -11,6 +12,7 @@ import {
   getPublishedBlogSlugsForStatic,
 } from "@/lib/blog-server";
 import { resolveBlogShareImageUrl } from "@/lib/blog-share-image";
+import BlogPostingJsonLd from "@/components/blogs/BlogPostingJsonLd";
 import BlogSlugContent from "./BlogSlugContent";
 
 const BASE_URL =
@@ -51,6 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = post.excerpt || "Read more on the Changer Fusions blog.";
   const imageUrl = resolveBlogShareImageUrl(slug, post.image_url);
   const url = `${BASE_URL}/blogs/${slug}`;
+  const modified = blogLastModifiedDate(post.published_at, post.updated_at);
 
   return {
     title,
@@ -62,6 +65,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "Changer Fusions",
       type: "article",
       publishedTime: post.published_at ?? undefined,
+      modifiedTime: modified?.toISOString(),
       images: [
         {
           url: imageUrl,
@@ -117,14 +121,20 @@ export default async function BlogSlugPage({ params }: Props) {
   const relatedBySlug: Record<string, (typeof relatedRows)[number]> = {};
   for (const r of relatedRows) relatedBySlug[r.slug] = r;
 
+  const canonicalUrl = `${BASE_URL}/blogs/${post.slug}`;
+  const shareImageUrl = resolveBlogShareImageUrl(post.slug, post.image_url);
+
   return (
-    <BlogSlugContent
-      post={post}
-      trending={trending}
-      sidebarAds={sidebarAds}
-      columnPosts={columnPosts}
-      bodyParts={bodyParts}
-      relatedBySlug={relatedBySlug}
-    />
+    <>
+      <BlogPostingJsonLd post={post} canonicalUrl={canonicalUrl} imageUrl={shareImageUrl} />
+      <BlogSlugContent
+        post={post}
+        trending={trending}
+        sidebarAds={sidebarAds}
+        columnPosts={columnPosts}
+        bodyParts={bodyParts}
+        relatedBySlug={relatedBySlug}
+      />
+    </>
   );
 }

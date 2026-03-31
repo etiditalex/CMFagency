@@ -8,6 +8,7 @@ import { Upload, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
+import { requestBlogPublicRevalidate } from "@/lib/request-blog-public-revalidate";
 import { supabase } from "@/lib/supabase";
 import BlogBodyInsertToolbar from "@/components/dashboard/BlogBodyInsertToolbar";
 
@@ -120,6 +121,7 @@ export default function NewBlogPage() {
             headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
             body: JSON.stringify({ slug: normalizedSlug }),
           });
+          void requestBlogPublicRevalidate(token, { slug: normalizedSlug });
         }
       }
       router.push("/dashboard/blogs");
