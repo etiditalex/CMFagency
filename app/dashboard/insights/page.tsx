@@ -8,7 +8,7 @@ import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { RevenuePieChart, VoteTrendBars } from "@/components/dashboard/SalesInsightsCharts";
+import { DailyVoteTicketCharts, RevenuePieChart } from "@/components/dashboard/SalesInsightsCharts";
 
 type SalesPayload = {
   generatedAt?: string;
@@ -23,7 +23,7 @@ type SalesPayload = {
     mpesaRevenue: number;
   };
   pie?: { vote: number; ticket: number; merchandise: number };
-  daily?: { date: string; voteRevenue: number; voteUnits: number }[];
+  daily?: { date: string; voteRevenue: number; voteUnits: number; ticketRevenue?: number }[];
   topVoteCampaigns?: Array<{
     campaignId: string;
     title: string;
@@ -96,7 +96,12 @@ export default function DashboardInsightsPage() {
 
   const k = data?.kpis;
   const pie = data?.pie ?? { vote: 0, ticket: 0, merchandise: 0 };
-  const daily = data?.daily ?? [];
+  const daily = (data?.daily ?? []).map((r) => ({
+    date: r.date,
+    voteRevenue: r.voteRevenue,
+    voteUnits: r.voteUnits,
+    ticketRevenue: r.ticketRevenue ?? 0,
+  }));
   const top = data?.topVoteCampaigns ?? [];
 
   return (
@@ -108,8 +113,9 @@ export default function DashboardInsightsPage() {
             Sales &amp; votes
           </h2>
           <p className="mt-1 text-sm text-gray-600 max-w-3xl">
-            Successful payments in the last <strong>90 days</strong> across your campaigns. Daily chart shows{" "}
-            <strong>last 14 days</strong> of vote revenue (M-Pesa and Paystack). Data matches the Transactions export —
+            Successful payments in the last <strong>90 days</strong> across your campaigns. The revenue mix is a pie chart;
+            daily graphs show <strong>the last 14 calendar days (UTC), including today</strong> — vote revenue, ticket
+            revenue, and vote units. Data matches the Transactions export —
             if rows were removed from the database (e.g. deleting a contestant), totals here drop too.
           </p>
           {data?.generatedAt && (
@@ -161,14 +167,15 @@ export default function DashboardInsightsPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="font-extrabold text-gray-900 mb-4">Revenue mix (90 days)</h3>
               <RevenuePieChart vote={pie.vote} ticket={pie.ticket} merchandise={pie.merchandise} />
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="font-extrabold text-gray-900 mb-4">Votes coming in (14 days)</h3>
-              <VoteTrendBars rows={daily} />
+              <h3 className="font-extrabold text-gray-900 mb-2">Daily revenue — votes &amp; tickets</h3>
+              <p className="text-xs text-gray-500 mb-6">Bar and line charts, same 14-day window (UTC).</p>
+              <DailyVoteTicketCharts rows={daily} />
             </div>
           </div>
 

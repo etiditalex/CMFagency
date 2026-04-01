@@ -31,7 +31,7 @@ async function canAccessReports(
 }
 
 /**
- * Aggregates successful payments for dashboard charts (votes vs tickets, daily vote activity, providers).
+ * Aggregates successful payments for dashboard charts (votes vs tickets, daily vote/ticket revenue, providers).
  * Same campaign scope as Transactions: full admin sees all campaigns; others see `created_by = self`.
  */
 export async function GET(req: Request) {
@@ -134,14 +134,16 @@ export async function GET(req: Request) {
   let mpesaRevenue = 0;
 
   const voteByCampaign = new Map<string, { revenue: number; units: number; count: number }>();
-  const dailyMap = new Map<string, { revenue: number; units: number }>();
+  type DailyBucket = { voteRevenue: number; voteUnits: number; ticketRevenue: number };
+  const dailyMap = new Map<string, DailyBucket>();
 
+  // Last N calendar days including today (UTC).
   const chartStart = new Date();
-  chartStart.setUTCDate(chartStart.getUTCDate() - DAILY_CHART_DAYS);
+  chartStart.setUTCDate(chartStart.getUTCDate() - (DAILY_CHART_DAYS - 1));
   for (let i = 0; i < DAILY_CHART_DAYS; i++) {
     const d = new Date(chartStart);
     d.setUTCDate(d.getUTCDate() + i);
-    dailyMap.set(ymd(d), { revenue: 0, units: 0 });
+    dailyMap.set(ymd(d), { voteRevenue: 0, voteUnits: 0, ticketRevenue: 0 });
   }
 
   const isMpesa = (p: string | null | undefined) => {
@@ -165,8 +167,8 @@ export async function GET(req: Request) {
       const day = ymd(new Date(t.created_at));
       const agg = dailyMap.get(day);
       if (agg) {
-        agg.revenue += amt;
-        agg.units += q;
+        agg.voteRevenue += amt;
+        agg.voteUnits += q;
       }
       const key = String(t.campaign_id);
       const cur = voteByCampaign.get(key) ?? { revenue: 0, units: 0, count: 0 };
@@ -176,6 +178,11 @@ export async function GET(req: Request) {
       voteByCampaign.set(key, cur);
     } else if (ctype === "ticket") {
       ticketRevenue += amt;
+      const day = ymd(new Date(t.created_at));
+      const agg = dailyMap.get(day);
+      if (agg) {
+        agg.ticketRevenue += amt;
+      }
     }
 
     if (isMpesa(t.provider)) mpesaRevenue += amt;
@@ -190,7 +197,12 @@ export async function GET(req: Request) {
 
   const daily = [...dailyMap.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, v]) => ({ date, voteRevenue: Math.round(v.revenue), voteUnits: v.units }));
+    .map(([date, v]) => ({
+      date,
+      voteRevenue: Math.round(v.voteRevenue),
+      voteUnits: v.voteUnits,
+      ticketRevenue: Math.round(v.ticketRevenue),
+    }));
 
   const titleById: Record<string, string> = {};
   for (const c of rows as { id: string; title?: string; slug?: string }[]) {

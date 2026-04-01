@@ -53,37 +53,159 @@ export function RevenuePieChart({ vote, ticket, merchandise }: PieProps) {
   );
 }
 
-type DailyRow = { date: string; voteRevenue: number; voteUnits: number };
+export type DailyRevenueRow = {
+  date: string;
+  voteRevenue: number;
+  voteUnits: number;
+  ticketRevenue: number;
+};
 
-/** Last N days vote revenue + units (dual bar height uses revenue). */
-export function VoteTrendBars({ rows }: { rows: DailyRow[] }) {
-  const maxRev = Math.max(1, ...rows.map((r) => r.voteRevenue));
+function dailyMaxRev(rows: DailyRevenueRow[]) {
+  return Math.max(1, ...rows.flatMap((r) => [r.voteRevenue, r.ticketRevenue]));
+}
+
+/**
+ * Grouped vertical bars per day: votes (blue) and tickets (green), KES height.
+ */
+export function DailyVoteTicketBarChart({ rows }: { rows: DailyRevenueRow[] }) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-gray-500 py-4">No daily data.</p>;
+  }
+  const maxRev = dailyMaxRev(rows);
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-gray-500">
-        Each day: <span className="font-medium text-blue-700">taller bar = vote revenue (KES)</span>, number = vote
-        units (paid checkouts).
-      </p>
+      <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-blue-600" />
+          Vote revenue (KES)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-emerald-600" />
+          Ticket revenue (KES)
+        </span>
+        <span className="text-gray-500">Small number under each day = vote units</span>
+      </div>
       <div className="flex items-end gap-0.5 sm:gap-1 h-44 border-b border-gray-200 pb-1 overflow-x-auto">
         {rows.map((r) => (
-          <div key={r.date} className="flex flex-col items-center gap-1 min-w-[1.25rem] flex-1">
-            <div className="flex flex-col justify-end items-center gap-0.5 w-full flex-1 min-h-0">
+          <div key={r.date} className="flex flex-col items-center gap-1 min-w-[1.75rem] flex-1">
+            <div className="flex flex-1 w-full min-h-0 items-end justify-center gap-px sm:gap-0.5">
               <div
-                className="w-full max-w-[20px] rounded-t bg-blue-600/90 mx-auto transition-[height]"
+                className="w-[42%] max-w-[14px] rounded-t bg-blue-600/90 mx-auto transition-[height]"
                 style={{ height: `${Math.max(2, (r.voteRevenue / maxRev) * 100)}%` }}
-                title={`${r.date}: KES ${r.voteRevenue.toLocaleString()}`}
+                title={`${r.date} votes: KES ${r.voteRevenue.toLocaleString()} · ${r.voteUnits} units`}
+              />
+              <div
+                className="w-[42%] max-w-[14px] rounded-t bg-emerald-600/90 mx-auto transition-[height]"
+                style={{ height: `${Math.max(2, (r.ticketRevenue / maxRev) * 100)}%` }}
+                title={`${r.date} tickets: KES ${r.ticketRevenue.toLocaleString()}`}
               />
             </div>
-            <span
-              className="text-[10px] text-gray-500 leading-none text-center truncate w-full"
-              title={`${r.date} · ${r.voteUnits} units`}
-            >
+            <span className="text-[10px] text-gray-500 leading-none text-center truncate w-full" title={r.date}>
               {r.date.slice(8)}
             </span>
-            <span className="text-[9px] text-gray-400 tabular-nums">{r.voteUnits > 0 ? r.voteUnits : ""}</span>
+            <span className="text-[9px] text-gray-400 tabular-nums leading-none">
+              {r.voteUnits > 0 ? r.voteUnits : ""}
+            </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * SVG line chart: vote vs ticket daily revenue (same period).
+ */
+export function DailyVoteTicketLineChart({ rows }: { rows: DailyRevenueRow[] }) {
+  if (rows.length === 0) {
+    return null;
+  }
+  const W = 480;
+  const H = 140;
+  const pad = { t: 10, r: 12, b: 28, l: 12 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+  const maxRev = dailyMaxRev(rows);
+  const n = rows.length;
+  const xAt = (i: number) => pad.l + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const yAt = (rev: number) => pad.t + plotH - (rev / maxRev) * plotH;
+
+  const voteLine = rows.map((r, i) => `${xAt(i)},${yAt(r.voteRevenue)}`).join(" ");
+  const ticketLine = rows.map((r, i) => `${xAt(i)},${yAt(r.ticketRevenue)}`).join(" ");
+
+  const labelIdx = [0, Math.floor((n - 1) / 2), n - 1].filter((i, j, a) => a.indexOf(i) === j);
+  const fmt = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return `${m}/${d}`;
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-4 h-0.5 bg-blue-600 rounded-full" />
+          Votes
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-4 h-0.5 bg-emerald-600 rounded-full" />
+          Tickets
+        </span>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full max-h-40 text-gray-400"
+        role="img"
+        aria-label="Line chart of daily vote revenue and ticket revenue in KES"
+      >
+        <line x1={pad.l} y1={pad.t + plotH} x2={pad.l + plotW} y2={pad.t + plotH} stroke="currentColor" strokeWidth={1} />
+        <polyline fill="none" stroke="rgb(37 99 235)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" points={voteLine} />
+        <polyline fill="none" stroke="rgb(22 163 74)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" points={ticketLine} />
+        {rows.map((r, i) => (
+          <g key={r.date}>
+            <circle cx={xAt(i)} cy={yAt(r.voteRevenue)} r={2.5} fill="rgb(37 99 235)" />
+            <circle cx={xAt(i)} cy={yAt(r.ticketRevenue)} r={2.5} fill="rgb(22 163 74)" />
+          </g>
+        ))}
+        {labelIdx.map((i) => (
+          <text
+            key={`lbl-${rows[i].date}`}
+            x={xAt(i)}
+            y={H - 6}
+            textAnchor="middle"
+            className="fill-gray-500 text-[10px]"
+            style={{ fontSize: 10 }}
+          >
+            {fmt(rows[i].date)}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+/** Bar + line visuals for daily vote & ticket revenue (14-day window from API). */
+export function DailyVoteTicketCharts({ rows }: { rows: DailyRevenueRow[] }) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-gray-500 py-2">No daily data.</p>;
+  }
+  const hasAny = rows.some((r) => r.voteRevenue > 0 || r.ticketRevenue > 0);
+  if (!hasAny) {
+    return (
+      <p className="text-sm text-gray-500 py-2">
+        No vote or ticket revenue in this 14-day window (UTC dates).
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-8">
+      <div>
+        <h4 className="text-sm font-bold text-gray-800 mb-2">By day — bar chart</h4>
+        <DailyVoteTicketBarChart rows={rows} />
+      </div>
+      <div className="pt-6 border-t border-gray-100">
+        <h4 className="text-sm font-bold text-gray-800 mb-2">By day — line chart</h4>
+        <DailyVoteTicketLineChart rows={rows} />
       </div>
     </div>
   );
