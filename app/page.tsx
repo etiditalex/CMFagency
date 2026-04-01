@@ -1,34 +1,15 @@
 import { Metadata } from "next";
-import nextDynamic from "next/dynamic";
 import Hero from "@/components/home/Hero";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
 import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
 import StatsSection from "@/components/home/StatsSection";
+import { HomeDeferredGallery, HomeDeferredPartnersCTA } from "@/components/home/HomeBelowFoldDynamic";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 /** Avoid stale static HTML on refresh (Vercel/CDN serving an old prerender of this page). */
 export const dynamic = "force-dynamic";
-
-const galleryPlaceholder = () => (
-  <div className="min-h-[280px] bg-gray-50/80 md:min-h-[360px]" aria-hidden />
-);
-
-const HomeGalleryCarousel = nextDynamic(() => import("@/components/home/HomeGalleryCarousel"), {
-  ssr: false,
-  loading: galleryPlaceholder,
-});
-const PartnersCarousel = nextDynamic(() => import("@/components/home/PartnersCarousel"), {
-  ssr: false,
-  loading: galleryPlaceholder,
-});
-const CTABanner = nextDynamic(() => import("@/components/home/CTABanner"), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[200px] bg-primary-600/20 md:min-h-[240px]" aria-hidden />
-  ),
-});
 
 export const metadata: Metadata = {
   title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",
@@ -88,12 +69,11 @@ export default function Home() {
       <Hero />
       <FeaturedEvents />
       <CoreValues />
-      <HomeGalleryCarousel />
+      <HomeDeferredGallery />
       <QuickLinks />
       <WhatWeDoOrbit />
       <StatsSection />
-      <PartnersCarousel />
-      <CTABanner />
+      <HomeDeferredPartnersCTA />
     </>
   );
 }
