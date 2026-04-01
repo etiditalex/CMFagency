@@ -11,9 +11,24 @@ import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 /** Avoid stale static HTML on refresh (Vercel/CDN serving an old prerender of this page). */
 export const dynamic = "force-dynamic";
 
-const HomeGalleryCarousel = nextDynamic(() => import("@/components/home/HomeGalleryCarousel"), { ssr: true });
-const PartnersCarousel = nextDynamic(() => import("@/components/home/PartnersCarousel"), { ssr: true });
-const CTABanner = nextDynamic(() => import("@/components/home/CTABanner"), { ssr: true });
+const galleryPlaceholder = () => (
+  <div className="min-h-[280px] bg-gray-50/80 md:min-h-[360px]" aria-hidden />
+);
+
+const HomeGalleryCarousel = nextDynamic(() => import("@/components/home/HomeGalleryCarousel"), {
+  ssr: false,
+  loading: galleryPlaceholder,
+});
+const PartnersCarousel = nextDynamic(() => import("@/components/home/PartnersCarousel"), {
+  ssr: false,
+  loading: galleryPlaceholder,
+});
+const CTABanner = nextDynamic(() => import("@/components/home/CTABanner"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-[200px] bg-primary-600/20 md:min-h-[240px]" aria-hidden />
+  ),
+});
 
 export const metadata: Metadata = {
   title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",

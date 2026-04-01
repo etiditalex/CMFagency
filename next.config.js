@@ -33,6 +33,10 @@ const imageRemotePatterns = [
 ]
 
 const nextConfig = {
+  // Tree-shake barrel imports (smaller client bundles for icon-heavy pages).
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
   // Ensure Turbopack uses this project root (we have another lockfile on disk).
   turbopack: {
     root: __dirname,
