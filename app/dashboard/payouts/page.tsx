@@ -232,6 +232,16 @@ export default function DashboardPayoutsPage() {
         </div>
       )}
 
+      <div className="mt-4 p-4 rounded-md bg-sky-50 border border-sky-200 text-sky-900 text-sm">
+        <strong className="font-bold">About these balances</strong>
+        <p className="mt-2 text-sky-900/90">
+          Totals come from <strong>successful</strong> rows in <code className="text-xs bg-white/80 px-1 rounded">transactions</code>{" "}
+          for your campaigns. Deleting a <strong>contestant</strong> can remove linked vote transactions (cascade), which lowers the
+          numbers here — that does not reverse money already settled at M-Pesa or Paystack. If <strong>Paystack</strong> shows zero, most
+          payments were likely recorded as M-Pesa STK (<strong>Daraja</strong> or similar provider name).
+        </p>
+      </div>
+
       {loading ? (
         <div className="mt-6 flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />

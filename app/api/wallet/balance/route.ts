@@ -71,15 +71,17 @@ export async function GET(req: Request) {
 
     if (txErr) throw txErr;
 
+    const isMpesa = (p: string | null | undefined) => {
+      const s = String(p ?? "").toLowerCase();
+      return s === "daraja" || s.includes("mpesa") || s.includes("m-pesa");
+    };
+
     let mpesa = 0;
     let paystack = 0;
     for (const t of txRows ?? []) {
       const amt = Number(t.amount ?? 0) || 0;
-      if (String(t.provider ?? "").toLowerCase() === "daraja") {
-        mpesa += amt;
-      } else {
-        paystack += amt;
-      }
+      if (isMpesa(t.provider)) mpesa += amt;
+      else paystack += amt;
     }
 
     // Pending M-Pesa withdrawals (reduce available) - use supabase (RLS allows own rows)
