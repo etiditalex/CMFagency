@@ -26,6 +26,7 @@ type Contestant = {
   description: string | null;
   image_url: string | null;
   sort_order: number;
+  created_at: string | null;
 };
 
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
@@ -154,7 +155,7 @@ export default function CampaignPage() {
         if (c?.type === "vote") {
           const { data: rows, error: rErr } = await supabase
             .from("contestants")
-            .select("id,name,description,image_url,sort_order")
+            .select("id,name,description,image_url,sort_order,created_at")
             .eq("campaign_id", c.id)
             .order("sort_order", { ascending: true });
 
@@ -206,6 +207,21 @@ export default function CampaignPage() {
     const interval = setInterval(fetchVoteCounts, 5000);
     return () => clearInterval(interval);
   }, [campaign, fetchVoteCounts]);
+
+  /** Highest vote totals first; ties use sort_order then registration time (created_at). */
+  const contestantsSorted = useMemo(() => {
+    if (contestants.length === 0) return contestants;
+    return [...contestants].sort((a, b) => {
+      const va = voteCounts[a.id] ?? 0;
+      const vb = voteCounts[b.id] ?? 0;
+      if (vb !== va) return vb - va;
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      const ta = a.created_at ? Date.parse(a.created_at) : 0;
+      const tb = b.created_at ? Date.parse(b.created_at) : 0;
+      if (ta !== tb) return ta - tb;
+      return a.name.localeCompare(b.name);
+    });
+  }, [contestants, voteCounts]);
 
   useEffect(() => {
     if (!ref) return;
@@ -582,7 +598,7 @@ export default function CampaignPage() {
                 <h2 className="text-lg font-bold text-gray-900 mb-3">Contestants</h2>
                 <p className="text-sm text-gray-600 mb-3">Vote counts update in real time. See who&apos;s leading and join the competition!</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {contestants.map((c) => {
+                  {contestantsSorted.map((c) => {
                     const votes = voteCounts[c.id] ?? 0;
                     return (
                       <label

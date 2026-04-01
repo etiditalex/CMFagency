@@ -27,6 +27,7 @@ type Contestant = {
   name: string;
   email?: string | null;
   created_at: string;
+  sort_order?: number;
   voting_link_sent_at?: string | null;
   certificate_approved_at?: string | null;
   certificate_downloaded_at?: string | null;
@@ -42,16 +43,41 @@ type CategoryWithCount = Campaign & { contestant_count: number; contestants: Con
 /** Supabase nested select shape (client generics don’t infer embedded `contestants` reliably). */
 type CampaignRowWithContestants = Campaign & { contestants: Contestant[] | null };
 
-/** Newest first (matches prior `.order("created_at", { ascending: false })` on contestants). */
-function sortContestantsByCreatedDesc(list: Contestant[]): Contestant[] {
-  return [...list].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+/** Highest vote totals first; ties use sort_order then registration time (created_at ascending). */
+function sortContestantsByVoteTotal(list: Contestant[], totals: Map<string, number>): Contestant[] {
+  return [...list].sort((a, b) => {
+    const va = totals.get(a.id) ?? 0;
+    const vb = totals.get(b.id) ?? 0;
+    if (vb !== va) return vb - va;
+    const sa = a.sort_order ?? 0;
+    const sb = b.sort_order ?? 0;
+    if (sa !== sb) return sa - sb;
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  });
 }
 
-function mapRowsToCategories(rows: CampaignRowWithContestants[]): CategoryWithCount[] {
+async function aggregateVoteTotalsByContestant(campaignIds: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (campaignIds.length === 0) return map;
+  const CHUNK = 40;
+  for (let i = 0; i < campaignIds.length; i += CHUNK) {
+    const chunk = campaignIds.slice(i, i + CHUNK);
+    const { data, error } = await supabase.from("votes").select("contestant_id,votes").in("campaign_id", chunk);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const r = row as { contestant_id: string; votes: number };
+      const id = String(r.contestant_id ?? "");
+      const v = Number(r.votes ?? 0) || 0;
+      if (!id) continue;
+      map.set(id, (map.get(id) ?? 0) + v);
+    }
+  }
+  return map;
+}
+
+function mapRowsToCategories(rows: CampaignRowWithContestants[], totals: Map<string, number>): CategoryWithCount[] {
   return rows.map((c) => {
-    const list = sortContestantsByCreatedDesc(c.contestants ?? []);
+    const list = sortContestantsByVoteTotal(c.contestants ?? [], totals);
     return {
       id: c.id,
       slug: c.slug,
@@ -73,6 +99,7 @@ const SELECT_EMBEDDED_FULL = `
     name,
     email,
     created_at,
+    sort_order,
     voting_link_sent_at,
     certificate_approved_at,
     certificate_downloaded_at
@@ -89,6 +116,7 @@ const SELECT_EMBEDDED_NO_CERT = `
     name,
     email,
     created_at,
+    sort_order,
     voting_link_sent_at
   )
 `;
@@ -101,7 +129,8 @@ const SELECT_EMBEDDED_MIN = `
     id,
     campaign_id,
     name,
-    created_at
+    created_at,
+    sort_order
   )
 `;
 
@@ -147,12 +176,12 @@ export default function DashboardContestantsPage() {
           return q;
         };
 
-        const applyEmbeddedResult = (rows: CampaignRowWithContestants[] | null) => {
+        const applyEmbeddedResult = (rows: CampaignRowWithContestants[] | null, totals: Map<string, number>) => {
           const list = rows ?? [];
           if (list.length === 0) {
             return { categories: [] as CategoryWithCount[], total: 0 };
           }
-          const categories = mapRowsToCategories(list);
+          const categories = mapRowsToCategories(list, totals);
           const total = categories.reduce((acc, c) => acc + c.contestant_count, 0);
           return { categories, total };
         };
@@ -188,7 +217,9 @@ export default function DashboardContestantsPage() {
         }
 
         if (embeddedRows !== null) {
-          const { categories, total } = applyEmbeddedResult(embeddedRows);
+          const campaignIds = embeddedRows.map((r) => r.id);
+          const voteTotals = await aggregateVoteTotalsByContestant(campaignIds);
+          const { categories, total } = applyEmbeddedResult(embeddedRows, voteTotals);
           if (!cancelled) {
             setCategories(categories);
             setTotalContestants(total);
@@ -224,26 +255,23 @@ export default function DashboardContestantsPage() {
 
         const { data: withCert, error: errWithCert } = await supabase
           .from("contestants")
-          .select("id,campaign_id,name,email,created_at,voting_link_sent_at,certificate_approved_at,certificate_downloaded_at")
-          .in("campaign_id", campaignIds)
-          .order("created_at", { ascending: false });
+          .select("id,campaign_id,name,email,created_at,sort_order,voting_link_sent_at,certificate_approved_at,certificate_downloaded_at")
+          .in("campaign_id", campaignIds);
 
         if (errWithCert && isMissingContestantEmailColumn(errWithCert)) {
           setMissingEmailColumn(true);
           const { data: withoutEmail, error: errWithout } = await supabase
             .from("contestants")
-            .select("id,campaign_id,name,created_at")
-            .in("campaign_id", campaignIds)
-            .order("created_at", { ascending: false });
+            .select("id,campaign_id,name,created_at,sort_order")
+            .in("campaign_id", campaignIds);
           if (errWithout) throw errWithout;
           contestantRows = withoutEmail;
         } else if (errWithCert && String(errWithCert.message ?? "").toLowerCase().includes("certificate")) {
           setMissingCertificateColumns(true);
           const { data: withEmail, error: errWithEmail } = await supabase
             .from("contestants")
-            .select("id,campaign_id,name,email,created_at,voting_link_sent_at")
-            .in("campaign_id", campaignIds)
-            .order("created_at", { ascending: false });
+            .select("id,campaign_id,name,email,created_at,sort_order,voting_link_sent_at")
+            .in("campaign_id", campaignIds);
           if (errWithEmail) throw errWithEmail;
           contestantRows = withEmail;
         } else {
@@ -259,8 +287,9 @@ export default function DashboardContestantsPage() {
           byCampaign.set(c.campaign_id, list);
         }
 
+        const voteTotals = await aggregateVoteTotalsByContestant(campaignIds);
         const withCounts: CategoryWithCount[] = campaigns.map((c) => {
-          const list = sortContestantsByCreatedDesc(byCampaign.get(c.id) ?? []);
+          const list = sortContestantsByVoteTotal(byCampaign.get(c.id) ?? [], voteTotals);
           return {
             ...c,
             contestant_count: list.length,

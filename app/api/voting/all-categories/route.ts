@@ -123,11 +123,39 @@ export async function GET() {
     byCampaign.set(row.campaign_id, arr);
   }
 
-  const categories = visible.map((raw) => {
-    const cont = [...(byCampaign.get(raw.id) ?? [])].sort((a, b) => {
+  /** Contestant id → total votes (from `votes` table). Only fetched with service role (anon cannot read `votes`). */
+  const voteTotalsByContestant = new Map<string, number>();
+  if (bypassesRls) {
+    for (let i = 0; i < ids.length; i += CAMPAIGN_ID_CHUNK) {
+      const chunk = ids.slice(i, i + CAMPAIGN_ID_CHUNK);
+      const { data: voteRows, error: vErr } = await client
+        .from("votes")
+        .select("contestant_id,votes")
+        .in("campaign_id", chunk);
+      if (vErr) {
+        return NextResponse.json({ error: vErr.message ?? "Failed to load votes" }, { status: 500 });
+      }
+      for (const row of voteRows ?? []) {
+        const r = row as { contestant_id: string; votes: number };
+        const id = String(r.contestant_id ?? "");
+        const v = Number(r.votes ?? 0) || 0;
+        if (!id) continue;
+        voteTotalsByContestant.set(id, (voteTotalsByContestant.get(id) ?? 0) + v);
+      }
+    }
+  }
+
+  const sortContestantsForCategory = (list: ContestantRow[]) =>
+    [...list].sort((a, b) => {
+      const va = voteTotalsByContestant.get(a.id) ?? 0;
+      const vb = voteTotalsByContestant.get(b.id) ?? 0;
+      if (vb !== va) return vb - va;
       if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
       return a.name.localeCompare(b.name);
     });
+
+  const categories = visible.map((raw) => {
+    const cont = sortContestantsForCategory(byCampaign.get(raw.id) ?? []);
     return {
       id: raw.id,
       slug: raw.slug,

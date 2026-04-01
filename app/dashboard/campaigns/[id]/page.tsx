@@ -61,6 +61,7 @@ type ContestantRow = {
   id: string;
   name: string;
   sort_order: number;
+  created_at?: string;
 };
 
 type TicketIssueRow = {
@@ -247,7 +248,7 @@ export default function CampaignReportPage() {
 
       const conQuery = supabase
         .from("contestants")
-        .select("id,name,sort_order")
+        .select("id,name,sort_order,created_at")
         .eq("campaign_id", campaignId)
         .order("sort_order", { ascending: true });
 
@@ -324,7 +325,18 @@ export default function CampaignReportPage() {
       if (conRes.error) {
         setContestants([]);
       } else {
-        setContestants((conRes.data ?? []) as ContestantRow[]);
+        const rawList = (conRes.data ?? []) as ContestantRow[];
+        const sorted = [...rawList].sort((a, b) => {
+          const va = byContestant[a.id] ?? 0;
+          const vb = byContestant[b.id] ?? 0;
+          if (vb !== va) return vb - va;
+          if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+          const ta = a.created_at ? Date.parse(a.created_at) : 0;
+          const tb = b.created_at ? Date.parse(b.created_at) : 0;
+          if (ta !== tb) return ta - tb;
+          return a.name.localeCompare(b.name);
+        });
+        setContestants(sorted);
       }
 
       setLastUpdatedAt(new Date().toISOString());
