@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink, Vote } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
 
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
 const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
@@ -75,27 +74,13 @@ export default function AllVotingPage() {
       setLoading(true);
       setError(null);
       try {
-        const { data: rows, error: qErr } = await supabase
-          .from("campaigns")
-          .select(
-            "id,slug,title,description,image_url,contestants(id,name,description,image_url,sort_order)"
-          )
-          .eq("type", "vote")
-          .order("title", { ascending: true });
-
-        if (qErr) throw qErr;
+        const res = await fetch("/api/voting/all-categories", { cache: "no-store" });
+        const j = (await res.json()) as { categories?: CategoryRow[]; error?: string };
         if (cancelled) return;
-
-        const list = (rows ?? []) as CategoryRow[];
-        const normalized = list.map((c) => {
-          const cont = [...(c.contestants ?? [])].sort((a, b) => {
-            if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
-            return a.name.localeCompare(b.name);
-          });
-          return { ...c, contestants: cont };
-        });
-
-        setCategories(normalized);
+        if (!res.ok) {
+          throw new Error(j.error ?? `Unable to load voting categories (${res.status})`);
+        }
+        setCategories(Array.isArray(j.categories) ? j.categories : []);
       } catch (e: unknown) {
         if (!cancelled) {
           setError((e as Error)?.message ?? "Unable to load voting categories.");
