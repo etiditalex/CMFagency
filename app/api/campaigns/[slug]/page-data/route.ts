@@ -42,7 +42,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json({ error: cErr.message }, { status: 500 });
   }
 
-  const cacheHdr = { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60" };
+  /** Vote totals must not be edge-cached; stale tallies vs `/vote-counts` (no-store) looked like fluctuating votes/revenue. */
+  const cacheHdrLive = { "Cache-Control": "no-store, max-age=0" };
+  const cacheHdrStatic = { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=60" };
 
   if (!c || !isCampaignInPublicWindow(c as { starts_at?: string | null; ends_at?: string | null })) {
     return NextResponse.json(
@@ -53,7 +55,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         vote_counts: {} as Record<string, number>,
         not_found: true,
       },
-      { headers: cacheHdr }
+      { headers: cacheHdrLive }
     );
   }
 
@@ -95,7 +97,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         contestants: [],
         vote_counts: {},
       },
-      { headers: cacheHdr }
+      { headers: cacheHdrStatic }
     );
   }
 
@@ -142,6 +144,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       contestants: conResult.data ?? [],
       vote_counts,
     },
-    { headers: cacheHdr }
+    { headers: cacheHdrLive }
   );
 }

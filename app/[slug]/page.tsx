@@ -211,6 +211,13 @@ export default function CampaignPage() {
     return () => clearInterval(interval);
   }, [campaign, fetchVoteCounts]);
 
+  /** Right after Paystack/M-Pesa reports success, refresh public totals (don’t wait for the 5s poll). */
+  useEffect(() => {
+    if (txStatus?.status !== "success") return;
+    if (campaign?.type !== "vote" || !slug) return;
+    void fetchVoteCounts();
+  }, [txStatus?.status, campaign?.type, slug, fetchVoteCounts]);
+
   /** Highest vote totals first; ties use sort_order then registration time (created_at). */
   const contestantsSorted = useMemo(() => {
     if (contestants.length === 0) return contestants;
