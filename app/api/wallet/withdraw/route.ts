@@ -2,21 +2,20 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+import { getWalletSupabasePublicEnv, parseBearerToken } from "@/lib/wallet-request-auth";
 
 /**
  * Creates a M-Pesa withdrawal request (status: pending_admin).
  * Admin must approve before B2C is executed.
  */
-async function getAuthenticatedUser(req: Request): Promise<{ id: string } | null> {
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "");
+async function getAuthenticatedUser(
+  req: Request,
+  env: { supabaseUrl: string; supabaseAnonKey: string }
+): Promise<{ id: string } | null> {
+  const token = parseBearerToken(req);
   if (!token) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return null;
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -30,7 +29,12 @@ async function getAuthenticatedUser(req: Request): Promise<{ id: string } | null
 }
 
 export async function POST(req: Request) {
-  const auth = await getAuthenticatedUser(req);
+  const env = getWalletSupabasePublicEnv();
+  if (!env) {
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  const auth = await getAuthenticatedUser(req, env);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -57,25 +61,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Enter a valid M-Pesa number (e.g. 254712345678)" }, { status: 400 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-  }
+  const supabaseUrl = env.supabaseUrl;
+  const supabaseAnonKey = env.supabaseAnonKey;
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: req.headers.get("authorization") ? { headers: { Authorization: req.headers.get("authorization")! } } : {},
+    global: (() => {
+      const t = parseBearerToken(req);
+      return t ? { headers: { Authorization: `Bearer ${t}` } } : {};
+    })(),
   });
-  const supabaseAdmin = supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
-    : null;
 
   try {
-    // Verify user has payouts feature
+    // Verify user has payouts feature (legacy admin_users-only rows bypass features array)
     const { data: pm } = await supabase.from("portal_members").select("features,role").eq("user_id", auth.id).maybeSingle();
+    const { data: legacyAdmin } = !pm
+      ? await supabase.from("admin_users").select("user_id").eq("user_id", auth.id).maybeSingle()
+      : { data: null };
     const features = (pm?.features as string[] | null) ?? [];
-    const isAdmin = pm?.role === "admin" || pm?.role === "manager";
+    const isAdmin = pm?.role === "admin" || pm?.role === "manager" || !!legacyAdmin;
     if (!isAdmin && !features.includes("payouts")) {
       return NextResponse.json({ error: "Payouts feature not enabled" }, { status: 403 });
     }

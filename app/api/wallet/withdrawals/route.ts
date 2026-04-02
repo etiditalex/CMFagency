@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { getWalletSupabasePublicEnv, parseBearerToken } from "@/lib/wallet-request-auth";
+
 /**
  * Lists withdrawal requests. Clients see own; admins see all.
  */
-async function getAuthenticatedUser(req: Request): Promise<{ id: string; isAdmin: boolean } | null> {
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "");
+async function getAuthenticatedUser(
+  req: Request,
+  env: { supabaseUrl: string; supabaseAnonKey: string }
+): Promise<{ id: string; isAdmin: boolean } | null> {
+  const token = parseBearerToken(req);
   if (!token) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return null;
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -29,19 +29,21 @@ async function getAuthenticatedUser(req: Request): Promise<{ id: string; isAdmin
 }
 
 export async function GET(req: Request) {
-  const auth = await getAuthenticatedUser(req);
+  const env = getWalletSupabasePublicEnv();
+  if (!env) {
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  const auth = await getAuthenticatedUser(req, env);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: req.headers.get("authorization") ? { headers: { Authorization: req.headers.get("authorization")! } } : {},
+  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+    global: (() => {
+      const t = parseBearerToken(req);
+      return t ? { headers: { Authorization: `Bearer ${t}` } } : {};
+    })(),
   });
 
   try {

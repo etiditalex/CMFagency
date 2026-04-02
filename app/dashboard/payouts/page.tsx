@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, RefreshCw, Smartphone, Wallet, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { getAccessTokenForApi } from "@/lib/get-access-token-for-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 
@@ -40,9 +41,12 @@ export default function DashboardPayoutsPage() {
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    const token = await getAccessTokenForApi();
+    if (!token) {
+      setError("Session expired. Refresh the page or sign in again.");
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -94,9 +98,11 @@ export default function DashboardPayoutsPage() {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?.id || submitting) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    const token = await getAccessTokenForApi();
+    if (!token) {
+      setSubmitError("Session expired. Refresh the page or sign in again.");
+      return;
+    }
 
     const amount = Math.trunc(Number(withdrawAmount));
     if (!Number.isFinite(amount) || amount < 10) {
@@ -132,9 +138,11 @@ export default function DashboardPayoutsPage() {
   };
 
   const handleApprove = async (id: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    const token = await getAccessTokenForApi();
+    if (!token) {
+      setError("Session expired. Refresh the page or sign in again.");
+      return;
+    }
 
     setApprovingId(id);
     try {
@@ -154,9 +162,11 @@ export default function DashboardPayoutsPage() {
   };
 
   const handleReject = async (id: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return;
+    const token = await getAccessTokenForApi();
+    if (!token) {
+      setError("Session expired. Refresh the page or sign in again.");
+      return;
+    }
 
     setRejectingId(id);
     try {

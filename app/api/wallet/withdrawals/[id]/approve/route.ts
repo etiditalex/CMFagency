@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { initiateB2C } from "@/lib/daraja-b2c";
+import { getWalletSupabasePublicEnv, parseBearerToken } from "@/lib/wallet-request-auth";
 
 /**
  * Admin approves a withdrawal request. Sets status to 'approved', triggers M-Pesa B2C,
  * then sets status to 'processing'. Callback updates to 'completed' or 'rejected'.
  */
-async function getAdminUser(req: Request): Promise<{ id: string } | null> {
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "");
+async function getAdminUser(
+  req: Request,
+  env: { supabaseUrl: string; supabaseAnonKey: string }
+): Promise<{ id: string } | null> {
+  const token = parseBearerToken(req);
   if (!token) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return null;
-
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
   const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -33,7 +32,12 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await getAdminUser(req);
+  const env = getWalletSupabasePublicEnv();
+  if (!env) {
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  const auth = await getAdminUser(req, env);
   if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
