@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
               contestant_id: tx.contestant_id,
               votes: tx.quantity,
             },
-            { onConflict: "transaction_id", ignoreDuplicates: true }
+            { onConflict: "transaction_id" }
           );
           if (voteErr) fulfillErr = voteErr.message;
         }
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
             campaign_id: tx.campaign_id,
             quantity: tx.quantity,
           },
-          { onConflict: "transaction_id", ignoreDuplicates: true }
+          { onConflict: "transaction_id" }
         );
         if (ticketErr) fulfillErr = ticketErr.message;
       }
@@ -130,6 +130,37 @@ export async function POST(req: NextRequest) {
           .eq("id", tx.id);
       }
       fulfillmentError = fulfillErr;
+    } else if (
+      !(meta as { merchandise_cart?: boolean }).merchandise_cart &&
+      tx.campaign_type === "vote" &&
+      tx.contestant_id
+    ) {
+      const { data: vRow } = await admin.from("votes").select("id").eq("transaction_id", tx.id).maybeSingle();
+      if (!vRow) {
+        const { error: repairErr } = await admin.from("votes").upsert(
+          {
+            transaction_id: tx.id,
+            campaign_id: tx.campaign_id,
+            contestant_id: tx.contestant_id,
+            votes: tx.quantity,
+          },
+          { onConflict: "transaction_id" }
+        );
+        if (repairErr) fulfillmentError = repairErr.message;
+      }
+    } else if (!(meta as { merchandise_cart?: boolean }).merchandise_cart && tx.campaign_type === "ticket") {
+      const { data: tRow } = await admin.from("ticket_issues").select("id").eq("transaction_id", tx.id).maybeSingle();
+      if (!tRow) {
+        const { error: repairErr } = await admin.from("ticket_issues").upsert(
+          {
+            transaction_id: tx.id,
+            campaign_id: tx.campaign_id,
+            quantity: tx.quantity,
+          },
+          { onConflict: "transaction_id" }
+        );
+        if (repairErr) fulfillmentError = repairErr.message;
+      }
     }
 
     const toEmail = (tx as { email?: string | null }).email?.trim?.();

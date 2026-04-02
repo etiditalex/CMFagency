@@ -166,6 +166,33 @@ export async function POST(req: Request) {
       .eq("id", tx.id);
 
     if (tx.fulfilled_at) {
+      // Vote row uses contestant_id from this transaction (set at STK push from voter's chosen contestant).
+      if (!meta.merchandise_cart && tx.campaign_type === "vote" && tx.contestant_id) {
+        const { data: vRow } = await supabase.from("votes").select("id").eq("transaction_id", tx.id).maybeSingle();
+        if (!vRow) {
+          await supabase.from("votes").upsert(
+            {
+              transaction_id: tx.id,
+              campaign_id: tx.campaign_id,
+              contestant_id: tx.contestant_id,
+              votes: tx.quantity,
+            },
+            { onConflict: "transaction_id" }
+          );
+        }
+      } else if (!meta.merchandise_cart && tx.campaign_type === "ticket") {
+        const { data: tRow } = await supabase.from("ticket_issues").select("id").eq("transaction_id", tx.id).maybeSingle();
+        if (!tRow) {
+          await supabase.from("ticket_issues").upsert(
+            {
+              transaction_id: tx.id,
+              campaign_id: tx.campaign_id,
+              quantity: tx.quantity,
+            },
+            { onConflict: "transaction_id" }
+          );
+        }
+      }
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
@@ -229,7 +256,7 @@ export async function POST(req: Request) {
               contestant_id: tx.contestant_id,
               votes: tx.quantity,
             },
-            { onConflict: "transaction_id", ignoreDuplicates: true }
+            { onConflict: "transaction_id" }
           );
           if (voteErr) {
             fulfillErr = voteErr.message;
@@ -243,7 +270,7 @@ export async function POST(req: Request) {
             campaign_id: tx.campaign_id,
             quantity: tx.quantity,
           },
-          { onConflict: "transaction_id", ignoreDuplicates: true }
+          { onConflict: "transaction_id" }
         );
         if (ticketErr) {
           fulfillErr = ticketErr.message;

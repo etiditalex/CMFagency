@@ -110,7 +110,8 @@ export default function CampaignReportPage() {
   const [revenueByContestant, setRevenueByContestant] = useState<Record<string, number>>({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
 
-  const [range, setRange] = useState<RangePreset>("30d");
+  /** Default "all" so vote/ticket totals match public counters; use a shorter window only when you need it. */
+  const [range, setRange] = useState<RangePreset>("all");
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
   const [confirmingRef, setConfirmingRef] = useState<string | null>(null);

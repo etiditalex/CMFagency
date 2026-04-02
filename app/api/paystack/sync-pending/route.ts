@@ -121,21 +121,10 @@ export async function GET(req: Request) {
         continue;
       }
 
-      if (!tx.fulfilled_at) {
-        await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
-          paidAt: json.data?.paid_at ?? new Date().toISOString(),
-          metadataPatch: {},
-        });
-      } else {
-        await supabase
-          .from("transactions")
-          .update({
-            status: "success",
-            verified_at: new Date().toISOString(),
-            paid_at: json.data?.paid_at ?? new Date().toISOString(),
-          } as Record<string, unknown>)
-          .eq("id", tx.id);
-      }
+      await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
+        paidAt: json.data?.paid_at ?? new Date().toISOString(),
+        metadataPatch: {},
+      });
 
       updated++;
     } catch (e) {

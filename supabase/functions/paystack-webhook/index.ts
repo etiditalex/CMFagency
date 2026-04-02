@@ -199,7 +199,9 @@ serve(async (req) => {
   // Fetch the transaction we created during initialization.
   const { data: tx, error: txErr } = await supabase
     .from("transactions")
-    .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata,email,payer_name")
+    .select(
+      "id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,status,fulfilled_at,metadata,email,payer_name,coupon_id",
+    )
     .eq("reference", reference)
     .single();
 
@@ -244,32 +246,42 @@ serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
-  // Mark transaction as verified successful (fulfillment is handled below and is idempotent).
+  const rawMeta =
+    typeof (tx as any).metadata === "object" && (tx as any).metadata ? { ...(tx as any).metadata } : {};
+  delete (rawMeta as Record<string, unknown>).fulfillment_error;
+  const metaForSuccess = {
+    ...rawMeta,
+    paystack_event_id: payload.data?.id ?? null,
+    paystack_status: payload.data?.status ?? null,
+  };
+
   await supabase
     .from("transactions")
     .update({
       status: "success",
       verified_at: new Date().toISOString(),
       paid_at: payload.data?.paid_at ?? null,
-      metadata: {
-        ...(typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {}),
-        paystack_event_id: payload.data?.id ?? null,
-        paystack_status: payload.data?.status ?? null,
-      },
+      metadata: metaForSuccess,
     } as any)
     .eq("id", tx.id);
 
-  // If already fulfilled, stop (idempotency).
-  if (tx.fulfilled_at) return new Response("ok", { status: 200 });
-
-  // Merchandise: no ticket_issues/votes, just mark fulfilled
   const meta = typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {};
   if (meta.merchandise_cart === true) {
-    await supabase
-      .from("transactions")
-      .update({ fulfilled_at: new Date().toISOString() } as any)
-      .eq("id", tx.id)
-      .is("fulfilled_at", null);
+    if (!tx.fulfilled_at) {
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as any)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+      const couponId = (tx as any).coupon_id;
+      if (couponId) {
+        const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+        if (cou) {
+          const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+          await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+        }
+      }
+    }
     return new Response("ok", { status: 200 });
   }
 
@@ -285,41 +297,47 @@ serve(async (req) => {
           contestant_id: tx.contestant_id,
           votes: tx.quantity,
         },
-        { onConflict: "transaction_id", ignoreDuplicates: true },
+        { onConflict: "transaction_id" },
       );
       if (voteUpsertErr) fulfillErr = voteUpsertErr.message;
     }
-  } else {
+  } else if (tx.campaign_type === "ticket") {
     const { error: ticketUpsertErr } = await supabase.from("ticket_issues").upsert(
       {
         transaction_id: tx.id,
         campaign_id: tx.campaign_id,
         quantity: tx.quantity,
       },
-      { onConflict: "transaction_id", ignoreDuplicates: true },
+      { onConflict: "transaction_id" },
     );
     if (ticketUpsertErr) fulfillErr = ticketUpsertErr.message;
   }
 
-  if (!fulfillErr) {
-    await supabase
-      .from("transactions")
-      .update({ fulfilled_at: new Date().toISOString() } as any)
-      .eq("id", tx.id)
-      .is("fulfilled_at", null);
-  } else {
+  if (fulfillErr) {
     console.error("[paystack-webhook] fulfillment failed:", fulfillErr);
     await supabase
       .from("transactions")
       .update({
         metadata: {
-          ...(typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {}),
-          paystack_event_id: payload.data?.id ?? null,
-          paystack_status: payload.data?.status ?? null,
+          ...metaForSuccess,
           fulfillment_error: fulfillErr,
         },
       } as any)
       .eq("id", tx.id);
+  } else if (!tx.fulfilled_at) {
+    await supabase
+      .from("transactions")
+      .update({ fulfilled_at: new Date().toISOString() } as any)
+      .eq("id", tx.id)
+      .is("fulfilled_at", null);
+    const couponId = (tx as any).coupon_id;
+    if (couponId) {
+      const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+      if (cou) {
+        const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+        await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+      }
+    }
   }
 
   const toEmail = (tx as any).email?.trim?.();

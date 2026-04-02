@@ -105,21 +105,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, status: "failed", reason: "amount_or_currency_mismatch" });
   }
 
-  if (!(tx as { fulfilled_at?: string | null }).fulfilled_at) {
-    await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
-      paidAt: json.data?.paid_at ?? new Date().toISOString(),
-      metadataPatch: {},
-    });
-  } else {
-    await supabase
-      .from("transactions")
-      .update({
-        status: "success",
-        verified_at: new Date().toISOString(),
-        paid_at: json.data?.paid_at ?? new Date().toISOString(),
-      } as Record<string, unknown>)
-      .eq("id", (tx as { id: string }).id);
-  }
+  await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
+    paidAt: json.data?.paid_at ?? new Date().toISOString(),
+    metadataPatch: {},
+  });
 
   return NextResponse.json({ ok: true, status: "success", completed: true });
 }

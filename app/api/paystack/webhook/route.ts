@@ -114,10 +114,6 @@ export async function POST(req: Request) {
     return new Response("ok", { status: 200 });
   }
 
-  if (tx.fulfilled_at) {
-    return new Response("ok", { status: 200 });
-  }
-
   const { fulfillErr } = await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
     paidAt: payload.data?.paid_at ?? null,
     metadataPatch: {
