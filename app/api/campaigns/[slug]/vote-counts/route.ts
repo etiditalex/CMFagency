@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+
 /**
  * Public vote totals per contestant for an active vote campaign.
  * Sums successful vote transaction quantities (same source as payment-backed votes).
@@ -37,18 +39,27 @@ export async function GET(
   const campaignId = (campaign as { id: string }).id;
 
   // Quantities from successful vote payments (aligns with revenue; public.votes can lag if fulfillment failed).
-  const { data: txRows, error: txErr } = await supabase
-    .from("transactions")
-    .select("contestant_id,quantity")
-    .eq("campaign_id", campaignId)
-    .eq("campaign_type", "vote")
-    .eq("status", "success")
-    .not("contestant_id", "is", null);
-
-  if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
+  let txRows: { contestant_id: string; quantity: number }[];
+  try {
+    txRows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("transactions")
+        .select("contestant_id,quantity")
+        .eq("campaign_id", campaignId)
+        .eq("campaign_type", "vote")
+        .eq("status", "success")
+        .not("contestant_id", "is", null)
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: r.data as { contestant_id: string; quantity: number }[] | null, error: r.error };
+    });
+  } catch (e: unknown) {
+    const msg = e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "query failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   const byContestant: Record<string, number> = {};
-  for (const row of (txRows ?? []) as { contestant_id: string; quantity: number }[]) {
+  for (const row of txRows) {
     const id = String(row.contestant_id ?? "");
     const v = Number(row.quantity ?? 0) || 0;
     if (!id) continue;

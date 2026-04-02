@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+
 function isCampaignInPublicWindow(c: { starts_at?: string | null; ends_at?: string | null }) {
   const t = Date.now();
   if (c.starts_at) {
@@ -101,21 +103,39 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     );
   }
 
-  const [schedResult, conResult, txVoteResult] = await Promise.all([
-    readSchedule(),
-    supabase
-      .from("contestants")
-      .select("id,name,description,image_url,sort_order,created_at")
-      .eq("campaign_id", row.id)
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("transactions")
-      .select("contestant_id,quantity")
-      .eq("campaign_id", row.id)
-      .eq("campaign_type", "vote")
-      .eq("status", "success")
-      .not("contestant_id", "is", null),
-  ]);
+  let schedResult: Awaited<ReturnType<typeof readSchedule>>;
+  let conResult: { data: unknown; error: { message?: string } | null };
+  let txVoteRows: { contestant_id: string; quantity: number }[];
+
+  try {
+    const triple = await Promise.all([
+      readSchedule(),
+      supabase
+        .from("contestants")
+        .select("id,name,description,image_url,sort_order,created_at")
+        .eq("campaign_id", row.id)
+        .order("sort_order", { ascending: true }),
+      fetchAllSupabasePages(async (from, to) => {
+        const r = await supabase
+          .from("transactions")
+          .select("contestant_id,quantity")
+          .eq("campaign_id", row.id)
+          .eq("campaign_type", "vote")
+          .eq("status", "success")
+          .not("contestant_id", "is", null)
+          .order("id", { ascending: true })
+          .range(from, to);
+        return { data: r.data as { contestant_id: string; quantity: number }[] | null, error: r.error };
+      }),
+    ]);
+    schedResult = triple[0];
+    conResult = triple[1];
+    txVoteRows = triple[2];
+  } catch (e: unknown) {
+    const msg =
+      e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Failed to load vote totals";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   const voting_starts_at =
     !schedResult.error && schedResult.data
@@ -125,12 +145,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   if (conResult.error) {
     return NextResponse.json({ error: conResult.error.message }, { status: 500 });
   }
-  if (txVoteResult.error) {
-    return NextResponse.json({ error: txVoteResult.error.message }, { status: 500 });
-  }
 
   const vote_counts: Record<string, number> = {};
-  for (const vr of (txVoteResult.data ?? []) as { contestant_id: string; quantity: number }[]) {
+  for (const vr of txVoteRows) {
     const id = String(vr.contestant_id ?? "");
     const v = Number(vr.quantity ?? 0) || 0;
     if (!id) continue;

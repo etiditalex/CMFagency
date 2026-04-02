@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+
 /**
  * Returns wallet balance split by M-Pesa (Daraja) and Paystack.
  * Requires authenticated portal member.
@@ -62,14 +64,17 @@ export async function GET(req: Request) {
       });
     }
 
-    // Sum successful transactions by provider
-    const { data: txRows, error: txErr } = await supabase
-      .from("transactions")
-      .select("amount,provider")
-      .eq("status", "success")
-      .in("campaign_id", campaignIds);
-
-    if (txErr) throw txErr;
+    // Sum successful transactions by provider (paginate — default response cap is 1000 rows)
+    const txRows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("transactions")
+        .select("amount,provider")
+        .eq("status", "success")
+        .in("campaign_id", campaignIds)
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: r.data as { amount: number; provider: string | null }[] | null, error: r.error };
+    });
 
     const isMpesa = (p: string | null | undefined) => {
       const s = String(p ?? "").toLowerCase();
@@ -78,7 +83,7 @@ export async function GET(req: Request) {
 
     let mpesa = 0;
     let paystack = 0;
-    for (const t of txRows ?? []) {
+    for (const t of txRows) {
       const amt = Number(t.amount ?? 0) || 0;
       if (isMpesa(t.provider)) mpesa += amt;
       else paystack += amt;

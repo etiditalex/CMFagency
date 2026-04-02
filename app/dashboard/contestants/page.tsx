@@ -8,6 +8,7 @@ import { Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-reac
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
 function isMissingPortalMembersTable(err: unknown) {
   const msg = String((err as { message?: string })?.message ?? "");
@@ -62,12 +63,18 @@ async function aggregateVoteTotalsByContestant(campaignIds: string[]): Promise<M
   const CHUNK = 40;
   for (let i = 0; i < campaignIds.length; i += CHUNK) {
     const chunk = campaignIds.slice(i, i + CHUNK);
-    const { data, error } = await supabase.from("votes").select("contestant_id,votes").in("campaign_id", chunk);
-    if (error) throw error;
-    for (const row of data ?? []) {
-      const r = row as { contestant_id: string; votes: number };
-      const id = String(r.contestant_id ?? "");
-      const v = Number(r.votes ?? 0) || 0;
+    const rows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("votes")
+        .select("contestant_id,votes")
+        .in("campaign_id", chunk)
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: r.data as { contestant_id: string; votes: number }[] | null, error: r.error };
+    });
+    for (const row of rows) {
+      const id = String(row.contestant_id ?? "");
+      const v = Number(row.votes ?? 0) || 0;
       if (!id) continue;
       map.set(id, (map.get(id) ?? 0) + v);
     }

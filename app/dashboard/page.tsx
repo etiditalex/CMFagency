@@ -21,6 +21,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
 function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
@@ -256,16 +257,41 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(0);
         setCertificateRequests([]);
       } else {
-        const [txRes, successTxRes, voteRes, tiRes, certRes] = await Promise.all([
+        const [txRes, successTx, voteRows, ticketRows, certRes] = await Promise.all([
           supabase
             .from("transactions")
             .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
             .in("campaign_id", campaignIds)
             .order("created_at", { ascending: false })
             .limit(10),
-          supabase.from("transactions").select("amount,currency,campaign_type,campaign_id").eq("status", "success").in("campaign_id", campaignIds),
-          supabase.from("votes").select("votes,campaign_id").in("campaign_id", campaignIds),
-          supabase.from("ticket_issues").select("quantity,campaign_id").in("campaign_id", campaignIds),
+          fetchAllSupabasePages(async (from, to) => {
+            const r = await supabase
+              .from("transactions")
+              .select("amount,currency,campaign_type,campaign_id")
+              .eq("status", "success")
+              .in("campaign_id", campaignIds)
+              .order("id", { ascending: true })
+              .range(from, to);
+            return { data: r.data as any[] | null, error: r.error };
+          }),
+          fetchAllSupabasePages(async (from, to) => {
+            const r = await supabase
+              .from("votes")
+              .select("votes,campaign_id")
+              .in("campaign_id", campaignIds)
+              .order("id", { ascending: true })
+              .range(from, to);
+            return { data: r.data as any[] | null, error: r.error };
+          }),
+          fetchAllSupabasePages(async (from, to) => {
+            const r = await supabase
+              .from("ticket_issues")
+              .select("quantity,campaign_id")
+              .in("campaign_id", campaignIds)
+              .order("id", { ascending: true })
+              .range(from, to);
+            return { data: r.data as any[] | null, error: r.error };
+          }),
           supabase
             .from("contestants")
             .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
@@ -284,14 +310,12 @@ export default function DashboardHomePage() {
           : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
         setRecentTransactions(visibleTx);
 
-        if (successTxRes.error) throw successTxRes.error;
-        const successTx = successTxRes.data;
-        setSuccessfulPayments((successTx ?? []).length);
+        setSuccessfulPayments(successTx.length);
         const rev: Record<string, number> = {};
         const revTickets: Record<string, number> = {};
         const revVotes: Record<string, number> = {};
         const revMerchandise: Record<string, number> = {};
-        for (const t of (successTx ?? []) as any[]) {
+        for (const t of successTx as any[]) {
           const cur = String(t.currency ?? "").toUpperCase() || "—";
           const amt = Number(t.amount ?? 0);
           const ctype = String(t.campaign_type ?? "").toLowerCase();
@@ -311,12 +335,10 @@ export default function DashboardHomePage() {
         setRevenueByCurrencyVotes(revVotes);
         setRevenueByCurrencyMerchandise(revMerchandise);
 
-        if (voteRes.error) throw voteRes.error;
-        setTotalVotes((voteRes.data ?? []).reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0));
+        setTotalVotes(voteRows.reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0));
 
-        if (tiRes.error) throw tiRes.error;
         setTotalTicketsIssued(
-          (tiRes.data ?? []).reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
+          ticketRows.reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
         );
 
         if (certRes.error) {

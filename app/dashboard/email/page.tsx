@@ -8,6 +8,7 @@ import { Loader2, Mail, MessagesSquare, Send } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
 type Campaign = { id: string; title: string; type: string; slug?: string };
 
@@ -91,14 +92,18 @@ export default function DashboardEmailPage() {
 
     const load = async () => {
       try {
-        const { data, error: e } = await supabase
-          .from("transactions")
-          .select("email")
-          .eq("campaign_id", selectedCampaignId)
-          .eq("status", "success")
-          .not("email", "is", null);
-        if (e) throw e;
-        const emails = new Set((data ?? []).map((r: { email?: string }) => (r.email ?? "").trim().toLowerCase()).filter(Boolean));
+        const rows = await fetchAllSupabasePages(async (from, to) => {
+          const r = await supabase
+            .from("transactions")
+            .select("email")
+            .eq("campaign_id", selectedCampaignId)
+            .eq("status", "success")
+            .not("email", "is", null)
+            .order("id", { ascending: true })
+            .range(from, to);
+          return { data: r.data as { email?: string | null }[] | null, error: r.error };
+        });
+        const emails = new Set(rows.map((r) => (r.email ?? "").trim().toLowerCase()).filter(Boolean));
         if (!cancelled) setRecipientCount(emails.size);
       } catch {
         if (!cancelled) setRecipientCount(0);

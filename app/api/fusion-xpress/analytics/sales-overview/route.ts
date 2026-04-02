@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+
 export const dynamic = "force-dynamic";
 
 const LOOKBACK_DAYS = 90;
@@ -105,18 +107,7 @@ export async function GET(req: Request) {
   const since = new Date();
   since.setUTCDate(since.getUTCDate() - LOOKBACK_DAYS);
 
-  const { data: txRows, error: txErr } = await supabase
-    .from("transactions")
-    .select("amount,currency,campaign_type,campaign_id,provider,quantity,created_at,status")
-    .eq("status", "success")
-    .in("campaign_id", campaignIds)
-    .gte("created_at", since.toISOString());
-
-  if (txErr) {
-    return NextResponse.json({ error: txErr.message }, { status: 500 });
-  }
-
-  const txs = (txRows ?? []) as {
+  let txRows: {
     amount: number;
     currency: string;
     campaign_type: string;
@@ -125,6 +116,24 @@ export async function GET(req: Request) {
     quantity: number;
     created_at: string;
   }[];
+  try {
+    txRows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("transactions")
+        .select("amount,currency,campaign_type,campaign_id,provider,quantity,created_at,status")
+        .eq("status", "success")
+        .in("campaign_id", campaignIds)
+        .gte("created_at", since.toISOString())
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: r.data as typeof txRows | null, error: r.error };
+    });
+  } catch (e: unknown) {
+    const msg = e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "query failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+
+  const txs = txRows;
 
   let voteRevenue = 0;
   let ticketRevenue = 0;

@@ -19,6 +19,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
 function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
@@ -393,23 +394,6 @@ export default function CampaignReportPage() {
       if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
       const txLimited = txQuery.order("created_at", { ascending: false }).limit(50);
 
-      let tiQuery = supabase.from("ticket_issues").select("quantity,issued_at").eq("campaign_id", campaignId);
-      if (rangeBounds.start) tiQuery = tiQuery.gte("issued_at", rangeBounds.start);
-      if (rangeBounds.end) tiQuery = tiQuery.lte("issued_at", rangeBounds.end);
-
-      let vQuery = supabase.from("votes").select("contestant_id,votes,created_at").eq("campaign_id", campaignId);
-      if (rangeBounds.start) vQuery = vQuery.gte("created_at", rangeBounds.start);
-      if (rangeBounds.end) vQuery = vQuery.lte("created_at", rangeBounds.end);
-
-      let revTxQuery = supabase
-        .from("transactions")
-        .select("contestant_id,amount,currency")
-        .eq("campaign_id", campaignId)
-        .eq("campaign_type", "vote")
-        .eq("status", "success");
-      if (rangeBounds.start) revTxQuery = revTxQuery.gte("verified_at", rangeBounds.start);
-      if (rangeBounds.end) revTxQuery = revTxQuery.lte("verified_at", rangeBounds.end);
-
       const conQuery = supabase
         .from("contestants")
         .select("id,name,sort_order,created_at")
@@ -427,13 +411,46 @@ export default function CampaignReportPage() {
           : Promise.resolve([] as TicketTransactionAggRow[]);
 
       const skipVotesAux = campaignData.type === "vote";
-      const emptyTableRes = Promise.resolve({ data: [] as unknown[], error: null });
 
-      const [txRes, tiRes, vRes, revTxRes, conRes, voteTxRows, ticketTxRows] = await Promise.all([
+      const tiRowsPromise = fetchAllSupabasePages(async (from, to) => {
+        let q = supabase.from("ticket_issues").select("quantity,issued_at").eq("campaign_id", campaignId);
+        if (rangeBounds.start) q = q.gte("issued_at", rangeBounds.start);
+        if (rangeBounds.end) q = q.lte("issued_at", rangeBounds.end);
+        const r = await q.order("id", { ascending: true }).range(from, to);
+        return { data: r.data as TicketIssueRow[] | null, error: r.error };
+      });
+
+      const vRowsPromise: Promise<VoteRow[]> = skipVotesAux
+        ? Promise.resolve([])
+        : fetchAllSupabasePages(async (from, to) => {
+            let q = supabase.from("votes").select("contestant_id,votes,created_at").eq("campaign_id", campaignId);
+            if (rangeBounds.start) q = q.gte("created_at", rangeBounds.start);
+            if (rangeBounds.end) q = q.lte("created_at", rangeBounds.end);
+            const r = await q.order("id", { ascending: true }).range(from, to);
+            return { data: r.data as VoteRow[] | null, error: r.error };
+          });
+
+      type RevTxRow = { contestant_id: string | null; amount: number; currency: string };
+      const revTxRowsPromise: Promise<RevTxRow[]> = skipVotesAux
+        ? Promise.resolve([])
+        : fetchAllSupabasePages(async (from, to) => {
+            let q = supabase
+              .from("transactions")
+              .select("contestant_id,amount,currency")
+              .eq("campaign_id", campaignId)
+              .eq("campaign_type", "vote")
+              .eq("status", "success");
+            if (rangeBounds.start) q = q.gte("verified_at", rangeBounds.start);
+            if (rangeBounds.end) q = q.lte("verified_at", rangeBounds.end);
+            const r = await q.order("id", { ascending: true }).range(from, to);
+            return { data: r.data as RevTxRow[] | null, error: r.error };
+          });
+
+      const [txRes, tiRows, vRows, revTxRowsData, conRes, voteTxRows, ticketTxRows] = await Promise.all([
         txLimited,
-        tiQuery,
-        skipVotesAux ? emptyTableRes : vQuery,
-        skipVotesAux ? emptyTableRes : revTxQuery,
+        tiRowsPromise,
+        vRowsPromise,
+        revTxRowsPromise,
         conQuery,
         voteTxPromise,
         ticketTxPromise,
@@ -456,8 +473,6 @@ export default function CampaignReportPage() {
       setSuccessfulPayments(kpiPayRows.length);
       setRevenueByCurrency(sumRevenueByCurrency(kpiPayRows));
 
-      if (tiRes.error) throw tiRes.error;
-      const tiRows = tiRes.data ?? [];
       setTotalTicketsIssued(
         tiRows.reduce((acc: number, r: TicketIssueRow) => acc + (Number(r.quantity ?? 0) || 0), 0)
       );
@@ -485,8 +500,6 @@ export default function CampaignReportPage() {
         }
         setRevenueByContestant(revByContestant);
       } else {
-        if (vRes.error) throw vRes.error;
-        const vRows = (vRes.data ?? []) as VoteRow[];
         const total = vRows.reduce((acc: number, r: VoteRow) => acc + (Number(r.votes ?? 0) || 0), 0);
         setTotalVotes(total);
 
@@ -499,12 +512,7 @@ export default function CampaignReportPage() {
         setVotesByContestant(byContestant);
 
         const revByContestant: Record<string, number> = {};
-        const revTxRows = (revTxRes.error ? [] : revTxRes.data ?? []) as {
-          contestant_id: string | null;
-          amount: number;
-          currency: string;
-        }[];
-        for (const t of revTxRows) {
+        for (const t of revTxRowsData) {
           const id = String(t.contestant_id ?? "");
           const amt = Number(t.amount ?? 0) || 0;
           if (!id) continue;

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
+
 /**
  * Creates a M-Pesa withdrawal request (status: pending_admin).
  * Admin must approve before B2C is executed.
@@ -87,14 +89,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No campaigns found. Balance is calculated from your campaign revenue." }, { status: 400 });
     }
 
-    const { data: txRows } = await supabase
-      .from("transactions")
-      .select("amount,provider")
-      .eq("status", "success")
-      .in("campaign_id", campaignIds);
+    const txRows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("transactions")
+        .select("amount,provider")
+        .eq("status", "success")
+        .in("campaign_id", campaignIds)
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: r.data as { amount: number; provider: string | null }[] | null, error: r.error };
+    });
 
     let mpesaIn = 0;
-    for (const t of txRows ?? []) {
+    for (const t of txRows) {
       if (String(t.provider ?? "").toLowerCase() === "daraja") {
         mpesaIn += Number(t.amount ?? 0) || 0;
       }
