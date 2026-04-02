@@ -48,37 +48,26 @@ export default function AllVotingPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/voting-schedule");
-        const j = (await res.json()) as { voting_starts_at?: string | null };
-        const iso = j?.voting_starts_at;
-        if (cancelled) return;
-        if (iso) {
-          const t = Date.parse(iso);
-          if (!Number.isNaN(t)) setVotingStartMs(t);
-        }
-      } catch {
-        // keep fallback
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
 
     const load = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("/api/voting/all-categories", { cache: "no-store" });
-        const j = (await res.json()) as { categories?: CategoryRow[]; error?: string };
+        const [schedRes, catRes] = await Promise.all([
+          fetch("/api/voting-schedule"),
+          fetch("/api/voting/all-categories", { cache: "no-store" }),
+        ]);
+
+        const schedJ = (await schedRes.json()) as { voting_starts_at?: string | null };
+        if (!cancelled && schedJ?.voting_starts_at) {
+          const t = Date.parse(schedJ.voting_starts_at);
+          if (!Number.isNaN(t)) setVotingStartMs(t);
+        }
+
+        const j = (await catRes.json()) as { categories?: CategoryRow[]; error?: string };
         if (cancelled) return;
-        if (!res.ok) {
-          throw new Error(j.error ?? `Unable to load voting categories (${res.status})`);
+        if (!catRes.ok) {
+          throw new Error(j.error ?? `Unable to load voting categories (${catRes.status})`);
         }
         setCategories(Array.isArray(j.categories) ? j.categories : []);
       } catch (e: unknown) {

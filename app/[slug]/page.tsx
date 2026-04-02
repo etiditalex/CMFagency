@@ -4,9 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
-import PaystackPop from "@paystack/inline-js";
 
-import { supabase } from "@/lib/supabase";
 import VoteSuccessToast from "@/components/VoteSuccessToast";
 
 type Campaign = {
@@ -103,27 +101,6 @@ export default function CampaignPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/voting-schedule");
-        const j = (await res.json()) as { voting_starts_at?: string | null };
-        const iso = j?.voting_starts_at;
-        if (cancelled) return;
-        if (iso) {
-          const t = Date.parse(iso);
-          if (!Number.isNaN(t)) setVotingStartMs(t);
-        }
-      } catch {
-        // keep fallback
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
 
     const load = async () => {
       setLoading(true);
@@ -131,14 +108,21 @@ export default function CampaignPage() {
 
       try {
         if (!slug) throw new Error("Missing campaign slug in URL.");
-        const { data: c, error: cErr } = await supabase
-          .from("campaigns")
-          .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn")
-          .eq("slug", slug)
-          .maybeSingle();
+        const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}/page-data`);
+        const body = (await res.json()) as {
+          error?: string;
+          not_found?: boolean;
+          campaign: Campaign | null;
+          contestants?: Contestant[];
+          vote_counts?: Record<string, number>;
+          voting_starts_at?: string | null;
+        };
 
-        if (cErr) throw cErr;
-        if (!c) {
+        if (!res.ok) {
+          throw new Error(body.error ?? `Unable to load campaign (HTTP ${res.status})`);
+        }
+
+        if (!body.campaign || body.not_found) {
           const msg = [
             `Campaign "${slug}" is not available publicly.`,
             "",
@@ -153,28 +137,31 @@ export default function CampaignPage() {
           throw new Error(msg);
         }
 
-        if (!cancelled) setCampaign(c as Campaign);
+        if (cancelled) return;
 
-        if (c?.type === "vote") {
-          const { data: rows, error: rErr } = await supabase
-            .from("contestants")
-            .select("id,name,description,image_url,sort_order,created_at")
-            .eq("campaign_id", c.id)
-            .order("sort_order", { ascending: true });
+        setCampaign(body.campaign);
+        const list = (body.contestants ?? []) as Contestant[];
+        setContestants(body.campaign.type === "vote" ? list : []);
+        setContestantId("");
+        if (body.campaign.type === "vote" && body.vote_counts && typeof body.vote_counts === "object") {
+          setVoteCounts(body.vote_counts);
+        } else {
+          setVoteCounts({});
+        }
 
-          if (rErr) throw rErr;
-          if (!cancelled) {
-            const list = (rows ?? []) as Contestant[];
-            setContestants(list);
-            // Never auto-select: voters must explicitly choose to avoid paying for the wrong person.
-            setContestantId("");
-          }
+        const iso = body.voting_starts_at;
+        if (iso) {
+          const t = Date.parse(iso);
+          if (!Number.isNaN(t)) setVotingStartMs(t);
         }
       } catch (e: any) {
         if (cancelled) return;
         const msg = String(e?.message ?? "");
         const parts = [msg, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
         setError(parts.length > 0 ? parts.join("\n") : "Unable to load campaign");
+        setCampaign(null);
+        setContestants([]);
+        setVoteCounts({});
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -464,6 +451,7 @@ export default function CampaignPage() {
 
       if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
         const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+        const { default: PaystackPop } = await import("@paystack/inline-js");
         const paystack = new PaystackPop();
         paystack.newTransaction({
           key: paystackKey,
