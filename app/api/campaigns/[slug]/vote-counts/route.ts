@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Public vote counts per contestant for an active vote campaign.
- * Used so voters can see live totals and competition.
- * Uses service role to bypass RLS (votes are normally admin-only).
+ * Public vote totals per contestant for an active vote campaign.
+ * Sums successful vote transaction quantities (same source as payment-backed votes).
  */
 export async function GET(
   _req: Request,
@@ -37,18 +36,21 @@ export async function GET(
 
   const campaignId = (campaign as { id: string }).id;
 
-  // Aggregate votes per contestant
-  const { data: voteRows, error: voteErr } = await supabase
-    .from("votes")
-    .select("contestant_id,votes")
-    .eq("campaign_id", campaignId);
+  // Quantities from successful vote payments (aligns with revenue; public.votes can lag if fulfillment failed).
+  const { data: txRows, error: txErr } = await supabase
+    .from("transactions")
+    .select("contestant_id,quantity")
+    .eq("campaign_id", campaignId)
+    .eq("campaign_type", "vote")
+    .eq("status", "success")
+    .not("contestant_id", "is", null);
 
-  if (voteErr) return NextResponse.json({ error: voteErr.message }, { status: 500 });
+  if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
 
   const byContestant: Record<string, number> = {};
-  for (const row of (voteRows ?? []) as { contestant_id: string; votes: number }[]) {
+  for (const row of (txRows ?? []) as { contestant_id: string; quantity: number }[]) {
     const id = String(row.contestant_id ?? "");
-    const v = Number(row.votes ?? 0) || 0;
+    const v = Number(row.quantity ?? 0) || 0;
     if (!id) continue;
     byContestant[id] = (byContestant[id] ?? 0) + v;
   }

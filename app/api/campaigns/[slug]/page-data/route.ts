@@ -99,14 +99,20 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     );
   }
 
-  const [schedResult, conResult, voteResult] = await Promise.all([
+  const [schedResult, conResult, txVoteResult] = await Promise.all([
     readSchedule(),
     supabase
       .from("contestants")
       .select("id,name,description,image_url,sort_order,created_at")
       .eq("campaign_id", row.id)
       .order("sort_order", { ascending: true }),
-    supabase.from("votes").select("contestant_id,votes").eq("campaign_id", row.id),
+    supabase
+      .from("transactions")
+      .select("contestant_id,quantity")
+      .eq("campaign_id", row.id)
+      .eq("campaign_type", "vote")
+      .eq("status", "success")
+      .not("contestant_id", "is", null),
   ]);
 
   const voting_starts_at =
@@ -117,14 +123,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   if (conResult.error) {
     return NextResponse.json({ error: conResult.error.message }, { status: 500 });
   }
-  if (voteResult.error) {
-    return NextResponse.json({ error: voteResult.error.message }, { status: 500 });
+  if (txVoteResult.error) {
+    return NextResponse.json({ error: txVoteResult.error.message }, { status: 500 });
   }
 
   const vote_counts: Record<string, number> = {};
-  for (const vr of (voteResult.data ?? []) as { contestant_id: string; votes: number }[]) {
+  for (const vr of (txVoteResult.data ?? []) as { contestant_id: string; quantity: number }[]) {
     const id = String(vr.contestant_id ?? "");
-    const v = Number(vr.votes ?? 0) || 0;
+    const v = Number(vr.quantity ?? 0) || 0;
     if (!id) continue;
     vote_counts[id] = (vote_counts[id] ?? 0) + v;
   }

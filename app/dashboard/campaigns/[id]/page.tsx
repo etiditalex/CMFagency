@@ -95,45 +95,69 @@ export type VoteTransactionAggRow = {
   currency: string;
 };
 
+type TicketTransactionAggRow = {
+  id: string;
+  quantity: number;
+  amount: number;
+  currency: string;
+};
+
+function sumRevenueByCurrency(rows: Array<{ amount: number; currency: string }>): Record<string, number> {
+  const rev: Record<string, number> = {};
+  for (const r of rows) {
+    const cur = String(r.currency ?? "").toUpperCase() || "—";
+    const amt = Number(r.amount ?? 0);
+    if (!Number.isFinite(amt)) continue;
+    rev[cur] = (rev[cur] ?? 0) + amt;
+  }
+  return rev;
+}
+
+const TX_PAGE = 1000;
+
+async function fetchAllTxPages<T extends Record<string, unknown>>(q: {
+  range: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message?: string } | null }>;
+}): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await q.range(from, from + TX_PAGE - 1);
+    if (error) throw error;
+    const chunk = (data ?? []) as T[];
+    out.push(...chunk);
+    if (chunk.length < TX_PAGE) break;
+    from += TX_PAGE;
+  }
+  return out;
+}
+
 /**
- * Successful vote payments in range. Uses verified_at (payment confirmed) so totals match
- * the selected period even when public.votes rows were inserted later (webhook delay / backfill).
- * Legacy rows with null verified_at fall back to created_at for the range filter.
+ * Successful payments in range. Prefers verified_at; if missing, uses created_at or paid_at
+ * so KPIs match money that cleared even when verified_at was not backfilled.
  */
-async function loadSuccessfulVoteTransactionsForRange(
+async function loadSuccessfulTransactionsForRangeGeneric(
   supabase: SupabaseClient,
   campaignId: string,
-  bounds: RangeBounds
-): Promise<VoteTransactionAggRow[]> {
-  const PAGE = 1000;
-
-  const fetchAll = async (q: {
-    range: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message?: string } | null }>;
-  }) => {
-    const out: VoteTransactionAggRow[] = [];
-    let from = 0;
-    for (;;) {
-      const { data, error } = await q.range(from, from + PAGE - 1);
-      if (error) throw error;
-      const chunk = (data ?? []) as VoteTransactionAggRow[];
-      out.push(...chunk);
-      if (chunk.length < PAGE) break;
-      from += PAGE;
-    }
-    return out;
+  bounds: RangeBounds,
+  campaignType: "vote" | "ticket"
+): Promise<Array<Record<string, unknown>>> {
+  const base = () => {
+    let q = supabase
+      .from("transactions")
+      .select(
+        campaignType === "vote"
+          ? "id,contestant_id,quantity,amount,currency"
+          : "id,quantity,amount,currency"
+      )
+      .eq("campaign_id", campaignId)
+      .eq("campaign_type", campaignType)
+      .eq("status", "success");
+    if (campaignType === "vote") q = q.not("contestant_id", "is", null);
+    return q;
   };
 
-  const base = () =>
-    supabase
-      .from("transactions")
-      .select("id,contestant_id,quantity,amount,currency")
-      .eq("campaign_id", campaignId)
-      .eq("campaign_type", "vote")
-      .eq("status", "success")
-      .not("contestant_id", "is", null);
-
   if (!bounds.start && !bounds.end) {
-    return fetchAll(base().order("id", { ascending: true }));
+    return fetchAllTxPages(base().order("id", { ascending: true }));
   }
 
   const start = bounds.start!;
@@ -145,19 +169,65 @@ async function loadSuccessfulVoteTransactionsForRange(
     .lte("verified_at", end)
     .order("id", { ascending: true });
 
-  const legacy = base()
+  const legacyCreated = base()
     .is("verified_at", null)
     .gte("created_at", start)
     .lte("created_at", end)
     .order("id", { ascending: true });
 
-  const [a, b] = await Promise.all([fetchAll(primary), fetchAll(legacy)]);
-  const map = new Map<string, VoteTransactionAggRow>();
-  for (const r of a) map.set(r.id, r);
+  const legacyPaid = base()
+    .is("verified_at", null)
+    .not("paid_at", "is", null)
+    .gte("paid_at", start)
+    .lte("paid_at", end)
+    .order("id", { ascending: true });
+
+  const [a, b, c] = await Promise.all([
+    fetchAllTxPages(primary),
+    fetchAllTxPages(legacyCreated),
+    fetchAllTxPages(legacyPaid),
+  ]);
+
+  const map = new Map<string, Record<string, unknown>>();
+  for (const r of a) map.set(String((r as { id: string }).id), r as Record<string, unknown>);
   for (const r of b) {
-    if (!map.has(r.id)) map.set(r.id, r);
+    const id = String((r as { id: string }).id);
+    if (!map.has(id)) map.set(id, r as Record<string, unknown>);
+  }
+  for (const r of c) {
+    const id = String((r as { id: string }).id);
+    if (!map.has(id)) map.set(id, r as Record<string, unknown>);
   }
   return [...map.values()];
+}
+
+async function loadSuccessfulVoteTransactionsForRange(
+  supabase: SupabaseClient,
+  campaignId: string,
+  bounds: RangeBounds
+): Promise<VoteTransactionAggRow[]> {
+  const rows = await loadSuccessfulTransactionsForRangeGeneric(supabase, campaignId, bounds, "vote");
+  return rows.map((r) => ({
+    id: String(r.id),
+    contestant_id: String(r.contestant_id ?? ""),
+    quantity: Number(r.quantity) || 0,
+    amount: Number(r.amount) || 0,
+    currency: String(r.currency ?? ""),
+  }));
+}
+
+async function loadSuccessfulTicketTransactionsForRange(
+  supabase: SupabaseClient,
+  campaignId: string,
+  bounds: RangeBounds
+): Promise<TicketTransactionAggRow[]> {
+  const rows = await loadSuccessfulTransactionsForRangeGeneric(supabase, campaignId, bounds, "ticket");
+  return rows.map((r) => ({
+    id: String(r.id),
+    quantity: Number(r.quantity) || 0,
+    amount: Number(r.amount) || 0,
+    currency: String(r.currency ?? ""),
+  }));
 }
 
 export default function CampaignReportPage() {
@@ -345,16 +415,22 @@ export default function CampaignReportPage() {
           ? loadSuccessfulVoteTransactionsForRange(supabase, campaignId, rangeBounds)
           : Promise.resolve([] as VoteTransactionAggRow[]);
 
+      const ticketTxPromise =
+        campaignData.type === "ticket"
+          ? loadSuccessfulTicketTransactionsForRange(supabase, campaignId, rangeBounds)
+          : Promise.resolve([] as TicketTransactionAggRow[]);
+
       const skipVotesAux = campaignData.type === "vote";
       const emptyTableRes = Promise.resolve({ data: [] as unknown[], error: null });
 
-      const [txRes, tiRes, vRes, revTxRes, conRes, voteTxRows] = await Promise.all([
+      const [txRes, tiRes, vRes, revTxRes, conRes, voteTxRows, ticketTxRows] = await Promise.all([
         txLimited,
         tiQuery,
         skipVotesAux ? emptyTableRes : vQuery,
         skipVotesAux ? emptyTableRes : revTxQuery,
         conQuery,
         voteTxPromise,
+        ticketTxPromise,
       ]);
 
       if (txRes.error) throw txRes.error;
@@ -365,16 +441,14 @@ export default function CampaignReportPage() {
       }
       setRecentTransactions(displayTx);
 
-      const success = txRows.filter((t: TxRow) => t.status === "success");
-      setSuccessfulPayments(success.length);
-      const rev: Record<string, number> = {};
-      for (const t of success) {
-        const cur = String(t.currency ?? "").toUpperCase() || "—";
-        const amt = Number(t.amount ?? 0);
-        if (!Number.isFinite(amt)) continue;
-        rev[cur] = (rev[cur] ?? 0) + amt;
-      }
-      setRevenueByCurrency(rev);
+      const kpiPayRows =
+        campaignData.type === "vote"
+          ? (voteTxRows as VoteTransactionAggRow[])
+          : campaignData.type === "ticket"
+            ? (ticketTxRows as TicketTransactionAggRow[])
+            : [];
+      setSuccessfulPayments(kpiPayRows.length);
+      setRevenueByCurrency(sumRevenueByCurrency(kpiPayRows));
 
       if (tiRes.error) throw tiRes.error;
       const tiRows = tiRes.data ?? [];
@@ -733,7 +807,9 @@ export default function CampaignReportPage() {
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{successfulPayments.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">Webhook-confirmed.</div>
+                <div className="mt-2 text-sm text-gray-600">
+                  All successful payments in this range (not just the latest 50 in the table below).
+                </div>
               </div>
               <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
                 <Shield className="w-5 h-5 text-gray-600" />
@@ -779,8 +855,8 @@ export default function CampaignReportPage() {
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
               <h2 className="mt-1 text-xl font-extrabold text-gray-900">Votes by contestant</h2>
               <p className="mt-2 text-gray-600 text-sm">
-                Totals use successful vote transactions: quantity per payment, filtered by verified_at in this range
-                (legacy rows without verified_at use created_at).
+                Totals use successful vote transactions: quantity per payment. Range uses verified_at when set;
+                otherwise created_at or paid_at for older rows.
               </p>
 
               {/* Winner + Top revenue badges */}
