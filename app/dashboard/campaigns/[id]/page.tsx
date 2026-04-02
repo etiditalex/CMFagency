@@ -264,6 +264,8 @@ export default function CampaignReportPage() {
   const [confirmingRef, setConfirmingRef] = useState<string | null>(null);
 
   const refreshInFlightRef = useRef(false);
+  /** When true, a refresh was requested while another was running; we run again when the current one finishes. */
+  const refreshQueuedRef = useRef(false);
 
   const publicUrl = useMemo(() => {
     if (!campaign?.slug) return "";
@@ -361,11 +363,15 @@ export default function CampaignReportPage() {
     return "—";
   }, [customFrom, customTo, range]);
 
-  const refreshData = async () => {
+  const refreshData = async (options?: { silent?: boolean }) => {
     if (!campaignId) return;
-    if (refreshInFlightRef.current) return;
+    const silent = options?.silent === true;
+    if (refreshInFlightRef.current) {
+      refreshQueuedRef.current = true;
+      return;
+    }
     refreshInFlightRef.current = true;
-    setDataLoading(true);
+    if (!silent) setDataLoading(true);
     setError(null);
 
     try {
@@ -529,8 +535,15 @@ export default function CampaignReportPage() {
       const parts = [e?.message, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
       setError(parts.length ? parts.join("\n") : "Failed to load campaign report");
     } finally {
-      setDataLoading(false);
+      if (!silent) setDataLoading(false);
       refreshInFlightRef.current = false;
+      const queued = refreshQueuedRef.current;
+      refreshQueuedRef.current = false;
+      if (queued) {
+        queueMicrotask(() => {
+          void refreshData({ silent: true });
+        });
+      }
     }
   };
 
@@ -585,26 +598,27 @@ export default function CampaignReportPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "transactions", filter: `campaign_id=eq.${campaignId}` },
-        () => refreshData()
+        () => refreshData({ silent: true })
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "votes", filter: `campaign_id=eq.${campaignId}` },
-        () => refreshData()
+        () => refreshData({ silent: true })
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "ticket_issues", filter: `campaign_id=eq.${campaignId}` },
-        () => refreshData()
+        () => refreshData({ silent: true })
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "contestants", filter: `campaign_id=eq.${campaignId}` },
-        () => refreshData()
+        () => refreshData({ silent: true })
       )
       .subscribe();
 
-    const interval = window.setInterval(() => refreshData(), 15_000);
+    /** Frequent poll so KPIs track live voting even if Realtime is off or misses events. */
+    const interval = window.setInterval(() => refreshData({ silent: true }), 5_000);
 
     return () => {
       window.clearInterval(interval);
@@ -678,12 +692,21 @@ export default function CampaignReportPage() {
               <span className="mx-2">·</span>
               Last updated: <span className="font-semibold">{updatedLabel}</span>
             </div>
+            {isVote && (
+              <p className="mt-2 text-sm text-gray-600 max-w-2xl">
+                <span className="font-semibold text-gray-800">Live totals:</span> votes, revenue, and successful payments
+                count only <span className="font-medium">completed</span> payments (
+                <code className="text-xs bg-gray-100 px-1 rounded">status = success</code>). This page refreshes
+                automatically about every 5 seconds and when payments update, so numbers should rise while voting is
+                active.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
             <button
               type="button"
-              onClick={refreshData}
+              onClick={() => void refreshData()}
               disabled={dataLoading}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
             >
