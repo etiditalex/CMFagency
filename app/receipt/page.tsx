@@ -135,6 +135,25 @@ export default async function ReceiptPage({ searchParams }: Props) {
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-center text-green-800 text-sm print:hidden">
           A copy of this receipt has been sent to your email. You can download or print it below.
         </div>
+        {(tx as { campaign_type?: string }).campaign_type === "vote" && slug && slug !== "event" && (
+          <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50/90 p-4 text-center print:hidden">
+            <p className="text-sm font-semibold text-gray-900">What would you like to do next?</p>
+            <div className="mt-3 flex flex-col sm:flex-row gap-3 justify-center sm:items-stretch">
+              <Link
+                href={`/${encodeURIComponent(slug)}`}
+                className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+              >
+                Vote again
+              </Link>
+              <Link
+                href={`/${encodeURIComponent(slug)}#vote-counts`}
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+              >
+                View vote counts
+              </Link>
+            </div>
+          </div>
+        )}
         <div className="mb-6 flex justify-between items-center print:hidden">
           <Link href="/" className="text-[#B8860B] font-medium hover:underline">← Back to home</Link>
           <PrintButton />

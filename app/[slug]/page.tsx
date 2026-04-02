@@ -163,11 +163,8 @@ export default function CampaignPage() {
           if (!cancelled) {
             const list = (rows ?? []) as Contestant[];
             setContestants(list);
-            const pick =
-              contestantPresetId && list.some((x) => x.id === contestantPresetId)
-                ? contestantPresetId
-                : (list[0]?.id as string) ?? "";
-            setContestantId(pick);
+            // Never auto-select: voters must explicitly choose to avoid paying for the wrong person.
+            setContestantId("");
           }
         }
       } catch (e: any) {
@@ -184,7 +181,23 @@ export default function CampaignPage() {
     return () => {
       cancelled = true;
     };
-  }, [slug, contestantPresetId]);
+  }, [slug]);
+
+  /** Optional `?c=` id for a hint only — selection still requires an explicit tap. */
+  const linkSuggestedContestantId = useMemo(() => {
+    if (!contestantPresetId) return null;
+    return contestants.some((x) => x.id === contestantPresetId) ? contestantPresetId : null;
+  }, [contestantPresetId, contestants]);
+
+  useEffect(() => {
+    if (loading || contestants.length === 0) return;
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#vote-counts") return;
+    const t = window.setTimeout(() => {
+      document.getElementById("vote-counts")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 350);
+    return () => window.clearTimeout(t);
+  }, [loading, slug, contestants.length]);
 
   // Fetch vote counts for vote campaigns (for competition visibility)
   const fetchVoteCounts = useMemo(() => {
@@ -513,6 +526,18 @@ export default function CampaignPage() {
   const votingOpensLabel = formatVotingOpensInNairobi(votingStartMs);
   const Icon = isVote ? Vote : Ticket;
 
+  const goVoteAgain = () => {
+    setContestantId("");
+    setAgreedToTerms(false);
+    receiptRequestedRef.current = false;
+    reminderRequestedRef.current = false;
+    router.replace(`/${slug}`);
+  };
+
+  const scrollToVoteCounts = () => {
+    document.getElementById("vote-counts")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   if (votingLocked) {
     return (
       <div className="pt-24 min-h-screen bg-gray-50">
@@ -567,7 +592,7 @@ export default function CampaignPage() {
                   <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-6">
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-6 h-6 text-secondary-700 mt-0.5 flex-shrink-0" />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-gray-900 text-lg">Payment confirmed</div>
                         <div className="text-gray-700 mt-2">
                           Your receipt has been sent to your email with your {txStatus?.campaign_type === "vote" ? "vote" : "ticket"} details.
@@ -575,6 +600,27 @@ export default function CampaignPage() {
                         <div className="text-sm text-gray-600 mt-2">
                           Reference: <span className="font-mono">{ref}</span>
                         </div>
+                        {isVote && (
+                          <div className="mt-5 pt-4 border-t border-secondary-200/80">
+                            <p className="text-sm font-semibold text-gray-900">What would you like to do next?</p>
+                            <div className="mt-3 flex flex-col sm:flex-row gap-3">
+                              <button
+                                type="button"
+                                onClick={goVoteAgain}
+                                className="flex-1 rounded-lg bg-primary-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                              >
+                                Vote again
+                              </button>
+                              <button
+                                type="button"
+                                onClick={scrollToVoteCounts}
+                                className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                              >
+                                View vote counts
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -612,17 +658,32 @@ export default function CampaignPage() {
             )}
 
             {isVote && contestants.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-6" id="vote-counts">
                 <h2 className="text-lg font-bold text-gray-900 mb-3">Contestants</h2>
-                <p className="text-sm text-gray-600 mb-3">Vote counts update in real time. See who&apos;s leading and join the competition!</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  <strong className="text-gray-800">Choose who you are voting for</strong> (required before paying). Counts update in real
+                  time so you can see who&apos;s leading.
+                </p>
+                {linkSuggestedContestantId && (
+                  <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                    You opened a link supporting{" "}
+                    <strong>{contestants.find((x) => x.id === linkSuggestedContestantId)?.name ?? "a contestant"}</strong>.{" "}
+                    They are not pre-selected — tap their card below if that&apos;s who you want to vote for.
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {contestantsSorted.map((c) => {
                     const votes = voteCounts[c.id] ?? 0;
+                    const isSuggested = linkSuggestedContestantId === c.id;
                     return (
                       <label
                         key={c.id}
                         className={`cursor-pointer rounded-lg border p-3 flex items-center gap-3 ${
-                          contestantId === c.id ? "border-primary-600 bg-primary-50" : "border-gray-200 bg-white"
+                          contestantId === c.id
+                            ? "border-primary-600 bg-primary-50"
+                            : isSuggested
+                              ? "border-amber-300 bg-amber-50/40 border-dashed"
+                              : "border-gray-200 bg-white"
                         }`}
                       >
                         <input
@@ -642,7 +703,14 @@ export default function CampaignPage() {
                             <div className="w-10 h-10 rounded-lg bg-gray-100 flex-shrink-0" />
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-gray-900 break-words">{c.name}</div>
+                            <div className="font-semibold text-gray-900 break-words flex flex-wrap items-center gap-2">
+                              {c.name}
+                              {isSuggested && (
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                                  From link
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm font-semibold text-primary-600 mt-0.5">
                               {votes.toLocaleString()} vote{votes !== 1 ? "s" : ""}
                             </div>
