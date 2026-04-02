@@ -233,8 +233,8 @@ export default function CampaignPage() {
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
-        const raw = await res.text();
+        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
+        let raw = await res.text();
         let json: any = {};
         if (raw) {
           try {
@@ -244,6 +244,24 @@ export default function CampaignPage() {
           }
         }
         if (!res.ok) throw new Error(json?.error ?? raw ?? "Unable to fetch payment status");
+
+        if (String(json.status ?? "pending") === "pending" && String(json.provider ?? "") === "paystack") {
+          await fetch("/api/paystack/verify-ref", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ref }),
+          }).catch(() => {});
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
+          raw = await res.text();
+          if (raw) {
+            try {
+              json = JSON.parse(raw);
+            } catch {
+              json = {};
+            }
+          }
+          if (!res.ok) throw new Error(json?.error ?? raw ?? "Unable to fetch payment status");
+        }
 
         const next = {
           status: String(json.status ?? "pending"),

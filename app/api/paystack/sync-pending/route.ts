@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 
 /**
@@ -120,71 +121,20 @@ export async function GET(req: Request) {
         continue;
       }
 
-      await supabase
-        .from("transactions")
-        .update({
-          status: "success",
-          verified_at: new Date().toISOString(),
-          paid_at: json.data?.paid_at ?? new Date().toISOString(),
-        } as any)
-        .eq("id", tx.id);
-
       if (!tx.fulfilled_at) {
-        const meta = (tx as any).metadata ?? {};
-        let fulfillErr: string | null = null;
-
-        if (meta.merchandise_cart === true) {
-          // Merchandise: no ticket_issues, just mark fulfilled
-        } else if (tx.campaign_type === "vote") {
-          if (!tx.contestant_id) {
-            fulfillErr = "vote_missing_contestant_id";
-          } else {
-            const { error: vErr } = await supabase.from("votes").upsert(
-              {
-                transaction_id: tx.id,
-                campaign_id: tx.campaign_id,
-                contestant_id: tx.contestant_id,
-                votes: tx.quantity,
-              },
-              { onConflict: "transaction_id", ignoreDuplicates: true }
-            );
-            if (vErr) fulfillErr = vErr.message;
-          }
-        } else if (tx.campaign_type === "ticket") {
-          const { error: tErr } = await supabase.from("ticket_issues").upsert(
-            {
-              transaction_id: tx.id,
-              campaign_id: tx.campaign_id,
-              quantity: tx.quantity,
-            },
-            { onConflict: "transaction_id", ignoreDuplicates: true }
-          );
-          if (tErr) fulfillErr = tErr.message;
-        }
-
-        if (!fulfillErr) {
-          await supabase
-            .from("transactions")
-            .update({ fulfilled_at: new Date().toISOString() } as any)
-            .eq("id", tx.id)
-            .is("fulfilled_at", null);
-
-          const couponId = (tx as { coupon_id?: string | null }).coupon_id;
-          if (couponId) {
-            const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
-            if (cou) {
-              const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
-              await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
-            }
-          }
-        } else {
-          await supabase
-            .from("transactions")
-            .update({
-              metadata: { ...meta, fulfillment_error: fulfillErr },
-            } as any)
-            .eq("id", tx.id);
-        }
+        await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
+          paidAt: json.data?.paid_at ?? new Date().toISOString(),
+          metadataPatch: {},
+        });
+      } else {
+        await supabase
+          .from("transactions")
+          .update({
+            status: "success",
+            verified_at: new Date().toISOString(),
+            paid_at: json.data?.paid_at ?? new Date().toISOString(),
+          } as Record<string, unknown>)
+          .eq("id", tx.id);
       }
 
       updated++;

@@ -3,6 +3,9 @@
 /**
  * Supabase Edge Function: Paystack webhook handler
  * -----------------------------------------------------------------------------
+ * Alternative: Next.js route `POST /api/paystack/webhook` on Vercel (same secret / logic).
+ * Use one webhook URL in Paystack Dashboard, not both, to avoid duplicate receipt emails.
+ *
  * Requirements satisfied:
  * - Payment status is confirmed ONLY by webhook (this function), never frontend.
  * - Voting is idempotent: one vote row per transaction (unique on transaction_id).

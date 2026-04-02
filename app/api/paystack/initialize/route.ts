@@ -23,7 +23,12 @@ type InitBody = {
  *
  * Security notes (per requirements):
  * - This endpoint does NOT mark transactions as successful.
- * - Payment success is ONLY confirmed via webhook (Supabase Edge Function).
+ * - Payment success is confirmed only after Paystack reports a charge success:
+ *   set the dashboard webhook to `https://YOUR_DOMAIN/api/paystack/webhook`
+ *   (recommended on Vercel), or deploy the Supabase Edge Function `paystack-webhook`
+ *   and point Paystack there.
+ * - Pending rows can also be completed via `/api/paystack/verify-ref` (used while polling)
+ *   or dashboard “Sync Paystack” (`/api/paystack/sync-pending`).
  * - We insert a "pending" transaction first under RLS rules using the anon key.
  *
  * Env required:
