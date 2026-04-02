@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+import { getVoteTransactionTotalsForCampaignsFlat } from "@/lib/vote-transaction-totals";
+
 export const dynamic = "force-dynamic";
 
 /** Avoid oversized `.in()` lists; safe with hundreds of categories. */
@@ -97,13 +99,17 @@ export async function GET() {
   const ids = visible.map((c) => c.id);
   const allContestants: ContestantRow[] = [];
 
-  for (let i = 0; i < ids.length; i += CAMPAIGN_ID_CHUNK) {
-    const chunk = ids.slice(i, i + CAMPAIGN_ID_CHUNK);
-    const { data: rows, error: conErr } = await client
-      .from("contestants")
-      .select("id, campaign_id, name, description, image_url, sort_order")
-      .in("campaign_id", chunk);
+  const contestantResults = await Promise.all(
+    Array.from({ length: Math.ceil(ids.length / CAMPAIGN_ID_CHUNK) || 1 }, (_, k) => {
+      const chunk = ids.slice(k * CAMPAIGN_ID_CHUNK, k * CAMPAIGN_ID_CHUNK + CAMPAIGN_ID_CHUNK);
+      return client
+        .from("contestants")
+        .select("id, campaign_id, name, description, image_url, sort_order")
+        .in("campaign_id", chunk);
+    })
+  );
 
+  for (const { data: rows, error: conErr } of contestantResults) {
     if (conErr) {
       return NextResponse.json({ error: conErr.message ?? "Failed to load contestants" }, { status: 500 });
     }
@@ -123,25 +129,20 @@ export async function GET() {
     byCampaign.set(row.campaign_id, arr);
   }
 
-  /** Contestant id → total votes (from `votes` table). Only fetched with service role (anon cannot read `votes`). */
-  const voteTotalsByContestant = new Map<string, number>();
-  if (bypassesRls) {
-    for (let i = 0; i < ids.length; i += CAMPAIGN_ID_CHUNK) {
-      const chunk = ids.slice(i, i + CAMPAIGN_ID_CHUNK);
-      const { data: voteRows, error: vErr } = await client
-        .from("votes")
-        .select("contestant_id,votes")
-        .in("campaign_id", chunk);
-      if (vErr) {
-        return NextResponse.json({ error: vErr.message ?? "Failed to load votes" }, { status: 500 });
-      }
-      for (const row of voteRows ?? []) {
-        const r = row as { contestant_id: string; votes: number };
-        const id = String(r.contestant_id ?? "");
-        const v = Number(r.votes ?? 0) || 0;
-        if (!id) continue;
-        voteTotalsByContestant.set(id, (voteTotalsByContestant.get(id) ?? 0) + v);
-      }
+  /**
+   * Contestant id → total votes from successful vote transactions (same basis as public campaign pages).
+   * Single DB aggregation when patch 64 RPCs are applied; falls back per-campaign if not.
+   */
+  let voteTotalsByContestant = new Map<string, number>();
+  if (bypassesRls && ids.length > 0) {
+    try {
+      voteTotalsByContestant = await getVoteTransactionTotalsForCampaignsFlat(client, ids);
+    } catch (e: unknown) {
+      const msg =
+        e && typeof e === "object" && "message" in e
+          ? String((e as { message: string }).message)
+          : "Failed to load vote totals";
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
   }
 

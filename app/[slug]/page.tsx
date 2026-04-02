@@ -206,7 +206,7 @@ export default function CampaignPage() {
 
   useEffect(() => {
     if (!campaign || campaign.type !== "vote") return;
-    fetchVoteCounts();
+    // Initial tallies come from `page-data`; avoid an immediate second full aggregation on load.
     const interval = setInterval(fetchVoteCounts, 5000);
     return () => clearInterval(interval);
   }, [campaign, fetchVoteCounts]);
