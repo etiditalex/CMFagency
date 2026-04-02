@@ -14,6 +14,8 @@ import {
   Wallet,
 } from "lucide-react";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
@@ -81,6 +83,81 @@ function endOfDay(d: Date) {
   const x = new Date(d);
   x.setHours(23, 59, 59, 999);
   return x;
+}
+
+type RangeBounds = { start: string | null; end: string | null };
+
+export type VoteTransactionAggRow = {
+  id: string;
+  contestant_id: string;
+  quantity: number;
+  amount: number;
+  currency: string;
+};
+
+/**
+ * Successful vote payments in range. Uses verified_at (payment confirmed) so totals match
+ * the selected period even when public.votes rows were inserted later (webhook delay / backfill).
+ * Legacy rows with null verified_at fall back to created_at for the range filter.
+ */
+async function loadSuccessfulVoteTransactionsForRange(
+  supabase: SupabaseClient,
+  campaignId: string,
+  bounds: RangeBounds
+): Promise<VoteTransactionAggRow[]> {
+  const PAGE = 1000;
+
+  const fetchAll = async (q: {
+    range: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message?: string } | null }>;
+  }) => {
+    const out: VoteTransactionAggRow[] = [];
+    let from = 0;
+    for (;;) {
+      const { data, error } = await q.range(from, from + PAGE - 1);
+      if (error) throw error;
+      const chunk = (data ?? []) as VoteTransactionAggRow[];
+      out.push(...chunk);
+      if (chunk.length < PAGE) break;
+      from += PAGE;
+    }
+    return out;
+  };
+
+  const base = () =>
+    supabase
+      .from("transactions")
+      .select("id,contestant_id,quantity,amount,currency")
+      .eq("campaign_id", campaignId)
+      .eq("campaign_type", "vote")
+      .eq("status", "success")
+      .not("contestant_id", "is", null);
+
+  if (!bounds.start && !bounds.end) {
+    return fetchAll(base().order("id", { ascending: true }));
+  }
+
+  const start = bounds.start!;
+  const end = bounds.end!;
+
+  const primary = base()
+    .not("verified_at", "is", null)
+    .gte("verified_at", start)
+    .lte("verified_at", end)
+    .order("id", { ascending: true });
+
+  const legacy = base()
+    .is("verified_at", null)
+    .gte("created_at", start)
+    .lte("created_at", end)
+    .order("id", { ascending: true });
+
+  const [a, b] = await Promise.all([fetchAll(primary), fetchAll(legacy)]);
+  const map = new Map<string, VoteTransactionAggRow>();
+  for (const r of a) map.set(r.id, r);
+  for (const r of b) {
+    if (!map.has(r.id)) map.set(r.id, r);
+  }
+  return [...map.values()];
 }
 
 export default function CampaignReportPage() {
@@ -222,6 +299,16 @@ export default function CampaignReportPage() {
     setError(null);
 
     try {
+      const { data: campaignRow, error: campErr } = await supabase
+        .from("campaigns")
+        .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at,created_by")
+        .eq("id", campaignId)
+        .single();
+
+      if (campErr) throw campErr;
+      const campaignData = campaignRow as Campaign;
+      setCampaign(campaignData);
+
       let txQuery = supabase
         .from("transactions")
         .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
@@ -244,8 +331,8 @@ export default function CampaignReportPage() {
         .eq("campaign_id", campaignId)
         .eq("campaign_type", "vote")
         .eq("status", "success");
-      if (rangeBounds.start) revTxQuery = revTxQuery.gte("created_at", rangeBounds.start);
-      if (rangeBounds.end) revTxQuery = revTxQuery.lte("created_at", rangeBounds.end);
+      if (rangeBounds.start) revTxQuery = revTxQuery.gte("verified_at", rangeBounds.start);
+      if (rangeBounds.end) revTxQuery = revTxQuery.lte("verified_at", rangeBounds.end);
 
       const conQuery = supabase
         .from("contestants")
@@ -253,22 +340,22 @@ export default function CampaignReportPage() {
         .eq("campaign_id", campaignId)
         .order("sort_order", { ascending: true });
 
-      const [cRes, txRes, tiRes, vRes, revTxRes, conRes] = await Promise.all([
-        supabase
-          .from("campaigns")
-          .select("id,type,slug,title,description,currency,unit_amount,max_per_txn,is_active,created_at,created_by")
-          .eq("id", campaignId)
-          .single(),
+      const voteTxPromise =
+        campaignData.type === "vote"
+          ? loadSuccessfulVoteTransactionsForRange(supabase, campaignId, rangeBounds)
+          : Promise.resolve([] as VoteTransactionAggRow[]);
+
+      const skipVotesAux = campaignData.type === "vote";
+      const emptyTableRes = Promise.resolve({ data: [] as unknown[], error: null });
+
+      const [txRes, tiRes, vRes, revTxRes, conRes, voteTxRows] = await Promise.all([
         txLimited,
         tiQuery,
-        vQuery,
-        revTxQuery,
+        skipVotesAux ? emptyTableRes : vQuery,
+        skipVotesAux ? emptyTableRes : revTxQuery,
         conQuery,
+        voteTxPromise,
       ]);
-
-      if (cRes.error) throw cRes.error;
-      const campaignData = cRes.data as Campaign;
-      setCampaign(campaignData);
 
       if (txRes.error) throw txRes.error;
       const txRows = txRes.data ?? [];
@@ -295,33 +382,56 @@ export default function CampaignReportPage() {
         tiRows.reduce((acc: number, r: TicketIssueRow) => acc + (Number(r.quantity ?? 0) || 0), 0)
       );
 
-      if (vRes.error) throw vRes.error;
-      const vRows = (vRes.data ?? []) as VoteRow[];
-      const total = vRows.reduce((acc: number, r: VoteRow) => acc + (Number(r.votes ?? 0) || 0), 0);
-      setTotalVotes(total);
+      let byContestant: Record<string, number> = {};
 
-      const byContestant: Record<string, number> = {};
-      for (const r of vRows) {
-        const id = String(r.contestant_id ?? "");
-        const v = Number(r.votes ?? 0) || 0;
-        if (!id) continue;
-        byContestant[id] = (byContestant[id] ?? 0) + v;
-      }
-      setVotesByContestant(byContestant);
+      if (campaignData.type === "vote") {
+        const rows = voteTxRows ?? [];
+        const total = rows.reduce((acc, r) => acc + (Number(r.quantity) || 0), 0);
+        setTotalVotes(total);
+        for (const r of rows) {
+          const id = String(r.contestant_id ?? "");
+          const v = Number(r.quantity) || 0;
+          if (!id) continue;
+          byContestant[id] = (byContestant[id] ?? 0) + v;
+        }
+        setVotesByContestant(byContestant);
 
-      const revByContestant: Record<string, number> = {};
-      const revTxRows = (revTxRes.error ? [] : revTxRes.data ?? []) as {
-        contestant_id: string | null;
-        amount: number;
-        currency: string;
-      }[];
-      for (const t of revTxRows) {
-        const id = String(t.contestant_id ?? "");
-        const amt = Number(t.amount ?? 0) || 0;
-        if (!id) continue;
-        revByContestant[id] = (revByContestant[id] ?? 0) + amt;
+        const revByContestant: Record<string, number> = {};
+        for (const t of rows) {
+          const id = String(t.contestant_id ?? "");
+          const amt = Number(t.amount ?? 0) || 0;
+          if (!id) continue;
+          revByContestant[id] = (revByContestant[id] ?? 0) + amt;
+        }
+        setRevenueByContestant(revByContestant);
+      } else {
+        if (vRes.error) throw vRes.error;
+        const vRows = (vRes.data ?? []) as VoteRow[];
+        const total = vRows.reduce((acc: number, r: VoteRow) => acc + (Number(r.votes ?? 0) || 0), 0);
+        setTotalVotes(total);
+
+        for (const r of vRows) {
+          const id = String(r.contestant_id ?? "");
+          const v = Number(r.votes ?? 0) || 0;
+          if (!id) continue;
+          byContestant[id] = (byContestant[id] ?? 0) + v;
+        }
+        setVotesByContestant(byContestant);
+
+        const revByContestant: Record<string, number> = {};
+        const revTxRows = (revTxRes.error ? [] : revTxRes.data ?? []) as {
+          contestant_id: string | null;
+          amount: number;
+          currency: string;
+        }[];
+        for (const t of revTxRows) {
+          const id = String(t.contestant_id ?? "");
+          const amt = Number(t.amount ?? 0) || 0;
+          if (!id) continue;
+          revByContestant[id] = (revByContestant[id] ?? 0) + amt;
+        }
+        setRevenueByContestant(revByContestant);
       }
-      setRevenueByContestant(revByContestant);
 
       if (conRes.error) {
         setContestants([]);
@@ -649,7 +759,11 @@ export default function CampaignReportPage() {
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
                 <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalVotes.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">From votes table.</div>
+                <div className="mt-2 text-sm text-gray-600">
+                  {isVote
+                    ? "Sum of quantities on successful vote payments (by payment confirmation time in this range)."
+                    : "From votes table."}
+                </div>
               </div>
               <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
                 <Vote className="w-5 h-5 text-gray-600" />
@@ -664,7 +778,10 @@ export default function CampaignReportPage() {
             <div className="p-6 border-b border-gray-200">
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
               <h2 className="mt-1 text-xl font-extrabold text-gray-900">Votes by contestant</h2>
-              <p className="mt-2 text-gray-600 text-sm">Totals are computed from webhook-confirmed vote rows.</p>
+              <p className="mt-2 text-gray-600 text-sm">
+                Totals use successful vote transactions: quantity per payment, filtered by verified_at in this range
+                (legacy rows without verified_at use created_at).
+              </p>
 
               {/* Winner + Top revenue badges */}
               {(voteWinnerIds.length > 0 || revenueLeaderIds.length > 0) && (
