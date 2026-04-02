@@ -14,22 +14,48 @@ function ymd(d: Date): string {
 
 async function canAccessReports(
   supabase: ReturnType<typeof createClient<any>>,
-  userId: string
+  userId: string,
+  supabaseUrl: string
 ): Promise<boolean> {
-  const { data: pmRaw } = await supabase
-    .from("portal_members")
-    .select("role,features")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const pm = pmRaw as { role: string; features: unknown } | null;
-  if (pm) {
-    if (pm.role === "admin" || pm.role === "manager") return true;
-    const feats = pm.features as string[] | null | undefined;
-    if (Array.isArray(feats) && feats.includes("reports")) return true;
-    return false;
-  }
-  const { data: au } = await supabase.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
-  return !!au;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+  const readMembership = async () => {
+    if (serviceKey) {
+      const admin = createClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: pmRaw } = await admin
+        .from("portal_members")
+        .select("role,features")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const pmRow = pmRaw as { role: string; features: unknown } | null;
+      if (pmRow) {
+        const role = String(pmRow.role ?? "").toLowerCase();
+        if (role === "admin" || role === "manager") return true;
+        const feats = pmRow.features as string[] | null | undefined;
+        if (Array.isArray(feats) && feats.includes("reports")) return true;
+        return false;
+      }
+      const { data: au } = await admin.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
+      return !!au;
+    }
+    const { data: pmRaw } = await supabase
+      .from("portal_members")
+      .select("role,features")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const pm = pmRaw as { role: string; features: unknown } | null;
+    if (pm) {
+      const role = String(pm.role ?? "").toLowerCase();
+      if (role === "admin" || role === "manager") return true;
+      const feats = pm.features as string[] | null | undefined;
+      if (Array.isArray(feats) && feats.includes("reports")) return true;
+      return false;
+    }
+    const { data: au } = await supabase.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
+    return !!au;
+  };
+  return readMembership();
 }
 
 /**
@@ -57,33 +83,32 @@ export async function GET(req: Request) {
   }
 
   const userId = userData.user.id;
-  if (!(await canAccessReports(supabase, userId))) {
+  if (!(await canAccessReports(supabase, userId, supabaseUrl))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let isFullAdmin = false;
-  const { data: pmRow } = await supabase.from("portal_members").select("role").eq("user_id", userId).maybeSingle();
-  if (pmRow?.role === "admin") isFullAdmin = true;
-  else if (!pmRow) {
-    const { data: au } = await supabase.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
-    if (au) isFullAdmin = true;
+  // Campaign visibility is enforced by RLS (own rows, event-linked rows, admin/manager = org-wide).
+  // Do not add `.eq("created_by", …)` here — that hid manager + event-owner clients from analytics.
+  type CampaignRow = { id: string; title?: string; slug?: string; type?: string };
+  let rows: CampaignRow[];
+  try {
+    rows = await fetchAllSupabasePages(async (from, to) => {
+      const r = await supabase
+        .from("campaigns")
+        .select("id,title,slug,type")
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      return { data: r.data as CampaignRow[] | null, error: r.error };
+    });
+  } catch (e: unknown) {
+    const msg =
+      e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "campaigns query failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  let campaignsQuery = supabase.from("campaigns").select("id,title,slug,type").order("created_at", { ascending: false });
-  if (!isFullAdmin) {
-    campaignsQuery = campaignsQuery.eq("created_by", userId);
-  }
-
-  const { data: campaigns, error: cErr } = await campaignsQuery;
-  if (cErr) {
-    return NextResponse.json({ error: cErr.message }, { status: 500 });
-  }
-
-  const rows = campaigns ?? [];
-  const campaignIds = rows.map((c: { id: string }) => c.id);
+  const campaignIds = rows.map((c) => c.id);
   const merchandiseId =
-    (rows as { id: string; slug?: string }[]).find((c) => String(c.slug ?? "").toLowerCase() === "merchandise")?.id ??
-    null;
+    rows.find((c) => String(c.slug ?? "").toLowerCase() === "merchandise")?.id ?? null;
 
   if (campaignIds.length === 0) {
     return NextResponse.json({
@@ -214,7 +239,7 @@ export async function GET(req: Request) {
     }));
 
   const titleById: Record<string, string> = {};
-  for (const c of rows as { id: string; title?: string; slug?: string }[]) {
+  for (const c of rows) {
     titleById[c.id] = String(c.title || c.slug || c.id);
   }
 

@@ -2,42 +2,28 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
-import { getWalletSupabasePublicEnv, parseBearerToken } from "@/lib/wallet-request-auth";
+import {
+  authenticateWalletRequest,
+  canRequestWalletWithdrawal,
+  getWalletSupabasePublicEnv,
+  parseBearerToken,
+} from "@/lib/wallet-request-auth";
 
 /**
  * Creates a M-Pesa withdrawal request (status: pending_admin).
  * Admin must approve before B2C is executed.
  */
-async function getAuthenticatedUser(
-  req: Request,
-  env: { supabaseUrl: string; supabaseAnonKey: string }
-): Promise<{ id: string } | null> {
-  const token = parseBearerToken(req);
-  if (!token) return null;
-
-  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-
-  const { data: pm } = await supabase.from("portal_members").select("user_id").eq("user_id", user.id).maybeSingle();
-  const { data: au } = !pm ? await supabase.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle() : { data: null };
-  if (!pm && !au) return null;
-
-  return { id: user.id };
-}
-
 export async function POST(req: Request) {
   const env = getWalletSupabasePublicEnv();
   if (!env) {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  const auth = await getAuthenticatedUser(req, env);
-  if (!auth) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authResult = await authenticateWalletRequest(req, env);
+  if (!authResult.ok) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
+  const auth = authResult.auth;
 
   let body: { amount?: number; recipient_phone?: string };
   try {
@@ -72,19 +58,12 @@ export async function POST(req: Request) {
   });
 
   try {
-    // Verify user has payouts feature (legacy admin_users-only rows bypass features array)
-    const { data: pm } = await supabase.from("portal_members").select("features,role").eq("user_id", auth.id).maybeSingle();
-    const { data: legacyAdmin } = !pm
-      ? await supabase.from("admin_users").select("user_id").eq("user_id", auth.id).maybeSingle()
-      : { data: null };
-    const features = (pm?.features as string[] | null) ?? [];
-    const isAdmin = pm?.role === "admin" || pm?.role === "manager" || !!legacyAdmin;
-    if (!isAdmin && !features.includes("payouts")) {
+    if (!canRequestWalletWithdrawal(auth)) {
       return NextResponse.json({ error: "Payouts feature not enabled" }, { status: 403 });
     }
 
     // Get available M-Pesa balance
-    let campaignsQuery = supabase.from("campaigns").select("id").eq("created_by", auth.id);
+    let campaignsQuery = supabase.from("campaigns").select("id").eq("created_by", auth.userId);
     const { data: campaigns } = await campaignsQuery;
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
@@ -113,7 +92,7 @@ export async function POST(req: Request) {
     const { data: withdrawals } = await supabase
       .from("withdrawal_requests")
       .select("amount,status")
-      .eq("created_by", auth.id)
+      .eq("created_by", auth.userId)
       .in("status", ["approved", "processing", "completed"]);
 
     let withdrawn = 0;
@@ -132,7 +111,7 @@ export async function POST(req: Request) {
     const { data: inserted, error } = await supabase
       .from("withdrawal_requests")
       .insert({
-        created_by: auth.id,
+        created_by: auth.userId,
         amount,
         currency: "KES",
         recipient_phone: phone,

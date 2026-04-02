@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BarChart3, Loader2, RefreshCw } from "lucide-react";
 
-import { supabase } from "@/lib/supabase";
+import { getAccessTokenForApi } from "@/lib/get-access-token-for-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { DailyVoteTicketCharts, RevenuePieChart } from "@/components/dashboard/SalesInsightsCharts";
@@ -47,12 +47,9 @@ export default function DashboardInsightsPage() {
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
+      const token = await getAccessTokenForApi();
       if (!token) {
-        setError("Not signed in");
+        setError("Session expired. Refresh the page or sign in again.");
         return;
       }
       const res = await fetch("/api/fusion-xpress/analytics/sales-overview", {

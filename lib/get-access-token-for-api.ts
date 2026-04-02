@@ -2,10 +2,17 @@ import { supabase } from "@/lib/supabase";
 
 /**
  * JWT for Authorization: Bearer … on our Next.js API routes.
- * Refreshes the session when it is expired or close to expiry so
- * server-side `getUser(token)` does not reject with a stale access_token.
+ * Validates the user with `getUser()` first (may refresh internally), then refreshes when
+ * the access token is expired or near expiry so server-side `getUser(token)` accepts it.
  */
 export async function getAccessTokenForApi(): Promise<string | null> {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData?.user) {
+    const { data: refreshed, error: refErr } = await supabase.auth.refreshSession();
+    if (refErr || !refreshed.session?.access_token) return null;
+    return refreshed.session.access_token;
+  }
+
   const {
     data: { session },
     error,

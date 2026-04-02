@@ -1,33 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { initiateB2C } from "@/lib/daraja-b2c";
-import { getWalletSupabasePublicEnv, parseBearerToken } from "@/lib/wallet-request-auth";
+import {
+  authenticateWalletRequest,
+  canApproveWalletWithdrawals,
+  getWalletSupabasePublicEnv,
+} from "@/lib/wallet-request-auth";
 
 /**
  * Admin approves a withdrawal request. Sets status to 'approved', triggers M-Pesa B2C,
  * then sets status to 'processing'. Callback updates to 'completed' or 'rejected'.
  */
-async function getAdminUser(
-  req: Request,
-  env: { supabaseUrl: string; supabaseAnonKey: string }
-): Promise<{ id: string } | null> {
-  const token = parseBearerToken(req);
-  if (!token) return null;
-
-  const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-
-  const { data: pm } = await supabase.from("portal_members").select("role").eq("user_id", user.id).maybeSingle();
-  const isAdmin = pm?.role === "admin";
-  const { data: au } = !pm ? await supabase.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle() : { data: null };
-  if (!isAdmin && !au) return null;
-
-  return { id: user.id };
-}
-
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -37,10 +20,14 @@ export async function POST(
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  const auth = await getAdminUser(req, env);
-  if (!auth) {
+  const authResult = await authenticateWalletRequest(req, env);
+  if (!authResult.ok) {
+    return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+  }
+  if (!canApproveWalletWithdrawals(authResult.auth)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const auth = authResult.auth;
 
   const { id } = await params;
 
@@ -86,7 +73,7 @@ export async function POST(
         .from("withdrawal_requests")
         .update({
           status: "rejected",
-          approved_by: auth.id,
+          approved_by: auth.userId,
           approved_at: new Date().toISOString(),
         })
         .eq("id", id);
@@ -113,7 +100,7 @@ export async function POST(
       .from("withdrawal_requests")
       .update({
         status: "approved",
-        approved_by: auth.id,
+        approved_by: auth.userId,
         approved_at: new Date().toISOString(),
       })
       .eq("id", id);
