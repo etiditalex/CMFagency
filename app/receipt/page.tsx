@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import VoteSuccessToast from "@/components/VoteSuccessToast";
 import ReceiptContent from "./ReceiptContent";
 import PrintButton from "./PrintButton";
 
@@ -129,10 +130,16 @@ export default async function ReceiptPage({ searchParams }: Props) {
     }
   }
 
+  const isVoteReceipt = (tx as { campaign_type?: string }).campaign_type === "vote";
+
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
+      <VoteSuccessToast show={isVoteReceipt} />
       <div className="max-w-xl mx-auto py-8 px-4 print:py-4">
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-center text-green-800 text-sm print:hidden">
+          {isVoteReceipt && (
+            <p className="font-semibold text-green-900 mb-2">Your vote was successful — payment is confirmed.</p>
+          )}
           A copy of this receipt has been sent to your email. You can download or print it below.
         </div>
         {(tx as { campaign_type?: string }).campaign_type === "vote" && slug && slug !== "event" && (

@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 
 import { supabase } from "@/lib/supabase";
+import VoteSuccessToast from "@/components/VoteSuccessToast";
 
 type Campaign = {
   id: string;
@@ -83,6 +84,7 @@ export default function CampaignPage() {
   const [error, setError] = useState<string | null>(null);
   const receiptRequestedRef = useRef(false);
   const reminderRequestedRef = useRef(false);
+  const voteSuccessToastFiredRef = useRef(false);
 
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [contestants, setContestants] = useState<Contestant[]>([]);
@@ -97,6 +99,7 @@ export default function CampaignPage() {
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [votingStartMs, setVotingStartMs] = useState<number>(FALLBACK_VOTING_START_MS);
+  const [voteSuccessToastShow, setVoteSuccessToastShow] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -336,6 +339,20 @@ export default function CampaignPage() {
     };
   }, [ref]);
 
+  useEffect(() => {
+    if (!ref) {
+      voteSuccessToastFiredRef.current = false;
+      setVoteSuccessToastShow(false);
+      return;
+    }
+    if (txStatus?.status !== "success") return;
+    const isVotePayment = txStatus.campaign_type === "vote" || campaign?.type === "vote";
+    if (!isVotePayment) return;
+    if (voteSuccessToastFiredRef.current) return;
+    voteSuccessToastFiredRef.current = true;
+    setVoteSuccessToastShow(true);
+  }, [ref, txStatus?.status, txStatus?.campaign_type, campaign?.type]);
+
   const effectiveMax = useMemo(() => {
     if (!campaign) return 10;
     return campaign.type === "vote" ? 1000000 : Math.min(campaign.max_per_txn, 10000);
@@ -531,6 +548,8 @@ export default function CampaignPage() {
     setAgreedToTerms(false);
     receiptRequestedRef.current = false;
     reminderRequestedRef.current = false;
+    voteSuccessToastFiredRef.current = false;
+    setVoteSuccessToastShow(false);
     router.replace(`/${slug}`);
   };
 
@@ -593,9 +612,23 @@ export default function CampaignPage() {
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="w-6 h-6 text-secondary-700 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-gray-900 text-lg">Payment confirmed</div>
+                        <div className="font-bold text-gray-900 text-lg">
+                          {txStatus?.campaign_type === "vote" || isVote ? "Your vote was successful" : "Payment confirmed"}
+                        </div>
                         <div className="text-gray-700 mt-2">
-                          Your receipt has been sent to your email with your {txStatus?.campaign_type === "vote" ? "vote" : "ticket"} details.
+                          {(txStatus?.campaign_type === "vote" || isVote) && (
+                            <span className="block font-medium text-green-800 mb-2">
+                              Payment processed — your votes are counted and a receipt is on its way to your email.
+                            </span>
+                          )}
+                          {!(txStatus?.campaign_type === "vote" || isVote) && (
+                            <span>
+                              Your receipt has been sent to your email with your ticket details.
+                            </span>
+                          )}
+                          {(txStatus?.campaign_type === "vote" || isVote) && (
+                            <span className="text-gray-600">Reference below confirms this payment.</span>
+                          )}
                         </div>
                         <div className="text-sm text-gray-600 mt-2">
                           Reference: <span className="font-mono">{ref}</span>
@@ -988,6 +1021,7 @@ export default function CampaignPage() {
           </div>
         </div>
       </div>
+      <VoteSuccessToast show={voteSuccessToastShow} />
     </div>
   );
 }
