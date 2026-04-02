@@ -150,7 +150,7 @@ create table if not exists public.votes (
   transaction_id uuid not null references public.transactions(id) on delete cascade,
   campaign_id uuid not null references public.campaigns(id) on delete cascade,
   contestant_id uuid not null references public.contestants(id) on delete cascade,
-  votes integer not null check (votes > 0 and votes <= 1000),
+  votes integer not null check (votes > 0 and votes <= 1000000),
   created_at timestamptz not null default now(),
 
   constraint votes_transaction_uniq unique (transaction_id)

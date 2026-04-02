@@ -270,23 +270,24 @@ serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
-  // Fulfill based on campaign type.
+  let fulfillErr: string | null = null;
   if (tx.campaign_type === "vote") {
-    if (!tx.contestant_id) return new Response("ok", { status: 200 });
-
-    // One row per transaction (unique on transaction_id).
-    await supabase.from("votes").upsert(
-      {
-        transaction_id: tx.id,
-        campaign_id: tx.campaign_id,
-        contestant_id: tx.contestant_id,
-        votes: tx.quantity,
-      },
-      { onConflict: "transaction_id", ignoreDuplicates: true },
-    );
+    if (!tx.contestant_id) {
+      fulfillErr = "vote_missing_contestant_id";
+    } else {
+      const { error: voteUpsertErr } = await supabase.from("votes").upsert(
+        {
+          transaction_id: tx.id,
+          campaign_id: tx.campaign_id,
+          contestant_id: tx.contestant_id,
+          votes: tx.quantity,
+        },
+        { onConflict: "transaction_id", ignoreDuplicates: true },
+      );
+      if (voteUpsertErr) fulfillErr = voteUpsertErr.message;
+    }
   } else {
-    // Tickets: one row per transaction (unique on transaction_id).
-    await supabase.from("ticket_issues").upsert(
+    const { error: ticketUpsertErr } = await supabase.from("ticket_issues").upsert(
       {
         transaction_id: tx.id,
         campaign_id: tx.campaign_id,
@@ -294,19 +295,32 @@ serve(async (req) => {
       },
       { onConflict: "transaction_id", ignoreDuplicates: true },
     );
+    if (ticketUpsertErr) fulfillErr = ticketUpsertErr.message;
   }
 
-  // Set fulfilled_at last. If webhook retries, vote/ticket upserts are safe, and this
-  // prevents any future fulfillment attempts for the same transaction.
-  await supabase
-    .from("transactions")
-    .update({ fulfilled_at: new Date().toISOString() } as any)
-    .eq("id", tx.id)
-    .is("fulfilled_at", null);
+  if (!fulfillErr) {
+    await supabase
+      .from("transactions")
+      .update({ fulfilled_at: new Date().toISOString() } as any)
+      .eq("id", tx.id)
+      .is("fulfilled_at", null);
+  } else {
+    console.error("[paystack-webhook] fulfillment failed:", fulfillErr);
+    await supabase
+      .from("transactions")
+      .update({
+        metadata: {
+          ...(typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {}),
+          paystack_event_id: payload.data?.id ?? null,
+          paystack_status: payload.data?.status ?? null,
+          fulfillment_error: fulfillErr,
+        },
+      } as any)
+      .eq("id", tx.id);
+  }
 
-  // Send receipt email (holder name, ticket/vote number, amount) - real name preferred over email
   const toEmail = (tx as any).email?.trim?.();
-  if (toEmail) {
+  if (toEmail && !fulfillErr) {
     const resendKey = Deno.env.get("RESEND_API_KEY");
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "CMF Agency <noreply@resend.dev>";
     const holderName = (tx as any).payer_name?.trim?.() || toEmail;

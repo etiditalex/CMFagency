@@ -73,19 +73,26 @@ export async function POST(req: NextRequest) {
       } as Record<string, unknown>)
       .eq("id", tx.id);
 
+    let fulfillmentError: string | null = null;
     if (!tx.fulfilled_at) {
-      if (tx.campaign_type === "vote" && tx.contestant_id) {
-        await admin.from("votes").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            contestant_id: tx.contestant_id,
-            votes: tx.quantity,
-          },
-          { onConflict: "transaction_id", ignoreDuplicates: true }
-        );
+      let fulfillErr: string | null = null;
+      if (tx.campaign_type === "vote") {
+        if (!tx.contestant_id) {
+          fulfillErr = "vote_missing_contestant_id";
+        } else {
+          const { error: voteErr } = await admin.from("votes").upsert(
+            {
+              transaction_id: tx.id,
+              campaign_id: tx.campaign_id,
+              contestant_id: tx.contestant_id,
+              votes: tx.quantity,
+            },
+            { onConflict: "transaction_id", ignoreDuplicates: true }
+          );
+          if (voteErr) fulfillErr = voteErr.message;
+        }
       } else {
-        await admin.from("ticket_issues").upsert(
+        const { error: ticketErr } = await admin.from("ticket_issues").upsert(
           {
             transaction_id: tx.id,
             campaign_id: tx.campaign_id,
@@ -93,25 +100,40 @@ export async function POST(req: NextRequest) {
           },
           { onConflict: "transaction_id", ignoreDuplicates: true }
         );
+        if (ticketErr) fulfillErr = ticketErr.message;
       }
-      await admin
-        .from("transactions")
-        .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
-        .eq("id", tx.id)
-        .is("fulfilled_at", null);
 
-      const couponId = (tx as { coupon_id?: string | null }).coupon_id;
-      if (couponId) {
-        const { data: cou } = await admin.from("coupons").select("used_count").eq("id", couponId).single();
-        if (cou) {
-          const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
-          await admin.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+      if (!fulfillErr) {
+        await admin
+          .from("transactions")
+          .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+          .eq("id", tx.id)
+          .is("fulfilled_at", null);
+
+        const couponId = (tx as { coupon_id?: string | null }).coupon_id;
+        if (couponId) {
+          const { data: cou } = await admin.from("coupons").select("used_count").eq("id", couponId).single();
+          if (cou) {
+            const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+            await admin.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+          }
         }
+      } else {
+        await admin
+          .from("transactions")
+          .update({
+            metadata: {
+              ...meta,
+              fulfillment_error: fulfillErr,
+            },
+          } as Record<string, unknown>)
+          .eq("id", tx.id);
       }
+      fulfillmentError = fulfillErr;
     }
 
     const toEmail = (tx as { email?: string | null }).email?.trim?.();
-    if (toEmail) {
+    if (toEmail && !fulfillmentError) {
       const holderName = (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail;
       const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
       const slug = String(meta.slug || meta.campaign_slug || "event");
@@ -162,6 +184,15 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (fulfillmentError) {
+      return NextResponse.json({
+        ok: true,
+        partial: true,
+        message:
+          "Transaction marked paid, but votes or tickets were not recorded. Fix the cause (see fulfillment_error), apply the votes table migration if needed, then confirm again.",
+        fulfillment_error: fulfillmentError,
+      });
+    }
     return NextResponse.json({ ok: true, message: "Transaction marked success and fulfilled." });
   } catch (e: unknown) {
     return NextResponse.json(

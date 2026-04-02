@@ -215,19 +215,29 @@ export async function POST(req: Request) {
         .eq("id", tx.id)
         .is("fulfilled_at", null);
     } else {
-      // Fulfill tickets or votes
-      if (tx.campaign_type === "vote" && tx.contestant_id) {
-        await supabase.from("votes").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            contestant_id: tx.contestant_id,
-            votes: tx.quantity,
-          },
-          { onConflict: "transaction_id", ignoreDuplicates: true }
-        );
+      // Fulfill tickets or votes (only mark fulfilled_at if DB write succeeds)
+      let fulfillErr: string | null = null;
+      if (tx.campaign_type === "vote") {
+        if (!tx.contestant_id) {
+          fulfillErr = "vote_missing_contestant_id";
+          console.error("[Daraja callback] Vote success but contestant_id is null", tx.id);
+        } else {
+          const { error: voteErr } = await supabase.from("votes").upsert(
+            {
+              transaction_id: tx.id,
+              campaign_id: tx.campaign_id,
+              contestant_id: tx.contestant_id,
+              votes: tx.quantity,
+            },
+            { onConflict: "transaction_id", ignoreDuplicates: true }
+          );
+          if (voteErr) {
+            fulfillErr = voteErr.message;
+            console.error("[Daraja callback] votes upsert failed:", voteErr.message);
+          }
+        }
       } else {
-        await supabase.from("ticket_issues").upsert(
+        const { error: ticketErr } = await supabase.from("ticket_issues").upsert(
           {
             transaction_id: tx.id,
             campaign_id: tx.campaign_id,
@@ -235,20 +245,37 @@ export async function POST(req: Request) {
           },
           { onConflict: "transaction_id", ignoreDuplicates: true }
         );
-      }
-      await supabase
-        .from("transactions")
-        .update({ fulfilled_at: new Date().toISOString() } as any)
-        .eq("id", tx.id)
-        .is("fulfilled_at", null);
-
-      const couponId = (tx as { coupon_id?: string | null }).coupon_id;
-      if (couponId) {
-        const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
-        if (cou) {
-          const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
-          await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+        if (ticketErr) {
+          fulfillErr = ticketErr.message;
+          console.error("[Daraja callback] ticket_issues upsert failed:", ticketErr.message);
         }
+      }
+
+      if (!fulfillErr) {
+        await supabase
+          .from("transactions")
+          .update({ fulfilled_at: new Date().toISOString() } as any)
+          .eq("id", tx.id)
+          .is("fulfilled_at", null);
+
+        const couponId = (tx as { coupon_id?: string | null }).coupon_id;
+        if (couponId) {
+          const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+          if (cou) {
+            const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+            await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+          }
+        }
+      } else {
+        await supabase
+          .from("transactions")
+          .update({
+            metadata: {
+              ...updatedMeta,
+              fulfillment_error: fulfillErr,
+            },
+          } as any)
+          .eq("id", tx.id);
       }
     }
 
