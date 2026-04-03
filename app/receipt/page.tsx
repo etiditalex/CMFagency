@@ -10,7 +10,8 @@ function voteReceiptQuery(ref: string, slug: string) {
   return `ref=${encodeURIComponent(ref)}&vote=1&slug=${encodeURIComponent(slug)}`;
 }
 
-function VotePaymentPendingMessage({
+/** Shown while a vote payment is still pending — no thank-you or success copy until status is confirmed. */
+function VotePaymentConfirmingMessage({
   paymentRef,
   slug,
 }: {
@@ -25,13 +26,13 @@ function VotePaymentPendingMessage({
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
-        <h1 className="text-xl font-semibold text-gray-800 mb-3">Thank you for voting</h1>
-        <p className="text-gray-700 mb-3 font-medium">
-          Your payment was successful. We&apos;re confirming it in our system now — your receipt will be sent to your
-          email shortly.
+        <h1 className="text-xl font-semibold text-gray-800 mb-3">Confirming your payment</h1>
+        <p className="text-gray-600 mb-3">
+          We&apos;re verifying your payment with your provider. This usually takes a moment — you&apos;ll see your
+          receipt here once it&apos;s fully processed.
         </p>
         <p className="text-gray-600 text-sm mb-6">
-          You can check back in a moment to download it here, or use the link in your confirmation email.
+          You can check back shortly, or use the link from your email or SMS when it arrives.
         </p>
         {hasCampaignSlug && (
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch mb-5">
@@ -107,7 +108,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
 
   if (!tx) {
     if (voteFromQuery) {
-      return <VotePaymentPendingMessage paymentRef={ref} slug={slugFromQuery || null} />;
+      return <VotePaymentConfirmingMessage paymentRef={ref} slug={slugFromQuery || null} />;
     }
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -151,7 +152,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
           : slugFromQuery && slugFromQuery !== "event"
             ? slugFromQuery
             : null;
-      return <VotePaymentPendingMessage paymentRef={ref} slug={slugForVote} />;
+      return <VotePaymentConfirmingMessage paymentRef={ref} slug={slugForVote} />;
     }
 
     return (
@@ -210,7 +211,10 @@ export default async function ReceiptPage({ searchParams }: Props) {
       <div className="max-w-xl mx-auto py-8 px-4 print:py-4">
         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-center text-green-800 text-sm print:hidden">
           {isVoteReceipt && (
-            <p className="font-semibold text-green-900 mb-2">Your vote was successful — payment is confirmed.</p>
+            <>
+              <p className="font-semibold text-green-900 mb-1">Thank you for voting.</p>
+              <p className="font-semibold text-green-900 mb-2">Your payment was successfully processed.</p>
+            </>
           )}
           A copy of this receipt has been sent to your email. You can download or print it below.
         </div>
