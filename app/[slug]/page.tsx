@@ -408,8 +408,12 @@ export default function CampaignPage() {
         if (!res.ok) {
           throw new Error(json.error ?? "M-Pesa STK Push failed");
         }
-        if (json.reference) {
-          router.replace(`/receipt?ref=${encodeURIComponent(json.reference)}`);
+         if (json.reference) {
+          const q =
+            campaign.type === "vote"
+              ? `ref=${encodeURIComponent(json.reference)}&vote=1&slug=${encodeURIComponent(campaign.slug)}`
+              : `ref=${encodeURIComponent(json.reference)}`;
+          router.replace(`/receipt?${q}`);
         }
         return;
       }
@@ -468,7 +472,11 @@ export default function CampaignPage() {
           reference: json.reference,
           channels: ["card", "mobile_money"],
           onSuccess: () => {
-            router.replace(`/receipt?ref=${encodeURIComponent(json.reference!)}`);
+            const q =
+              campaign.type === "vote"
+                ? `ref=${encodeURIComponent(json.reference!)}&vote=1&slug=${encodeURIComponent(campaign.slug)}`
+                : `ref=${encodeURIComponent(json.reference!)}`;
+            router.replace(`/receipt?${q}`);
           },
           onCancel: () => {
             setSubmitting(false);
@@ -644,7 +652,7 @@ export default function CampaignPage() {
                                 onClick={scrollToVoteCounts}
                                 className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                               >
-                                View vote counts
+                                View votes
                               </button>
                             </div>
                           </div>
@@ -669,15 +677,56 @@ export default function CampaignPage() {
                   <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-4">
                     <div className="flex items-start gap-3">
                       <Loader2 className="w-5 h-5 text-secondary-700 mt-0.5 animate-spin" />
-                      <div>
-                        <div className="font-semibold text-gray-900">Payment received (processing)</div>
-                        <div className="text-gray-700 mt-1">
-                          Your payment is being confirmed securely by webhook. Reference:{" "}
-                          <span className="font-mono">{ref}</span>
-                        </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                          Do not refresh repeatedly—webhook confirmation may take a short moment.
-                        </div>
+                      <div className="min-w-0 flex-1">
+                        {isVote ? (
+                          <>
+                            <div className="font-bold text-gray-900 text-lg">Thank you for voting</div>
+                            <div className="text-gray-700 mt-2">
+                              <span className="block font-medium text-green-800 mb-2">
+                                Your payment was successful. We&apos;re confirming it now — your receipt will be emailed
+                                shortly.
+                              </span>
+                              <span className="text-gray-600">
+                                Reference: <span className="font-mono">{ref}</span>
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-2">
+                              Confirmation can take a short moment — no need to refresh repeatedly.
+                            </div>
+                            {contestants.length > 0 && (
+                              <div className="mt-5 pt-4 border-t border-secondary-200/80">
+                                <p className="text-sm font-semibold text-gray-900">What would you like to do next?</p>
+                                <div className="mt-3 flex flex-col sm:flex-row gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={goVoteAgain}
+                                    className="flex-1 rounded-lg bg-primary-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                  >
+                                    Vote again
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={scrollToVoteCounts}
+                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                  >
+                                    View votes
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-semibold text-gray-900">Payment received (processing)</div>
+                            <div className="text-gray-700 mt-1">
+                              Your payment is being confirmed securely by webhook. Reference:{" "}
+                              <span className="font-mono">{ref}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 mt-2">
+                              Do not refresh repeatedly—webhook confirmation may take a short moment.
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

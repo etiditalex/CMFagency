@@ -4,11 +4,64 @@ import VoteSuccessToast from "@/components/VoteSuccessToast";
 import ReceiptContent from "./ReceiptContent";
 import PrintButton from "./PrintButton";
 
-type Props = { searchParams: Promise<{ ref?: string }> };
+type Props = { searchParams: Promise<{ ref?: string; vote?: string; slug?: string }> };
+
+function voteReceiptQuery(ref: string, slug: string) {
+  return `ref=${encodeURIComponent(ref)}&vote=1&slug=${encodeURIComponent(slug)}`;
+}
+
+function VotePaymentPendingMessage({
+  paymentRef,
+  slug,
+}: {
+  paymentRef: string;
+  slug: string | null;
+}) {
+  const hasCampaignSlug = Boolean(slug && slug !== "event");
+  const receiptHref = hasCampaignSlug
+    ? `/receipt?${voteReceiptQuery(paymentRef, slug!)}`
+    : `/receipt?ref=${encodeURIComponent(paymentRef)}`;
+
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
+        <h1 className="text-xl font-semibold text-gray-800 mb-3">Thank you for voting</h1>
+        <p className="text-gray-700 mb-3 font-medium">
+          Your payment was successful. We&apos;re confirming it in our system now — your receipt will be sent to your
+          email shortly.
+        </p>
+        <p className="text-gray-600 text-sm mb-6">
+          You can check back in a moment to download it here, or use the link in your confirmation email.
+        </p>
+        {hasCampaignSlug && (
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch mb-5">
+            <Link
+              href={`/${encodeURIComponent(slug!)}`}
+              className="inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+            >
+              Vote again
+            </Link>
+            <Link
+              href={`/${encodeURIComponent(slug!)}#vote-counts`}
+              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+            >
+              View votes
+            </Link>
+          </div>
+        )}
+        <Link href={receiptHref} className="text-[#B8860B] font-medium hover:underline">
+          Check receipt again
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export default async function ReceiptPage({ searchParams }: Props) {
   const params = await searchParams;
   const ref = (params.ref ?? "").trim();
+  const voteFromQuery = params.vote === "1" || params.vote === "true";
+  const slugFromQuery = (params.slug ?? "").trim();
   if (!ref) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -53,6 +106,9 @@ export default async function ReceiptPage({ searchParams }: Props) {
   }
 
   if (!tx) {
+    if (voteFromQuery) {
+      return <VotePaymentPendingMessage paymentRef={ref} slug={slugFromQuery || null} />;
+    }
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
@@ -82,6 +138,22 @@ export default async function ReceiptPage({ searchParams }: Props) {
   }
 
   if (status !== "success") {
+    const isVotePending = (tx as { campaign_type?: string }).campaign_type === "vote";
+    const metaPending =
+      (typeof (tx as { metadata?: unknown }).metadata === "object" &&
+        (tx as { metadata?: Record<string, unknown> }).metadata) ||
+      {};
+    const slugPending = ((metaPending.slug as string) || "").trim() || null;
+    if (isVotePending) {
+      const slugForVote =
+        slugPending && slugPending !== "event"
+          ? slugPending
+          : slugFromQuery && slugFromQuery !== "event"
+            ? slugFromQuery
+            : null;
+      return <VotePaymentPendingMessage paymentRef={ref} slug={slugForVote} />;
+    }
+
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
@@ -156,13 +228,19 @@ export default async function ReceiptPage({ searchParams }: Props) {
                 href={`/${encodeURIComponent(slug)}#vote-counts`}
                 className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
               >
-                View vote counts
+                View votes
               </Link>
             </div>
           </div>
         )}
-        <div className="mb-6 flex justify-between items-center print:hidden">
-          <Link href="/" className="text-[#B8860B] font-medium hover:underline">← Back to home</Link>
+        <div
+          className={`mb-6 flex items-center gap-4 print:hidden ${
+            isVoteReceipt && slug && slug !== "event" ? "justify-end" : "justify-between"
+          }`}
+        >
+          {!(isVoteReceipt && slug && slug !== "event") && (
+            <Link href="/" className="text-[#B8860B] font-medium hover:underline">← Back to home</Link>
+          )}
           <PrintButton />
         </div>
         <ReceiptContent
