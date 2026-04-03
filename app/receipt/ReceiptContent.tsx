@@ -7,6 +7,8 @@ type Props = {
   quantity: string;
   reference: string;
   mpesaReceipt?: string;
+  /** Nominee / contestant name for vote receipts */
+  votedForName?: string;
   eventLocation?: string;
   eventDate?: string;
   eventTime?: string;
@@ -21,6 +23,7 @@ export default function ReceiptContent({
   quantity,
   reference,
   mpesaReceipt,
+  votedForName,
   eventLocation,
   eventDate,
   eventTime,
@@ -37,6 +40,12 @@ export default function ReceiptContent({
       <div className="p-6 bg-gray-50">
         <h2 className="text-lg font-semibold text-gray-800">Your {typeLabel.toLowerCase()}</h2>
         <p className="text-xl font-semibold text-gray-900 mt-1">{holderName}</p>
+        {typeLabel === "Vote" && votedForName && (
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">
+            <span className="font-medium text-gray-900">{holderName}</span> voted for{" "}
+            <span className="font-semibold text-gray-900">{votedForName}</span>.
+          </p>
+        )}
 
         {eventLocation && (
           <div className="mt-4 p-3 bg-amber-50 border-l-4 border-[#D4AF37] rounded-r-lg">
@@ -55,6 +64,12 @@ export default function ReceiptContent({
             <dt className="text-gray-600">{typeLabel === "Order" ? "Customer" : `${typeLabel} holder`}:</dt>
             <dd className="font-mono font-semibold">{holderName}</dd>
           </div>
+          {typeLabel === "Vote" && votedForName && (
+            <div className="flex justify-between">
+              <dt className="text-gray-600">Voted for:</dt>
+              <dd className="font-mono font-semibold">{votedForName}</dd>
+            </div>
+          )}
           <div className="flex justify-between">
             <dt className="text-gray-600">Amount paid:</dt>
             <dd className="font-mono font-semibold">{amount}</dd>

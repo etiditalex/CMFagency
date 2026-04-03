@@ -24,6 +24,8 @@ export type ReceiptEmailProps = {
   reference: string;
   paymentLabel?: string;
   mpesaReceipt?: string;
+  /** Vote receipts: who the voter supported */
+  votedForName?: string;
   /** "mpesa" = green gradient, "paystack" = purple gradient */
   variant?: "mpesa" | "paystack";
   /** Link to view ticket / event page (e.g. success page or event URL) */
@@ -65,6 +67,7 @@ export function ReceiptEmail({
   reference,
   paymentLabel = "Payment confirmed",
   mpesaReceipt,
+  votedForName,
   variant = "paystack",
   viewTicketsUrl,
   downloadReceiptUrl,
@@ -77,6 +80,7 @@ export function ReceiptEmail({
 }: ReceiptEmailProps) {
   const holderLabel = typeLabel === "Order" ? "Customer" : `${typeLabel} holder`;
   const isTicket = typeLabel === "Ticket";
+  const isVote = typeLabel === "Vote";
   const qrData = `${ticketNumber}\n${reference}`;
   const viewButtonText = typeLabel === "Vote" ? "View Vote" : typeLabel === "Ticket" ? "View Ticket" : "View Order";
   const previewText =
@@ -107,6 +111,11 @@ export function ReceiptEmail({
               {isTicket ? "Your invitation & ticket" : `Your ${typeLabel.toLowerCase()}`}
             </Heading>
             <Text style={holderNameText}>{holderName}</Text>
+            {isVote && votedForName && (
+              <Text style={voteSupportLine}>
+                <strong>{holderName}</strong> voted for <strong>{votedForName}</strong>.
+              </Text>
+            )}
 
             {(viewTicketsUrl || isTicket) && (
               <table style={buttonTable}>
@@ -138,7 +147,9 @@ export function ReceiptEmail({
               Hello {holderName},{" "}
               {isTicket
                 ? `your invitation and ticket for ${campaignTitle} is confirmed. Please keep this email safe and show the QR code at the entrance.`
-                : `we are happy to confirm your ${typeLabel.toLowerCase()} for ${campaignTitle}.`}
+                : isVote && votedForName
+                  ? `thank you for voting for ${votedForName} in ${campaignTitle}.`
+                  : `we are happy to confirm your ${typeLabel.toLowerCase()} for ${campaignTitle}.`}
             </Text>
 
             {eventLocation && (
@@ -156,6 +167,12 @@ export function ReceiptEmail({
                 <td style={labelCell}>{holderLabel}:</td>
                 <td style={valueCell}>{holderName}</td>
               </tr>
+              {isVote && votedForName && (
+                <tr>
+                  <td style={labelCell}>Voted for:</td>
+                  <td style={valueCell}>{votedForName}</td>
+                </tr>
+              )}
               <tr>
                 <td style={labelCell}>Amount paid:</td>
                 <td style={valueCell}>{amount}</td>
@@ -273,10 +290,17 @@ const sectionTitle = {
 };
 
 const holderNameText = {
-  margin: "0 0 16px",
+  margin: "0 0 8px",
   fontSize: "20px",
   fontWeight: "600",
   color: "#111",
+};
+
+const voteSupportLine = {
+  margin: "0 0 16px",
+  fontSize: "15px",
+  lineHeight: "1.5",
+  color: "#444",
 };
 
 const buttonTable = {

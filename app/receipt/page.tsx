@@ -3,6 +3,7 @@ import Link from "next/link";
 import VoteSuccessToast from "@/components/VoteSuccessToast";
 import ReceiptConfirmingPoller from "@/components/ReceiptConfirmingPoller";
 import ReceiptContent from "./ReceiptContent";
+import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 import PrintButton from "./PrintButton";
 
 type Props = { searchParams: Promise<{ ref?: string; vote?: string; slug?: string }> };
@@ -92,7 +93,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
   const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
   const { data: tx, error } = await supabase
     .from("transactions")
-    .select("reference, status, payer_name, amount, currency, quantity, campaign_type, metadata, provider")
+    .select("reference, status, payer_name, amount, currency, quantity, campaign_type, metadata, provider, contestant_id")
     .eq("reference", ref)
     .maybeSingle();
 
@@ -206,6 +207,8 @@ export default async function ReceiptPage({ searchParams }: Props) {
   }
 
   const isVoteReceipt = (tx as { campaign_type?: string }).campaign_type === "vote";
+  const contestantId = (tx as { contestant_id?: string | null }).contestant_id ?? null;
+  const votedForName = isVoteReceipt ? await fetchContestantNameById(supabase, contestantId) : undefined;
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
@@ -258,6 +261,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
           quantity={`${quantity} ${quantityLabel}`}
           reference={ref}
           mpesaReceipt={isMpesa ? mpesaReceipt : undefined}
+          votedForName={votedForName}
           eventLocation={eventLocation}
           eventDate={eventDate}
           eventTime={eventTime}

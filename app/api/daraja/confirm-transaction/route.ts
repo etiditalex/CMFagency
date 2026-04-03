@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
+import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 
 /**
  * POST: Admin-only. Mark a pending M-Pesa transaction as success and fulfill (tickets/votes + receipt email).
@@ -197,6 +198,9 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const votedForName =
+        tx.campaign_type === "vote" ? await fetchContestantNameById(admin, tx.contestant_id) : undefined;
+
       await sendReceiptEmail({
         to: toEmail,
         campaignTitle,
@@ -207,6 +211,7 @@ export async function POST(req: NextRequest) {
         quantity: `${tx.quantity} ${quantityLabel}`,
         reference,
         variant: "mpesa",
+        votedForName,
         viewTicketsUrl,
         downloadReceiptUrl,
         eventLocation,

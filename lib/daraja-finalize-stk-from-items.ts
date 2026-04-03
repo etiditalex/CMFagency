@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
@@ -280,6 +281,9 @@ async function sendDarajaReceiptEmail(
     }
   }
 
+  const votedForName =
+    tx.campaign_type === "vote" ? await fetchContestantNameById(supabase, tx.contestant_id) : undefined;
+
   try {
     const emailResult = await sendReceiptEmail({
       to: toEmail,
@@ -291,6 +295,7 @@ async function sendDarajaReceiptEmail(
       quantity: `${tx.quantity} ${quantityLabel}`,
       reference,
       mpesaReceipt: mpesaReceipt || undefined,
+      votedForName,
       variant: "mpesa",
       viewTicketsUrl,
       downloadReceiptUrl,

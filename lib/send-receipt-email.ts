@@ -15,6 +15,8 @@ export type ReceiptParams = {
   quantity: string;
   reference: string;
   mpesaReceipt?: string;
+  /** Vote receipts: nominee name */
+  votedForName?: string;
   variant?: "mpesa" | "paystack";
   viewTicketsUrl?: string;
   downloadReceiptUrl?: string;
@@ -38,6 +40,7 @@ const receiptProps = (
   reference: params.reference,
   paymentLabel: params.variant === "mpesa" ? "M-Pesa payment confirmed" : "Payment confirmed",
   mpesaReceipt: params.mpesaReceipt,
+  votedForName: params.votedForName,
   variant: params.variant ?? "paystack",
   viewTicketsUrl: params.viewTicketsUrl,
   downloadReceiptUrl: params.downloadReceiptUrl,

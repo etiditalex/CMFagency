@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
+import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 
 /**
  * Sends the receipt email to the customer (voter/ticket buyer) with
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
 
   const { data: tx, error } = await supabase
     .from("transactions")
-    .select("id,reference,email,payer_name,amount,currency,quantity,campaign_type,metadata,provider")
+    .select("id,reference,email,payer_name,amount,currency,quantity,campaign_type,metadata,provider,contestant_id")
     .eq("reference", ref)
     .eq("status", "success")
     .maybeSingle();
@@ -74,6 +75,11 @@ export async function POST(req: Request) {
     }
   }
 
+  const votedForName =
+    (tx as { campaign_type?: string }).campaign_type === "vote"
+      ? await fetchContestantNameById(supabase, (tx as { contestant_id?: string | null }).contestant_id)
+      : undefined;
+
   const result = await sendReceiptEmail({
     to: toEmail,
     campaignTitle,
@@ -85,6 +91,7 @@ export async function POST(req: Request) {
     reference: ref,
     variant: isMpesa ? "mpesa" : "paystack",
     mpesaReceipt: isMpesa ? mpesaReceipt : undefined,
+    votedForName,
     viewTicketsUrl,
     downloadReceiptUrl,
     eventLocation,

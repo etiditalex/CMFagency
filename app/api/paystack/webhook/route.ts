@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
+import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +168,9 @@ export async function POST(req: Request) {
       }
     }
 
+    const votedForName =
+      tx.campaign_type === "vote" ? await fetchContestantNameById(supabase, tx.contestant_id) : undefined;
+
     try {
       const emailResult = await sendReceiptEmail({
         to: toEmail,
@@ -178,6 +182,7 @@ export async function POST(req: Request) {
         quantity: `${tx.quantity} ${quantityLabel}`,
         reference: referenceStr,
         variant: "paystack",
+        votedForName,
         viewTicketsUrl,
         downloadReceiptUrl,
         eventLocation,
