@@ -5,10 +5,16 @@ import { createClient } from "@supabase/supabase-js";
  * Public read: when voting campaign pages unlock globally.
  */
 export async function GET() {
+  const jsonCached = (iso: string | null) => {
+    const res = NextResponse.json({ voting_starts_at: iso });
+    res.headers.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=600");
+    return res;
+  };
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !anonKey) {
-    return NextResponse.json({ voting_starts_at: null }, { status: 200 });
+    return jsonCached(null);
   }
 
   const supabase = createClient(supabaseUrl, anonKey, { auth: { persistSession: false } });
@@ -20,15 +26,9 @@ export async function GET() {
     .maybeSingle();
 
   if (error) {
-    const msg = String(error.message ?? "").toLowerCase();
-    const missing =
-      msg.includes("does not exist") ||
-      msg.includes("fusion_voting_schedule") ||
-      String((error as { code?: string }).code ?? "") === "42P01";
-    if (missing) return NextResponse.json({ voting_starts_at: null });
-    return NextResponse.json({ voting_starts_at: null });
+    return jsonCached(null);
   }
 
   const iso = (data as { voting_starts_at?: string } | null)?.voting_starts_at ?? null;
-  return NextResponse.json({ voting_starts_at: iso });
+  return jsonCached(iso);
 }

@@ -16,6 +16,14 @@ function isCampaignInPublicWindow(c: { starts_at?: string | null; ends_at?: stri
   return true;
 }
 
+function votingStartsAtFromSchedule(schedResult: {
+  data: unknown;
+  error: { message?: string } | null;
+}): string | null {
+  if (schedResult.error || !schedResult.data) return null;
+  return (schedResult.data as { voting_starts_at?: string | null }).voting_starts_at ?? null;
+}
+
 /**
  * One round-trip for public campaign pages: campaign + (for votes) contestants, tallies, voting schedule.
  * Mirrors RLS visibility: active, in starts_at/ends_at window.
@@ -33,12 +41,20 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
 
-  const { data: c, error: cErr } = await supabase
-    .from("campaigns")
-    .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn,is_active,starts_at,ends_at")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .maybeSingle();
+  const readSchedule = () =>
+    supabase.from("fusion_voting_schedule").select("voting_starts_at").eq("id", 1).maybeSingle();
+
+  const [{ data: c, error: cErr }, schedEarly] = await Promise.all([
+    supabase
+      .from("campaigns")
+      .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn,is_active,starts_at,ends_at")
+      .eq("slug", slug)
+      .eq("is_active", true)
+      .maybeSingle(),
+    readSchedule(),
+  ]);
+
+  const voting_starts_at = votingStartsAtFromSchedule(schedEarly);
 
   if (cErr) {
     return NextResponse.json({ error: cErr.message }, { status: 500 });
@@ -51,7 +67,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   if (!c || !isCampaignInPublicWindow(c as { starts_at?: string | null; ends_at?: string | null })) {
     return NextResponse.json(
       {
-        voting_starts_at: null as string | null,
+        voting_starts_at,
         campaign: null,
         contestants: [] as unknown[],
         vote_counts: {} as Record<string, number>,
@@ -85,13 +101,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     max_per_txn: row.max_per_txn,
   };
 
-  const readSchedule = () =>
-    supabase.from("fusion_voting_schedule").select("voting_starts_at").eq("id", 1).maybeSingle();
-
   if (row.type !== "vote") {
-    const { data: sched, error: sErr } = await readSchedule();
-    const voting_starts_at =
-      !sErr && sched ? (sched as { voting_starts_at?: string | null }).voting_starts_at ?? null : null;
     return NextResponse.json(
       {
         voting_starts_at,
@@ -103,13 +113,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     );
   }
 
-  let schedResult: Awaited<ReturnType<typeof readSchedule>>;
   let conResult: { data: unknown; error: { message?: string } | null };
   let vote_counts: Record<string, number>;
 
   try {
-    const triple = await Promise.all([
-      readSchedule(),
+    const pair = await Promise.all([
       supabase
         .from("contestants")
         .select("id,name,description,image_url,sort_order,created_at")
@@ -117,19 +125,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         .order("sort_order", { ascending: true }),
       getVoteTransactionTotalsByCampaign(supabase, row.id),
     ]);
-    schedResult = triple[0];
-    conResult = triple[1];
-    vote_counts = triple[2];
+    conResult = pair[0];
+    vote_counts = pair[1];
   } catch (e: unknown) {
     const msg =
       e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Failed to load vote totals";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  const voting_starts_at =
-    !schedResult.error && schedResult.data
-      ? (schedResult.data as { voting_starts_at?: string | null }).voting_starts_at ?? null
-      : null;
 
   if (conResult.error) {
     return NextResponse.json({ error: conResult.error.message }, { status: 500 });

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ExternalLink, Vote } from "lucide-react";
 
 
-/** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
+/** Used if schedule is missing from API (migration not applied yet). */
 const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
 
 function formatVotingOpensInNairobi(isoMs: number): string {
@@ -53,22 +53,23 @@ export default function AllVotingPage() {
       setLoading(true);
       setError(null);
       try {
-        const [schedRes, catRes] = await Promise.all([
-          fetch("/api/voting-schedule"),
-          fetch("/api/voting/all-categories", { cache: "no-store" }),
-        ]);
-
-        const schedJ = (await schedRes.json()) as { voting_starts_at?: string | null };
-        if (!cancelled && schedJ?.voting_starts_at) {
-          const t = Date.parse(schedJ.voting_starts_at);
-          if (!Number.isNaN(t)) setVotingStartMs(t);
-        }
-
-        const j = (await catRes.json()) as { categories?: CategoryRow[]; error?: string };
+        const catRes = await fetch("/api/voting/all-categories", { cache: "no-store" });
+        const j = (await catRes.json()) as {
+          categories?: CategoryRow[];
+          error?: string;
+          voting_starts_at?: string | null;
+        };
         if (cancelled) return;
         if (!catRes.ok) {
           throw new Error(j.error ?? `Unable to load voting categories (${catRes.status})`);
         }
+
+        const schedIso = j.voting_starts_at;
+        if (!cancelled && schedIso) {
+          const t = Date.parse(schedIso);
+          if (!Number.isNaN(t)) setVotingStartMs(t);
+        }
+
         setCategories(Array.isArray(j.categories) ? j.categories : []);
       } catch (e: unknown) {
         if (!cancelled) {

@@ -76,16 +76,27 @@ function createSupabaseForVotingCatalog(): {
 export async function GET() {
   const sup = createSupabaseForVotingCatalog();
   if (!sup) {
-    return NextResponse.json({ categories: [] });
+    return NextResponse.json({ categories: [], voting_starts_at: null as string | null });
   }
 
   const { client, bypassesRls } = sup;
 
-  const { data: rawCampaigns, error: cErr } = await client
-    .from("campaigns")
-    .select("id, slug, title, description, image_url, is_active, starts_at, ends_at")
-    .eq("type", "vote")
-    .order("title", { ascending: true });
+  const readSchedule = () =>
+    client.from("fusion_voting_schedule").select("voting_starts_at").eq("id", 1).maybeSingle();
+
+  const [{ data: rawCampaigns, error: cErr }, schedRes] = await Promise.all([
+    client
+      .from("campaigns")
+      .select("id, slug, title, description, image_url, is_active, starts_at, ends_at")
+      .eq("type", "vote")
+      .order("title", { ascending: true }),
+    readSchedule(),
+  ]);
+
+  const voting_starts_at =
+    !schedRes.error && schedRes.data
+      ? (schedRes.data as { voting_starts_at?: string | null }).voting_starts_at ?? null
+      : null;
 
   if (cErr) {
     return NextResponse.json({ error: cErr.message ?? "Failed to load voting categories" }, { status: 500 });
@@ -93,13 +104,15 @@ export async function GET() {
 
   const visible = (rawCampaigns ?? []).filter((c) => isCampaignPublicVisible(c as CampaignRaw)) as CampaignRaw[];
   if (visible.length === 0) {
-    return NextResponse.json({ categories: [] });
+    const res = NextResponse.json({ categories: [], voting_starts_at });
+    if (!bypassesRls) res.headers.set("X-Voting-Catalog-RLS", "anon");
+    return res;
   }
 
   const ids = visible.map((c) => c.id);
   const allContestants: ContestantRow[] = [];
 
-  const contestantResults = await Promise.all(
+  const contestantChunksPromise = Promise.all(
     Array.from({ length: Math.ceil(ids.length / CAMPAIGN_ID_CHUNK) || 1 }, (_, k) => {
       const chunk = ids.slice(k * CAMPAIGN_ID_CHUNK, k * CAMPAIGN_ID_CHUNK + CAMPAIGN_ID_CHUNK);
       return client
@@ -108,6 +121,23 @@ export async function GET() {
         .in("campaign_id", chunk);
     })
   );
+
+  const voteTotalsPromise =
+    bypassesRls && ids.length > 0
+      ? getVoteTransactionTotalsForCampaignsFlat(client, ids)
+      : Promise.resolve(new Map<string, number>());
+
+  let contestantResults: Awaited<typeof contestantChunksPromise>;
+  let voteTotalsByContestant: Map<string, number>;
+  try {
+    [contestantResults, voteTotalsByContestant] = await Promise.all([contestantChunksPromise, voteTotalsPromise]);
+  } catch (e: unknown) {
+    const msg =
+      e && typeof e === "object" && "message" in e
+        ? String((e as { message: string }).message)
+        : "Failed to load voting catalog data";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
   for (const { data: rows, error: conErr } of contestantResults) {
     if (conErr) {
@@ -127,23 +157,6 @@ export async function GET() {
     const arr = byCampaign.get(row.campaign_id) ?? [];
     arr.push(row);
     byCampaign.set(row.campaign_id, arr);
-  }
-
-  /**
-   * Contestant id → total votes from successful vote transactions (same basis as public campaign pages).
-   * Single DB aggregation when patch 64 RPCs are applied; falls back per-campaign if not.
-   */
-  let voteTotalsByContestant = new Map<string, number>();
-  if (bypassesRls && ids.length > 0) {
-    try {
-      voteTotalsByContestant = await getVoteTransactionTotalsForCampaignsFlat(client, ids);
-    } catch (e: unknown) {
-      const msg =
-        e && typeof e === "object" && "message" in e
-          ? String((e as { message: string }).message)
-          : "Failed to load vote totals";
-      return NextResponse.json({ error: msg }, { status: 500 });
-    }
   }
 
   const sortContestantsForCategory = (list: ContestantRow[]) =>
@@ -173,7 +186,7 @@ export async function GET() {
     };
   });
 
-  const res = NextResponse.json({ categories });
+  const res = NextResponse.json({ categories, voting_starts_at });
   if (!bypassesRls) {
     res.headers.set("X-Voting-Catalog-RLS", "anon");
   }
