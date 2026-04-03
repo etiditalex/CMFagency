@@ -1017,28 +1017,33 @@ export default function CampaignPage() {
                   <>
                     <Image
                       src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479160/M-PESA-logo-2_phv5ni.png"
-                      alt="M-Pesa"
+                      alt=""
                       width={64}
                       height={22}
-                      className="h-[22px] w-auto object-contain brightness-0 invert"
+                      className="h-[22px] w-auto shrink-0 object-contain brightness-0 invert"
+                      aria-hidden
                     />
+                    <span className="text-white font-semibold">Submit</span>
                   </>
                 ) : (
                   <>
                     <Image
                       src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/visa_x5rgq6.svg"
-                      alt="Visa"
+                      alt=""
                       width={36}
                       height={12}
-                      className="h-4 w-auto object-contain brightness-0 invert opacity-90"
+                      className="h-4 w-auto shrink-0 object-contain brightness-0 invert opacity-90"
+                      aria-hidden
                     />
                     <Image
                       src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1773479587/mastercard_gvjys4.svg"
-                      alt="Mastercard"
+                      alt=""
                       width={28}
                       height={22}
-                      className="h-5 w-auto object-contain brightness-0 invert opacity-90"
+                      className="h-5 w-auto shrink-0 object-contain brightness-0 invert opacity-90"
+                      aria-hidden
                     />
+                    <span className="text-white font-semibold">Submit</span>
                   </>
                 )}
               </button>
