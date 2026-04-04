@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
   if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (String((tx as { provider?: string }).provider) !== "paystack") {
+  if (String((tx as { provider?: string }).provider ?? "").toLowerCase() !== "paystack") {
     return NextResponse.json({ error: "Not a Paystack transaction" }, { status: 400 });
   }
 

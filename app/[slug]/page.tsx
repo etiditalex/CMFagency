@@ -255,7 +255,10 @@ export default function CampaignPage() {
         }
         if (!res.ok) throw new Error(json?.error ?? raw ?? "Unable to fetch payment status");
 
-        if (String(json.status ?? "pending") === "pending" && String(json.provider ?? "") === "paystack") {
+        if (
+          String(json.status ?? "pending") === "pending" &&
+          String(json.provider ?? "").toLowerCase() === "paystack"
+        ) {
           await fetch("/api/paystack/verify-ref", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -273,7 +276,10 @@ export default function CampaignPage() {
           if (!res.ok) throw new Error(json?.error ?? raw ?? "Unable to fetch payment status");
         }
 
-        if (String(json.status ?? "pending") === "pending" && String(json.provider ?? "") === "daraja") {
+        if (
+          String(json.status ?? "pending") === "pending" &&
+          String(json.provider ?? "").toLowerCase() === "daraja"
+        ) {
           await fetch("/api/daraja/verify-ref", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

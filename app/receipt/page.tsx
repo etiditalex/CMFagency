@@ -115,6 +115,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
     }
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <ReceiptConfirmingPoller paymentRef={ref} />
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
           <h1 className="text-xl font-semibold text-gray-800 mb-2">Payment processing</h1>
           <p className="text-gray-600 mb-4">Your payment is being confirmed. A receipt will be sent to your email shortly. You can check back in a moment or use the link in the confirmation email.</p>
@@ -160,6 +161,7 @@ export default async function ReceiptPage({ searchParams }: Props) {
 
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <ReceiptConfirmingPoller paymentRef={ref} />
         <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
           <h1 className="text-xl font-semibold text-gray-800 mb-2">Payment received</h1>
           <p className="text-gray-600 mb-4">We&apos;re confirming your payment. A receipt will be sent to your email shortly. You can also check back in a moment to download it here.</p>
