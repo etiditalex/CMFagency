@@ -42,6 +42,21 @@ function isMissingMerchTable(err: { message?: string; code?: string } | null) {
   return code === "42P01" || (msg.includes("merchandise_items") && msg.includes("does not exist"));
 }
 
+/** If true, refresh before upload so we do not pay for a full upload + 401 + upload again. */
+function accessTokenNeedsRefresh(accessToken: string, leewaySec = 120): boolean {
+  try {
+    const part = accessToken.split(".")[1];
+    if (!part) return true;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "==".slice(0, (4 - (b64.length % 4)) % 4);
+    const payload = JSON.parse(atob(padded)) as { exp?: number };
+    if (typeof payload.exp !== "number") return true;
+    return payload.exp * 1000 <= Date.now() + leewaySec * 1000;
+  } catch {
+    return true;
+  }
+}
+
 export default function DashboardMerchandisePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
@@ -162,7 +177,7 @@ export default function DashboardMerchandisePage() {
 
     let { data: { session } } = await supabase.auth.getSession();
     let token = session?.access_token;
-    if (!token) {
+    if (!token || accessTokenNeedsRefresh(token)) {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session?.access_token) {
         throw new Error("Session expired. Please sign in again.");
@@ -171,7 +186,6 @@ export default function DashboardMerchandisePage() {
     }
 
     let res = await postUpload(token);
-    // Cached access_token is often expired while refresh_token is still valid (dashboard left open).
     if (res.status === 401) {
       const { data, error } = await supabase.auth.refreshSession();
       if (error || !data.session?.access_token) {
