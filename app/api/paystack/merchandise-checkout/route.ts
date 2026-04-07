@@ -20,7 +20,7 @@ type InitBody = {
   inline?: boolean;
 };
 
-const DEFAULT_SHIPPING = 500; // KES
+const DEFAULT_SHIPPING = 0; // KES — disabled for merchandise for now
 
 /**
  * Merchandise checkout - integrates cart with Fusion Xpress Paystack flow.

@@ -20,7 +20,7 @@ type Body = {
   shipping?: number;
 };
 
-const DEFAULT_SHIPPING = 500;
+const DEFAULT_SHIPPING = 0; // disabled for merchandise for now
 
 export async function POST(req: Request) {
   try {

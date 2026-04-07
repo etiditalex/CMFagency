@@ -9,7 +9,8 @@ import { useSearchParams } from "next/navigation";
 import PaystackPop from "@paystack/inline-js";
 import { useCart } from "@/contexts/CartContext";
 
-const SHIPPING = 500;
+/** Merchandise cart: no shipping charge for now (was 500 KES). */
+const MERCHANDISE_SHIPPING = 0;
 
 export default function CartPage() {
   const searchParams = useSearchParams();
@@ -128,7 +129,7 @@ export default function CartPage() {
             payer_name: payerName,
             phone: phone.trim(),
             cart: cartPayload,
-            shipping: SHIPPING,
+            shipping: MERCHANDISE_SHIPPING,
           }),
         });
         const raw = await res.text();
@@ -156,7 +157,7 @@ export default function CartPage() {
           email: emailTrim,
           payer_name: payerName,
           cart: cartPayload,
-          shipping: SHIPPING,
+          shipping: MERCHANDISE_SHIPPING,
           inline: useInline,
         }),
       });
@@ -537,14 +538,16 @@ export default function CartPage() {
                         <span>Subtotal ({getTotalItems()} items)</span>
                         <span className="font-semibold">KSh {getTotalPrice().toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-gray-600">
-                        <span>Shipping</span>
-                        <span className="font-semibold">KSh {SHIPPING.toLocaleString()}</span>
-                      </div>
+                      {MERCHANDISE_SHIPPING > 0 && (
+                        <div className="flex justify-between text-gray-600">
+                          <span>Shipping</span>
+                          <span className="font-semibold">KSh {MERCHANDISE_SHIPPING.toLocaleString()}</span>
+                        </div>
+                      )}
                       <div className="border-t border-gray-200 pt-4">
                         <div className="flex justify-between text-xl font-bold text-gray-900">
                           <span>Total</span>
-                          <span>KSh {(getTotalPrice() + SHIPPING).toLocaleString()}</span>
+                          <span>KSh {(getTotalPrice() + MERCHANDISE_SHIPPING).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -573,8 +576,9 @@ export default function CartPage() {
                             `• ${item.name} (${item.category})\n  Quantity: ${item.quantity}\n  Price: KSh ${item.price.toLocaleString()} each\n  Subtotal: KSh ${(item.price * item.quantity).toLocaleString()}\n`
                         ).join("\n") +
                         `\nSubtotal: KSh ${getTotalPrice().toLocaleString()}\n` +
-                        `Shipping: KSh ${SHIPPING}\n` +
-                        `Total: KSh ${(getTotalPrice() + SHIPPING).toLocaleString()}\n\n` +
+                        (MERCHANDISE_SHIPPING > 0
+                          ? `Shipping: KSh ${MERCHANDISE_SHIPPING}\nTotal: KSh ${(getTotalPrice() + MERCHANDISE_SHIPPING).toLocaleString()}\n\n`
+                          : `Total: KSh ${getTotalPrice().toLocaleString()}\n\n`) +
                         `Please confirm my order.`
                     )}`}
                     target="_blank"
