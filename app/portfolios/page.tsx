@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
 // Gallery images using real Cloudinary images
 const galleryImages = [
@@ -242,7 +244,65 @@ const galleryImages = [
   },
 ];
 
+type DbGalleryRow = {
+  id: number;
+  title: string | null;
+  image_url: string;
+  category: string;
+  is_featured: boolean;
+};
+
 export default function PortfoliosPage() {
+  const [images, setImages] = useState<Array<{ id: number; src: string; alt: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setLoadError(null);
+      try {
+        const { data, error } = await supabase
+          .from("gallery_images")
+          .select("id,title,image_url,category,is_featured")
+          .eq("is_active", true)
+          .order("is_featured", { ascending: false })
+          .order("sort_order", { ascending: true })
+          .order("id", { ascending: true })
+          .limit(400);
+        if (error) throw error;
+        if (cancelled) return;
+        const rows = (data ?? []) as DbGalleryRow[];
+        setImages(
+          rows.map((r) => ({
+            id: r.id,
+            src: r.image_url,
+            alt: (r.title ?? "").trim() || "Gallery image",
+          }))
+        );
+      } catch (e: unknown) {
+        if (!cancelled) {
+          // Backward-compat: if table doesn't exist yet, keep the static list.
+          setLoadError(e instanceof Error ? e.message : "Failed to load gallery");
+          setImages([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayImages = useMemo(() => {
+    if (images.length > 0) return images;
+    // Fallback to static images for older DBs / local dev.
+    return galleryImages.map((g) => ({ id: g.id, src: g.src, alt: g.alt }));
+  }, [images]);
+
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
@@ -261,9 +321,24 @@ export default function PortfoliosPage() {
             </p>
           </motion.div>
 
+          {loadError && images.length === 0 && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+              Gallery is using fallback images. To manage this from Fusion Xpress, apply{" "}
+              <code className="rounded bg-white/80 px-1">ticketing_voting_mvp_patch_66_gallery_images.sql</code> in Supabase.
+            </div>
+          )}
+
           {/* Image Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {galleryImages.map((image, index) => (
+            {loading &&
+              [1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={`sk-${i}`}
+                  className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 animate-pulse"
+                />
+              ))}
+            {!loading &&
+              displayImages.map((image, index) => (
               <motion.div
                 key={image.id}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -275,6 +350,7 @@ export default function PortfoliosPage() {
                   src={image.src}
                   alt={image.alt}
                   fill
+                  unoptimized
                   className="object-cover group-hover:scale-110 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />

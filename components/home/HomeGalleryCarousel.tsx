@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 export default function HomeGalleryCarousel() {
   // Curated from images already used across the site (Cloudinary). Add more URLs here as new images are uploaded.
-  const images = useMemo(
+  const fallbackImages = useMemo(
     () => [
       // CFMA / Fashion (auditions + awards)
       "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448263/HighFashionAudition20251_ufpxud.jpg",
@@ -53,6 +54,34 @@ export default function HomeGalleryCarousel() {
     ],
     []
   );
+
+  const [images, setImages] = useState<string[]>(fallbackImages);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("gallery_images")
+          .select("image_url,is_featured")
+          .eq("is_active", true)
+          .order("is_featured", { ascending: false })
+          .order("sort_order", { ascending: true })
+          .order("id", { ascending: true })
+          .limit(40);
+        if (error) throw error;
+        const rows = (data ?? []) as Array<{ image_url: string }>;
+        const urls = rows.map((r) => r.image_url).filter(Boolean);
+        if (!cancelled && urls.length > 0) setImages(urls);
+      } catch {
+        // Keep fallbackImages.
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [fallbackImages]);
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
