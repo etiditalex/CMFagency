@@ -20,12 +20,19 @@ export default function AdSenseBlock() {
 
     const tryPush = () => {
       if (cancelled || pushed.current || !el) return;
+      // Already processed (React re-renders, observers firing twice, etc.)
+      if (el.querySelector("iframe") || el.getAttribute("data-adsbygoogle-status") === "done") {
+        pushed.current = true;
+        return;
+      }
       const width = el.getBoundingClientRect().width;
       if (width < 120) return; // avoid "No slot size for availableWidth=0"
 
       try {
         const w = window as Window & { adsbygoogle?: unknown[] };
-        (w.adsbygoogle = w.adsbygoogle || []).push({});
+        // One push({}) fills every unfilled .adsbygoogle on the page; multiple AdSenseBlock
+        // instances (e.g. footer + blog sidebar) then trigger "already have ads". Target this ins only.
+        (w.adsbygoogle = w.adsbygoogle || []).push({ element: el });
         pushed.current = true;
 
         // If ad is blocked/not filled, avoid a broken empty slot.
