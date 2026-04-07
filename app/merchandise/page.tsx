@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ShoppingCart, Heart, Star, Filter, Check } from "lucide-react";
+import { Search, ShoppingCart, Heart, Star, Check } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/lib/supabase";
 
-const merchandise: Array<{
+type MerchItem = {
   id: number;
   name: string;
   price: number;
@@ -18,67 +19,77 @@ const merchandise: Array<{
   reviews: number;
   description: string;
   inStock: boolean;
-}> = [
-  // T-Shirts
-  {
-    id: 1,
-    name: "Changer Fusions Classic T-Shirt",
-    price: 2500,
-    originalPrice: null,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/t-shirts_hm50aj.jpg",
-    category: "T-Shirts",
-    rating: 4.8,
-    reviews: 124,
-    description: "Premium quality cotton t-shirt with Changer Fusions branding. Comfortable fit for everyday wear.",
-    inStock: true,
-  },
-  // Water Bottles
-  {
-    id: 2,
-    name: "Changer Fusions Water Bottle",
-    price: 1500,
-    originalPrice: null,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/water_bottle_it6dhy.jpg",
-    category: "Water Bottles",
-    rating: 4.6,
-    reviews: 203,
-    description: "Eco-friendly stainless steel water bottle with Changer Fusions logo. Keeps drinks cold for 24 hours or hot for 12 hours.",
-    inStock: true,
-  },
-  // Hoodies
-  {
-    id: 3,
-    name: "Changer Fusions Classic Hoodie",
-    price: 4500,
-    originalPrice: null,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/hoodie_hwkw2l.jpg",
-    category: "Hoodies",
-    rating: 4.9,
-    reviews: 89,
-    description: "Comfortable hoodie perfect for casual wear. Features Changer Fusions branding and soft fleece interior.",
-    inStock: true,
-  },
-  // Key Holders
-  {
-    id: 4,
-    name: "Changer Fusions Key Holder",
-    price: 800,
-    originalPrice: null,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765963219/Key_holder_nkhf6x.jpg",
-    category: "Key Holders",
-    rating: 4.4,
-    reviews: 145,
-    description: "Premium key holder with Changer Fusions logo. Durable and stylish design.",
-    inStock: true,
-  },
-];
-
-const categories = ["All", "T-Shirts", "Water Bottles", "Hoodies", "Key Holders"];
+};
 
 export default function MerchandisePage() {
+  const [merchandise, setMerchandise] = useState<MerchItem[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart, cart } = useCart();
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoadingCatalog(true);
+      setCatalogError(null);
+      try {
+        const { data, error } = await supabase
+          .from("merchandise_items")
+          .select("id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("id", { ascending: true });
+        if (error) throw error;
+        if (cancelled) return;
+        const rows = (data ?? []) as Array<{
+          id: number;
+          name: string;
+          price_kes: number;
+          original_price_kes: number | null;
+          short_description: string | null;
+          image_url: string;
+          category: string;
+          in_stock: boolean;
+        }>;
+        setMerchandise(
+          rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            price: row.price_kes,
+            originalPrice: row.original_price_kes,
+            image: row.image_url,
+            category: row.category,
+            description: row.short_description ?? "",
+            inStock: row.in_stock,
+            rating: 0,
+            reviews: 0,
+          }))
+        );
+      } catch (e: unknown) {
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : "Could not load products";
+          setCatalogError(msg);
+          setMerchandise([]);
+        }
+      } finally {
+        if (!cancelled) setLoadingCatalog(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const categories = useMemo(() => {
+    const unique = new Set<string>();
+    for (const item of merchandise) {
+      if (item.category?.trim()) unique.add(item.category.trim());
+    }
+    return ["All", ...Array.from(unique).sort((a, b) => a.localeCompare(b))];
+  }, [merchandise]);
   const [showToast, setShowToast] = useState(false);
   const [addedItem, setAddedItem] = useState<string>("");
 
@@ -129,6 +140,16 @@ export default function MerchandisePage() {
       {/* Search and Filter */}
       <section className="section-padding">
         <div className="container-custom">
+          {catalogError && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
+              <p className="font-semibold">Products could not be loaded.</p>
+              <p className="mt-1 text-amber-800/90">
+                {catalogError}. If this is a new environment, apply{" "}
+                <code className="rounded bg-white/80 px-1">ticketing_voting_mvp_patch_65_merchandise_items.sql</code> in Supabase.
+              </p>
+            </div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -164,7 +185,23 @@ export default function MerchandisePage() {
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredMerchandise.map((item, index) => (
+            {loadingCatalog &&
+              [1, 2, 3, 4].map((i) => (
+                <div
+                  key={`sk-${i}`}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 animate-pulse"
+                >
+                  <div className="h-64 bg-gray-200" />
+                  <div className="p-5 space-y-3">
+                    <div className="h-3 w-20 bg-gray-200 rounded" />
+                    <div className="h-5 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-100 rounded w-full" />
+                    <div className="h-10 bg-gray-200 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            {!loadingCatalog &&
+              filteredMerchandise.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -178,6 +215,7 @@ export default function MerchandisePage() {
                     src={item.image}
                     alt={item.name}
                     fill
+                    unoptimized
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   {item.originalPrice && (
@@ -206,21 +244,23 @@ export default function MerchandisePage() {
                     {item.name}
                   </h3>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                  <div className="flex items-center space-x-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < Math.floor(item.rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
-                    <span className="text-sm text-gray-600 ml-2">
-                      {item.rating} ({item.reviews})
-                    </span>
-                  </div>
+                  {item.reviews > 0 && (
+                    <div className="flex items-center space-x-1 mb-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-4 h-4 ${
+                            i < Math.floor(item.rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                      <span className="text-sm text-gray-600 ml-2">
+                        {item.rating} ({item.reviews})
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center space-x-2">
@@ -275,16 +315,20 @@ export default function MerchandisePage() {
                   </button>
                 </div>
               </motion.div>
-            ))}
+              ))}
           </div>
 
-          {filteredMerchandise.length === 0 && (
+          {!loadingCatalog && filteredMerchandise.length === 0 && !catalogError && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-center py-12"
             >
-              <p className="text-gray-600 text-lg">No products found matching your criteria.</p>
+              <p className="text-gray-600 text-lg">
+                {merchandise.length === 0
+                  ? "No products are available yet. Admins can add items from Fusion Xpress → Merchandise."
+                  : "No products found matching your criteria."}
+              </p>
             </motion.div>
           )}
         </div>
