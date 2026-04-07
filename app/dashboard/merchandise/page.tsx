@@ -150,18 +150,36 @@ export default function DashboardMerchandisePage() {
   };
 
   const uploadImageFile = async (file: File): Promise<string | null> => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("Session expired. Please sign in again.");
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/campaign-image/upload", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    const postUpload = async (accessToken: string) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return fetch("/api/campaign-image/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: formData,
+      });
+    };
+
+    let { data: { session } } = await supabase.auth.getSession();
+    let token = session?.access_token;
+    if (!token) {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session?.access_token) {
+        throw new Error("Session expired. Please sign in again.");
+      }
+      token = data.session.access_token;
+    }
+
+    let res = await postUpload(token);
+    // Cached access_token is often expired while refresh_token is still valid (dashboard left open).
+    if (res.status === 401) {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error || !data.session?.access_token) {
+        throw new Error("Session expired. Please sign in again.");
+      }
+      res = await postUpload(data.session.access_token);
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error((err as { error?: string }).error || "Image upload failed");
