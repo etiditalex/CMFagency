@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import CookieBanner from "@/components/CookieBanner";
 
 const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShell"), {
-  ssr: true,
+  ssr: false,
   loading: () => (
     <div className="min-h-screen flex items-center justify-center bg-gray-50" aria-busy="true" aria-label="Loading dashboard">
       <div className="h-9 w-9 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />

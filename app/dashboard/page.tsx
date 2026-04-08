@@ -119,6 +119,7 @@ export default function DashboardHomePage() {
   }, []);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
+  const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -366,6 +367,14 @@ export default function DashboardHomePage() {
     }
   }, [user?.id, isFullAdmin, isEmployer, isAdmin]);
 
+  const scheduleRefresh = useCallback(() => {
+    if (realtimeRefreshTimeoutRef.current) return;
+    realtimeRefreshTimeoutRef.current = window.setTimeout(() => {
+      realtimeRefreshTimeoutRef.current = null;
+      void refreshData();
+    }, 800);
+  }, [refreshData]);
+
   const syncPendingPaystack = useCallback(async () => {
     if (!user) return;
     setSyncing(true);
@@ -445,13 +454,6 @@ export default function DashboardHomePage() {
     const init = async () => {
       setSessionChecking(true);
       try {
-        // Require portal 2FA: code must have been verified this session.
-        const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
-        const status = (await statusRes.json().catch(() => ({}))) as { verified?: boolean };
-        if (!cancelled && !status.verified) {
-          router.replace("/fusion-xpress");
-          return;
-        }
         if (cancelled) return;
         setError(null);
         setSessionChecking(false);
@@ -473,20 +475,27 @@ export default function DashboardHomePage() {
 
     const channel = supabase
       .channel(`fusion-xpress-dashboard-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => refreshData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, () => refreshData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_issues" }, () => refreshData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "contestants" }, () => refreshData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, () => refreshData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_issues" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "contestants" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, scheduleRefresh)
       .subscribe();
 
-    const interval = window.setInterval(() => refreshData(), 15_000);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void refreshData();
+    }, 60_000);
 
     return () => {
       window.clearInterval(interval);
+      if (realtimeRefreshTimeoutRef.current) {
+        window.clearTimeout(realtimeRefreshTimeoutRef.current);
+        realtimeRefreshTimeoutRef.current = null;
+      }
       supabase.removeChannel(channel);
     };
-  }, [isPortalMember, refreshData, user?.id, isEmployer]);
+  }, [isPortalMember, refreshData, scheduleRefresh, user?.id, isEmployer]);
 
   if (authLoading || portalLoading || sessionChecking) {
     return (

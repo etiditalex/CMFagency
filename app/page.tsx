@@ -8,8 +8,8 @@ import StatsSection from "@/components/home/StatsSection";
 import { HomeDeferredGallery, HomeDeferredPartnersCTA } from "@/components/home/HomeBelowFoldDynamic";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
-/** Avoid stale static HTML on refresh (Vercel/CDN serving an old prerender of this page). */
-export const dynamic = "force-dynamic";
+/** Keep homepage fast with ISR instead of per-request rendering. */
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Changer Fusions - Marketing Agency in Ambalal, Mombasa | Digital Marketing, Web Development",

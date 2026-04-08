@@ -196,16 +196,16 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("dashboard_sidebar_collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
   const [search, setSearch] = useState("");
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem("dashboard_sidebar_collapsed");
-      if (raw === "1") setSidebarCollapsed(true);
-    } catch {}
-  }, []);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {
@@ -219,7 +219,6 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember || !isAdmin) {
-      setPendingApplicationsCount(0);
       return;
     }
     let cancelled = false;
@@ -320,6 +319,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={false}
                       className={`group flex items-center rounded-md transition-colors ${
                         active
                           ? "bg-primary-600/20 border border-primary-500/30 text-white"
@@ -409,6 +409,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={false}
                           onClick={() => setMobileOpen(false)}
                           className={`group flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
                             active

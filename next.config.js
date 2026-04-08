@@ -35,7 +35,7 @@ const imageRemotePatterns = [
 const nextConfig = {
   // Tree-shake barrel imports (smaller client bundles for icon-heavy pages).
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'date-fns', 'framer-motion'],
   },
   // Ensure Turbopack uses this project root (we have another lockfile on disk).
   turbopack: {
@@ -77,6 +77,8 @@ const nextConfig = {
   },
   images: {
     remotePatterns: imageRemotePatterns,
+    // Prefer next-gen formats when supported by the browser/CDN edge.
+    formats: ['image/avif', 'image/webp'],
   },
 }
 

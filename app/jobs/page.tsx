@@ -6,8 +6,8 @@ import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
 import { JobsBoardClient } from "./JobsBoardClient";
 import { JobsEditorialIntro } from "@/components/jobs/JobsEditorialIntro";
 
-/** Unified feed loads on the server (employer listings + aggregated APIs). */
-export const dynamic = "force-dynamic";
+/** Revalidate frequently to keep listings fresh without full per-request rendering cost. */
+export const revalidate = 120;
 
 type PageProps = {
   searchParams: Promise<{ q?: string }>;
