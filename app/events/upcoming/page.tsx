@@ -97,9 +97,19 @@ export default function UpcomingEventsPage() {
               <p className="mt-4 text-gray-600">Loading events...</p>
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12 text-gray-600">
-              <p className="text-lg">No upcoming events at the moment.</p>
-              <p className="mt-2 text-sm">Check back soon or explore our past events.</p>
+            <div className="text-center py-12 text-gray-600 max-w-xl mx-auto space-y-3">
+              <p className="text-lg font-medium text-gray-800">No upcoming dates are published yet.</p>
+              <p className="text-sm leading-relaxed">
+                New programmes are announced on this site and through our newsletter. Browse{" "}
+                <Link href="/events/past" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                  past events
+                </Link>{" "}
+                for highlights, or ask about partnerships via{" "}
+                <Link href="/contact" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                  Contact
+                </Link>
+                .
+              </p>
             </div>
           ) : (
           <div className="mt-2 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">

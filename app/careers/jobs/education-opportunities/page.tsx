@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Briefcase, MapPin, Clock, Users, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { BookOpen, Users } from "lucide-react";
 
+import { CareerTrackJobsFallback } from "@/components/careers/CareerTrackJobsFallback";
 import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
 import CareerDetailTemplate from "@/components/careers/CareerDetailTemplate";
 
@@ -38,41 +37,27 @@ export default function EducationOpportunitiesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Education Opportunities - Jobs
-            </h1>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Explore exciting education job opportunities at CMF Agency
-            </p>
-          </motion.div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-              <p className="text-gray-700 text-center">
-                Education job opportunities are coming soon. Check back regularly for updates.
-              </p>
-              <div className="mt-8 text-center">
-                <Link
-                  href="/careers"
-                  className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold"
-                >
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                  Back to Careers
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <CareerTrackJobsFallback
+      backHref="/careers/jobs"
+      backLabel="Back to Jobs"
+      title="Education, training, and facilitation roles"
+      subtitle="Help teams and communities build skills in marketing, leadership, and digital literacy."
+      intro="We run educational touchpoints alongside our events and corporate programmes: student engagements, leadership sessions, and practical workshops for SMEs. Facilitators translate agency methodologies into clear sessions participants can reuse—without turning classes into pure sales pitches for our services."
+      icon={BookOpen}
+      positions={[
+        "Workshop facilitator (marketing fundamentals, personal brand, digital safety)",
+        "Training programme coordinator and curriculum assistant",
+        "Corporate learning liaison for client-specific academies",
+        "Speaker and moderator support for conferences we produce",
+        "Content developer for learner handouts and follow-up resources",
+      ]}
+      requirements={[
+        "Experience teaching, training, or mentoring adults or tertiary students",
+        "Subject matter depth in business, communication, or digital tools—or a credible mix",
+        "Patient facilitation style and respect for diverse literacy levels",
+        "Willingness to align materials with client brand and compliance requirements",
+        "Clean communication: session plans submitted ahead of time when stakeholders require approvals",
+      ]}
+    />
   );
 }

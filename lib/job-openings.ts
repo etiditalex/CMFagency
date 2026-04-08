@@ -23,7 +23,7 @@ export const JOB_OPENINGS: JobOpening[] = [
     officeAddress: "Nairobi, Kenya (exact address supplied in your invite)",
     interviewLocationNotes:
       "Report to the reception at Nairobi HQ on the date below. Bring a printed copy of this email and original ID.",
-    contactLine: "HR: +254 700 000 000 (placeholder — update in lib/job-openings.ts)",
+    contactLine: "HR: info@cmfagency.co.ke · +254 797 777347",
   },
   {
     id: "marketing",
@@ -32,7 +32,7 @@ export const JOB_OPENINGS: JobOpening[] = [
     officeAddress: "Mombasa, Kenya (exact address supplied in your invite)",
     interviewLocationNotes:
       "Interviews for marketing roles are held at the Mombasa office. Arrive 15 minutes early with your CV.",
-    contactLine: "Talent: +254 700 000 001 (placeholder — update in lib/job-openings.ts)",
+    contactLine: "Talent: info@cmfagency.co.ke · +254 797 777347",
   },
   {
     id: "event-coordinator",
@@ -40,7 +40,7 @@ export const JOB_OPENINGS: JobOpening[] = [
     officeName: "CMF Agency — Mombasa Office",
     officeAddress: "Mombasa, Kenya (exact address supplied in your invite)",
     interviewLocationNotes: "Events team interviews take place at the Mombasa office.",
-    contactLine: "Events desk: +254 700 000 002 (placeholder — update in lib/job-openings.ts)",
+    contactLine: "Events desk: info@cmfagency.co.ke · +254 797 777347",
   },
   {
     id: "fashion-model-scout",

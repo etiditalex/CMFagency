@@ -6,7 +6,26 @@ const ADSENSE_CLIENT = "ca-pub-7231529725117325";
 // Homepage_Footer_Ad slot; override with NEXT_PUBLIC_ADSENSE_SLOT if needed
 const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT || "2949826143";
 
+/** AdSense rejects pushes when the slot width is 0; allow normal mobile widths once laid out. */
+const MIN_SLOT_WIDTH = 120;
+const LAYOUT_RETRY_MS = 120;
+const MAX_LAYOUT_RETRIES = 25;
+
+function hasUsableSlotSize(ins: HTMLModElement): boolean {
+  const rect = ins.getBoundingClientRect();
+  const wrap = ins.parentElement;
+  const wrapW = wrap?.getBoundingClientRect().width ?? 0;
+  const fromIns = rect.width;
+  const width = Math.max(fromIns, wrapW);
+  if (width < MIN_SLOT_WIDTH) return false;
+  const style = getComputedStyle(ins);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (!ins.offsetParent && fromIns === 0 && wrapW === 0) return false;
+  return true;
+}
+
 export default function AdSenseBlock() {
+  const wrapRef = useRef<HTMLDivElement>(null);
   const insRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
   const [showFallback, setShowFallback] = useState(false);
@@ -17,51 +36,59 @@ export default function AdSenseBlock() {
 
     let cancelled = false;
     let fallbackTimer: number | undefined;
+    let retryTimer: number | undefined;
+    let retryCount = 0;
 
     const tryPush = () => {
       if (cancelled || pushed.current || !el) return;
-      // Already processed (React re-renders, observers firing twice, etc.)
       if (el.querySelector("iframe") || el.getAttribute("data-adsbygoogle-status") === "done") {
         pushed.current = true;
         return;
       }
-      const width = el.getBoundingClientRect().width;
-      if (width < 120) return; // avoid "No slot size for availableWidth=0"
-
-      try {
-        const w = window as Window & { adsbygoogle?: unknown[] };
-        // One push({}) fills every unfilled .adsbygoogle on the page; multiple AdSenseBlock
-        // instances (e.g. footer + blog sidebar) then trigger "already have ads". Target this ins only.
-        (w.adsbygoogle = w.adsbygoogle || []).push({ element: el });
-        pushed.current = true;
-
-        // If ad is blocked/not filled, avoid a broken empty slot.
-        fallbackTimer = window.setTimeout(() => {
-          if (!cancelled && !el.querySelector("iframe")) {
-            setShowFallback(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (cancelled || pushed.current || !el) return;
+          if (!hasUsableSlotSize(el)) {
+            if (retryCount < MAX_LAYOUT_RETRIES) {
+              retryCount += 1;
+              retryTimer = window.setTimeout(tryPush, LAYOUT_RETRY_MS);
+            }
+            return;
           }
-        }, 3000);
-      } catch (e) {
-        setShowFallback(true);
-        console.warn("AdSense push error:", e);
-      }
+
+          try {
+            const w = window as Window & { adsbygoogle?: unknown[] };
+            (w.adsbygoogle = w.adsbygoogle || []).push({ element: el });
+            pushed.current = true;
+
+            fallbackTimer = window.setTimeout(() => {
+              if (!cancelled && !el.querySelector("iframe")) {
+                setShowFallback(true);
+              }
+            }, 3000);
+          } catch (e) {
+            setShowFallback(true);
+            console.warn("AdSense push error:", e);
+          }
+        });
+      });
     };
 
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          tryPush();
-        }
+        if (entries.some((entry) => entry.isIntersecting)) tryPush();
       },
-      { threshold: 0.1 }
+      { rootMargin: "80px 0px", threshold: 0.01 }
     );
 
     const ro = new ResizeObserver(() => {
-      tryPush();
+      if (!pushed.current) tryPush();
     });
 
-    io.observe(el);
+    const wrap = wrapRef.current;
+    if (wrap) io.observe(wrap);
     ro.observe(el);
+    if (wrap) ro.observe(wrap);
     tryPush();
 
     return () => {
@@ -69,11 +96,16 @@ export default function AdSenseBlock() {
       io.disconnect();
       ro.disconnect();
       if (fallbackTimer) window.clearTimeout(fallbackTimer);
+      if (retryTimer) window.clearTimeout(retryTimer);
     };
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-lg min-h-[90px]" aria-label="Advertisement">
+    <div
+      ref={wrapRef}
+      className="w-full max-w-full overflow-hidden rounded-lg min-h-[90px] min-w-0"
+      aria-label="Advertisement"
+    >
       {showFallback ? (
         <div className="w-full min-h-[90px] rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3 text-sm text-gray-300">
           Advertisement unavailable right now.
@@ -81,8 +113,8 @@ export default function AdSenseBlock() {
       ) : (
         <ins
           ref={insRef}
-          className="adsbygoogle"
-          style={{ display: "block" }}
+          className="adsbygoogle mx-auto"
+          style={{ display: "block", width: "100%", minHeight: 90 }}
           data-ad-client={ADSENSE_CLIENT}
           data-ad-slot={ADSENSE_SLOT}
           data-ad-format="auto"

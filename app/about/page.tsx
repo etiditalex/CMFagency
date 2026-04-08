@@ -89,14 +89,65 @@ export default function AboutPage() {
             <div className="mt-10 space-y-10">
               <section>
                 <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">ABOUT US</h1>
+                <h2 className="mt-6 text-xl md:text-2xl font-bold text-gray-900">
+                  Marketing agency in Mombasa for brands across Kenya
+                </h2>
                 <div className="mt-4 text-gray-700 leading-relaxed space-y-4">
                   <p>
-                    Changer Fusions is a forward-thinking marketing strategic partner specializing in blending innovative marketing
-                    techniques, cutting-edge technologies, and transformative strategies to create impactful and tailored solutions for clients.
+                    Changer Fusions works with companies, institutions, and event owners who need marketing that is both creative
+                    and accountable. We are based at Ambalal Building on Nkruma Road in Mombasa and run campaigns across the
+                    coast, Nairobi, and national programs—combining digital channels, on-ground activations, and content so your
+                    message reaches the right audience, not just the loudest one.
                   </p>
                   <p>
-                    With a focus on harnessing the power of change and innovation, we drive meaningful results and facilitate growth in an
-                    ever-evolving marketing landscape.
+                    Our team plans and executes work in the same lanes you see elsewhere on this site:{" "}
+                    <Link href="/services/digital-marketing" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      digital marketing and performance
+                    </Link>
+                    ,{" "}
+                    <Link href="/services/website-development" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      websites and product UX
+                    </Link>
+                    ,{" "}
+                    <Link href="/services/branding" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      branding and design systems
+                    </Link>
+                    ,{" "}
+                    <Link href="/services/events-marketing" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      events marketing
+                    </Link>
+                    , and{" "}
+                    <Link href="/services/market-research" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      market research
+                    </Link>{" "}
+                    when decisions need evidence, not guesswork. Whether you are launching a product, filling a venue, or
+                    steadying reputation after a crisis week, we align creative, media, and measurement on one plan.
+                  </p>
+                  <p>
+                    Public resources on this site include our{" "}
+                    <Link href="/events" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      events calendar
+                    </Link>
+                    ,{" "}
+                    <Link href="/jobs" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      job board
+                    </Link>{" "}
+                    for Kenya and remote-friendly roles, and{" "}
+                    <Link href="/blogs" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      long-form articles
+                    </Link>{" "}
+                    on how we think about growth, storytelling, and execution. For a scoped proposal or a chemistry call, use{" "}
+                    <Link href="/contact" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                      Contact
+                    </Link>{" "}
+                    or write to{" "}
+                    <a
+                      href="mailto:info@cmfagency.co.ke"
+                      className="font-semibold text-primary-600 underline hover:text-primary-700"
+                    >
+                      info@cmfagency.co.ke
+                    </a>
+                    .
                   </p>
                 </div>
               </section>

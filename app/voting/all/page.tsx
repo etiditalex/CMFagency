@@ -143,11 +143,26 @@ export default function AllVotingPage() {
     return (
       <div className="pt-24 min-h-screen bg-gray-50">
         <div className="container-custom py-10 max-w-2xl">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-900">No public voting categories</h1>
-            <p className="text-gray-600 mt-2">
-              There are no active voting campaigns available right now. Check back later or use a category link from the
-              organizer.
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100 space-y-3">
+            <h1 className="text-2xl font-bold text-gray-900">No open voting categories</h1>
+            <p className="text-gray-600">
+              Organisers activate categories when a programme goes live. If you opened this page from a flyer or SMS, use
+              the exact category URL you were given—it will load when that campaign is published.
+            </p>
+            <p className="text-sm text-gray-600">
+              For general enquiries:{" "}
+              <Link href="/events" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                Events
+              </Link>
+              ,{" "}
+              <Link href="/contact" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                Contact
+              </Link>
+              , or{" "}
+              <Link href="/" className="font-semibold text-primary-600 underline hover:text-primary-700">
+                Home
+              </Link>
+              .
             </p>
           </div>
         </div>

@@ -47,10 +47,13 @@ export default function PageNotFound() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
-            className="text-lg text-gray-600 mb-8"
+            className="text-lg text-gray-600 mb-6"
           >
-            Sorry, the page you are looking for is currently under development or doesn't exist.
-            We're working on bringing you more exciting features soon!
+            The page may have been moved, renamed, or the link might be mistyped. Use the home button below or open{" "}
+            <Link href="/contact" className="text-primary-600 font-semibold underline hover:text-primary-700">
+              Contact
+            </Link>{" "}
+            if you need a specific programme, ticket link, or document.
           </motion.p>
 
           <motion.div

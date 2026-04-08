@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Briefcase, MapPin, Clock, Users, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { Calendar, Users } from "lucide-react";
 
+import { CareerTrackJobsFallback } from "@/components/careers/CareerTrackJobsFallback";
 import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
 import CareerDetailTemplate from "@/components/careers/CareerDetailTemplate";
 
@@ -38,41 +37,27 @@ export default function EventsOpportunitiesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-              Events Opportunities - Jobs
-            </h1>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Explore exciting events job opportunities at CMF Agency
-            </p>
-          </motion.div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg p-8 border border-gray-200">
-              <p className="text-gray-700 text-center">
-                Events job opportunities are coming soon. Check back regularly for updates.
-              </p>
-              <div className="mt-8 text-center">
-                <Link
-                  href="/careers"
-                  className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold"
-                >
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                  Back to Careers
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <CareerTrackJobsFallback
+      backHref="/careers/jobs"
+      backLabel="Back to Jobs"
+      title="Events and production roles"
+      subtitle="Join the team that designs runsheets, coordinates crews, and keeps audiences safe and on schedule."
+      intro="Changer Fusions produces corporate launches, awards nights, student engagements, and fashion-forward showcases across Kenya. Events staff work closely with clients, venues, and suppliers—often on tight turnarounds—so we look for people who communicate clearly under pressure and treat guests and talent with equal professionalism."
+      icon={Calendar}
+      positions={[
+        "Event coordinator and project lead",
+        "Production assistant and stage liaison",
+        "Vendor and logistics coordinator",
+        "Registration and guest experience lead",
+        "Brand activation and field teams (campaign-dependent)",
+      ]}
+      requirements={[
+        "Demonstrated experience with live events, hospitality, or project coordination",
+        "Comfort with evening and weekend work when programmes require it",
+        "Strong written and spoken English; Swahili is a plus for coastal and national audiences",
+        "Ability to follow safety briefings and venue rules without improvisation that affects insurance",
+        "Familiarity with basic run-of-show documents, timelines, or ticketing tools",
+      ]}
+    />
   );
 }

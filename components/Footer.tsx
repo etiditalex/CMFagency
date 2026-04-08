@@ -151,15 +151,6 @@ export default function Footer() {
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
                   </svg>
                 </a>
-                <div
-                  className="w-10 h-10 rounded-full bg-gray-800 opacity-50 flex items-center justify-center cursor-not-allowed"
-                  aria-label="Google Plus (Coming Soon)"
-                  title="Google Plus (Coming Soon)"
-                >
-                  <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.5 13h-2.5v2.5h-2V13H10v-2h2.5V8.5h2V11H18v2z"/>
-                  </svg>
-                </div>
               </div>
             </div>
 

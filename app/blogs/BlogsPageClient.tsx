@@ -43,7 +43,7 @@ export default function BlogsPageClient({
   listingTruncated,
 }: Props) {
   return (
-    <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
+    <div className="min-h-0 w-full max-w-[100vw] overflow-x-hidden bg-transparent">
       <BlogNewsletterBannerPopup />
       <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
         <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:gap-10">
@@ -56,8 +56,23 @@ export default function BlogsPageClient({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 md:gap-6 lg:gap-8 w-full">
               {initialPosts.length === 0 ? (
-                <div className="col-span-full py-10 text-center text-gray-500 text-sm sm:text-base">
-                  No published articles yet. Check back soon.
+                <div className="col-span-full py-10 px-4 max-w-2xl mx-auto text-center text-gray-600 text-sm sm:text-base space-y-4">
+                  <p className="font-semibold text-gray-800">We are preparing the next articles for you.</p>
+                  <p>
+                    In the meantime, explore{" "}
+                    <Link href="/services/digital-marketing" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                      services
+                    </Link>
+                    , upcoming{" "}
+                    <Link href="/events" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                      events
+                    </Link>
+                    , or reach the team on{" "}
+                    <Link href="/contact" className="text-primary-600 font-semibold underline hover:text-primary-700">
+                      Contact
+                    </Link>
+                    .
+                  </p>
                 </div>
               ) : (
                 initialPosts.map((post, idx) => (
