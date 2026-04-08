@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
+import {
+  dbStatusForPaystackTerminal,
+  paystackStatusIsTerminalNonSuccess,
+} from "@/lib/paystack-verify-status";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 
 /**
@@ -78,6 +82,9 @@ export async function GET(req: Request) {
   }
 
   let updated = 0;
+  /** Rows updated to success or failed/abandoned (excludes amount-mismatch failures counted in updated). */
+  let markedSuccess = 0;
+  let markedTerminal = 0;
   const errors: string[] = [];
 
   for (const tx of pendingRows) {
@@ -94,7 +101,31 @@ export async function GET(req: Request) {
       }
 
       const paystackStatus = String(json.data?.status ?? "").toLowerCase();
-      if (paystackStatus !== "success") continue;
+
+      if (paystackStatus !== "success") {
+        if (paystackStatusIsTerminalNonSuccess(paystackStatus)) {
+          const nextStatus = dbStatusForPaystackTerminal(paystackStatus);
+          const prevMeta =
+            typeof tx.metadata === "object" && tx.metadata !== null && !Array.isArray(tx.metadata)
+              ? { ...(tx.metadata as Record<string, unknown>) }
+              : {};
+          await supabase
+            .from("transactions")
+            .update({
+              status: nextStatus,
+              verified_at: new Date().toISOString(),
+              metadata: {
+                ...prevMeta,
+                paystack_status: paystackStatus,
+                reconciled_via: "sync-pending",
+              },
+            } as Record<string, unknown>)
+            .eq("id", tx.id);
+          updated++;
+          markedTerminal++;
+        }
+        continue;
+      }
 
       const paidAmountSubunit = Number(json.data?.amount ?? 0);
       const paidCurrency = (json.data?.currency ?? "").toUpperCase();
@@ -131,12 +162,18 @@ export async function GET(req: Request) {
         continue;
       }
 
-      await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
+      const { fulfillErr } = await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
         paidAt: json.data?.paid_at ?? new Date().toISOString(),
         metadataPatch: {},
       });
 
+      if (fulfillErr) {
+        errors.push(`${tx.reference}: finalize failed: ${fulfillErr}`);
+        continue;
+      }
+
       updated++;
+      markedSuccess++;
     } catch (e) {
       errors.push(`${tx.reference}: ${(e as Error)?.message ?? "Unknown error"}`);
     }
@@ -145,6 +182,10 @@ export async function GET(req: Request) {
   return NextResponse.json({
     updated,
     total: pendingRows.length,
+    /** Successful Paystack charges reconciled to status success. */
+    marked_success: markedSuccess,
+    /** Paystack reported failed / abandoned / reversed (no successful charge). */
+    marked_terminal_from_paystack: markedTerminal,
     errors: errors.length ? errors : undefined,
   });
 }

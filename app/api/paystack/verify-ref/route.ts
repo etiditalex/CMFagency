@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 
 import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
+import {
+  dbStatusForPaystackTerminal,
+  paystackStatusIsTerminalNonSuccess,
+} from "@/lib/paystack-verify-status";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 
 export const dynamic = "force-dynamic";
@@ -69,9 +73,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Paystack verify failed" }, { status: 502 });
   }
 
-  const paystackStatus = String(json.data?.status ?? "").toLowerCase();
-  if (paystackStatus !== "success") {
-    return NextResponse.json({ ok: true, status: "pending", paystack: paystackStatus || "unknown" });
+  const paystackStatusRaw = String(json.data?.status ?? "").toLowerCase() || "unknown";
+
+  if (paystackStatusRaw !== "success") {
+    if (paystackStatusIsTerminalNonSuccess(paystackStatusRaw)) {
+      const nextStatus = dbStatusForPaystackTerminal(paystackStatusRaw);
+      const prevMeta =
+        typeof tx.metadata === "object" && tx.metadata !== null && !Array.isArray(tx.metadata)
+          ? { ...(tx.metadata as Record<string, unknown>) }
+          : {};
+      await supabase
+        .from("transactions")
+        .update({
+          status: nextStatus,
+          verified_at: new Date().toISOString(),
+          metadata: {
+            ...prevMeta,
+            paystack_status: paystackStatusRaw,
+            reconciled_via: "verify-ref",
+          },
+        } as Record<string, unknown>)
+        .eq("id", (tx as { id: string }).id);
+      return NextResponse.json({
+        ok: true,
+        status: nextStatus,
+        paystack: paystackStatusRaw,
+        completed: false,
+        reconciled: true,
+      });
+    }
+    return NextResponse.json({ ok: true, status: "pending", paystack: paystackStatusRaw });
   }
 
   const paidAmountSubunit = Number(json.data?.amount ?? 0);
