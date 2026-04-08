@@ -3,19 +3,23 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface CartItem {
+  /** Unique line identifier: `${productId}::${size||''}::${color||''}` */
+  key: string;
   id: number;
   name: string;
   price: number;
   image: string;
   category: string;
+  size?: string | null;
+  color?: string | null;
   quantity: number;
 }
 
 interface CartContextType {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, "quantity">) => void;
-  removeFromCart: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
@@ -34,7 +38,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         try {
           const parsedCart = JSON.parse(savedCart);
           if (Array.isArray(parsedCart)) {
-            setCart(parsedCart);
+            const normalized = parsedCart
+              .filter(Boolean)
+              .map((it: any) => {
+                const id = Number(it?.id ?? 0);
+                const size = typeof it?.size === "string" ? it.size : null;
+                const color = typeof it?.color === "string" ? it.color : null;
+                const key = typeof it?.key === "string" && it.key.trim() ? it.key : `${id}::${size ?? ""}::${color ?? ""}`;
+                return { ...it, id, size, color, key } as CartItem;
+              });
+            setCart(normalized);
           }
         } catch (error) {
           console.error("Error loading cart from localStorage:", error);
@@ -57,10 +70,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (item: Omit<CartItem, "quantity">) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+      const existingItem = prevCart.find((cartItem) => cartItem.key === item.key);
       if (existingItem) {
         return prevCart.map((cartItem) =>
-          cartItem.id === item.id
+          cartItem.key === item.key
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
@@ -69,18 +82,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: number) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== id));
+  const removeFromCart = (key: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.key !== key));
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (key: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(id);
+      removeFromCart(key);
       return;
     }
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        item.key === key ? { ...item, quantity } : item
       )
     );
   };

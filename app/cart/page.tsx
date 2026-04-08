@@ -113,11 +113,14 @@ export default function CartPage() {
       const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
       const cartPayload = cart.map((item) => ({
         id: item.id,
+        variant_key: item.key,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         image: item.image,
         category: item.category,
+        size: item.size ?? null,
+        color: item.color ?? null,
       }));
 
       if (paymentMethod === "mpesa") {
@@ -257,7 +260,7 @@ export default function CartPage() {
               <div className="lg:col-span-2 space-y-4">
                 {cart.map((item, index) => (
                   <motion.div
-                    key={item.id}
+                    key={item.key}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -275,6 +278,13 @@ export default function CartPage() {
                       <div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2">{item.name}</h3>
                         <p className="text-sm text-gray-600 mb-2">{item.category}</p>
+                        {(item.size || item.color) && (
+                          <p className="text-xs text-gray-500 mb-2">
+                            {item.size ? `Size: ${item.size}` : ""}
+                            {item.size && item.color ? " • " : ""}
+                            {item.color ? `Color: ${item.color}` : ""}
+                          </p>
+                        )}
                         <p className="text-2xl font-bold text-primary-600">
                           KSh {item.price.toLocaleString()}
                         </p>
@@ -282,7 +292,7 @@ export default function CartPage() {
                       <div className="flex items-center justify-between mt-4">
                         <div className="flex items-center space-x-3">
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.key, item.quantity - 1)}
                             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                           >
                             <Minus className="w-4 h-4 text-gray-700" />
@@ -291,14 +301,14 @@ export default function CartPage() {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.key, item.quantity + 1)}
                             className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                           >
                             <Plus className="w-4 h-4 text-gray-700" />
                           </button>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.key)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           aria-label="Remove item"
                         >

@@ -19,6 +19,8 @@ type MerchItem = {
   reviews: number;
   description: string;
   inStock: boolean;
+  sizes: string[];
+  colors: string[];
 };
 
 export default function MerchandisePage() {
@@ -28,6 +30,7 @@ export default function MerchandisePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const { addToCart, cart } = useCart();
+  const [variantById, setVariantById] = useState<Record<number, { size: string; color: string }>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +40,7 @@ export default function MerchandisePage() {
       try {
         const { data, error } = await supabase
           .from("merchandise_items")
-          .select("id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock")
+          .select("id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,available_sizes,available_colors")
           .eq("is_active", true)
           .order("sort_order", { ascending: true })
           .order("id", { ascending: true });
@@ -52,9 +55,10 @@ export default function MerchandisePage() {
           image_url: string;
           category: string;
           in_stock: boolean;
+          available_sizes?: string[] | null;
+          available_colors?: string[] | null;
         }>;
-        setMerchandise(
-          rows.map((row) => ({
+        const mapped = rows.map((row) => ({
             id: row.id,
             name: row.name,
             price: row.price_kes,
@@ -63,10 +67,24 @@ export default function MerchandisePage() {
             category: row.category,
             description: row.short_description ?? "",
             inStock: row.in_stock,
+            sizes: Array.isArray(row.available_sizes) ? row.available_sizes.filter(Boolean) : [],
+            colors: Array.isArray(row.available_colors) ? row.available_colors.filter(Boolean) : [],
             rating: 0,
             reviews: 0,
-          }))
-        );
+          }));
+        setMerchandise(mapped);
+        // Preselect first options (if present) to keep checkout fast.
+        setVariantById((prev) => {
+          const next = { ...prev };
+          for (const it of mapped) {
+            if (next[it.id]) continue;
+            next[it.id] = {
+              size: it.sizes[0] ?? "",
+              color: it.colors[0] ?? "",
+            };
+          }
+          return next;
+        });
       } catch (e: unknown) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : "Could not load products";
@@ -244,6 +262,58 @@ export default function MerchandisePage() {
                     {item.name}
                   </h3>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                  {(item.sizes.length > 0 || item.colors.length > 0) && (
+                    <div className="mb-3 space-y-2">
+                      {item.sizes.length > 0 && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-gray-600">Size</span>
+                          <select
+                            value={variantById[item.id]?.size ?? ""}
+                            onChange={(e) =>
+                              setVariantById((prev) => ({
+                                ...prev,
+                                [item.id]: { ...(prev[item.id] ?? { size: "", color: "" }), size: e.target.value },
+                              }))
+                            }
+                            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                          >
+                            <option value="" disabled>
+                              Select…
+                            </option>
+                            {item.sizes.map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {item.colors.length > 0 && (
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-gray-600">Color</span>
+                          <select
+                            value={variantById[item.id]?.color ?? ""}
+                            onChange={(e) =>
+                              setVariantById((prev) => ({
+                                ...prev,
+                                [item.id]: { ...(prev[item.id] ?? { size: "", color: "" }), color: e.target.value },
+                              }))
+                            }
+                            className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+                          >
+                            <option value="" disabled>
+                              Select…
+                            </option>
+                            {item.colors.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {item.reviews > 0 && (
                     <div className="flex items-center space-x-1 mb-3">
                       {[...Array(5)].map((_, i) => (
@@ -276,15 +346,27 @@ export default function MerchandisePage() {
                     </div>
                   </div>
                   <button
-                    disabled={!item.inStock}
+                    disabled={
+                      !item.inStock ||
+                      (item.sizes.length > 0 && !(variantById[item.id]?.size ?? "")) ||
+                      (item.colors.length > 0 && !(variantById[item.id]?.color ?? ""))
+                    }
                     onClick={() => {
                       if (item.inStock) {
+                        const size = variantById[item.id]?.size ?? "";
+                        const color = variantById[item.id]?.color ?? "";
+                        if (item.sizes.length > 0 && !size) return;
+                        if (item.colors.length > 0 && !color) return;
+                        const key = `${item.id}::${size}::${color}`;
                         addToCart({
+                          key,
                           id: item.id,
                           name: item.name,
                           price: item.price,
                           image: item.image,
                           category: item.category,
+                          size: size || null,
+                          color: color || null,
                         });
                         setAddedItem(item.name);
                         setShowToast(true);
@@ -294,14 +376,18 @@ export default function MerchandisePage() {
                       }
                     }}
                     className={`w-full mt-4 py-3 rounded-lg font-semibold transition-all duration-300 flex items-center justify-center space-x-2 ${
-                      item.inStock
-                        ? cart.some((cartItem) => cartItem.id === item.id)
+                      item.inStock &&
+                      !(
+                        (item.sizes.length > 0 && !(variantById[item.id]?.size ?? "")) ||
+                        (item.colors.length > 0 && !(variantById[item.id]?.color ?? ""))
+                      )
+                        ? cart.some((cartItem) => cartItem.key === `${item.id}::${variantById[item.id]?.size ?? ""}::${variantById[item.id]?.color ?? ""}`)
                           ? "bg-secondary-600 text-white shadow-lg"
                           : "bg-primary-600 hover:bg-primary-700 text-white shadow-lg hover:shadow-xl active:scale-95"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    {cart.some((cartItem) => cartItem.id === item.id) ? (
+                    {cart.some((cartItem) => cartItem.key === `${item.id}::${variantById[item.id]?.size ?? ""}::${variantById[item.id]?.color ?? ""}`) ? (
                       <>
                         <Check className="w-5 h-5" />
                         <span>Added to Cart</span>
@@ -309,7 +395,12 @@ export default function MerchandisePage() {
                     ) : (
                       <>
                         <ShoppingCart className="w-5 h-5" />
-                        <span>Add to Cart</span>
+                        <span>
+                          {(item.sizes.length > 0 && !(variantById[item.id]?.size ?? "")) ||
+                          (item.colors.length > 0 && !(variantById[item.id]?.color ?? ""))
+                            ? "Select options"
+                            : "Add to Cart"}
+                        </span>
                       </>
                     )}
                   </button>

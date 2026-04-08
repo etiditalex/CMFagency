@@ -5,11 +5,14 @@ import { ensureMerchandiseCampaign } from "@/lib/ensure-cfma-campaigns";
 
 type CartItem = {
   id: number;
+  variant_key?: string;
   name: string;
   price: number;
   quantity: number;
   image?: string;
   category?: string;
+  size?: string | null;
+  color?: string | null;
 };
 
 type InitBody = {
@@ -54,11 +57,14 @@ export async function POST(req: Request) {
       if (!Number.isFinite(price) || price < 0) continue;
       validatedCart.push({
         id,
+        variant_key: typeof (item as any)?.variant_key === "string" ? String((item as any).variant_key).slice(0, 200) : undefined,
         name: String(item?.name ?? "").slice(0, 200),
         price,
         quantity: qty,
         image: item?.image,
         category: item?.category,
+        size: typeof (item as any)?.size === "string" ? String((item as any).size).slice(0, 40) : null,
+        color: typeof (item as any)?.color === "string" ? String((item as any).color).slice(0, 40) : null,
       });
       subtotal += price * qty;
     }

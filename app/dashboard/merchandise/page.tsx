@@ -20,6 +20,8 @@ type MerchRow = {
   in_stock: boolean;
   is_active: boolean;
   sort_order: number;
+  available_sizes?: string[] | null;
+  available_colors?: string[] | null;
   updated_at: string;
 };
 
@@ -33,7 +35,11 @@ const emptyForm = {
   in_stock: true,
   is_active: true,
   sort_order: "0",
+  sizes: [] as string[],
+  colors_text: "",
 };
+
+const SIZE_OPTIONS = ["SMALL", "MEDIUM", "LARGE", "XL", "XXL"] as const;
 
 function isMissingMerchTable(err: { message?: string; code?: string } | null) {
   if (!err) return false;
@@ -93,7 +99,7 @@ export default function DashboardMerchandisePage() {
         const { data, error: err } = await supabase
           .from("merchandise_items")
           .select(
-            "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,updated_at"
+            "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,updated_at"
           )
           .order("sort_order", { ascending: true })
           .order("id", { ascending: true });
@@ -142,6 +148,8 @@ export default function DashboardMerchandisePage() {
       in_stock: row.in_stock,
       is_active: row.is_active,
       sort_order: String(row.sort_order ?? 0),
+      sizes: Array.isArray(row.available_sizes) ? row.available_sizes.filter(Boolean) : [],
+      colors_text: Array.isArray(row.available_colors) ? row.available_colors.filter(Boolean).join(", ") : "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -235,6 +243,13 @@ export default function DashboardMerchandisePage() {
     }
     const sort_order = Math.trunc(Number(form.sort_order));
     const sortVal = Number.isFinite(sort_order) ? sort_order : 0;
+    const sizes = Array.isArray((form as any).sizes) ? (form as any).sizes.filter(Boolean) : [];
+    const colors_text = String((form as any).colors_text ?? "");
+    const available_colors = colors_text
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 30);
 
     setSaving(true);
     try {
@@ -254,13 +269,15 @@ export default function DashboardMerchandisePage() {
         in_stock: form.in_stock,
         is_active: form.is_active,
         sort_order: sortVal,
+        available_sizes: sizes,
+        available_colors,
       };
       if (editingId != null) {
         const { error: err } = await supabase.from("merchandise_items").update(payload).eq("id", editingId);
         if (err) throw err;
         setItems((prev) =>
           prev
-            .map((r) => (r.id === editingId ? { ...r, ...payload, id: editingId, updated_at: new Date().toISOString() } : r))
+            .map((r) => (r.id === editingId ? { ...r, ...(payload as any), id: editingId, updated_at: new Date().toISOString() } : r))
             .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)
         );
         resetForm();
@@ -382,6 +399,39 @@ export default function DashboardMerchandisePage() {
               value={form.short_description}
               onChange={(e) => setForm((f) => ({ ...f, short_description: e.target.value }))}
               placeholder="One or two sentences shown on the product card."
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Available sizes</label>
+            <p className="text-xs text-gray-500 mb-2">Select sizes buyers can choose (leave empty if not applicable).</p>
+            <div className="flex flex-wrap gap-3">
+              {SIZE_OPTIONS.map((sz) => (
+                <label key={sz} className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(form as any).sizes?.includes(sz)}
+                    onChange={(e) => {
+                      const next = new Set<string>((form as any).sizes ?? []);
+                      if (e.target.checked) next.add(sz);
+                      else next.delete(sz);
+                      setForm((f: any) => ({ ...f, sizes: Array.from(next) }));
+                    }}
+                  />
+                  <span className="text-sm font-semibold text-gray-800">{sz}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Available colors</label>
+            <p className="text-xs text-gray-500 mb-2">Comma-separated (e.g. Black, White, Navy). Leave empty if not applicable.</p>
+            <input
+              className="w-full rounded-md border border-gray-300 px-3 py-2"
+              value={(form as any).colors_text}
+              onChange={(e) => setForm((f: any) => ({ ...f, colors_text: e.target.value }))}
+              placeholder="Black, White, Navy"
             />
           </div>
           <div className="sm:col-span-2">
