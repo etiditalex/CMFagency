@@ -35,6 +35,8 @@ import {
   X,
   LogOut,
   User,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -194,8 +196,26 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [search, setSearch] = useState("");
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("dashboard_sidebar_collapsed");
+      if (raw === "1") setSidebarCollapsed(true);
+    } catch {}
+  }, []);
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem("dashboard_sidebar_collapsed", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember || !isAdmin) {
@@ -245,23 +265,53 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar (desktop) */}
-      <aside className="hidden lg:flex w-72 flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5">
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-white/5">
+      <aside
+        className={`hidden lg:flex flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5 transition-[width] duration-300 ease-out ${
+          sidebarCollapsed ? "w-20" : "w-72"
+        }`}
+      >
+        <div className={`relative h-16 flex items-center border-b border-white/5 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
           <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center">
             <Shield className="w-5 h-5 text-primary-100" />
           </div>
-          <div className="min-w-0">
-            <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-            <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
+              <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
+            </div>
+          )}
+          {!sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebarCollapsed}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4 text-white/80" />
+            </button>
+          )}
+          {sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebarCollapsed}
+              className="absolute top-4 -right-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 border border-primary-400 shadow"
+              aria-label="Expand sidebar"
+              title="Expand sidebar"
+            >
+              <PanelLeftOpen className="w-3.5 h-3.5 text-white" />
+            </button>
+          )}
         </div>
 
-        <nav className="px-3 py-4 space-y-5">
+        <nav className={`py-4 space-y-5 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
           {sections.map((s) => (
             <div key={s.key}>
-              <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">
-                {s.label}
-              </div>
+              {!sidebarCollapsed && (
+                <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">
+                  {s.label}
+                </div>
+              )}
               <div className="mt-2 space-y-1">
                 {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
                   const Icon = item.icon;
@@ -270,21 +320,24 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
+                      className={`group flex items-center rounded-md transition-colors ${
                         active
                           ? "bg-primary-600/20 border border-primary-500/30 text-white"
                           : "text-white/80 hover:bg-white/5 hover:text-white"
-                      }`}
+                      } ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"}`}
+                      title={sidebarCollapsed ? item.label : undefined}
                     >
                       <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                      <span className="text-sm font-semibold flex items-center gap-2">
-                        {item.label}
-                        {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-                          <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
-                            {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
-                          </span>
-                        )}
-                      </span>
+                      {!sidebarCollapsed && (
+                        <span className="text-sm font-semibold flex items-center gap-2">
+                          {item.label}
+                          {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
+                            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
+                              {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -293,12 +346,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className="mt-auto p-4 border-t border-white/5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-sm font-bold truncate">{user?.name || user?.email || "Admin"}</div>
-              <div className="text-xs text-white/55 truncate">{user?.email || "Signed in"}</div>
-            </div>
+        <div className={`mt-auto border-t border-white/5 ${sidebarCollapsed ? "p-2" : "p-4"}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between gap-3"}`}>
+            {!sidebarCollapsed && (
+              <div className="min-w-0">
+                <div className="text-sm font-bold truncate">{user?.name || user?.email || "Admin"}</div>
+                <div className="text-xs text-white/55 truncate">{user?.email || "Signed in"}</div>
+              </div>
+            )}
             <button
               type="button"
               onClick={logout}
