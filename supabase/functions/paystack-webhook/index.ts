@@ -129,6 +129,31 @@ async function notifyCampaignOwnerPaymentIncompleteDeno(
   }
 }
 
+/** Same logic as lib/paystack-charge-matches-transaction.ts (keep in sync). */
+function paystackChargeMatchesTransaction(
+  paidSubunit: number,
+  paidCurrencyRaw: string,
+  tx: { amount: unknown; currency: unknown; metadata?: unknown },
+): { ok: true } | { ok: false; code: "amount" | "currency" } {
+  const meta =
+    typeof tx.metadata === "object" && tx.metadata !== null && !Array.isArray(tx.metadata)
+      ? (tx.metadata as Record<string, unknown>)
+      : {};
+  const storedSubunit = meta.paystack_amount_subunit;
+  const expectedSubunit =
+    typeof storedSubunit === "number" && Number.isFinite(storedSubunit)
+      ? Math.trunc(storedSubunit)
+      : Math.round(Number(tx.amount ?? 0) * 100);
+  const paid = Math.round(Number(paidSubunit));
+  if (!Number.isFinite(paid) || paid !== expectedSubunit) {
+    return { ok: false, code: "amount" };
+  }
+  const paidCur = String(paidCurrencyRaw ?? "").trim().toUpperCase();
+  const txCur = String(tx.currency ?? "").trim().toUpperCase();
+  if (paidCur !== txCur) return { ok: false, code: "currency" };
+  return { ok: true };
+}
+
 async function hmacSha512Hex(secret: string, payload: string) {
   const key = await crypto.subtle.importKey(
     "raw",
@@ -210,12 +235,10 @@ serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
-  // Basic consistency checks (prevents mismatched webhook payloads from being counted).
-  // Paystack sends amount in subunit (cents/kobo). Our tx.amount is in whole units.
   const paidAmountSubunit = Number(payload.data?.amount ?? 0);
-  const expectedSubunit = Math.round(Number(tx.amount) * 100);
   const paidCurrency = (payload.data?.currency ?? "").toUpperCase();
-  if (paidAmountSubunit !== expectedSubunit || paidCurrency !== String(tx.currency).toUpperCase()) {
+  const match = paystackChargeMatchesTransaction(paidAmountSubunit, paidCurrency, tx);
+  if (!match.ok) {
     // Record failure state for audit, but do not fulfill.
     await supabase
       .from("transactions")
@@ -224,7 +247,7 @@ serve(async (req) => {
         verified_at: new Date().toISOString(),
         metadata: {
           ...(typeof (tx as any).metadata === "object" && (tx as any).metadata ? (tx as any).metadata : {}),
-          webhook_error: "amount_or_currency_mismatch",
+          webhook_error: match.code === "amount" ? "amount_mismatch" : "currency_mismatch",
           paystack_amount: paidAmountSubunit,
           paystack_currency: paidCurrency,
           paystack_event_id: payload.data?.id ?? null,

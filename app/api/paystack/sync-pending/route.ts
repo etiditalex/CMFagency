@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 
@@ -96,16 +97,25 @@ export async function GET(req: Request) {
       if (paystackStatus !== "success") continue;
 
       const paidAmountSubunit = Number(json.data?.amount ?? 0);
-      const expectedSubunit = Math.round(Number(tx.amount) * 100);
       const paidCurrency = (json.data?.currency ?? "").toUpperCase();
-      if (paidAmountSubunit !== expectedSubunit || paidCurrency !== String(tx.currency).toUpperCase()) {
+      const match = paystackChargeMatchesTransaction(paidAmountSubunit, paidCurrency, tx as PaystackFulfillmentRow);
+      if (!match.ok) {
+        const prevMeta =
+          typeof tx.metadata === "object" && tx.metadata !== null && !Array.isArray(tx.metadata)
+            ? { ...(tx.metadata as Record<string, unknown>) }
+            : {};
         await supabase
           .from("transactions")
           .update({
             status: "failed",
             verified_at: new Date().toISOString(),
-            metadata: { webhook_error: "amount_or_currency_mismatch", paystack_amount: paidAmountSubunit, paystack_currency: paidCurrency },
-          } as any)
+            metadata: {
+              ...prevMeta,
+              webhook_error: match.code === "amount" ? "amount_mismatch" : "currency_mismatch",
+              paystack_amount: paidAmountSubunit,
+              paystack_currency: paidCurrency,
+            },
+          } as Record<string, unknown>)
           .eq("id", tx.id);
         void notifyCampaignOwnerPaymentIncomplete(supabase, {
           campaignId: String(tx.campaign_id),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 
@@ -74,9 +75,9 @@ export async function POST(req: Request) {
   }
 
   const paidAmountSubunit = Number(json.data?.amount ?? 0);
-  const expectedSubunit = Math.round(Number((tx as { amount?: number }).amount) * 100);
   const paidCurrency = (json.data?.currency ?? "").toUpperCase();
-  if (paidAmountSubunit !== expectedSubunit || paidCurrency !== String((tx as { currency?: string }).currency).toUpperCase()) {
+  const match = paystackChargeMatchesTransaction(paidAmountSubunit, paidCurrency, tx as PaystackFulfillmentRow);
+  if (!match.ok) {
     await supabase
       .from("transactions")
       .update({
@@ -84,7 +85,7 @@ export async function POST(req: Request) {
         verified_at: new Date().toISOString(),
         metadata: {
           ...((typeof tx.metadata === "object" && tx.metadata ? tx.metadata : {}) as Record<string, unknown>),
-          webhook_error: "amount_or_currency_mismatch",
+          webhook_error: match.code === "amount" ? "amount_mismatch" : "currency_mismatch",
           paystack_amount: paidAmountSubunit,
           paystack_currency: paidCurrency,
         },
@@ -105,10 +106,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, status: "failed", reason: "amount_or_currency_mismatch" });
   }
 
-  await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
+  const { fulfillErr } = await finalizePaystackTransactionSuccess(supabase, tx as PaystackFulfillmentRow, {
     paidAt: json.data?.paid_at ?? new Date().toISOString(),
     metadataPatch: {},
   });
+
+  if (fulfillErr) {
+    console.error("[paystack/verify-ref] finalize failed:", fulfillErr);
+    return NextResponse.json({ ok: false, status: "pending", error: fulfillErr }, { status: 200 });
+  }
 
   return NextResponse.json({ ok: true, status: "success", completed: true });
 }

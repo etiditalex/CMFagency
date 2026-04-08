@@ -173,6 +173,8 @@ export async function POST(req: Request) {
       amount = expectedTotal - discountInt;
     }
 
+    const amountMainRounded = Math.round(Number(amount));
+
     const insertPayload = {
       campaign_id: campaign.id,
       campaign_type: campaign.type,
@@ -183,7 +185,7 @@ export async function POST(req: Request) {
       quantity: q,
       currency: campaign.currency,
       unit_amount: unitAmount,
-      amount: Math.round(Number(amount)),
+      amount: amountMainRounded,
       discount_amount: discountInt,
       coupon_id: couponId,
       contestant_id: campaign.type === "vote" ? contestantId : null,
@@ -191,6 +193,7 @@ export async function POST(req: Request) {
       metadata: {
         slug: campaign.slug,
         campaign_title: campaign.title,
+        paystack_amount_subunit: amountMainRounded * 100,
       },
     };
 
@@ -218,8 +221,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Paystack expects amount in subunit (cents/kobo). 1 KES = 100 cents.
-    const amountInSubunit = Math.round(amount * 100);
+    // Paystack expects amount in subunit (cents/kobo). Must match DB row (amount × 100) exactly.
+    const amountInSubunit = amountMainRounded * 100;
 
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;

@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
+import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
@@ -82,10 +83,10 @@ export async function POST(req: Request) {
   }
 
   const paidAmountSubunit = Number(payload.data?.amount ?? 0);
-  const expectedSubunit = Math.round(Number(tx.amount) * 100);
   const paidCurrency = (payload.data?.currency ?? "").toUpperCase();
+  const match = paystackChargeMatchesTransaction(paidAmountSubunit, paidCurrency, tx as PaystackFulfillmentRow);
 
-  if (paidAmountSubunit !== expectedSubunit || paidCurrency !== String(tx.currency).toUpperCase()) {
+  if (!match.ok) {
     await supabase
       .from("transactions")
       .update({
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
         verified_at: new Date().toISOString(),
         metadata: {
           ...(typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {}),
-          webhook_error: "amount_or_currency_mismatch",
+          webhook_error: match.code === "amount" ? "amount_mismatch" : "currency_mismatch",
           paystack_amount: paidAmountSubunit,
           paystack_currency: paidCurrency,
           paystack_event_id: payload.data?.id ?? null,

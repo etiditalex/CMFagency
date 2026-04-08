@@ -40,7 +40,7 @@ export async function finalizePaystackTransactionSuccess(
   const metaForSuccess = { ...metaBase, ...options.metadataPatch };
   delete metaForSuccess.fulfillment_error;
 
-  await supabase
+  const { data: updatedRows, error: statusErr } = await supabase
     .from("transactions")
     .update({
       status: "success",
@@ -48,7 +48,17 @@ export async function finalizePaystackTransactionSuccess(
       paid_at: paidAt,
       metadata: metaForSuccess,
     } as Record<string, unknown>)
-    .eq("id", tx.id);
+    .eq("id", tx.id)
+    .select("id");
+
+  if (statusErr) {
+    console.error("[finalizePaystack] status update error:", statusErr.message);
+    return { fulfillErr: statusErr.message };
+  }
+  if (!updatedRows?.length) {
+    console.error("[finalizePaystack] status update matched no rows for id:", tx.id);
+    return { fulfillErr: "transaction_status_update_no_rows" };
+  }
 
   if (metaBase.merchandise_cart === true) {
     if (!tx.fulfilled_at) {

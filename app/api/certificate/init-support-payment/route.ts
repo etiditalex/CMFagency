@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       slug: campaign.slug,
       campaign_title: campaign.title,
       certificate_support: true,
+      paystack_amount_subunit: amount * 100,
     },
   };
 

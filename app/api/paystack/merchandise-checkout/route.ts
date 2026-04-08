@@ -117,6 +117,8 @@ export async function POST(req: Request) {
     // Paystack reference: only alphanumeric, hyphen, period, equals
     const reference = `cmf-${crypto.randomUUID().replace(/-/g, "")}`;
 
+    const amountInSubunit = total * 100;
+
     const { error: insertErr } = await supabase.from("transactions").insert({
       campaign_id: campaign.id,
       campaign_type: campaign.type,
@@ -138,6 +140,7 @@ export async function POST(req: Request) {
         subtotal,
         shipping,
         total,
+        paystack_amount_subunit: amountInSubunit,
       },
     });
 
@@ -152,8 +155,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    const amountInSubunit = Math.round(total * 100);
 
     const origin = req.headers.get("origin") ?? "";
     const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
