@@ -86,6 +86,7 @@ export default function BlogsPageClient({
                         src={post.image_url || DEFAULT_BLOG_CARD_IMAGE}
                         alt={post.title}
                         fill
+                        unoptimized
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading={idx < 3 ? "eager" : "lazy"}
                         fetchPriority={idx === 0 ? "high" : "auto"}

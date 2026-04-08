@@ -11,7 +11,7 @@ export const revalidate = 120;
 export default async function BlogsPage() {
   const { posts, sidebarAds, trending, columnPosts, listingTruncated } = await getBlogIndexData();
   return (
-    <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
+    <div className="pt-28 md:pt-32 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
       <BlogListingEditorialIntro />
       <BlogsPageClient
         initialPosts={posts}

@@ -43,6 +43,7 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
               src={featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
               alt={featured.title}
               fill
+              unoptimized
               className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
               loading="lazy"
               sizes="(max-width: 1024px) 100vw, 320px"
@@ -77,6 +78,7 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
                     src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                     alt=""
                     fill
+                    unoptimized
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
                     sizes="96px"

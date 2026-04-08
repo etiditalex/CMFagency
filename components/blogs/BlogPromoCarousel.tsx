@@ -93,6 +93,7 @@ export default function BlogPromoCarousel({
   imageMaxClass = "max-h-[min(260px,50vh)]",
 }: Props) {
   const [index, setIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -105,7 +106,10 @@ export default function BlogPromoCarousel({
   }, []);
 
   const advance = useCallback(() => {
-    setIndex((i) => (i + 1) % ads.length);
+    setIndex((i) => {
+      setPrevIndex(i);
+      return (i + 1) % ads.length;
+    });
   }, [ads.length]);
 
   useEffect(() => {
@@ -115,9 +119,18 @@ export default function BlogPromoCarousel({
   }, [ads.length, paused, reduceMotion, advance]);
 
   const durationClass = reduceMotion ? "duration-0" : "duration-700";
+  const fadeMs = reduceMotion ? 0 : 700;
+
+  useEffect(() => {
+    if (prevIndex == null) return;
+    const id = window.setTimeout(() => setPrevIndex(null), fadeMs);
+    return () => window.clearTimeout(id);
+  }, [prevIndex, fadeMs]);
 
   if (ads.length === 0) return null;
   const activeAd = ads[index];
+  const nextAd = ads[(index + 1) % ads.length];
+  const nextSrc = normalizePromoImageSrc(nextAd?.image_url);
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -132,8 +145,31 @@ export default function BlogPromoCarousel({
         aria-roledescription="carousel"
         aria-label="Promotional carousel"
       >
+        {nextSrc ? (
+          <img
+            src={nextSrc}
+            alt=""
+            aria-hidden="true"
+            className="hidden"
+            loading="eager"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
+        ) : null}
         <div className="relative min-h-[120px]">
-          <div key={activeAd.id} className={`relative z-[1] transition-opacity ease-in-out ${durationClass} opacity-100`}>
+          {prevIndex != null && prevIndex !== index ? (
+            <div
+              key={`prev-${ads[prevIndex].id}`}
+              aria-hidden
+              className={`absolute inset-0 z-0 pointer-events-none transition-opacity ease-in-out ${durationClass} opacity-0`}
+            >
+              <PromoSlideCard ad={ads[prevIndex]} imageMaxClass={imageMaxClass} />
+            </div>
+          ) : null}
+          <div
+            key={`active-${activeAd.id}`}
+            className={`relative z-[1] transition-opacity ease-in-out ${durationClass} opacity-100`}
+          >
             <PromoSlideCard ad={activeAd} imageMaxClass={imageMaxClass} imagePriority={index === 0} />
           </div>
         </div>
@@ -150,7 +186,11 @@ export default function BlogPromoCarousel({
                 className={`h-2 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                   idx === index ? "w-7 bg-primary-600" : "w-2 bg-gray-300 hover:bg-gray-400"
                 }`}
-                onClick={() => setIndex(idx)}
+                onClick={() => {
+                  if (idx === index) return;
+                  setPrevIndex(index);
+                  setIndex(idx);
+                }}
               />
             ))}
           </div>

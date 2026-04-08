@@ -54,6 +54,7 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
                 src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                 alt={p.title}
                 fill
+                unoptimized
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 sizes="(max-width: 640px) 112px, 128px"
@@ -117,7 +118,7 @@ export default function BlogSlugContent({
   const shareUrl = `${SITE_URL}/blogs/${post.slug}`;
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
+    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
       <div className="container-blog py-10 md:py-12">
         <Link
           href="/blogs"
@@ -156,6 +157,7 @@ export default function BlogSlugContent({
                   src={heroSrc}
                   alt={post.title}
                   fill
+                  unoptimized
                   className="absolute inset-0 w-full h-full object-cover"
                   fetchPriority="high"
                   priority
