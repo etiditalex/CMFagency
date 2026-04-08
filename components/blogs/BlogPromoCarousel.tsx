@@ -117,6 +117,7 @@ export default function BlogPromoCarousel({
   const durationClass = reduceMotion ? "duration-0" : "duration-700";
 
   if (ads.length === 0) return null;
+  const activeAd = ads[index];
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -132,20 +133,9 @@ export default function BlogPromoCarousel({
         aria-label="Promotional carousel"
       >
         <div className="relative min-h-[120px]">
-          {ads.map((ad, idx) => {
-            const active = idx === index;
-            return (
-              <div
-                key={ad.id}
-                aria-hidden={!active}
-                className={`${active ? "relative z-[1]" : "absolute inset-0 z-0 pointer-events-none"} transition-opacity ease-in-out ${durationClass} ${
-                  active ? "opacity-100" : "opacity-0"
-                }`}
-              >
-                <PromoSlideCard ad={ad} imageMaxClass={imageMaxClass} imagePriority={idx === 0} />
-              </div>
-            );
-          })}
+          <div key={activeAd.id} className={`relative z-[1] transition-opacity ease-in-out ${durationClass} opacity-100`}>
+            <PromoSlideCard ad={activeAd} imageMaxClass={imageMaxClass} imagePriority={index === 0} />
+          </div>
         </div>
 
         {ads.length > 1 && (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Clock, FileText } from "lucide-react";
 
@@ -38,12 +39,13 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
       <div className="px-4 pt-4">
         <Link href={`/blogs/${featured.slug}`} className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
-            <img
+            <Image
               src={featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
               alt={featured.title}
+              fill
               className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
               loading="lazy"
-              decoding="async"
+              sizes="(max-width: 1024px) 100vw, 320px"
               referrerPolicy="no-referrer"
             />
             <span className="absolute bottom-2 right-2 bg-primary-600 text-white text-[10px] font-bold tracking-wide px-2 py-1 uppercase shadow-sm">
@@ -71,12 +73,13 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
                 className="flex gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg"
               >
                 <div className="relative w-24 h-[4.25rem] shrink-0 overflow-hidden rounded-md bg-gray-100 border border-gray-100">
-                  <img
+                  <Image
                     src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                     alt=""
+                    fill
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
-                    decoding="async"
+                    sizes="96px"
                     referrerPolicy="no-referrer"
                   />
                 </div>

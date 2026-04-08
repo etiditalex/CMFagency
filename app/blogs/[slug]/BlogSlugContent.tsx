@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Calendar, Clock, User, ArrowLeft } from "lucide-react";
 import type { BlogBodyPart } from "@/lib/blog-body";
@@ -49,12 +50,13 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
             className="flex gap-3 sm:gap-4 group text-left items-start"
           >
             <div className="relative w-28 h-20 sm:w-32 sm:h-[4.5rem] shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
-              <img
+              <Image
                 src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                 alt={p.title}
+                fill
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
-                decoding="async"
+                sizes="(max-width: 640px) 112px, 128px"
                 referrerPolicy="no-referrer"
               />
             </div>
@@ -150,12 +152,14 @@ export default function BlogSlugContent({
 
             {(post.image_url || DEFAULT_BLOG_CARD_IMAGE) && (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-10 shadow-md bg-gray-100">
-                <img
+                <Image
                   src={heroSrc}
                   alt={post.title}
+                  fill
                   className="absolute inset-0 w-full h-full object-cover"
                   fetchPriority="high"
-                  decoding="async"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 900px"
                   referrerPolicy="no-referrer"
                 />
               </div>

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
@@ -81,13 +82,14 @@ export default function BlogsPageClient({
                     className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
                   >
                     <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
-                      <img
+                      <Image
                         src={post.image_url || DEFAULT_BLOG_CARD_IMAGE}
                         alt={post.title}
+                        fill
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         loading={idx < 3 ? "eager" : "lazy"}
-                        decoding="async"
                         fetchPriority={idx === 0 ? "high" : "auto"}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 left-3">

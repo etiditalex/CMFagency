@@ -145,10 +145,10 @@ export type BlogListingRow = {
 };
 
 /** Cap listing grid payload; trending/columns use separate small queries so older News/Business posts still appear in sidebars. */
-export const BLOG_LISTING_PAGE_SIZE = 150;
+export const BLOG_LISTING_PAGE_SIZE = 60;
 
 /** Keeps `unstable_cache` payload under Next.js ~2MB data cache limit; cards only show a short preview. */
-const LISTING_EXCERPT_MAX_CHARS = 400;
+const LISTING_EXCERPT_MAX_CHARS = 220;
 
 function trimListingExcerpt(post: BlogListingRow): BlogListingRow {
   const ex = post.excerpt;

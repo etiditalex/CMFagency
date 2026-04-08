@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import BlogColumnsWidget from "@/components/blogs/BlogColumnsWidget";
@@ -60,12 +61,13 @@ export default function BlogListingSidebar({ trending, columnPosts, className = 
           href={CMFA_EVENT_HREF}
           className="block relative aspect-[4/3] w-full bg-black outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80"
         >
-          <img
+          <Image
             src={CMFA_BANNER_IMAGE}
             alt="Coast Fashion and Modelling Awards 2026 — CMFA banner"
+            fill
             className="absolute inset-0 h-full w-full object-cover object-center"
             loading="lazy"
-            decoding="async"
+            sizes="(max-width: 1024px) 100vw, 320px"
             referrerPolicy="no-referrer"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
