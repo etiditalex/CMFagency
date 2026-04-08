@@ -119,7 +119,7 @@ export default function DashboardHomePage() {
   }, []);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
-  const realtimeRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const realtimeRefreshTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isAdmin) {
