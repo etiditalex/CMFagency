@@ -31,16 +31,6 @@ const executiveMembers = [
       "Alex is passionate about using technology to solve real-world challenges and enhance operational efficiency.",
     ],
   },
-  {
-    name: "Violet Moriasi",
-    position: "Marketing Director",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768399105/Violet_Kwamboka-_Director_Marketing_w5n2ac.jpg",
-    description: "Violet Moriasi is the Marketing Director at Changer Fusions, responsible for shaping the company's brand identity, marketing strategy, and market positioning. She brings extensive experience in digital marketing, brand communication, and audience engagement across multiple platforms.",
-    achievements: [
-      "Violet is known for her creative insight and data-driven approach to marketing, ensuring that campaigns are impactful, consistent, and aligned with business objectives.",
-      "Her leadership continues to strengthen Changer Fusions' visibility, brand credibility, and customer engagement.",
-    ],
-  },
 ];
 
 const teamMembers = [
@@ -74,25 +64,6 @@ const teamMembers = [
     achievements: [
       "With a people-centered and results-oriented approach, Byron helps position Changer Fusions as a trusted, innovative force in Kenya's events and creative industry.",
       "He champions talent development, collaboration, and ethical leadership within the organization.",
-    ],
-  },
-  {
-    name: "Maxwell Wisdom",
-    position: "Legal & Contracts Manager",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768399036/Maxwell_Wisdom-_Legal_and_Contracts_xyfhy6.jpg",
-    description: "Maxwell Wisdom serves as the Legal & Contracts Manager at Changer Fusions, where he supports business operations through effective contract management and risk control. He is responsible for drafting and negotiating client, vendor, and partnership agreements, identifying legal risks within projects, and proposing practical mitigation measures.",
-    achievements: [
-      "Maxwell works closely with other departments and marketing teams, ensuring all digital, creative, and consulting services are governed by clear, enforceable legal terms that protect the organization's interests.",
-    ],
-  },
-  {
-    name: "Mohamed Ibrahim",
-    position: "Social Media Manager",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768398936/Mohamed_Ibrahim-Social_Media_Manager_sckrd2.jpg",
-    description: "Mohamed Ibrahim is a dedicated Social Media Manager at Changer Fusions, with a strong foundation in digital communication and content management. He is a hardworking, self-motivated professional with solid computer and digital competencies, capable of managing multiple responsibilities with accuracy and professionalism.",
-    achievements: [
-      "Mohamed plays an active role in overseeing and optimizing the company's social media platforms, ensuring consistent brand messaging, audience engagement, and digital visibility.",
-      "He is committed to continuous learning, personal development, and making meaningful contributions toward the organization's growth and strategic objectives.",
     ],
   },
 ];
