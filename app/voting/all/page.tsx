@@ -2,8 +2,8 @@ import AllVotingPageClient from "./AllVotingPageClient";
 import { getVotingAllCatalog } from "@/lib/voting-all-catalog";
 import { votingStartMsFromSchedule } from "@/lib/voting-schedule-public";
 
-/** Match API route; shared CDN + server cache for the voting hub page. */
-export const revalidate = 30;
+/** Avoid build-time Supabase work on Vercel (60s prerender timeouts); render on request instead. */
+export const dynamic = "force-dynamic";
 
 export default async function AllVotingPage() {
   const result = await getVotingAllCatalog();

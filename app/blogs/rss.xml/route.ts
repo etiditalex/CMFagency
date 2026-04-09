@@ -1,7 +1,8 @@
 import { getPublishedBlogsForFeed } from "@/lib/blog-server";
 import { SITE_URL } from "@/lib/site-url";
 
-export const revalidate = 300;
+/** Skip slow DB work during `next build` prerender (Vercel 60s limit); RSS is generated on demand. */
+export const dynamic = "force-dynamic";
 
 function escapeXml(text: string): string {
   return text

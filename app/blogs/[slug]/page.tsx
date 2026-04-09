@@ -9,7 +9,6 @@ import {
   getBlogColumnsSidebarPosts,
   getBlogRelatedCardsBySlugs,
   getBlogTrendingExcluding,
-  getPublishedBlogSlugsForStatic,
 } from "@/lib/blog-server";
 import { resolveBlogShareImageUrl } from "@/lib/blog-share-image";
 import BlogPostingJsonLd from "@/components/blogs/BlogPostingJsonLd";
@@ -22,16 +21,11 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-/** Cache rendered pages; speeds repeat visits (CDN + incremental static). */
-export const revalidate = 120;
+/** Avoid prerendering every post at build (many parallel DB calls → Vercel 60s timeouts). SSR per request. */
+export const dynamic = "force-dynamic";
 
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  try {
-    return await getPublishedBlogSlugsForStatic();
-  } catch {
-    return [];
-  }
-}
+/** Cache rendered pages after generation (on-demand). */
+export const revalidate = 120;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

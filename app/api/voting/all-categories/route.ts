@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getVotingAllCatalog } from "@/lib/voting-all-catalog";
 
-/** CDN + ISR: catalog changes infrequently; vote-order may lag up to this window. */
-export const revalidate = 30;
+/** Do not participate in static / ISR build steps that can hit Vercel’s default timeout. */
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   const result = await getVotingAllCatalog();
