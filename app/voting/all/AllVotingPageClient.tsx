@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ExternalLink, Vote } from "lucide-react";
 
 import type { VotingAllCategoryRow } from "@/lib/voting-all-catalog";
+import { GENERIC_VOTING_HUB_LOAD_FAILURE } from "@/lib/payment-user-message";
 import { formatVotingOpensInNairobi } from "@/lib/voting-schedule-public";
 
 type Props = {
@@ -44,7 +45,9 @@ export default function AllVotingPageClient({
     return (
       <div className="pt-24 min-h-screen bg-gray-50">
         <div className="container-custom py-10 max-w-2xl">
-          <div className="bg-white rounded-xl shadow-lg p-8 border border-red-100 text-red-800">{initialError}</div>
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-red-100 text-red-800">
+            {GENERIC_VOTING_HUB_LOAD_FAILURE}
+          </div>
         </div>
       </div>
     );

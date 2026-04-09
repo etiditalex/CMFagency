@@ -485,12 +485,6 @@ export default function DashboardApplicationsPage() {
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
             Job Applications
           </h2>
-          <p className="mt-1 text-gray-600 max-w-3xl">
-            Documents are auto-triaged to <strong>under review</strong> when files are complete and the role matches
-            the job catalog. Use <strong>Invite to interview</strong> to email office details from{" "}
-            <code className="text-xs bg-gray-100 px-1 rounded">lib/job-openings.ts</code>. Unlisted roles get status{" "}
-            <strong>no_open_role</strong> and applicants are emailed automatically.
-          </p>
         </div>
         <div className="flex flex-col gap-3 w-full lg:w-auto lg:items-end">
           <div className="flex flex-wrap items-center gap-2">

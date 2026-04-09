@@ -6,6 +6,12 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Ticket, Vote } from "lucide-react";
 
 import VoteSuccessToast from "@/components/VoteSuccessToast";
+import {
+  GENERIC_CAMPAIGN_LOAD_FAILURE,
+  GENERIC_PAYMENT_FAILURE,
+  messageForPaymentFailure,
+  PaymentClientError,
+} from "@/lib/payment-user-message";
 
 type Campaign = {
   id: string;
@@ -107,7 +113,7 @@ export default function CampaignPage() {
       setError(null);
 
       try {
-        if (!slug) throw new Error("Missing campaign slug in URL.");
+        if (!slug) throw new Error();
         const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}/page-data`);
         const body = (await res.json()) as {
           error?: string;
@@ -118,23 +124,10 @@ export default function CampaignPage() {
           voting_starts_at?: string | null;
         };
 
-        if (!res.ok) {
-          throw new Error(body.error ?? `Unable to load campaign (HTTP ${res.status})`);
-        }
+        if (!res.ok) throw new Error();
 
         if (!body.campaign || body.not_found) {
-          const msg = [
-            `Campaign "${slug}" is not available publicly.`,
-            "",
-            "Checklist:",
-            "- Confirm the row exists in public.campaigns for this slug.",
-            "- Ensure is_active = true.",
-            "- Ensure starts_at/ends_at are NULL or within the current time window.",
-            '- Ensure the public RLS policy "campaigns_public_read_active" exists and grants SELECT to anon.',
-            "",
-            "If you recently created the campaign, open it from the dashboard first to confirm it saved correctly.",
-          ].join("\n");
-          throw new Error(msg);
+          throw new Error();
         }
 
         if (cancelled) return;
@@ -154,11 +147,9 @@ export default function CampaignPage() {
           const t = Date.parse(iso);
           if (!Number.isNaN(t)) setVotingStartMs(t);
         }
-      } catch (e: any) {
+      } catch {
         if (cancelled) return;
-        const msg = String(e?.message ?? "");
-        const parts = [msg, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
-        setError(parts.length > 0 ? parts.join("\n") : "Unable to load campaign");
+        setError(GENERIC_CAMPAIGN_LOAD_FAILURE);
         setCampaign(null);
         setContestants([]);
         setVoteCounts({});
@@ -403,13 +394,19 @@ export default function CampaignPage() {
 
     try {
       const q = Math.max(1, Math.min(effectiveMax, Math.trunc(quantity)));
-      if (campaign.type === "vote" && !contestantId) throw new Error("Please select a contestant.");
+      if (campaign.type === "vote" && !contestantId) {
+        throw new PaymentClientError("Please select a contestant.");
+      }
 
       if (paymentMethod === "mpesa" && isKes) {
-        if (!phone.trim()) throw new Error("M-Pesa number is required (e.g. 254712345678)");
-        if (!email.trim()) throw new Error("Email is required to send your receipt.");
+        if (!phone.trim()) {
+          throw new PaymentClientError("M-Pesa number is required (e.g. 254712345678)");
+        }
+        if (!email.trim()) throw new PaymentClientError("Email is required to send your receipt.");
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
+        if (!emailRegex.test(email.trim())) {
+          throw new PaymentClientError("Please enter a valid email address.");
+        }
         const res = await fetch("/api/daraja/stk-push", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -430,7 +427,7 @@ export default function CampaignPage() {
           } catch {}
         }
         if (!res.ok) {
-          throw new Error(json.error ?? "M-Pesa STK Push failed");
+          throw new Error();
         }
          if (json.reference) {
           const q =
@@ -442,9 +439,11 @@ export default function CampaignPage() {
         return;
       }
 
-      if (!email.trim()) throw new Error("Email is required.");
+      if (!email.trim()) throw new PaymentClientError("Email is required.");
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email.trim())) throw new Error("Please enter a valid email address.");
+      if (!emailRegex.test(email.trim())) {
+        throw new PaymentClientError("Please enter a valid email address.");
+      }
 
       const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
       const res = await fetch("/api/paystack/initialize", {
@@ -479,9 +478,7 @@ export default function CampaignPage() {
       }
 
       if (!res.ok) {
-        const errMsg = typeof json.error === "string" && json.error.trim() ? json.error : raw;
-        const extra = typeof json.details === "string" ? ` ${json.details}` : "";
-        throw new Error(errMsg + extra || `Card payment initialization failed (HTTP ${res.status})`);
+        throw new Error();
       }
 
       if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
@@ -505,8 +502,8 @@ export default function CampaignPage() {
           onCancel: () => {
             setSubmitting(false);
           },
-          onError: (err: { message?: string }) => {
-            setError(err?.message ?? "Payment was not completed.");
+          onError: () => {
+            setError(GENERIC_PAYMENT_FAILURE);
             setSubmitting(false);
           },
         });
@@ -518,9 +515,9 @@ export default function CampaignPage() {
         return;
       }
 
-      throw new Error("Missing payment link.");
-    } catch (e: any) {
-      setError(e?.message ?? "Payment initialization failed.");
+      throw new Error();
+    } catch (e: unknown) {
+      setError(messageForPaymentFailure(e));
     } finally {
       setSubmitting(false);
     }
@@ -548,15 +545,8 @@ export default function CampaignPage() {
             </p>
             {error && (
               <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 mt-0.5" />
-                <div>
-                  <div className="font-semibold">Debug info (local testing)</div>
-                  <div className="text-sm mt-1 break-words">{error}</div>
-                  <div className="text-xs text-gray-600 mt-2">
-                    Common causes: the Supabase SQL hasn't been run yet, the slug doesn't exist, or RLS is hiding an
-                    inactive/out-of-window campaign.
-                  </div>
-                </div>
+                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
           </div>

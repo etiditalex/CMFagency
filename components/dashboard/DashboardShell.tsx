@@ -92,7 +92,6 @@ const NAV: NavItem[] = [
   { label: "Applications", href: "/dashboard/applications", icon: Briefcase, section: "main", adminOnly: true },
   { label: "Job board", href: "/dashboard/job-listings", icon: ClipboardList, section: "main", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
-  { label: "Changer", href: "/dashboard/changer", icon: MessagesSquare, section: "main", adminOnly: true },
   { label: "Merchandise", href: "/dashboard/merchandise", icon: ShoppingBag, section: "main", adminOnly: true },
   { label: "Gallery", href: "/dashboard/gallery", icon: ImageIcon, section: "main", adminOnly: true },
   { label: "Blogs", href: "/dashboard/blogs", icon: BookOpen, section: "main", adminOnly: true },

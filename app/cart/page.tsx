@@ -8,6 +8,11 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import PaystackPop from "@paystack/inline-js";
 import { useCart } from "@/contexts/CartContext";
+import {
+  GENERIC_PAYMENT_FAILURE,
+  messageForPaymentFailure,
+  PaymentClientError,
+} from "@/lib/payment-user-message";
 
 /** Merchandise cart: no shipping charge for now (was 500 KES). */
 const MERCHANDISE_SHIPPING = 0;
@@ -107,7 +112,7 @@ export default function CartPage() {
       const emailTrim = email.trim();
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailTrim || !emailRegex.test(emailTrim)) {
-        throw new Error("Please enter a valid email address.");
+        throw new PaymentClientError("Please enter a valid email address.");
       }
 
       const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
@@ -143,13 +148,13 @@ export default function CartPage() {
           } catch {}
         }
         if (!res.ok) {
-          throw new Error(json?.error ?? `M-Pesa checkout failed (HTTP ${res.status})`);
+          throw new Error();
         }
         if (json.reference) {
           window.location.href = `/cart?ref=${encodeURIComponent(json.reference)}`;
           return;
         }
-        throw new Error(json?.error ?? "Missing reference.");
+        throw new Error();
       }
 
       const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
@@ -190,8 +195,8 @@ export default function CartPage() {
             window.location.href = `/cart?ref=${encodeURIComponent(json.reference!)}`;
           },
           onCancel: () => setSubmitting(false),
-          onError: (err: { message?: string }) => {
-            setError(err?.message ?? "Payment was not completed.");
+          onError: () => {
+            setError(GENERIC_PAYMENT_FAILURE);
             setSubmitting(false);
           },
         });
@@ -203,9 +208,9 @@ export default function CartPage() {
         return;
       }
 
-      throw new Error("Missing payment link.");
+      throw new Error();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Checkout failed.");
+      setError(messageForPaymentFailure(e));
     } finally {
       setSubmitting(false);
     }

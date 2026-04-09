@@ -109,12 +109,6 @@ export default function DashboardInsightsPage() {
             <BarChart3 className="w-6 h-6 text-primary-600" />
             Sales &amp; votes
           </h2>
-          <p className="mt-1 text-sm text-gray-600 max-w-3xl">
-            Successful payments in the last <strong>90 days</strong> across your campaigns. The revenue mix is a pie chart;
-            daily graphs show <strong>the last 14 calendar days (UTC), including today</strong> — vote revenue, ticket
-            revenue, and vote units. Data matches the Transactions export —
-            if rows were removed from the database (e.g. deleting a contestant), totals here drop too.
-          </p>
           {data?.generatedAt && (
             <p className="mt-1 text-xs text-gray-500">
               Generated {new Date(data.generatedAt).toLocaleString()} · {data.campaignCount ?? 0} campaigns in scope

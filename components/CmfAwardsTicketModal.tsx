@@ -7,6 +7,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 import { normalizePeoplePerPackage } from "@/lib/fusion-event-ticket-tier";
+import {
+  GENERIC_PAYMENT_FAILURE,
+  messageForPaymentFailure,
+  PaymentClientError,
+} from "@/lib/payment-user-message";
 
 const DEFAULT_EVENT = {
   title: "Coast Fashion and Modelling Awards 2026",
@@ -285,7 +290,9 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
 
     try {
       if (!isSingleTier) {
-        throw new Error("Please select one ticket type. For multiple types, visit each campaign page.");
+        throw new PaymentClientError(
+          "Please select one ticket type. For multiple types, visit each campaign page."
+        );
       }
       const item = lineItems[0];
 
@@ -309,7 +316,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
             json = JSON.parse(raw);
           } catch {}
         }
-        if (!res.ok) throw new Error(json.error ?? "M-Pesa STK Push failed");
+        if (!res.ok) throw new Error();
         if (json.reference) {
           onClose();
           window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
@@ -347,8 +354,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
         }
 
         if (!res.ok) {
-          const msg = (typeof json.error === "string" ? json.error : raw) || "Card payment initialization failed.";
-          throw new Error(msg);
+          throw new Error();
         }
 
         if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
@@ -366,8 +372,8 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
               window.location.href = `/receipt?ref=${encodeURIComponent(json.reference!)}`;
             },
             onCancel: () => setSubmitting(false),
-            onError: (err: { message?: string }) => {
-              setError(err?.message ?? "Payment was not completed.");
+            onError: () => {
+              setError(GENERIC_PAYMENT_FAILURE);
               setSubmitting(false);
             },
           });
@@ -380,9 +386,9 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
           return;
         }
 
-        throw new Error("Missing payment link.");
+        throw new Error();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Payment failed. Please try again.");
+      setError(messageForPaymentFailure(e));
     } finally {
       setSubmitting(false);
     }
