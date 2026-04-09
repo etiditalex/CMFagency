@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -339,14 +338,6 @@ export default function DashboardMerchandisePage() {
       <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Merchandise</h2>
-          <p className="text-gray-600 mt-1 max-w-3xl">
-            Add and edit products for the public{" "}
-            <Link href="/merchandise" className="text-primary-600 font-semibold hover:underline inline-flex items-center gap-1">
-              Merchandise <ExternalLink className="w-3.5 h-3.5" />
-            </Link>{" "}
-            page. Shoppers only see items marked <strong>Active</strong>. Upload an image from your device or paste a hosted
-            image URL (for example Cloudinary).
-          </p>
         </div>
       </div>
 
