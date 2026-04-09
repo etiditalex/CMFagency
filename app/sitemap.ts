@@ -4,6 +4,9 @@ import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-se
 import { getPublishedJobListings } from "@/lib/job-board-listings";
 import { SITE_URL } from "@/lib/site-url";
 
+/** Do not run multi-query Supabase work during `next build` (Vercel 60s prerender limit). */
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL;
   const now = new Date();

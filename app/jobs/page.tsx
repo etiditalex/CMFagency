@@ -6,8 +6,8 @@ import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
 import { JobsBoardClient } from "./JobsBoardClient";
 import { JobsEditorialIntro } from "@/components/jobs/JobsEditorialIntro";
 
-/** Revalidate frequently to keep listings fresh without full per-request rendering cost. */
-export const revalidate = 120;
+/** Job feed aggregates DB + external sources — too slow/heavy for reliable build-time prerender on Vercel. */
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   searchParams: Promise<{ q?: string }>;

@@ -5,8 +5,8 @@ import { getBlogIndexData } from "@/lib/blog-server";
 
 export { metadata };
 
-/** Refresh listing periodically so repeat views hit the server cache, not only client navigations. */
-export const revalidate = 120;
+/** Avoid prerendering the full index at build (many Supabase reads → Vercel timeouts). */
+export const dynamic = "force-dynamic";
 
 export default async function BlogsPage() {
   const { posts, sidebarAds, trending, columnPosts, listingTruncated } = await getBlogIndexData();
