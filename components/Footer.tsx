@@ -166,9 +166,12 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-400">
-              &copy; {currentYear} Changer Fusions. All rights reserved.
-            </p>
+            <div className="text-center md:text-left">
+              <p className="text-sm text-gray-400">
+                &copy; {currentYear} Changer Fusions. All rights reserved.
+              </p>
+              <p className="text-xs text-gray-500 mt-2">Built by Changer Fusions</p>
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
               <Link href="/privacy" className="text-gray-400 hover:text-primary-400 transition-colors duration-200">
                 Privacy Policy
