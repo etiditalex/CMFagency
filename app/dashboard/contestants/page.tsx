@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-react";
+import { Bell, Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -55,6 +55,37 @@ function sortContestantsByVoteTotal(list: Contestant[], totals: Map<string, numb
     if (sa !== sb) return sa - sb;
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
+}
+
+async function fetchPendingCertificateRequests(
+  campaignIds: string[],
+  campaignTitleById: Record<string, string>
+): Promise<Array<{ id: string; name: string; requested_at: string; campaign_title: string }>> {
+  if (campaignIds.length === 0) return [];
+  const certRes = await supabase
+    .from("contestants")
+    .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
+    .in("campaign_id", campaignIds)
+    .not("certificate_requested_at", "is", null)
+    .is("certificate_approved_at", null)
+    .is("certificate_downloaded_at", null)
+    .order("certificate_requested_at", { ascending: false })
+    .limit(6);
+
+  if (certRes.error) {
+    const msg = String(certRes.error.message ?? "").toLowerCase();
+    if (msg.includes("certificate_requested_at")) return [];
+    throw certRes.error;
+  }
+
+  return ((certRes.data ?? []) as { id: string; name?: string; campaign_id: string; certificate_requested_at: string }[]).map(
+    (r) => ({
+      id: String(r.id),
+      name: String(r.name ?? "Contestant"),
+      requested_at: String(r.certificate_requested_at),
+      campaign_title: campaignTitleById[String(r.campaign_id)] ?? "Voting category",
+    })
+  );
 }
 
 async function aggregateVoteTotalsByContestant(campaignIds: string[]): Promise<Map<string, number>> {
@@ -155,6 +186,9 @@ export default function DashboardContestantsPage() {
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [certificateRequests, setCertificateRequests] = useState<
+    Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
+  >([]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -173,6 +207,7 @@ export default function DashboardContestantsPage() {
       setLoading(true);
       setError(null);
       setMissingCertificateColumns(false);
+      setCertificateRequests([]);
 
       try {
         const baseCampaignsQuery = (select: string) => {
@@ -227,9 +262,17 @@ export default function DashboardContestantsPage() {
           const campaignIds = embeddedRows.map((r) => r.id);
           const voteTotals = await aggregateVoteTotalsByContestant(campaignIds);
           const { categories, total } = applyEmbeddedResult(embeddedRows, voteTotals);
+          const titleById = Object.fromEntries(embeddedRows.map((r) => [r.id, r.title]));
+          let pending: Array<{ id: string; name: string; requested_at: string; campaign_title: string }> = [];
+          try {
+            pending = await fetchPendingCertificateRequests(campaignIds, titleById);
+          } catch {
+            pending = [];
+          }
           if (!cancelled) {
             setCategories(categories);
             setTotalContestants(total);
+            setCertificateRequests(pending);
           }
           return;
         }
@@ -253,6 +296,7 @@ export default function DashboardContestantsPage() {
           if (!cancelled) {
             setCategories([]);
             setTotalContestants(0);
+            setCertificateRequests([]);
           }
           return;
         }
@@ -306,9 +350,18 @@ export default function DashboardContestantsPage() {
 
         const total = contestants.length;
 
+        const titleById = Object.fromEntries(campaigns.map((c) => [c.id, c.title]));
+        let pending: Array<{ id: string; name: string; requested_at: string; campaign_title: string }> = [];
+        try {
+          pending = await fetchPendingCertificateRequests(campaignIds, titleById);
+        } catch {
+          pending = [];
+        }
+
         if (!cancelled) {
           setCategories(withCounts);
           setTotalContestants(total);
+          setCertificateRequests(pending);
         }
       } catch (e) {
         if (isMissingPortalMembersTable(e)) {
@@ -316,7 +369,10 @@ export default function DashboardContestantsPage() {
           router.replace("/fusion-xpress?error=setup");
           return;
         }
-        if (!cancelled) setError((e as Error)?.message ?? "Failed to load contestants");
+        if (!cancelled) {
+          setError((e as Error)?.message ?? "Failed to load contestants");
+          setCertificateRequests([]);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -357,6 +413,7 @@ export default function DashboardContestantsPage() {
           ),
         }))
       );
+      setCertificateRequests((prev) => prev.filter((x) => x.id !== contestantId));
     } finally {
       setApprovingId(null);
     }
@@ -468,6 +525,31 @@ export default function DashboardContestantsPage() {
           <p className="mt-2 text-xs font-mono bg-amber-100/80 p-2 rounded break-all">
             database/ticketing_voting_mvp_patch_37_contestants_certificate.sql
           </p>
+        </div>
+      )}
+
+      {!missingCertificateColumns && certificateRequests.length > 0 && (
+        <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-extrabold inline-flex items-center gap-2">
+                <Bell className="w-4 h-4" />
+                Certificate requests pending approval
+              </div>
+              <p className="mt-1 text-sm">
+                {certificateRequests.length} contestant{certificateRequests.length !== 1 ? "s have" : " has"} requested a participation
+                certificate.
+              </p>
+              <p className="mt-2 text-sm">
+                Latest:{" "}
+                {certificateRequests
+                  .slice(0, 3)
+                  .map((r) => `${r.name} (${r.campaign_title})`)
+                  .join(" • ")}
+              </p>
+              <p className="mt-2 text-sm text-amber-950/90">Expand a category below and use the certificate section to approve.</p>
+            </div>
+          </div>
         </div>
       )}
 

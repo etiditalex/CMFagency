@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   Briefcase,
   Calendar,
   Copy,
@@ -98,9 +97,6 @@ export default function DashboardHomePage() {
     }>
   >([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
-  const [certificateRequests, setCertificateRequests] = useState<
-    Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
-  >([]);
   const [pendingJobApplications, setPendingJobApplications] = useState(0);
 
   const [votingScheduleDate, setVotingScheduleDate] = useState("2026-04-01");
@@ -256,9 +252,8 @@ export default function DashboardHomePage() {
         setRevenueByCurrencyMerchandise({});
         setTotalVotes(0);
         setTotalTicketsIssued(0);
-        setCertificateRequests([]);
       } else {
-        const [txRes, successTx, voteRows, ticketRows, certRes] = await Promise.all([
+        const [txRes, successTx, voteRows, ticketRows] = await Promise.all([
           supabase
             .from("transactions")
             .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
@@ -293,15 +288,6 @@ export default function DashboardHomePage() {
               .range(from, to);
             return { data: r.data as any[] | null, error: r.error };
           }),
-          supabase
-            .from("contestants")
-            .select("id,name,campaign_id,certificate_requested_at,certificate_approved_at,certificate_downloaded_at")
-            .in("campaign_id", campaignIds)
-            .not("certificate_requested_at", "is", null)
-            .is("certificate_approved_at", null)
-            .is("certificate_downloaded_at", null)
-            .order("certificate_requested_at", { ascending: false })
-            .limit(6),
         ]);
 
         if (txRes.error) throw txRes.error;
@@ -341,20 +327,6 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(
           ticketRows.reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
         );
-
-        if (certRes.error) {
-          const msg = String(certRes.error.message ?? "").toLowerCase();
-          if (!msg.includes("certificate_requested_at")) throw certRes.error;
-          setCertificateRequests([]);
-        } else {
-          const mapped = ((certRes.data ?? []) as any[]).map((r) => ({
-            id: String(r.id),
-            name: String(r.name ?? "Contestant"),
-            requested_at: String(r.certificate_requested_at),
-            campaign_title: titleMap[String(r.campaign_id)]?.title ?? "Voting category",
-          }));
-          setCertificateRequests(mapped);
-        }
       }
 
       setLastUpdatedAt(new Date().toISOString());
@@ -677,36 +649,6 @@ export default function DashboardHomePage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-primary-300 bg-white hover:bg-primary-100 text-primary-950 text-sm font-semibold shrink-0"
             >
               Open Applications
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {certificateRequests.length > 0 && (
-        <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-900">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="font-extrabold inline-flex items-center gap-2">
-                <Bell className="w-4 h-4" />
-                Certificate requests pending approval
-              </div>
-              <p className="mt-1 text-sm">
-                {certificateRequests.length} contestant{certificateRequests.length !== 1 ? "s have" : " has"} requested a participation certificate.
-              </p>
-              <p className="mt-2 text-sm">
-                Latest:{" "}
-                {certificateRequests
-                  .slice(0, 3)
-                  .map((r) => `${r.name} (${r.campaign_title})`)
-                  .join(" • ")}
-              </p>
-            </div>
-            <Link
-              href="/dashboard/contestants"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 text-sm font-semibold"
-            >
-              Review
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>

@@ -282,11 +282,11 @@ export default function DashboardJobListingsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Job board listings</h2>
-            <p className="mt-1 text-gray-600 text-sm max-w-3xl">
-              {isEmployer && !isAdmin
-                ? "Create and manage your vacancies. After you publish, roles appear on the public job board subject to our listing rules."
-                : "Publish roles for members. Internship and industrial attachment posts are visible to everyone; other types require an active KES\u00a0500/year job-board membership to view full details."}
-            </p>
+            {isEmployer && !isAdmin && (
+              <p className="mt-1 text-gray-600 text-sm max-w-3xl">
+                Create and manage your vacancies. After you publish, roles appear on the public job board subject to our listing rules.
+              </p>
+            )}
           </div>
           <button
             type="button"

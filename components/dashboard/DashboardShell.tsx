@@ -5,7 +5,6 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
-  Activity,
   BarChart3,
   BadgePercent,
   BookOpen,
@@ -74,7 +73,6 @@ const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
-  { label: "Site traffic", href: "/dashboard/analytics", icon: Activity, section: "main", adminOnly: true },
   { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "main", featureKey: "reports" },
   {
     label: "Sales & votes",
