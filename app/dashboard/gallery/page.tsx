@@ -62,8 +62,8 @@ export default function DashboardGalleryPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -113,23 +113,23 @@ export default function DashboardGalleryPage() {
   }, [authLoading, portalLoading, isAuthenticated, user?.id, isPortalMember, isAdmin]);
 
   useEffect(() => {
-    if (imageFile) return;
+    if (imageFiles.length > 0) return;
     const t = form.image_url.trim();
-    if (t.startsWith("http") || t.startsWith("data:")) setImagePreviewUrl(t);
-    else setImagePreviewUrl(null);
-  }, [form.image_url, imageFile]);
+    if (t.startsWith("http") || t.startsWith("data:")) setImagePreviewUrls([t]);
+    else setImagePreviewUrls([]);
+  }, [form.image_url, imageFiles.length]);
 
   const resetForm = () => {
     setEditingId(null);
     setForm(emptyForm);
-    setImageFile(null);
-    setImagePreviewUrl(null);
+    setImageFiles([]);
+    setImagePreviewUrls([]);
   };
 
   const startEdit = (row: GalleryRow) => {
     setEditingId(row.id);
-    setImageFile(null);
-    setImagePreviewUrl(row.image_url || null);
+    setImageFiles([]);
+    setImagePreviewUrls(row.image_url ? [row.image_url] : []);
     setForm({
       title: row.title || "",
       image_url: row.image_url || "",
@@ -142,13 +142,13 @@ export default function DashboardGalleryPage() {
   };
 
   const clearImage = () => {
-    if (imageFile) {
-      setImageFile(null);
+    if (imageFiles.length > 0) {
+      setImageFiles([]);
       const t = form.image_url.trim();
-      setImagePreviewUrl(t && (t.startsWith("http") || t.startsWith("data:")) ? t : null);
+      setImagePreviewUrls(t && (t.startsWith("http") || t.startsWith("data:")) ? [t] : []);
     } else {
       setForm((f) => ({ ...f, image_url: "" }));
-      setImagePreviewUrl(null);
+      setImagePreviewUrls([]);
     }
   };
 
@@ -202,30 +202,28 @@ export default function DashboardGalleryPage() {
     const sort_order = Math.trunc(Number(form.sort_order));
     const sortVal = Number.isFinite(sort_order) ? sort_order : 0;
 
-    if (!imageFile && !urlFallback) {
+    if (imageFiles.length === 0 && !urlFallback) {
       setError("Add a gallery image: upload a file from your device or paste an image URL.");
       return;
     }
 
     setSaving(true);
     try {
-      let image_url = urlFallback;
-      if (imageFile) {
-        const uploaded = await uploadImageFile(imageFile);
-        if (!uploaded) throw new Error("Image upload returned no URL.");
-        image_url = uploaded;
-      }
-
-      const payload = {
-        title,
-        image_url,
-        category,
-        is_featured: form.is_featured,
-        is_active: form.is_active,
-        sort_order: sortVal,
-      };
-
       if (editingId != null) {
+        let image_url = urlFallback;
+        if (imageFiles.length > 0) {
+          const uploaded = await uploadImageFile(imageFiles[0]);
+          if (!uploaded) throw new Error("Image upload returned no URL.");
+          image_url = uploaded;
+        }
+        const payload = {
+          title,
+          image_url,
+          category,
+          is_featured: form.is_featured,
+          is_active: form.is_active,
+          sort_order: sortVal,
+        };
         const { error: err } = await supabase.from("gallery_images").update(payload).eq("id", editingId);
         if (err) throw err;
         setItems((prev) =>
@@ -235,10 +233,38 @@ export default function DashboardGalleryPage() {
         );
         resetForm();
       } else {
-        const { data, error: err } = await supabase.from("gallery_images").insert(payload).select().single();
-        if (err) throw err;
-        const row = data as GalleryRow;
-        setItems((prev) => [...prev, row].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id));
+        if (imageFiles.length > 0) {
+          const uploadedUrls = await Promise.all(imageFiles.map((file) => uploadImageFile(file)));
+          const payloads = uploadedUrls.map((uploadedUrl, idx) => {
+            if (!uploadedUrl) throw new Error("Image upload returned no URL.");
+            const fallbackTitle = imageFiles[idx]?.name.replace(/\.[^.]+$/, "") || "";
+            return {
+              title: title || fallbackTitle,
+              image_url: uploadedUrl,
+              category,
+              is_featured: form.is_featured,
+              is_active: form.is_active,
+              sort_order: sortVal + idx,
+            };
+          });
+          const { data, error: err } = await supabase.from("gallery_images").insert(payloads).select();
+          if (err) throw err;
+          const rows = (data ?? []) as GalleryRow[];
+          setItems((prev) => [...prev, ...rows].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id));
+        } else {
+          const payload = {
+            title,
+            image_url: urlFallback,
+            category,
+            is_featured: form.is_featured,
+            is_active: form.is_active,
+            sort_order: sortVal,
+          };
+          const { data, error: err } = await supabase.from("gallery_images").insert(payload).select().single();
+          if (err) throw err;
+          const row = data as GalleryRow;
+          setItems((prev) => [...prev, row].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id));
+        }
         resetForm();
       }
     } catch (e2: unknown) {
@@ -334,18 +360,30 @@ export default function DashboardGalleryPage() {
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-gray-700 mb-1">Gallery image</label>
             <p className="text-xs text-gray-500 mb-3">
-              Upload a file (JPG, PNG, GIF, WebP — max 5MB) or paste a URL below. Uploading replaces the URL for this save.
+              Upload one or more files (JPG, PNG, GIF, WebP - max 5MB each) or paste a URL below.
+              {editingId != null ? " Uploading replaces the URL for this save." : " All selected files will be uploaded in one save."}
             </p>
 
-            {imagePreviewUrl ? (
-              <div className="relative rounded-lg overflow-hidden border border-gray-200 w-full max-w-md mb-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imagePreviewUrl}
-                  alt="Gallery preview"
-                  className="w-full h-44 object-cover bg-gray-100"
-                  referrerPolicy="no-referrer"
-                />
+            {imagePreviewUrls.length > 0 ? (
+              <div className="relative rounded-lg border border-gray-200 p-3 w-full max-w-2xl mb-3">
+                {imagePreviewUrls.length > 1 && (
+                  <p className="text-xs font-semibold text-gray-600 mb-2">{imagePreviewUrls.length} images selected</p>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {imagePreviewUrls.slice(0, 6).map((previewUrl, idx) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={`${previewUrl}-${idx}`}
+                      src={previewUrl}
+                      alt="Gallery preview"
+                      className="w-full h-28 object-cover rounded bg-gray-100"
+                      referrerPolicy="no-referrer"
+                    />
+                  ))}
+                </div>
+                {imagePreviewUrls.length > 6 && (
+                  <p className="text-xs text-gray-500 mt-2">Showing 6 of {imagePreviewUrls.length} previews.</p>
+                )}
                 <button
                   type="button"
                   onClick={clearImage}
@@ -359,21 +397,31 @@ export default function DashboardGalleryPage() {
               <label className="block cursor-pointer mb-3">
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors max-w-md">
                   <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload from your device</p>
-                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WebP (max 5MB)</p>
+                  <p className="text-sm text-gray-600">{editingId != null ? "Click to upload from your device" : "Click to upload one or many images"}</p>
+                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WebP (max 5MB each)</p>
                 </div>
                 <input
                   type="file"
+                  multiple={editingId == null}
                   accept="image/jpeg,image/png,image/gif,image/webp"
                   className="hidden"
                   onChange={(e) => {
-                    const f = e.target.files?.[0];
+                    const files = Array.from(e.target.files ?? []);
                     e.target.value = "";
-                    if (f) {
-                      setImageFile(f);
-                      const reader = new FileReader();
-                      reader.onload = () => setImagePreviewUrl(reader.result as string);
-                      reader.readAsDataURL(f);
+                    if (files.length > 0) {
+                      const selected = editingId != null ? [files[0]] : files;
+                      setImageFiles(selected);
+                      void Promise.all(
+                        selected.map(
+                          (file) =>
+                            new Promise<string>((resolve) => {
+                              const reader = new FileReader();
+                              reader.onload = () => resolve(String(reader.result ?? ""));
+                              reader.onerror = () => resolve("");
+                              reader.readAsDataURL(file);
+                            })
+                        )
+                      ).then((previews) => setImagePreviewUrls(previews.filter(Boolean)));
                     }
                   }}
                 />
@@ -385,7 +433,7 @@ export default function DashboardGalleryPage() {
               className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
               value={form.image_url}
               onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-              placeholder="https://… (optional if you upload a file)"
+              placeholder="https://... (optional if you upload file(s))"
             />
           </div>
 
@@ -442,7 +490,7 @@ export default function DashboardGalleryPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60"
           >
             {editingId != null ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {saving ? "Saving…" : editingId != null ? "Update image" : "Add image"}
+            {saving ? "Saving..." : editingId != null ? "Update image" : imageFiles.length > 1 ? `Add ${imageFiles.length} images` : "Add image"}
           </button>
           {editingId != null && (
             <button

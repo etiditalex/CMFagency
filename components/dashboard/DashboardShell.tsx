@@ -203,6 +203,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       return false;
     }
   });
+  /** Desktop only: when the rail is collapsed, expand while the pointer is over the sidebar. */
+  const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
   const [search, setSearch] = useState("");
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
 
@@ -215,6 +217,22 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       return next;
     });
   };
+
+  const showDesktopSidebarFull = !sidebarCollapsed || sidebarHoverExpanded;
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [mobileOpen]);
 
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember || !isAdmin) {
@@ -262,20 +280,39 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar (desktop) */}
+      {/* Sidebar (desktop): icon rail when collapsed; expands on hover or stays open when pinned */}
       <aside
-        className={`hidden lg:flex flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5 transition-[width] duration-300 ease-out ${
-          sidebarCollapsed ? "w-20" : "w-72"
+        className={`hidden lg:flex flex-col flex-shrink-0 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5 overflow-hidden transition-[width] duration-300 ease-out ${
+          showDesktopSidebarFull ? "w-72" : "w-[4.25rem]"
         }`}
+        onMouseEnter={() => {
+          if (sidebarCollapsed) setSidebarHoverExpanded(true);
+        }}
+        onMouseLeave={() => setSidebarHoverExpanded(false)}
       >
-        <div className={`relative h-16 flex items-center border-b border-white/5 ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
-          <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center">
+        <div
+          className={`relative h-16 flex items-center border-b border-white/5 ${showDesktopSidebarFull ? "gap-3 px-5" : "justify-center px-2"}`}
+        >
+          <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center flex-shrink-0">
             <Shield className="w-5 h-5 text-primary-100" />
           </div>
-          {!sidebarCollapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-              <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
+          {showDesktopSidebarFull && (
+            <div className="min-w-0 flex-1 flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
+                <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
+              </div>
+              {sidebarCollapsed && sidebarHoverExpanded && (
+                <button
+                  type="button"
+                  onClick={toggleSidebarCollapsed}
+                  className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
+                  aria-label="Keep sidebar open"
+                  title="Keep open"
+                >
+                  <PanelLeftOpen className="w-4 h-4 text-white/80" />
+                </button>
+              )}
             </div>
           )}
           {!sidebarCollapsed && (
@@ -284,31 +321,29 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               onClick={toggleSidebarCollapsed}
               className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
               aria-label="Collapse sidebar"
-              title="Collapse sidebar"
+              title="Collapse to icons"
             >
               <PanelLeftClose className="w-4 h-4 text-white/80" />
             </button>
           )}
-          {sidebarCollapsed && (
+          {sidebarCollapsed && !sidebarHoverExpanded && (
             <button
               type="button"
               onClick={toggleSidebarCollapsed}
-              className="absolute top-4 -right-3 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 border border-primary-400 shadow"
-              aria-label="Expand sidebar"
-              title="Expand sidebar"
+              className="absolute top-4 -right-3 z-10 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 border border-primary-400 shadow"
+              aria-label="Pin sidebar open"
+              title="Keep sidebar open"
             >
               <PanelLeftOpen className="w-3.5 h-3.5 text-white" />
             </button>
           )}
         </div>
 
-        <nav className={`py-4 space-y-5 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+        <nav className={`flex-1 overflow-y-auto py-4 space-y-5 ${showDesktopSidebarFull ? "px-3" : "px-2"}`}>
           {sections.map((s) => (
             <div key={s.key}>
-              {!sidebarCollapsed && (
-                <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">
-                  {s.label}
-                </div>
+              {showDesktopSidebarFull && (
+                <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
               )}
               <div className="mt-2 space-y-1">
                 {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
@@ -323,15 +358,17 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         active
                           ? "bg-primary-600/20 border border-primary-500/30 text-white"
                           : "text-white/80 hover:bg-white/5 hover:text-white"
-                      } ${sidebarCollapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5"}`}
-                      title={sidebarCollapsed ? item.label : undefined}
+                      } ${showDesktopSidebarFull ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
+                      title={!showDesktopSidebarFull ? item.label : undefined}
                     >
-                      <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                      {!sidebarCollapsed && (
-                        <span className="text-sm font-semibold flex items-center gap-2">
-                          {item.label}
+                      <Icon
+                        className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+                      />
+                      {showDesktopSidebarFull && (
+                        <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
+                          <span className="truncate">{item.label}</span>
                           {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-                            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
+                            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
                               {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
                             </span>
                           )}
@@ -345,9 +382,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
 
-        <div className={`mt-auto border-t border-white/5 ${sidebarCollapsed ? "p-2" : "p-4"}`}>
-          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between gap-3"}`}>
-            {!sidebarCollapsed && (
+        <div className={`mt-auto border-t border-white/5 ${showDesktopSidebarFull ? "p-4" : "p-2"}`}>
+          <div className={`flex items-center ${showDesktopSidebarFull ? "justify-between gap-3" : "justify-center"}`}>
+            {showDesktopSidebarFull && (
               <div className="min-w-0">
                 <div className="text-sm font-bold truncate">{user?.name || user?.email || "Admin"}</div>
                 <div className="text-xs text-white/55 truncate">{user?.email || "Signed in"}</div>
@@ -365,23 +402,23 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile drawer: tap hamburger; backdrop + slide-in (touch has no hover) */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
+        <div className="lg:hidden fixed inset-0 z-50 flex">
           <div
             className="absolute inset-0 bg-black/55"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-80 max-w-[85vw] bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/10">
-            <div className="h-16 flex items-center justify-between gap-3 px-5 border-b border-white/10">
+          <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/10 shadow-xl">
+            <div className="h-16 flex items-center justify-between gap-3 px-5 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center flex-shrink-0">
                   <Shield className="w-5 h-5 text-primary-100" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-                  <div className="text-sm text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
+                  <div className="text-xs sm:text-sm text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
                 </div>
               </div>
               <button
@@ -394,12 +431,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               </button>
             </div>
 
-            <nav className="px-3 py-4 space-y-5">
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
               {sections.map((s) => (
                 <div key={s.key}>
-                  <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">
-                    {s.label}
-                  </div>
+                  <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
                   <div className="mt-2 space-y-1">
                     {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
                       const Icon = item.icon;
@@ -416,11 +451,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                               : "text-white/80 hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          <Icon className={`w-4 h-4 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`} />
-                          <span className="text-sm font-semibold flex items-center gap-2">
-                            {item.label}
+                          <Icon
+                            className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+                          />
+                          <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
+                            <span className="truncate">{item.label}</span>
                             {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-                              <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold">
+                              <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
                                 {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
                               </span>
                             )}
@@ -433,7 +470,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               ))}
             </nav>
 
-            <div className="mt-auto p-4 border-t border-white/10">
+            <div className="p-4 border-t border-white/10 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -452,7 +489,6 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
       {/* Main area */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Top bar (matches screenshot vibe) */}
         <header className="h-16 flex items-center gap-3 px-4 sm:px-6 border-b border-black/5 bg-gradient-to-r from-primary-800 via-primary-600 to-secondary-700">
           <button
             type="button"
@@ -464,23 +500,20 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           </button>
 
           <div className="flex items-center gap-2 bg-white/95 rounded-md border border-primary-600/25 w-full max-w-xl h-10 px-3 shadow-sm">
-            <Search className="w-4 h-4 text-gray-500" />
+            <Search className="w-4 h-4 text-gray-500 flex-shrink-0" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search"
-              className="flex-1 bg-transparent outline-none text-base sm:text-sm text-gray-900 placeholder:text-gray-500"
+              className="flex-1 bg-transparent outline-none text-base sm:text-sm text-gray-900 placeholder:text-gray-500 min-w-0"
             />
           </div>
 
-          <div className="ml-auto hidden sm:flex items-center gap-2 text-white">
-            <div className="text-sm font-semibold truncate max-w-[220px]">
-              {user?.name || user?.email || "Admin"}
-            </div>
+          <div className="ml-auto hidden sm:flex items-center gap-2 text-white min-w-0">
+            <div className="text-sm font-semibold truncate max-w-[220px]">{user?.name || user?.email || "Admin"}</div>
           </div>
         </header>
 
-        {/* Page header */}
         <div className="px-4 sm:px-6 pt-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
@@ -494,7 +527,6 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {/* Page content - app-like contained layout like application screens */}
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
           <div className="max-w-4xl lg:max-w-5xl mx-auto">
             <div className="bg-white rounded-md border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
