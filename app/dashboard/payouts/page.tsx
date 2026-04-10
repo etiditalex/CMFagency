@@ -213,9 +213,6 @@ export default function DashboardPayoutsPage() {
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Payouts</h2>
-          <p className="mt-1 text-gray-600 text-left max-w-3xl">
-            Track available balances (M-Pesa & Paystack) and request M-Pesa withdrawals. Admin approval required.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -253,15 +250,11 @@ export default function DashboardPayoutsPage() {
             <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Smartphone className="w-5 h-5" />
-                M-Pesa (Daraja)
+                M-Pesa
               </div>
               <div className="mt-2 text-2xl font-bold text-gray-900">
                 KES {(balance?.mpesa ?? 0).toLocaleString()}
               </div>
-              <div className="mt-1 text-sm text-gray-600">
-                Available for withdrawal: KES {(balance?.mpesaAvailable ?? 0).toLocaleString()}
-              </div>
-              <p className="mt-2 text-xs text-gray-500">Money received via M-Pesa STK Push</p>
             </div>
             <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
@@ -271,17 +264,12 @@ export default function DashboardPayoutsPage() {
               <div className="mt-2 text-2xl font-bold text-gray-900">
                 {(balance?.paystack ?? 0).toLocaleString()}
               </div>
-              <div className="mt-1 text-sm text-gray-600">Card & mobile money (non-M-Pesa)</div>
-              <p className="mt-2 text-xs text-gray-500">Withdrawals via M-Pesa only for now</p>
             </div>
           </div>
 
           {/* Request withdrawal */}
           <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <h3 className="font-extrabold text-gray-900">Request M-Pesa Withdrawal</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Withdraw from your M-Pesa balance. An admin must approve before payout.
-            </p>
             <form onSubmit={handleWithdraw} className="mt-4 flex flex-wrap gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Amount (KES)</label>
