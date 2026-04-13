@@ -370,7 +370,7 @@ export default function RegisterAsModelPage() {
                 </form>
 
               {/* Certificate of participation — for past contestants */}
-              <div className="mt-10 pt-8 border-t border-gray-200">
+              <div id="certificate" className="mt-10 scroll-mt-28 pt-8 border-t border-gray-200 md:scroll-mt-36">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Certificate of participation</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Enter your name exactly as it appears in our records for that category, and the email we should use (must match the one you registered with when we have it on file).
