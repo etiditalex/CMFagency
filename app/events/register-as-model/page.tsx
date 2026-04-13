@@ -369,7 +369,7 @@ export default function RegisterAsModelPage() {
                   </button>
                 </form>
 
-              {/* Certificate of participation — for past contestants */}
+              {/* Certificate of participation - for past contestants */}
               <div id="certificate" className="mt-10 scroll-mt-28 pt-8 border-t border-gray-200 md:scroll-mt-36">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Certificate of participation</h3>
                 <p className="text-sm text-gray-600 mb-4">
