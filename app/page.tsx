@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Hero from "@/components/home/Hero";
+import HeroSupportSection from "@/components/home/HeroSupportSection";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
 import CoreValues from "@/components/home/CoreValues";
 import QuickLinks from "@/components/home/QuickLinks";
@@ -67,6 +68,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <HeroSupportSection />
       <FeaturedEvents />
       <CoreValues />
       <HomeDeferredGallery />

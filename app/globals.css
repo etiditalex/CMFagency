@@ -38,6 +38,17 @@
   .container-blog {
     @apply w-full max-w-none mx-auto px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10;
   }
+
+  /* Home: upcoming events strip — thin scrollbar on WebKit */
+  .hero-upcoming-events-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  .hero-upcoming-events-scroll::-webkit-scrollbar-track {
+    @apply rounded-full bg-gray-100;
+  }
+  .hero-upcoming-events-scroll::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-primary-300 hover:bg-primary-400;
+  }
 }
 
 /* Text justification across all website */

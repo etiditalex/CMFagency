@@ -10,7 +10,7 @@ export default function Footer() {
   const footerActionLinks = [
     { href: "/", label: "Home", icon: House },
     { href: "/events/register-as-model", label: "Register as Model", icon: UserPlus },
-    { href: "/events/register-as-model#certificate", label: "Certification", icon: Award },
+    { href: "/events/register-as-model", label: "Certification", icon: Award },
     { href: "/kcm", label: "KCM Member", icon: Crown },
     { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
   ];
