@@ -237,7 +237,7 @@ export default function Footer() {
                   <Link
                     key={`desktop-${item.href}-${item.label}`}
                     href={item.href}
-                    className="group flex min-h-16 items-center justify-center gap-2 px-1 py-1 text-center transition-colors duration-200"
+                    className="group flex min-h-16 flex-col items-center justify-center gap-1.5 px-1 py-1 text-center transition-colors duration-200"
                   >
                     <Icon className="h-4 w-4 shrink-0 text-white/80 group-hover:text-white" />
                     <span className="text-sm font-medium text-white/90 group-hover:text-white">{item.label}</span>
