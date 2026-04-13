@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, House, UserPlus, Award, Crown, Shield } from "lucide-react";
 import Image from "next/image";
 import AdSenseBlock from "@/components/AdSenseBlock";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
@@ -7,6 +7,13 @@ import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const footerActionLinks = [
+    { href: "/", label: "Home", icon: House },
+    { href: "/events/register-as-model", label: "Register as Model", icon: UserPlus },
+    { href: "/events/register-as-model", label: "Certification", icon: Award },
+    { href: "/kcm", label: "KCM Member", icon: Crown },
+    { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
+  ];
 
   const quickLinks = [
     { href: "/", label: "Home" },
@@ -187,6 +194,59 @@ export default function Footer() {
             </div>
           </div>
         </div>
+      </div>
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        {/* Mobile dock navigation */}
+        <div className="mx-0 mb-0 rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 py-3 md:hidden">
+          <div className="grid grid-cols-5 gap-1">
+            {footerActionLinks.map((item) => {
+              const Icon = item.icon;
+              const mobileLabel =
+                item.label === "Register as Model"
+                  ? "Register"
+                  : item.label === "Certification"
+                    ? "Cert"
+                    : item.label === "KCM Member"
+                      ? "KCM"
+                      : item.label === "Fusion Xpress"
+                        ? "FX"
+                        : item.label;
+              return (
+                <Link
+                  key={`mobile-${item.href}-${item.label}`}
+                  href={item.href}
+                  className="group flex min-h-16 flex-col items-center justify-center gap-1.5 px-1 text-center transition-colors duration-200"
+                >
+                  <Icon className="h-5 w-5 shrink-0 text-white group-hover:text-white" />
+                  <span className="text-xs leading-none font-semibold text-white group-hover:text-white whitespace-nowrap">
+                    {mobileLabel}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Desktop sticky links */}
+        <div className="hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
+          <div className="container-custom py-4 md:py-5">
+            <div className="grid grid-cols-5 gap-x-6">
+              {footerActionLinks.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={`desktop-${item.href}-${item.label}`}
+                    href={item.href}
+                    className="group flex min-h-16 items-center justify-center gap-2 px-1 py-1 text-center transition-colors duration-200"
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-white/80 group-hover:text-white" />
+                    <span className="text-sm font-medium text-white/90 group-hover:text-white">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div> 
       </div>
     </footer>
   );

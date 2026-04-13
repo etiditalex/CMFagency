@@ -705,6 +705,13 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
+            <Link
+              href="/kcm"
+              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
+            >
+              KCM
+            </Link>
+
             {/* Fusion Xpress (Admin portal) */}
             <Link
               href="/fusion-xpress"
@@ -1041,6 +1048,14 @@ export default function Navbar() {
                   )}
                 </AnimatePresence>
               </div>
+
+              <Link
+                href="/kcm"
+                onClick={() => setIsOpen(false)}
+                className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+              >
+                KCM
+              </Link>
               
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
