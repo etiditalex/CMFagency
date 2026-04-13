@@ -21,6 +21,31 @@ create table if not exists public.kcm_memberships (
   updated_at timestamptz not null default now()
 );
 
+-- If the table already existed from an earlier partial run, ensure new columns exist.
+alter table public.kcm_memberships add column if not exists payment_status text;
+alter table public.kcm_memberships add column if not exists daraja_checkout_request_id text;
+alter table public.kcm_memberships add column if not exists daraja_merchant_request_id text;
+alter table public.kcm_memberships add column if not exists mpesa_receipt text;
+alter table public.kcm_memberships add column if not exists paid_at timestamptz;
+
+-- Backfill + enforce check only when column was added without NOT NULL / default.
+update public.kcm_memberships set payment_status = 'pending' where payment_status is null;
+alter table public.kcm_memberships alter column payment_status set default 'pending';
+alter table public.kcm_memberships alter column payment_status set not null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'kcm_memberships_payment_status_check'
+  ) then
+    alter table public.kcm_memberships
+      add constraint kcm_memberships_payment_status_check
+      check (payment_status in ('pending', 'success', 'failed'));
+  end if;
+end $$;
+
 create index if not exists idx_kcm_memberships_created_at on public.kcm_memberships (created_at desc);
 create index if not exists idx_kcm_memberships_status on public.kcm_memberships (status);
 create index if not exists idx_kcm_memberships_email on public.kcm_memberships (email);
