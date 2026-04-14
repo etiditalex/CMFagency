@@ -26,9 +26,34 @@ export async function GET(req: NextRequest) {
     const { data, error, count } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    const memberships = (data ?? []) as Array<{ id: string; payment_status?: string } & Record<string, unknown>>;
+    const ids = memberships.map((m) => String(m.id));
+    let profileMap: Record<string, { display_name: string | null; avatar_url: string | null; bio: string | null }> = {};
+
+    if (ids.length > 0) {
+      const { data: profiles } = await admin
+        .from("kcm_member_profiles")
+        .select("membership_id,display_name,avatar_url,bio")
+        .in("membership_id", ids);
+      for (const p of (profiles ?? []) as Array<{ membership_id: string; display_name: string | null; avatar_url: string | null; bio: string | null }>) {
+        profileMap[String(p.membership_id)] = {
+          display_name: p.display_name ?? null,
+          avatar_url: p.avatar_url ?? null,
+          bio: p.bio ?? null,
+        };
+      }
+    }
+
+    const enriched = memberships.map((m) => ({
+      ...m,
+      account_status: String(m.payment_status ?? "") === "success" ? "active" : "inactive",
+      profile: profileMap[String(m.id)] ?? null,
+      profile_completed: !!profileMap[String(m.id)]?.display_name || !!profileMap[String(m.id)]?.avatar_url,
+    }));
+
     return NextResponse.json({
-      memberships: data ?? [],
-      total: count ?? (data ?? []).length,
+      memberships: enriched,
+      total: count ?? enriched.length,
       limit,
       offset,
     });

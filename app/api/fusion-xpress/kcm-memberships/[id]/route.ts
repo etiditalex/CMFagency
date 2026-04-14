@@ -41,7 +41,21 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
 
-    return NextResponse.json({ membership: data });
+    const { data: profile } = await admin
+      .from("kcm_member_profiles")
+      .select("display_name,avatar_url,bio")
+      .eq("membership_id", id)
+      .maybeSingle();
+
+    return NextResponse.json({
+      membership: {
+        ...data,
+        account_status: String((data as { payment_status?: string }).payment_status ?? "") === "success" ? "active" : "inactive",
+        profile: profile ?? null,
+        profile_completed: !!(profile as { display_name?: string | null; avatar_url?: string | null } | null)?.display_name ||
+          !!(profile as { display_name?: string | null; avatar_url?: string | null } | null)?.avatar_url,
+      },
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });

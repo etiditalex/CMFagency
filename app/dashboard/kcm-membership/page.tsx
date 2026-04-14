@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
+import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -22,6 +23,13 @@ type Membership = {
   payment_confirmed: boolean;
   payment_status: "pending" | "success" | "failed";
   mpesa_receipt: string | null;
+  account_status?: "active" | "inactive";
+  profile_completed?: boolean;
+  profile?: {
+    display_name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+  } | null;
   status: MembershipStatus;
   review_notes: string | null;
   created_at: string;
@@ -198,6 +206,7 @@ export default function DashboardKcmMembershipPage() {
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr className="text-left">
               <th className="px-4 py-3 font-bold text-gray-600">Name</th>
+              <th className="px-4 py-3 font-bold text-gray-600">Profile</th>
               <th className="px-4 py-3 font-bold text-gray-600">Contact</th>
               <th className="px-4 py-3 font-bold text-gray-600">Experience</th>
               <th className="px-4 py-3 font-bold text-gray-600">Top model</th>
@@ -209,13 +218,13 @@ export default function DashboardKcmMembershipPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   Loading memberships...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   No KCM membership submissions yet.
                 </td>
               </tr>
@@ -259,6 +268,28 @@ function Row({
         <div className="font-semibold text-gray-900">{row.first_name} {row.second_name}</div>
         <div className="text-xs text-gray-500">{row.email}</div>
         <div className="text-xs text-gray-400">{new Date(row.created_at).toLocaleString()}</div>
+        <div className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+          row.account_status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+        }`}>
+          {row.account_status ?? "inactive"}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+            {row.profile?.avatar_url ? (
+              <Image src={row.profile.avatar_url} alt={`${row.first_name} avatar`} fill className="object-cover" />
+            ) : null}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-xs font-semibold text-gray-700">
+              {row.profile?.display_name || "No display name"}
+            </div>
+            <div className="text-[11px] text-gray-500">
+              {row.profile_completed ? "Profile set up" : "Profile pending"}
+            </div>
+          </div>
+        </div>
       </td>
       <td className="px-4 py-3 text-gray-700">{row.contact}</td>
       <td className="max-w-xs px-4 py-3 text-gray-700">

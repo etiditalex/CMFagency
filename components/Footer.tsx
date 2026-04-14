@@ -11,7 +11,7 @@ export default function Footer() {
     { href: "/", label: "Home", icon: House },
     { href: "/events/register-as-model", label: "Register as Model", icon: UserPlus },
     { href: "/events/register-as-model", label: "Certification", icon: Award },
-    { href: "/kcm", label: "KCM Member", icon: Crown },
+    { href: "/kcm/member-portal", label: "KCM Member", icon: Crown },
     { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
   ];
 

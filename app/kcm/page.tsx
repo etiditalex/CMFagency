@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { CheckCircle2, CreditCard } from "lucide-react";
+import Link from "next/link";
 
 type FormState = {
   firstName: string;
@@ -156,7 +157,7 @@ export default function KcmPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24 md:pb-0">
+    <main className="min-h-screen overflow-x-hidden bg-gray-50 pb-24 md:pb-0">
       <section className="relative mt-20 h-[48vh] min-h-[300px] overflow-hidden border-y border-primary-300/50 bg-primary-950 md:mt-24 md:h-[56vh] md:min-h-[390px]">
         <Image
           src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg"
@@ -276,6 +277,55 @@ export default function KcmPage() {
               </p>
             </article>
           </div>
+
+          <div className="relative left-1/2 right-1/2 mt-16 w-screen -translate-x-1/2 md:mt-48">
+            <div className="relative">
+              <div className="relative h-[240px] w-full overflow-hidden sm:h-[280px] md:h-[430px]">
+                <Image
+                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776166126/models3_prjvhc.jpg"
+                  alt="Kenya Coast Models runway showcase"
+                  fill
+                  className="object-cover object-[center_10%]"
+                  sizes="100vw"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-primary-950/40 via-primary-900/15 to-primary-950/70" />
+              </div>
+
+              <div className="relative z-10 mx-3 -mt-14 sm:mx-4 sm:-mt-16 md:absolute md:left-1/2 md:top-0 md:mx-0 md:w-[min(88%,1180px)] md:-translate-x-1/2 md:-translate-y-1/2">
+                <article className="overflow-hidden rounded-2xl border border-white/20 bg-secondary-600 text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
+                  <div className="grid md:grid-cols-[1.1fr_1.25fr]">
+                    <div className="bg-secondary-600 p-4 md:p-5">
+                      <div className="relative min-h-[180px] overflow-hidden rounded-xl border border-white/15 sm:min-h-[210px] md:min-h-[245px]">
+                        <Image
+                          src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776166126/models2_zb5yfj.jpg"
+                          alt="KCM model community moments"
+                          fill
+                          className="object-cover object-[center_12%]"
+                          sizes="(max-width: 768px) 100vw, 44vw"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-4 md:p-8">
+                      <h3 className="text-left text-xl font-extrabold leading-tight sm:text-2xl md:text-[2.05rem]">
+                        Join Our Kenya-Coast Model Community
+                      </h3>
+                      <p className="mt-3 text-left text-sm leading-relaxed text-white/95 md:text-lg md:leading-snug">
+                        Be part of Kenya-Coast models&apos; growing network, built to connect emerging
+                        and professional coastal talent with trusted opportunities and visibility.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsRegisterModalOpen(true)}
+                        className="mt-5 inline-flex w-full items-center justify-center rounded-full border border-white/80 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15 sm:w-auto md:text-base"
+                      >
+                        Join KCM Community
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -314,6 +364,14 @@ export default function KcmPage() {
               >
                 Register another model
               </button>
+              <div className="mt-3">
+                <Link
+                  href="/kcm/member-portal"
+                  className="inline-flex rounded-lg border border-primary-600 bg-white px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                >
+                  Open member portal
+                </Link>
+              </div>
             </div>
           ) : (
             <>
