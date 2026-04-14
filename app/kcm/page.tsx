@@ -278,7 +278,7 @@ export default function KcmPage() {
             </article>
           </div>
 
-          <div className="relative left-1/2 right-1/2 mt-16 w-screen -translate-x-1/2 md:mt-48">
+          <div className="relative left-1/2 right-1/2 mt-32 w-screen -translate-x-1/2 md:mt-72">
             <div className="relative">
               <div className="relative h-[240px] w-full overflow-hidden sm:h-[280px] md:h-[430px]">
                 <Image
