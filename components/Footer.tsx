@@ -230,7 +230,7 @@ export default function Footer() {
       </div>
 
       {/* Desktop sticky links */}
-      <div className="hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
+      <div className="fixed inset-x-0 bottom-0 z-50 hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
           <div className="container-custom py-4 md:py-5">
             <div className="grid grid-cols-5 gap-x-6">
               {footerActionLinks.map((item) => {
