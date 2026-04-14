@@ -160,12 +160,12 @@ export default function DashboardInsightsPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="font-extrabold text-gray-900 mb-4">Revenue mix (90 days)</h3>
+              <h3 className="font-extrabold text-gray-900 mb-4">Revenue mix (all time)</h3>
               <RevenuePieChart vote={pie.vote} ticket={pie.ticket} merchandise={pie.merchandise} />
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
               <h3 className="font-extrabold text-gray-900 mb-2">Daily revenue — votes &amp; tickets</h3>
-              <p className="text-xs text-gray-500 mb-6">Bar and line charts, same 14-day window (UTC).</p>
+              <p className="text-xs text-gray-500 mb-6">Bar and line charts across all available dates (UTC).</p>
               <DailyVoteTicketCharts rows={daily} />
             </div>
           </div>

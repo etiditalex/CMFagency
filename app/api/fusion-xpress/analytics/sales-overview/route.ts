@@ -5,9 +5,6 @@ import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
 export const dynamic = "force-dynamic";
 
-const LOOKBACK_DAYS = 90;
-const DAILY_CHART_DAYS = 14;
-
 function ymd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -129,9 +126,6 @@ export async function GET(req: Request) {
     });
   }
 
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - LOOKBACK_DAYS);
-
   let txRows: {
     amount: number;
     currency: string;
@@ -148,7 +142,6 @@ export async function GET(req: Request) {
         .select("amount,currency,campaign_type,campaign_id,provider,quantity,created_at,status")
         .eq("status", "success")
         .in("campaign_id", campaignIds)
-        .gte("created_at", since.toISOString())
         .order("id", { ascending: true })
         .range(from, to);
       return { data: r.data as typeof txRows | null, error: r.error };
@@ -171,15 +164,6 @@ export async function GET(req: Request) {
   type DailyBucket = { voteRevenue: number; voteUnits: number; ticketRevenue: number };
   const dailyMap = new Map<string, DailyBucket>();
 
-  // Last N calendar days including today (UTC).
-  const chartStart = new Date();
-  chartStart.setUTCDate(chartStart.getUTCDate() - (DAILY_CHART_DAYS - 1));
-  for (let i = 0; i < DAILY_CHART_DAYS; i++) {
-    const d = new Date(chartStart);
-    d.setUTCDate(d.getUTCDate() + i);
-    dailyMap.set(ymd(d), { voteRevenue: 0, voteUnits: 0, ticketRevenue: 0 });
-  }
-
   const isMpesa = (p: string | null | undefined) => {
     const s = String(p ?? "").toLowerCase();
     return s === "daraja" || s.includes("mpesa") || s.includes("m-pesa");
@@ -199,11 +183,10 @@ export async function GET(req: Request) {
       const q = qRaw > 0 ? qRaw : 1;
       voteUnits += q;
       const day = ymd(new Date(t.created_at));
-      const agg = dailyMap.get(day);
-      if (agg) {
-        agg.voteRevenue += amt;
-        agg.voteUnits += q;
-      }
+      const agg = dailyMap.get(day) ?? { voteRevenue: 0, voteUnits: 0, ticketRevenue: 0 };
+      agg.voteRevenue += amt;
+      agg.voteUnits += q;
+      dailyMap.set(day, agg);
       const key = String(t.campaign_id);
       const cur = voteByCampaign.get(key) ?? { revenue: 0, units: 0, count: 0 };
       cur.revenue += amt;
@@ -213,10 +196,9 @@ export async function GET(req: Request) {
     } else if (ctype === "ticket") {
       ticketRevenue += amt;
       const day = ymd(new Date(t.created_at));
-      const agg = dailyMap.get(day);
-      if (agg) {
-        agg.ticketRevenue += amt;
-      }
+      const agg = dailyMap.get(day) ?? { voteRevenue: 0, voteUnits: 0, ticketRevenue: 0 };
+      agg.ticketRevenue += amt;
+      dailyMap.set(day, agg);
     }
 
     if (isMpesa(t.provider)) mpesaRevenue += amt;

@@ -10,6 +10,7 @@ const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT || "2949826143";
 const MIN_SLOT_WIDTH = 120;
 const LAYOUT_RETRY_MS = 120;
 const MAX_LAYOUT_RETRIES = 25;
+const PUSH_RETRY_MS = 220;
 
 function hasUsableSlotSize(ins: HTMLModElement): boolean {
   const rect = ins.getBoundingClientRect();
@@ -67,6 +68,18 @@ export default function AdSenseBlock() {
               }
             }, 3000);
           } catch (e) {
+            const message = e instanceof Error ? e.message : String(e ?? "");
+            const isZeroWidthSlotError =
+              message.includes("No slot size for availableWidth=0") ||
+              message.includes("availableWidth=0");
+
+            // AdSense can still report width=0 during transient layout states; retry a few times first.
+            if (isZeroWidthSlotError && retryCount < MAX_LAYOUT_RETRIES) {
+              retryCount += 1;
+              retryTimer = window.setTimeout(tryPush, PUSH_RETRY_MS);
+              return;
+            }
+
             setShowFallback(true);
             console.warn("AdSense push error:", e);
           }

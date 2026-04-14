@@ -5,6 +5,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
+  Activity,
   BarChart3,
   BadgePercent,
   BookOpen,
@@ -89,6 +90,7 @@ const NAV: NavItem[] = [
   { label: "Contestants", href: "/dashboard/contestants", icon: UserPlus, section: "main", featureKey: "voting" },
   { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "main", adminOnly: true },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
+  { label: "Logs", href: "/dashboard/logs", icon: Activity, section: "main", adminOnly: true },
   { label: "Applications", href: "/dashboard/applications", icon: Briefcase, section: "main", adminOnly: true },
   { label: "Job board", href: "/dashboard/job-listings", icon: ClipboardList, section: "main", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },

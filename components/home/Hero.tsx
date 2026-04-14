@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Handshake } from "lucide-react";
+import { Calendar, Handshake } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { cloudinaryLoader } from "@/lib/cloudinary";
@@ -176,22 +176,6 @@ export default function Hero() {
             </div>
           </div>
         </div>
-
-        {/* Navigation Arrows */}
-        <button
-          onClick={() => paginate(-1)}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all duration-300 group"
-          aria-label="Previous slide"
-        >
-          <ChevronLeft className="w-6 h-6 text-white group-hover:text-primary-200" />
-        </button>
-        <button
-          onClick={() => paginate(1)}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all duration-300 group"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-6 h-6 text-white group-hover:text-primary-200" />
-        </button>
 
         {/* Carousel Indicators */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
