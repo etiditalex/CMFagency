@@ -755,9 +755,9 @@ export default function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-white border-t border-gray-200"
+            className="lg:hidden border-t border-gray-200 bg-white"
           >
-            <div className="container-custom py-4 space-y-3">
+            <div className="container-custom max-h-[calc(100vh-152px)] overflow-y-auto overscroll-contain py-4 pb-24 space-y-3">
               {/* Social Media Icons - Mobile */}
               <div className="flex items-center justify-center gap-4 pb-4 border-b border-gray-200">
                 <a

@@ -195,9 +195,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-50 transform-gpu">
+      <div className="fixed inset-x-0 bottom-0 z-[60] md:hidden">
         {/* Mobile dock navigation */}
-        <div className="mx-0 mb-0 rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden">
+        <div className="mx-0 mb-0 h-[74px] rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 py-2">
           <div className="grid grid-cols-5 gap-1">
             {footerActionLinks.map((item) => {
               const Icon = item.icon;
@@ -215,7 +215,7 @@ export default function Footer() {
                 <Link
                   key={`mobile-${item.href}-${item.label}`}
                   href={item.href}
-                  className="group flex h-[3.75rem] flex-col items-center justify-center gap-1 px-1 text-center transition-colors duration-200"
+                  className="group flex h-[58px] flex-col items-center justify-center gap-1 px-1 text-center transition-colors duration-200"
                 >
                   <Icon className="h-5 w-5 shrink-0 text-white group-hover:text-white" />
                   <span className="text-[11px] leading-none font-semibold text-white group-hover:text-white whitespace-nowrap">
@@ -227,8 +227,10 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Desktop sticky links */}
-        <div className="hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
+      </div>
+
+      {/* Desktop sticky links */}
+      <div className="hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
           <div className="container-custom py-4 md:py-5">
             <div className="grid grid-cols-5 gap-x-6">
               {footerActionLinks.map((item) => {
@@ -246,7 +248,6 @@ export default function Footer() {
               })}
             </div>
           </div>
-        </div> 
       </div>
     </footer>
   );

@@ -37,11 +37,9 @@ const carouselItems = [
 
 export default function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
     }, 5000);
 
@@ -49,63 +47,30 @@ export default function Hero() {
   }, []);
 
   const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
+    enter: {
       opacity: 0,
-    }),
+    },
     center: {
-      zIndex: 1,
-      x: 0,
       opacity: 1,
     },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
+    exit: {
       opacity: 0,
-    }),
-  };
-
-  const swipeConfidenceThreshold = 10000;
-  const swipePower = (offset: number, velocity: number) => {
-    return Math.abs(offset) * velocity;
-  };
-
-  const paginate = (newDirection: number) => {
-    setDirection(newDirection);
-    if (newDirection === 1) {
-      setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
-    } else {
-      setCurrentIndex((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
-    }
+    },
   };
 
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
       {/* Carousel Container */}
       <div className="relative h-screen w-full">
-        <AnimatePresence initial={false} custom={direction} mode="wait">
+        <AnimatePresence initial={false} mode="sync">
           <motion.div
             key={currentIndex}
-            custom={direction}
             variants={slideVariants}
             initial="enter"
             animate="center"
             exit="exit"
             transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
-            }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={1}
-            onDragEnd={(e, { offset, velocity }) => {
-              const swipe = swipePower(offset.x, velocity.x);
-
-              if (swipe < -swipeConfidenceThreshold) {
-                paginate(1);
-              } else if (swipe > swipeConfidenceThreshold) {
-                paginate(-1);
-              }
+              opacity: { duration: 0.22, ease: "linear" },
             }}
             className="absolute inset-0"
           >
@@ -183,7 +148,6 @@ export default function Hero() {
             <button
               key={index}
               onClick={() => {
-                setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
               }}
               className={`h-2.5 rounded-full transition-all duration-300 ${
