@@ -80,9 +80,9 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
       {/* Carousel Container */}
-      <div className="relative w-full h-screen">
+      <div className="relative h-screen w-full">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
             key={currentIndex}
@@ -128,15 +128,15 @@ export default function Hero() {
         </AnimatePresence>
 
         {/* Static Content Overlay - Always visible */}
-        <div className="relative z-10 h-full flex items-center">
+        <div className="relative z-10 flex h-full items-center">
           <div className="container-custom w-full">
-            <div className="max-w-2xl">
+            <div className="max-w-3xl">
               {/* Title */}
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight text-left drop-shadow-2xl"
+                className="mb-5 max-w-2xl text-left text-4xl font-bold leading-[1.04] tracking-tight text-white drop-shadow-2xl md:text-6xl lg:text-7xl"
               >
                 Strategic Marketing That Powers Growth and Relevance
               </motion.h1>
@@ -146,7 +146,7 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="text-xl md:text-2xl text-white mb-8 leading-relaxed drop-shadow-lg"
+                className="mb-8 max-w-xl text-lg leading-relaxed text-white/95 drop-shadow-lg md:text-2xl"
               >
                 Market to thrive, Market to exit
               </motion.p>
@@ -160,16 +160,16 @@ export default function Hero() {
               >
                 <Link
                   href="/events"
-                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:bg-gray-100 hover:shadow-xl group sm:flex-none sm:px-8 sm:py-4 sm:text-base"
+                  className="group inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:flex-none sm:px-8 sm:py-4 sm:text-base"
                 >
                   <Calendar className="w-5 h-5 text-primary-600" />
                   <span>Planning an event?</span>
                 </Link>
                 <Link
                   href="/contact"
-                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:bg-gray-100 hover:shadow-xl group sm:flex-none sm:px-8 sm:py-4 sm:text-base"
+                  className="group inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg border border-white/45 bg-white/10 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:flex-none sm:px-8 sm:py-4 sm:text-base"
                 >
-                  <Handshake className="w-5 h-5 text-primary-600" />
+                  <Handshake className="h-5 w-5 text-white" />
                   <span>Partner with Us</span>
                 </Link>
               </motion.div>
@@ -178,7 +178,7 @@ export default function Hero() {
         </div>
 
         {/* Carousel Indicators */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
+        <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 space-x-2">
           {carouselItems.map((_, index) => (
             <button
               key={index}
@@ -186,11 +186,12 @@ export default function Hero() {
                 setDirection(index > currentIndex ? 1 : -1);
                 setCurrentIndex(index);
               }}
-              className={`h-3 rounded-full transition-all duration-300 ${
+              className={`h-2.5 rounded-full transition-all duration-300 ${
                 index === currentIndex
                   ? "w-8 bg-white"
-                  : "w-3 bg-white/50 hover:bg-white/75"
+                  : "w-2.5 bg-white/45 hover:bg-white/70"
               }`}
+              aria-current={index === currentIndex ? "true" : "false"}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}

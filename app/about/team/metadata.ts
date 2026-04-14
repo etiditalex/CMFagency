@@ -1,9 +1,16 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Our Team - Expert Marketing Professionals in Kenya | Changer Fusions",
-  description: "Meet the expert marketing team at Changer Fusions - Kenya's leading marketing agency. Our experienced professionals in digital marketing, branding, events, and technology deliver innovative solutions for businesses across Kenya. Based in Mombasa, serving clients nationwide.",
+  title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
+  description: "Meet the Changer Fusions team, including founders Javan Rolynce and Alex Etidit. Discover the professionals behind our digital marketing, branding, events, and technology services in Kenya.",
   keywords: [
+    "Javan Rolynce",
+    "Alex Etidit",
+    "Changer Fusions founders",
+    "Changer Fusions team",
+    "Our Team Changer Fusions",
+    "Javan Rolynce Changer Fusions",
+    "Alex Etidit Changer Fusions",
     "marketing team Kenya",
     "marketing professionals Kenya",
     "digital marketing experts Kenya",
@@ -27,8 +34,8 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     type: "website",
-    title: "Our Team - Expert Marketing Professionals in Kenya | Changer Fusions",
-    description: "Meet the expert marketing team at Changer Fusions - Kenya's leading marketing agency. Our experienced professionals deliver innovative marketing solutions for businesses across Kenya.",
+    title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
+    description: "Meet founders Javan Rolynce and Alex Etidit alongside the wider Changer Fusions team delivering marketing and events excellence in Kenya.",
     url: "https://cmfagency.co.ke/about/team",
     siteName: "Changer Fusions",
     locale: "en_KE",
@@ -43,8 +50,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Our Team - Expert Marketing Professionals in Kenya | Changer Fusions",
-    description: "Meet the expert marketing team at Changer Fusions - Kenya's leading marketing agency delivering innovative solutions.",
+    title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
+    description: "Meet founders Javan Rolynce and Alex Etidit alongside the wider Changer Fusions team.",
     images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg"],
     site: "@ChangerFusions",
   },

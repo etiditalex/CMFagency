@@ -68,10 +68,32 @@ export default function SEOStructuredData() {
       "Social Media Marketing",
     ],
     sameAs: [
-      // Add social media links when available
-      // "https://www.facebook.com/changerfusions",
-      // "https://www.twitter.com/changerfusions",
-      // "https://www.linkedin.com/company/changerfusions",
+      "https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite",
+      "https://www.facebook.com/share/187Kse9GrQ/",
+      "https://www.linkedin.com/in/changer-fusions-2262a53a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
+      "https://x.com/ChangerFusions",
+    ],
+    founder: [
+      {
+        "@type": "Person",
+        name: "Javan Rolynce",
+        jobTitle: "Chief Executive Officer (CEO)",
+        worksFor: {
+          "@type": "Organization",
+          name: "Changer Fusions",
+          url: "https://cmfagency.co.ke",
+        },
+      },
+      {
+        "@type": "Person",
+        name: "Alex Etidit",
+        jobTitle: "Technical Director",
+        worksFor: {
+          "@type": "Organization",
+          name: "Changer Fusions",
+          url: "https://cmfagency.co.ke",
+        },
+      },
     ],
   };
 
@@ -88,6 +110,60 @@ export default function SEOStructuredData() {
       },
       "query-input": "required name=search_term_string",
     },
+    hasPart: [
+      {
+        "@type": "WebPage",
+        name: "Our Team",
+        url: "https://cmfagency.co.ke/about/team",
+      },
+      {
+        "@type": "WebPage",
+        name: "KCM - Kenya Coast Models Membership",
+        url: "https://cmfagency.co.ke/kcm",
+      },
+      {
+        "@type": "WebPage",
+        name: "Register as a Model",
+        url: "https://cmfagency.co.ke/events/register-as-model",
+      },
+      {
+        "@type": "WebPage",
+        name: "Fusion Xpress",
+        url: "https://cmfagency.co.ke/fusion-xpress",
+      },
+      {
+        "@type": "WebPage",
+        name: "Events",
+        url: "https://cmfagency.co.ke/events",
+      },
+      {
+        "@type": "WebPage",
+        name: "Jobs",
+        url: "https://cmfagency.co.ke/jobs",
+      },
+      {
+        "@type": "WebPage",
+        name: "Contact",
+        url: "https://cmfagency.co.ke/contact",
+      },
+    ],
+  };
+
+  const siteNavigationSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Primary site navigation",
+    itemListElement: [
+      { "@type": "SiteNavigationElement", position: 1, name: "Home", url: "https://cmfagency.co.ke/" },
+      { "@type": "SiteNavigationElement", position: 2, name: "About Us", url: "https://cmfagency.co.ke/about" },
+      { "@type": "SiteNavigationElement", position: 3, name: "Our Team", url: "https://cmfagency.co.ke/about/team" },
+      { "@type": "SiteNavigationElement", position: 4, name: "Events", url: "https://cmfagency.co.ke/events" },
+      { "@type": "SiteNavigationElement", position: 5, name: "Register as a Model", url: "https://cmfagency.co.ke/events/register-as-model" },
+      { "@type": "SiteNavigationElement", position: 6, name: "KCM", url: "https://cmfagency.co.ke/kcm" },
+      { "@type": "SiteNavigationElement", position: 7, name: "Fusion Xpress", url: "https://cmfagency.co.ke/fusion-xpress" },
+      { "@type": "SiteNavigationElement", position: 8, name: "Jobs", url: "https://cmfagency.co.ke/jobs" },
+      { "@type": "SiteNavigationElement", position: 9, name: "Contact", url: "https://cmfagency.co.ke/contact" },
+    ],
   };
 
   const serviceSchema = {
@@ -334,6 +410,7 @@ export default function SEOStructuredData() {
       <StructuredData data={organizationSchema} />
       <StructuredData data={websiteSchema} />
       <StructuredData data={serviceSchema} />
+      <StructuredData data={siteNavigationSchema} />
       <StructuredData data={cfmaEventSchema} />
       <StructuredData data={faqSchema} />
       <StructuredData data={localBusinessSchema} />
