@@ -26,6 +26,7 @@ const initialState: FormState = {
 
 export default function KcmPage() {
   const [form, setForm] = useState<FormState>(initialState);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,15 @@ export default function KcmPage() {
     }, 4000);
     return () => window.clearInterval(timer);
   }, [membershipId, paymentStatus]);
+
+  useEffect(() => {
+    if (!isRegisterModalOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isRegisterModalOpen]);
 
   const initiatePaymentPrompt = async () => {
     setError(null);
@@ -146,46 +156,141 @@ export default function KcmPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <section className="relative h-[68vh] min-h-[460px] overflow-hidden pt-24 md:pt-28">
+    <main className="min-h-screen bg-gray-50 pb-24 md:pb-0">
+      <section className="relative mt-20 h-[48vh] min-h-[300px] overflow-hidden border-y border-primary-300/50 bg-primary-950 md:mt-24 md:h-[56vh] md:min-h-[390px]">
         <Image
-          src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776075185/medium-shot-young-woman-dancing1_pkc158.jpg"
+          src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg"
           alt="Kenya Coast Models hero background"
           fill
           priority
-          className="object-cover object-[center_18%]"
+          className="object-cover object-[center_28%]"
           sizes="100vw"
         />
-        <div className="absolute inset-0 bg-black/20" />
-      </section>
-
-      <section className="container-custom py-10 md:py-12">
-        <div className="grid gap-8 rounded-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-700 p-6 text-white md:p-8 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest">
-              Kenya Coast Models
-            </p>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">
-              KCM Membership Registration
-            </h1>
-            <p className="mt-4 max-w-xl text-sm text-white/90 md:text-base">
-              Join a curated network of coast-based models and access growth opportunities, visibility, and
-              professional support under the Changer Fusion brand.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm">
-            <h2 className="text-xl font-bold">Membership overview</h2>
-            <ul className="mt-4 space-y-3 text-sm text-white/90">
-              <li>Professional profile inclusion for KCM opportunities.</li>
-              <li>Access to auditions, campaigns, and selected model showcases.</li>
-              <li>One-time registration payment: <span className="font-semibold">KES 50</span>.</li>
-            </ul>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-950/95 via-primary-900/82 via-45% to-primary-900/18" />
+        <div className="absolute inset-y-0 left-0 w-[56%] bg-gradient-to-r from-primary-950/88 to-transparent md:w-[52%]" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="container-custom w-full">
+            <div className="max-w-3xl text-white">
+              <h1 className="max-w-2xl text-left text-2xl font-extrabold leading-[1.08] tracking-tight sm:text-3xl md:text-5xl">
+                Kenya Coast Models Membership
+              </h1>
+              <p className="mt-2 max-w-2xl text-left text-xs leading-relaxed text-white/90 sm:mt-3 sm:text-sm md:mt-4 md:text-[1.12rem] md:leading-relaxed">
+                Kenya Coast Models is a dynamic platform designed to unify and manage models across
+                the coastal region by providing a centralized space for registration and membership.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="container-custom py-12 md:py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+      <section className="bg-secondary-600 py-10 md:py-20">
+        <div className="container-custom">
+          <div className="grid items-center gap-5 lg:grid-cols-2 lg:gap-8">
+            <div className="overflow-hidden rounded-xl border border-white/25 bg-white/10">
+              <div className="relative aspect-[16/9] w-full">
+                <Image
+                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776152776/kcm_c4wxka.jpg"
+                  alt="Kenya Coast Models community"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </div>
+            </div>
+
+            <div className="text-white">
+              <h2 className="text-left text-2xl font-extrabold leading-tight sm:text-3xl md:text-4xl">
+                Why Become a member?
+              </h2>
+              <p className="mt-3 text-left text-sm leading-relaxed text-white/95 sm:text-base md:mt-4 md:text-lg">
+                Kenya Coast Models is a dynamic platform designed to unify and manage models across
+                the coastal region by providing a centralized space for registration and membership.
+                Through this platform, aspiring and professional models can easily join a growing
+                network that connects them to exclusive, untapped opportunities within the fashion
+                and creative industry. By becoming a member, models gain visibility, credibility,
+                and access to curated gigs, events, and collaborations, empowering them to grow
+                their careers and unlock their full potential in a competitive market.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-secondary-700 transition hover:bg-primary-50 sm:mt-6 sm:w-auto"
+              >
+                Register now
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-primary-50 py-10 md:py-16">
+        <div className="container-custom">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-2xl font-extrabold tracking-tight text-primary-900 sm:text-3xl md:text-4xl">
+              Kenya Coast Models Highlights
+            </h2>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 md:mt-8 md:grid-cols-2 lg:grid-cols-4">
+            <article className="rounded-xl border border-primary-200 bg-white p-6 text-center shadow-sm">
+              <p className="text-5xl font-bold leading-none text-primary-200">01</p>
+              <h3 className="mt-3 text-2xl font-extrabold text-secondary-700">
+                Profile Visibility
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                Get listed in a centralized talent network that helps casting teams and partners
+                discover verified models faster.
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-primary-200 bg-white p-6 text-center shadow-sm">
+              <p className="text-5xl font-bold leading-none text-primary-200">02</p>
+              <h3 className="mt-3 text-2xl font-extrabold text-secondary-700">
+                Access to Opportunities
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                Receive access to curated gigs, auditions, and campaign opportunities connected to
+                fashion, events, and creative activations.
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-primary-200 bg-white p-6 text-center shadow-sm">
+              <p className="text-5xl font-bold leading-none text-primary-200">03</p>
+              <h3 className="mt-3 text-2xl font-extrabold text-secondary-700">
+                Credibility Boost
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                Build trust with event organizers and brands through structured membership and a
+                professional representation standard.
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-primary-200 bg-white p-6 text-center shadow-sm">
+              <p className="text-5xl font-bold leading-none text-primary-200">04</p>
+              <h3 className="mt-3 text-2xl font-extrabold text-secondary-700">
+                Career Growth
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                Grow your potential through ongoing exposure, collaborations, and real project
+                experience in a competitive market.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      {isRegisterModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/55 p-3 pt-20 sm:items-center sm:p-4">
+          <div className="absolute inset-0" onClick={() => setIsRegisterModalOpen(false)} />
+          <div className="relative z-[71] my-4 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl sm:p-6 md:p-8">
+            <button
+              type="button"
+              onClick={() => setIsRegisterModalOpen(false)}
+              className="absolute right-3 top-3 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+            >
+              Close
+            </button>
+
           {submitted ? (
             <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-center">
               <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
@@ -203,6 +308,7 @@ export default function KcmPage() {
                   setPaymentLoading(false);
                   setPaymentStatus("idle");
                   setMembershipId(null);
+                  setIsRegisterModalOpen(false);
                 }}
                 className="mt-5 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700"
               >
@@ -393,8 +499,9 @@ export default function KcmPage() {
               </form>
             </>
           )}
+          </div>
         </div>
-      </section>
+      )}
     </main>
   );
 }

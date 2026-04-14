@@ -156,18 +156,18 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6 }}
-                className="flex flex-row gap-4"
+                className="flex flex-row gap-3 sm:gap-4"
               >
                 <Link
                   href="/events"
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
+                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:bg-gray-100 hover:shadow-xl group sm:flex-none sm:px-8 sm:py-4 sm:text-base"
                 >
                   <Calendar className="w-5 h-5 text-primary-600" />
-                  <span>Are you planning an event?</span>
+                  <span>Planning an event?</span>
                 </Link>
                 <Link
                   href="/contact"
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl group"
+                  className="inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-600 shadow-lg transition-all duration-300 hover:bg-gray-100 hover:shadow-xl group sm:flex-none sm:px-8 sm:py-4 sm:text-base"
                 >
                   <Handshake className="w-5 h-5 text-primary-600" />
                   <span>Partner with Us</span>

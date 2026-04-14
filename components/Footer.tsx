@@ -195,9 +195,9 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="fixed inset-x-0 bottom-0 z-50 transform-gpu">
         {/* Mobile dock navigation */}
-        <div className="mx-0 mb-0 rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 py-3 md:hidden">
+        <div className="mx-0 mb-0 rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] md:hidden">
           <div className="grid grid-cols-5 gap-1">
             {footerActionLinks.map((item) => {
               const Icon = item.icon;
@@ -215,10 +215,10 @@ export default function Footer() {
                 <Link
                   key={`mobile-${item.href}-${item.label}`}
                   href={item.href}
-                  className="group flex min-h-16 flex-col items-center justify-center gap-1.5 px-1 text-center transition-colors duration-200"
+                  className="group flex h-[3.75rem] flex-col items-center justify-center gap-1 px-1 text-center transition-colors duration-200"
                 >
                   <Icon className="h-5 w-5 shrink-0 text-white group-hover:text-white" />
-                  <span className="text-xs leading-none font-semibold text-white group-hover:text-white whitespace-nowrap">
+                  <span className="text-[11px] leading-none font-semibold text-white group-hover:text-white whitespace-nowrap">
                     {mobileLabel}
                   </span>
                 </Link>

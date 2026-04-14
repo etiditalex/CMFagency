@@ -85,7 +85,7 @@ export default function HeroSupportSection() {
             title="KCM Membership"
             titleClassName="text-primary-700"
             lineClassName="bg-primary-500"
-            content="Join Kenya Coast Models under Changer Fusions to access model showcases, casting opportunities, and a growing professional network across our events and partner activations."
+            content="Kenya Coast Models is a dynamic platform designed to unify and manage models across the coastal region by providing a centralized space for registration and membership. Through this platform, aspiring and professional models can easily join a growing network that connects them to exclusive, untapped opportunities within the fashion and creative industry. By becoming a member, models gain visibility, credibility, and access to curated gigs, events, and collaborations, empowering them to grow their careers and unlock their full potential in a competitive market."
             buttonText="Become a Member"
             buttonHref="/kcm"
             buttonClassName="bg-secondary-700 hover:bg-secondary-800"
