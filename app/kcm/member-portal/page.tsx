@@ -346,7 +346,7 @@ export default function KcmMemberPortalPage() {
   return (
     <main className="min-h-screen bg-gray-50 pt-28 pb-12">
       <section className="container-custom">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-[1200px]">
           {!data ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
               <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">KCM Member Portal</h1>
@@ -395,8 +395,43 @@ export default function KcmMemberPortalPage() {
               </form>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+              <div className="grid lg:grid-cols-[240px_1fr]">
+                <aside className="border-b border-gray-200 bg-white lg:border-b-0 lg:border-r">
+                  <div className="border-b border-gray-100 px-4 py-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">KCM Portal</p>
+                    <p className="mt-1 text-sm font-bold text-gray-900">{displayName || data.membership.first_name}</p>
+                  </div>
+                  <nav className="space-y-1 p-3">
+                    <a href="#profile-preview" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                      Profile overview
+                    </a>
+                    <a href="#profile-editor" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                      Edit profile
+                    </a>
+                    <a href="#portfolio-uploads" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                      Portfolio uploads
+                    </a>
+                  </nav>
+                  <div className="border-t border-gray-100 p-3">
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </aside>
+
+                <div className="min-w-0 bg-[#f3f8fc]">
+                  <header className="relative overflow-hidden border-b border-primary-900/30 bg-primary-800 px-5 py-5 text-white md:px-6">
+                    <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,#ffffff_0,transparent_40%),linear-gradient(135deg,#ffffff33_0%,transparent_60%)]" />
+                    <h2 className="relative text-xl font-extrabold tracking-tight">Dashboard</h2>
+                  </header>
+                  <div className="space-y-6 p-4 md:p-6">
+              <div id="profile-preview" className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="relative h-44 w-full bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
                   {coverUrl ? (
                     <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
@@ -516,7 +551,7 @@ export default function KcmMemberPortalPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <div id="portfolio-uploads" className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <h2 className="text-left text-xl font-extrabold text-gray-900">Your profile</h2>
                 {error && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
                 {profileMessage && <p className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{profileMessage}</p>}
@@ -733,6 +768,9 @@ export default function KcmMemberPortalPage() {
                 ) : (
                   <p className="mt-4 text-sm text-gray-500">No portfolio files yet. Upload images or a PDF to showcase your work.</p>
                 )}
+              </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
