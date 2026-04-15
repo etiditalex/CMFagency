@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { FileText, Loader2, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+import { Camera, FileText, Instagram, Loader2, LogOut, PlusCircle, Share2, ShieldCheck, Trash2, Twitter, UserRound } from "lucide-react";
 
 type PortfolioItem = {
   id: string;
@@ -27,8 +27,15 @@ type PortalState = {
   profile: {
     display_name: string | null;
     avatar_url: string | null;
+    cover_url: string | null;
+    profile_category: "creative" | "model" | null;
+    professional_title: string | null;
     bio: string | null;
     portfolio_text: string | null;
+    social_instagram: string | null;
+    social_facebook: string | null;
+    social_tiktok: string | null;
+    social_x: string | null;
   } | null;
   portfolio_items: PortfolioItem[];
 };
@@ -44,11 +51,19 @@ export default function KcmMemberPortalPage() {
   const [verifying, setVerifying] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [profileCategory, setProfileCategory] = useState<"creative" | "model">("creative");
+  const [professionalTitle, setProfessionalTitle] = useState("");
   const [bio, setBio] = useState("");
   const [portfolioText, setPortfolioText] = useState("");
+  const [socialInstagram, setSocialInstagram] = useState("");
+  const [socialFacebook, setSocialFacebook] = useState("");
+  const [socialTiktok, setSocialTiktok] = useState("");
+  const [socialX, setSocialX] = useState("");
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
   const [deletingPortfolioId, setDeletingPortfolioId] = useState<string | null>(null);
   const [uploadCaption, setUploadCaption] = useState("");
@@ -67,8 +82,15 @@ export default function KcmMemberPortalPage() {
       }
       setData(json);
       setDisplayName(json.profile?.display_name ?? `${json.membership.first_name} ${json.membership.second_name}`.trim());
+      setCoverUrl(json.profile?.cover_url ?? null);
+      setProfileCategory(json.profile?.profile_category === "model" ? "model" : "creative");
+      setProfessionalTitle(json.profile?.professional_title ?? "");
       setBio(json.profile?.bio ?? "");
       setPortfolioText(json.profile?.portfolio_text ?? "");
+      setSocialInstagram(json.profile?.social_instagram ?? "");
+      setSocialFacebook(json.profile?.social_facebook ?? "");
+      setSocialTiktok(json.profile?.social_tiktok ?? "");
+      setSocialX(json.profile?.social_x ?? "");
       setPortfolioItems(Array.isArray(json.portfolio_items) ? json.portfolio_items : []);
     } catch {
       setData(null);
@@ -140,8 +162,14 @@ export default function KcmMemberPortalPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           display_name: displayName,
+          profile_category: profileCategory,
+          professional_title: professionalTitle,
           bio,
           portfolio_text: portfolioText,
+          social_instagram: socialInstagram,
+          social_facebook: socialFacebook,
+          social_tiktok: socialTiktok,
+          social_x: socialX,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
@@ -178,6 +206,30 @@ export default function KcmMemberPortalPage() {
       setError("Could not upload image.");
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const onCoverChange = async (file: File | null) => {
+    if (!file) return;
+    setUploadingCover(true);
+    setError(null);
+    setProfileMessage(null);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      const res = await fetch("/api/kcm-member/profile/cover", { method: "POST", body: form });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; cover_url?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Could not upload cover image.");
+        return;
+      }
+      setCoverUrl(json.cover_url ?? null);
+      setProfileMessage("Cover photo updated.");
+      await loadMe();
+    } catch {
+      setError("Could not upload cover image.");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -257,6 +309,30 @@ export default function KcmMemberPortalPage() {
     setProfileMessage(null);
   };
 
+  const handle = useMemo(() => {
+    const base = (displayName || data?.membership.email || "member")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 24);
+    return base || "member";
+  }, [data?.membership.email, displayName]);
+
+  const shareProfile = async () => {
+    const title = professionalTitle || `${profileCategory === "model" ? "Model" : "Creative"} Profile`;
+    const text = `${displayName || data?.membership.first_name} - ${title}`;
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "KCM Member Profile", text, url });
+      } else if (navigator.clipboard && url) {
+        await navigator.clipboard.writeText(url);
+        setProfileMessage("Profile link copied. Share it on your socials.");
+      }
+    } catch {
+      // user canceled share dialog
+    }
+  };
+
   if (checking) {
     return (
       <main className="min-h-screen bg-gray-50 pt-28">
@@ -320,7 +396,101 @@ export default function KcmMemberPortalPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="relative h-44 w-full bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
+                  {coverUrl ? (
+                    <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80')] bg-cover bg-center opacity-25" />
+                  )}
+                  <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-white/95 px-3 py-2 text-xs font-semibold text-gray-700 shadow">
+                    <Camera className="h-3.5 w-3.5" />
+                    {uploadingCover ? "Uploading..." : "Upload cover photo"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="sr-only"
+                      onChange={(e) => void onCoverChange(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
+                <div className="relative px-4 pb-6 pt-0 sm:px-6">
+                  <div className="-mt-12 flex flex-wrap items-end justify-between gap-4">
+                    <div className="flex items-end gap-4">
+                      <div className="relative h-24 w-24 overflow-hidden rounded-xl border-4 border-white bg-gray-100 shadow-sm">
+                        {data.profile?.avatar_url ? (
+                          <Image src={data.profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-gray-400">
+                            <UserRound className="h-10 w-10" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="pb-1">
+                        <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                          {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
+                        </h2>
+                        <p className="text-sm text-gray-600">@{handle}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-secondary-700">
+                          {profileCategory === "model" ? "Model" : "Creative"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setProfileMessage("Use the profile editor below to add another profile variant.")}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <PlusCircle className="h-4 w-4" />
+                        Add profile
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void shareProfile()}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        <Share2 className="h-4 w-4" />
+                        Share to socials
+                      </button>
+                    </div>
+                  </div>
+                  <h3 className="mt-5 text-2xl font-extrabold text-gray-900">
+                    {professionalTitle || (profileCategory === "model" ? "Professional Model" : "Creative Professional")}
+                  </h3>
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                    {bio || "Add your description below to complete your profile."}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Share</span>
+                    {socialInstagram ? (
+                      <a href={socialInstagram} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700">
+                        <Instagram className="h-4 w-4" />
+                      </a>
+                    ) : null}
+                    {socialFacebook ? (
+                      <a href={socialFacebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9V12.06h2.54V9.84c0-2.52 1.49-3.92 3.79-3.92 1.1 0 2.25.2 2.25.2v2.48h-1.27c-1.26 0-1.65.79-1.65 1.6v1.86h2.81l-.45 2.91h-2.36V22c4.78-.76 8.44-4.92 8.44-9.94z"/></svg>
+                      </a>
+                    ) : null}
+                    {socialTiktok ? (
+                      <a href={socialTiktok} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-black">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.35V2h-3.2v13.18a2.9 2.9 0 11-2-2.77V9.13a6.13 6.13 0 105.2 6.05V8.57a8.07 8.07 0 004.57 1.42V6.69z"/></svg>
+                      </a>
+                    ) : null}
+                    {socialX ? (
+                      <a href={socialX} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-black">
+                        <Twitter className="h-4 w-4" />
+                      </a>
+                    ) : null}
+                    {!socialInstagram && !socialFacebook && !socialTiktok && !socialX ? (
+                      <span className="text-xs text-gray-500">Add social links below</span>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8" id="profile-editor">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">Welcome, {data.membership.first_name}</h1>
@@ -378,6 +548,29 @@ export default function KcmMemberPortalPage() {
                       className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
                     />
                   </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
+                      <select
+                        value={profileCategory}
+                        onChange={(e) => setProfileCategory(e.target.value === "model" ? "model" : "creative")}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                      >
+                        <option value="creative">Creative</option>
+                        <option value="model">Model</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Professional title</label>
+                      <input
+                        type="text"
+                        value={professionalTitle}
+                        onChange={(e) => setProfessionalTitle(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        placeholder={profileCategory === "model" ? "Runway and Editorial Model" : "Creative Professional"}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-gray-700">Bio</label>
                     <textarea
@@ -402,6 +595,48 @@ export default function KcmMemberPortalPage() {
                       placeholder="e.g. Commercial and editorial work since 2022; featured in…"
                     />
                     <p className="mt-1 text-right text-xs text-gray-400">{portfolioText.length} / 12000</p>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Instagram URL</label>
+                      <input
+                        type="url"
+                        value={socialInstagram}
+                        onChange={(e) => setSocialInstagram(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        placeholder="https://instagram.com/yourhandle"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">Facebook URL</label>
+                      <input
+                        type="url"
+                        value={socialFacebook}
+                        onChange={(e) => setSocialFacebook(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        placeholder="https://facebook.com/yourprofile"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">TikTok URL</label>
+                      <input
+                        type="url"
+                        value={socialTiktok}
+                        onChange={(e) => setSocialTiktok(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        placeholder="https://tiktok.com/@yourhandle"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700">X/Twitter URL</label>
+                      <input
+                        type="url"
+                        value={socialX}
+                        onChange={(e) => setSocialX(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        placeholder="https://x.com/yourhandle"
+                      />
+                    </div>
                   </div>
                   <button
                     type="submit"

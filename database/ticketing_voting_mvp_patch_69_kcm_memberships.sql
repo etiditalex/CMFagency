@@ -202,6 +202,32 @@ end $$;
 
 -- Written portfolio narrative (member-editable after login)
 alter table public.kcm_member_profiles add column if not exists portfolio_text text;
+alter table public.kcm_member_profiles add column if not exists cover_url text;
+alter table public.kcm_member_profiles add column if not exists profile_category text;
+alter table public.kcm_member_profiles add column if not exists professional_title text;
+alter table public.kcm_member_profiles add column if not exists social_instagram text;
+alter table public.kcm_member_profiles add column if not exists social_facebook text;
+alter table public.kcm_member_profiles add column if not exists social_tiktok text;
+alter table public.kcm_member_profiles add column if not exists social_x text;
+
+update public.kcm_member_profiles
+set profile_category = 'creative'
+where profile_category is null or btrim(profile_category) = '';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'kcm_member_profiles_category_check'
+  ) then
+    alter table public.kcm_member_profiles
+      add constraint kcm_member_profiles_category_check
+      check (profile_category in ('creative', 'model'));
+  end if;
+end $$;
+
+alter table public.kcm_member_profiles alter column profile_category set default 'creative';
 
 -- Uploaded portfolio files (images / PDFs), managed via service role
 create table if not exists public.kcm_member_portfolio_items (

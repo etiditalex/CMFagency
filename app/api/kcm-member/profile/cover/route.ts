@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getKcmAdminClient, getKcmMemberSession } from "@/lib/kcm-member-auth";
 
-const MAX_SIZE = 3 * 1024 * 1024;
+const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const BUCKET = "kcm-avatars";
+const BUCKET = "kcm-covers";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Invalid file type. Use: ${ALLOWED_TYPES.join(", ")}` }, { status: 400 });
     }
     if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large. Max 3MB." }, { status: 400 });
+      return NextResponse.json({ error: "File too large. Max 5MB." }, { status: 400 });
     }
 
     const { data: bucket } = await admin.storage.getBucket(BUCKET);
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${session.membershipId}/avatar-${Date.now()}.${ext}`;
+    const path = `${session.membershipId}/cover-${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
     const { error: uploadErr } = await admin.storage.from(BUCKET).upload(path, buffer, {
       upsert: true,
@@ -40,11 +40,11 @@ export async function POST(req: NextRequest) {
     if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 });
 
     const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
-    const avatarUrl = pub.publicUrl;
+    const coverUrl = pub.publicUrl;
 
     const { data: existing } = await admin
       .from("kcm_member_profiles")
-      .select("display_name,bio,portfolio_text,cover_url,profile_category,professional_title,social_instagram,social_facebook,social_tiktok,social_x")
+      .select("display_name,bio,portfolio_text,avatar_url,profile_category,professional_title,social_instagram,social_facebook,social_tiktok,social_x")
       .eq("membership_id", session.membershipId)
       .maybeSingle();
 
@@ -52,11 +52,11 @@ export async function POST(req: NextRequest) {
       {
         membership_id: session.membershipId,
         email: session.email,
-        avatar_url: avatarUrl,
+        cover_url: coverUrl,
+        avatar_url: (existing as { avatar_url?: string | null } | null)?.avatar_url ?? null,
         display_name: (existing as { display_name?: string | null } | null)?.display_name ?? null,
         bio: (existing as { bio?: string | null } | null)?.bio ?? null,
         portfolio_text: (existing as { portfolio_text?: string | null } | null)?.portfolio_text ?? null,
-        cover_url: (existing as { cover_url?: string | null } | null)?.cover_url ?? null,
         profile_category: (existing as { profile_category?: string | null } | null)?.profile_category ?? "creative",
         professional_title: (existing as { professional_title?: string | null } | null)?.professional_title ?? null,
         social_instagram: (existing as { social_instagram?: string | null } | null)?.social_instagram ?? null,
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
     if (profileErr) return NextResponse.json({ error: profileErr.message }, { status: 500 });
 
-    return NextResponse.json({ ok: true, avatar_url: avatarUrl });
+    return NextResponse.json({ ok: true, cover_url: coverUrl });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });

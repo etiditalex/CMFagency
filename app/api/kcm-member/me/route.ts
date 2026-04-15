@@ -19,7 +19,7 @@ export async function GET() {
 
     const { data: profile, error: pErr } = await admin
       .from("kcm_member_profiles")
-      .select("id,display_name,avatar_url,bio,portfolio_text,updated_at")
+      .select("id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x,updated_at")
       .eq("membership_id", session.membershipId)
       .maybeSingle();
     if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
