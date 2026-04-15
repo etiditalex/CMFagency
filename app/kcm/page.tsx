@@ -94,6 +94,7 @@ export default function KcmPage() {
     try {
       const response = await fetch("/api/kcm-membership/stk-push", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           first_name: form.firstName.trim(),
