@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getKcmRegistrationFeeKes } from "@/lib/kcm-registration-fee";
 
 type Body = {
   first_name?: string;
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    const amountKes = await getKcmRegistrationFeeKes(admin);
+
     const { data: inserted, error: insertErr } = await admin
       .from("kcm_memberships")
       .insert({
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
         email,
         experience,
         top_model_interest: false,
-        payment_amount_kes: 50,
+        payment_amount_kes: amountKes,
         payment_confirmed: false,
         payment_status: "pending",
         status: "in_review",
@@ -106,7 +109,7 @@ export async function POST(req: NextRequest) {
         Password: password,
         Timestamp: timestamp,
         TransactionType: "CustomerPayBillOnline",
-        Amount: 50,
+        Amount: amountKes,
         PartyA: phone,
         PartyB: shortCode,
         PhoneNumber: phone,

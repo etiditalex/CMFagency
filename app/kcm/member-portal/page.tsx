@@ -2,7 +2,16 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
-import { CheckCircle2, Loader2, LogOut, ShieldCheck } from "lucide-react";
+import { FileText, Loader2, LogOut, ShieldCheck, Trash2 } from "lucide-react";
+
+type PortfolioItem = {
+  id: string;
+  file_url: string;
+  mime_type: string;
+  caption: string | null;
+  sort_order: number;
+  created_at: string;
+};
 
 type PortalState = {
   authenticated: boolean;
@@ -19,7 +28,9 @@ type PortalState = {
     display_name: string | null;
     avatar_url: string | null;
     bio: string | null;
+    portfolio_text: string | null;
   } | null;
+  portfolio_items: PortfolioItem[];
 };
 
 export default function KcmMemberPortalPage() {
@@ -34,8 +45,13 @@ export default function KcmMemberPortalPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
+  const [portfolioText, setPortfolioText] = useState("");
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+  const [deletingPortfolioId, setDeletingPortfolioId] = useState<string | null>(null);
+  const [uploadCaption, setUploadCaption] = useState("");
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
 
   const loadMe = async () => {
@@ -52,6 +68,8 @@ export default function KcmMemberPortalPage() {
       setData(json);
       setDisplayName(json.profile?.display_name ?? `${json.membership.first_name} ${json.membership.second_name}`.trim());
       setBio(json.profile?.bio ?? "");
+      setPortfolioText(json.profile?.portfolio_text ?? "");
+      setPortfolioItems(Array.isArray(json.portfolio_items) ? json.portfolio_items : []);
     } catch {
       setData(null);
       setError("Could not load portal.");
@@ -120,7 +138,11 @@ export default function KcmMemberPortalPage() {
       const res = await fetch("/api/kcm-member/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName, bio }),
+        body: JSON.stringify({
+          display_name: displayName,
+          bio,
+          portfolio_text: portfolioText,
+        }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -156,6 +178,76 @@ export default function KcmMemberPortalPage() {
       setError("Could not upload image.");
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const onPortfolioFile = async (file: File | null) => {
+    if (!file) return;
+    setUploadingPortfolio(true);
+    setError(null);
+    setProfileMessage(null);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("caption", uploadCaption.trim());
+      const res = await fetch("/api/kcm-member/portfolio/upload", { method: "POST", body: form });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; item?: PortfolioItem };
+      if (!res.ok) {
+        setError(json.error ?? "Could not upload file.");
+        return;
+      }
+      setUploadCaption("");
+      setProfileMessage("Portfolio file added.");
+      if (json.item) {
+        setPortfolioItems((prev) => [...prev, json.item!].sort((a, b) => a.sort_order - b.sort_order));
+      } else {
+        await loadMe();
+      }
+    } catch {
+      setError("Could not upload file.");
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  };
+
+  const deletePortfolioItem = async (id: string) => {
+    setDeletingPortfolioId(id);
+    setError(null);
+    setProfileMessage(null);
+    try {
+      const res = await fetch(`/api/kcm-member/portfolio/${id}`, { method: "DELETE" });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Could not remove file.");
+        return;
+      }
+      setPortfolioItems((prev) => prev.filter((p) => p.id !== id));
+      setProfileMessage("Portfolio file removed.");
+    } catch {
+      setError("Could not remove file.");
+    } finally {
+      setDeletingPortfolioId(null);
+    }
+  };
+
+  const saveCaption = async (id: string, caption: string) => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/kcm-member/portfolio/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; item?: PortfolioItem };
+      if (!res.ok) {
+        setError(json.error ?? "Could not update caption.");
+        return;
+      }
+      if (json.item) {
+        setPortfolioItems((prev) => prev.map((p) => (p.id === id ? json.item! : p)));
+      }
+    } catch {
+      setError("Could not update caption.");
     }
   };
 
@@ -296,6 +388,21 @@ export default function KcmMemberPortalPage() {
                       placeholder="Tell us about your modeling journey..."
                     />
                   </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Written portfolio</label>
+                    <p className="mb-2 text-xs text-gray-500">
+                      Describe your experience, brands, runway, editorial work, or goals. This complements your uploaded portfolio files below.
+                    </p>
+                    <textarea
+                      value={portfolioText}
+                      onChange={(e) => setPortfolioText(e.target.value)}
+                      rows={6}
+                      maxLength={12000}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                      placeholder="e.g. Commercial and editorial work since 2022; featured in…"
+                    />
+                    <p className="mt-1 text-right text-xs text-gray-400">{portfolioText.length} / 12000</p>
+                  </div>
                   <button
                     type="submit"
                     disabled={savingProfile}
@@ -304,6 +411,93 @@ export default function KcmMemberPortalPage() {
                     {savingProfile ? "Saving..." : "Save profile"}
                   </button>
                 </form>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+                <h2 className="text-left text-xl font-extrabold text-gray-900">Portfolio uploads</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Add photos or PDFs (up to 15 files). JPG, PNG, WebP, or PDF — large images up to 8MB, PDFs up to 6MB.
+                </p>
+
+                <div className="mt-4 space-y-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">Optional caption for next upload</label>
+                    <input
+                      type="text"
+                      value={uploadCaption}
+                      onChange={(e) => setUploadCaption(e.target.value.slice(0, 500))}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+                      placeholder="e.g. Coast Fashion Week 2025"
+                    />
+                  </div>
+                  <label className="inline-flex cursor-pointer items-center rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-secondary-700 disabled:opacity-60">
+                    {uploadingPortfolio ? "Uploading..." : "Choose file to upload"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      className="sr-only"
+                      disabled={uploadingPortfolio || portfolioItems.length >= 15}
+                      onChange={(e) => void onPortfolioFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {portfolioItems.length >= 15 ? (
+                    <p className="text-xs text-amber-700">You have reached the maximum of 15 portfolio files.</p>
+                  ) : null}
+                </div>
+
+                {portfolioItems.length > 0 ? (
+                  <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+                    {portfolioItems.map((item) => (
+                      <li key={item.id} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                        <div className="relative aspect-[4/3] w-full bg-gray-200">
+                          {item.mime_type.startsWith("image/") ? (
+                            <Image src={item.file_url} alt={item.caption || "Portfolio"} fill className="object-cover" sizes="(max-width:640px) 100vw, 50vw" />
+                          ) : (
+                            <a
+                              href={item.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-primary-700 hover:bg-primary-50"
+                            >
+                              <FileText className="h-10 w-10" />
+                              <span className="text-sm font-semibold">Open PDF</span>
+                            </a>
+                          )}
+                        </div>
+                        <div className="space-y-2 p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <input
+                              key={`${item.id}-${item.caption ?? ""}`}
+                              type="text"
+                              defaultValue={item.caption ?? ""}
+                              placeholder="Caption"
+                              className="min-w-0 flex-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs"
+                              onBlur={(e) => {
+                                const next = e.target.value.trim();
+                                if (next !== (item.caption ?? "").trim()) void saveCaption(item.id, next);
+                              }}
+                            />
+                            <button
+                              type="button"
+                              disabled={deletingPortfolioId === item.id}
+                              onClick={() => void deletePortfolioItem(item.id)}
+                              className="shrink-0 rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              aria-label="Remove file"
+                            >
+                              {deletingPortfolioId === item.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-4 text-sm text-gray-500">No portfolio files yet. Upload images or a PDF to showcase your work.</p>
+                )}
               </div>
             </div>
           )}

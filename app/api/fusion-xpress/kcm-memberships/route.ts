@@ -28,28 +28,71 @@ export async function GET(req: NextRequest) {
 
     const memberships = (data ?? []) as Array<{ id: string; payment_status?: string } & Record<string, unknown>>;
     const ids = memberships.map((m) => String(m.id));
-    let profileMap: Record<string, { display_name: string | null; avatar_url: string | null; bio: string | null }> = {};
+    let profileMap: Record<
+      string,
+      {
+        display_name: string | null;
+        avatar_url: string | null;
+        bio: string | null;
+        portfolio_text: string | null;
+      }
+    > = {};
+    let portfolioItemCountMap: Record<string, number> = {};
 
     if (ids.length > 0) {
       const { data: profiles } = await admin
         .from("kcm_member_profiles")
-        .select("membership_id,display_name,avatar_url,bio")
+        .select("membership_id,display_name,avatar_url,bio,portfolio_text")
         .in("membership_id", ids);
-      for (const p of (profiles ?? []) as Array<{ membership_id: string; display_name: string | null; avatar_url: string | null; bio: string | null }>) {
+      for (const p of (profiles ?? []) as Array<{
+        membership_id: string;
+        display_name: string | null;
+        avatar_url: string | null;
+        bio: string | null;
+        portfolio_text: string | null;
+      }>) {
         profileMap[String(p.membership_id)] = {
           display_name: p.display_name ?? null,
           avatar_url: p.avatar_url ?? null,
           bio: p.bio ?? null,
+          portfolio_text: p.portfolio_text ?? null,
         };
+      }
+
+      const { data: itemRows } = await admin
+        .from("kcm_member_portfolio_items")
+        .select("membership_id")
+        .in("membership_id", ids);
+      for (const row of itemRows ?? []) {
+        const mid = String((row as { membership_id: string }).membership_id);
+        portfolioItemCountMap[mid] = (portfolioItemCountMap[mid] ?? 0) + 1;
       }
     }
 
-    const enriched = memberships.map((m) => ({
-      ...m,
-      account_status: String(m.payment_status ?? "") === "success" ? "active" : "inactive",
-      profile: profileMap[String(m.id)] ?? null,
-      profile_completed: !!profileMap[String(m.id)]?.display_name || !!profileMap[String(m.id)]?.avatar_url,
-    }));
+    const enriched = memberships.map((m) => {
+      const prof = profileMap[String(m.id)] ?? null;
+      const itemCount = portfolioItemCountMap[String(m.id)] ?? 0;
+      return {
+        ...m,
+        account_status: String(m.payment_status ?? "") === "success" ? "active" : "inactive",
+        profile: prof
+          ? { ...prof, portfolio_item_count: itemCount }
+          : itemCount > 0
+            ? {
+                display_name: null,
+                avatar_url: null,
+                bio: null,
+                portfolio_text: null,
+                portfolio_item_count: itemCount,
+              }
+            : null,
+        profile_completed:
+          !!prof?.display_name ||
+          !!prof?.avatar_url ||
+          !!prof?.portfolio_text?.trim() ||
+          itemCount > 0,
+      };
+    });
 
     return NextResponse.json({
       memberships: enriched,

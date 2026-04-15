@@ -43,17 +43,44 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { data: profile } = await admin
       .from("kcm_member_profiles")
-      .select("display_name,avatar_url,bio")
+      .select("display_name,avatar_url,bio,portfolio_text")
       .eq("membership_id", id)
       .maybeSingle();
+
+    const { count: itemCount } = await admin
+      .from("kcm_member_portfolio_items")
+      .select("*", { count: "exact", head: true })
+      .eq("membership_id", id);
+
+    const n = itemCount ?? 0;
+    const profRow = profile as {
+      display_name?: string | null;
+      avatar_url?: string | null;
+      bio?: string | null;
+      portfolio_text?: string | null;
+    } | null;
+
+    const mergedProfile =
+      profRow || n > 0
+        ? {
+            display_name: profRow?.display_name ?? null,
+            avatar_url: profRow?.avatar_url ?? null,
+            bio: profRow?.bio ?? null,
+            portfolio_text: profRow?.portfolio_text ?? null,
+            portfolio_item_count: n,
+          }
+        : null;
 
     return NextResponse.json({
       membership: {
         ...data,
         account_status: String((data as { payment_status?: string }).payment_status ?? "") === "success" ? "active" : "inactive",
-        profile: profile ?? null,
-        profile_completed: !!(profile as { display_name?: string | null; avatar_url?: string | null } | null)?.display_name ||
-          !!(profile as { display_name?: string | null; avatar_url?: string | null } | null)?.avatar_url,
+        profile: mergedProfile,
+        profile_completed:
+          !!profRow?.display_name ||
+          !!profRow?.avatar_url ||
+          !!profRow?.portfolio_text?.trim() ||
+          n > 0,
       },
     });
   } catch (e: unknown) {

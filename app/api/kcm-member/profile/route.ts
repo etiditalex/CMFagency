@@ -6,9 +6,14 @@ export async function PATCH(req: NextRequest) {
     const session = await getKcmMemberSession();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = (await req.json().catch(() => ({}))) as { display_name?: string; bio?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      display_name?: string;
+      bio?: string;
+      portfolio_text?: string;
+    };
     const displayName = String(body.display_name ?? "").trim();
     const bio = String(body.bio ?? "").trim();
+    const portfolioText = String(body.portfolio_text ?? "").trim().slice(0, 12000);
 
     const admin = getKcmAdminClient();
     if (!admin) return NextResponse.json({ error: "Server configuration error." }, { status: 500 });
@@ -19,6 +24,7 @@ export async function PATCH(req: NextRequest) {
         email: session.email,
         display_name: displayName || null,
         bio: bio || null,
+        portfolio_text: portfolioText || null,
       },
       { onConflict: "membership_id" }
     );
@@ -26,7 +32,7 @@ export async function PATCH(req: NextRequest) {
 
     const { data: profile } = await admin
       .from("kcm_member_profiles")
-      .select("id,display_name,avatar_url,bio,updated_at")
+      .select("id,display_name,avatar_url,bio,portfolio_text,updated_at")
       .eq("membership_id", session.membershipId)
       .maybeSingle();
 

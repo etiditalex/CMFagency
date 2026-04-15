@@ -5,6 +5,8 @@ import Image from "next/image";
 import { CheckCircle2, CreditCard } from "lucide-react";
 import Link from "next/link";
 
+import { KCM_REGISTRATION_FEE_DEFAULT_KES } from "@/lib/kcm-registration-fee";
+
 type FormState = {
   firstName: string;
   secondName: string;
@@ -35,6 +37,20 @@ export default function KcmPage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [membershipId, setMembershipId] = useState<string | null>(null);
+  const [feeKes, setFeeKes] = useState(KCM_REGISTRATION_FEE_DEFAULT_KES);
+
+  useEffect(() => {
+    void fetch("/api/kcm-membership/registration-fee", { cache: "no-store" })
+      .then((res) => res.json().catch(() => ({})))
+      .then((j: { registration_fee_kes?: number }) => {
+        if (typeof j.registration_fee_kes === "number" && j.registration_fee_kes >= 1) {
+          setFeeKes(j.registration_fee_kes);
+        }
+      })
+      .catch(() => {
+        // Keep default fee if the settings table is not migrated yet.
+      });
+  }, []);
 
   useEffect(() => {
     if (!membershipId || paymentStatus !== "pending") return;
@@ -113,7 +129,7 @@ export default function KcmPage() {
     setError(null);
 
     if (!form.paymentConfirmed) {
-      setError("Complete the KES 50 payment step before submitting.");
+      setError(`Complete the KES ${feeKes.toLocaleString()} payment step before submitting.`);
       setSubmitting(false);
       return;
     }
@@ -470,7 +486,8 @@ export default function KcmPage() {
                     Payment step
                   </p>
                   <p className="mt-1 text-sm text-primary-800">
-                    To proceed with membership, initiate payment of <span className="font-semibold">KES 50</span>.
+                    To proceed with membership, initiate payment of{" "}
+                    <span className="font-semibold">KES {feeKes.toLocaleString()}</span>.
                   </p>
                   {!paymentPromptSent ? (
                     <button
@@ -479,7 +496,7 @@ export default function KcmPage() {
                       disabled={paymentLoading}
                       className="mt-3 inline-flex items-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      {paymentLoading ? "Starting M-Pesa..." : "Pay KES 50 via M-Pesa"}
+                      {paymentLoading ? "Starting M-Pesa..." : `Pay KES ${feeKes.toLocaleString()} via M-Pesa`}
                     </button>
                   ) : (
                     <>

@@ -199,3 +199,70 @@ begin
       with check (false);
   end if;
 end $$;
+
+-- Written portfolio narrative (member-editable after login)
+alter table public.kcm_member_profiles add column if not exists portfolio_text text;
+
+-- Uploaded portfolio files (images / PDFs), managed via service role
+create table if not exists public.kcm_member_portfolio_items (
+  id uuid primary key default gen_random_uuid(),
+  membership_id uuid not null references public.kcm_memberships(id) on delete cascade,
+  storage_path text not null,
+  file_url text not null,
+  mime_type text not null,
+  caption text,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_kcm_member_portfolio_items_membership_id on public.kcm_member_portfolio_items (membership_id);
+create index if not exists idx_kcm_member_portfolio_items_sort on public.kcm_member_portfolio_items (membership_id, sort_order);
+
+alter table public.kcm_member_portfolio_items enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'kcm_member_portfolio_items'
+      and policyname = 'kcm_member_portfolio_items_no_direct_access'
+  ) then
+    create policy kcm_member_portfolio_items_no_direct_access
+      on public.kcm_member_portfolio_items
+      as restrictive
+      for all
+      using (false)
+      with check (false);
+  end if;
+end $$;
+
+-- KCM public registration fee (M-Pesa STK amount + copy on marketing pages). Editable in Fusion Xpress.
+create table if not exists public.kcm_registration_settings (
+  id smallint primary key default 1 constraint kcm_registration_settings_singleton check (id = 1),
+  registration_fee_kes integer not null default 50 check (registration_fee_kes >= 1 and registration_fee_kes <= 1000000),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.kcm_registration_settings (id, registration_fee_kes)
+values (1, 50)
+on conflict (id) do nothing;
+
+alter table public.kcm_registration_settings enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'kcm_registration_settings'
+      and policyname = 'kcm_registration_settings_no_direct_access'
+  ) then
+    create policy kcm_registration_settings_no_direct_access
+      on public.kcm_registration_settings
+      as restrictive
+      for all
+      using (false)
+      with check (false);
+  end if;
+end $$;

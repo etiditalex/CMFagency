@@ -19,10 +19,18 @@ export async function GET() {
 
     const { data: profile, error: pErr } = await admin
       .from("kcm_member_profiles")
-      .select("id,display_name,avatar_url,bio,updated_at")
+      .select("id,display_name,avatar_url,bio,portfolio_text,updated_at")
       .eq("membership_id", session.membershipId)
       .maybeSingle();
     if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
+
+    const { data: portfolioRows, error: portErr } = await admin
+      .from("kcm_member_portfolio_items")
+      .select("id,file_url,mime_type,caption,sort_order,created_at")
+      .eq("membership_id", session.membershipId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (portErr) return NextResponse.json({ error: portErr.message }, { status: 500 });
 
     const paymentStatus = String((membership as { payment_status?: string }).payment_status ?? "pending");
     const accountStatus = paymentStatus === "success" ? "active" : "inactive";
@@ -32,6 +40,7 @@ export async function GET() {
       account_status: accountStatus,
       membership: membership,
       profile: profile ?? null,
+      portfolio_items: portfolioRows ?? [],
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";

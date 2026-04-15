@@ -42,11 +42,20 @@ export async function POST(req: NextRequest) {
     const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(path);
     const avatarUrl = pub.publicUrl;
 
+    const { data: existing } = await admin
+      .from("kcm_member_profiles")
+      .select("display_name,bio,portfolio_text")
+      .eq("membership_id", session.membershipId)
+      .maybeSingle();
+
     const { error: profileErr } = await admin.from("kcm_member_profiles").upsert(
       {
         membership_id: session.membershipId,
         email: session.email,
         avatar_url: avatarUrl,
+        display_name: (existing as { display_name?: string | null } | null)?.display_name ?? null,
+        bio: (existing as { bio?: string | null } | null)?.bio ?? null,
+        portfolio_text: (existing as { portfolio_text?: string | null } | null)?.portfolio_text ?? null,
       },
       { onConflict: "membership_id" }
     );

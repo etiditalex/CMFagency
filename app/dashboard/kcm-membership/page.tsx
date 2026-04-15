@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import Image from "next/image";
@@ -29,6 +29,8 @@ type Membership = {
     display_name: string | null;
     avatar_url: string | null;
     bio: string | null;
+    portfolio_text?: string | null;
+    portfolio_item_count?: number;
   } | null;
   status: MembershipStatus;
   review_notes: string | null;
@@ -48,6 +50,68 @@ export default function DashboardKcmMembershipPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
+
+  const [regFeeDraft, setRegFeeDraft] = useState("");
+  const [regFeeLoading, setRegFeeLoading] = useState(false);
+  const [regFeeSaving, setRegFeeSaving] = useState(false);
+  const [regFeeMessage, setRegFeeMessage] = useState<string | null>(null);
+  const [regFeeMessageIsError, setRegFeeMessageIsError] = useState(false);
+
+  const loadRegistrationFee = useCallback(async () => {
+    setRegFeeLoading(true);
+    setRegFeeMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/fusion-xpress/kcm-registration-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { registration_fee_kes?: number; error?: string };
+      if (!res.ok) return;
+      if (typeof json.registration_fee_kes === "number") setRegFeeDraft(String(json.registration_fee_kes));
+    } finally {
+      setRegFeeLoading(false);
+    }
+  }, []);
+
+  const saveRegistrationFee = async () => {
+    const n = Math.floor(Number(regFeeDraft));
+    if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
+      setRegFeeMessage("Enter an amount between 1 and 1,000,000 KES.");
+      setRegFeeMessageIsError(true);
+      return;
+    }
+    setRegFeeSaving(true);
+    setRegFeeMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+      const res = await fetch("/api/fusion-xpress/kcm-registration-settings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ registration_fee_kes: n }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { registration_fee_kes?: number; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not save registration fee.");
+      if (typeof json.registration_fee_kes === "number") setRegFeeDraft(String(json.registration_fee_kes));
+      setRegFeeMessage("Registration fee saved. New checkouts use this amount.");
+      setRegFeeMessageIsError(false);
+    } catch (e: unknown) {
+      setRegFeeMessage(e instanceof Error ? e.message : "Could not save registration fee.");
+      setRegFeeMessageIsError(true);
+    } finally {
+      setRegFeeSaving(false);
+    }
+  };
 
   const load = async (status: "" | MembershipStatus = statusFilter) => {
     setLoading(true);
@@ -94,6 +158,7 @@ export default function DashboardKcmMembershipPage() {
       return;
     }
     void load("");
+    void loadRegistrationFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, isManager, user?.id, router]);
 
@@ -199,6 +264,46 @@ export default function DashboardKcmMembershipPage() {
         </div>
       </div>
 
+      <div className="mt-6 rounded-lg border border-primary-200 bg-primary-50/90 p-4 md:p-5">
+        <h3 className="text-sm font-bold text-primary-950">KCM registration fee</h3>
+        <p className="mt-1 text-xs text-primary-900">
+          This amount is used for new M-Pesa STK prompts and stored on each membership record. Allowed range: 1–1,000,000
+          KES.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="kcm-reg-fee" className="block text-xs font-medium text-gray-700">
+              Amount (KES)
+            </label>
+            <input
+              id="kcm-reg-fee"
+              type="number"
+              min={1}
+              max={1_000_000}
+              value={regFeeDraft}
+              onChange={(e) => setRegFeeDraft(e.target.value)}
+              disabled={regFeeLoading || regFeeSaving}
+              className="mt-0.5 w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => void saveRegistrationFee()}
+            disabled={regFeeLoading || regFeeSaving || regFeeDraft === ""}
+            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {regFeeSaving ? "Saving..." : "Save fee"}
+          </button>
+        </div>
+        {regFeeMessage ? (
+          <p
+            className={`mt-2 text-xs ${regFeeMessageIsError ? "text-red-700" : "text-green-800"}`}
+          >
+            {regFeeMessage}
+          </p>
+        ) : null}
+      </div>
+
       {error && <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <div className="mt-6 overflow-x-auto rounded-md border border-gray-200 bg-white">
@@ -288,6 +393,15 @@ function Row({
             <div className="text-[11px] text-gray-500">
               {row.profile_completed ? "Profile set up" : "Profile pending"}
             </div>
+            {(row.profile?.portfolio_item_count ?? 0) > 0 || row.profile?.portfolio_text?.trim() ? (
+              <div className="mt-1 text-[10px] leading-snug text-gray-500">
+                {(row.profile?.portfolio_item_count ?? 0) > 0 ? (
+                  <span>{row.profile?.portfolio_item_count} portfolio file(s)</span>
+                ) : null}
+                {(row.profile?.portfolio_item_count ?? 0) > 0 && row.profile?.portfolio_text?.trim() ? " · " : null}
+                {row.profile?.portfolio_text?.trim() ? <span>Written portfolio</span> : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </td>
