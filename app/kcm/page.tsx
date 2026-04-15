@@ -213,7 +213,7 @@ export default function KcmPage() {
         </div>
       </section>
 
-      <section className="bg-secondary-600 py-10 md:py-20">
+      <section className="bg-primary-700 py-10 md:py-20">
         <div className="container-custom">
           <div className="grid items-center gap-5 lg:grid-cols-2 lg:gap-8">
             <div className="overflow-hidden rounded-xl border border-white/25 bg-white/10">
@@ -244,7 +244,7 @@ export default function KcmPage() {
               <button
                 type="button"
                 onClick={() => setIsRegisterModalOpen(true)}
-                className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-secondary-700 transition hover:bg-primary-50 sm:mt-6 sm:w-auto"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary-700 transition hover:bg-primary-50 sm:mt-6 sm:w-auto"
               >
                 Register now
               </button>
@@ -321,9 +321,9 @@ export default function KcmPage() {
               </div>
 
               <div className="relative z-10 mx-3 -mt-14 sm:mx-4 sm:-mt-16 md:absolute md:left-1/2 md:top-0 md:mx-0 md:w-[min(88%,1180px)] md:-translate-x-1/2 md:-translate-y-1/2">
-                <article className="overflow-hidden rounded-2xl border border-white/20 bg-secondary-600 text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
+                <article className="overflow-hidden rounded-2xl border border-white/20 bg-primary-700 text-white shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
                   <div className="grid md:grid-cols-[1.1fr_1.25fr]">
-                    <div className="bg-secondary-600 p-4 md:p-5">
+                    <div className="bg-primary-700 p-4 md:p-5">
                       <div className="relative min-h-[180px] overflow-hidden rounded-xl border border-white/15 sm:min-h-[210px] md:min-h-[245px]">
                         <Image
                           src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776166126/models2_zb5yfj.jpg"
