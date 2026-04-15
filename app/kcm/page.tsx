@@ -37,6 +37,7 @@ export default function KcmPage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "pending" | "success" | "failed">("idle");
   const [membershipId, setMembershipId] = useState<string | null>(null);
+  const [paymentFailureDetail, setPaymentFailureDetail] = useState<string | null>(null);
   const [feeKes, setFeeKes] = useState(KCM_REGISTRATION_FEE_DEFAULT_KES);
 
   useEffect(() => {
@@ -54,24 +55,34 @@ export default function KcmPage() {
 
   useEffect(() => {
     if (!membershipId || paymentStatus !== "pending") return;
-    const timer = window.setInterval(async () => {
+
+    const poll = async () => {
       try {
-        const res = await fetch(`/api/kcm-membership/payment-status?membership_id=${encodeURIComponent(membershipId)}`);
-        const json = (await res.json().catch(() => ({}))) as { payment_status?: string };
+        const res = await fetch(
+          `/api/kcm-membership/payment-status?membership_id=${encodeURIComponent(membershipId)}`,
+          { cache: "no-store" }
+        );
+        const json = (await res.json().catch(() => ({}))) as {
+          payment_status?: string;
+          review_notes?: string | null;
+        };
         if (!res.ok) return;
         const status = String(json.payment_status ?? "pending");
         if (status === "success") {
           setPaymentStatus("success");
+          setPaymentFailureDetail(null);
           setForm((prev) => ({ ...prev, paymentConfirmed: true }));
-          window.clearInterval(timer);
         } else if (status === "failed") {
+          setPaymentFailureDetail(json.review_notes?.trim() || null);
           setPaymentStatus("failed");
-          window.clearInterval(timer);
         }
       } catch {
         // Keep polling quietly for callback completion.
       }
-    }, 4000);
+    };
+
+    void poll();
+    const timer = window.setInterval(poll, 4000);
     return () => window.clearInterval(timer);
   }, [membershipId, paymentStatus]);
 
@@ -86,6 +97,7 @@ export default function KcmPage() {
 
   const initiatePaymentPrompt = async () => {
     setError(null);
+    setPaymentFailureDetail(null);
     if (!form.contact.trim() || !form.email.trim()) {
       setError("Enter contact and email first, then initiate payment.");
       return;
@@ -509,6 +521,11 @@ export default function KcmPage() {
                         {paymentStatus === "success" && "Payment confirmed successfully."}
                         {paymentStatus === "failed" && "Payment failed or cancelled. Retry payment below."}
                       </div>
+                      {paymentStatus === "failed" && paymentFailureDetail ? (
+                        <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                          {paymentFailureDetail}
+                        </p>
+                      ) : null}
                       {paymentStatus === "failed" && (
                         <button
                           type="button"

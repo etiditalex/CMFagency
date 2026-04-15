@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await admin
       .from("kcm_memberships")
-      .select("id,payment_status,payment_confirmed,mpesa_receipt,paid_at")
+      .select("id,payment_status,payment_confirmed,mpesa_receipt,paid_at,review_notes")
       .eq("id", membershipId)
       .maybeSingle();
 
@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
       payment_confirmed: data.payment_confirmed,
       mpesa_receipt: data.mpesa_receipt,
       paid_at: data.paid_at,
+      review_notes: (data as { review_notes?: string | null }).review_notes ?? null,
     });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unexpected error" }, { status: 500 });
