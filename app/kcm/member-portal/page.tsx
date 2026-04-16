@@ -360,8 +360,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     }
   };
 
-  const pageTitle = section === "dashboard" ? "Dashboard" : section === "edit-profile" ? "Edit profile" : "Portfolio uploads";
-
   const navItemClass = (target: PortalSection) =>
     `block rounded-md px-3 py-2 text-sm font-semibold leading-snug [word-break:break-word] ${
       section === target ? "bg-primary-100 text-primary-900" : "text-gray-900 hover:bg-gray-100"
@@ -378,7 +376,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 pt-28 pb-12">
+    <main className="min-h-screen bg-gray-50 py-6 md:py-8">
       <section className={data ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10" : "container-custom"}>
         <div className={data ? "w-full max-w-none" : "mx-auto max-w-[1200px]"}>
           {!data ? (
@@ -462,10 +460,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                 </aside>
 
                 <div className="min-w-0 bg-[#f3f8fc]">
-                  <header className="relative overflow-x-clip border-b border-primary-900/30 bg-primary-800 px-5 py-5 text-white md:px-6">
-                    <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,#ffffff_0,transparent_40%),linear-gradient(135deg,#ffffff33_0%,transparent_60%)]" />
-                    <h2 className="relative break-words text-xl font-extrabold tracking-tight">{pageTitle}</h2>
-                  </header>
                   <div className="space-y-6 p-4 md:p-6">
               {section === "dashboard" ? (
               <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">

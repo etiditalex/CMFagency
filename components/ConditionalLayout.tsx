@@ -25,6 +25,7 @@ export default function ConditionalLayout({
   const pathname = usePathname();
   const isVerifyEmailPage = pathname === "/verify-email";
   const isDashboard = pathname?.startsWith("/dashboard");
+  const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -42,6 +43,17 @@ export default function ConditionalLayout({
     return (
       <>
         <DashboardShell>{children}</DashboardShell>
+        <CookieBanner />
+        <ScrollToTopButton />
+      </>
+    );
+  }
+
+  // KCM member portal pages have their own shell and should render without site navbar/top bar/footer.
+  if (isKcmMemberPortal) {
+    return (
+      <>
+        <main className="min-h-screen">{children}</main>
         <CookieBanner />
         <ScrollToTopButton />
       </>
