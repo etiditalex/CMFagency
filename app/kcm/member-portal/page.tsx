@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, FileText, Instagram, Loader2, LogOut, PlusCircle, Share2, ShieldCheck, Trash2, Twitter, UserRound } from "lucide-react";
 
@@ -68,6 +68,8 @@ export default function KcmMemberPortalPage() {
   const [deletingPortfolioId, setDeletingPortfolioId] = useState<string | null>(null);
   const [uploadCaption, setUploadCaption] = useState("");
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [editingWrittenPortfolio, setEditingWrittenPortfolio] = useState(true);
+  const portfolioUiSyncedRef = useRef(false);
 
   const loadMe = async () => {
     setChecking(true);
@@ -92,6 +94,11 @@ export default function KcmMemberPortalPage() {
       setSocialTiktok(json.profile?.social_tiktok ?? "");
       setSocialX(json.profile?.social_x ?? "");
       setPortfolioItems(Array.isArray(json.portfolio_items) ? json.portfolio_items : []);
+      if (!portfolioUiSyncedRef.current) {
+        portfolioUiSyncedRef.current = true;
+        const hasWritten = (json.profile?.portfolio_text ?? "").trim().length > 0;
+        setEditingWrittenPortfolio(!hasWritten);
+      }
     } catch {
       setData(null);
       setError("Could not load portal.");
@@ -151,8 +158,7 @@ export default function KcmMemberPortalPage() {
     }
   };
 
-  const saveProfile = async (e: FormEvent) => {
-    e.preventDefault();
+  const persistProfile = async () => {
     setSavingProfile(true);
     setError(null);
     setProfileMessage(null);
@@ -178,12 +184,18 @@ export default function KcmMemberPortalPage() {
         return;
       }
       setProfileMessage("Profile updated.");
+      setEditingWrittenPortfolio(false);
       await loadMe();
     } catch {
       setError("Could not save profile.");
     } finally {
       setSavingProfile(false);
     }
+  };
+
+  const saveProfile = async (e: FormEvent) => {
+    e.preventDefault();
+    await persistProfile();
   };
 
   const onAvatarChange = async (file: File | null) => {
@@ -307,6 +319,14 @@ export default function KcmMemberPortalPage() {
     await fetch("/api/kcm-member/logout", { method: "POST" });
     setData(null);
     setProfileMessage(null);
+    portfolioUiSyncedRef.current = false;
+    setEditingWrittenPortfolio(true);
+  };
+
+  const savedPortfolioText = (data?.profile?.portfolio_text ?? "").trim();
+  const cancelEditWrittenPortfolio = () => {
+    setPortfolioText(data?.profile?.portfolio_text ?? "");
+    setEditingWrittenPortfolio(false);
   };
 
   const handle = useMemo(() => {
@@ -345,8 +365,8 @@ export default function KcmMemberPortalPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 pt-28 pb-12">
-      <section className="container-custom">
-        <div className="mx-auto max-w-[1200px]">
+      <section className={data ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10" : "container-custom"}>
+        <div className={data ? "w-full max-w-none" : "mx-auto max-w-[1200px]"}>
           {!data ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
               <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">KCM Member Portal</h1>
@@ -395,21 +415,21 @@ export default function KcmMemberPortalPage() {
               </form>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-              <div className="grid lg:grid-cols-[240px_1fr]">
-                <aside className="border-b border-gray-200 bg-white lg:border-b-0 lg:border-r">
-                  <div className="border-b border-gray-100 px-4 py-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">KCM Portal</p>
-                    <p className="mt-1 text-sm font-bold text-gray-900">{displayName || data.membership.first_name}</p>
+            <div className="overflow-hidden border border-gray-200 bg-white shadow-sm lg:rounded-lg">
+              <div className="grid min-h-[min(100vh,920px)] lg:grid-cols-[min(280px,32vw)_1fr]">
+                <aside className="border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
+                  <div className="border-b border-gray-200 px-4 py-4 lg:bg-gray-50">
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-gray-900">KCM Portal</p>
+                    <p className="mt-1.5 text-sm font-bold text-gray-900">{displayName || data.membership.first_name}</p>
                   </div>
                   <nav className="space-y-1 p-3">
-                    <a href="#profile-preview" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    <a href="#profile-preview" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
                       Profile overview
                     </a>
-                    <a href="#profile-editor" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    <a href="#profile-editor" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
                       Edit profile
                     </a>
-                    <a href="#portfolio-uploads" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    <a href="#portfolio-uploads" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
                       Portfolio uploads
                     </a>
                   </nav>
@@ -417,7 +437,7 @@ export default function KcmMemberPortalPage() {
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
                     >
                       <LogOut className="h-4 w-4" />
                       Logout
@@ -617,19 +637,62 @@ export default function KcmMemberPortalPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700">Written portfolio</label>
-                    <p className="mb-2 text-xs text-gray-500">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <label className="block text-sm font-semibold text-gray-900">Written portfolio</label>
+                      {!editingWrittenPortfolio ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPortfolioText(data?.profile?.portfolio_text ?? "");
+                            setEditingWrittenPortfolio(true);
+                          }}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                        >
+                          {savedPortfolioText ? "Edit" : "Add written portfolio"}
+                        </button>
+                      ) : null}
+                    </div>
+                    <p className="mb-3 text-xs text-gray-600">
                       Describe your experience, brands, runway, editorial work, or goals. This complements your uploaded portfolio files below.
                     </p>
-                    <textarea
-                      value={portfolioText}
-                      onChange={(e) => setPortfolioText(e.target.value)}
-                      rows={6}
-                      maxLength={12000}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
-                      placeholder="e.g. Commercial and editorial work since 2022; featured in…"
-                    />
-                    <p className="mt-1 text-right text-xs text-gray-400">{portfolioText.length} / 12000</p>
+                    {editingWrittenPortfolio ? (
+                      <>
+                        <textarea
+                          value={portfolioText}
+                          onChange={(e) => setPortfolioText(e.target.value)}
+                          rows={8}
+                          maxLength={12000}
+                          className="min-h-[180px] w-full resize-y rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          placeholder="e.g. Commercial and editorial work since 2022; featured in…"
+                        />
+                        <p className="mt-1 text-right text-xs text-gray-500">{portfolioText.length} / 12000</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={cancelEditWrittenPortfolio}
+                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={savingProfile}
+                            onClick={() => void persistProfile()}
+                            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                          >
+                            {savingProfile ? "Saving…" : "Save written portfolio"}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="min-h-[120px] rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm leading-relaxed text-gray-900 shadow-sm">
+                        {savedPortfolioText ? (
+                          <p className="whitespace-pre-line">{data?.profile?.portfolio_text}</p>
+                        ) : (
+                          <p className="text-gray-500">You have not added a written portfolio yet. Click &quot;Add written portfolio&quot; to get started.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
