@@ -516,8 +516,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   </div>
                 </div>
                 <div className="relative min-w-0 px-4 pb-6 pt-0 sm:px-6">
-                  <div className="-mt-12 flex min-w-0 flex-wrap items-start justify-between gap-4">
-                    <div className="flex min-w-0 max-w-full flex-1 items-center gap-4">
+                  <div className="-mt-12 flex min-w-0 flex-col gap-4">
+                    <div className="flex min-w-0 max-w-full items-center gap-4">
                       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-4 border-white bg-gray-100 shadow-sm">
                         {data.profile?.avatar_url ? (
                           <Image src={data.profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
@@ -527,8 +527,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="break-words text-2xl font-extrabold tracking-tight text-gray-900">
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <h2 className="break-words text-2xl font-extrabold leading-tight tracking-tight text-gray-900">
                           {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
                         </h2>
                         <p className="break-all text-sm text-gray-600">@{handle}</p>
@@ -537,7 +537,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         </p>
                       </div>
                     </div>
-                    <div className="flex min-w-0 w-full flex-wrap gap-2 sm:w-auto sm:max-w-full sm:justify-end">
+                    <div className="flex min-w-0 w-full flex-wrap gap-2 sm:justify-start">
                       <Link
                         href="/kcm/member-portal/edit-profile"
                         className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
