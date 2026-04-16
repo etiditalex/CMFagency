@@ -595,6 +595,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
               ) : null}
 
               {section !== "dashboard" ? (
+              <>
               <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <h2 className="text-left text-xl font-extrabold text-gray-900">Your profile</h2>
                 {error && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
@@ -858,6 +859,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <p className="mt-4 text-sm text-gray-500">No portfolio files yet. Upload images or a PDF to showcase your work.</p>
                 )}
               </div>
+              </>
               ) : null}
                   </div>
                 </div>
