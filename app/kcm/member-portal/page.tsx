@@ -527,12 +527,12 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1 space-y-0.5">
+                      <div className="min-w-0 flex-1">
                         <p className="break-all text-sm text-gray-600">@{handle}</p>
-                        <h2 className="break-words text-xl font-extrabold leading-tight tracking-tight text-gray-900">
+                        <h2 className="break-words pt-0.5 text-xl font-extrabold leading-tight tracking-tight text-gray-900">
                           {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
                         </h2>
-                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-secondary-700">
+                        <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "model" ? "Model" : "Creative"}
                         </p>
                       </div>
@@ -555,9 +555,9 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       </button>
                     </div>
                   </div>
-                  <h3 className="mt-5 break-words text-2xl font-extrabold text-gray-900">
-                    {professionalTitle || (profileCategory === "model" ? "Professional Model" : "Creative Professional")}
-                  </h3>
+                  {professionalTitle ? (
+                    <h3 className="mt-5 break-words text-2xl font-extrabold text-gray-900">{professionalTitle}</h3>
+                  ) : null}
                   <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-gray-700">
                     {bio || "Add your description below to complete your profile."}
                   </p>
