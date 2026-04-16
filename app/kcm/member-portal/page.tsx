@@ -418,7 +418,7 @@ export default function KcmMemberPortalPage() {
             <div className="overflow-x-clip border border-gray-200 bg-white shadow-sm lg:rounded-lg">
               <div className="grid min-h-[min(100vh,920px)] lg:grid-cols-[280px_minmax(0,1fr)]">
                 <aside className="min-w-0 border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
-                  <div className="border-b border-gray-200 px-4 py-4 lg:bg-gray-50">
+                  <div className="border-b border-gray-200 px-4 pt-5 pb-4 lg:bg-gray-50">
                     <p className="text-sm font-extrabold uppercase tracking-[0.08em] leading-6 text-gray-900 [word-break:break-word]">KCM Portal</p>
                     <p className="mt-1.5 break-words text-sm font-bold leading-snug text-gray-900">
                       {displayName || data.membership.first_name}
