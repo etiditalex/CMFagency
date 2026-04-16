@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Camera, FileText, Instagram, Loader2, LogOut, PlusCircle, Share2, ShieldCheck, Trash2, Twitter, UserRound } from "lucide-react";
 
 type PortfolioItem = {
@@ -40,7 +41,13 @@ type PortalState = {
   portfolio_items: PortfolioItem[];
 };
 
-export default function KcmMemberPortalPage() {
+type PortalSection = "dashboard" | "edit-profile" | "portfolio-uploads";
+
+type KcmMemberPortalPageProps = {
+  section?: PortalSection;
+};
+
+export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPageProps) {
   const [checking, setChecking] = useState(true);
   const [data, setData] = useState<PortalState | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -353,6 +360,13 @@ export default function KcmMemberPortalPage() {
     }
   };
 
+  const pageTitle = section === "dashboard" ? "Dashboard" : section === "edit-profile" ? "Edit profile" : "Portfolio uploads";
+
+  const navItemClass = (target: PortalSection) =>
+    `block rounded-md px-3 py-2 text-sm font-semibold leading-snug [word-break:break-word] ${
+      section === target ? "bg-primary-100 text-primary-900" : "text-gray-900 hover:bg-gray-100"
+    }`;
+
   if (checking) {
     return (
       <main className="min-h-screen bg-gray-50 pt-28">
@@ -425,24 +439,15 @@ export default function KcmMemberPortalPage() {
                     </p>
                   </div>
                   <nav className="space-y-1 p-3">
-                    <a
-                      href="#profile-preview"
-                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
-                    >
+                    <Link href="/kcm/member-portal" className={navItemClass("dashboard")}>
                       Profile overview
-                    </a>
-                    <a
-                      href="#profile-editor"
-                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
-                    >
+                    </Link>
+                    <Link href="/kcm/member-portal/edit-profile" className={navItemClass("edit-profile")}>
                       Edit profile
-                    </a>
-                    <a
-                      href="#portfolio-uploads"
-                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
-                    >
+                    </Link>
+                    <Link href="/kcm/member-portal/portfolio-uploads" className={navItemClass("portfolio-uploads")}>
                       Portfolio uploads
-                    </a>
+                    </Link>
                   </nav>
                   <div className="border-t border-gray-100 p-3">
                     <button
@@ -459,10 +464,11 @@ export default function KcmMemberPortalPage() {
                 <div className="min-w-0 bg-[#f3f8fc]">
                   <header className="relative overflow-x-clip border-b border-primary-900/30 bg-primary-800 px-5 py-5 text-white md:px-6">
                     <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,#ffffff_0,transparent_40%),linear-gradient(135deg,#ffffff33_0%,transparent_60%)]" />
-                    <h2 className="relative break-words text-xl font-extrabold tracking-tight">Dashboard</h2>
+                    <h2 className="relative break-words text-xl font-extrabold tracking-tight">{pageTitle}</h2>
                   </header>
                   <div className="space-y-6 p-4 md:p-6">
-              <div id="profile-preview" className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+              {section === "dashboard" ? (
+              <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="relative h-44 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
                   {coverUrl ? (
                     <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
@@ -503,14 +509,13 @@ export default function KcmMemberPortalPage() {
                       </div>
                     </div>
                     <div className="flex min-w-0 w-full flex-wrap gap-2 sm:w-auto sm:max-w-full sm:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setProfileMessage("Use the profile editor below to add another profile variant.")}
+                      <Link
+                        href="/kcm/member-portal/edit-profile"
                         className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
                       >
                         <PlusCircle className="h-4 w-4 shrink-0" />
                         <span className="min-w-0 break-words">Add profile</span>
-                      </button>
+                      </Link>
                       <button
                         type="button"
                         onClick={() => void shareProfile()}
@@ -555,8 +560,10 @@ export default function KcmMemberPortalPage() {
                   </div>
                 </div>
               </div>
+              ) : null}
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8" id="profile-editor">
+              {section !== "portfolio-uploads" ? (
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 max-w-full">
                     <h1 className="break-words text-left text-2xl font-extrabold text-gray-900 md:text-3xl">
@@ -585,8 +592,10 @@ export default function KcmMemberPortalPage() {
                   </p>
                 </div>
               </div>
+              ) : null}
 
-              <div id="portfolio-uploads" className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              {section !== "dashboard" ? (
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
                 <h2 className="text-left text-xl font-extrabold text-gray-900">Your profile</h2>
                 {error && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
                 {profileMessage && <p className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{profileMessage}</p>}
@@ -849,6 +858,7 @@ export default function KcmMemberPortalPage() {
                   <p className="mt-4 text-sm text-gray-500">No portfolio files yet. Upload images or a PDF to showcase your work.</p>
                 )}
               </div>
+              ) : null}
                   </div>
                 </div>
               </div>
@@ -858,4 +868,8 @@ export default function KcmMemberPortalPage() {
       </section>
     </main>
   );
+}
+
+export default function KcmMemberPortalDashboardPage() {
+  return <KcmMemberPortalPage section="dashboard" />;
 }
