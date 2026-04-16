@@ -398,12 +398,22 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     );
   }
 
+  const loginBackgroundStyle = !data
+    ? {
+        backgroundImage:
+          "linear-gradient(rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.55)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }
+    : undefined;
+
   return (
-    <main className="min-h-screen bg-gray-50 py-6 md:py-8">
+    <main className="min-h-screen bg-gray-50 py-6 md:py-8" style={loginBackgroundStyle}>
       <section className={data ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10" : "container-custom"}>
         <div className={data ? "w-full max-w-none" : "mx-auto max-w-[1200px]"}>
           {!data ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="rounded-2xl border border-white/50 bg-white/95 p-6 shadow-xl backdrop-blur-sm md:p-8">
               <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">KCM Member Portal</h1>
               <p className="mt-2 text-sm text-gray-600">
                 Sign in with your paid membership email. We will send a verification code to your inbox.
