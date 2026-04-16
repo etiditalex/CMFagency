@@ -528,10 +528,10 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         )}
                       </div>
                       <div className="min-w-0 flex-1 space-y-0.5">
-                        <h2 className="break-words text-2xl font-extrabold leading-tight tracking-tight text-gray-900">
+                        <p className="break-all text-sm text-gray-600">@{handle}</p>
+                        <h2 className="break-words text-xl font-extrabold leading-tight tracking-tight text-gray-900">
                           {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
                         </h2>
-                        <p className="break-all text-sm text-gray-600">@{handle}</p>
                         <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "model" ? "Model" : "Creative"}
                         </p>
