@@ -528,9 +528,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         )}
                       </div>
                       <div className="min-w-0 flex-1 self-end pb-1">
-                        <h2 className="break-words text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl">
-                          {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
-                        </h2>
                         <p className="break-all text-base text-gray-700 sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "model" ? "Model" : "Creative"}
