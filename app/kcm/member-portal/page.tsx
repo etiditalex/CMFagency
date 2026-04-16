@@ -415,21 +415,32 @@ export default function KcmMemberPortalPage() {
               </form>
             </div>
           ) : (
-            <div className="overflow-hidden border border-gray-200 bg-white shadow-sm lg:rounded-lg">
-              <div className="grid min-h-[min(100vh,920px)] lg:grid-cols-[min(280px,32vw)_1fr]">
-                <aside className="border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
+            <div className="overflow-x-clip border border-gray-200 bg-white shadow-sm lg:rounded-lg">
+              <div className="grid min-h-[min(100vh,920px)] lg:grid-cols-[280px_minmax(0,1fr)]">
+                <aside className="min-w-0 border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
                   <div className="border-b border-gray-200 px-4 py-4 lg:bg-gray-50">
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-gray-900">KCM Portal</p>
-                    <p className="mt-1.5 text-sm font-bold text-gray-900">{displayName || data.membership.first_name}</p>
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-gray-900 [word-break:break-word]">KCM Portal</p>
+                    <p className="mt-1.5 break-words text-sm font-bold leading-snug text-gray-900">
+                      {displayName || data.membership.first_name}
+                    </p>
                   </div>
                   <nav className="space-y-1 p-3">
-                    <a href="#profile-preview" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+                    <a
+                      href="#profile-preview"
+                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
+                    >
                       Profile overview
                     </a>
-                    <a href="#profile-editor" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+                    <a
+                      href="#profile-editor"
+                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
+                    >
                       Edit profile
                     </a>
-                    <a href="#portfolio-uploads" className="block rounded-md px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100">
+                    <a
+                      href="#portfolio-uploads"
+                      className="block rounded-md px-3 py-2 text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-100 [word-break:break-word]"
+                    >
                       Portfolio uploads
                     </a>
                   </nav>
@@ -437,7 +448,7 @@ export default function KcmMemberPortalPage() {
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                      className="inline-flex w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100"
                     >
                       <LogOut className="h-4 w-4" />
                       Logout
@@ -446,21 +457,21 @@ export default function KcmMemberPortalPage() {
                 </aside>
 
                 <div className="min-w-0 bg-[#f3f8fc]">
-                  <header className="relative overflow-hidden border-b border-primary-900/30 bg-primary-800 px-5 py-5 text-white md:px-6">
-                    <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,#ffffff_0,transparent_40%),linear-gradient(135deg,#ffffff33_0%,transparent_60%)]" />
-                    <h2 className="relative text-xl font-extrabold tracking-tight">Dashboard</h2>
+                  <header className="relative overflow-x-clip border-b border-primary-900/30 bg-primary-800 px-5 py-5 text-white md:px-6">
+                    <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_20%,#ffffff_0,transparent_40%),linear-gradient(135deg,#ffffff33_0%,transparent_60%)]" />
+                    <h2 className="relative break-words text-xl font-extrabold tracking-tight">Dashboard</h2>
                   </header>
                   <div className="space-y-6 p-4 md:p-6">
-              <div id="profile-preview" className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div className="relative h-44 w-full bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
+              <div id="profile-preview" className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="relative h-44 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
                   {coverUrl ? (
                     <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
                   ) : (
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80')] bg-cover bg-center opacity-25" />
                   )}
-                  <label className="absolute right-3 top-3 inline-flex cursor-pointer items-center gap-2 rounded-md bg-white/95 px-3 py-2 text-xs font-semibold text-gray-700 shadow">
-                    <Camera className="h-3.5 w-3.5" />
-                    {uploadingCover ? "Uploading..." : "Upload cover photo"}
+                  <label className="absolute right-3 top-3 z-10 inline-flex max-w-[calc(100%-1.5rem)] cursor-pointer flex-wrap items-center justify-end gap-2 rounded-md bg-white/95 px-3 py-2 text-left text-xs font-semibold leading-snug text-gray-700 shadow sm:max-w-[min(100%-1.5rem,16rem)]">
+                    <Camera className="h-3.5 w-3.5 shrink-0" />
+                    <span className="min-w-0 break-words">{uploadingCover ? "Uploading..." : "Upload cover photo"}</span>
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp"
@@ -469,10 +480,10 @@ export default function KcmMemberPortalPage() {
                     />
                   </label>
                 </div>
-                <div className="relative px-4 pb-6 pt-0 sm:px-6">
-                  <div className="-mt-12 flex flex-wrap items-end justify-between gap-4">
-                    <div className="flex items-end gap-4">
-                      <div className="relative h-24 w-24 overflow-hidden rounded-xl border-4 border-white bg-gray-100 shadow-sm">
+                <div className="relative min-w-0 px-4 pb-6 pt-0 sm:px-6">
+                  <div className="-mt-12 flex min-w-0 flex-wrap items-end justify-between gap-4">
+                    <div className="flex min-w-0 max-w-full flex-1 items-end gap-4">
+                      <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-4 border-white bg-gray-100 shadow-sm">
                         {data.profile?.avatar_url ? (
                           <Image src={data.profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
                         ) : (
@@ -481,39 +492,39 @@ export default function KcmMemberPortalPage() {
                           </div>
                         )}
                       </div>
-                      <div className="pb-1">
-                        <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                      <div className="min-w-0 flex-1 pb-1">
+                        <h2 className="break-words text-2xl font-extrabold tracking-tight text-gray-900">
                           {displayName || `${data.membership.first_name} ${data.membership.second_name}`}
                         </h2>
-                        <p className="text-sm text-gray-600">@{handle}</p>
+                        <p className="break-all text-sm text-gray-600">@{handle}</p>
                         <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "model" ? "Model" : "Creative"}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex min-w-0 w-full flex-wrap gap-2 sm:w-auto sm:max-w-full sm:justify-end">
                       <button
                         type="button"
                         onClick={() => setProfileMessage("Use the profile editor below to add another profile variant.")}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
                       >
-                        <PlusCircle className="h-4 w-4" />
-                        Add profile
+                        <PlusCircle className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0 break-words">Add profile</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => void shareProfile()}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
                       >
-                        <Share2 className="h-4 w-4" />
-                        Share to socials
+                        <Share2 className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0 break-words">Share to socials</span>
                       </button>
                     </div>
                   </div>
-                  <h3 className="mt-5 text-2xl font-extrabold text-gray-900">
+                  <h3 className="mt-5 break-words text-2xl font-extrabold text-gray-900">
                     {professionalTitle || (profileCategory === "model" ? "Professional Model" : "Creative Professional")}
                   </h3>
-                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                  <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-gray-700">
                     {bio || "Add your description below to complete your profile."}
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
@@ -546,10 +557,12 @@ export default function KcmMemberPortalPage() {
               </div>
 
               <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8" id="profile-editor">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">Welcome, {data.membership.first_name}</h1>
-                    <p className="mt-1 text-sm text-gray-600">{data.membership.email}</p>
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 max-w-full">
+                    <h1 className="break-words text-left text-2xl font-extrabold text-gray-900 md:text-3xl">
+                      Welcome, {data.membership.first_name}
+                    </h1>
+                    <p className="mt-1 break-all text-sm text-gray-600">{data.membership.email}</p>
                   </div>
                   <button
                     type="button"
@@ -561,11 +574,13 @@ export default function KcmMemberPortalPage() {
                   </button>
                 </div>
                 <div className="mt-5 rounded-xl border border-primary-200 bg-primary-50 p-4">
-                  <p className="inline-flex items-center gap-2 text-sm font-semibold text-primary-900">
-                    <ShieldCheck className="h-4 w-4" />
-                    Account status: <span className="uppercase">{data.account_status}</span>
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary-900">
+                    <ShieldCheck className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 break-words">
+                      Account status: <span className="uppercase">{data.account_status}</span>
+                    </span>
                   </p>
-                  <p className="mt-1 text-xs text-primary-800">
+                  <p className="mt-1 break-words text-xs text-primary-800">
                     Payment status: {data.membership.payment_status} | Membership review: {data.membership.status}
                   </p>
                 </div>
@@ -637,8 +652,8 @@ export default function KcmMemberPortalPage() {
                     />
                   </div>
                   <div>
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-sm font-semibold text-gray-900">Written portfolio</label>
+                    <div className="mb-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
+                      <label className="min-w-0 flex-1 break-words text-sm font-semibold text-gray-900">Written portfolio</label>
                       {!editingWrittenPortfolio ? (
                         <button
                           type="button"
@@ -646,7 +661,7 @@ export default function KcmMemberPortalPage() {
                             setPortfolioText(data?.profile?.portfolio_text ?? "");
                             setEditingWrittenPortfolio(true);
                           }}
-                          className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                          className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-50"
                         >
                           {savedPortfolioText ? "Edit" : "Add written portfolio"}
                         </button>
@@ -662,7 +677,7 @@ export default function KcmMemberPortalPage() {
                           onChange={(e) => setPortfolioText(e.target.value)}
                           rows={8}
                           maxLength={12000}
-                          className="min-h-[180px] w-full resize-y rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          className="min-h-[180px] w-full min-w-0 resize-y rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                           placeholder="e.g. Commercial and editorial work since 2022; featured in…"
                         />
                         <p className="mt-1 text-right text-xs text-gray-500">{portfolioText.length} / 12000</p>
@@ -685,11 +700,13 @@ export default function KcmMemberPortalPage() {
                         </div>
                       </>
                     ) : (
-                      <div className="min-h-[120px] rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm leading-relaxed text-gray-900 shadow-sm">
+                      <div className="min-h-[120px] min-w-0 rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm leading-relaxed text-gray-900 shadow-sm">
                         {savedPortfolioText ? (
-                          <p className="whitespace-pre-line">{data?.profile?.portfolio_text}</p>
+                          <p className="whitespace-pre-line break-words [overflow-wrap:anywhere]">{data?.profile?.portfolio_text}</p>
                         ) : (
-                          <p className="text-gray-500">You have not added a written portfolio yet. Click &quot;Add written portfolio&quot; to get started.</p>
+                          <p className="break-words text-gray-500">
+                            You have not added a written portfolio yet. Click &quot;Add written portfolio&quot; to get started.
+                          </p>
                         )}
                       </div>
                     )}
