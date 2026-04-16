@@ -5,12 +5,29 @@ import { useEffect, useRef, useState } from "react";
 const ADSENSE_CLIENT = "ca-pub-7231529725117325";
 // Homepage_Footer_Ad slot; override with NEXT_PUBLIC_ADSENSE_SLOT if needed
 const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT || "2949826143";
+const ADSENSE_READY_EVENT = "adsense:ready";
 
 /** AdSense rejects pushes when the slot width is 0; allow normal mobile widths once laid out. */
 const MIN_SLOT_WIDTH = 120;
 const LAYOUT_RETRY_MS = 120;
 const MAX_LAYOUT_RETRIES = 25;
 const PUSH_RETRY_MS = 220;
+
+function hasUsableAncestorLayout(node: HTMLElement | null): boolean {
+  let current = node?.parentElement ?? null;
+  let sawEnoughWidth = false;
+
+  while (current && current !== document.body) {
+    const style = getComputedStyle(current);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+
+    const width = current.getBoundingClientRect().width;
+    if (width >= MIN_SLOT_WIDTH) sawEnoughWidth = true;
+    current = current.parentElement;
+  }
+
+  return sawEnoughWidth;
+}
 
 function hasUsableSlotSize(ins: HTMLModElement): boolean {
   const rect = ins.getBoundingClientRect();
@@ -22,7 +39,13 @@ function hasUsableSlotSize(ins: HTMLModElement): boolean {
   const style = getComputedStyle(ins);
   if (style.display === "none" || style.visibility === "hidden") return false;
   if (!ins.offsetParent && fromIns === 0 && wrapW === 0) return false;
+  if (!hasUsableAncestorLayout(ins)) return false;
   return true;
+}
+
+function isAdSenseScriptReady(): boolean {
+  const script = document.querySelector(`script[src*="pagead/js/adsbygoogle.js"]`) as HTMLScriptElement | null;
+  return script?.dataset.adsenseLoaded === "true";
 }
 
 export default function AdSenseBlock() {
@@ -49,6 +72,13 @@ export default function AdSenseBlock() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           if (cancelled || pushed.current || !el) return;
+          if (!isAdSenseScriptReady()) {
+            if (retryCount < MAX_LAYOUT_RETRIES) {
+              retryCount += 1;
+              retryTimer = window.setTimeout(tryPush, LAYOUT_RETRY_MS);
+            }
+            return;
+          }
           if (!hasUsableSlotSize(el)) {
             if (retryCount < MAX_LAYOUT_RETRIES) {
               retryCount += 1;
@@ -102,12 +132,14 @@ export default function AdSenseBlock() {
     if (wrap) io.observe(wrap);
     ro.observe(el);
     if (wrap) ro.observe(wrap);
+    window.addEventListener(ADSENSE_READY_EVENT, tryPush);
     tryPush();
 
     return () => {
       cancelled = true;
       io.disconnect();
       ro.disconnect();
+      window.removeEventListener(ADSENSE_READY_EVENT, tryPush);
       if (fallbackTimer) window.clearTimeout(fallbackTimer);
       if (retryTimer) window.clearTimeout(retryTimer);
     };

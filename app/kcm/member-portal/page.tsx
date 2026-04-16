@@ -384,14 +384,14 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   };
 
   const navItemClass = (target: PortalSection) =>
-    `block rounded-md px-3 py-2 text-sm font-semibold leading-snug [word-break:break-word] ${
+    `block min-w-[150px] rounded-xl border px-3 py-2.5 text-center text-sm font-semibold leading-snug [word-break:break-word] sm:min-w-0 sm:rounded-md sm:border-0 sm:px-3 sm:py-2 sm:text-left ${
       section === target ? "bg-primary-100 text-primary-900" : "text-gray-900 hover:bg-gray-100"
     }`;
 
   if (checking) {
     return (
-      <main className="min-h-screen bg-gray-50 pt-28">
-        <div className="container-custom flex min-h-[50vh] items-center justify-center">
+      <main className="min-h-[100dvh] bg-gray-50 px-4 py-24 sm:px-6">
+        <div className="mx-auto flex min-h-[50dvh] w-full max-w-5xl items-center justify-center">
           <Loader2 className="h-10 w-10 animate-spin text-primary-600" />
         </div>
       </main>
@@ -401,7 +401,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   const loginBackgroundStyle = !data
     ? {
         backgroundImage:
-          "linear-gradient(rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.55)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
+          "linear-gradient(135deg, rgba(6, 18, 52, 0.9), rgba(8, 40, 88, 0.88)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -409,11 +409,24 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     : undefined;
 
   return (
-    <main className="min-h-screen bg-gray-50 py-6 md:py-8" style={loginBackgroundStyle}>
-      <section className={data ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10" : "container-custom"}>
-        <div className={data ? "w-full max-w-none" : "mx-auto max-w-[1200px]"}>
+    <main
+      className={
+        data
+          ? "min-h-[100dvh] bg-gray-50 py-4 sm:py-6 md:py-8"
+          : "min-h-[100dvh] bg-gray-50 px-3 py-6 sm:px-4 md:px-6"
+      }
+      style={loginBackgroundStyle}
+    >
+      <section
+        className={
+          data
+            ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10"
+            : "mx-auto flex min-h-[100dvh] w-full max-w-[1200px] items-center justify-center py-10 sm:py-12 md:py-16"
+        }
+      >
+        <div className={data ? "w-full max-w-none" : "mx-auto w-full max-w-2xl"}>
           {!data ? (
-            <div className="rounded-2xl border border-white/50 bg-white/95 p-6 shadow-xl backdrop-blur-sm md:p-8">
+            <div className="w-full rounded-2xl border border-white/50 bg-white/95 p-5 shadow-xl backdrop-blur-sm sm:p-6 md:p-8">
               <h1 className="text-left text-2xl font-extrabold text-gray-900 md:text-3xl">KCM Member Portal</h1>
               <p className="mt-2 text-sm text-gray-600">
                 Sign in with your paid membership email. We will send a verification code to your inbox.
@@ -426,13 +439,14 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your-email@example.com"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                   required
+                  autoComplete="email"
                 />
                 <button
                   type="submit"
                   disabled={sendingCode}
-                  className="inline-flex items-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:w-auto sm:py-2.5"
                 >
                   {sendingCode ? "Sending..." : "Send login code"}
                 </button>
@@ -446,30 +460,32 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   maxLength={6}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2.5 font-mono tracking-widest"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 font-mono text-base tracking-widest text-gray-900 outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20 sm:text-sm"
                   placeholder="000000"
                   required
+                  autoComplete="one-time-code"
                 />
                 <button
                   type="submit"
                   disabled={verifying}
-                  className="inline-flex items-center rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-secondary-700 disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-secondary-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:w-auto sm:py-2.5"
                 >
                   {verifying ? "Verifying..." : "Verify and continue"}
                 </button>
               </form>
             </div>
           ) : (
-            <div className="overflow-x-clip border border-gray-200 bg-white shadow-sm lg:rounded-lg">
-              <div className="grid min-h-[min(100vh,920px)] lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:rounded-lg">
+              <div className="grid min-h-[calc(100dvh-2rem)] lg:min-h-[min(100dvh,920px)] lg:grid-cols-[280px_minmax(0,1fr)]">
                 <aside className="min-w-0 border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
-                  <div className="border-b border-gray-200 px-4 pt-5 pb-4 lg:bg-gray-50">
+                  <div className="border-b border-gray-200 px-4 pt-4 pb-4 lg:bg-gray-50 lg:pt-5">
                     <p className="text-sm font-extrabold uppercase tracking-[0.08em] leading-6 text-gray-900 [word-break:break-word]">KCM Portal</p>
                     <p className="mt-1.5 break-words text-sm font-bold leading-snug text-gray-900">
                       {displayName || data.membership.first_name}
                     </p>
                   </div>
-                  <nav className="space-y-1 p-3">
+                  <nav className="overflow-x-auto px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible lg:p-3">
+                    <div className="flex snap-x snap-mandatory gap-2 pb-1 lg:block lg:space-y-1 lg:pb-0">
                     <Link href="/kcm/member-portal" className={navItemClass("dashboard")}>
                       Profile overview
                     </Link>
@@ -479,12 +495,13 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     <Link href="/kcm/member-portal/portfolio-uploads" className={navItemClass("portfolio-uploads")}>
                       Portfolio uploads
                     </Link>
+                    </div>
                   </nav>
                   <div className="border-t border-gray-100 p-3">
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100"
+                      className="inline-flex w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:rounded-md sm:py-2"
                     >
                       <LogOut className="h-4 w-4" />
                       Logout
@@ -493,17 +510,17 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                 </aside>
 
                 <div className="min-w-0 bg-[#f3f8fc]">
-                  <div className="space-y-6 p-4 md:p-6">
+                  <div className="space-y-5 p-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:p-4 sm:pb-6 md:space-y-6 md:p-6">
               {section === "dashboard" ? (
               <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-                <div className="relative h-44 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
+                <div className="relative h-48 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
                   {coverUrl ? (
                     <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
                   ) : (
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80')] bg-cover bg-center opacity-25" />
                   )}
-                  <div className="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap justify-end gap-2 sm:max-w-[min(100%-1.5rem,22rem)]">
-                  <label className="inline-flex cursor-pointer flex-wrap items-center justify-end gap-2 rounded-md bg-white/95 px-3 py-2 text-left text-xs font-semibold leading-snug text-gray-700 shadow">
+                  <div className="absolute inset-x-3 top-3 z-10 flex flex-col gap-2 sm:inset-x-auto sm:right-3 sm:max-w-[min(100%-1.5rem,22rem)] sm:flex-row sm:flex-wrap sm:justify-end">
+                  <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-white/95 px-3 py-2 text-center text-xs font-semibold leading-snug text-gray-700 shadow sm:w-auto sm:flex-wrap sm:justify-end sm:text-left">
                     <Camera className="h-3.5 w-3.5 shrink-0" />
                     <span className="min-w-0 break-words">{uploadingCover ? "Uploading..." : "Upload cover photo"}</span>
                     <input
@@ -518,7 +535,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       type="button"
                       onClick={() => void removeCoverPhoto()}
                       disabled={removingCover}
-                      className="inline-flex items-center rounded-md bg-white/95 px-3 py-2 text-xs font-semibold text-red-700 shadow hover:bg-white disabled:opacity-60"
+                      className="inline-flex w-full items-center justify-center rounded-md bg-white/95 px-3 py-2 text-xs font-semibold text-red-700 shadow hover:bg-white disabled:opacity-60 sm:w-auto"
                     >
                       {removingCover ? "Removing..." : "Remove cover"}
                     </button>
@@ -526,8 +543,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   </div>
                 </div>
                 <div className="relative min-w-0 px-4 pb-6 pt-0 sm:px-6">
-                  <div className="-mt-12 flex min-w-0 flex-col gap-4">
-                    <div className="flex min-w-0 max-w-full items-start gap-4">
+                  <div className="-mt-10 flex min-w-0 flex-col gap-4 sm:-mt-12">
+                    <div className="flex min-w-0 max-w-full flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left">
                       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border-4 border-white bg-gray-100 shadow-sm">
                         {data.profile?.avatar_url ? (
                           <Image src={data.profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
@@ -537,17 +554,17 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1 self-end pb-1">
+                      <div className="min-w-0 flex-1 self-center pb-0 sm:self-end sm:pb-1">
                         <p className="break-all text-base text-gray-700 sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "model" ? "Model" : "Creative"}
                         </p>
                       </div>
                     </div>
-                    <div className="flex min-w-0 w-full flex-wrap gap-2 sm:justify-start">
+                    <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-start">
                       <Link
                         href="/kcm/member-portal/edit-profile"
-                        className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        className="inline-flex min-w-0 w-full items-center justify-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto sm:max-w-full sm:justify-start sm:text-left"
                       >
                         <PlusCircle className="h-4 w-4 shrink-0" />
                         <span className="min-w-0 break-words">Add profile</span>
@@ -555,7 +572,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <button
                         type="button"
                         onClick={() => void shareProfile()}
-                        className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-left text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                        className="inline-flex min-w-0 w-full items-center justify-center gap-1.5 whitespace-normal rounded-md border border-gray-300 bg-white px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto sm:max-w-full sm:justify-start sm:text-left"
                       >
                         <Share2 className="h-4 w-4 shrink-0" />
                         <span className="min-w-0 break-words">Share to socials</span>
@@ -563,30 +580,50 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     </div>
                   </div>
                   {professionalTitle ? (
-                    <h3 className="mt-5 break-words text-2xl font-extrabold text-gray-900">{professionalTitle}</h3>
+                    <h3 className="mt-5 break-words text-center text-xl font-extrabold text-gray-900 sm:text-left sm:text-2xl">{professionalTitle}</h3>
                   ) : null}
-                  <p className="mt-2 whitespace-pre-line break-words text-sm leading-relaxed text-gray-700">
+                  <p className="mt-2 whitespace-pre-line break-words text-center text-sm leading-relaxed text-gray-700 sm:text-left">
                     {bio || "Add your description below to complete your profile."}
                   </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Share</span>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 sm:justify-start">
+                    <span className="w-full text-center text-xs font-semibold uppercase tracking-wide text-gray-500 sm:w-auto sm:text-left">Share</span>
                     {socialInstagram ? (
-                      <a href={socialInstagram} target="_blank" rel="noopener noreferrer" className="text-pink-600 hover:text-pink-700">
+                      <a
+                        href={socialInstagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-pink-50 text-pink-600 transition hover:bg-pink-100 hover:text-pink-700"
+                      >
                         <Instagram className="h-4 w-4" />
                       </a>
                     ) : null}
                     {socialFacebook ? (
-                      <a href={socialFacebook} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">
+                      <a
+                        href={socialFacebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition hover:bg-blue-100 hover:text-blue-700"
+                      >
                         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 5.02 3.66 9.18 8.44 9.94v-7.03H7.9V12.06h2.54V9.84c0-2.52 1.49-3.92 3.79-3.92 1.1 0 2.25.2 2.25.2v2.48h-1.27c-1.26 0-1.65.79-1.65 1.6v1.86h2.81l-.45 2.91h-2.36V22c4.78-.76 8.44-4.92 8.44-9.94z"/></svg>
                       </a>
                     ) : null}
                     {socialTiktok ? (
-                      <a href={socialTiktok} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-black">
+                      <a
+                        href={socialTiktok}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200 hover:text-black"
+                      >
                         <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.35V2h-3.2v13.18a2.9 2.9 0 11-2-2.77V9.13a6.13 6.13 0 105.2 6.05V8.57a8.07 8.07 0 004.57 1.42V6.69z"/></svg>
                       </a>
                     ) : null}
                     {socialX ? (
-                      <a href={socialX} target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-black">
+                      <a
+                        href={socialX}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700 transition hover:bg-gray-200 hover:text-black"
+                      >
                         <Twitter className="h-4 w-4" />
                       </a>
                     ) : null}
@@ -599,8 +636,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
               ) : null}
 
               {section !== "portfolio-uploads" ? (
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
+                <div className="flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap">
                   <div className="min-w-0 max-w-full">
                     <h1 className="break-words text-left text-2xl font-extrabold text-gray-900 md:text-3xl">
                       Welcome, {data.membership.first_name}
@@ -610,7 +647,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <button
                     type="button"
                     onClick={logout}
-                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
                   >
                     <LogOut className="h-4 w-4" />
                     Logout
@@ -632,18 +669,18 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
 
               {section !== "dashboard" ? (
               <>
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
                 <h2 className="text-left text-xl font-extrabold text-gray-900">Your profile</h2>
                 {error && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
                 {profileMessage && <p className="mt-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">{profileMessage}</p>}
 
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="relative h-20 w-20 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+                <div className="mt-4 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
                     {data.profile?.avatar_url ? (
                       <Image src={data.profile.avatar_url} alt="Profile avatar" fill className="object-cover" />
                     ) : null}
                   </div>
-                  <label className="inline-flex cursor-pointer rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 sm:min-h-10 sm:w-auto sm:py-2">
                     {uploadingAvatar ? "Uploading..." : "Upload image"}
                     <input
                       type="file"
@@ -661,7 +698,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
+                      autoComplete="name"
                     />
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -670,7 +708,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <select
                         value={profileCategory}
                         onChange={(e) => setProfileCategory(e.target.value === "model" ? "model" : "creative")}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                       >
                         <option value="creative">Creative</option>
                         <option value="model">Model</option>
@@ -682,7 +720,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         type="text"
                         value={professionalTitle}
                         onChange={(e) => setProfessionalTitle(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                         placeholder={profileCategory === "model" ? "Runway and Editorial Model" : "Creative Professional"}
                       />
                     </div>
@@ -693,7 +731,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                       placeholder="Tell us about your modeling journey..."
                     />
                   </div>
@@ -707,7 +745,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                             setPortfolioText(data?.profile?.portfolio_text ?? "");
                             setEditingWrittenPortfolio(true);
                           }}
-                          className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-left text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-50"
+                          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-sm font-semibold leading-snug text-gray-900 hover:bg-gray-50 sm:w-auto sm:shrink-0 sm:py-1.5 sm:text-left"
                         >
                           {savedPortfolioText ? "Edit" : "Add written portfolio"}
                         </button>
@@ -723,15 +761,15 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           onChange={(e) => setPortfolioText(e.target.value)}
                           rows={8}
                           maxLength={12000}
-                          className="min-h-[180px] w-full min-w-0 resize-y rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                          className="min-h-[180px] w-full min-w-0 resize-y rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm transition focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                           placeholder="e.g. Commercial and editorial work since 2022; featured in…"
                         />
                         <p className="mt-1 text-right text-xs text-gray-500">{portfolioText.length} / 12000</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                           <button
                             type="button"
                             onClick={cancelEditWrittenPortfolio}
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50"
+                            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-50 sm:w-auto"
                           >
                             Cancel
                           </button>
@@ -739,7 +777,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                             type="button"
                             disabled={savingProfile}
                             onClick={() => void persistProfile()}
-                            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                            className="w-full rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:py-2"
                           >
                             {savingProfile ? "Saving…" : "Save written portfolio"}
                           </button>
@@ -764,7 +802,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         type="url"
                         value={socialInstagram}
                         onChange={(e) => setSocialInstagram(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
+                        inputMode="url"
                         placeholder="https://instagram.com/yourhandle"
                       />
                     </div>
@@ -774,7 +813,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         type="url"
                         value={socialFacebook}
                         onChange={(e) => setSocialFacebook(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
+                        inputMode="url"
                         placeholder="https://facebook.com/yourprofile"
                       />
                     </div>
@@ -784,7 +824,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         type="url"
                         value={socialTiktok}
                         onChange={(e) => setSocialTiktok(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
+                        inputMode="url"
                         placeholder="https://tiktok.com/@yourhandle"
                       />
                     </div>
@@ -794,7 +835,8 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         type="url"
                         value={socialX}
                         onChange={(e) => setSocialX(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
+                        inputMode="url"
                         placeholder="https://x.com/yourhandle"
                       />
                     </div>
@@ -802,14 +844,14 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                    className="w-full rounded-lg bg-primary-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:py-2.5"
                   >
                     {savingProfile ? "Saving..." : "Save profile"}
                   </button>
                 </form>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
                 <h2 className="text-left text-xl font-extrabold text-gray-900">Portfolio uploads</h2>
                 <p className="mt-2 text-sm text-gray-600">
                   Add photos or PDFs (up to 15 files). JPG, PNG, WebP, or PDF — large images up to 8MB, PDFs up to 6MB.
@@ -822,11 +864,11 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       type="text"
                       value={uploadCaption}
                       onChange={(e) => setUploadCaption(e.target.value.slice(0, 500))}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-3 text-base text-gray-900 outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20 sm:text-sm"
                       placeholder="e.g. Coast Fashion Week 2025"
                     />
                   </div>
-                  <label className="inline-flex cursor-pointer items-center rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-secondary-700 disabled:opacity-60">
+                  <label className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-secondary-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-secondary-700 disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 sm:w-auto sm:py-2.5">
                     {uploadingPortfolio ? "Uploading..." : "Choose file to upload"}
                     <input
                       type="file"
@@ -842,7 +884,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                 </div>
 
                 {portfolioItems.length > 0 ? (
-                  <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ul className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {portfolioItems.map((item) => (
                       <li key={item.id} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                         <div className="relative aspect-[4/3] w-full bg-gray-200">
@@ -861,13 +903,13 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           )}
                         </div>
                         <div className="space-y-2 p-3">
-                          <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <input
                               key={`${item.id}-${item.caption ?? ""}`}
                               type="text"
                               defaultValue={item.caption ?? ""}
                               placeholder="Caption"
-                              className="min-w-0 flex-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs"
+                              className="min-w-0 w-full flex-1 rounded border border-gray-200 bg-white px-3 py-2 text-sm sm:px-2 sm:py-1 sm:text-xs"
                               onBlur={(e) => {
                                 const next = e.target.value.trim();
                                 if (next !== (item.caption ?? "").trim()) void saveCaption(item.id, next);
@@ -877,7 +919,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                               type="button"
                               disabled={deletingPortfolioId === item.id}
                               onClick={() => void deletePortfolioItem(item.id)}
-                              className="shrink-0 rounded p-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              className="inline-flex items-center justify-center self-end rounded border border-red-100 px-3 py-2 text-red-600 hover:bg-red-50 disabled:opacity-50 sm:self-auto sm:border-0 sm:px-1.5 sm:py-1.5"
                               aria-label="Remove file"
                             >
                               {deletingPortfolioId === item.id ? (
