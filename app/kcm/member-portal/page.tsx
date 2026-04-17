@@ -65,6 +65,7 @@ type WalletTransaction = {
   failure_reason: string | null;
   initiated_at: string;
   paid_at: string | null;
+  created_at: string;
 };
 
 type WalletState = {
