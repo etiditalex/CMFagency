@@ -189,6 +189,7 @@ export default function DashboardContestantsPage() {
   const [certificateRequests, setCertificateRequests] = useState<
     Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
   >([]);
+  const [downloadingAllVotes, setDownloadingAllVotes] = useState(false);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -458,22 +459,47 @@ export default function DashboardContestantsPage() {
     }
   };
 
-  const downloadCsv = (category: CategoryWithCount) => {
-    const headers = ["Name", "Email", "Registered", "Voting link sent"];
-    const rows = category.contestants.map((c) => [
-      c.name.replace(/"/g, '""'),
-      (c.email ?? "").replace(/"/g, '""'),
-      new Date(c.created_at).toLocaleString(),
-      c.voting_link_sent_at ? new Date(c.voting_link_sent_at).toLocaleString() : "—",
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `contestants-${category.slug}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadAllContestantsWithVotesExcel = async () => {
+    setDownloadingAllVotes(true);
+    setError(null);
+    try {
+      const campaignIds = categories.map((c) => c.id);
+      if (campaignIds.length === 0) return;
+      // Pull latest totals across all visible voting categories before export.
+      const liveVoteTotals = await aggregateVoteTotalsByContestant(campaignIds);
+      const rows = categories
+        .flatMap((category) =>
+          category.contestants.map((contestant) => ({
+            name: contestant.name,
+            category: category.title,
+            votes: liveVoteTotals.get(contestant.id) ?? 0,
+            email: contestant.email ?? "",
+            registeredAt: new Date(contestant.created_at).toLocaleString(),
+          }))
+        )
+        .sort((a, b) => b.votes - a.votes || a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+
+      const headers = ["Contestant", "Category", "Votes", "Email", "Registered"];
+      const csvRows = rows.map((r) => [
+        r.name.replace(/"/g, '""'),
+        r.category.replace(/"/g, '""'),
+        String(r.votes),
+        r.email.replace(/"/g, '""'),
+        r.registeredAt.replace(/"/g, '""'),
+      ]);
+      const csv = [headers.join(","), ...csvRows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
+      const blob = new Blob(["\uFEFF", csv], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `contestants-performance-all-categories-${new Date().toISOString().slice(0, 10)}.xls`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error)?.message ?? "Failed to download contestants performance report.");
+    } finally {
+      setDownloadingAllVotes(false);
+    }
   };
 
   if (authLoading || portalLoading) {
@@ -495,9 +521,18 @@ export default function DashboardContestantsPage() {
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Contestants</h2>
           <p className="text-gray-600 mt-1">
-            View and download model registrations by voting category. Contestants are visible to voters on each campaign&apos;s voting page.
+            View contestants by category and download one Excel report for all categories with live vote performance.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => void downloadAllContestantsWithVotesExcel()}
+          disabled={loading || categories.length === 0 || downloadingAllVotes}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <Download className="w-4 h-4" />
+          {downloadingAllVotes ? "Preparing Excel..." : "Download Excel (all categories)"}
+        </button>
       </div>
 
       {error && (
@@ -616,15 +651,6 @@ export default function DashboardContestantsPage() {
                           <ExternalLink className="w-4 h-4" />
                           View
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => downloadCsv(cat)}
-                          disabled={cat.contestant_count === 0}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download
-                        </button>
                       </td>
                     </tr>
                     {expandedCategoryId === cat.id && cat.contestants.length > 0 && (
