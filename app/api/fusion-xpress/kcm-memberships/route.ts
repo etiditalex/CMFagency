@@ -33,29 +33,61 @@ export async function GET(req: NextRequest) {
       {
         display_name: string | null;
         avatar_url: string | null;
+        cover_url: string | null;
+        profile_category: string | null;
+        professional_title: string | null;
         bio: string | null;
         portfolio_text: string | null;
+        social_instagram: string | null;
+        social_facebook: string | null;
+        social_tiktok: string | null;
+        social_x: string | null;
       }
     > = {};
     let portfolioItemCountMap: Record<string, number> = {};
+    let walletMap: Record<
+      string,
+      {
+        total_contributions_kes: number;
+        pending_contributions_kes: number;
+        successful_contributions_count: number;
+        last_contribution_at: string | null;
+      }
+    > = {};
 
     if (ids.length > 0) {
       const { data: profiles } = await admin
         .from("kcm_member_profiles")
-        .select("membership_id,display_name,avatar_url,bio,portfolio_text")
+        .select(
+          "membership_id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x"
+        )
         .in("membership_id", ids);
       for (const p of (profiles ?? []) as Array<{
         membership_id: string;
         display_name: string | null;
         avatar_url: string | null;
+        cover_url: string | null;
+        profile_category: string | null;
+        professional_title: string | null;
         bio: string | null;
         portfolio_text: string | null;
+        social_instagram: string | null;
+        social_facebook: string | null;
+        social_tiktok: string | null;
+        social_x: string | null;
       }>) {
         profileMap[String(p.membership_id)] = {
           display_name: p.display_name ?? null,
           avatar_url: p.avatar_url ?? null,
+          cover_url: p.cover_url ?? null,
+          profile_category: p.profile_category ?? null,
+          professional_title: p.professional_title ?? null,
           bio: p.bio ?? null,
           portfolio_text: p.portfolio_text ?? null,
+          social_instagram: p.social_instagram ?? null,
+          social_facebook: p.social_facebook ?? null,
+          social_tiktok: p.social_tiktok ?? null,
+          social_x: p.social_x ?? null,
         };
       }
 
@@ -67,11 +99,49 @@ export async function GET(req: NextRequest) {
         const mid = String((row as { membership_id: string }).membership_id);
         portfolioItemCountMap[mid] = (portfolioItemCountMap[mid] ?? 0) + 1;
       }
+
+      const { data: walletRows } = await admin
+        .from("kcm_member_wallet_transactions")
+        .select("membership_id,amount_kes,status,paid_at,created_at")
+        .in("membership_id", ids);
+      for (const row of (walletRows ?? []) as Array<{
+        membership_id: string;
+        amount_kes: number;
+        status: "pending" | "success" | "failed";
+        paid_at: string | null;
+        created_at: string;
+      }>) {
+        const mid = String(row.membership_id);
+        const current = walletMap[mid] ?? {
+          total_contributions_kes: 0,
+          pending_contributions_kes: 0,
+          successful_contributions_count: 0,
+          last_contribution_at: null,
+        };
+        const amount = Number(row.amount_kes || 0);
+        if (row.status === "success") {
+          current.total_contributions_kes += amount;
+          current.successful_contributions_count += 1;
+          const stamp = row.paid_at ?? row.created_at;
+          if (!current.last_contribution_at || new Date(stamp) > new Date(current.last_contribution_at)) {
+            current.last_contribution_at = stamp;
+          }
+        } else if (row.status === "pending") {
+          current.pending_contributions_kes += amount;
+        }
+        walletMap[mid] = current;
+      }
     }
 
     const enriched = memberships.map((m) => {
       const prof = profileMap[String(m.id)] ?? null;
       const itemCount = portfolioItemCountMap[String(m.id)] ?? 0;
+      const wallet = walletMap[String(m.id)] ?? {
+        total_contributions_kes: 0,
+        pending_contributions_kes: 0,
+        successful_contributions_count: 0,
+        last_contribution_at: null,
+      };
       return {
         ...m,
         account_status: String(m.payment_status ?? "") === "success" ? "active" : "inactive",
@@ -81,11 +151,19 @@ export async function GET(req: NextRequest) {
             ? {
                 display_name: null,
                 avatar_url: null,
+                cover_url: null,
+                profile_category: null,
+                professional_title: null,
                 bio: null,
                 portfolio_text: null,
+                social_instagram: null,
+                social_facebook: null,
+                social_tiktok: null,
+                social_x: null,
                 portfolio_item_count: itemCount,
               }
             : null,
+        contributions: wallet,
         profile_completed:
           !!prof?.display_name ||
           !!prof?.avatar_url ||

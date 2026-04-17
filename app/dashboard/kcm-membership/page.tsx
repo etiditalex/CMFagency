@@ -28,10 +28,23 @@ type Membership = {
   profile?: {
     display_name: string | null;
     avatar_url: string | null;
+    cover_url?: string | null;
+    profile_category?: string | null;
+    professional_title?: string | null;
     bio: string | null;
     portfolio_text?: string | null;
+    social_instagram?: string | null;
+    social_facebook?: string | null;
+    social_tiktok?: string | null;
+    social_x?: string | null;
     portfolio_item_count?: number;
   } | null;
+  contributions?: {
+    total_contributions_kes: number;
+    pending_contributions_kes: number;
+    successful_contributions_count: number;
+    last_contribution_at: string | null;
+  };
   status: MembershipStatus;
   review_notes: string | null;
   created_at: string;
@@ -315,7 +328,7 @@ export default function DashboardKcmMembershipPage() {
               <th className="px-4 py-3 font-bold text-gray-600">Contact</th>
               <th className="px-4 py-3 font-bold text-gray-600">Experience</th>
               <th className="px-4 py-3 font-bold text-gray-600">Top model</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Payment</th>
+              <th className="px-4 py-3 font-bold text-gray-600">Payment / Contributions</th>
               <th className="px-4 py-3 font-bold text-gray-600">Status</th>
               <th className="px-4 py-3 font-bold text-gray-600">Review notes</th>
             </tr>
@@ -393,6 +406,14 @@ function Row({
             <div className="text-[11px] text-gray-500">
               {row.profile_completed ? "Profile set up" : "Profile pending"}
             </div>
+            {row.profile?.profile_category ? (
+              <div className="mt-1 text-[10px] uppercase tracking-wide text-secondary-700">
+                {String(row.profile.profile_category).replace(/_/g, " ")}
+              </div>
+            ) : null}
+            {row.profile?.professional_title ? (
+              <div className="mt-0.5 line-clamp-2 text-[10px] text-gray-500">{row.profile.professional_title}</div>
+            ) : null}
             {(row.profile?.portfolio_item_count ?? 0) > 0 || row.profile?.portfolio_text?.trim() ? (
               <div className="mt-1 text-[10px] leading-snug text-gray-500">
                 {(row.profile?.portfolio_item_count ?? 0) > 0 ? (
@@ -414,6 +435,20 @@ function Row({
         <div>{row.payment_confirmed ? `KES ${Number(row.payment_amount_kes ?? 0).toLocaleString()}` : "Not confirmed"}</div>
         <div className="text-xs text-gray-500">Status: {row.payment_status}</div>
         {row.mpesa_receipt ? <div className="text-xs text-gray-400">Receipt: {row.mpesa_receipt}</div> : null}
+        <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-[11px]">
+          <div className="font-semibold text-gray-700">
+            Wallet total: KES {Number(row.contributions?.total_contributions_kes ?? 0).toLocaleString()}
+          </div>
+          <div className="text-gray-500">
+            Pending: KES {Number(row.contributions?.pending_contributions_kes ?? 0).toLocaleString()}
+          </div>
+          <div className="text-gray-500">
+            Contributions: {Number(row.contributions?.successful_contributions_count ?? 0)}
+          </div>
+          {row.contributions?.last_contribution_at ? (
+            <div className="text-gray-400">Last: {new Date(row.contributions.last_contribution_at).toLocaleString()}</div>
+          ) : null}
+        </div>
       </td>
       <td className="px-4 py-3">
         <select

@@ -43,7 +43,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     const { data: profile } = await admin
       .from("kcm_member_profiles")
-      .select("display_name,avatar_url,bio,portfolio_text")
+      .select(
+        "display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x"
+      )
       .eq("membership_id", id)
       .maybeSingle();
 
@@ -56,17 +58,60 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const profRow = profile as {
       display_name?: string | null;
       avatar_url?: string | null;
+      cover_url?: string | null;
+      profile_category?: string | null;
+      professional_title?: string | null;
       bio?: string | null;
       portfolio_text?: string | null;
+      social_instagram?: string | null;
+      social_facebook?: string | null;
+      social_tiktok?: string | null;
+      social_x?: string | null;
     } | null;
+
+    const { data: walletRows } = await admin
+      .from("kcm_member_wallet_transactions")
+      .select("amount_kes,status,paid_at,created_at")
+      .eq("membership_id", id);
+    const contributions = {
+      total_contributions_kes: 0,
+      pending_contributions_kes: 0,
+      successful_contributions_count: 0,
+      last_contribution_at: null as string | null,
+    };
+    for (const row of (walletRows ?? []) as Array<{
+      amount_kes: number;
+      status: "pending" | "success" | "failed";
+      paid_at: string | null;
+      created_at: string;
+    }>) {
+      const amount = Number(row.amount_kes || 0);
+      if (row.status === "success") {
+        contributions.total_contributions_kes += amount;
+        contributions.successful_contributions_count += 1;
+        const stamp = row.paid_at ?? row.created_at;
+        if (!contributions.last_contribution_at || new Date(stamp) > new Date(contributions.last_contribution_at)) {
+          contributions.last_contribution_at = stamp;
+        }
+      } else if (row.status === "pending") {
+        contributions.pending_contributions_kes += amount;
+      }
+    }
 
     const mergedProfile =
       profRow || n > 0
         ? {
             display_name: profRow?.display_name ?? null,
             avatar_url: profRow?.avatar_url ?? null,
+            cover_url: profRow?.cover_url ?? null,
+            profile_category: profRow?.profile_category ?? null,
+            professional_title: profRow?.professional_title ?? null,
             bio: profRow?.bio ?? null,
             portfolio_text: profRow?.portfolio_text ?? null,
+            social_instagram: profRow?.social_instagram ?? null,
+            social_facebook: profRow?.social_facebook ?? null,
+            social_tiktok: profRow?.social_tiktok ?? null,
+            social_x: profRow?.social_x ?? null,
             portfolio_item_count: n,
           }
         : null;
@@ -76,6 +121,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
         ...data,
         account_status: String((data as { payment_status?: string }).payment_status ?? "") === "success" ? "active" : "inactive",
         profile: mergedProfile,
+        contributions,
         profile_completed:
           !!profRow?.display_name ||
           !!profRow?.avatar_url ||
