@@ -715,9 +715,8 @@ export default function Navbar() {
             {/* Fusion Xpress (Admin portal) */}
             <Link
               href="/fusion-xpress"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white font-bold hover:bg-black transition-colors shadow-md"
+              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
             >
-              <Shield className="w-4 h-4" />
               <span>Fusion Xpress</span>
             </Link>
 
@@ -1061,10 +1060,9 @@ export default function Navbar() {
                 <Link
                   href="/fusion-xpress"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center justify-center gap-2 py-2 px-4 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors font-bold shadow-md"
+                  className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
-                  <Shield className="w-5 h-5" />
-                  <span>Fusion Xpress</span>
+                  Fusion Xpress
                 </Link>
 
                 <Link

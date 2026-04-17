@@ -141,14 +141,24 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     routerRef.current = router;
   }, [logout, router]);
 
+  const redirectToAdminLogin = () => {
+    router.replace("/fusion-xpress/admin-login");
+  };
+
+  const handleDashboardLogout = async () => {
+    await logout();
+    redirectToAdminLogin();
+  };
+
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember) return;
 
     const resetTimer = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-        logoutRef.current();
-        routerRef.current.replace("/fusion-xpress");
+        logoutRef.current().finally(() => {
+          routerRef.current.replace("/fusion-xpress/admin-login");
+        });
       }, INACTIVITY_TIMEOUT_MS);
     };
 
@@ -394,7 +404,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             )}
             <button
               type="button"
-              onClick={logout}
+              onClick={handleDashboardLogout}
               className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
               title="Sign out"
             >
@@ -477,7 +487,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => {
                   setMobileOpen(false);
-                  logout();
+                  void handleDashboardLogout();
                 }}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
               >

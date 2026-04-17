@@ -1,11 +1,4 @@
-"use client";
-
-import { useMemo } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
-
-import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
+import { CheckCircle2 } from "lucide-react";
 
 /**
  * Fusion Xpress (Portal Login)
@@ -14,20 +7,6 @@ import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
  * Same auth stack: Supabase + portal_members + 2FA APIs.
  */
 export default function FusionXpressAdminLoginPage() {
-  const sp = useSearchParams();
-  const initialErrorKey = sp?.get("error") ?? null;
-  const fromEmployer = sp?.get("from") === "employer";
-
-  const initialErrorMessage = useMemo(() => {
-    if (initialErrorKey === "unauthorized") {
-      return "Access denied. Hiring managers can register from the job board under “For employers”, then sign in there or here. Otherwise ask an admin to add your account to the portal.";
-    }
-    if (initialErrorKey === "setup") {
-      return "Fusion Xpress portal is not configured yet. Run the database setup SQL in Supabase.";
-    }
-    return null;
-  }, [initialErrorKey]);
-
   return (
     <div className="min-h-screen pt-28 md:pt-32 bg-white">
       <div className="w-full px-4 sm:px-6 lg:px-8 py-10">
@@ -175,20 +154,6 @@ export default function FusionXpressAdminLoginPage() {
           </div>
         </section>
 
-        <section className="mt-12 flex items-center justify-center">
-          <div className="w-full max-w-md">
-            <Link href="/" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Home
-            </Link>
-
-            <PortalLoginForm
-              initialErrorMessage={initialErrorMessage}
-              showEmployerBanner={fromEmployer}
-              layout="standalone"
-            />
-          </div>
-        </section>
       </div>
     </div>
   );
