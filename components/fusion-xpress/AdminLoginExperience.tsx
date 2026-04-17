@@ -27,31 +27,6 @@ function isMissingAdminUsersTable(err: unknown) {
   return code === "42P01" || (msg.includes("admin_users") && msg.includes("does not exist"));
 }
 
-function ParticleField() {
-  const particles = Array.from({ length: 10 }, (_, i) => i);
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden hidden sm:block">
-      {particles.map((i) => (
-        <motion.span
-          key={i}
-          className="absolute h-1.5 w-1.5 rounded-full bg-secondary-200/30 blur-[1px]"
-          style={{
-            left: `${8 + i * 9}%`,
-            top: `${10 + (i % 5) * 17}%`,
-          }}
-          animate={{ y: [0, -12, 0], opacity: [0.2, 0.65, 0.2] }}
-          transition={{
-            duration: 7 + (i % 4),
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "easeInOut",
-            delay: i * 0.2,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginExperienceProps) {
   const router = useRouter();
 
@@ -306,27 +281,9 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     }
   };
 
-  const loginBackgroundStyle = {
-    backgroundImage:
-      "linear-gradient(135deg, rgba(6, 18, 52, 0.9), rgba(8, 40, 88, 0.88)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  } as const;
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900" style={loginBackgroundStyle}>
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.04] sm:opacity-[0.06]" />
-      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.2),transparent_70%)] opacity-40" />
-      <div className="hidden md:block absolute inset-0 opacity-30">
-        <div className="absolute left-[28%] top-[14%] h-[70%] w-px bg-gradient-to-b from-transparent via-secondary-300/60 to-transparent" />
-        <div className="absolute left-[52%] top-[10%] h-[76%] w-px bg-gradient-to-b from-transparent via-primary-300/55 to-transparent" />
-        <div className="absolute left-[28%] top-[38%] h-px w-[24%] bg-gradient-to-r from-secondary-200/45 to-transparent" />
-        <div className="absolute left-[52%] top-[58%] h-px w-[16%] bg-gradient-to-r from-primary-200/45 to-transparent" />
-      </div>
-      <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.18)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.08]" />
-      <ParticleField />
-
+    <main className="relative min-h-screen overflow-hidden bg-[#f3f4f6] text-slate-900">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)]" />
       <div className="relative z-10 flex min-h-screen items-start justify-center px-3 pb-6 pt-6 sm:items-center sm:p-6">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
