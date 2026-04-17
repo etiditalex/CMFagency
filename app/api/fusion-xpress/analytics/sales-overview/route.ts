@@ -104,8 +104,6 @@ export async function GET(req: Request) {
   }
 
   const campaignIds = rows.map((c) => c.id);
-  const merchandiseId =
-    rows.find((c) => String(c.slug ?? "").toLowerCase() === "merchandise")?.id ?? null;
 
   if (campaignIds.length === 0) {
     return NextResponse.json({
@@ -129,7 +127,7 @@ export async function GET(req: Request) {
   let txRows: {
     amount: number;
     currency: string;
-    campaign_type: string;
+    resolved_type: string;
     campaign_id: string;
     provider: string | null;
     quantity: number;
@@ -138,8 +136,8 @@ export async function GET(req: Request) {
   try {
     txRows = await fetchAllSupabasePages(async (from, to) => {
       const r = await supabase
-        .from("transactions")
-        .select("amount,currency,campaign_type,campaign_id,provider,quantity,created_at,status")
+        .from("reportable_transactions")
+        .select("amount,currency,resolved_type,campaign_id,provider,quantity,created_at,status")
         .eq("status", "success")
         .in("campaign_id", campaignIds)
         .order("id", { ascending: true })
@@ -172,12 +170,11 @@ export async function GET(req: Request) {
   for (const t of txs) {
     const amt = Number(t.amount ?? 0);
     if (!Number.isFinite(amt)) continue;
-    const ctype = String(t.campaign_type ?? "").toLowerCase();
-    const isMerch = merchandiseId && String(t.campaign_id) === String(merchandiseId);
+    const resolvedType = String(t.resolved_type ?? "").toLowerCase();
 
-    if (isMerch) {
+    if (resolvedType === "merchandise") {
       merchandiseRevenue += amt;
-    } else if (ctype === "vote") {
+    } else if (resolvedType === "vote") {
       voteRevenue += amt;
       const qRaw = Math.trunc(Number(t.quantity ?? 0));
       const q = qRaw > 0 ? qRaw : 1;
@@ -193,7 +190,8 @@ export async function GET(req: Request) {
       cur.units += q;
       cur.count += 1;
       voteByCampaign.set(key, cur);
-    } else if (ctype === "ticket") {
+    } else {
+      // Non-vote / non-merch revenue is treated as ticket revenue.
       ticketRevenue += amt;
       const day = ymd(new Date(t.created_at));
       const agg = dailyMap.get(day) ?? { voteRevenue: 0, voteUnits: 0, ticketRevenue: 0 };
