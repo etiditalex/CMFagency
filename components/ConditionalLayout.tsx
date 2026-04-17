@@ -26,6 +26,7 @@ export default function ConditionalLayout({
   const isVerifyEmailPage = pathname === "/verify-email";
   const isDashboard = pathname?.startsWith("/dashboard");
   const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
+  const isFusionAdminLogin = pathname === "/fusion-xpress/admin-login";
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -51,6 +52,17 @@ export default function ConditionalLayout({
 
   // KCM member portal pages have their own shell and should render without site navbar/top bar/footer.
   if (isKcmMemberPortal) {
+    return (
+      <>
+        <main className="min-h-screen">{children}</main>
+        <CookieBanner />
+        <ScrollToTopButton />
+      </>
+    );
+  }
+
+  // Fusion Xpress standalone admin login should render distraction-free without site chrome.
+  if (isFusionAdminLogin) {
     return (
       <>
         <main className="min-h-screen">{children}</main>

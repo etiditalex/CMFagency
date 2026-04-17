@@ -34,7 +34,7 @@ function ParticleField() {
       {particles.map((i) => (
         <motion.span
           key={i}
-          className="absolute h-1.5 w-1.5 rounded-full bg-emerald-200/30 blur-[1px]"
+          className="absolute h-1.5 w-1.5 rounded-full bg-secondary-200/30 blur-[1px]"
           style={{
             left: `${8 + i * 9}%`,
             top: `${10 + (i % 5) * 17}%`,
@@ -308,14 +308,14 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(20,184,166,0.16),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(37,99,235,0.20),transparent_42%),linear-gradient(120deg,#020617_0%,#071225_52%,#000000_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(44,165,124,0.16),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(30,88,202,0.22),transparent_42%),linear-gradient(120deg,#030814_0%,#081737_52%,#000000_100%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.06]" />
-      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(16,185,129,0.25),transparent_70%)] opacity-40" />
+      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.26),transparent_70%)] opacity-40" />
       <div className="hidden md:block absolute inset-0 opacity-30">
-        <div className="absolute left-[28%] top-[14%] h-[70%] w-px bg-gradient-to-b from-transparent via-emerald-300/60 to-transparent" />
-        <div className="absolute left-[52%] top-[10%] h-[76%] w-px bg-gradient-to-b from-transparent via-cyan-200/50 to-transparent" />
-        <div className="absolute left-[28%] top-[38%] h-px w-[24%] bg-gradient-to-r from-emerald-200/45 to-transparent" />
-        <div className="absolute left-[52%] top-[58%] h-px w-[16%] bg-gradient-to-r from-cyan-200/40 to-transparent" />
+        <div className="absolute left-[28%] top-[14%] h-[70%] w-px bg-gradient-to-b from-transparent via-secondary-300/60 to-transparent" />
+        <div className="absolute left-[52%] top-[10%] h-[76%] w-px bg-gradient-to-b from-transparent via-primary-300/55 to-transparent" />
+        <div className="absolute left-[28%] top-[38%] h-px w-[24%] bg-gradient-to-r from-secondary-200/45 to-transparent" />
+        <div className="absolute left-[52%] top-[58%] h-px w-[16%] bg-gradient-to-r from-primary-200/45 to-transparent" />
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.18)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.08]" />
       <ParticleField />
@@ -329,19 +329,19 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
           aria-label="Fusion Xpress admin sign in"
         >
           <div className="mb-6 flex items-center justify-between">
-            <Link href="/fusion-xpress" className="text-xs text-blue-100/80 transition hover:text-white">
+            <Link href="/fusion-xpress" className="text-xs text-primary-100/85 transition hover:text-white">
               Back
             </Link>
-            <span className="rounded-full border border-emerald-300/40 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200">
+            <span className="rounded-full border border-secondary-300/45 bg-secondary-500/15 px-3 py-1 text-xs font-medium text-secondary-100">
               Admin Portal
             </span>
           </div>
 
           <div className="mb-6">
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-300/20 to-blue-400/20 ring-1 ring-white/20">
-              {step === "code" ? <KeyRound className="h-5 w-5 text-emerald-200" /> : <Shield className="h-5 w-5 text-emerald-200" />}
+            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-secondary-400/25 to-primary-500/25 ring-1 ring-white/20">
+              {step === "code" ? <KeyRound className="h-5 w-5 text-secondary-100" /> : <Shield className="h-5 w-5 text-secondary-100" />}
             </div>
-            <p className="text-xs uppercase tracking-[0.26em] text-blue-100/70">Fusion Xpress</p>
+            <p className="text-xs uppercase tracking-[0.26em] text-primary-100/70">Fusion Xpress</p>
             <h1 className="mt-2 text-2xl font-semibold text-white">{step === "code" ? "Verify Your Login" : "Welcome Back, Admin"}</h1>
             <p className="mt-2 text-sm text-slate-200/80">
               {step === "code"
@@ -368,7 +368,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 whileFocus={{ scale: 1.01 }}
-                className="w-full rounded-xl border border-white/20 bg-black/25 px-4 py-3 font-mono tracking-[0.35em] text-white placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                className="w-full rounded-xl border border-white/20 bg-black/25 px-4 py-3 font-mono tracking-[0.35em] text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
                 placeholder="000000"
                 aria-label="Verification code"
               />
@@ -376,7 +376,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
               <button
                 type="submit"
                 disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
-                className="w-full rounded-xl bg-blue-400 px-4 py-3 font-semibold text-black transition hover:bg-blue-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
+                className="w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {codeLoading ? "Verifying..." : "Verify and continue"}
               </button>
@@ -421,7 +421,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
                     placeholder="you@fusionxpress.com"
                   />
                 </div>
@@ -441,7 +441,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
+                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -453,21 +453,21 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-white/40 bg-transparent text-blue-400 focus:ring-blue-400/50"
+                    className="h-4 w-4 rounded border-white/40 bg-transparent text-primary-500 focus:ring-primary-400/50"
                   />
                   Remember me
                 </label>
-                <button type="button" onClick={onForgotPassword} className="font-medium text-blue-300 hover:text-blue-200" disabled={loading}>
+                <button type="button" onClick={onForgotPassword} className="font-medium text-primary-300 hover:text-primary-200" disabled={loading}>
                   Forgot Password
                 </button>
               </div>
 
-              {resetSent ? <p className="text-xs text-emerald-200">Reset link sent to your email.</p> : null}
+              {resetSent ? <p className="text-xs text-secondary-200">Reset link sent to your email.</p> : null}
 
               <button
                 type="submit"
                 disabled={loading || !canSubmit}
-                className="w-full rounded-xl bg-blue-400 px-4 py-3 font-semibold text-black transition hover:bg-blue-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
+                className="w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {loading ? "Signing in..." : "Sign in"}
               </button>
