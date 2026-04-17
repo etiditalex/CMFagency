@@ -3,7 +3,21 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, FileText, Instagram, Loader2, LogOut, PlusCircle, Share2, ShieldCheck, Trash2, Twitter, UserRound } from "lucide-react";
+import {
+  BadgeCheck,
+  Camera,
+  FileText,
+  Instagram,
+  Loader2,
+  LogOut,
+  PlusCircle,
+  Share2,
+  ShieldCheck,
+  Trash2,
+  Twitter,
+  UserRound,
+  Wallet,
+} from "lucide-react";
 
 type PortfolioItem = {
   id: string;
@@ -21,6 +35,7 @@ type PortalState = {
     id: string;
     first_name: string;
     second_name: string;
+    contact: string;
     email: string;
     payment_status: string;
     status: string;
@@ -29,7 +44,7 @@ type PortalState = {
     display_name: string | null;
     avatar_url: string | null;
     cover_url: string | null;
-    profile_category: "creative" | "model" | null;
+    profile_category: "high_fashion_model" | "pageant_model" | null;
     professional_title: string | null;
     bio: string | null;
     portfolio_text: string | null;
@@ -39,6 +54,23 @@ type PortalState = {
     social_x: string | null;
   } | null;
   portfolio_items: PortfolioItem[];
+};
+
+type WalletTransaction = {
+  id: string;
+  amount_kes: number;
+  status: "pending" | "success" | "failed";
+  phone: string;
+  mpesa_receipt: string | null;
+  failure_reason: string | null;
+  initiated_at: string;
+  paid_at: string | null;
+};
+
+type WalletState = {
+  balance_kes: number;
+  pending_kes: number;
+  transactions: WalletTransaction[];
 };
 
 type PortalSection = "dashboard" | "edit-profile" | "portfolio-uploads";
@@ -59,7 +91,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
 
   const [displayName, setDisplayName] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const [profileCategory, setProfileCategory] = useState<"creative" | "model">("creative");
+  const [profileCategory, setProfileCategory] = useState<"high_fashion_model" | "pageant_model">("high_fashion_model");
   const [professionalTitle, setProfessionalTitle] = useState("");
   const [bio, setBio] = useState("");
   const [portfolioText, setPortfolioText] = useState("");
@@ -77,6 +109,13 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   const [uploadCaption, setUploadCaption] = useState("");
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [editingWrittenPortfolio, setEditingWrittenPortfolio] = useState(true);
+  const [wallet, setWallet] = useState<WalletState | null>(null);
+  const [walletAmount, setWalletAmount] = useState("1000");
+  const [walletPhone, setWalletPhone] = useState("");
+  const [walletBusy, setWalletBusy] = useState(false);
+  const [walletRefreshing, setWalletRefreshing] = useState(false);
+  const [walletMessage, setWalletMessage] = useState<string | null>(null);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const portfolioUiSyncedRef = useRef(false);
 
   const loadMe = async () => {
@@ -93,7 +132,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
       setData(json);
       setDisplayName(json.profile?.display_name ?? `${json.membership.first_name} ${json.membership.second_name}`.trim());
       setCoverUrl(json.profile?.cover_url ?? null);
-      setProfileCategory(json.profile?.profile_category === "model" ? "model" : "creative");
+      setProfileCategory(json.profile?.profile_category === "pageant_model" ? "pageant_model" : "high_fashion_model");
       setProfessionalTitle(json.profile?.professional_title ?? "");
       setBio(json.profile?.bio ?? "");
       setPortfolioText(json.profile?.portfolio_text ?? "");
@@ -102,6 +141,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
       setSocialTiktok(json.profile?.social_tiktok ?? "");
       setSocialX(json.profile?.social_x ?? "");
       setPortfolioItems(Array.isArray(json.portfolio_items) ? json.portfolio_items : []);
+      setWalletPhone(json.membership.contact ?? "");
       if (!portfolioUiSyncedRef.current) {
         portfolioUiSyncedRef.current = true;
         const hasWritten = (json.profile?.portfolio_text ?? "").trim().length > 0;
@@ -118,6 +158,41 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   useEffect(() => {
     void loadMe();
   }, []);
+
+  const loadWallet = async (background = false) => {
+    if (!background) setWalletRefreshing(true);
+    setWalletError(null);
+    try {
+      const res = await fetch("/api/kcm-member/wallet", { cache: "no-store" });
+      const json = (await res.json().catch(() => ({}))) as WalletState & { error?: string };
+      if (!res.ok) {
+        setWalletError(json.error ?? "Could not load wallet.");
+        return;
+      }
+      setWallet(json);
+    } catch {
+      setWalletError("Could not load wallet.");
+    } finally {
+      if (!background) setWalletRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (data?.authenticated) {
+      void loadWallet();
+    } else {
+      setWallet(null);
+    }
+  }, [data?.authenticated, data?.membership.id]);
+
+  useEffect(() => {
+    const hasPending = (wallet?.transactions ?? []).some((tx) => tx.status === "pending");
+    if (!hasPending || !data?.authenticated) return;
+    const id = window.setInterval(() => {
+      void loadWallet(true);
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [wallet?.transactions, data?.authenticated]);
 
   const sendCode = async (e: FormEvent) => {
     e.preventDefault();
@@ -349,8 +424,40 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     await fetch("/api/kcm-member/logout", { method: "POST" });
     setData(null);
     setProfileMessage(null);
+    setWallet(null);
+    setWalletMessage(null);
+    setWalletError(null);
     portfolioUiSyncedRef.current = false;
     setEditingWrittenPortfolio(true);
+  };
+
+  const promptContribution = async (e: FormEvent) => {
+    e.preventDefault();
+    setWalletBusy(true);
+    setWalletError(null);
+    setWalletMessage(null);
+    try {
+      const amountKes = Math.round(Number(walletAmount));
+      const res = await fetch("/api/kcm-member/wallet/prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount_kes: amountKes,
+          phone: walletPhone.trim(),
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      if (!res.ok) {
+        setWalletError(json.error ?? "Could not send payment prompt.");
+        return;
+      }
+      setWalletMessage(json.message ?? "Payment prompt sent.");
+      await loadWallet();
+    } catch {
+      setWalletError("Could not send payment prompt.");
+    } finally {
+      setWalletBusy(false);
+    }
   };
 
   const savedPortfolioText = (data?.profile?.portfolio_text ?? "").trim();
@@ -368,7 +475,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   }, [data?.membership.email, displayName]);
 
   const shareProfile = async () => {
-    const title = professionalTitle || `${profileCategory === "model" ? "Model" : "Creative"} Profile`;
+    const title = professionalTitle || `${profileCategory === "pageant_model" ? "Pageant Model" : "High Fashion Model"} Profile`;
     const text = `${displayName || data?.membership.first_name} - ${title}`;
     const url = typeof window !== "undefined" ? window.location.href : "";
     try {
@@ -387,6 +494,15 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     `block min-w-[150px] rounded-xl border px-3 py-2.5 text-center text-sm font-semibold leading-snug [word-break:break-word] sm:min-w-0 sm:rounded-md sm:border-0 sm:px-3 sm:py-2 sm:text-left ${
       section === target ? "bg-primary-100 text-primary-900" : "text-gray-900 hover:bg-gray-100"
     }`;
+
+  const totalContributionKes = wallet?.balance_kes ?? 0;
+  const membershipBadge = useMemo(() => {
+    if (data?.account_status !== "active") return { label: "Pending Member", tone: "bg-amber-100 text-amber-800" };
+    if (totalContributionKes >= 20000) return { label: "Platinum Member", tone: "bg-violet-100 text-violet-800" };
+    if (totalContributionKes >= 10000) return { label: "Gold Member", tone: "bg-yellow-100 text-yellow-800" };
+    if (totalContributionKes >= 5000) return { label: "Silver Member", tone: "bg-slate-100 text-slate-800" };
+    return { label: "Bronze Member", tone: "bg-orange-100 text-orange-800" };
+  }, [data?.account_status, totalContributionKes]);
 
   if (checking) {
     return (
@@ -507,6 +623,96 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       Logout
                     </button>
                   </div>
+                  <div className="border-t border-gray-100 p-3">
+                    <div className="rounded-xl border border-primary-100 bg-primary-50 p-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-800">Membership badge</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <BadgeCheck className="h-4 w-4 text-primary-700" />
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${membershipBadge.tone}`}>
+                          {membershipBadge.label}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-secondary-700" />
+                        <p className="text-sm font-semibold text-gray-900">Member wallet</p>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-600">Monthly contributions are reflected after payment confirmation.</p>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-lg bg-gray-50 px-2 py-2">
+                          <p className="text-gray-500">Balance</p>
+                          <p className="font-bold text-gray-900">KES {(wallet?.balance_kes ?? 0).toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-50 px-2 py-2">
+                          <p className="text-amber-700">Pending</p>
+                          <p className="font-bold text-amber-900">KES {(wallet?.pending_kes ?? 0).toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <form onSubmit={promptContribution} className="mt-3 space-y-2">
+                        <input
+                          type="number"
+                          min={1}
+                          value={walletAmount}
+                          onChange={(e) => setWalletAmount(e.target.value)}
+                          placeholder="Amount (KES)"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
+                        />
+                        <input
+                          type="tel"
+                          value={walletPhone}
+                          onChange={(e) => setWalletPhone(e.target.value)}
+                          placeholder="M-Pesa number"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
+                        />
+                        <button
+                          type="submit"
+                          disabled={walletBusy}
+                          className="inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-secondary-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-secondary-700 disabled:opacity-60"
+                        >
+                          {walletBusy ? "Sending prompt..." : "Prompt payment"}
+                        </button>
+                      </form>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-[11px] text-gray-500">
+                          {wallet?.transactions?.[0]?.status === "pending" ? "Waiting for latest payment confirmation..." : "Wallet synced"}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void loadWallet()}
+                          disabled={walletRefreshing}
+                          className="text-[11px] font-semibold text-secondary-700 hover:text-secondary-800 disabled:opacity-60"
+                        >
+                          {walletRefreshing ? "Refreshing..." : "Refresh"}
+                        </button>
+                      </div>
+                      {walletError ? <p className="mt-2 text-xs text-red-700">{walletError}</p> : null}
+                      {walletMessage ? <p className="mt-2 text-xs text-green-700">{walletMessage}</p> : null}
+                      {(wallet?.transactions?.length ?? 0) > 0 ? (
+                        <div className="mt-3 border-t border-gray-100 pt-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Recent prompts</p>
+                          <ul className="mt-1 space-y-1">
+                            {(wallet?.transactions ?? []).slice(0, 3).map((tx) => (
+                              <li key={tx.id} className="flex items-center justify-between text-xs text-gray-700">
+                                <span>KES {Number(tx.amount_kes ?? 0).toLocaleString()}</span>
+                                <span
+                                  className={
+                                    tx.status === "success"
+                                      ? "text-green-700"
+                                      : tx.status === "failed"
+                                        ? "text-red-700"
+                                        : "text-amber-700"
+                                  }
+                                >
+                                  {tx.status}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                 </aside>
 
                 <div className="min-w-0 bg-[#f3f8fc]">
@@ -557,7 +763,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <div className="min-w-0 flex-1 self-center pb-0 sm:self-end sm:pb-1">
                         <p className="break-all text-base text-gray-700 sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
-                          {profileCategory === "model" ? "Model" : "Creative"}
+                          {profileCategory === "pageant_model" ? "Pageant model" : "High Fashion model"}
                         </p>
                       </div>
                     </div>
@@ -707,11 +913,13 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
                       <select
                         value={profileCategory}
-                        onChange={(e) => setProfileCategory(e.target.value === "model" ? "model" : "creative")}
+                        onChange={(e) =>
+                          setProfileCategory(e.target.value === "pageant_model" ? "pageant_model" : "high_fashion_model")
+                        }
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
                       >
-                        <option value="creative">Creative</option>
-                        <option value="model">Model</option>
+                        <option value="high_fashion_model">High Fashion model</option>
+                        <option value="pageant_model">Pageant model</option>
                       </select>
                     </div>
                     <div>
@@ -721,7 +929,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         value={professionalTitle}
                         onChange={(e) => setProfessionalTitle(e.target.value)}
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
-                        placeholder={profileCategory === "model" ? "Runway and Editorial Model" : "Creative Professional"}
+                        placeholder={profileCategory === "pageant_model" ? "Award-winning Pageant Model" : "Runway and Editorial Model"}
                       />
                     </div>
                   </div>

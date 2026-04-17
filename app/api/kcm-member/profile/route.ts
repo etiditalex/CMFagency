@@ -20,7 +20,8 @@ export async function PATCH(req: NextRequest) {
     const displayName = String(body.display_name ?? "").trim();
     const bio = String(body.bio ?? "").trim();
     const portfolioText = String(body.portfolio_text ?? "").trim().slice(0, 12000);
-    const category = String(body.profile_category ?? "creative").trim().toLowerCase() === "model" ? "model" : "creative";
+    const rawCategory = String(body.profile_category ?? "high_fashion_model").trim().toLowerCase();
+    const category = rawCategory === "pageant_model" ? "pageant_model" : "high_fashion_model";
     const professionalTitle = String(body.professional_title ?? "").trim().slice(0, 180);
     const socialInstagram = String(body.social_instagram ?? "").trim().slice(0, 255);
     const socialFacebook = String(body.social_facebook ?? "").trim().slice(0, 255);
