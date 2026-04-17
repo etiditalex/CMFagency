@@ -281,9 +281,16 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     }
   };
 
+  const loginBackgroundStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, rgba(6, 18, 52, 0.9), rgba(8, 40, 88, 0.88)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  } as const;
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f3f4f6] text-slate-900">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,#f8fafc_0%,#f1f5f9_100%)]" />
+    <main className="relative min-h-screen overflow-hidden text-slate-900" style={loginBackgroundStyle}>
       <div className="relative z-10 flex min-h-screen items-start justify-center px-3 pb-6 pt-6 sm:items-center sm:p-6">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
