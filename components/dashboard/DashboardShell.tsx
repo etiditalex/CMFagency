@@ -156,7 +156,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     const resetTimer = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
-        logoutRef.current().finally(() => {
+        Promise.resolve(logoutRef.current()).finally(() => {
           routerRef.current.replace("/fusion-xpress/admin-login");
         });
       }, INACTIVITY_TIMEOUT_MS);
