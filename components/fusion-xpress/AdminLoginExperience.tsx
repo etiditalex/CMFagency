@@ -306,18 +306,25 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     }
   };
 
+  const loginBackgroundStyle = {
+    backgroundImage:
+      "linear-gradient(135deg, rgba(6, 18, 52, 0.9), rgba(8, 40, 88, 0.88)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  } as const;
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(44,165,124,0.10),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(30,88,202,0.12),transparent_42%),linear-gradient(120deg,#ffffff_0%,#f8fbff_52%,#f8fafc_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.08)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.03] sm:opacity-[0.05]" />
-      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.12),transparent_70%)] opacity-40" />
-      <div className="hidden md:block absolute inset-0 opacity-25">
+    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900" style={loginBackgroundStyle}>
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.04] sm:opacity-[0.06]" />
+      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.2),transparent_70%)] opacity-40" />
+      <div className="hidden md:block absolute inset-0 opacity-30">
         <div className="absolute left-[28%] top-[14%] h-[70%] w-px bg-gradient-to-b from-transparent via-secondary-300/60 to-transparent" />
         <div className="absolute left-[52%] top-[10%] h-[76%] w-px bg-gradient-to-b from-transparent via-primary-300/55 to-transparent" />
         <div className="absolute left-[28%] top-[38%] h-px w-[24%] bg-gradient-to-r from-secondary-200/45 to-transparent" />
         <div className="absolute left-[52%] top-[58%] h-px w-[16%] bg-gradient-to-r from-primary-200/45 to-transparent" />
       </div>
-      <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(circle,_rgba(15,23,42,0.2)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.04]" />
+      <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.18)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.08]" />
       <ParticleField />
 
       <div className="relative z-10 flex min-h-screen items-start justify-center px-3 pb-6 pt-6 sm:items-center sm:p-6">
