@@ -332,7 +332,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
-          className="w-full max-w-[28rem] rounded-2xl border border-white/70 bg-white/70 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:max-w-md sm:p-8"
+          className="w-full max-w-[28rem] rounded-2xl border border-white/90 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] sm:max-w-md sm:p-8"
           aria-label="Fusion Xpress admin sign in"
         >
           <div className="mb-5 flex items-center justify-between sm:mb-6">
