@@ -211,15 +211,12 @@ export default function DashboardHomePage() {
 
     try {
       // Campaigns: total + active/inactive + title lookup for transactions list.
-      // Only full admins see all campaigns; managers and clients see only their own.
-      let campaignsQuery = supabase
+      // RLS already scopes visibility (own/admin/event-linked campaigns), so do not
+      // hard-filter by created_by here or historical ticket reports can disappear.
+      const campaignsQuery = supabase
         .from("campaigns")
         .select("id,title,type,slug,is_active,created_at")
         .order("created_at", { ascending: false });
-
-      if (!isFullAdmin && user?.id) {
-        campaignsQuery = campaignsQuery.eq("created_by", user.id);
-      }
 
       const { data: campaigns, error: cErr } = await campaignsQuery;
 

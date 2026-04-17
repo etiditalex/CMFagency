@@ -47,14 +47,12 @@ export default function TransactionsPage() {
     setError(null);
 
     try {
-      let campaignsQuery = supabase
+      // RLS defines which campaigns this user can report on (own/admin/event-linked).
+      // Avoid forcing created_by here so historical event tickets remain visible.
+      const campaignsQuery = supabase
         .from("campaigns")
         .select("id,title,slug")
         .order("created_at", { ascending: false });
-
-      if (!isFullAdmin) {
-        campaignsQuery = campaignsQuery.eq("created_by", user.id);
-      }
 
       const { data: campaigns, error: cErr } = await campaignsQuery;
       if (cErr) throw cErr;
