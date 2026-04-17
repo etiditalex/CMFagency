@@ -30,7 +30,7 @@ function isMissingAdminUsersTable(err: unknown) {
 function ParticleField() {
   const particles = Array.from({ length: 10 }, (_, i) => i);
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden hidden sm:block">
       {particles.map((i) => (
         <motion.span
           key={i}
@@ -307,43 +307,45 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#030712] text-white">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(44,165,124,0.16),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(30,88,202,0.22),transparent_42%),linear-gradient(120deg,#030814_0%,#081737_52%,#000000_100%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.06]" />
-      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.26),transparent_70%)] opacity-40" />
-      <div className="hidden md:block absolute inset-0 opacity-30">
+    <main className="relative min-h-screen overflow-hidden bg-slate-50 text-slate-900">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(44,165,124,0.10),transparent_45%),radial-gradient(circle_at_80%_30%,rgba(30,88,202,0.12),transparent_42%),linear-gradient(120deg,#ffffff_0%,#f8fbff_52%,#f8fafc_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.08)_1px,transparent_1px)] bg-[size:56px_56px] opacity-[0.03] sm:opacity-[0.05]" />
+      <div className="hidden md:block absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_right,rgba(44,165,124,0.12),transparent_70%)] opacity-40" />
+      <div className="hidden md:block absolute inset-0 opacity-25">
         <div className="absolute left-[28%] top-[14%] h-[70%] w-px bg-gradient-to-b from-transparent via-secondary-300/60 to-transparent" />
         <div className="absolute left-[52%] top-[10%] h-[76%] w-px bg-gradient-to-b from-transparent via-primary-300/55 to-transparent" />
         <div className="absolute left-[28%] top-[38%] h-px w-[24%] bg-gradient-to-r from-secondary-200/45 to-transparent" />
         <div className="absolute left-[52%] top-[58%] h-px w-[16%] bg-gradient-to-r from-primary-200/45 to-transparent" />
       </div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.18)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.08]" />
+      <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(circle,_rgba(15,23,42,0.2)_0.8px,transparent_0.8px)] bg-[size:8px_8px] [mask-image:linear-gradient(to_left,black_0%,transparent_70%)] opacity-[0.04]" />
       <ParticleField />
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <div className="relative z-10 flex min-h-screen items-start justify-center px-3 pb-6 pt-6 sm:items-center sm:p-6">
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
-          className="w-full max-w-md rounded-2xl border border-white/15 bg-white/10 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:p-8"
+          className="w-full max-w-[28rem] rounded-2xl border border-white/70 bg-white/70 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.12)] backdrop-blur-xl sm:max-w-md sm:p-8"
           aria-label="Fusion Xpress admin sign in"
         >
-          <div className="mb-6 flex items-center justify-between">
-            <Link href="/fusion-xpress" className="text-xs text-primary-100/85 transition hover:text-white">
+          <div className="mb-5 flex items-center justify-between sm:mb-6">
+            <Link href="/fusion-xpress" className="text-xs text-primary-700 transition hover:text-primary-900">
               Back
             </Link>
-            <span className="rounded-full border border-secondary-300/45 bg-secondary-500/15 px-3 py-1 text-xs font-medium text-secondary-100">
+            <span className="rounded-full border border-secondary-300/60 bg-secondary-100 px-3 py-1 text-xs font-medium text-secondary-800">
               Admin Portal
             </span>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-5 sm:mb-6">
             <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-secondary-400/25 to-primary-500/25 ring-1 ring-white/20">
               {step === "code" ? <KeyRound className="h-5 w-5 text-secondary-100" /> : <Shield className="h-5 w-5 text-secondary-100" />}
             </div>
-            <p className="text-xs uppercase tracking-[0.26em] text-primary-100/70">Fusion Xpress</p>
-            <h1 className="mt-2 text-2xl font-semibold text-white">{step === "code" ? "Verify Your Login" : "Welcome Back, Admin"}</h1>
-            <p className="mt-2 text-sm text-slate-200/80">
+            <p className="text-xs uppercase tracking-[0.26em] text-primary-700/80">Fusion Xpress</p>
+            <h1 className="mt-2 text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
+              {step === "code" ? "Verify Your Login" : "Welcome Back, Admin"}
+            </h1>
+            <p className="mt-2 text-xs text-slate-600 sm:text-sm">
               {step === "code"
                 ? "Enter your 6-digit verification code to continue."
                 : "Secure access to campaign management, ticketing, and analytics."}
@@ -356,7 +358,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
 
           {step === "code" ? (
             <form className="space-y-4" onSubmit={onVerifyCode}>
-              <label className="block text-sm text-slate-200" htmlFor="verification-code">
+              <label className="block text-sm text-slate-700" htmlFor="verification-code">
                 Verification code
               </label>
               <motion.input
@@ -368,7 +370,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 whileFocus={{ scale: 1.01 }}
-                className="w-full rounded-xl border border-white/20 bg-black/25 px-4 py-3 font-mono tracking-[0.35em] text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
+                className="w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-3.5 font-mono tracking-[0.3em] text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30 sm:tracking-[0.35em]"
                 placeholder="000000"
                 aria-label="Verification code"
               />
@@ -376,18 +378,18 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
               <button
                 type="submit"
                 disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
-                className="w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
+                className="min-h-12 w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {codeLoading ? "Verifying..." : "Verify and continue"}
               </button>
 
-              <div className="flex items-center justify-between text-xs text-slate-300">
+              <div className="flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                 {twoFactorMethod === "email" ? (
-                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-white">
+                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="text-left hover:text-slate-900">
                     {resendCodeLoading ? "Sending..." : "Resend code"}
                   </button>
                 ) : (
-                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-white">
+                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="text-left hover:text-slate-900">
                     Send email code
                   </button>
                 )}
@@ -398,7 +400,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                       setTwoFactorMethod("totp");
                       setCode("");
                     }}
-                    className="hover:text-white"
+                    className="text-left hover:text-slate-900"
                   >
                     Use authenticator app
                   </button>
@@ -408,11 +410,11 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
           ) : (
             <form className="space-y-4" onSubmit={onSubmit}>
               <div>
-                <label className="mb-2 block text-sm text-slate-200" htmlFor="admin-email">
+                <label className="mb-2 block text-sm text-slate-700" htmlFor="admin-email">
                   Email
                 </label>
                 <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300/80" />
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <motion.input
                     id="admin-email"
                     type="email"
@@ -421,18 +423,18 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white/80 py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30"
                     placeholder="you@fusionxpress.com"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-slate-200" htmlFor="admin-password">
+                <label className="mb-2 block text-sm text-slate-700" htmlFor="admin-password">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300/80" />
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <motion.input
                     id="admin-password"
                     type="password"
@@ -441,14 +443,14 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     whileFocus={{ scale: 1.01 }}
-                    className="w-full rounded-xl border border-white/20 bg-black/25 py-3 pl-10 pr-4 text-white placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/40"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white/80 py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30"
                     placeholder="Enter your password"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="inline-flex items-center gap-2 text-slate-200">
+              <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <label className="inline-flex items-center gap-2 text-slate-700">
                   <input
                     type="checkbox"
                     checked={rememberMe}
@@ -457,7 +459,12 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                   />
                   Remember me
                 </label>
-                <button type="button" onClick={onForgotPassword} className="font-medium text-primary-300 hover:text-primary-200" disabled={loading}>
+                <button
+                  type="button"
+                  onClick={onForgotPassword}
+                  className="text-left font-medium text-primary-300 hover:text-primary-200 sm:text-right"
+                  disabled={loading}
+                >
                   Forgot Password
                 </button>
               </div>
@@ -467,7 +474,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
               <button
                 type="submit"
                 disabled={loading || !canSubmit}
-                className="w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
+                className="min-h-12 w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
               >
                 {loading ? "Signing in..." : "Sign in"}
               </button>
