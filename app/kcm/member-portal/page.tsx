@@ -153,6 +153,9 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   const [walletMessage, setWalletMessage] = useState<string | null>(null);
   const [walletError, setWalletError] = useState<string | null>(null);
   const portfolioUiSyncedRef = useRef(false);
+  const profileShowcaseRef = useRef<HTMLDivElement | null>(null);
+  /** On small screens, cover/avatar/bio card stays hidden until user taps Portfolio in Quick actions. */
+  const [mobileProfileShowcaseOpen, setMobileProfileShowcaseOpen] = useState(false);
 
   const loadMe = async () => {
     setChecking(true);
@@ -229,6 +232,18 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     }, 8000);
     return () => window.clearInterval(id);
   }, [wallet?.transactions, data?.authenticated]);
+
+  useEffect(() => {
+    if (section !== "dashboard") setMobileProfileShowcaseOpen(false);
+  }, [section]);
+
+  useEffect(() => {
+    if (!mobileProfileShowcaseOpen) return;
+    const id = window.requestAnimationFrame(() => {
+      profileShowcaseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [mobileProfileShowcaseOpen]);
 
   const sendCode = async (e: FormEvent) => {
     e.preventDefault();
@@ -768,15 +783,18 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       </span>
                       <span className="text-[10px] font-semibold leading-tight text-gray-800">Edit</span>
                     </Link>
-                    <Link
-                      href="/kcm/member-portal/portfolio-uploads"
+                    <button
+                      type="button"
+                      aria-expanded={mobileProfileShowcaseOpen}
+                      aria-controls="kcm-profile-showcase"
                       className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-xl bg-slate-50 px-1 py-2 text-center transition-colors hover:bg-primary-50 active:bg-primary-100"
+                      onClick={() => setMobileProfileShowcaseOpen(true)}
                     >
                       <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-50 text-violet-700">
                         <Images className="h-5 w-5" />
                       </span>
                       <span className="text-[10px] font-semibold leading-tight text-gray-800">Portfolio</span>
-                    </Link>
+                    </button>
                     <Link
                       href="/kcm/member-portal/wallet"
                       className="flex min-h-[4.5rem] flex-col items-center justify-center gap-1 rounded-xl bg-slate-50 px-1 py-2 text-center transition-colors hover:bg-primary-50 active:bg-primary-100"
@@ -789,7 +807,13 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div
+                  ref={profileShowcaseRef}
+                  id="kcm-profile-showcase"
+                  className={`overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ${
+                    mobileProfileShowcaseOpen ? "block" : "max-lg:hidden lg:block"
+                  }`}
+                >
                 <div className="relative h-44 w-full overflow-hidden bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-48">
                   {coverUrl ? (
                     <Image src={coverUrl} alt="Profile cover" fill className="object-cover" />
@@ -907,6 +931,15 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     {!socialInstagram && !socialFacebook && !socialTiktok && !socialX ? (
                       <span className="text-xs text-gray-500">Add social links in Edit profile</span>
                     ) : null}
+                  </div>
+                  <div className="border-t border-gray-100 px-4 pb-4 pt-3 lg:hidden">
+                    <Link
+                      href="/kcm/member-portal/portfolio-uploads"
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-primary-800"
+                    >
+                      <FileText className="h-4 w-4 shrink-0" />
+                      Upload portfolio files
+                    </Link>
                   </div>
                 </div>
                 </div>
