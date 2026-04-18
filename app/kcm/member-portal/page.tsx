@@ -642,7 +642,9 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     </p>
                   </div>
                   <nav
-                    className="overflow-x-auto overscroll-x-contain px-3 py-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible lg:p-3"
+                    className={`overflow-x-auto overscroll-x-contain px-3 py-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible lg:p-3 ${
+                      section === "dashboard" ? "hidden lg:block" : ""
+                    }`}
                     aria-label="Portal sections"
                   >
                     <div className="flex snap-x snap-mandatory gap-2 pb-1 pr-1 lg:block lg:space-y-1 lg:pb-0 lg:pr-0">
@@ -741,7 +743,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <p className="mt-2 max-w-full break-words text-sm text-white/75 [overflow-wrap:anywhere]">{data.membership.email}</p>
                 </div>
 
-                <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm lg:hidden">
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary-900">Quick actions</p>
                   <div className="mt-3 grid grid-cols-4 gap-2">
                     <Link
