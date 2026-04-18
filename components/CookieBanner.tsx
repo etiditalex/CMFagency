@@ -37,10 +37,10 @@ export default function CookieBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ duration: 0.3 }}
-          className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl"
+          className="fixed left-0 right-0 z-[70] bg-white border-t border-gray-200 shadow-2xl md:bottom-0 max-md:bottom-[calc(3.25rem+env(safe-area-inset-bottom,0px))]"
         >
-          <div className="container-custom py-4">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="container-custom py-3 md:py-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-4">
               <div className="flex items-start space-x-4 flex-1">
                 <div className="flex-shrink-0">
                   <Cookie className="w-6 h-6 text-primary-600" />

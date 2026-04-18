@@ -195,10 +195,10 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-[60] md:hidden">
-        {/* Mobile dock navigation */}
-        <div className="mx-0 mb-0 h-[74px] rounded-none border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 px-2 py-2">
-          <div className="grid grid-cols-5 gap-1">
+      {/* Short dock (~52px + safe area). Keep in sync with CookieBanner mobile bottom offset. */}
+      <div className="fixed inset-x-0 bottom-0 z-[60] pb-[env(safe-area-inset-bottom,0px)] md:hidden">
+        <div className="mx-0 rounded-none border-t border-gray-200 bg-white px-1.5 py-1 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
+          <div className="grid grid-cols-5 gap-0.5">
             {footerActionLinks.map((item) => {
               const Icon = item.icon;
               const mobileLabel =
@@ -215,10 +215,10 @@ export default function Footer() {
                 <Link
                   key={`mobile-${item.href}-${item.label}`}
                   href={item.href}
-                  className="group flex h-[58px] flex-col items-center justify-center gap-1 px-1 text-center transition-colors duration-200"
+                  className="group flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-0.5 py-0.5 text-center transition-colors duration-200 active:bg-gray-50"
                 >
-                  <Icon className="h-5 w-5 shrink-0 text-white group-hover:text-white" />
-                  <span className="text-[11px] leading-none font-semibold text-white group-hover:text-white whitespace-nowrap">
+                  <Icon className="h-4 w-4 shrink-0 text-gray-700 group-hover:text-primary-700 group-active:text-primary-800" />
+                  <span className="whitespace-nowrap text-[10px] font-semibold leading-tight text-gray-800 group-hover:text-primary-800">
                     {mobileLabel}
                   </span>
                 </Link>
@@ -226,28 +226,6 @@ export default function Footer() {
             })}
           </div>
         </div>
-
-      </div>
-
-      {/* Desktop sticky links */}
-      <div className="fixed inset-x-0 bottom-0 z-50 hidden border-t border-primary-500/40 bg-gradient-to-r from-primary-900 via-primary-700 to-primary-800 md:block">
-          <div className="container-custom py-4 md:py-5">
-            <div className="grid grid-cols-5 gap-x-6">
-              {footerActionLinks.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={`desktop-${item.href}-${item.label}`}
-                    href={item.href}
-                    className="group flex min-h-16 flex-col items-center justify-center gap-1.5 px-1 py-1 text-center transition-colors duration-200"
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-white/80 group-hover:text-white" />
-                    <span className="text-sm font-medium text-white/90 group-hover:text-white">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
       </div>
     </footer>
   );
