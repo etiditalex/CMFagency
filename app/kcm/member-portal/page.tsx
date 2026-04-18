@@ -634,7 +634,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
           ) : (
             <div className="max-w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:rounded-lg">
               <div className="grid min-h-[calc(100dvh-2.5rem)] min-w-0 max-w-full grid-cols-1 lg:min-h-[min(100dvh,920px)] lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-                <aside className="min-w-0 max-w-full border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
+                <aside className="order-2 flex min-h-0 min-w-0 max-w-full flex-col border-b border-gray-200 bg-gray-50 lg:order-1 lg:border-b-0 lg:border-r lg:bg-white">
                   <div className="border-b border-gray-200 px-4 pt-4 pb-4 lg:bg-gray-50 lg:pt-5">
                     <p className="text-sm font-extrabold uppercase tracking-[0.08em] leading-6 text-gray-900 [word-break:break-word]">KCM Portal</p>
                     <p className="mt-1.5 break-words text-sm font-bold leading-snug text-gray-900">
@@ -723,15 +723,15 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     <button
                       type="button"
                       onClick={logout}
-                      className="inline-flex min-h-11 w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:min-h-10 sm:rounded-md sm:py-2"
+                      className="inline-flex min-h-11 w-full min-w-0 items-center justify-start gap-2 whitespace-nowrap rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-left text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:min-h-10 sm:rounded-md sm:py-2"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4 shrink-0" />
                       Logout
                     </button>
                   </div>
                 </aside>
 
-                <div className="min-w-0 max-w-full bg-slate-100">
+                <div className="order-1 min-w-0 max-w-full bg-slate-100 lg:order-2">
                   <div className="space-y-4 p-3 pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] sm:space-y-5 sm:p-4 sm:pb-6 md:space-y-6 md:p-6">
               {section === "dashboard" ? (
               <>
