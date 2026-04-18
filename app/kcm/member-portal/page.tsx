@@ -74,6 +74,31 @@ type WalletState = {
   transactions: WalletTransaction[];
 };
 
+/** Monday 00:00 local → next Monday 00:00 (current calendar week). */
+function getCurrentWeekBounds(): { start: number; end: number } {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  const start = d.getTime();
+  const end = start + 7 * 24 * 60 * 60 * 1000;
+  return { start, end };
+}
+
+function hasSuccessfulContributionThisWeek(transactions: WalletTransaction[] | undefined): boolean {
+  if (!transactions?.length) return false;
+  const { start, end } = getCurrentWeekBounds();
+  return transactions.some((t) => {
+    if (t.status !== "success") return false;
+    const raw = t.paid_at ?? t.initiated_at;
+    if (!raw) return false;
+    const ts = new Date(raw).getTime();
+    return ts >= start && ts < end;
+  });
+}
+
 type PortalSection = "dashboard" | "edit-profile" | "portfolio-uploads" | "wallet";
 
 type KcmMemberPortalPageProps = {
@@ -492,7 +517,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   };
 
   const navItemClass = (target: PortalSection) =>
-    `block min-w-[150px] rounded-xl border px-3 py-2.5 text-center text-sm font-semibold leading-snug [word-break:break-word] sm:min-w-0 sm:rounded-md sm:border-0 sm:px-3 sm:py-2 sm:text-left ${
+    `block shrink-0 snap-start min-w-[150px] rounded-xl border px-3 py-2.5 text-center text-sm font-semibold leading-snug [word-break:break-word] sm:min-w-0 sm:rounded-md sm:border-0 sm:px-3 sm:py-2 sm:text-left ${
       section === target ? "bg-primary-100 text-primary-900" : "text-gray-900 hover:bg-gray-100"
     }`;
 
@@ -504,6 +529,11 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     if (totalContributionKes >= 5000) return { label: "Silver Member", tone: "bg-slate-100 text-slate-800" };
     return { label: "Bronze Member", tone: "bg-orange-100 text-orange-800" };
   }, [data?.account_status, totalContributionKes]);
+
+  const contributedThisWeek = useMemo(
+    () => hasSuccessfulContributionThisWeek(wallet?.transactions),
+    [wallet?.transactions],
+  );
 
   if (checking) {
     return (
@@ -529,15 +559,15 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
     <main
       className={
         data
-          ? "min-h-[100dvh] bg-gray-50 py-4 sm:py-6 md:py-8"
-          : "min-h-[100dvh] bg-gray-50 px-3 py-6 sm:px-4 md:px-6"
+          ? "min-h-[100dvh] overflow-x-hidden bg-gray-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:py-4 sm:pt-4 md:py-6 lg:py-8"
+          : "min-h-[100dvh] bg-gray-50 px-3 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-4 md:px-6"
       }
       style={loginBackgroundStyle}
     >
       <section
         className={
           data
-            ? "w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10"
+            ? "w-full min-w-0 max-w-full px-3 sm:px-4 md:px-5 lg:px-6 xl:px-8 2xl:px-10"
             : "mx-auto flex min-h-[100dvh] w-full max-w-[1200px] items-center justify-center py-10 sm:py-12 md:py-16"
         }
       >
@@ -592,17 +622,20 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
               </form>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:rounded-lg">
-              <div className="grid min-h-[calc(100dvh-2rem)] lg:min-h-[min(100dvh,920px)] lg:grid-cols-[280px_minmax(0,1fr)]">
-                <aside className="min-w-0 border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
+            <div className="max-w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:rounded-lg">
+              <div className="grid min-h-[calc(100dvh-2.5rem)] min-w-0 max-w-full grid-cols-1 lg:min-h-[min(100dvh,920px)] lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+                <aside className="min-w-0 max-w-full border-b border-gray-200 bg-gray-50 lg:border-b-0 lg:border-r lg:bg-white">
                   <div className="border-b border-gray-200 px-4 pt-4 pb-4 lg:bg-gray-50 lg:pt-5">
                     <p className="text-sm font-extrabold uppercase tracking-[0.08em] leading-6 text-gray-900 [word-break:break-word]">KCM Portal</p>
                     <p className="mt-1.5 break-words text-sm font-bold leading-snug text-gray-900">
                       {displayName || data.membership.first_name}
                     </p>
                   </div>
-                  <nav className="overflow-x-auto px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible lg:p-3">
-                    <div className="flex snap-x snap-mandatory gap-2 pb-1 lg:block lg:space-y-1 lg:pb-0">
+                  <nav
+                    className="overflow-x-auto overscroll-x-contain px-3 py-3 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:overflow-visible lg:p-3"
+                    aria-label="Portal sections"
+                  >
+                    <div className="flex snap-x snap-mandatory gap-2 pb-1 pr-1 lg:block lg:space-y-1 lg:pb-0 lg:pr-0">
                     <Link href="/kcm/member-portal" className={navItemClass("dashboard")}>
                       Profile overview
                     </Link>
@@ -617,16 +650,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     </Link>
                     </div>
                   </nav>
-                  <div className="border-t border-gray-100 p-3">
-                    <button
-                      type="button"
-                      onClick={logout}
-                      className="inline-flex w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:rounded-md sm:py-2"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </div>
                   <div className="border-t border-gray-100 p-3 space-y-3">
                     <div className="rounded-xl border border-primary-100 bg-primary-50 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-800">Membership badge</p>
@@ -652,21 +675,31 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                           <p className="font-bold text-amber-900">KES {(wallet?.pending_kes ?? 0).toLocaleString()}</p>
                         </div>
                       </div>
+                      <div
+                        className={`mt-3 rounded-lg border px-2.5 py-2.5 text-[11px] font-semibold leading-snug [overflow-wrap:anywhere] sm:text-xs ${
+                          contributedThisWeek
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                            : "border-red-200 bg-red-50 text-red-800"
+                        }`}
+                      >
+                        Weekly contribution:{" "}
+                        {contributedThisWeek ? "Contributed this week" : "Not contributed this week"}
+                      </div>
                       <Link
                         href="/kcm/member-portal/wallet"
-                        className="mt-3 inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-secondary-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-secondary-700"
+                        className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary-700 sm:min-h-10 sm:py-2"
                       >
                         Open wallet page
                       </Link>
-                      <div className="mt-2 flex items-center justify-between">
-                        <p className="text-[11px] text-gray-500">
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                        <p className="min-w-0 text-[11px] leading-snug text-gray-500 [overflow-wrap:anywhere]">
                           {wallet?.transactions?.[0]?.status === "pending" ? "Waiting for latest payment confirmation..." : "Wallet synced"}
                         </p>
                         <button
                           type="button"
                           onClick={() => void loadWallet()}
                           disabled={walletRefreshing}
-                          className="text-[11px] font-semibold text-secondary-700 hover:text-secondary-800 disabled:opacity-60"
+                          className="inline-flex min-h-11 shrink-0 items-center justify-center self-start rounded-lg px-3 text-xs font-semibold text-secondary-700 hover:bg-secondary-50 hover:text-secondary-800 disabled:opacity-60 sm:min-h-0 sm:self-auto sm:px-0 sm:text-[11px] sm:hover:bg-transparent"
                         >
                           {walletRefreshing ? "Refreshing..." : "Refresh"}
                         </button>
@@ -674,10 +707,20 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       {walletError ? <p className="mt-2 text-xs text-red-700">{walletError}</p> : null}
                     </div>
                   </div>
+                  <div className="border-t border-gray-100 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pb-3">
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="inline-flex min-h-11 w-full min-w-0 flex-wrap items-center justify-center gap-2 whitespace-normal rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-center text-sm font-semibold text-gray-900 hover:bg-gray-100 sm:min-h-10 sm:rounded-md sm:py-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
                 </aside>
 
-                <div className="min-w-0 bg-[#f3f8fc]">
-                  <div className="space-y-5 p-3 pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:p-4 sm:pb-6 md:space-y-6 md:p-6">
+                <div className="min-w-0 max-w-full bg-[#f3f8fc]">
+                  <div className="space-y-5 p-3 pb-[max(1rem,calc(env(safe-area-inset-bottom,0px)+0.75rem))] sm:p-4 sm:pb-6 md:space-y-6 md:p-6">
               {section === "dashboard" ? (
               <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="relative h-48 w-full overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-900 via-primary-700 to-secondary-600 sm:h-52">
@@ -686,7 +729,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   ) : (
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1600&q=80')] bg-cover bg-center opacity-25" />
                   )}
-                  <div className="absolute inset-x-3 top-3 z-10 flex flex-col gap-2 sm:inset-x-auto sm:right-3 sm:max-w-[min(100%-1.5rem,22rem)] sm:flex-row sm:flex-wrap sm:justify-end">
+                  <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex flex-col gap-2 sm:inset-x-auto sm:right-3 sm:top-3 sm:max-w-[min(100%-1.5rem,22rem)] sm:flex-row sm:flex-wrap sm:justify-end">
                   <label className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md bg-white/95 px-3 py-2 text-center text-xs font-semibold leading-snug text-gray-700 shadow sm:w-auto sm:flex-wrap sm:justify-end sm:text-left">
                     <Camera className="h-3.5 w-3.5 shrink-0" />
                     <span className="min-w-0 break-words">{uploadingCover ? "Uploading..." : "Upload cover photo"}</span>
@@ -722,7 +765,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         )}
                       </div>
                       <div className="min-w-0 flex-1 self-center pb-0 sm:self-end sm:pb-1">
-                        <p className="break-all text-base text-gray-700 sm:text-lg">@{handle}</p>
+                        <p className="break-words text-base text-gray-700 [overflow-wrap:anywhere] sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
                           {profileCategory === "pageant_model" ? "Pageant model" : "High Fashion model"}
                         </p>
@@ -804,21 +847,11 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
 
               {section === "dashboard" ? (
               <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6 md:p-8">
-                <div className="flex min-w-0 flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap">
-                  <div className="min-w-0 max-w-full">
-                    <h1 className="break-words text-left text-2xl font-extrabold text-gray-900 md:text-3xl">
-                      Welcome, {data.membership.first_name}
-                    </h1>
-                    <p className="mt-1 break-all text-sm text-gray-600">{data.membership.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 sm:w-auto"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                  </button>
+                <div className="min-w-0 max-w-full">
+                  <h1 className="break-words text-left text-2xl font-extrabold text-gray-900 md:text-3xl">
+                    Welcome, {data.membership.first_name}
+                  </h1>
+                  <p className="mt-1 break-words text-sm text-gray-600 [overflow-wrap:anywhere]">{data.membership.email}</p>
                 </div>
                 <div className="mt-5 rounded-xl border border-primary-200 bg-primary-50 p-4">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-primary-900">
@@ -827,7 +860,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       Account status: <span className="uppercase">{data.account_status}</span>
                     </span>
                   </p>
-                  <p className="mt-1 break-words text-xs text-primary-800">
+                  <p className="mt-1 break-words text-xs leading-relaxed text-primary-800 [overflow-wrap:anywhere]">
                     Payment status: {data.membership.payment_status} | Membership review: {data.membership.status}
                   </p>
                 </div>
@@ -1133,35 +1166,38 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <input
                     type="number"
                     min={1}
+                    inputMode="decimal"
                     value={walletAmount}
                     onChange={(e) => setWalletAmount(e.target.value)}
                     placeholder="Amount (KES)"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
+                    className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20 sm:min-h-0 sm:text-sm"
                   />
                   <input
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={walletPhone}
                     onChange={(e) => setWalletPhone(e.target.value)}
                     placeholder="M-Pesa number"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20"
+                    className="min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base outline-none transition focus:border-secondary-500 focus:ring-2 focus:ring-secondary-500/20 sm:min-h-0 sm:text-sm"
                   />
                   <button
                     type="submit"
                     disabled={walletBusy}
-                    className="inline-flex min-h-10 items-center justify-center rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary-700 disabled:opacity-60"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-secondary-700 disabled:opacity-60 md:min-h-10 md:w-auto"
                   >
                     {walletBusy ? "Sending..." : "Prompt payment"}
                   </button>
                 </form>
-                <div className="mt-3 flex items-center justify-between">
-                  <p className="text-xs text-gray-500">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <p className="min-w-0 text-xs leading-snug text-gray-500 [overflow-wrap:anywhere]">
                     {wallet?.transactions?.[0]?.status === "pending" ? "Waiting for latest payment confirmation..." : "Wallet synced"}
                   </p>
                   <button
                     type="button"
                     onClick={() => void loadWallet()}
                     disabled={walletRefreshing}
-                    className="text-xs font-semibold text-secondary-700 hover:text-secondary-800 disabled:opacity-60"
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center self-start rounded-lg px-3 text-xs font-semibold text-secondary-700 hover:bg-secondary-50 hover:text-secondary-800 disabled:opacity-60 sm:min-h-0 sm:self-auto sm:px-0 sm:hover:bg-transparent"
                   >
                     {walletRefreshing ? "Refreshing..." : "Refresh wallet"}
                   </button>
@@ -1169,7 +1205,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                 {walletError ? <p className="mt-2 text-sm text-red-700">{walletError}</p> : null}
                 {walletMessage ? <p className="mt-2 text-sm text-green-700">{walletMessage}</p> : null}
                 {(wallet?.transactions?.length ?? 0) > 0 ? (
-                  <div className="mt-5 overflow-x-auto rounded-xl border border-gray-200">
+                  <div className="mt-5 -mx-1 max-w-full overflow-x-auto overscroll-x-contain rounded-xl border border-gray-200 px-1 [-webkit-overflow-scrolling:touch] sm:mx-0 sm:px-0">
                     <table className="w-full min-w-[560px] text-left text-sm">
                       <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                         <tr>
