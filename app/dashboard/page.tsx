@@ -514,9 +514,6 @@ export default function DashboardHomePage() {
           <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
             <div className="min-w-0">
               <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Recent Activity</h2>
-              <p className="mt-1 text-gray-600 max-w-3xl text-left">
-                Create ticket or voting campaigns, generate shareable payment links, and track webhook-confirmed activity.
-              </p>
               <div className="mt-3 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="text-left">
                   <span className="font-semibold">Last updated:</span> {updatedLabel}
@@ -551,16 +548,9 @@ export default function DashboardHomePage() {
                   <Vote className="w-4 h-4 text-gray-600" />
                   Voting start date
                 </div>
-                <p className="mt-0.5 text-xs text-gray-500">Set when public voting becomes available.</p>
               </div>
             </div>
-            {votingScheduleDisplay && !votingScheduleLoading ? (
-              <p className="mt-4 text-sm text-gray-700">
-                <span className="font-semibold">Current:</span> {votingScheduleDisplay}
-              </p>
-            ) : null}
             <div className="mt-4">
-              <label className="block text-xs font-semibold text-gray-700">First day voting is open</label>
               <input
                 type="date"
                 value={votingScheduleDate}

@@ -23,6 +23,10 @@ type Withdrawal = {
   metadata?: Record<string, unknown>;
 };
 
+function formatKes(value: number): string {
+  return value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
 export default function DashboardPayoutsPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
@@ -250,10 +254,13 @@ export default function DashboardPayoutsPage() {
             <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Smartphone className="w-5 h-5" />
-                M-Pesa
+                M-Pesa total received
               </div>
               <div className="mt-2 text-2xl font-bold text-gray-900">
-                KES {(balance?.mpesa ?? 0).toLocaleString()}
+                KES {formatKes(balance?.mpesa ?? 0)}
+              </div>
+              <div className="mt-1 text-sm text-gray-600">
+                Available for withdrawal: <span className="font-semibold">KES {formatKes(balance?.mpesaAvailable ?? 0)}</span>
               </div>
             </div>
             <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
@@ -262,7 +269,7 @@ export default function DashboardPayoutsPage() {
                 Paystack
               </div>
               <div className="mt-2 text-2xl font-bold text-gray-900">
-                {(balance?.paystack ?? 0).toLocaleString()}
+                {formatKes(balance?.paystack ?? 0)}
               </div>
             </div>
           </div>
@@ -318,7 +325,7 @@ export default function DashboardPayoutsPage() {
                     className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded border border-amber-200"
                   >
                     <div>
-                      <span className="font-bold">KES {Number(w.amount).toLocaleString()}</span>
+                      <span className="font-bold">KES {formatKes(Number(w.amount))}</span>
                       <span className="text-gray-600 ml-2">→ {w.recipient_phone}</span>
                       {w.created_by && (
                         <span className="block text-xs text-gray-500 mt-1">Requested by: {w.created_by.slice(0, 8)}…</span>
@@ -369,7 +376,7 @@ export default function DashboardPayoutsPage() {
                     className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded border border-orange-200"
                   >
                     <div>
-                      <span className="font-bold">KES {Number(w.amount).toLocaleString()}</span>
+                      <span className="font-bold">KES {formatKes(Number(w.amount))}</span>
                       <span className="text-gray-600 ml-2">→ {w.recipient_phone}</span>
                       {(w.metadata as { b2c_error?: string })?.b2c_error && (
                         <span className="block text-xs text-red-600 mt-1">
@@ -416,7 +423,7 @@ export default function DashboardPayoutsPage() {
                           {new Date(w.created_at).toLocaleString()}
                         </td>
                         <td className="py-3 pr-4 font-semibold">
-                          {String(w.currency ?? "KES").toUpperCase()} {Number(w.amount).toLocaleString()}
+                          {String(w.currency ?? "KES").toUpperCase()} {formatKes(Number(w.amount))}
                         </td>
                         <td className="py-3 pr-4 text-gray-700">{w.recipient_phone}</td>
                         {isFullAdmin && (

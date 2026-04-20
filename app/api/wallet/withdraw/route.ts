@@ -82,9 +82,14 @@ export async function POST(req: Request) {
       return { data: r.data as { amount: number; provider: string | null }[] | null, error: r.error };
     });
 
+    const isMpesa = (p: string | null | undefined) => {
+      const s = String(p ?? "").toLowerCase();
+      return s === "daraja" || s.includes("mpesa") || s.includes("m-pesa");
+    };
+
     let mpesaIn = 0;
     for (const t of txRows) {
-      if (String(t.provider ?? "").toLowerCase() === "daraja") {
+      if (isMpesa(t.provider)) {
         mpesaIn += Number(t.amount ?? 0) || 0;
       }
     }
