@@ -7,6 +7,7 @@ import {
   Briefcase,
   Calendar,
   Copy,
+  Crown,
   ExternalLink,
   Plus,
   RefreshCw,
@@ -98,6 +99,9 @@ export default function DashboardHomePage() {
   >([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, { title: string; type: string }>>({});
   const [pendingJobApplications, setPendingJobApplications] = useState(0);
+  const [kcmMembershipPaidKes, setKcmMembershipPaidKes] = useState(0);
+  const [kcmMembershipPaidCount, setKcmMembershipPaidCount] = useState(0);
+  const [kcmContributionsKes, setKcmContributionsKes] = useState(0);
 
   const [votingScheduleDate, setVotingScheduleDate] = useState("2026-04-01");
   const [votingScheduleDisplay, setVotingScheduleDisplay] = useState("");
@@ -324,6 +328,46 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(
           ticketRows.reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
         );
+      }
+
+      if (isAdmin) {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          if (!token) {
+            setKcmMembershipPaidKes(0);
+            setKcmMembershipPaidCount(0);
+            setKcmContributionsKes(0);
+          } else {
+            const res = await fetch("/api/fusion-xpress/kcm-memberships/summary", {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const j = (await res.json().catch(() => ({}))) as {
+              totalMembershipPaidKes?: number;
+              membershipPaidCount?: number;
+              totalContributionKes?: number;
+            };
+            if (res.ok) {
+              setKcmMembershipPaidKes(Number(j.totalMembershipPaidKes ?? 0) || 0);
+              setKcmMembershipPaidCount(Number(j.membershipPaidCount ?? 0) || 0);
+              setKcmContributionsKes(Number(j.totalContributionKes ?? 0) || 0);
+            } else {
+              setKcmMembershipPaidKes(0);
+              setKcmMembershipPaidCount(0);
+              setKcmContributionsKes(0);
+            }
+          }
+        } catch {
+          setKcmMembershipPaidKes(0);
+          setKcmMembershipPaidCount(0);
+          setKcmContributionsKes(0);
+        }
+      } else {
+        setKcmMembershipPaidKes(0);
+        setKcmMembershipPaidCount(0);
+        setKcmContributionsKes(0);
       }
 
       setLastUpdatedAt(new Date().toISOString());
@@ -816,6 +860,37 @@ export default function DashboardHomePage() {
               </span>
             </div>
         </div>
+
+        {isAdmin && (
+          <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+            <div className="flex items-center justify-end">
+              <Link
+                href="/dashboard/kcm-membership"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View More
+              </Link>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">KCM membership paid</div>
+                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">
+                  KES {kcmMembershipPaidKes.toLocaleString()}
+                </div>
+                <div className="mt-2 text-sm text-gray-600 text-left">
+                  Contributions: <span className="font-semibold text-secondary-700">KES {kcmContributionsKes.toLocaleString()}</span>
+                </div>
+                <div className="mt-1 text-xs text-gray-500 text-left">
+                  Paid members: {kcmMembershipPaidCount.toLocaleString()}
+                </div>
+              </div>
+              <span className="inline-flex w-10 h-10 rounded-full bg-primary-100 items-center justify-center">
+                <Crown className="w-5 h-5 text-primary-700" />
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Summary tiles */}
