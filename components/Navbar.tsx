@@ -16,6 +16,7 @@ export default function Navbar() {
   const [servicesCmfaIndex, setServicesCmfaIndex] = useState(0);
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
+  const [kcmOpen, setKcmOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
   const [careersNewsIndex, setCareersNewsIndex] = useState(0);
@@ -115,6 +116,11 @@ export default function Navbar() {
   const eventsCol1 = [eventsLinks[0]];
   const eventsCol2 = [eventsLinks[1], eventsLinks[2]]; // Upcoming + Register as a Model
   const eventsCol3 = [eventsLinks[3]];
+  const kcmLinks = [
+    { href: "/kcm", label: "KCM Membership" },
+    { href: "/kcm/cfm-tickets", label: "CFM Tickets" },
+    { href: "/kcm/member-portal", label: "KCM Member Portal" },
+  ];
 
   // Quick actions for CFMA 2026 (no images)
   const cfmaGoogleCalendarUrl =
@@ -705,12 +711,47 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            <Link
-              href="/kcm"
-              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
+            <div
+              className="relative"
+              onMouseEnter={() => setKcmOpen(true)}
+              onMouseLeave={() => setKcmOpen(false)}
             >
-              KCM
-            </Link>
+              <button
+                type="button"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={kcmOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setKcmOpen((p) => !p);
+                }}
+              >
+                <span>KCM</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {kcmOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {kcmLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Fusion Xpress (Admin portal) */}
             <Link
@@ -1048,13 +1089,39 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
 
-              <Link
-                href="/kcm"
-                onClick={() => setIsOpen(false)}
-                className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
-              >
-                KCM
-              </Link>
+              <div className="pt-2">
+                <button
+                  onClick={() => setKcmOpen(!kcmOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  <span>KCM</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {kcmOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="pl-4 space-y-2 mt-2"
+                    >
+                      {kcmLinks.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => {
+                            setIsOpen(false);
+                            setKcmOpen(false);
+                          }}
+                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               <div className="pt-4 border-t border-gray-200 space-y-3">
                 <Link
