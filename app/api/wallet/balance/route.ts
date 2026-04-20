@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   if (!authResult.ok) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
-  const { userId } = authResult.auth;
+  const { userId, portal, legacyAdmin } = authResult.auth;
 
   const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     global: (() => {
@@ -32,11 +32,12 @@ export async function GET(req: Request) {
   });
 
   try {
-    // Campaign IDs: always user's own campaigns (balance is per-user)
-    const { data: campaigns, error: cErr } = await supabase
-      .from("campaigns")
-      .select("id")
-      .eq("created_by", userId);
+    const isAdminScope = legacyAdmin || portal?.role === "admin";
+    // Admins: all visible campaigns via RLS. Others: own campaigns only.
+    const campaignsQuery = supabase.from("campaigns").select("id").order("created_at", { ascending: false });
+    const { data: campaigns, error: cErr } = isAdminScope
+      ? await campaignsQuery
+      : await campaignsQuery.eq("created_by", userId);
     if (cErr) throw cErr;
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
@@ -45,6 +46,10 @@ export async function GET(req: Request) {
         mpesa: 0,
         paystack: 0,
         mpesaAvailable: 0,
+        mpesaPendingApproval: 0,
+        mpesaInTransit: 0,
+        mpesaPaidOut: 0,
+        scope: isAdminScope ? "visible_campaigns" : "owned_campaigns",
       });
     }
 
@@ -81,9 +86,22 @@ export async function GET(req: Request) {
       .in("status", ["pending_admin", "approved", "processing", "completed"]);
 
     let withdrawnMpesa = 0;
+    let mpesaPendingApproval = 0;
+    let mpesaInTransit = 0;
+    let mpesaPaidOut = 0;
     for (const w of withdrawals ?? []) {
-      if (["approved", "processing", "completed"].includes(String(w.status ?? ""))) {
-        withdrawnMpesa += Number(w.amount ?? 0) || 0;
+      const status = String(w.status ?? "");
+      const amount = Number(w.amount ?? 0) || 0;
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
+      if (status === "pending_admin") {
+        mpesaPendingApproval += amount;
+      } else if (status === "approved" || status === "processing") {
+        mpesaInTransit += amount;
+        withdrawnMpesa += amount;
+      } else if (status === "completed") {
+        mpesaPaidOut += amount;
+        withdrawnMpesa += amount;
       }
     }
 
@@ -93,6 +111,10 @@ export async function GET(req: Request) {
       mpesa,
       paystack,
       mpesaAvailable,
+      mpesaPendingApproval,
+      mpesaInTransit,
+      mpesaPaidOut,
+      scope: isAdminScope ? "visible_campaigns" : "owned_campaigns",
     });
   } catch (e: unknown) {
     return NextResponse.json(

@@ -62,9 +62,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payouts feature not enabled" }, { status: 403 });
     }
 
-    // Get available M-Pesa balance
-    let campaignsQuery = supabase.from("campaigns").select("id").eq("created_by", auth.userId);
-    const { data: campaigns } = await campaignsQuery;
+    const isAdminScope = auth.legacyAdmin || auth.portal?.role === "admin";
+    // Admins: all visible campaigns via RLS. Others: own campaigns only.
+    const campaignsQuery = supabase.from("campaigns").select("id").order("created_at", { ascending: false });
+    const { data: campaigns } = isAdminScope
+      ? await campaignsQuery
+      : await campaignsQuery.eq("created_by", auth.userId);
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
     if (campaignIds.length === 0) {

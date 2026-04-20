@@ -10,7 +10,15 @@ import { getAccessTokenForApi } from "@/lib/get-access-token-for-api";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 
-type Balance = { mpesa: number; paystack: number; mpesaAvailable: number };
+type Balance = {
+  mpesa: number;
+  paystack: number;
+  mpesaAvailable: number;
+  mpesaPendingApproval?: number;
+  mpesaInTransit?: number;
+  mpesaPaidOut?: number;
+  scope?: string;
+};
 type Withdrawal = {
   id: string;
   amount: number;
@@ -70,6 +78,10 @@ export default function DashboardPayoutsPage() {
         mpesa: balJson.mpesa ?? 0,
         paystack: balJson.paystack ?? 0,
         mpesaAvailable: balJson.mpesaAvailable ?? 0,
+        mpesaPendingApproval: balJson.mpesaPendingApproval ?? 0,
+        mpesaInTransit: balJson.mpesaInTransit ?? 0,
+        mpesaPaidOut: balJson.mpesaPaidOut ?? 0,
+        scope: balJson.scope ?? "owned_campaigns",
       });
       setWithdrawals(wdJson.withdrawals ?? []);
     } catch (e) {
@@ -262,6 +274,9 @@ export default function DashboardPayoutsPage() {
               <div className="mt-1 text-sm text-gray-600">
                 Available for withdrawal: <span className="font-semibold">KES {formatKes(balance?.mpesaAvailable ?? 0)}</span>
               </div>
+              <div className="mt-1 text-xs text-gray-500">
+                Scope: {balance?.scope === "visible_campaigns" ? "all campaigns visible to your account" : "owned campaigns only"}.
+              </div>
             </div>
             <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
@@ -272,6 +287,38 @@ export default function DashboardPayoutsPage() {
                 {formatKes(balance?.paystack ?? 0)}
               </div>
             </div>
+          </div>
+
+          <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
+            <h3 className="font-extrabold text-gray-900">Reconciliation (M-Pesa wallet)</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Accounting view for{" "}
+              {balance?.scope === "visible_campaigns" ? "all visible campaigns" : "owned campaigns"}: inflow minus paid-out
+              and in-transit withdrawal requests.
+            </p>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">Inflow (successful)</div>
+                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesa ?? 0)}</div>
+              </div>
+              <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">Paid out (completed)</div>
+                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesaPaidOut ?? 0)}</div>
+              </div>
+              <div className="rounded border border-gray-200 bg-gray-50 p-3">
+                <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">In transit (approved/processing)</div>
+                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesaInTransit ?? 0)}</div>
+              </div>
+              <div className="rounded border border-green-200 bg-green-50 p-3">
+                <div className="text-xs font-bold text-green-800 uppercase tracking-wide">Net available</div>
+                <div className="mt-1 text-lg font-extrabold text-green-900">KES {formatKes(balance?.mpesaAvailable ?? 0)}</div>
+              </div>
+            </div>
+            {(balance?.mpesaPendingApproval ?? 0) > 0 ? (
+              <p className="mt-3 text-sm text-amber-700">
+                Pending admin approval (not deducted yet): KES {formatKes(balance?.mpesaPendingApproval ?? 0)}
+              </p>
+            ) : null}
           </div>
 
           {/* Request withdrawal */}

@@ -109,6 +109,7 @@ export default function DashboardInsightsPage() {
             <BarChart3 className="w-6 h-6 text-primary-600" />
             Sales &amp; votes
           </h2>
+          <p className="mt-1 text-xs text-gray-500">Scope: all campaigns visible to your account.</p>
           {data?.generatedAt && (
             <p className="mt-1 text-xs text-gray-500">
               Generated {new Date(data.generatedAt).toLocaleString()} · {data.campaignCount ?? 0} campaigns in scope
@@ -143,7 +144,7 @@ export default function DashboardInsightsPage() {
               { label: "Ticket revenue (KES)", value: k?.ticketRevenue ?? 0, fmt: (n: number) => n.toLocaleString() },
               { label: "Merch revenue (KES)", value: k?.merchandiseRevenue ?? 0, fmt: (n: number) => n.toLocaleString() },
               { label: "Vote units (qty)", value: k?.voteUnits ?? 0, fmt: (n: number) => n.toLocaleString() },
-              { label: "M-Pesa / STK (KES)", value: k?.mpesaRevenue ?? 0, fmt: (n: number) => n.toLocaleString() },
+              { label: "M-Pesa / STK sales (visible scope) (KES)", value: k?.mpesaRevenue ?? 0, fmt: (n: number) => n.toLocaleString() },
               { label: "Paystack & other (KES)", value: k?.paystackRevenue ?? 0, fmt: (n: number) => n.toLocaleString() },
             ].map((card) => (
               <div
