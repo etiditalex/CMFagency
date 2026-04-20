@@ -278,7 +278,7 @@ export default function CfmTicketsPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <main
-        className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat pt-24 pb-10 md:pt-28 md:pb-16"
+        className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16"
         style={{
           backgroundImage:
             "url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg')",
@@ -286,29 +286,29 @@ export default function CfmTicketsPage() {
       >
         <div className="absolute inset-0 bg-black/25" />
 
-        <section className="container-custom relative z-10 mt-4 md:mt-6">
-          <article className="mx-auto w-full max-w-5xl overflow-hidden rounded-3xl border border-white/35 bg-white shadow-2xl">
-            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-5 text-white sm:px-6 md:px-8 md:py-6">
-              <h1 className="mt-2 text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
+        <section className="container-custom relative z-10 mt-3 sm:mt-4 md:mt-6">
+          <article className="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-white/35 bg-white shadow-2xl sm:rounded-3xl">
+            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3.5 sm:px-6 sm:py-5 md:px-8 md:py-6">
+              <h1 className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl">
                 Choose Your Ticket Package
               </h1>
             </div>
 
-            <div className="grid gap-3 bg-white p-4 sm:gap-4 sm:p-5 md:grid-cols-3 md:p-7">
+            <div className="grid gap-3 bg-white p-3 max-[360px]:gap-2.5 max-[360px]:p-2.5 sm:gap-4 sm:p-5 md:grid-cols-3 md:p-7">
               {packages.map((pkg) => (
                 <section
                   key={pkg.amount}
-                  className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:p-5 ${
+                  className={`rounded-xl border bg-white p-3 max-[360px]:p-2.5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:rounded-2xl sm:p-5 ${
                     selectedPackage.amount === pkg.amount
                       ? "border-primary-400 ring-2 ring-primary-100"
                       : "border-gray-200"
                   }`}
                 >
-                  <p className="text-xs font-bold uppercase tracking-wide text-primary-700">{pkg.name}</p>
-                  <p className="mt-2 text-2xl font-extrabold text-gray-900 sm:text-3xl">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs">{pkg.name}</p>
+                  <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl">
                     KES {pkg.amount.toLocaleString()}
                   </p>
-                  <ul className="mt-4 space-y-2 text-sm text-gray-700">
+                  <ul className="mt-3 space-y-1.5 text-xs text-gray-700 max-[360px]:mt-2.5 max-[360px]:space-y-1 max-[360px]:text-[11px] sm:mt-4 sm:space-y-2 sm:text-sm">
                     {pkg.perks.map((perk) => (
                       <li key={perk} className="flex items-start gap-2">
                         <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary-600" />
@@ -319,7 +319,7 @@ export default function CfmTicketsPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedAmount(pkg.amount)}
-                    className="mt-5 w-full rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-700 transition hover:bg-primary-100"
+                    className="mt-4 w-full rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 max-[360px]:mt-3 max-[360px]:px-2.5 max-[360px]:text-[11px] sm:mt-5 sm:px-4 sm:text-sm"
                   >
                     {selectedPackage.amount === pkg.amount ? "Selected" : `Select ${pkg.amount}`}
                   </button>
@@ -332,11 +332,11 @@ export default function CfmTicketsPage() {
                 e.preventDefault();
                 void onPay("daraja");
               }}
-              className="border-t border-gray-200 bg-white p-4 sm:p-5 md:p-7"
+              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7"
             >
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-extrabold text-gray-900">Checkout</h2>
-                <p className="text-sm font-semibold text-primary-700">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
+                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg">Checkout</h2>
+                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm">
                   Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}
                 </p>
               </div>
@@ -353,7 +353,7 @@ export default function CfmTicketsPage() {
               ) : null}
               {pendingReference && paymentStatus ? (
                 <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
-                  <p className="font-semibold">Payment reference: {pendingReference}</p>
+                  <p className="break-all font-semibold">Payment reference: {pendingReference}</p>
                   <p className="mt-1">
                     Status:{" "}
                     <span className="font-bold uppercase">
@@ -380,13 +380,13 @@ export default function CfmTicketsPage() {
                 </div>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
                   required
                 />
                 <input
@@ -394,7 +394,7 @@ export default function CfmTicketsPage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
                   required
                 />
                 <input
@@ -402,7 +402,7 @@ export default function CfmTicketsPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
                   required
                 />
                 <input
@@ -410,7 +410,7 @@ export default function CfmTicketsPage() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="M-Pesa phone (e.g. 254712345678)"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
                 />
                 <input
                   type="number"
@@ -419,12 +419,12 @@ export default function CfmTicketsPage() {
                   value={normalizedQuantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                   placeholder="Quantity"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:col-span-2"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] sm:col-span-2"
                   required
                 />
               </div>
 
-              <label className="mt-4 flex items-start gap-2 text-sm text-gray-700">
+              <label className="mt-4 flex items-start gap-2 text-xs text-gray-700 sm:text-sm">
                 <input
                   type="checkbox"
                   checked={agreedToTerms}
@@ -445,11 +445,11 @@ export default function CfmTicketsPage() {
                 </span>
               </label>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2 sm:gap-3">
                 <button
                   type="submit"
                   disabled={submittingMethod !== null}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-[360px]:px-3 max-[360px]:text-[13px] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "daraja" ? (
                     <>
@@ -464,7 +464,7 @@ export default function CfmTicketsPage() {
                   type="button"
                   onClick={() => void onPay("paystack")}
                   disabled={submittingMethod !== null}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-[360px]:px-3 max-[360px]:text-[13px] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "paystack" ? (
                     <>
