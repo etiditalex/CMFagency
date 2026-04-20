@@ -290,12 +290,7 @@ export default function DashboardPayoutsPage() {
           </div>
 
           <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
-            <h3 className="font-extrabold text-gray-900">Reconciliation (M-Pesa wallet)</h3>
-            <p className="mt-1 text-sm text-gray-600">
-              Accounting view for{" "}
-              {balance?.scope === "visible_campaigns" ? "all visible campaigns" : "owned campaigns"}: inflow minus paid-out
-              and in-transit withdrawal requests.
-            </p>
+            <h3 className="font-extrabold text-gray-900">M-Pesa Wallet</h3>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
                 <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">Inflow (successful)</div>
