@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -205,11 +206,15 @@ async function loadBlogIndexData(): Promise<{
 }
 
 /**
- * Server-only index data: parallel bounded queries. Deduped per request with React `cache()`.
- * Cross-request caching uses `/blogs` ISR (`export const revalidate = 60`); `unstable_cache` is not used here because
- * large excerpt HTML can exceed Next.js’s ~2MB data cache limit.
+ * Server-only index data: parallel bounded queries.
+ * Cached across requests to reduce Supabase round-trips on high-traffic /blogs loads.
  */
-export const getBlogIndexData = cache(loadBlogIndexData);
+const getBlogIndexDataCached = unstable_cache(loadBlogIndexData, ["blog-index-data-v1"], {
+  revalidate: 120,
+});
+
+/** Request-level dedupe wrapper around cross-request cached loader. */
+export const getBlogIndexData = cache(async () => getBlogIndexDataCached());
 
 export type BlogSitemapRow = { slug: string; published_at: string; updated_at: string | null };
 

@@ -243,6 +243,27 @@ export default function DashboardHomePage() {
       // For clients, filter transactions/votes/tickets by their campaigns only.
       // When client has no campaigns, return empty (don't run unfiltered queries).
       const hasCampaigns = campaignIds.length > 0;
+      const kcmSummaryPromise =
+        isAdmin
+          ? (async () => {
+              const {
+                data: { session },
+              } = await supabase.auth.getSession();
+              const token = session?.access_token;
+              if (!token) return null;
+              const res = await fetch("/api/fusion-xpress/kcm-memberships/summary", {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (!res.ok) return null;
+              return (await res.json().catch(() => ({}))) as {
+                totalMembershipPaidKes?: number;
+                membershipPaidCount?: number;
+                totalContributionKes?: number;
+              };
+            })()
+          : Promise.resolve(null);
+      let resolvedKcmSummary: { totalMembershipPaidKes?: number; membershipPaidCount?: number; totalContributionKes?: number } | null =
+        null;
 
       if (!hasCampaigns) {
         setRecentTransactions([]);
@@ -254,7 +275,7 @@ export default function DashboardHomePage() {
         setTotalVotes(0);
         setTotalTicketsIssued(0);
       } else {
-        const [txRes, successTx, voteRows, ticketRows] = await Promise.all([
+        const [txRes, successRows, kcmSummary] = await Promise.all([
           supabase
             .from("transactions")
             .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
@@ -263,33 +284,17 @@ export default function DashboardHomePage() {
             .limit(10),
           fetchAllSupabasePages(async (from, to) => {
             const r = await supabase
-              .from("transactions")
-              .select("amount,currency,campaign_type,campaign_id")
+              .from("reportable_transactions")
+              .select("amount,currency,resolved_type,campaign_id,quantity")
               .eq("status", "success")
               .in("campaign_id", campaignIds)
               .order("id", { ascending: true })
               .range(from, to);
             return { data: r.data as any[] | null, error: r.error };
           }),
-          fetchAllSupabasePages(async (from, to) => {
-            const r = await supabase
-              .from("votes")
-              .select("votes,campaign_id")
-              .in("campaign_id", campaignIds)
-              .order("id", { ascending: true })
-              .range(from, to);
-            return { data: r.data as any[] | null, error: r.error };
-          }),
-          fetchAllSupabasePages(async (from, to) => {
-            const r = await supabase
-              .from("ticket_issues")
-              .select("quantity,campaign_id")
-              .in("campaign_id", campaignIds)
-              .order("id", { ascending: true })
-              .range(from, to);
-            return { data: r.data as any[] | null, error: r.error };
-          }),
+          kcmSummaryPromise,
         ]);
+        resolvedKcmSummary = kcmSummary;
 
         if (txRes.error) throw txRes.error;
         const rawTx = (txRes.data ?? []) as any[];
@@ -298,15 +303,19 @@ export default function DashboardHomePage() {
           : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
         setRecentTransactions(visibleTx);
 
-        setSuccessfulPayments(successTx.length);
+        setSuccessfulPayments(successRows.length);
         const rev: Record<string, number> = {};
         const revTickets: Record<string, number> = {};
         const revVotes: Record<string, number> = {};
         const revMerchandise: Record<string, number> = {};
-        for (const t of successTx as any[]) {
+        let voteUnits = 0;
+        let ticketUnits = 0;
+        for (const t of successRows as any[]) {
           const cur = String(t.currency ?? "").toUpperCase() || "—";
           const amt = Number(t.amount ?? 0);
-          const ctype = String(t.campaign_type ?? "").toLowerCase();
+          const ctype = String(t.resolved_type ?? "").toLowerCase();
+          const qtyRaw = Math.trunc(Number(t.quantity ?? 0));
+          const qty = qtyRaw > 0 ? qtyRaw : 1;
           const isMerchandise = merchandiseCampaignId && String(t.campaign_id ?? "") === String(merchandiseCampaignId);
           if (!Number.isFinite(amt)) continue;
           rev[cur] = (rev[cur] ?? 0) + amt;
@@ -314,52 +323,27 @@ export default function DashboardHomePage() {
             revMerchandise[cur] = (revMerchandise[cur] ?? 0) + amt;
           } else if (ctype === "vote") {
             revVotes[cur] = (revVotes[cur] ?? 0) + amt;
+            voteUnits += qty;
           } else if (ctype === "ticket") {
             revTickets[cur] = (revTickets[cur] ?? 0) + amt;
+            ticketUnits += qty;
           }
         }
         setRevenueByCurrency(rev);
         setRevenueByCurrencyTickets(revTickets);
         setRevenueByCurrencyVotes(revVotes);
         setRevenueByCurrencyMerchandise(revMerchandise);
-
-        setTotalVotes(voteRows.reduce((acc: number, r: any) => acc + (Number(r.votes ?? 0) || 0), 0));
-
-        setTotalTicketsIssued(
-          ticketRows.reduce((acc: number, r: any) => acc + (Number(r.quantity ?? 0) || 0), 0)
-        );
+        setTotalVotes(voteUnits);
+        setTotalTicketsIssued(ticketUnits);
       }
 
       if (isAdmin) {
-        try {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          const token = session?.access_token;
-          if (!token) {
-            setKcmMembershipPaidKes(0);
-            setKcmMembershipPaidCount(0);
-            setKcmContributionsKes(0);
-          } else {
-            const res = await fetch("/api/fusion-xpress/kcm-memberships/summary", {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const j = (await res.json().catch(() => ({}))) as {
-              totalMembershipPaidKes?: number;
-              membershipPaidCount?: number;
-              totalContributionKes?: number;
-            };
-            if (res.ok) {
-              setKcmMembershipPaidKes(Number(j.totalMembershipPaidKes ?? 0) || 0);
-              setKcmMembershipPaidCount(Number(j.membershipPaidCount ?? 0) || 0);
-              setKcmContributionsKes(Number(j.totalContributionKes ?? 0) || 0);
-            } else {
-              setKcmMembershipPaidKes(0);
-              setKcmMembershipPaidCount(0);
-              setKcmContributionsKes(0);
-            }
-          }
-        } catch {
+        const kcmSummary = resolvedKcmSummary ?? (await kcmSummaryPromise);
+        if (kcmSummary) {
+          setKcmMembershipPaidKes(Number(kcmSummary.totalMembershipPaidKes ?? 0) || 0);
+          setKcmMembershipPaidCount(Number(kcmSummary.membershipPaidCount ?? 0) || 0);
+          setKcmContributionsKes(Number(kcmSummary.totalContributionKes ?? 0) || 0);
+        } else {
           setKcmMembershipPaidKes(0);
           setKcmMembershipPaidCount(0);
           setKcmContributionsKes(0);

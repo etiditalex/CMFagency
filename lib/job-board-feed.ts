@@ -98,7 +98,7 @@ function collectedMatchesQuery(j: CollectedJob, q: string): boolean {
  * Merged employer-published jobs + aggregated remote APIs, optional keyword search.
  * Flow: DB (+ search index on aggregated_jobs.search_tsv) → unified list for /jobs.
  */
-export async function getUnifiedJobBoardFeed(options?: {
+async function getUnifiedJobBoardFeedUncached(options?: {
   search?: string | null;
   limit?: number;
 }): Promise<{ jobs: UnifiedJobListing[]; error: string | null }> {
@@ -257,4 +257,23 @@ export async function getUnifiedJobBoardFeed(options?: {
   const trimmed = jobs.slice(0, limit);
   const errMsg = employerErr && aggregatedErr ? `${employerErr}; ${aggregatedErr}` : employerErr || aggregatedErr;
   return { jobs: trimmed, error: errMsg };
+}
+
+/** Cache high-traffic default board query (no keyword) across requests. */
+const getUnifiedJobBoardFeedDefaultCached = unstable_cache(
+  async (limit: number) => getUnifiedJobBoardFeedUncached({ search: null, limit }),
+  ["job-board-default-feed-v1"],
+  { revalidate: 180 }
+);
+
+export async function getUnifiedJobBoardFeed(options?: {
+  search?: string | null;
+  limit?: number;
+}): Promise<{ jobs: UnifiedJobListing[]; error: string | null }> {
+  const q = (options?.search ?? "").trim();
+  const limit = Math.min(Math.max(options?.limit ?? 400, 1), 500);
+  if (!q) {
+    return getUnifiedJobBoardFeedDefaultCached(limit);
+  }
+  return getUnifiedJobBoardFeedUncached({ search: q, limit });
 }

@@ -453,7 +453,7 @@ export default function DashboardCampaignsPage() {
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="mt-6 grid grid-cols-1 gap-6">
         {filtered.length === 0 ? (
           <div className="bg-white rounded-md shadow-sm p-8 border border-gray-200">
             <p className="text-gray-700 text-left">
@@ -484,8 +484,8 @@ export default function DashboardCampaignsPage() {
               const publicUrl = `/${c.slug}`;
 
               return (
-                <div key={c.id} className="bg-white rounded-md shadow-sm p-6 border border-gray-200 ">
-                  <div className="flex items-start justify-between gap-4">
+                <div key={c.id} className="bg-white rounded-md shadow-sm p-4 border border-gray-200">
+                  <div className="flex flex-col gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="inline-flex w-9 h-9 rounded-lg bg-primary-50 items-center justify-center">
@@ -505,18 +505,18 @@ export default function DashboardCampaignsPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-3 gap-3">
-                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
                           <div className="text-xs text-gray-500">{isVote ? "Total votes" : "Total sales"}</div>
                           <div className="text-lg font-bold text-gray-900">
                             {isVote ? c.total_votes.toLocaleString() : `${c.currency} ${c.total_amount.toLocaleString()}`}
                           </div>
                         </div>
-                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
                           <div className="text-xs text-gray-500">Successful txns</div>
                           <div className="text-lg font-bold text-gray-900">{c.successful_transactions.toLocaleString()}</div>
                         </div>
-                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-3">
+                        <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
                           <div className="text-xs text-gray-500">Status</div>
                           <div className={`text-lg font-bold ${c.is_active ? "text-green-700" : "text-amber-600"}`}>
                             {c.is_active ? "Active" : "Draft"}
@@ -525,12 +525,12 @@ export default function DashboardCampaignsPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex w-full items-center gap-2 overflow-x-auto">
                       {isFullAdmin && (
                         <button
                           type="button"
                           onClick={() => { setAssignCampaign(c); setAssignTargetUserId(""); }}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-primary-200 hover:bg-primary-50 text-primary-700 font-semibold"
+                          className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-primary-200 hover:bg-primary-50 text-primary-700 font-semibold whitespace-nowrap"
                           title="Assign this campaign to a client so it appears in their dashboard"
                         >
                           <UserPlus className="w-4 h-4" />
@@ -540,7 +540,7 @@ export default function DashboardCampaignsPage() {
                       {hasFeature("create_campaign") && (
                         <Link
                           href={`/dashboard/campaigns/${c.id}/edit`}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                          className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold whitespace-nowrap"
                           title="Edit campaign"
                         >
                           <Pencil className="w-4 h-4" />
@@ -550,7 +550,7 @@ export default function DashboardCampaignsPage() {
                       {hasFeature("reports") && (
                         <Link
                           href={`/dashboard/campaigns/${c.id}`}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                          className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold whitespace-nowrap"
                           title="Open campaign report"
                         >
                           <LineChart className="w-4 h-4" />
@@ -559,7 +559,7 @@ export default function DashboardCampaignsPage() {
                       )}
                       <Link
                         href={publicUrl}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold whitespace-nowrap"
                         title="Open public link"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -568,7 +568,7 @@ export default function DashboardCampaignsPage() {
                       <button
                         type="button"
                         onClick={() => copyLink(c.slug)}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-gray-900 font-semibold whitespace-nowrap"
                         title="Copy public link"
                       >
                         <Copy className="w-4 h-4" />
@@ -579,7 +579,7 @@ export default function DashboardCampaignsPage() {
                           type="button"
                           onClick={() => handleDelete(c.id, c.title)}
                           disabled={deletingId === c.id}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-200 hover:bg-red-50 text-red-700 font-semibold disabled:opacity-50"
+                          className="inline-flex shrink-0 items-center justify-center gap-2 px-4 py-2 rounded-md border border-red-200 hover:bg-red-50 text-red-700 font-semibold whitespace-nowrap disabled:opacity-50"
                           title={isFullAdmin ? "Delete campaign (admin: can remove duplicates)" : "Delete campaign"}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -589,7 +589,7 @@ export default function DashboardCampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 text-sm text-gray-600 break-all">
+                  <div className="mt-3 text-sm text-gray-600 break-all">
                     Public link:{" "}
                     <span className="font-mono">{origin ? `${origin}${publicUrl}` : publicUrl}</span>
                   </div>
