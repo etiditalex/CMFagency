@@ -136,7 +136,12 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
 
   const visible = (rawCampaigns ?? []).filter((c) => isCampaignPublicVisible(c as CampaignRaw)) as CampaignRaw[];
   if (visible.length === 0) {
-    const payload = { ok: true, categories: [], voting_starts_at, rlsAnon: !bypassesRls } as const;
+    const payload: Extract<VotingAllCatalogResult, { ok: true }> = {
+      ok: true,
+      categories: [],
+      voting_starts_at,
+      rlsAnon: !bypassesRls,
+    };
     votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };
     return payload;
   }
@@ -217,7 +222,12 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
     };
   });
 
-  const payload = { ok: true, categories, voting_starts_at, rlsAnon: !bypassesRls } as const;
+  const payload: Extract<VotingAllCatalogResult, { ok: true }> = {
+    ok: true,
+    categories,
+    voting_starts_at,
+    rlsAnon: !bypassesRls,
+  };
   votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };
   return payload;
 }
