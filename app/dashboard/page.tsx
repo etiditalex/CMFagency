@@ -279,7 +279,6 @@ export default function DashboardHomePage() {
           supabase
             .from("transactions")
             .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
-            .in("campaign_id", campaignIds)
             .order("created_at", { ascending: false })
             .limit(10),
           fetchAllSupabasePages(async (from, to) => {
@@ -302,6 +301,22 @@ export default function DashboardHomePage() {
           ? rawTx
           : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
         setRecentTransactions(visibleTx);
+        const txCampaignIds = [...new Set(visibleTx.map((t) => String(t.campaign_id ?? "")).filter(Boolean))];
+        if (txCampaignIds.length > 0) {
+          const { data: txCampaigns } = await supabase.from("campaigns").select("id,title,type").in("id", txCampaignIds);
+          if (txCampaigns?.length) {
+            setCampaignTitleById((prev) => {
+              const next = { ...prev };
+              for (const c of txCampaigns as Array<{ id: string; title?: string; type?: string }>) {
+                next[c.id] = {
+                  title: String(c.title ?? next[c.id]?.title ?? c.id),
+                  type: String(c.type ?? next[c.id]?.type ?? ""),
+                };
+              }
+              return next;
+            });
+          }
+        }
 
         setSuccessfulPayments(successRows.length);
         const rev: Record<string, number> = {};

@@ -27,7 +27,7 @@ type TxRow = {
 export default function TransactionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin, isAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +39,23 @@ export default function TransactionsPage() {
 
   const PAGE_SIZE = 100;
 
+  const loadCampaignTitlesForIds = useCallback(async (ids: string[]) => {
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (uniqueIds.length === 0) return;
+    const { data: campaigns, error: cErr } = await supabase
+      .from("campaigns")
+      .select("id,title,slug")
+      .in("id", uniqueIds);
+    if (cErr) throw cErr;
+    setCampaignTitleById((prev) => {
+      const next = { ...prev };
+      for (const c of (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>) {
+        next[c.id] = String(c.title || c.slug || c.id);
+      }
+      return next;
+    });
+  }, []);
+
   const refreshData = useCallback(async (offset = 0, append = false) => {
     if (!user?.id) return;
 
@@ -47,39 +64,16 @@ export default function TransactionsPage() {
     setError(null);
 
     try {
-      // RLS defines which campaigns this user can report on (own/admin/event-linked).
-      // Avoid forcing created_by here so historical event tickets remain visible.
-      const campaignsQuery = supabase
-        .from("campaigns")
-        .select("id,title,slug")
-        .order("created_at", { ascending: false });
-
-      const { data: campaigns, error: cErr } = await campaignsQuery;
-      if (cErr) throw cErr;
-
-      const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
-      const titleMap: Record<string, string> = {};
-      for (const c of (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>) {
-        titleMap[c.id] = String(c.title || c.slug || c.id);
-      }
-      setCampaignTitleById(titleMap);
-
-      if (campaignIds.length === 0) {
-        setTransactions([]);
-        setHasMore(false);
-        return;
-      }
-
       const { data: txRows, error: txErr } = await supabase
         .from("transactions")
         .select("id,reference,status,amount,currency,quantity,created_at,campaign_id,campaign_type,provider,email,payer_name")
-        .in("campaign_id", campaignIds)
         .order("created_at", { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
 
       if (txErr) throw txErr;
 
       const rows = (txRows ?? []) as TxRow[];
+      await loadCampaignTitlesForIds([...new Set(rows.map((r) => String(r.campaign_id ?? "")))]);
       const visible = isAdmin
         ? rows
         : rows.filter((t) => t.status !== "failed" && t.status !== "abandoned");
@@ -92,7 +86,7 @@ export default function TransactionsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, isFullAdmin, isAdmin]);
+  }, [user?.id, isAdmin, loadCampaignTitlesForIds]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;

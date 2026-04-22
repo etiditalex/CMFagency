@@ -4,6 +4,7 @@ import { getVoteTransactionTotalsForCampaignsFlat } from "@/lib/vote-transaction
 
 /** Avoid oversized `.in()` lists; safe with hundreds of categories. */
 const CAMPAIGN_ID_CHUNK = 40;
+const VOTING_ALL_CACHE_TTL_MS = 30_000;
 
 type CampaignRaw = {
   id: string;
@@ -89,11 +90,22 @@ export type VotingAllCatalogResult =
     }
   | { ok: false; error: string };
 
+let votingAllCatalogCache:
+  | {
+      expiresAt: number;
+      value: Extract<VotingAllCatalogResult, { ok: true }>;
+    }
+  | null = null;
+
 /**
  * Shared server logic for `/voting/all` and `GET /api/voting/all-categories`.
  * Prefer service role on the server to avoid RLS timeouts on large catalogs.
  */
 export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
+  const now = Date.now();
+  if (votingAllCatalogCache && votingAllCatalogCache.expiresAt > now) {
+    return votingAllCatalogCache.value;
+  }
   const sup = createSupabaseForVotingCatalog();
   if (!sup) {
     return { ok: true, categories: [], voting_starts_at: null, rlsAnon: false };
@@ -124,7 +136,9 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
 
   const visible = (rawCampaigns ?? []).filter((c) => isCampaignPublicVisible(c as CampaignRaw)) as CampaignRaw[];
   if (visible.length === 0) {
-    return { ok: true, categories: [], voting_starts_at, rlsAnon: !bypassesRls };
+    const payload = { ok: true, categories: [], voting_starts_at, rlsAnon: !bypassesRls } as const;
+    votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };
+    return payload;
   }
 
   const ids = visible.map((c) => c.id);
@@ -203,5 +217,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
     };
   });
 
-  return { ok: true, categories, voting_starts_at, rlsAnon: !bypassesRls };
+  const payload = { ok: true, categories, voting_starts_at, rlsAnon: !bypassesRls } as const;
+  votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };
+  return payload;
 }
