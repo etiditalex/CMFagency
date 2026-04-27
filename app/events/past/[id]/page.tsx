@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CalendarPlus, Download, MapPin, ArrowLeft, ExternalLink, Star, Send, CheckCircle, Ticket } from "lucide-react";
+import { Calendar, CalendarPlus, Download, MapPin, ArrowLeft, ExternalLink, Star, Send, CheckCircle, Ticket, Clock } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { useParams } from "next/navigation";
@@ -18,6 +18,8 @@ type DbEvent = {
   time: string | null;
   description: string | null;
   full_description: string | null;
+  image_url: string | null;
+  default_image_url: string | null;
   venue: string | null;
   hosted_by: string | null;
   gallery: string[] | null;
@@ -201,7 +203,7 @@ export default function PastEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,venue,hosted_by,gallery,ticket_campaign_slug,payment_link,document_url,document_label,map_url")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,venue,hosted_by,gallery,ticket_campaign_slug,payment_link,document_url,document_label,map_url")
         .eq("slug", slugParam)
         .lt("event_date", format(new Date(), "yyyy-MM-dd"))
         .maybeSingle();
@@ -221,6 +223,10 @@ export default function PastEventDetailPage() {
     location: dbEvent.location ?? "",
     description: dbEvent.description ?? "",
     fullDescription: dbEvent.full_description ?? undefined,
+    imageUrl:
+      dbEvent.image_url ||
+      dbEvent.default_image_url ||
+      (Array.isArray(dbEvent.gallery) ? dbEvent.gallery[0] : undefined),
     venue: dbEvent.venue,
     hostedBy: dbEvent.hosted_by,
     gallery: Array.isArray(dbEvent.gallery) ? dbEvent.gallery : undefined,
@@ -294,7 +300,7 @@ export default function PastEventDetailPage() {
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      <div className="container-custom py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <Link
           href="/events/past"
           className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
@@ -307,100 +313,114 @@ export default function PastEventDetailPage() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Event Details */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-lg"
-            >
-              <div className="p-8">
-                <h1 className="text-4xl font-bold mb-6 text-gray-900">{event.title}</h1>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-start space-x-3">
-                    <Calendar className="w-6 h-6 text-primary-600 mt-1" />
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-6 sm:p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Poster + description (description sits below poster) */}
+                  <div className="lg:col-span-7 space-y-5">
+                    {event.imageUrl && (
+                      <div className="rounded-2xl border border-gray-200 overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={event.imageUrl}
+                          alt={event.title}
+                          className="w-full h-auto object-cover"
+                        />
+                      </div>
+                    )}
                     <div>
-                      <div className="font-semibold text-gray-900">Date</div>
-                      <div className="text-gray-600">{format(event.date, "EEEE, MMMM d, yyyy")}</div>
+                      <h2 className="text-lg font-extrabold text-gray-900">About this event</h2>
+                      <div className="mt-2 prose prose-lg max-w-none">
+                        <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-line">
+                          {event.fullDescription || event.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-6 h-6 text-primary-600 mt-1" />
-                    <div>
-                      <div className="font-semibold text-gray-900">Location</div>
-                      <div className="text-gray-600">{event.location}</div>
-                      {event.venue && (
-                        <div className="text-sm text-gray-500 mt-1">Venue: {event.venue}</div>
-                      )}
-                      {event.hostedBy && (
-                        <div className="text-sm text-gray-500 mt-1">Hosted by: {event.hostedBy}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="prose prose-lg max-w-none">
-                  <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-line">
-                    {event.fullDescription || event.description}
-                  </p>
-                </div>
-                {showActionGrid && dbEvent && (
-                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {dbEvent.ticket_campaign_slug && (
-                      <a
-                        href={`/${dbEvent.ticket_campaign_slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
-                      >
-                        <Ticket className="w-5 h-5" />
-                        Buy Ticket
-                      </a>
+                  {/* Details + actions */}
+                  <div className="lg:col-span-5">
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
+
+                    <div className="mt-4 space-y-2 text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        <span className="font-semibold">{event.location}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span className="font-semibold">{format(event.date, "dd MMM yyyy")}</span>
+                      </div>
+                      {dbEvent?.time && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="font-semibold">{dbEvent.time}</span>
+                        </div>
+                      )}
+                      {event.venue && <div className="text-sm text-gray-500">Venue: {event.venue}</div>}
+                      {event.hostedBy && <div className="text-sm text-gray-500">Hosted by: {event.hostedBy}</div>}
+                    </div>
+
+                    {showActionGrid && dbEvent && (
+                      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {dbEvent.ticket_campaign_slug && (
+                          <a
+                            href={`/${dbEvent.ticket_campaign_slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                          >
+                            <Ticket className="w-5 h-5" />
+                            Buy Ticket
+                          </a>
+                        )}
+                        {dbEvent.payment_link && (
+                          <a
+                            href={dbEvent.payment_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                          >
+                            <ExternalLink className="w-5 h-5" />
+                            Pay
+                          </a>
+                        )}
+                        {dbEvent.document_url && (
+                          <a
+                            href={dbEvent.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
+                          >
+                            <Download className="w-5 h-5" />
+                            {dbEvent.document_label || "Download"}
+                          </a>
+                        )}
+                        {dbEvent.map_url && (
+                          <a
+                            href={dbEvent.map_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                          >
+                            <MapPin className="w-5 h-5" />
+                            Map
+                          </a>
+                        )}
+                        <a
+                          href={buildGoogleCalendarUrl(dbEvent)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors sm:col-span-2"
+                        >
+                          <CalendarPlus className="w-5 h-5" />
+                          Add to Calendar
+                        </a>
+                      </div>
                     )}
-                    {dbEvent.payment_link && (
-                      <a
-                        href={dbEvent.payment_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
-                      >
-                        <ExternalLink className="w-5 h-5" />
-                        Pay
-                      </a>
-                    )}
-                    {dbEvent.document_url && (
-                      <a
-                        href={dbEvent.document_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
-                      >
-                        <Download className="w-5 h-5" />
-                        {dbEvent.document_label || "Download"}
-                      </a>
-                    )}
-                    {dbEvent.map_url && (
-                      <a
-                        href={dbEvent.map_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
-                      >
-                        <MapPin className="w-5 h-5" />
-                        View on Map
-                      </a>
-                    )}
-                    <a
-                      href={buildGoogleCalendarUrl(dbEvent)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
-                    >
-                      <CalendarPlus className="w-5 h-5" />
-                      Add to Calendar
-                    </a>
                   </div>
-                )}
+                </div>
               </div>
             </motion.div>
 

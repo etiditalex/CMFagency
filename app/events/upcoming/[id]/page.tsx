@@ -6,6 +6,7 @@ import {
   CalendarPlus,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Download,
   ExternalLink,
   Handshake,
@@ -577,9 +578,11 @@ function CfmaEventDetail() {
 
 function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>(event.event_date);
   const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
   const objectPosition = (event.image_focus as string | null) || "center center";
   const eventDate = new Date(event.event_date);
+  const endDate = event.end_date ? new Date(event.end_date) : null;
   const hasTicket = !!event.ticket_campaign_slug;
   const hasTieredTickets = (event.ticket_tiers?.length ?? 0) > 0;
   const hasPayment = !!event.payment_link;
@@ -587,10 +590,16 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const hasDocument = !!event.document_url;
   const hasMap = !!event.map_url;
   const calendarUrl = buildGoogleCalendarUrl(event);
+  const dateOptions = (() => {
+    const startIso = event.event_date;
+    const endIso = event.end_date && event.end_date !== startIso ? event.end_date : null;
+    return [startIso, ...(endIso ? [endIso] : [])];
+  })();
+  const tiers = (event.ticket_tiers ?? []) as TicketTierRow[];
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      <div className="container-custom py-8">
+      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
         <Link
           href="/events/upcoming"
           className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
@@ -599,131 +608,181 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
           Back to Upcoming Events
         </Link>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-lg overflow-hidden"
-        >
-          {/* Hero image: show full image without cropping on detail page */}
-          <div className="relative w-full bg-black h-72 md:h-96">
-            <Image
-              src={imgUrl}
-              alt={event.title}
-              fill
-              className="object-contain"
-              style={{ objectPosition }}
-              priority
-            />
-            <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
-              <div className="text-white font-bold text-xl leading-tight">{format(eventDate, "dd")}</div>
-              <div className="text-white font-semibold text-xs uppercase tracking-wide mt-1">
-                {format(eventDate, "MMM")}
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left: poster + description (matches share-style layout) */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/10]">
+                  <Image
+                    src={imgUrl}
+                    alt={event.title}
+                    fill
+                    className="object-cover"
+                    style={{ objectPosition }}
+                    priority
+                  />
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="p-8">
-            <h1 className="text-4xl font-bold mb-6 text-gray-900">{event.title}</h1>
-            <div className="flex flex-wrap gap-4 text-gray-700 mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary-600" />
-                <span>{format(eventDate, "EEEE, MMMM d, yyyy")}</span>
-                {event.time && <span> · {event.time}</span>}
+
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
+                <h2 className="text-xl font-extrabold text-gray-900">About this event</h2>
+                <div className="mt-3 prose prose-lg max-w-none">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {event.full_description || event.description || ""}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary-600" />
-                <span>{event.location ?? "—"}</span>
-              </div>
-            </div>
-            <div className="prose prose-lg max-w-none">
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                {event.full_description || event.description || ""}
-              </p>
             </div>
 
-            {/* Action buttons grid: Payment/Ticket, Free Register, Document, Map, Calendar */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {hasFreeReg && (
-                <Link
-                  href={`/events/register/${event.slug}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
-                >
-                  <Ticket className="w-5 h-5" />
-                  Register
-                </Link>
-              )}
-              {hasTieredTickets && !hasFreeReg && (
-                <button
-                  type="button"
-                  onClick={() => setTicketModalOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
-                >
-                  <Ticket className="w-5 h-5" />
-                  Buy Ticket Online
-                </button>
-              )}
-              {hasTicket && !hasFreeReg && !hasTieredTickets && (
-                <Link
-                  href={`/${event.ticket_campaign_slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
-                >
-                  <Ticket className="w-5 h-5" />
-                  Buy Ticket Online
-                </Link>
-              )}
-              {hasPayment && !hasFreeReg && (
-                <a
-                  href={event.payment_link!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
-                >
-                  <ExternalLink className="w-5 h-5" />
-                  Pay Now
-                </a>
-              )}
-              {hasDocument && (
-                <a
-                  href={event.document_url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
-                >
-                  <Download className="w-5 h-5" />
-                  {event.document_label || "Download"}
-                </a>
-              )}
-              {hasMap && (
-                <a
-                  href={event.map_url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
-                >
-                  <MapPin className="w-5 h-5" />
-                  View on Map
-                </a>
-              )}
-              <a
-                href={calendarUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
-              >
-                <CalendarPlus className="w-5 h-5" />
-                Add to Calendar
-              </a>
-            </div>
+            {/* Right: details + tickets */}
+            <div className="lg:col-span-5">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 sticky top-24">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
 
-            <Link
-              href="/contact"
-              className="mt-6 inline-flex items-center gap-2 btn-primary"
-            >
-              Get in Touch
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+                <div className="mt-3 space-y-2 text-gray-700">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                    <span className="font-semibold">{event.location ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="font-semibold">{format(eventDate, "dd MMM yyyy")}</span>
+                    {endDate && event.end_date !== event.event_date && (
+                      <span className="text-gray-500">– {format(endDate, "dd MMM yyyy")}</span>
+                    )}
+                  </div>
+                  {event.time && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <span className="font-semibold">{event.time}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="font-extrabold text-gray-900">Please Select Dates To Attend:</div>
+                  <div className="text-xs font-semibold text-red-600 mt-1">
+                    Note: Choose as many tickets as you wish to secure your spots!
+                  </div>
+                  <select
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    aria-label="Select date to attend"
+                  >
+                    {dateOptions.map((iso) => (
+                      <option key={iso} value={iso}>
+                        {format(new Date(iso), "EEE dd/MM/yyyy")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {hasTieredTickets && tiers.length > 0 && !hasFreeReg && (
+                  <div className="mt-4 space-y-3">
+                    {tiers.map((t) => (
+                      <button
+                        key={t.id || t.slug}
+                        type="button"
+                        onClick={() => setTicketModalOpen(true)}
+                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="font-extrabold text-gray-900">{t.label}</div>
+                          <div className="font-extrabold text-gray-900">
+                            Ksh {Number(t.unit_amount_kes).toLocaleString("en-KE")}
+                          </div>
+                        </div>
+                        {Array.isArray(t.inclusions) && t.inclusions.length > 0 && (
+                          <div className="mt-2 text-sm text-gray-600 line-clamp-2">
+                            {t.inclusions.join(" • ")}
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {hasFreeReg && (
+                    <Link
+                      href={`/events/register/${event.slug}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                    >
+                      <Ticket className="w-5 h-5" />
+                      Register
+                    </Link>
+                  )}
+                  {hasTieredTickets && !hasFreeReg && (
+                    <button
+                      type="button"
+                      onClick={() => setTicketModalOpen(true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                    >
+                      <Ticket className="w-5 h-5" />
+                      Buy Ticket Online
+                    </button>
+                  )}
+                  {hasTicket && !hasFreeReg && !hasTieredTickets && (
+                    <Link
+                      href={`/${event.ticket_campaign_slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                    >
+                      <Ticket className="w-5 h-5" />
+                      Buy Ticket Online
+                    </Link>
+                  )}
+                  {hasPayment && !hasFreeReg && (
+                    <a
+                      href={event.payment_link!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      Pay Now
+                    </a>
+                  )}
+                  {hasDocument && (
+                    <a
+                      href={event.document_url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-primary-600 text-primary-600 hover:bg-primary-50 font-semibold py-3 px-4 transition-colors"
+                    >
+                      <Download className="w-5 h-5" />
+                      {event.document_label || "Download"}
+                    </a>
+                  )}
+                  {hasMap && (
+                    <a
+                      href={event.map_url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                    >
+                      <MapPin className="w-5 h-5" />
+                      Map
+                    </a>
+                  )}
+                  <a
+                    href={calendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-gray-300 hover:border-primary-500 text-gray-700 hover:text-primary-600 font-semibold py-3 px-4 transition-colors"
+                  >
+                    <CalendarPlus className="w-5 h-5" />
+                    Calendar
+                  </a>
+                  
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -800,13 +859,7 @@ function GenericUpcomingEventDetail({
                 {event.fullDescription || event.description}
               </p>
             </div>
-            <Link
-              href="/contact"
-              className="mt-8 inline-flex items-center gap-2 btn-primary"
-            >
-              Get in Touch
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            
           </div>
         </motion.div>
       </div>
