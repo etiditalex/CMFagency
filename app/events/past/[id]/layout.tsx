@@ -3,6 +3,7 @@ import { getPastEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const SITE_URL = "https://cmfagency.co.ke";
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id?: string }> };
 
@@ -18,11 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getPastEventBySlug(slug);
-  const image =
-    event?.image_url ||
-    event?.default_image_url ||
-    (Array.isArray(event?.gallery) ? event?.gallery?.[0] : null) ||
-    EVENTS_BANNER_OG.url;
+  const image = `${SITE_URL}/events/past/${slug}/opengraph-image`;
 
   const title = event?.title
     ? `${event.title} | Past Events | Changer Fusions`
@@ -45,10 +42,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [
         {
           url: image,
-          width: EVENTS_BANNER_OG.width,
-          height: EVENTS_BANNER_OG.height,
+          width: 1200,
+          height: 630,
           alt: event?.title || "Past Event",
-          type: "image/jpeg",
+          type: "image/png",
         },
       ],
     },

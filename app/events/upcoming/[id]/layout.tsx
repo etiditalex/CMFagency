@@ -4,6 +4,7 @@ import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const CFMA_SLUG = "coast-fashion-modelling-awards-2026";
 const SITE_URL = "https://cmfagency.co.ke";
+export const dynamic = "force-dynamic";
 
 const CFMA_META = {
   title: "Coast Fashion and Modelling Awards 2026 (CMFA) | Buy Tickets | Changer Fusions",
@@ -56,8 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getUpcomingEventBySlug(slug);
-  const image =
-    event?.image_url || event?.default_image_url || EVENTS_BANNER_OG.url;
+  const image = `${SITE_URL}/events/upcoming/${slug}/opengraph-image`;
   const title = event?.title
     ? `${event.title} | Upcoming Events | Changer Fusions`
     : "Upcoming Event | Changer Fusions";
@@ -78,10 +78,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [
         {
           url: image,
-          width: EVENTS_BANNER_OG.width,
-          height: EVENTS_BANNER_OG.height,
+          width: 1200,
+          height: 630,
           alt: event?.title || "Upcoming Event",
-          type: "image/jpeg",
+          type: "image/png",
         },
       ],
     },
