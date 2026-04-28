@@ -299,23 +299,23 @@ export default function PastEventDetailPage() {
   };
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+    <div className="pt-16 sm:pt-20 min-h-screen bg-gray-50">
+      <div className="w-full px-3 sm:px-6 lg:px-10 py-5 sm:py-8">
         <Link
           href="/events/past"
-          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
+          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4 sm:mb-6 text-sm sm:text-base font-medium"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Past Events
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-8">
             {/* Event Details */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              <div className="p-6 sm:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="p-4 sm:p-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
                   {/* Poster + description (description sits below poster) */}
                   <div className="lg:col-span-7 space-y-5">
                     {event.imageUrl && (
@@ -329,9 +329,9 @@ export default function PastEventDetailPage() {
                       </div>
                     )}
                     <div>
-                      <h2 className="text-lg font-extrabold text-gray-900">About this event</h2>
-                      <div className="mt-2 prose prose-lg max-w-none">
-                        <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-line">
+                      <h2 className="text-base sm:text-lg font-extrabold text-gray-900">About this event</h2>
+                      <div className="mt-2 prose max-w-none">
+                        <p className="text-sm sm:text-lg text-gray-700 leading-relaxed whitespace-pre-line">
                           {event.fullDescription || event.description}
                         </p>
                       </div>
@@ -340,12 +340,12 @@ export default function PastEventDetailPage() {
 
                   {/* Details + actions */}
                   <div className="lg:col-span-5">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
+                    <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
 
-                    <div className="mt-4 space-y-2 text-gray-700">
+                    <div className="mt-4 space-y-2 text-gray-700 text-sm sm:text-base">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-500" />
-                        <span className="font-semibold">{event.location}</span>
+                        <span className="font-semibold break-words">{event.location}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-gray-500" />
@@ -362,7 +362,7 @@ export default function PastEventDetailPage() {
                     </div>
 
                     {showActionGrid && dbEvent && (
-                      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm sm:text-base">
                         {dbEvent.ticket_campaign_slug && (
                           <a
                             href={`/${dbEvent.ticket_campaign_slug}`}
@@ -432,8 +432,8 @@ export default function PastEventDetailPage() {
               transition={{ duration: 0.6, delay: 0.4 }}
               className="bg-white rounded-xl shadow-lg"
             >
-              <div className="p-8">
-                <h2 className="text-3xl font-bold mb-6 text-gray-900">Share Your Review</h2>
+              <div className="p-4 sm:p-8">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-5 sm:mb-6 text-gray-900">Share Your Review</h2>
                 {reviewSubmitted ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -534,8 +534,8 @@ export default function PastEventDetailPage() {
               transition={{ duration: 0.6, delay: 0.6 }}
               className="bg-white rounded-xl shadow-lg"
             >
-              <div className="p-8">
-                <h2 className="text-3xl font-bold mb-6 text-gray-900">Event Feedback</h2>
+              <div className="p-4 sm:p-8">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-5 sm:mb-6 text-gray-900">Event Feedback</h2>
                 <p className="text-gray-600 mb-6">
                   We value your feedback! Your thoughts help us improve future events. Share your experience, suggestions, or any comments about this event.
                 </p>
@@ -555,7 +555,7 @@ export default function PastEventDetailPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white rounded-xl shadow-lg p-6 sticky top-24"
+              className="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:sticky lg:top-24"
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">Contact Us</h2>
               <p className="text-sm text-gray-600 mb-6">

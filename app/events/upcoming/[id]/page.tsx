@@ -598,37 +598,37 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const tiers = (event.ticket_tiers ?? []) as TicketTierRow[];
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
-      <div className="w-full px-4 sm:px-6 lg:px-10 py-8">
+    <div className="pt-16 sm:pt-20 min-h-screen bg-gray-50">
+      <div className="w-full px-3 sm:px-6 lg:px-10 py-5 sm:py-8">
         <Link
           href="/events/upcoming"
-          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-6 font-medium"
+          className="inline-flex items-center text-primary-600 hover:text-primary-700 mb-4 sm:mb-6 text-sm sm:text-base font-medium"
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back to Upcoming Events
         </Link>
 
         <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
             {/* Left: poster + description (matches share-style layout) */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="relative w-full aspect-[4/3] sm:aspect-[16/10]">
+            <div className="lg:col-span-7 space-y-4 sm:space-y-6">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] bg-white">
                   <Image
                     src={imgUrl}
                     alt={event.title}
                     fill
-                    className="object-cover"
+                    className="object-contain"
                     style={{ objectPosition }}
                     priority
                   />
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8">
-                <h2 className="text-xl font-extrabold text-gray-900">About this event</h2>
-                <div className="mt-3 prose prose-lg max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-8">
+                <h2 className="text-lg sm:text-xl font-extrabold text-gray-900">About this event</h2>
+                <div className="mt-2 sm:mt-3 prose max-w-none">
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
                     {event.full_description || event.description || ""}
                   </p>
                 </div>
@@ -637,15 +637,15 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
 
             {/* Right: details + tickets */}
             <div className="lg:col-span-5">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sm:p-8 sticky top-24">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
+              <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-8 lg:sticky lg:top-24">
+                <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
 
-                <div className="mt-3 space-y-2 text-gray-700">
+                <div className="mt-3 space-y-2 text-gray-700 text-sm sm:text-base">
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-500" />
-                    <span className="font-semibold">{event.location ?? "—"}</span>
+                    <span className="font-semibold break-words">{event.location ?? "—"}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span className="font-semibold">{format(eventDate, "dd MMM yyyy")}</span>
                     {endDate && event.end_date !== event.event_date && (
@@ -660,8 +660,8 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   )}
                 </div>
 
-                <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                  <div className="font-extrabold text-gray-900">Please Select Dates To Attend:</div>
+                <div className="mt-5 sm:mt-6 rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4">
+                  <div className="font-extrabold text-gray-900 text-sm sm:text-base">Please Select Dates To Attend:</div>
                   <div className="text-xs font-semibold text-red-600 mt-1">
                     Note: Choose as many tickets as you wish to secure your spots!
                   </div>
@@ -680,17 +680,17 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                 </div>
 
                 {hasTieredTickets && tiers.length > 0 && !hasFreeReg && (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-4 space-y-2 sm:space-y-3">
                     {tiers.map((t) => (
                       <button
                         key={t.id || t.slug}
                         type="button"
                         onClick={() => setTicketModalOpen(true)}
-                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 p-4 shadow-sm"
+                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 p-3 sm:p-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="font-extrabold text-gray-900">{t.label}</div>
-                          <div className="font-extrabold text-gray-900">
+                          <div className="font-extrabold text-gray-900 text-sm sm:text-base">{t.label}</div>
+                          <div className="font-extrabold text-gray-900 text-sm sm:text-base whitespace-nowrap">
                             Ksh {Number(t.unit_amount_kes).toLocaleString("en-KE")}
                           </div>
                         </div>
@@ -705,7 +705,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                 )}
 
                 {/* Action buttons */}
-                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm sm:text-base">
                   {hasFreeReg && (
                     <Link
                       href={`/events/register/${event.slug}`}
@@ -827,12 +827,12 @@ function GenericUpcomingEventDetail({
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-xl shadow-lg overflow-hidden"
         >
-          <div className="relative w-full h-64 md:h-80">
+          <div className="relative w-full h-64 md:h-80 bg-white">
             <Image
               src={event.image}
               alt={event.title}
               fill
-              className="object-cover"
+              className="object-contain"
               priority
             />
             <div className="absolute top-4 left-4 bg-primary-600 rounded-lg px-5 py-4 shadow-lg">
