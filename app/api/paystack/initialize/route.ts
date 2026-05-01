@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
+import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
 
 type InitBody = {
   slug?: string;
@@ -12,6 +13,12 @@ type InitBody = {
   contestant_id?: string | null;
   /** Payer display name (e.g. "John Doe") for dashboard visibility after payment */
   payer_name?: string | null;
+  /** Kenya MSISDN (254…). Stored on the transaction for ticket purchases when provided. */
+  payer_phone?: string | null;
+  /** Optional: referrer name or phone for commission tracking */
+  referred_by?: string | null;
+  lipa_pole_pole_plan_id?: string | null;
+  lipa_pole_pole_deposit_kes?: number | null;
   /** When true, return ref/amount/email for Paystack Inline popup (card entry on-page) instead of redirect URL */
   inline?: boolean;
   /** Coupon/promo code for discount */
@@ -46,6 +53,15 @@ export async function POST(req: Request) {
     const contestantId = body.contestant_id ?? null;
     const payerName = (body.payer_name ?? "").trim() || null;
     const couponCode = (body.coupon_code ?? "").trim() || null;
+    const referredBy = (body.referred_by ?? "").trim().slice(0, 240) || null;
+
+    const payerPhoneRaw = (body.payer_phone ?? "").trim().replace(/\s/g, "");
+    const payerPhoneNorm =
+      payerPhoneRaw.startsWith("+254") ? `254${payerPhoneRaw.slice(4)}` :
+      payerPhoneRaw.startsWith("254") ? payerPhoneRaw :
+      payerPhoneRaw.startsWith("0") ? `254${payerPhoneRaw.slice(1)}` :
+      payerPhoneRaw.length === 9 && /^[17]/.test(payerPhoneRaw) ? `254${payerPhoneRaw}` :
+      payerPhoneRaw;
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -139,15 +155,75 @@ export async function POST(req: Request) {
       }
     }
 
+    const installmentPlanId = (body.lipa_pole_pole_plan_id ?? "").trim();
+    const installmentDepositRaw = body.lipa_pole_pole_deposit_kes;
+    let useInstallment = false;
+    let installmentPayKes = 0;
+    let installmentTicketQty = 0;
+
+    if (installmentPlanId) {
+      if (!supabaseAdmin) {
+        return NextResponse.json(
+          { error: "Lipa Pole Pole requires server configuration (SUPABASE_SERVICE_ROLE_KEY)." },
+          { status: 500 }
+        );
+      }
+      if (campaign.type !== "ticket") {
+        return NextResponse.json({ error: "Lipa Pole Pole is only for ticket purchases." }, { status: 400 });
+      }
+      if (couponCode) {
+        return NextResponse.json({ error: "Coupons cannot be combined with Lipa Pole Pole." }, { status: 400 });
+      }
+      if (!/^254[17]\d{8}$/.test(payerPhoneNorm)) {
+        return NextResponse.json(
+          { error: "Valid Kenya payer_phone is required for Lipa Pole Pole (Paystack)." },
+          { status: 400 }
+        );
+      }
+      const dep =
+        installmentDepositRaw != null && Number.isFinite(Number(installmentDepositRaw))
+          ? Math.trunc(Number(installmentDepositRaw))
+          : undefined;
+      const resInst = await resolveInstallmentPaymentKes(supabaseAdmin, installmentPlanId, dep, {
+        email,
+        phone: payerPhoneNorm,
+      });
+      if (!resInst.ok) {
+        return NextResponse.json({ error: resInst.error }, { status: 400 });
+      }
+      if (resInst.plan.campaign_id !== campaign.id) {
+        return NextResponse.json(
+          { error: "That installment plan does not match this ticket package." },
+          { status: 400 }
+        );
+      }
+      useInstallment = true;
+      installmentPayKes = resInst.payKes;
+      installmentTicketQty = resInst.plan.ticket_quantity;
+    }
+
     // Reference used to reconcile webhook and DB. Must be unique.
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
 
     let unitAmount = Number(campaign.unit_amount);
-    let amount = unitAmount * q;
+    let txQuantity = q;
+    let amount = unitAmount * txQuantity;
     let couponId: string | null = null;
     let discountAmount = 0;
 
-    if (couponCode) {
+    const lipaMeta: Record<string, unknown> = useInstallment
+      ? {
+          lipa_pole_pole: true,
+          lipa_pole_pole_plan_id: installmentPlanId,
+          lipa_pole_pole_ticket_quantity: installmentTicketQty,
+        }
+      : {};
+
+    if (useInstallment) {
+      unitAmount = 1;
+      txQuantity = installmentPayKes;
+      amount = installmentPayKes;
+    } else if (couponCode) {
       if (!supabaseAdmin) {
         return NextResponse.json({ error: "Coupon validation unavailable" }, { status: 500 });
       }
@@ -175,6 +251,18 @@ export async function POST(req: Request) {
 
     const amountMainRounded = Math.round(Number(amount));
 
+    const payerPhoneStored =
+      /^254[17]\d{8}$/.test(payerPhoneNorm) ? payerPhoneNorm : null;
+
+    const txMetadata: Record<string, unknown> = {
+      slug: campaign.slug,
+      campaign_title: campaign.title,
+      paystack_amount_subunit: amountMainRounded * 100,
+      ...lipaMeta,
+    };
+    if (payerPhoneStored) txMetadata.payer_phone = payerPhoneStored;
+    if (referredBy) txMetadata.referred_by = referredBy;
+
     const insertPayload = {
       campaign_id: campaign.id,
       campaign_type: campaign.type,
@@ -182,7 +270,7 @@ export async function POST(req: Request) {
       provider: "paystack",
       email,
       payer_name: payerName,
-      quantity: q,
+      quantity: txQuantity,
       currency: campaign.currency,
       unit_amount: unitAmount,
       amount: amountMainRounded,
@@ -190,11 +278,7 @@ export async function POST(req: Request) {
       coupon_id: couponId,
       contestant_id: campaign.type === "vote" ? contestantId : null,
       status: "pending",
-      metadata: {
-        slug: campaign.slug,
-        campaign_title: campaign.title,
-        paystack_amount_subunit: amountMainRounded * 100,
-      },
+      metadata: txMetadata,
     };
 
     const insertClient = couponId ? supabaseAdmin! : supabase;
@@ -241,7 +325,11 @@ export async function POST(req: Request) {
     const customFields: Array<{ display_name: string; variable_name: string; value: string }> = [
       { display_name: campaign.type === "vote" ? "Vote number" : "Ticket number", variable_name: "ticket_number", value: ticketNumber },
       { display_name: campaign.type === "vote" ? "Vote holder" : "Ticket holder", variable_name: "holder", value: payerName ?? email },
-      { display_name: campaign.type === "vote" ? "Votes" : "Tickets", variable_name: "quantity", value: String(q) },
+      {
+        display_name: campaign.type === "vote" ? "Votes" : useInstallment ? "Lipa Pole Pole" : "Tickets",
+        variable_name: "quantity",
+        value: useInstallment ? `KES ${installmentPayKes.toLocaleString()} installment` : String(q),
+      },
     ];
 
     const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -260,10 +348,19 @@ export async function POST(req: Request) {
         metadata: {
           campaign_id: campaign.id,
           campaign_type: campaign.type,
-          quantity: q,
+          quantity: useInstallment ? installmentTicketQty : q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
           slug: campaign.slug,
           custom_fields: customFields,
+          ...(payerPhoneStored ? { payer_phone: payerPhoneStored } : {}),
+          ...(referredBy ? { referred_by: referredBy } : {}),
+          ...(useInstallment
+            ? {
+                lipa_pole_pole: true,
+                lipa_pole_pole_plan_id: installmentPlanId,
+                lipa_pole_pole_installment_kes: installmentPayKes,
+              }
+            : {}),
         },
       }),
     });

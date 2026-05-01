@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { applyLipaPolePolePaymentSuccess, isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 
 /** Row shape needed to record Paystack success + fulfill (votes/tickets). */
 export type PaystackFulfillmentRow = {
@@ -32,12 +33,12 @@ export async function finalizePaystackTransactionSuccess(
   }
 ): Promise<{ fulfillErr: string | null }> {
   const paidAt = options.paidAt ?? new Date().toISOString();
-  const metaBase =
+  const metaBase: Record<string, unknown> =
     typeof tx.metadata === "object" && tx.metadata && !Array.isArray(tx.metadata)
       ? { ...(tx.metadata as Record<string, unknown>) }
       : {};
 
-  const metaForSuccess = { ...metaBase, ...options.metadataPatch };
+  const metaForSuccess: Record<string, unknown> = { ...metaBase, ...options.metadataPatch };
   delete metaForSuccess.fulfillment_error;
 
   const { data: updatedRows, error: statusErr } = await supabase
@@ -79,6 +80,38 @@ export async function finalizePaystackTransactionSuccess(
     return { fulfillErr: null };
   }
 
+  if (isLipaPolePoleMetadata(metaForSuccess)) {
+    const lipa = await applyLipaPolePolePaymentSuccess({
+      supabase,
+      transactionId: tx.id,
+      campaignId: tx.campaign_id,
+      paymentAmountKes: Number(tx.amount ?? 0),
+      metadataBase: metaForSuccess,
+    });
+    const mergedMeta = { ...metaForSuccess, ...lipa.metadataExtra };
+    if (lipa.fulfillErr) {
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: { ...mergedMeta, fulfillment_error: lipa.fulfillErr },
+        } as Record<string, unknown>)
+        .eq("id", tx.id);
+      return { fulfillErr: lipa.fulfillErr };
+    }
+    await supabase
+      .from("transactions")
+      .update({ metadata: mergedMeta } as Record<string, unknown>)
+      .eq("id", tx.id);
+    if (!tx.fulfilled_at) {
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+    }
+    return { fulfillErr: null };
+  }
+
   let fulfillErr: string | null = null;
 
   if (tx.campaign_type === "vote") {
@@ -113,7 +146,7 @@ export async function finalizePaystackTransactionSuccess(
     await supabase
       .from("transactions")
       .update({
-        metadata: { ...metaForSuccess, fulfillment_error: fulfillErr },
+        metadata: Object.assign({}, metaForSuccess, { fulfillment_error: fulfillErr }),
       } as Record<string, unknown>)
       .eq("id", tx.id);
     return { fulfillErr };

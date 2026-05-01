@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
+import { applyLipaPolePolePaymentSuccess, isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
+import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
 
 export type CallbackMetadataItem = { Name: string; Value: string | number };
 
@@ -80,8 +82,11 @@ export async function finalizeDarajaStkFromMetadataItems(
     return "amount_mismatch";
   }
 
-  const meta = typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {};
-  const updatedMeta = {
+  const meta: Record<string, unknown> =
+    typeof tx.metadata === "object" && tx.metadata && !Array.isArray(tx.metadata)
+      ? (tx.metadata as Record<string, unknown>)
+      : {};
+  const updatedMeta: Record<string, unknown> = {
     ...meta,
     mpesa_receipt: mpesaReceipt,
     daraja_transaction_date: transactionDate,
@@ -96,6 +101,53 @@ export async function finalizeDarajaStkFromMetadataItems(
       metadata: updatedMeta,
     } as Record<string, unknown>)
     .eq("id", tx.id);
+
+  if (isLipaPolePoleMetadata(updatedMeta)) {
+    const lipa = await applyLipaPolePolePaymentSuccess({
+      supabase,
+      transactionId: tx.id,
+      campaignId: tx.campaign_id,
+      paymentAmountKes: paidAmount,
+      metadataBase: updatedMeta,
+    });
+    const mergedMeta = { ...updatedMeta, ...lipa.metadataExtra };
+    if (lipa.fulfillErr) {
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: { ...mergedMeta, fulfillment_error: lipa.fulfillErr },
+        } as Record<string, unknown>)
+        .eq("id", tx.id);
+    } else {
+      await supabase.from("transactions").update({ metadata: mergedMeta } as Record<string, unknown>).eq("id", tx.id);
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+    }
+    const toEmail = tx.email?.trim?.();
+    if (toEmail && !lipa.fulfillErr) {
+      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
+      const continueUrl = `${baseUrl}/kcm/cfm-tickets`;
+      const bal = Number(lipa.metadataExtra.lipa_pole_pole_balance_remaining_kes ?? 0);
+      const paidTot = Number(lipa.metadataExtra.lipa_pole_pole_amount_paid_kes ?? 0);
+      const totalDue = Number(lipa.metadataExtra.lipa_pole_pole_total_due_kes ?? 0);
+      void sendLipaPolePoleEmail({
+        to: toEmail,
+        holderName: tx.payer_name?.trim?.() || toEmail,
+        campaignTitle: String((updatedMeta as Record<string, unknown>).campaign_title ?? (updatedMeta as Record<string, unknown>).slug ?? "CFM Tickets"),
+        totalDueKes: totalDue,
+        paidKes: paidTot,
+        balanceKes: bal,
+        continueUrl,
+        variant: "partial_paid",
+      }).catch((err) =>
+        console.warn(`${logPrefix} Lipa Pole Pole email:`, err instanceof Error ? err.message : err)
+      );
+    }
+    return "completed";
+  }
 
   if (tx.fulfilled_at) {
     if (!meta.merchandise_cart && tx.campaign_type === "vote" && tx.contestant_id) {
@@ -225,10 +277,7 @@ export async function finalizeDarajaStkFromMetadataItems(
       await supabase
         .from("transactions")
         .update({
-          metadata: {
-            ...updatedMeta,
-            fulfillment_error: fulfillErr,
-          },
+          metadata: Object.assign({}, updatedMeta, { fulfillment_error: fulfillErr }),
         } as Record<string, unknown>)
         .eq("id", tx.id);
     }

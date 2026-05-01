@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
+import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
 
 type StkPushBody = {
   slug?: string;
@@ -13,6 +14,11 @@ type StkPushBody = {
   contestant_id?: string | null;
   payer_name?: string | null;
   coupon_code?: string | null;
+  /** Optional: referrer name or phone for commission tracking */
+  referred_by?: string | null;
+  /** Lipa Pole Pole: pay toward an existing installment plan */
+  lipa_pole_pole_plan_id?: string | null;
+  lipa_pole_pole_deposit_kes?: number | null;
 };
 
 /**
@@ -45,6 +51,7 @@ export async function POST(req: Request) {
     const contestantId = body.contestant_id ?? null;
     const payerName = (body.payer_name ?? "").trim() || null;
     const couponCode = (body.coupon_code ?? "").trim() || null;
+    const referredBy = (body.referred_by ?? "").trim().slice(0, 240) || null;
 
     // Normalize phone: 254XXXXXXXXX (Kenya)
     const phone =
@@ -164,13 +171,64 @@ export async function POST(req: Request) {
       }
     }
 
+    const installmentPlanId = (body.lipa_pole_pole_plan_id ?? "").trim();
+    const installmentDepositRaw = body.lipa_pole_pole_deposit_kes;
+    let useInstallment = false;
+    let installmentPayKes = 0;
+    let installmentTicketQty = 0;
+
+    if (installmentPlanId) {
+      if (!supabaseAdmin) {
+        return NextResponse.json(
+          { error: "Lipa Pole Pole requires server configuration (SUPABASE_SERVICE_ROLE_KEY)." },
+          { status: 500 }
+        );
+      }
+      if (campaign.type !== "ticket") {
+        return NextResponse.json({ error: "Lipa Pole Pole is only for ticket purchases." }, { status: 400 });
+      }
+      if (couponCode) {
+        return NextResponse.json({ error: "Coupons cannot be combined with Lipa Pole Pole." }, { status: 400 });
+      }
+      const dep =
+        installmentDepositRaw != null && Number.isFinite(Number(installmentDepositRaw))
+          ? Math.trunc(Number(installmentDepositRaw))
+          : undefined;
+      const resInst = await resolveInstallmentPaymentKes(supabaseAdmin, installmentPlanId, dep, { email, phone });
+      if (!resInst.ok) {
+        return NextResponse.json({ error: resInst.error }, { status: 400 });
+      }
+      if (resInst.plan.campaign_id !== campaign.id) {
+        return NextResponse.json(
+          { error: "That installment plan does not match this ticket package." },
+          { status: 400 }
+        );
+      }
+      useInstallment = true;
+      installmentPayKes = resInst.payKes;
+      installmentTicketQty = resInst.plan.ticket_quantity;
+    }
+
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
     let unitAmount = Number(campaign.unit_amount);
-    let amount = unitAmount * q;
+    let txQuantity = q;
+    let amount = unitAmount * txQuantity;
     let couponId: string | null = null;
     let discountAmount = 0;
 
-    if (couponCode) {
+    const lipaMeta: Record<string, unknown> = useInstallment
+      ? {
+          lipa_pole_pole: true,
+          lipa_pole_pole_plan_id: installmentPlanId,
+          lipa_pole_pole_ticket_quantity: installmentTicketQty,
+        }
+      : {};
+
+    if (useInstallment) {
+      unitAmount = 1;
+      txQuantity = installmentPayKes;
+      amount = installmentPayKes;
+    } else if (couponCode) {
       if (!supabaseAdmin) {
         return NextResponse.json({ error: "Coupon validation unavailable" }, { status: 500 });
       }
@@ -202,7 +260,7 @@ export async function POST(req: Request) {
       provider: "daraja",
       email: email || null,
       payer_name: payerName,
-      quantity: q,
+      quantity: txQuantity,
       currency: campaign.currency,
       unit_amount: unitAmount,
       amount: Math.round(Number(amount)),
@@ -214,6 +272,8 @@ export async function POST(req: Request) {
         slug: campaign.slug,
         campaign_title: campaign.title,
         phone,
+        ...(referredBy ? { referred_by: referredBy } : {}),
+        ...lipaMeta,
       },
     };
 
@@ -293,7 +353,9 @@ export async function POST(req: Request) {
       PhoneNumber: phone,
       CallBackURL: callbackUrl,
       AccountReference: reference.slice(0, 12),
-      TransactionDesc: `${campaign.title?.slice(0, 20) ?? campaign.slug} (${q} ${campaign.type === "ticket" ? "ticket(s)" : "vote(s)"})`,
+      TransactionDesc: useInstallment
+        ? `LipaPolePole ${campaign.slug}`.slice(0, 20)
+        : `${campaign.title?.slice(0, 20) ?? campaign.slug} (${q} ${campaign.type === "ticket" ? "ticket(s)" : "vote(s)"})`,
     };
 
     const stkRes = await fetch(stkPushUrl, {
@@ -329,11 +391,14 @@ export async function POST(req: Request) {
     }
 
     // Store CheckoutRequestID for callback lookup (service role needed for update)
-    const metaUpdate = { slug: campaign.slug, campaign_title: campaign.title, phone, checkout_request_id: checkoutRequestId };
+    const metaUpdate = {
+      ...(insertPayload.metadata as Record<string, unknown>),
+      checkout_request_id: checkoutRequestId,
+    };
     if (supabaseAdmin) {
       await supabaseAdmin
         .from("transactions")
-        .update({ metadata: metaUpdate } as any)
+        .update({ metadata: metaUpdate } as Record<string, unknown>)
         .eq("reference", reference);
     }
 

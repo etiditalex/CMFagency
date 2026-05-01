@@ -5,6 +5,8 @@ import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
+import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
+import { isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 
 export const dynamic = "force-dynamic";
@@ -130,6 +132,30 @@ export async function POST(req: Request) {
 
   const toEmail = (tx as { email?: string | null }).email?.trim?.();
   if (toEmail && !fulfillErr) {
+    const { data: txFresh } = await supabase.from("transactions").select("metadata").eq("id", tx.id).maybeSingle();
+    const metaFresh =
+      typeof txFresh?.metadata === "object" && txFresh.metadata
+        ? (txFresh.metadata as Record<string, unknown>)
+        : {};
+    if (isLipaPolePoleMetadata(metaFresh)) {
+      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
+      try {
+        await sendLipaPolePoleEmail({
+          to: toEmail,
+          holderName: (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail,
+          campaignTitle: String(metaFresh.campaign_title ?? metaFresh.slug ?? "CFM Tickets"),
+          totalDueKes: Number(metaFresh.lipa_pole_pole_total_due_kes ?? 0),
+          paidKes: Number(metaFresh.lipa_pole_pole_amount_paid_kes ?? 0),
+          balanceKes: Number(metaFresh.lipa_pole_pole_balance_remaining_kes ?? 0),
+          continueUrl: `${baseUrl}/kcm/cfm-tickets`,
+          variant: "partial_paid",
+        });
+      } catch (e) {
+        console.warn("[paystack/webhook] Lipa Pole Pole email error:", e instanceof Error ? e.message : e);
+      }
+      return new Response("ok", { status: 200 });
+    }
+
     const meta =
       typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {};
     const referenceStr = String(tx.reference);

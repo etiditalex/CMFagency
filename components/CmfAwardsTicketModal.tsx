@@ -487,18 +487,20 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                     exit={{ opacity: 0, x: 8 }}
                     className="space-y-6"
                   >
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">ADVANCE TICKETS</h2>
-                    <div className="space-y-4">
+                    <h2 className="text-base sm:text-xl font-bold text-gray-900">ADVANCE TICKETS</h2>
+                    <div className="space-y-3">
                       {TICKET_TIERS.map((tier) => {
                         const qty = quantities[tier.id] ?? 0;
                         return (
                           <div
                             key={tier.id}
-                            className="flex items-center justify-between gap-4 py-3 border-b border-gray-100"
+                            className={`flex items-center justify-between gap-4 py-2 border-b border-gray-100 rounded-lg transition-colors ${
+                              qty > 0 ? 'hover:bg-blue-50' : ''
+                            }`}
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-gray-900">{tier.label}</div>
-                              <div className="text-primary-600 font-bold">
+                              <div className="font-semibold text-sm sm:text-base text-gray-900">{tier.label}</div>
+                              <div className="text-primary-600 font-bold text-sm sm:text-base">
                                 KES {tier.unitAmount.toLocaleString()}.00
                               </div>
                               {tier.peoplePerPackage > 1 ? (

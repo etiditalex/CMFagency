@@ -1,17 +1,29 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Ticket } from "lucide-react";
+import { Loader2, Wallet } from "lucide-react";
 import {
   PaymentClientError,
   messageForPaymentFailure,
 } from "@/lib/payment-user-message";
+
+/** Normalize to Kenya 254XXXXXXXXX for M-Pesa / stored payer phone. */
+function normalizeKenyaPhone(raw: string): string {
+  const phoneRaw = raw.trim().replace(/\s/g, "");
+  if (phoneRaw.startsWith("+254")) return `254${phoneRaw.slice(4)}`;
+  if (phoneRaw.startsWith("254")) return phoneRaw;
+  if (phoneRaw.startsWith("0") && phoneRaw.length >= 10) return `254${phoneRaw.slice(1)}`;
+  if (phoneRaw.length === 9 && /^[17]/.test(phoneRaw)) return `254${phoneRaw}`;
+  return phoneRaw;
+}
 
 type TicketPackage = {
   name: string;
   slug: string;
   amount: number;
   perks: string[];
+  /** Shown when this tier is selected (mobile payment panel + reference). */
+  paymentSummary: string[];
 };
 
 const packages: TicketPackage[] = [
@@ -20,18 +32,36 @@ const packages: TicketPackage[] = [
     slug: "cfma-2026",
     amount: 500,
     perks: ["Entry for one guest", "General seating", "Event wristband"],
+    paymentSummary: [
+      "Your phone number is required for every purchase (receipts and records).",
+      "M-Pesa: STK push uses that same number (Safaricom).",
+      "Cards & mobile money: Paystack checkout (Visa, Mastercard, etc.).",
+      "You will receive a confirmation email after successful payment.",
+    ],
   },
   {
     name: "VIP",
     slug: "cfma-2026-vip",
     amount: 1500,
     perks: ["Priority entry", "Reserved seating zone", "Complimentary refreshment"],
+    paymentSummary: [
+      "Your phone number is required for every purchase (receipts and records).",
+      "M-Pesa: STK push uses that same number (Safaricom).",
+      "Cards & mobile money: Paystack checkout (Visa, Mastercard, etc.).",
+      "You will receive a confirmation email after successful payment.",
+    ],
   },
   {
     name: "VVIP",
     slug: "cfma-2026-vvip",
     amount: 3500,
     perks: ["Front-row experience", "VIP lounge access", "Meet & greet opportunity"],
+    paymentSummary: [
+      "Your phone number is required for every purchase (receipts and records).",
+      "M-Pesa: STK push uses that same number (Safaricom).",
+      "Cards & mobile money: Paystack checkout (Visa, Mastercard, etc.).",
+      "You will receive a confirmation email after successful payment.",
+    ],
   },
 ];
 
@@ -80,6 +110,7 @@ export default function CfmTicketsPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [referredBy, setReferredBy] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submittingMethod, setSubmittingMethod] = useState<"daraja" | "paystack" | null>(null);
@@ -90,6 +121,17 @@ export default function CfmTicketsPage() {
     null | { status: string; provider: string | null; amount: number | null; currency: string | null; quantity: number | null }
   >(null);
 
+  const [installmentPlanId, setInstallmentPlanId] = useState<string | null>(null);
+  const [installmentDeposit, setInstallmentDeposit] = useState("");
+  const [installmentLookup, setInstallmentLookup] = useState<null | {
+    balance_kes: number;
+    total_due_kes: number;
+    amount_paid_kes: number;
+    ticket_quantity: number;
+  }>(null);
+  const [installmentLookupLoading, setInstallmentLookupLoading] = useState(false);
+  const [installmentPayLoading, setInstallmentPayLoading] = useState<"daraja" | "paystack" | null>(null);
+
   const selectedPackage = useMemo(
     () => packages.find((pkg) => pkg.amount === selectedAmount) ?? packages[0],
     [selectedAmount]
@@ -97,6 +139,12 @@ export default function CfmTicketsPage() {
 
   const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
   const normalizedQuantity = Math.max(1, Math.min(10000, Math.trunc(Number(quantity) || 1)));
+
+  useEffect(() => {
+    setInstallmentPlanId(null);
+    setInstallmentLookup(null);
+    setInstallmentDeposit("");
+  }, [selectedAmount, normalizedQuantity]);
 
   const validateCommon = () => {
     if (!firstName.trim() || !lastName.trim()) {
@@ -107,6 +155,12 @@ export default function CfmTicketsPage() {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       throw new PaymentClientError("Enter a valid email address.");
+    }
+    const phoneNorm = normalizeKenyaPhone(phone);
+    if (!phoneNorm || !/^254[17]\d{8}$/.test(phoneNorm)) {
+      throw new PaymentClientError(
+        "Enter a valid Kenya phone number (e.g. 0712345678 or 254712345678)."
+      );
     }
     if (!agreedToTerms) {
       throw new PaymentClientError("Please agree to Terms and Conditions before payment.");
@@ -121,7 +175,9 @@ export default function CfmTicketsPage() {
         slug: selectedPackage.slug,
         email: email.trim(),
         payer_name: payerName,
+        payer_phone: normalizeKenyaPhone(phone),
         quantity: normalizedQuantity,
+        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
       }),
     });
 
@@ -142,20 +198,16 @@ export default function CfmTicketsPage() {
   };
 
   const handleDaraja = async () => {
-    const p = phone.trim();
-    if (!p) {
-      throw new PaymentClientError("M-Pesa phone number is required.");
-    }
-
     const res = await fetch("/api/daraja/stk-push", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         slug: selectedPackage.slug,
-        phone: p,
+        phone: normalizeKenyaPhone(phone),
         email: email.trim(),
         payer_name: payerName,
         quantity: normalizedQuantity,
+        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
       }),
     });
 
@@ -177,6 +229,189 @@ export default function CfmTicketsPage() {
       return;
     }
     setNotice(json.message ?? "M-Pesa prompt sent. Check your phone to complete payment.");
+  };
+
+  const lookupInstallmentBalance = async () => {
+    setInstallmentLookupLoading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      validateCommon();
+      const res = await fetch("/api/cfm-tickets/installment/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: selectedPackage.slug,
+          email: email.trim(),
+          phone: normalizeKenyaPhone(phone),
+        }),
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        found?: boolean;
+        error?: string;
+        plan_id?: string;
+        balance_kes?: number;
+        total_due_kes?: number;
+        amount_paid_kes?: number;
+        ticket_quantity?: number;
+      };
+      if (!res.ok) throw new PaymentClientError(j.error ?? "Lookup failed.");
+      if (!j.found) {
+        setInstallmentPlanId(null);
+        setInstallmentLookup(null);
+        setNotice("No Lipa Pole Pole plan found for this email and phone. Start one with a payment below.");
+        return;
+      }
+      setInstallmentPlanId(j.plan_id ?? null);
+      setInstallmentLookup({
+        balance_kes: Number(j.balance_kes ?? 0),
+        total_due_kes: Number(j.total_due_kes ?? 0),
+        amount_paid_kes: Number(j.amount_paid_kes ?? 0),
+        ticket_quantity: Number(j.ticket_quantity ?? normalizedQuantity),
+      });
+      setNotice(null);
+    } catch (err) {
+      setError(messageForPaymentFailure(err));
+    } finally {
+      setInstallmentLookupLoading(false);
+    }
+  };
+
+  const ensureInstallmentPlanId = async (): Promise<{ planId: string; balanceKes: number }> => {
+    const res = await fetch("/api/cfm-tickets/installment/plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: selectedPackage.slug,
+        email: email.trim(),
+        phone: normalizeKenyaPhone(phone),
+        payer_name: payerName,
+        ticket_quantity: normalizedQuantity,
+        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+      }),
+    });
+    const j = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      plan_id?: string;
+      balance_kes?: number;
+      total_due_kes?: number;
+      amount_paid_kes?: number;
+      ticket_quantity?: number;
+    };
+    if (!res.ok) throw new PaymentClientError(j.error ?? "Could not start Lipa Pole Pole plan.");
+    if (!j.plan_id) throw new PaymentClientError("Invalid response from server.");
+    setInstallmentPlanId(j.plan_id);
+    setInstallmentLookup({
+      balance_kes: Number(j.balance_kes ?? 0),
+      total_due_kes: Number(j.total_due_kes ?? 0),
+      amount_paid_kes: Number(j.amount_paid_kes ?? 0),
+      ticket_quantity: Number(j.ticket_quantity ?? normalizedQuantity),
+    });
+    return { planId: j.plan_id, balanceKes: Number(j.balance_kes ?? 0) };
+  };
+
+  const handleInstallmentDaraja = async () => {
+    validateCommon();
+    const { planId } = await ensureInstallmentPlanId();
+    let depositKes: number | undefined;
+    if (installmentDeposit.trim()) {
+      depositKes = Math.trunc(Number(installmentDeposit));
+      if (!Number.isFinite(depositKes) || depositKes < 1) {
+        throw new PaymentClientError("Enter a valid installment amount (KES), or leave blank to pay the full remaining balance.");
+      }
+    }
+    const res = await fetch("/api/daraja/stk-push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: selectedPackage.slug,
+        phone: normalizeKenyaPhone(phone),
+        email: email.trim(),
+        payer_name: payerName,
+        quantity: normalizedQuantity,
+        lipa_pole_pole_plan_id: planId,
+        ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
+        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      reference?: string;
+      message?: string;
+      error?: string;
+    };
+    if (!res.ok) throw new PaymentClientError(json.error ?? "M-Pesa installment could not be started.");
+    if (json.reference) {
+      setPendingReference(json.reference);
+      setPaymentStatus({
+        status: "pending",
+        provider: "daraja",
+        amount: depositKes ?? installmentLookup?.balance_kes ?? null,
+        currency: "KES",
+        quantity: normalizedQuantity,
+      });
+      setNotice("M-Pesa prompt sent for your Lipa Pole Pole installment. Complete payment on your phone.");
+      return;
+    }
+    setNotice(json.message ?? "M-Pesa prompt sent. Check your phone to complete payment.");
+  };
+
+  const handleInstallmentPaystack = async () => {
+    validateCommon();
+    const { planId } = await ensureInstallmentPlanId();
+    let depositKes: number | undefined;
+    if (installmentDeposit.trim()) {
+      depositKes = Math.trunc(Number(installmentDeposit));
+      if (!Number.isFinite(depositKes) || depositKes < 1) {
+        throw new PaymentClientError("Enter a valid installment amount (KES), or leave blank to pay the full remaining balance.");
+      }
+    }
+    const res = await fetch("/api/paystack/initialize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: selectedPackage.slug,
+        email: email.trim(),
+        payer_name: payerName,
+        payer_phone: normalizeKenyaPhone(phone),
+        quantity: normalizedQuantity,
+        lipa_pole_pole_plan_id: planId,
+        ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
+        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as {
+      authorization_url?: string;
+      reference?: string;
+      error?: string;
+    };
+    if (!res.ok) throw new PaymentClientError(json.error ?? "Paystack could not start.");
+    if (json.authorization_url) {
+      window.location.href = json.authorization_url;
+      return;
+    }
+    if (json.reference) {
+      window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
+      return;
+    }
+    throw new Error("Missing Paystack authorization URL");
+  };
+
+  const onInstallmentPay = async (method: "daraja" | "paystack") => {
+    if (installmentPayLoading) return;
+    setError(null);
+    setNotice(null);
+    setInstallmentPayLoading(method);
+    try {
+      if (method === "daraja") {
+        await handleInstallmentDaraja();
+      } else {
+        await handleInstallmentPaystack();
+      }
+    } catch (err) {
+      setError(messageForPaymentFailure(err));
+    } finally {
+      setInstallmentPayLoading(null);
+    }
   };
 
   const onPay = async (method: "daraja" | "paystack") => {
@@ -277,54 +512,102 @@ export default function CfmTicketsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
-      <main
-        className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16"
-        style={{
-          backgroundImage:
-            "url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg')",
-        }}
-      >
-        <div className="absolute inset-0 bg-black/25" />
+      <main className="relative min-h-screen overflow-hidden max-md:bg-gray-100 pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16">
+        {/* Hero photo + overlay: desktop only; mobile uses flat background */}
+        <div
+          className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
+          style={{
+            backgroundImage:
+              "url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg')",
+          }}
+          aria-hidden
+        />
+        <div className="pointer-events-none absolute inset-0 hidden bg-black/25 md:block" aria-hidden />
 
-        <section className="container-custom relative z-10 mt-3 sm:mt-4 md:mt-6">
-          <article className="mx-auto w-full max-w-5xl overflow-hidden rounded-2xl border border-white/35 bg-white shadow-2xl sm:rounded-3xl">
-            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3.5 sm:px-6 sm:py-5 md:px-8 md:py-6">
-              <h1 className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl">
+        <section className="container-custom relative z-10 mt-3 max-md:mx-0 max-md:mt-2 max-md:max-w-none max-md:px-0 sm:mt-4 md:mt-6">
+          <article className="mx-auto w-full max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
+            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-2.5 max-md:px-4">
+              <h1 className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:text-[13px] max-md:font-bold">
                 Choose Your Ticket Package
               </h1>
             </div>
 
-            <div className="grid gap-3 bg-white p-3 max-[360px]:gap-2.5 max-[360px]:p-2.5 sm:gap-4 sm:p-5 md:grid-cols-3 md:p-7">
-              {packages.map((pkg) => (
-                <section
-                  key={pkg.amount}
-                  className={`rounded-xl border bg-white p-3 max-[360px]:p-2.5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg sm:rounded-2xl sm:p-5 ${
-                    selectedPackage.amount === pkg.amount
-                      ? "border-primary-400 ring-2 ring-primary-100"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs">{pkg.name}</p>
-                  <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl">
-                    KES {pkg.amount.toLocaleString()}
-                  </p>
-                  <ul className="mt-3 space-y-1.5 text-xs text-gray-700 max-[360px]:mt-2.5 max-[360px]:space-y-1 max-[360px]:text-[11px] sm:mt-4 sm:space-y-2 sm:text-sm">
-                    {pkg.perks.map((perk) => (
-                      <li key={perk} className="flex items-start gap-2">
-                        <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary-600" />
-                        <span>{perk}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAmount(pkg.amount)}
-                    className="mt-4 w-full rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 max-[360px]:mt-3 max-[360px]:px-2.5 max-[360px]:text-[11px] sm:mt-5 sm:px-4 sm:text-sm"
-                  >
-                    {selectedPackage.amount === pkg.amount ? "Selected" : `Select ${pkg.amount}`}
-                  </button>
-                </section>
-              ))}
+            {/* Mobile: tiers capped ~50vh so all three stay visible without scrolling; desktop unchanged */}
+            <div className="bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-0 max-md:py-2 max-md:pb-2">
+              <div className="max-md:max-h-[50dvh] max-md:flex max-md:flex-col max-md:min-h-0">
+                <div className="grid gap-3 max-[360px]:gap-2.5 sm:gap-4 md:grid-cols-3 max-md:grid-cols-3 max-md:gap-1.5 max-md:px-2 max-md:flex-1 max-md:min-h-0 max-md:auto-rows-fr">
+                  {packages.map((pkg) => {
+                    const isSelected = selectedPackage.amount === pkg.amount;
+                    return (
+                      <button
+                        key={pkg.amount}
+                        type="button"
+                        onClick={() => setSelectedAmount(pkg.amount)}
+                        className={`rounded-xl border bg-white p-3 max-[360px]:p-2.5 text-left shadow-sm transition sm:rounded-2xl sm:p-5 max-md:flex max-md:h-full max-md:min-h-0 max-md:flex-col max-md:rounded-lg max-md:p-2 max-md:py-2.5 ${
+                          isSelected
+                            ? "border-primary-600 bg-primary-50 ring-2 ring-primary-400/80 shadow-md max-md:border-primary-600 max-md:bg-primary-600/15 max-md:ring-2 max-md:ring-primary-500"
+                            : "border-gray-200 hover:border-primary-300 hover:bg-amber-50/90 hover:shadow-md max-md:hover:bg-amber-50"
+                        }`}
+                      >
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs max-md:text-[9px] max-md:leading-tight">
+                          {pkg.name}
+                        </p>
+                        <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl max-md:mt-1 max-md:text-sm max-md:leading-none">
+                          KES {pkg.amount.toLocaleString()}
+                        </p>
+                        <ul className="mt-3 space-y-1.5 text-xs text-gray-700 max-[360px]:mt-2.5 max-[360px]:space-y-1 max-[360px]:text-[11px] sm:mt-4 sm:space-y-2 sm:text-sm max-md:hidden">
+                          {pkg.perks.map((perk) => (
+                            <li key={perk} className="flex items-start gap-2">
+                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600" />
+                              <span>{perk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <span
+                          className={`mt-4 block w-full rounded-lg border px-3 py-2 text-center text-xs font-semibold transition max-md:mt-auto max-md:px-1.5 max-md:py-1 max-md:text-[10px] sm:mt-5 sm:px-4 sm:text-sm ${
+                            isSelected
+                              ? "border-primary-500 bg-primary-600 text-white max-md:border-primary-600"
+                              : "border-primary-200 bg-primary-50/80 text-primary-800 max-md:border-primary-200 max-md:bg-white"
+                          }`}
+                        >
+                          {isSelected ? "Selected" : `Select`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Mobile: payment + inclusions for the active tier only */}
+              <div
+                className="mt-2 hidden max-md:mx-2 max-md:block rounded-lg border border-primary-200 bg-gradient-to-b from-primary-50/90 to-white px-2.5 py-2 text-[10px] leading-snug text-gray-800"
+                role="region"
+                aria-live="polite"
+                aria-label={`Payment details for ${selectedPackage.name}`}
+              >
+                <p className="font-bold text-primary-800">
+                  {selectedPackage.name} · KES {selectedPackage.amount.toLocaleString()} / ticket
+                </p>
+                <ul className="mt-1.5 space-y-0.5 text-[10px] text-gray-700">
+                  {selectedPackage.perks.map((perk) => (
+                    <li key={perk} className="flex gap-1.5">
+                      <span className="text-primary-600">•</span>
+                      <span>{perk}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 border-t border-primary-100 pt-1.5 text-[9px] font-semibold uppercase tracking-wide text-primary-700">
+                  How to pay
+                </p>
+                <ul className="mt-1 space-y-0.5 text-[10px] text-gray-700">
+                  {selectedPackage.paymentSummary.map((line) => (
+                    <li key={line} className="flex gap-1.5">
+                      <span className="shrink-0 text-primary-600">→</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
 
             <form
@@ -332,29 +615,31 @@ export default function CfmTicketsPage() {
                 e.preventDefault();
                 void onPay("daraja");
               }}
-              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7"
+              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-3 max-md:py-2 max-md:pt-2.5 text-sm max-md:text-[11px]"
             >
-              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
-                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg">Checkout</h2>
-                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm">
+              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2 max-md:mb-1.5 max-md:gap-0">
+                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg max-md:text-[11px] max-md:font-bold max-md:leading-tight">
+                  Checkout
+                </h2>
+                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm max-md:text-[9px] max-md:font-medium max-md:leading-tight">
                   Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}
                 </p>
               </div>
 
               {error ? (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 max-md:mb-1.5 max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:leading-snug">
                   {error}
                 </div>
               ) : null}
               {notice ? (
-                <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+                <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 max-md:mb-1.5 max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:leading-snug">
                   {notice}
                 </div>
               ) : null}
               {pendingReference && paymentStatus ? (
-                <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
+                <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900 max-md:mb-1.5 max-md:px-1.5 max-md:py-1.5 max-md:text-[10px] max-md:leading-snug">
                   <p className="break-all font-semibold">Payment reference: {pendingReference}</p>
-                  <p className="mt-1">
+                  <p className="mt-0.5 max-md:mt-0">
                     Status:{" "}
                     <span className="font-bold uppercase">
                       {paymentStatus.status === "success"
@@ -365,14 +650,14 @@ export default function CfmTicketsPage() {
                     </span>
                   </p>
                   {paymentStatus.amount != null ? (
-                    <p className="mt-1">
+                    <p className="mt-0.5 max-md:mt-0">
                       Amount: {paymentStatus.currency ?? "KES"} {paymentStatus.amount.toLocaleString()}
                     </p>
                   ) : null}
-                  <div className="mt-3">
+                  <div className="mt-2 max-md:mt-1.5">
                     <a
                       href={`/receipt?ref=${encodeURIComponent(pendingReference)}`}
-                      className="inline-flex rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                      className="inline-flex rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 max-md:px-2 max-md:py-1 max-md:text-[9px]"
                     >
                       Open receipt
                     </a>
@@ -380,13 +665,13 @@ export default function CfmTicketsPage() {
                 </div>
               ) : null}
 
-              <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+              <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 max-md:gap-1">
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
                   required
                 />
                 <input
@@ -394,7 +679,7 @@ export default function CfmTicketsPage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
                   required
                 />
                 <input
@@ -402,15 +687,32 @@ export default function CfmTicketsPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
                   required
                 />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="M-Pesa phone (e.g. 254712345678)"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px]"
+                  placeholder="Your phone (e.g. 0712… or 254712…)"
+                  autoComplete="tel"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:placeholder:text-[10px]"
+                  required
+                  aria-describedby="cfm-tickets-phone-hint"
+                />
+                <p
+                  id="cfm-tickets-phone-hint"
+                  className="text-xs text-gray-500 sm:col-span-2 max-md:text-[9px] max-md:leading-snug"
+                >
+                  Required for all payments. M-Pesa checkout uses this number for the STK prompt.
+                </p>
+                <input
+                  type="text"
+                  value={referredBy}
+                  onChange={(e) => setReferredBy(e.target.value)}
+                  placeholder="Referred by (optional — name or phone)"
+                  maxLength={240}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] sm:col-span-2 max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
                 />
                 <input
                   type="number"
@@ -419,17 +721,17 @@ export default function CfmTicketsPage() {
                   value={normalizedQuantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                   placeholder="Quantity"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] sm:col-span-2"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] sm:col-span-2 max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
                   required
                 />
               </div>
 
-              <label className="mt-4 flex items-start gap-2 text-xs text-gray-700 sm:text-sm">
+              <label className="mt-4 flex items-start gap-2 text-xs text-gray-700 sm:text-sm max-md:mt-1.5 max-md:gap-1 max-md:text-[9px] max-md:leading-snug">
                 <input
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 max-md:mt-px max-md:h-3 max-md:w-3"
                 />
                 <span>
                   I agree to the{" "}
@@ -445,16 +747,17 @@ export default function CfmTicketsPage() {
                 </span>
               </label>
 
-              <div className="mt-4 grid gap-2.5 sm:grid-cols-2 sm:gap-3">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 max-md:mt-1.5 max-md:gap-1">
                 <button
                   type="submit"
                   disabled={submittingMethod !== null}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-[360px]:px-3 max-[360px]:text-[13px] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-[360px]:px-1 max-[360px]:text-[10px] max-md:min-h-8 max-md:px-1 max-md:py-1.5 max-md:text-[9px] max-md:leading-tight sm:gap-2 sm:px-4 sm:text-sm disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "daraja" ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing M-Pesa...
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3 max-md:w-3" />
+                      <span className="max-md:hidden">Processing M-Pesa...</span>
+                      <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
                     </>
                   ) : (
                     "Pay with M-Pesa"
@@ -464,17 +767,97 @@ export default function CfmTicketsPage() {
                   type="button"
                   onClick={() => void onPay("paystack")}
                   disabled={submittingMethod !== null}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-[360px]:px-3 max-[360px]:text-[13px] disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-primary-700 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-[360px]:px-1 max-[360px]:text-[10px] max-md:min-h-8 max-md:px-1 max-md:py-1.5 max-md:text-[9px] max-md:leading-tight sm:gap-2 sm:px-4 sm:text-sm disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "paystack" ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Redirecting...
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3 max-md:w-3" />
+                      <span className="max-md:hidden">Redirecting...</span>
+                      <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
                     </>
                   ) : (
                     "Pay with Card / Paystack"
                   )}
                 </button>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 sm:p-4 max-md:mt-3 max-md:p-2.5">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-amber-800 max-md:h-4 max-md:w-4" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-amber-950 sm:text-base">Lipa Pole Pole</h3>
+                    <p className="mt-1 text-xs leading-snug text-amber-900/90 sm:text-sm">
+                      Pay for your tickets in installments.
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3">
+                      <input
+                        type="number"
+                        min={1}
+                        value={installmentDeposit}
+                        onChange={(e) => setInstallmentDeposit(e.target.value)}
+                        placeholder="Amount (KES) — optional"
+                        className="w-full rounded-lg border border-amber-300/80 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 max-md:px-2 max-md:py-1.5 max-md:text-[11px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void lookupInstallmentBalance()}
+                        disabled={installmentLookupLoading}
+                        className="w-full rounded-lg border border-amber-700 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 sm:text-sm disabled:opacity-60"
+                      >
+                        {installmentLookupLoading ? (
+                          <span className="inline-flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Checking…
+                          </span>
+                        ) : (
+                          "Check my balance"
+                        )}
+                      </button>
+                    </div>
+                    {installmentLookup ? (
+                      <p className="mt-2 rounded-md bg-white/90 px-2 py-1.5 text-xs font-medium text-gray-800 ring-1 ring-amber-200/80 sm:text-sm">
+                        Balance: <strong>KES {installmentLookup.balance_kes.toLocaleString()}</strong> of total{" "}
+                        <strong>KES {installmentLookup.total_due_kes.toLocaleString()}</strong> (paid KES{" "}
+                        {installmentLookup.amount_paid_kes.toLocaleString()} · {installmentLookup.ticket_quantity}{" "}
+                        ticket
+                        {installmentLookup.ticket_quantity === 1 ? "" : "s"})
+                      </p>
+                    ) : null}
+                    {/* Intentionally minimal copy here (per UX request). */}
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+                      <button
+                        type="button"
+                        onClick={() => void onInstallmentPay("daraja")}
+                        disabled={installmentPayLoading !== null}
+                        className="inline-flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-2 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-green-800 whitespace-nowrap overflow-hidden sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {installmentPayLoading === "daraja" ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Starting…
+                          </>
+                        ) : (
+                          <span className="truncate">M-Pesa · Lipa Pole Pole</span>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void onInstallmentPay("paystack")}
+                        disabled={installmentPayLoading !== null}
+                        className="inline-flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-2 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-teal-900 whitespace-nowrap overflow-hidden sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {installmentPayLoading === "paystack" ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Redirecting…
+                          </>
+                        ) : (
+                          <span className="truncate">Card / Paystack · Lipa Pole Pole</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </form>
           </article>

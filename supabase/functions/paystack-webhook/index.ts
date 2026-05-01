@@ -308,6 +308,69 @@ serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
+  const lipaMeta = metaForSuccess as Record<string, unknown>;
+  if (lipaMeta.lipa_pole_pole === true && typeof lipaMeta.lipa_pole_pole_plan_id === "string") {
+    const planId = String(lipaMeta.lipa_pole_pole_plan_id);
+    const payDelta = Math.round(Number(tx.amount ?? 0));
+    const { data: planRow } = await supabase.from("cfm_installment_plans").select("*").eq("id", planId).maybeSingle();
+    const plan = planRow as Record<string, number | string> | null;
+    let fulfillErr: string | null = null;
+    if (!plan) {
+      fulfillErr = "lipa_plan_missing";
+    } else if (plan.status !== "active") {
+      fulfillErr = plan.status === "completed" ? null : "lipa_plan_inactive";
+    } else {
+      const newPaid = Math.min(Number(plan.total_due), Number(plan.amount_paid) + payDelta);
+      const completed = newPaid >= Number(plan.total_due);
+      const nextReminderIso = completed
+        ? null
+        : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+      const { error: upErr } = await supabase
+        .from("cfm_installment_plans")
+        .update({
+          amount_paid: newPaid,
+          status: completed ? "completed" : "active",
+          updated_at: new Date().toISOString(),
+          next_reminder_at: nextReminderIso,
+        })
+        .eq("id", planId);
+      if (upErr) fulfillErr = upErr.message;
+      if (!fulfillErr && completed) {
+        const { error: tErr } = await supabase.from("ticket_issues").upsert(
+          {
+            transaction_id: tx.id,
+            campaign_id: tx.campaign_id,
+            quantity: Number(plan.ticket_quantity),
+          },
+          { onConflict: "transaction_id" },
+        );
+        if (tErr) fulfillErr = tErr.message;
+      }
+      const balanceRemaining = Math.max(0, Number(plan.total_due) - newPaid);
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: {
+            ...metaForSuccess,
+            lipa_pole_pole_balance_remaining_kes: balanceRemaining,
+            lipa_pole_pole_amount_paid_kes: newPaid,
+            lipa_pole_pole_total_due_kes: plan.total_due,
+            lipa_pole_pole_plan_completed: completed,
+            lipa_pole_pole_tickets_issued: completed ? Number(plan.ticket_quantity) : 0,
+          },
+        } as any)
+        .eq("id", tx.id);
+    }
+    if (!fulfillErr && !tx.fulfilled_at) {
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as any)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+    }
+    return new Response("ok", { status: 200 });
+  }
+
   let fulfillErr: string | null = null;
   if (tx.campaign_type === "vote") {
     if (!tx.contestant_id) {
