@@ -288,11 +288,15 @@ export async function POST(req: Request) {
       const msg = insertErr?.message ?? "";
       const isRls = /policy|RLS|row level security/i.test(msg) || msg.includes("violates");
       const isConstraint = /check constraint|transactions_amount|23514/i.test(msg);
+      const isQuantityCheck = /transactions_quantity_check|quantity_check/i.test(msg);
       const isMissingColumn = /column.*does not exist|discount_amount|coupon_id/i.test(msg);
       let userError = "Unable to create transaction.";
       if (couponId && (isMissingColumn || isConstraint)) {
         userError =
           "Unable to create transaction with coupon. Ensure database patch 32 (coupons) has been run in Supabase.";
+      } else if (isQuantityCheck) {
+        userError =
+          "Unable to create transaction. Database is restricting quantity amounts. Run database patch 12 (merchandise) which relaxes `transactions.quantity` to allow larger values (needed for Lipa Pole Pole deposits above 1,000).";
       } else if (isRls) {
         userError = "Unable to create transaction. Check: campaign is_active=true, dates valid.";
       }
