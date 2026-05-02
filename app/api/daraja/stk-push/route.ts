@@ -5,6 +5,7 @@ import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
+import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 
 type StkPushBody = {
   slug?: string;
@@ -14,7 +15,7 @@ type StkPushBody = {
   contestant_id?: string | null;
   payer_name?: string | null;
   coupon_code?: string | null;
-  /** Optional: referrer name or phone for commission tracking */
+  /** Optional: referrer display name (not a phone number) */
   referred_by?: string | null;
   /** Lipa Pole Pole: pay toward an existing installment plan */
   lipa_pole_pole_plan_id?: string | null;
@@ -51,7 +52,10 @@ export async function POST(req: Request) {
     const contestantId = body.contestant_id ?? null;
     const payerName = (body.payer_name ?? "").trim() || null;
     const couponCode = (body.coupon_code ?? "").trim() || null;
-    const referredBy = (body.referred_by ?? "").trim().slice(0, 240) || null;
+    const referredByRaw = (body.referred_by ?? "").trim().slice(0, 240);
+    const referredByErr = validateReferredByNameOnly(referredByRaw);
+    if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
+    const referredBy = referredByRaw || null;
 
     // Normalize phone: 254XXXXXXXXX (Kenya)
     const phone =
@@ -225,8 +229,9 @@ export async function POST(req: Request) {
       : {};
 
     if (useInstallment) {
-      unitAmount = 1;
-      txQuantity = installmentPayKes;
+      // Use quantity=1 and unit_amount=KES so `transactions.quantity <= 1000` (legacy DB) still allows any installment size.
+      unitAmount = installmentPayKes;
+      txQuantity = 1;
       amount = installmentPayKes;
     } else if (couponCode) {
       if (!supabaseAdmin) {

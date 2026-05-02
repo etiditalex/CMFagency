@@ -5,6 +5,7 @@ import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
+import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 
 type InitBody = {
   slug?: string;
@@ -53,7 +54,10 @@ export async function POST(req: Request) {
     const contestantId = body.contestant_id ?? null;
     const payerName = (body.payer_name ?? "").trim() || null;
     const couponCode = (body.coupon_code ?? "").trim() || null;
-    const referredBy = (body.referred_by ?? "").trim().slice(0, 240) || null;
+    const referredByRaw = (body.referred_by ?? "").trim().slice(0, 240);
+    const referredByErr = validateReferredByNameOnly(referredByRaw);
+    if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
+    const referredBy = referredByRaw || null;
 
     const payerPhoneRaw = (body.payer_phone ?? "").trim().replace(/\s/g, "");
     const payerPhoneNorm =
@@ -220,8 +224,9 @@ export async function POST(req: Request) {
       : {};
 
     if (useInstallment) {
-      unitAmount = 1;
-      txQuantity = installmentPayKes;
+      // quantity=1, unit_amount=KES keeps legacy DB quantity caps satisfied (see stk-push Lipa path).
+      unitAmount = installmentPayKes;
+      txQuantity = 1;
       amount = installmentPayKes;
     } else if (couponCode) {
       if (!supabaseAdmin) {

@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { normalizeInstallmentEmail } from "@/lib/lipa-pole-pole";
+import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 
 function normalizeKenyaPhone(raw: string): string {
   const phoneRaw = raw.trim().replace(/\s/g, "");
@@ -72,7 +73,10 @@ export async function POST(req: Request) {
     const emailNorm = normalizeInstallmentEmail(body.email ?? "");
     const phoneNorm = normalizeKenyaPhone(body.phone ?? "");
     const payerName = (body.payer_name ?? "").trim() || null;
-    const referredBy = (body.referred_by ?? "").trim().slice(0, 240) || null;
+    const referredByRaw = (body.referred_by ?? "").trim().slice(0, 240);
+    const referredByErr = validateReferredByNameOnly(referredByRaw);
+    if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
+    const referredBy = referredByRaw || null;
     const ticketQty = Math.trunc(Number(body.ticket_quantity ?? 0));
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
