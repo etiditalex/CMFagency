@@ -282,12 +282,14 @@ export async function POST(req: Request) {
       },
     };
 
-    const insertClient = couponId ? supabaseAdmin! : supabase;
+    // Lipa uses unit_amount = installment KES (≠ campaign.unit_amount); anon RLS requires equality → use service role (same as coupon inserts).
+    const insertClient = couponId || useInstallment ? supabaseAdmin! : supabase;
     const { error: insertErr } = await insertClient.from("transactions").insert(insertPayload);
 
     if (insertErr) {
       const msg = insertErr?.message ?? "";
-      const isRls = /policy|RLS|row level security/i.test(msg) || msg.includes("violates");
+      const isRls =
+        /policy|RLS|row level security|row-level security policy/i.test(msg);
       const isConstraint = /check constraint|transactions_amount|23514/i.test(msg);
       const isQuantityCheck = /transactions_quantity_check|quantity_check/i.test(msg);
       const isMissingColumn = /column.*does not exist|discount_amount|coupon_id/i.test(msg);
