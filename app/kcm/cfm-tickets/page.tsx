@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Wallet } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   PaymentClientError,
   messageForPaymentFailure,
@@ -524,7 +524,7 @@ export default function CfmTicketsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(cfmTicketsJsonLd) }}
       />
-      <main className="relative min-h-screen overflow-hidden max-md:bg-gray-100 pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16">
+      <main className="relative min-h-screen overflow-x-clip max-md:bg-gray-100 pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
         {/* Hero photo + overlay: desktop only; mobile uses flat background */}
         <div
           className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
@@ -536,31 +536,23 @@ export default function CfmTicketsPage() {
         />
         <div className="pointer-events-none absolute inset-0 hidden bg-black/25 md:block" aria-hidden />
 
-        <section className="relative z-10 mt-3 max-md:mx-0 max-md:mt-2 max-md:max-w-none max-md:px-0 sm:mt-4 md:mt-6 md:w-full md:max-w-none md:px-0">
+        <section className="relative z-10 mt-3 min-w-0 max-md:mx-0 max-md:mt-2 max-md:max-w-none max-md:px-0 sm:mt-4 md:mt-6 md:w-full md:max-w-none md:px-0">
           {/* Desktop: full-viewport-width white panel so the hero image never shows beside this page */}
-          <div className="md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
-          <article className="mx-auto w-full max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
+          <div className="min-w-0 md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
+          <article className="mx-auto w-full min-w-0 max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
             <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-2.5 max-md:px-4">
               <h1
                 id="cfm-tickets-heading"
-                className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:text-[13px] max-md:font-bold"
+                className="text-lg font-extrabold leading-tight max-[360px]:text-[15px] sm:text-2xl md:text-3xl max-md:font-bold max-md:leading-snug"
               >
                 Choose Your Ticket Package
               </h1>
-              <p className="mt-2 max-w-3xl text-[11px] leading-snug text-white/90 sm:text-sm md:mt-3 md:text-base md:leading-relaxed">
-                Official <strong className="font-semibold text-white">CFM / CFMA tickets</strong> for the{" "}
-                <strong className="font-semibold text-white">Coast Fashion &amp; Modelling Awards</strong> in Kenya.
-                Buy online with <strong className="font-semibold text-white">M-Pesa</strong> (STK),{" "}
-                <strong className="font-semibold text-white">Paystack</strong> (card), or{" "}
-                <strong className="font-semibold text-white">Lipa Pole Pole</strong> installments — Regular KES 500, VIP
-                KES 1,500, VVIP KES 3,500.
-              </p>
             </div>
 
-            {/* Mobile: tiers capped ~50vh */}
+            {/* Mobile: ≤320px single-column tiers; wider mobile keeps 3 cols with capped height */}
             <div className="bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-0 max-md:py-2 max-md:pb-2">
-                <div className="max-md:max-h-[50dvh] max-md:flex max-md:flex-col max-md:min-h-0">
-                  <div className="grid gap-3 max-[360px]:gap-2.5 sm:gap-4 md:grid-cols-3 max-md:grid-cols-3 max-md:gap-1.5 max-md:px-2 max-md:flex-1 max-md:min-h-0 max-md:auto-rows-fr">
+                <div className="max-md:flex max-md:flex-col max-md:min-h-0 max-md:max-h-[min(52dvh,26rem)] max-[320px]:max-h-none max-[320px]:overflow-visible min-[321px]:max-md:overflow-y-auto">
+                  <div className="grid grid-cols-1 gap-3 max-[360px]:gap-2.5 sm:gap-4 min-[321px]:max-md:grid-cols-3 md:grid-cols-3 min-[321px]:max-md:gap-2 max-md:px-2 max-md:min-h-0 max-md:flex-1 min-[321px]:max-md:auto-rows-fr max-[320px]:auto-rows-auto">
                     {packages.map((pkg) => {
                     const isSelected = selectedPackage.amount === pkg.amount;
                     return (
@@ -568,16 +560,16 @@ export default function CfmTicketsPage() {
                         key={pkg.amount}
                         type="button"
                         onClick={() => setSelectedAmount(pkg.amount)}
-                        className={`rounded-xl border bg-white p-3 max-[360px]:p-2.5 text-left shadow-sm transition sm:rounded-2xl sm:p-5 max-md:flex max-md:h-full max-md:min-h-0 max-md:flex-col max-md:rounded-lg max-md:p-2 max-md:py-2.5 ${
+                        className={`touch-manipulation rounded-xl border bg-white p-3 max-[360px]:p-2.5 text-left shadow-sm transition sm:rounded-2xl sm:p-5 max-md:flex max-md:min-h-0 max-md:flex-col max-md:rounded-lg max-md:p-2.5 max-md:py-3 min-[321px]:max-md:h-full max-[320px]:h-auto ${
                           isSelected
                             ? "border-primary-600 bg-primary-50 ring-2 ring-primary-400/80 shadow-md max-md:border-primary-600 max-md:bg-primary-600/15 max-md:ring-2 max-md:ring-primary-500"
                             : "border-gray-200 hover:border-primary-300 hover:bg-amber-50/90 hover:shadow-md max-md:hover:bg-amber-50"
                         }`}
                       >
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs max-md:text-[9px] max-md:leading-tight">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs max-md:text-[10px] max-md:leading-tight">
                           {pkg.name}
                         </p>
-                        <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl max-md:mt-1 max-md:text-sm max-md:leading-none">
+                        <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl max-md:mt-1 max-md:text-base max-md:leading-none">
                           KES {pkg.amount.toLocaleString()}
                         </p>
                         <ul className="mt-3 space-y-1.5 text-xs text-gray-700 max-[360px]:mt-2.5 max-[360px]:space-y-1 max-[360px]:text-[11px] sm:mt-4 sm:space-y-2 sm:text-sm max-md:hidden">
@@ -589,7 +581,7 @@ export default function CfmTicketsPage() {
                           ))}
                         </ul>
                         <span
-                          className={`mt-4 block w-full rounded-lg border px-3 py-2 text-center text-xs font-semibold transition max-md:mt-auto max-md:px-1.5 max-md:py-1 max-md:text-[10px] sm:mt-5 sm:px-4 sm:text-sm ${
+                          className={`mt-4 block w-full min-h-[40px] rounded-lg border px-3 py-2 text-center text-xs font-semibold transition max-md:mt-auto max-md:flex max-md:items-center max-md:justify-center max-md:px-2 max-md:py-1.5 max-md:text-[11px] sm:mt-5 sm:min-h-0 sm:px-4 sm:text-sm ${
                             isSelected
                               ? "border-primary-500 bg-primary-600 text-white max-md:border-primary-600"
                               : "border-primary-200 bg-primary-50/80 text-primary-800 max-md:border-primary-200 max-md:bg-white"
@@ -629,29 +621,29 @@ export default function CfmTicketsPage() {
                 e.preventDefault();
                 void onPay("daraja");
               }}
-              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-3 max-md:py-2 max-md:pt-2.5 text-sm max-md:text-[11px]"
+              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-3 max-md:py-2 max-md:pt-2.5 text-sm max-md:text-sm"
             >
-              <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2 max-md:mb-1.5 max-md:gap-0">
-                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg max-md:text-[11px] max-md:font-bold max-md:leading-tight">
+              <div className="mb-4 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2 max-md:mb-2 max-md:gap-0">
+                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg max-md:text-sm max-md:font-bold max-md:leading-tight">
                   Checkout
                 </h2>
-                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm max-md:text-[9px] max-md:font-medium max-md:leading-tight">
+                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm max-md:text-xs max-md:font-medium max-md:leading-snug max-md:break-words">
                   Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}
                 </p>
               </div>
 
               {error ? (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 max-md:mb-1.5 max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:leading-snug">
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 max-md:mb-2 max-md:px-2.5 max-md:py-1.5 max-md:text-xs max-md:leading-snug">
                   {error}
                 </div>
               ) : null}
               {notice ? (
-                <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 max-md:mb-1.5 max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:leading-snug">
+                <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 max-md:mb-2 max-md:px-2.5 max-md:py-1.5 max-md:text-xs max-md:leading-snug">
                   {notice}
                 </div>
               ) : null}
               {pendingReference && paymentStatus ? (
-                <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900 max-md:mb-1.5 max-md:px-1.5 max-md:py-1.5 max-md:text-[10px] max-md:leading-snug">
+                <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900 max-md:mb-2 max-md:px-2.5 max-md:py-2 max-md:text-xs max-md:leading-snug">
                   <p className="break-all font-semibold">Payment reference: {pendingReference}</p>
                   <p className="mt-0.5 max-md:mt-0">
                     Status:{" "}
@@ -671,7 +663,7 @@ export default function CfmTicketsPage() {
                   <div className="mt-2 max-md:mt-1.5">
                     <a
                       href={`/receipt?ref=${encodeURIComponent(pendingReference)}`}
-                      className="inline-flex rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 max-md:px-2 max-md:py-1 max-md:text-[9px]"
+                      className="inline-flex min-h-[40px] items-center rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 max-md:px-2.5 max-md:py-2 max-md:text-[11px]"
                     >
                       Open receipt
                     </a>
@@ -679,13 +671,13 @@ export default function CfmTicketsPage() {
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-md:gap-1">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-md:gap-2">
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
+                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                 />
                 <input
@@ -693,7 +685,7 @@ export default function CfmTicketsPage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
+                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                 />
                 <input
@@ -701,7 +693,7 @@ export default function CfmTicketsPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
+                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                 />
                 <input
@@ -710,7 +702,7 @@ export default function CfmTicketsPage() {
                   onChange={(e) => setReferredBy(e.target.value)}
                   placeholder="Referrer's name (optional)"
                   maxLength={240}
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[10px]"
+                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                 />
                 <input
                   type="tel"
@@ -718,13 +710,14 @@ export default function CfmTicketsPage() {
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="Your phone number (e.g. 0712… or 254712…)"
                   autoComplete="tel"
-                  className="col-span-2 min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[10px] max-md:placeholder:text-[10px]"
+                  inputMode="tel"
+                  className="col-span-2 min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                   aria-describedby="cfm-tickets-phone-hint"
                 />
                 <p
                   id="cfm-tickets-phone-hint"
-                  className="col-span-2 text-xs text-gray-500 max-md:text-[9px] max-md:leading-snug"
+                  className="col-span-2 text-xs text-gray-500 max-md:text-[11px] max-md:leading-snug"
                 >
                   Required for all payments. M-Pesa checkout uses this number for the STK prompt.
                 </p>
@@ -735,17 +728,18 @@ export default function CfmTicketsPage() {
                   value={normalizedQuantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                   placeholder="Quantity"
-                  className="col-span-2 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 max-[360px]:px-2.5 max-[360px]:text-[13px] max-md:px-1.5 max-md:py-1 max-md:text-[11px] max-md:placeholder:text-[11px]"
+                  inputMode="numeric"
+                  className="col-span-2 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                 />
               </div>
 
-              <label className="mt-4 flex items-start gap-2 text-xs text-gray-700 sm:text-sm max-md:mt-1.5 max-md:gap-1 max-md:text-[9px] max-md:leading-snug">
+              <label className="mt-4 flex items-start gap-2.5 text-xs text-gray-700 sm:text-sm max-md:mt-3 max-md:gap-2 max-md:text-[11px] max-md:leading-snug">
                 <input
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 max-md:mt-px max-md:h-3 max-md:w-3"
+                  className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 max-md:mt-0.5 sm:h-4 sm:w-4"
                 />
                 <span>
                   I agree to the{" "}
@@ -761,36 +755,44 @@ export default function CfmTicketsPage() {
                 </span>
               </label>
 
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 max-md:mt-1.5 max-md:gap-1">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 max-md:mt-3 max-md:gap-2">
                 <button
                   type="submit"
                   disabled={submittingMethod !== null}
-                  className="inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-[360px]:px-1 max-[360px]:text-[10px] max-md:min-h-8 max-md:px-1 max-md:py-1.5 max-md:text-[9px] max-md:leading-tight sm:gap-2 sm:px-4 sm:text-sm disabled:cursor-not-allowed disabled:opacity-70"
+                  aria-label="Pay with M-Pesa"
+                  className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-md:px-2 max-md:text-[11px] max-md:leading-tight sm:gap-2 sm:px-4 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "daraja" ? (
                     <>
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3 max-md:w-3" />
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3.5 max-md:w-3.5" />
                       <span className="max-md:hidden">Processing M-Pesa...</span>
                       <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
                     </>
                   ) : (
-                    "Pay with M-Pesa"
+                    <>
+                      <span className="max-md:hidden">Pay with M-Pesa</span>
+                      <span className="hidden max-md:inline text-center leading-tight">M-Pesa</span>
+                    </>
                   )}
                 </button>
                 <button
                   type="button"
                   onClick={() => void onPay("paystack")}
                   disabled={submittingMethod !== null}
-                  className="inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-primary-700 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-[360px]:px-1 max-[360px]:text-[10px] max-md:min-h-8 max-md:px-1 max-md:py-1.5 max-md:text-[9px] max-md:leading-tight sm:gap-2 sm:px-4 sm:text-sm disabled:cursor-not-allowed disabled:opacity-70"
+                  aria-label="Pay with Card or Paystack"
+                  className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-primary-700 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-md:px-2 max-md:text-[11px] max-md:leading-tight sm:gap-2 sm:px-4 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {submittingMethod === "paystack" ? (
                     <>
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3 max-md:w-3" />
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3.5 max-md:w-3.5" />
                       <span className="max-md:hidden">Redirecting...</span>
                       <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
                     </>
                   ) : (
-                    "Pay with Card / Paystack"
+                    <>
+                      <span className="max-md:hidden">Pay with Card / Paystack</span>
+                      <span className="hidden max-md:inline text-center leading-tight">Card / Paystack</span>
+                    </>
                   )}
                 </button>
               </div>
@@ -807,20 +809,14 @@ export default function CfmTicketsPage() {
                 <span className="h-px flex-1 bg-gray-300" />
               </div>
 
-              <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4 max-md:mt-3 max-md:p-2.5">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Wallet className="mt-0.5 h-5 w-5 shrink-0 text-white max-md:h-4 max-md:w-4" aria-hidden />
-                  <div className="min-w-0 flex-1">
+              <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4 max-md:mt-3 max-md:p-3">
+                <div className="min-w-0">
                     <h3 className="text-sm font-bold text-white sm:text-base">Lipa Pole Pole</h3>
                     <p className="mt-1 text-xs leading-snug text-white/90 sm:text-sm">
-                      Pay in installments. Choose your package with the tiers above (
-                      <span className="font-semibold text-white">
-                        {selectedPackage.name} · KES {selectedPackage.amount.toLocaleString()}
-                      </span>
-                      ).
+                      Choose your package with the tiers above (KES 500–3,500).
                     </p>
                     <p className="mt-2 text-xs font-semibold text-white sm:text-sm">
-                      First payment (this purchase)
+                      First payment
                     </p>
                     <input
                       type="number"
@@ -828,12 +824,13 @@ export default function CfmTicketsPage() {
                       value={installmentDeposit}
                       onChange={(e) => setInstallmentDeposit(e.target.value)}
                       placeholder="First payment (KES), min 50 — required until you have paid before"
-                      className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 max-md:px-2 max-md:py-1.5 max-md:text-[11px]"
+                      inputMode="numeric"
+                      className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
                     />
                     <p className="mt-3 text-xs font-semibold text-white sm:text-sm">
                       Returning / top-up — verify your balance
                     </p>
-                    <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs">
+                    <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs max-md:text-[11px]">
                       Use the phone or name you used when you started Lipa Pole Pole (optional if already filled in checkout).
                     </p>
                     <div className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3">
@@ -843,14 +840,15 @@ export default function CfmTicketsPage() {
                         onChange={(e) => setBalanceLookupPhone(e.target.value)}
                         placeholder="Phone for lookup (optional)"
                         autoComplete="tel"
-                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 max-md:px-2 max-md:py-1.5 max-md:text-[11px]"
+                        inputMode="tel"
+                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
                       />
                       <input
                         type="text"
                         value={balanceLookupName}
                         onChange={(e) => setBalanceLookupName(e.target.value)}
                         placeholder="Name on record (optional)"
-                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 max-md:px-2 max-md:py-1.5 max-md:text-[11px]"
+                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
                       />
                     </div>
                     <div className="mt-2">
@@ -858,7 +856,7 @@ export default function CfmTicketsPage() {
                         type="button"
                         onClick={() => void lookupInstallmentBalance()}
                         disabled={installmentLookupLoading}
-                        className="w-full rounded-lg border border-white/70 bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:text-sm sm:max-w-xs disabled:opacity-60"
+                        className="touch-manipulation w-full min-h-[44px] rounded-lg border border-white/70 bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:text-sm sm:max-w-xs disabled:opacity-60 max-md:flex max-md:items-center max-md:justify-center"
                       >
                         {installmentLookupLoading ? (
                           <span className="inline-flex items-center justify-center gap-2">
@@ -871,7 +869,7 @@ export default function CfmTicketsPage() {
                       </button>
                     </div>
                     {installmentLookup ? (
-                      <p className="mt-2 rounded-md bg-white px-2 py-1.5 text-xs font-medium text-gray-800 shadow-sm ring-1 ring-white/50 sm:text-sm">
+                      <p className="mt-2 break-words rounded-md bg-white px-2 py-1.5 text-xs font-medium text-gray-800 shadow-sm ring-1 ring-white/50 sm:text-sm">
                         Balance: <strong>KES {installmentLookup.balance_kes.toLocaleString()}</strong> of total{" "}
                         <strong>KES {installmentLookup.total_due_kes.toLocaleString()}</strong> (paid KES{" "}
                         {installmentLookup.amount_paid_kes.toLocaleString()} · {installmentLookup.ticket_quantity}{" "}
@@ -880,12 +878,13 @@ export default function CfmTicketsPage() {
                       </p>
                     ) : null}
                     {/* Intentionally minimal copy here (per UX request). */}
-                    <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => void onInstallmentPay("daraja")}
                         disabled={installmentPayLoading !== null}
-                        className="inline-flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-2 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-green-800 whitespace-nowrap overflow-hidden sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="M-Pesa Lipa Pole Pole installment payment"
+                        className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {installmentPayLoading === "daraja" ? (
                           <>
@@ -893,14 +892,15 @@ export default function CfmTicketsPage() {
                             Starting…
                           </>
                         ) : (
-                          <span className="truncate">M-Pesa · Lipa Pole Pole</span>
+                          <span className="text-center leading-tight">M-Pesa · Lipa Pole Pole</span>
                         )}
                       </button>
                       <button
                         type="button"
                         onClick={() => void onInstallmentPay("paystack")}
                         disabled={installmentPayLoading !== null}
-                        className="inline-flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-2 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-teal-900 whitespace-nowrap overflow-hidden sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-label="Card or Paystack Lipa Pole Pole installment payment"
+                        className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-900 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {installmentPayLoading === "paystack" ? (
                           <>
@@ -908,11 +908,10 @@ export default function CfmTicketsPage() {
                             Redirecting…
                           </>
                         ) : (
-                          <span className="truncate">Card / Paystack · Lipa Pole Pole</span>
+                          <span className="text-center leading-tight">Card / Paystack · Lipa Pole Pole</span>
                         )}
                       </button>
                     </div>
-                  </div>
                 </div>
               </div>
             </form>

@@ -1,3 +1,5 @@
+import { montserrat } from "@/lib/fonts";
+
 export { metadata } from "./metadata";
 
 export default function CfmTicketsLayout({
@@ -5,5 +7,5 @@ export default function CfmTicketsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <div className={`${montserrat.className} antialiased`}>{children}</div>;
 }
