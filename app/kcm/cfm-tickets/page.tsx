@@ -8,6 +8,7 @@ import {
 } from "@/lib/payment-user-message";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
+import { cfmTicketsJsonLd } from "./structured-data";
 
 /** Normalize to Kenya 254XXXXXXXXX for M-Pesa / stored payer phone. */
 function normalizeKenyaPhone(raw: string): string {
@@ -46,45 +47,6 @@ const packages: TicketPackage[] = [
     perks: ["Front-row experience", "VIP lounge access", "Meet & greet opportunity"],
   },
 ];
-
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "What are the CFM Tickets package prices?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "CFM Tickets packages are KES 500, KES 1,500, and KES 3,500.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What is included in the KES 500 ticket package?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The KES 500 Standard Access package includes entry for one guest, general seating, and an event wristband.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What is included in the KES 1,500 ticket package?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The KES 1,500 Premium Access package includes priority entry, a reserved seating zone, and a complimentary refreshment.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What is included in the KES 3,500 ticket package?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "The KES 3,500 VIP Access package includes a front-row experience, VIP lounge access, and a meet and greet opportunity.",
-      },
-    },
-  ],
-};
 
 export default function CfmTicketsPage() {
   const [selectedAmount, setSelectedAmount] = useState<number>(500);
@@ -560,7 +522,7 @@ export default function CfmTicketsPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(cfmTicketsJsonLd) }}
       />
       <main className="relative min-h-screen overflow-hidden max-md:bg-gray-100 pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16">
         {/* Hero photo + overlay: desktop only; mobile uses flat background */}
@@ -579,9 +541,20 @@ export default function CfmTicketsPage() {
           <div className="md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
           <article className="mx-auto w-full max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
             <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-2.5 max-md:px-4">
-              <h1 className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:text-[13px] max-md:font-bold">
+              <h1
+                id="cfm-tickets-heading"
+                className="text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:text-[13px] max-md:font-bold"
+              >
                 Choose Your Ticket Package
               </h1>
+              <p className="mt-2 max-w-3xl text-[11px] leading-snug text-white/90 sm:text-sm md:mt-3 md:text-base md:leading-relaxed">
+                Official <strong className="font-semibold text-white">CFM / CFMA tickets</strong> for the{" "}
+                <strong className="font-semibold text-white">Coast Fashion &amp; Modelling Awards</strong> in Kenya.
+                Buy online with <strong className="font-semibold text-white">M-Pesa</strong> (STK),{" "}
+                <strong className="font-semibold text-white">Paystack</strong> (card), or{" "}
+                <strong className="font-semibold text-white">Lipa Pole Pole</strong> installments — Regular KES 500, VIP
+                KES 1,500, VVIP KES 3,500.
+              </p>
             </div>
 
             {/* Mobile: tiers capped ~50vh */}

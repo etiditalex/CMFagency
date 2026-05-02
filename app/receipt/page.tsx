@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import VoteSuccessToast from "@/components/VoteSuccessToast";
 import ReceiptConfirmingPoller from "@/components/ReceiptConfirmingPoller";
-import ReceiptContent from "./ReceiptContent";
+import ReceiptContent, { type LipaReceiptBalance } from "./ReceiptContent";
 import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
 import PrintButton from "./PrintButton";
 
@@ -189,6 +189,64 @@ export default async function ReceiptPage({ searchParams }: Props) {
   const mpesaReceipt = (meta.mpesa_receipt as string)?.trim() || undefined;
   const isMpesa = (tx as { provider?: string }).provider === "daraja";
 
+  const isLipaPolePole = meta.lipa_pole_pole === true;
+  let lipaBalance: LipaReceiptBalance | null = null;
+  if (isLipaPolePole && (tx as { campaign_type?: string }).campaign_type === "ticket") {
+    const totalDue = Number(meta.lipa_pole_pole_total_due_kes);
+    const paid = Number(meta.lipa_pole_pole_amount_paid_kes);
+    const balance = Number(meta.lipa_pole_pole_balance_remaining_kes);
+    const completed = Boolean(meta.lipa_pole_pole_plan_completed);
+    const ticketQtyMeta = Number(meta.lipa_pole_pole_ticket_quantity);
+    const ticketQuantity =
+      Number.isFinite(ticketQtyMeta) && ticketQtyMeta > 0 ? ticketQtyMeta : quantity;
+
+    if (Number.isFinite(totalDue) && Number.isFinite(paid) && Number.isFinite(balance)) {
+      lipaBalance = {
+        totalDueKes: totalDue,
+        paidKes: paid,
+        balanceKes: balance,
+        completed,
+        ticketQuantity,
+      };
+    } else {
+      const planId = typeof meta.lipa_pole_pole_plan_id === "string" ? meta.lipa_pole_pole_plan_id : "";
+      if (planId) {
+        const { data: planRow } = await supabase
+          .from("cfm_installment_plans")
+          .select("total_due, amount_paid, ticket_quantity, status")
+          .eq("id", planId)
+          .maybeSingle();
+        if (planRow) {
+          const p = planRow as {
+            total_due: number;
+            amount_paid: number;
+            ticket_quantity: number;
+            status: string;
+          };
+          const bal = Math.max(0, p.total_due - p.amount_paid);
+          lipaBalance = {
+            totalDueKes: p.total_due,
+            paidKes: p.amount_paid,
+            balanceKes: bal,
+            completed: p.status === "completed" || bal <= 0,
+            ticketQuantity: p.ticket_quantity,
+          };
+        }
+      }
+    }
+  }
+
+  const headerSubtitle = isLipaPolePole
+    ? "Lipa Pole Pole — payment confirmed"
+    : isMpesa
+      ? "M-Pesa payment confirmed"
+      : "Payment confirmed";
+
+  const quantityDisplay =
+    lipaBalance != null
+      ? `${lipaBalance.ticketQuantity} ${lipaBalance.ticketQuantity === 1 ? "ticket" : "tickets"} (package)`
+      : `${quantity} ${quantityLabel}`;
+
   let eventLocation: string | undefined;
   let eventDate: string | undefined;
   let eventTime: string | undefined;
@@ -260,13 +318,15 @@ export default async function ReceiptPage({ searchParams }: Props) {
           ticketNumber={ticketNumber}
           holderName={holderName}
           amount={`${currency} ${amount.toLocaleString()}`}
-          quantity={`${quantity} ${quantityLabel}`}
+          quantity={quantityDisplay}
           reference={ref}
           mpesaReceipt={isMpesa ? mpesaReceipt : undefined}
           votedForName={votedForName}
           eventLocation={eventLocation}
           eventDate={eventDate}
           eventTime={eventTime}
+          lipaBalance={lipaBalance}
+          headerSubtitle={headerSubtitle}
         />
       </div>
     </div>
