@@ -524,7 +524,7 @@ export default function CfmTicketsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(cfmTicketsJsonLd) }}
       />
-      <main className="relative min-h-screen overflow-x-clip max-md:bg-gray-100 pt-20 pb-8 max-[360px]:pt-[74px] sm:pt-24 sm:pb-10 md:pt-28 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <main className="relative min-h-screen overflow-x-clip max-md:bg-gray-100 pb-8 pt-32 max-md:pt-36 md:pt-36 sm:pb-10 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
         {/* Hero photo + overlay: desktop only; mobile uses flat background */}
         <div
           className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
@@ -540,10 +540,10 @@ export default function CfmTicketsPage() {
           {/* Desktop: full-viewport-width white panel so the hero image never shows beside this page */}
           <div className="min-w-0 md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
           <article className="mx-auto w-full min-w-0 max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
-            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-2.5 max-md:px-4">
+            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-3.5 max-md:px-4">
               <h1
                 id="cfm-tickets-heading"
-                className="text-lg font-extrabold leading-tight max-[360px]:text-[15px] sm:text-2xl md:text-3xl max-md:font-bold max-md:leading-snug"
+                className="scroll-mt-36 text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:font-bold max-md:leading-snug"
               >
                 Choose Your Ticket Package
               </h1>
