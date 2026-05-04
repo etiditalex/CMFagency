@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       description,
       url,
       siteName: "Changer Fusions",
-      type: "product",
+      type: "website",
       images: product.image ? [{ url: product.image, alt: product.name }] : undefined,
     },
   };

@@ -124,8 +124,8 @@ export default function TransactionsPage() {
       }
       const qs = new URLSearchParams();
       if (typeFilter !== "all") qs.set("campaign_type", typeFilter);
-      const url = `/api/transactions/export${qs.toString() ? `?${qs.toString()}` : ""}`;
-      const res = await fetch(url, {
+      const exportUrl = `/api/transactions/export${qs.toString() ? `?${qs.toString()}` : ""}`;
+      const res = await fetch(exportUrl, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -133,13 +133,13 @@ export default function TransactionsPage() {
         throw new Error((err as { error?: string }).error ?? `Download failed (${res.status})`);
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       const typeLabel = typeFilter === "all" ? "all" : typeFilter === "ticket" ? "tickets" : "votes";
       a.download = `transactions-${typeLabel}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Download failed");
     } finally {
