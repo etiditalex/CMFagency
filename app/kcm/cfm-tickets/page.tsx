@@ -69,7 +69,6 @@ export default function CfmTicketsPage() {
   const [installmentDeposit, setInstallmentDeposit] = useState("");
   /** Optional: use a different phone/name only for “Check my balance” (top-ups / returning payers). */
   const [balanceLookupPhone, setBalanceLookupPhone] = useState("");
-  const [balanceLookupName, setBalanceLookupName] = useState("");
   const [installmentLookup, setInstallmentLookup] = useState<null | {
     balance_kes: number;
     total_due_kes: number;
@@ -92,7 +91,6 @@ export default function CfmTicketsPage() {
     setInstallmentLookup(null);
     setInstallmentDeposit("");
     setBalanceLookupPhone("");
-    setBalanceLookupName("");
   }, [selectedAmount, normalizedQuantity]);
 
   const validateCommon = () => {
@@ -189,11 +187,10 @@ export default function CfmTicketsPage() {
       : "";
     const phoneNorm = phoneOverride || phoneFromForm;
     const emailTrim = email.trim();
-    const nameTrim = balanceLookupName.trim();
     const phoneOk = /^254[17]\d{8}$/.test(phoneNorm);
-    if (!phoneOk && !emailTrim && nameTrim.length < 2) {
+    if (!phoneOk && !emailTrim) {
       throw new PaymentClientError(
-        "To check your balance, enter your Kenya phone, your email, or your name as used when you started Lipa Pole Pole (at least 2 characters)."
+        "To check your balance, enter your Kenya phone or your email as used when you started Lipa Pole Pole."
       );
     }
   };
@@ -216,9 +213,6 @@ export default function CfmTicketsPage() {
           slug: selectedPackage.slug,
           email: email.trim(),
           phone: phoneNorm,
-          ...(balanceLookupName.trim().length >= 2
-            ? { verify_name: balanceLookupName.trim() }
-            : {}),
         }),
       });
       const j = (await res.json().catch(() => ({}))) as {
@@ -831,9 +825,9 @@ export default function CfmTicketsPage() {
                       Returning / top-up — verify your balance
                     </p>
                     <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs max-md:text-[11px]">
-                      Use the phone or name you used when you started Lipa Pole Pole (optional if already filled in checkout).
+                      Use the phone you used when you started Lipa Pole Pole (optional if already filled in checkout).
                     </p>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2 sm:gap-3">
+                    <div className="mt-2 grid gap-2 sm:gap-3">
                       <input
                         type="tel"
                         value={balanceLookupPhone}
@@ -841,13 +835,6 @@ export default function CfmTicketsPage() {
                         placeholder="Phone for lookup (optional)"
                         autoComplete="tel"
                         inputMode="tel"
-                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
-                      />
-                      <input
-                        type="text"
-                        value={balanceLookupName}
-                        onChange={(e) => setBalanceLookupName(e.target.value)}
-                        placeholder="Name on record (optional)"
                         className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
                       />
                     </div>

@@ -24,6 +24,8 @@ type TxRow = {
   payer_name?: string | null;
 };
 
+type TypeFilter = "all" | "ticket" | "vote";
+
 export default function TransactionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -36,6 +38,7 @@ export default function TransactionsPage() {
   const [downloading, setDownloading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
   const PAGE_SIZE = 100;
 
@@ -64,11 +67,14 @@ export default function TransactionsPage() {
     setError(null);
 
     try {
-      const { data: txRows, error: txErr } = await supabase
+      let q = supabase
         .from("transactions")
         .select("id,reference,status,amount,currency,quantity,created_at,campaign_id,campaign_type,provider,email,payer_name")
-        .order("created_at", { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1);
+        .order("created_at", { ascending: false });
+      if (typeFilter !== "all") {
+        q = q.eq("campaign_type", typeFilter);
+      }
+      const { data: txRows, error: txErr } = await q.range(offset, offset + PAGE_SIZE - 1);
 
       if (txErr) throw txErr;
 
@@ -86,7 +92,7 @@ export default function TransactionsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, isAdmin, loadCampaignTitlesForIds]);
+  }, [user?.id, isAdmin, loadCampaignTitlesForIds, typeFilter]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -116,7 +122,10 @@ export default function TransactionsPage() {
         setError("Not logged in");
         return;
       }
-      const res = await fetch("/api/transactions/export", {
+      const qs = new URLSearchParams();
+      if (typeFilter !== "all") qs.set("campaign_type", typeFilter);
+      const url = `/api/transactions/export${qs.toString() ? `?${qs.toString()}` : ""}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -127,7 +136,8 @@ export default function TransactionsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `transactions-reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+      const typeLabel = typeFilter === "all" ? "all" : typeFilter === "ticket" ? "tickets" : "votes";
+      a.download = `transactions-${typeLabel}-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
@@ -149,9 +159,11 @@ export default function TransactionsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">All Transactions</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {typeFilter === "all" ? "All Transactions" : typeFilter === "ticket" ? "Ticket Transactions" : "Vote Transactions"}
+          </h2>
           <p className="mt-1 text-sm text-gray-600">
-            View and download all transactions for reconciliation.
+            View and download transactions for reconciliation.
             {!isAdmin && (
               <>
                 {" "}
@@ -162,6 +174,30 @@ export default function TransactionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border border-gray-200 bg-white p-1">
+            {([
+              { id: "all", label: "All" },
+              { id: "ticket", label: "Tickets" },
+              { id: "vote", label: "Votes" },
+            ] as Array<{ id: TypeFilter; label: string }>).map((opt) => {
+              const active = typeFilter === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setTypeFilter(opt.id);
+                    void refreshData(0, false);
+                  }}
+                  className={`px-3 py-1.5 text-sm font-semibold rounded-md transition ${
+                    active ? "bg-primary-600 text-white" : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
           <button
             type="button"
             onClick={() => refreshData(0, false)}

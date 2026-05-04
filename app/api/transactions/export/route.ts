@@ -16,6 +16,11 @@ async function isAdminOrManager(userId: string, serviceKey: string, supabaseUrl:
  * Max 10,000 rows to avoid timeouts.
  */
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const campaignTypeParam = (url.searchParams.get("campaign_type") ?? "").trim().toLowerCase();
+  const campaignTypeFilter =
+    campaignTypeParam === "ticket" || campaignTypeParam === "vote" ? campaignTypeParam : null;
+
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "") ?? "";
   if (!token) {
@@ -71,6 +76,10 @@ export async function GET(req: Request) {
     metadata?: Record<string, unknown>;
     campaign_id: string;
   }>;
+
+  if (campaignTypeFilter) {
+    rows = rows.filter((r) => String(r.campaign_type ?? "").toLowerCase() === campaignTypeFilter);
+  }
 
   if (!showIncomplete) {
     rows = rows.filter((r) => r.status !== "failed" && r.status !== "abandoned");
@@ -143,7 +152,8 @@ export async function GET(req: Request) {
   const bom = "\uFEFF";
 
   const timestamp = new Date().toISOString().slice(0, 10);
-  const filename = `transactions-reconciliation-${timestamp}.csv`;
+  const kind = campaignTypeFilter ? `${campaignTypeFilter}s` : "reconciliation";
+  const filename = `transactions-${kind}-${timestamp}.csv`;
 
   return new NextResponse(bom + csv, {
     status: 200,

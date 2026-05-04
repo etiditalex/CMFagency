@@ -25,6 +25,21 @@ const partnerLogos = [
     image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_4_vujwiy.jpg",
     alt: "Partner 4",
   },
+  {
+    id: 5,
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_jiwrxe.jpg",
+    alt: "CityBlue Hotels",
+  },
+  {
+    id: 6,
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_1_qxxeml.jpg",
+    alt: "Letsvoice Podcast",
+  },
+  {
+    id: 7,
+    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.42_thnno6.jpg",
+    alt: "Partner logo",
+  },
 ];
 
 // Duplicate logos for seamless infinite scroll
