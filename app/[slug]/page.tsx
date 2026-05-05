@@ -37,6 +37,8 @@ type Contestant = {
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
 const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
 
+const CONTESTANT_LINK_DEADLINE_ISO = "2026-08-11T00:00:00+03:00";
+
 function formatVotingOpensInNairobi(isoMs: number): string {
   try {
     return new Intl.DateTimeFormat("en-GB", {
@@ -49,6 +51,107 @@ function formatVotingOpensInNairobi(isoMs: number): string {
   } catch {
     return "soon";
   }
+}
+
+function nairobiParts(d: Date): { y: number; m: number; day: number; hh: number; mm: number; ss: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Nairobi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const read = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  return { y: read("year"), m: read("month"), day: read("day"), hh: read("hour"), mm: read("minute"), ss: read("second") };
+}
+
+function toNairobiDate(d: Date): Date {
+  const p = nairobiParts(d);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return new Date(`${p.y}-${pad(p.m)}-${pad(p.day)}T${pad(p.hh)}:${pad(p.mm)}:${pad(p.ss)}+03:00`);
+}
+
+function addMonthsClamped(d: Date, months: number): Date {
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  const day = d.getUTCDate();
+  const hh = d.getUTCHours();
+  const mm = d.getUTCMinutes();
+  const ss = d.getUTCSeconds();
+  const nextFirst = new Date(Date.UTC(y, m + months, 1, hh, mm, ss));
+  const lastOfNext = new Date(Date.UTC(nextFirst.getUTCFullYear(), nextFirst.getUTCMonth() + 1, 0, hh, mm, ss));
+  const clampedDay = Math.min(day, lastOfNext.getUTCDate());
+  return new Date(Date.UTC(nextFirst.getUTCFullYear(), nextFirst.getUTCMonth(), clampedDay, hh, mm, ss));
+}
+
+function computeCountdown(now: Date, target: Date): { months: number; days: number; hours: number; minutes: number; seconds: number } {
+  if (now.getTime() >= target.getTime()) return { months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+  // Work in Nairobi time using a stable +03:00 anchor.
+  let cursor = toNairobiDate(now);
+  const end = new Date(target.getTime());
+
+  let months = 0;
+  while (true) {
+    const next = addMonthsClamped(cursor, 1);
+    if (next.getTime() <= end.getTime()) {
+      cursor = next;
+      months += 1;
+      continue;
+    }
+    break;
+  }
+
+  let ms = end.getTime() - cursor.getTime();
+  const sec = 1000;
+  const min = 60 * sec;
+  const hr = 60 * min;
+  const day = 24 * hr;
+
+  const days = Math.floor(ms / day);
+  ms -= days * day;
+  const hours = Math.floor(ms / hr);
+  ms -= hours * hr;
+  const minutes = Math.floor(ms / min);
+  ms -= minutes * min;
+  const seconds = Math.floor(ms / sec);
+  return { months, days, hours, minutes, seconds };
+}
+
+function CountdownDeadline({ show }: { show: boolean }) {
+  const targetMs = useMemo(() => new Date(CONTESTANT_LINK_DEADLINE_ISO).getTime(), []);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!show) return;
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [show]);
+
+  if (!show) return null;
+
+  const parts = computeCountdown(new Date(nowMs), new Date(targetMs));
+  const done = parts.months + parts.days + parts.hours + parts.minutes + parts.seconds <= 0;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+      <div className="text-sm font-extrabold text-amber-900">Countdown to deadline (Aug 11, 00:00)</div>
+      <div className="mt-1 text-sm text-amber-900/90">
+        {done ? (
+          <span className="font-semibold">Deadline reached.</span>
+        ) : (
+          <span className="font-semibold">
+            {parts.months} month{parts.months === 1 ? "" : "s"} · {parts.days} day{parts.days === 1 ? "" : "s"} ·{" "}
+            {pad2(parts.hours)}:{pad2(parts.minutes)}:{pad2(parts.seconds)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function CampaignPage() {
@@ -589,6 +692,7 @@ export default function CampaignPage() {
                   This voting page is not open yet. Please come back when voting starts (East Africa Time).
                 </p>
                 <p className="text-sm text-gray-500 mt-3">Link is valid and will work once voting opens.</p>
+                <CountdownDeadline show={!!contestantPresetId} />
               </div>
             </div>
           </div>
@@ -619,6 +723,7 @@ export default function CampaignPage() {
               <div className="min-w-0">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{campaign.title}</h1>
                 <p className="text-gray-600 mt-2">{campaign.description ?? "Complete payment to continue."}</p>
+                <CountdownDeadline show={isVote && !!contestantPresetId} />
               </div>
             </div>
 
