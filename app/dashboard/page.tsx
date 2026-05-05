@@ -23,6 +23,15 @@ import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
+type TrendingItem = {
+  rank: number;
+  contestantId: string;
+  name: string;
+  category: string;
+  votes: number;
+  imageUrl: string | null;
+};
+
 function isMissingPortalMembersTable(err: any) {
   const msg = String(err?.message ?? "");
   const code = String(err?.code ?? "");
@@ -110,6 +119,11 @@ export default function DashboardHomePage() {
   const [votingScheduleMessage, setVotingScheduleMessage] = useState<string | null>(null);
   const [allVotingCopied, setAllVotingCopied] = useState(false);
   const [allVotingPublicUrl, setAllVotingPublicUrl] = useState("");
+
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingError, setTrendingError] = useState<string | null>(null);
+  const [trendingWeekLabel, setTrendingWeekLabel] = useState<string>("");
+  const [trendingItems, setTrendingItems] = useState<TrendingItem[]>([]);
 
   const refreshInFlightRef = useRef(false);
 
@@ -379,6 +393,47 @@ export default function DashboardHomePage() {
     }
   }, [user?.id, isFullAdmin, isEmployer, isAdmin]);
 
+  const loadTrending = useCallback(async () => {
+    if (!hasFeature("voting")) return;
+    if (!isFullAdmin && !isManager) return;
+    setTrendingLoading(true);
+    setTrendingError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setTrendingError("Session expired. Please sign in again.");
+        setTrendingItems([]);
+        setTrendingWeekLabel("");
+        return;
+      }
+      const res = await fetch("/api/fusion-xpress/analytics/trending-contestants", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        week?: { label?: string };
+        items?: TrendingItem[];
+      };
+      if (!res.ok) {
+        setTrendingError(String(j?.error ?? `Failed (${res.status})`));
+        setTrendingItems([]);
+        setTrendingWeekLabel("");
+        return;
+      }
+      setTrendingWeekLabel(String(j?.week?.label ?? ""));
+      setTrendingItems(Array.isArray(j?.items) ? j.items : []);
+    } catch (e: unknown) {
+      setTrendingError(e instanceof Error ? e.message : "Failed to load trending contestants");
+      setTrendingItems([]);
+      setTrendingWeekLabel("");
+    } finally {
+      setTrendingLoading(false);
+    }
+  }, [hasFeature, isFullAdmin, isManager]);
+
   const scheduleRefresh = useCallback(() => {
     if (realtimeRefreshTimeoutRef.current) return;
     realtimeRefreshTimeoutRef.current = window.setTimeout(() => {
@@ -470,6 +525,7 @@ export default function DashboardHomePage() {
         setError(null);
         setSessionChecking(false);
         await refreshData();
+        await loadTrending();
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
         if (!cancelled) setSessionChecking(false);
@@ -480,7 +536,12 @@ export default function DashboardHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, loadTrending, router, user]);
+
+  useEffect(() => {
+    if (!lastUpdatedAt) return;
+    void loadTrending();
+  }, [lastUpdatedAt, loadTrending]);
 
   useEffect(() => {
     if (!isPortalMember || !user?.id || isEmployer) return;
@@ -549,6 +610,7 @@ export default function DashboardHomePage() {
 
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
   const showVotingCard = (isFullAdmin || isManager) && hasFeature("voting");
+  const showTrending = showVotingCard;
 
   return (
     <div className="text-left">
@@ -645,6 +707,82 @@ export default function DashboardHomePage() {
           </div>
         )}
       </div>
+
+      {showTrending && (
+        <div
+          className={`mt-6 bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] border border-slate-100 overflow-hidden ${
+            trendingLoading ? "animate-pulse opacity-[0.85]" : ""
+          }`}
+        >
+          <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="font-extrabold text-gray-900 inline-flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-700" />
+                Trending (this week)
+              </div>
+              <div className="mt-1 text-sm text-gray-600">{trendingWeekLabel || "—"}</div>
+              {trendingError && <div className="mt-2 text-sm text-red-700 whitespace-pre-wrap">{trendingError}</div>}
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadTrending()}
+              disabled={trendingLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
+              title="Refresh trending"
+            >
+              <RefreshCw className={`w-4 h-4 ${trendingLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
+
+          <div className="overflow-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr className="text-left">
+                  <th className="px-6 py-3 font-bold text-gray-600 w-16">Rank</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
+                  <th className="px-6 py-3 font-bold text-gray-600">Category</th>
+                  <th className="px-6 py-3 font-bold text-gray-600 w-32">Votes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trendingItems.length === 0 ? (
+                  <tr>
+                    <td className="px-6 py-6 text-gray-600" colSpan={4}>
+                      No votes recorded yet for this week.
+                    </td>
+                  </tr>
+                ) : (
+                  trendingItems.slice(0, 10).map((it) => (
+                    <tr key={it.contestantId} className="border-b border-gray-100">
+                      <td className="px-6 py-4 font-extrabold text-gray-900">#{it.rank}</td>
+                      <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="inline-flex w-9 h-9 rounded-full bg-gray-100 overflow-hidden items-center justify-center shrink-0">
+                            {it.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={it.imageUrl} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-xs font-bold text-gray-500">
+                                {String(it.name ?? "?")
+                                  .slice(0, 1)
+                                  .toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                          <span className="truncate">{it.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-700">{it.category}</td>
+                      <td className="px-6 py-4 text-gray-900 font-extrabold">{Number(it.votes ?? 0).toLocaleString()}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {isManager && (
         <div className="mt-6 rounded-md border border-secondary-200 bg-secondary-50 p-4 text-secondary-900">
