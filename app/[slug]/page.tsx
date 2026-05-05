@@ -154,6 +154,10 @@ function CountdownDeadline({ show }: { show: boolean }) {
   );
 }
 
+function VotingDeadlineCountdown({ isVote }: { isVote: boolean }) {
+  return <CountdownDeadline show={isVote} />;
+}
+
 export default function CampaignPage() {
   const router = useRouter();
   const routeParams = useParams<{ slug?: string | string[] }>();
@@ -687,12 +691,12 @@ export default function CampaignPage() {
                 <Vote className="w-5 h-5 text-amber-700" />
               </span>
               <div>
+                <VotingDeadlineCountdown isVote={true} />
                 <h1 className="text-2xl font-bold text-gray-900">Voting opens {votingOpensLabel}</h1>
                 <p className="text-gray-600 mt-2">
                   This voting page is not open yet. Please come back when voting starts (East Africa Time).
                 </p>
                 <p className="text-sm text-gray-500 mt-3">Link is valid and will work once voting opens.</p>
-                <CountdownDeadline show={!!contestantPresetId} />
               </div>
             </div>
           </div>
@@ -721,9 +725,9 @@ export default function CampaignPage() {
                 <Icon className="w-5 h-5 text-primary-700" />
               </span>
               <div className="min-w-0">
+                <VotingDeadlineCountdown isVote={isVote} />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{campaign.title}</h1>
                 <p className="text-gray-600 mt-2">{campaign.description ?? "Complete payment to continue."}</p>
-                <CountdownDeadline show={isVote && !!contestantPresetId} />
               </div>
             </div>
 
