@@ -36,8 +36,7 @@ type Contestant = {
 
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
 const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
-
-const CONTESTANT_LINK_DEADLINE_ISO = "2026-08-11T00:00:00+03:00";
+const VOTING_ENDS_AT_ISO = "2026-08-11T00:00:00+03:00";
 
 function formatVotingOpensInNairobi(isoMs: number): string {
   try {
@@ -121,8 +120,8 @@ function computeCountdown(now: Date, target: Date): { months: number; days: numb
   return { months, days, hours, minutes, seconds };
 }
 
-function CountdownDeadline({ show }: { show: boolean }) {
-  const targetMs = useMemo(() => new Date(CONTESTANT_LINK_DEADLINE_ISO).getTime(), []);
+function VotingEndsCountdown({ show }: { show: boolean }) {
+  const targetMs = useMemo(() => new Date(VOTING_ENDS_AT_ISO).getTime(), []);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -133,29 +132,46 @@ function CountdownDeadline({ show }: { show: boolean }) {
 
   if (!show) return null;
 
-  const parts = computeCountdown(new Date(nowMs), new Date(targetMs));
-  const done = parts.months + parts.days + parts.hours + parts.minutes + parts.seconds <= 0;
+  const t = computeCountdown(new Date(nowMs), new Date(targetMs));
+  const done = t.months + t.days + t.hours + t.minutes + t.seconds <= 0;
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
+  const items: Array<{ label: string; value: string }> = done
+    ? [
+        { label: "MONTHS", value: "00" },
+        { label: "DAYS", value: "00" },
+        { label: "HRS", value: "00" },
+        { label: "MIN", value: "00" },
+        { label: "SEC", value: "00" },
+      ]
+    : [
+        { label: "MONTHS", value: String(t.months) },
+        { label: "DAYS", value: String(t.days) },
+        { label: "HRS", value: pad2(t.hours) },
+        { label: "MIN", value: pad2(t.minutes) },
+        { label: "SEC", value: pad2(t.seconds) },
+      ];
+
   return (
-    <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-      <div className="text-sm font-extrabold text-amber-900">Countdown to deadline (Aug 11, 00:00)</div>
-      <div className="mt-1 text-sm text-amber-900/90">
-        {done ? (
-          <span className="font-semibold">Deadline reached.</span>
-        ) : (
-          <span className="font-semibold">
-            {parts.months} month{parts.months === 1 ? "" : "s"} · {parts.days} day{parts.days === 1 ? "" : "s"} ·{" "}
-            {pad2(parts.hours)}:{pad2(parts.minutes)}:{pad2(parts.seconds)}
-          </span>
-        )}
+    <div className="mb-4 rounded-2xl border border-primary-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-4 px-5 py-4 flex-wrap">
+        <div className="text-[11px] tracking-[0.24em] font-extrabold text-primary-800">
+          VOTING ENDS IN
+        </div>
+        <div className="flex items-center gap-2">
+          {items.map((it) => (
+            <div
+              key={it.label}
+              className="w-[62px] rounded-xl border border-primary-200 bg-primary-50 px-2.5 py-2 text-center"
+            >
+              <div className="text-lg font-extrabold text-gray-900 tabular-nums leading-none">{it.value}</div>
+              <div className="mt-1 text-[10px] font-bold tracking-wider text-primary-800/80">{it.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-}
-
-function VotingDeadlineCountdown({ isVote }: { isVote: boolean }) {
-  return <CountdownDeadline show={isVote} />;
 }
 
 export default function CampaignPage() {
@@ -687,11 +703,8 @@ export default function CampaignPage() {
         <div className="container-custom py-10 max-w-2xl">
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
             <div className="flex items-start gap-3">
-              <span className="inline-flex w-10 h-10 rounded-lg bg-amber-50 items-center justify-center flex-shrink-0">
-                <Vote className="w-5 h-5 text-amber-700" />
-              </span>
               <div>
-                <VotingDeadlineCountdown isVote={true} />
+                <VotingEndsCountdown show />
                 <h1 className="text-2xl font-bold text-gray-900">Voting opens {votingOpensLabel}</h1>
                 <p className="text-gray-600 mt-2">
                   This voting page is not open yet. Please come back when voting starts (East Africa Time).
@@ -721,11 +734,13 @@ export default function CampaignPage() {
               </div>
             )}
             <div className="flex items-start gap-3">
-              <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center flex-shrink-0">
-                <Icon className="w-5 h-5 text-primary-700" />
-              </span>
+              {!isVote && (
+                <span className="inline-flex w-10 h-10 rounded-lg bg-primary-50 items-center justify-center flex-shrink-0">
+                  <Icon className="w-5 h-5 text-primary-700" />
+                </span>
+              )}
               <div className="min-w-0">
-                <VotingDeadlineCountdown isVote={isVote} />
+                <VotingEndsCountdown show={isVote} />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{campaign.title}</h1>
                 <p className="text-gray-600 mt-2">{campaign.description ?? "Complete payment to continue."}</p>
               </div>
