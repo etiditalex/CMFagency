@@ -40,6 +40,39 @@ const focusCards = [
 
 const b2bBullets = ["Raise brand awareness", "Maximize impact and ROI", "Increase sales", "Generate leads"];
 
+const faqItems = [
+  {
+    question: "What digital marketing services do you offer in Mombasa?",
+    answer:
+      "Changer Fusions provides SEO, PPC advertising, social media marketing, email marketing, content strategy, analytics, and conversion rate optimization for businesses in Mombasa and across Kenya.",
+  },
+  {
+    question: "How long does it take to see results from SEO?",
+    answer:
+      "SEO is a long-term channel. Many sites start to see measurable improvements within 8–12 weeks, but meaningful growth typically builds over 3–6+ months depending on competition, website quality, and content.",
+  },
+  {
+    question: "Do you manage paid ads (PPC) budgets?",
+    answer:
+      "Yes. We plan, launch and optimize PPC campaigns. Your ad spend is separate from our management fee, and we align budgets to your goals (leads, sales, traffic) and expected cost per result.",
+  },
+  {
+    question: "Can you help with social media marketing for my business?",
+    answer:
+      "Yes. We help with social media strategy, content direction, campaign setup, targeting, reporting and optimization to grow reach and drive conversions.",
+  },
+  {
+    question: "How do you measure digital marketing performance?",
+    answer:
+      "We track key metrics based on your goal, such as leads, conversions, revenue, engagement, traffic quality, cost per lead/acquisition, and ROI. Reporting is shared regularly with clear next actions.",
+  },
+  {
+    question: "Do you work with businesses outside Mombasa?",
+    answer:
+      "Yes. We support clients across Kenya and can run campaigns nationally while tailoring strategy for specific locations and audiences.",
+  },
+];
+
 export default function DigitalMarketingPage() {
   const route = "/services/digital-marketing";
   const { loading, page } = useManagedPublicPage(route);
@@ -62,6 +95,24 @@ export default function DigitalMarketingPage() {
         }
         introContent={
           <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
+            <script
+              type="application/ld+json"
+              // Keep on-page for AI/SEO, no visual changes.
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  mainEntity: faqItems.map((f) => ({
+                    "@type": "Question",
+                    name: f.question,
+                    acceptedAnswer: {
+                      "@type": "Answer",
+                      text: f.answer,
+                    },
+                  })),
+                }),
+              }}
+            />
             <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
               Digital Marketing Services in Mombasa: Driving Growth and Success Online
             </h2>

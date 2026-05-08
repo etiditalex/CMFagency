@@ -14,6 +14,34 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 
+const faqItems = [
+  {
+    question: "Do you offer website development in Mombasa?",
+    answer:
+      "Yes. Changer Fusions builds websites for businesses in Mombasa and across Kenya, including custom websites, CMS builds, and e-commerce stores.",
+  },
+  {
+    question: "What technologies do you use to build websites?",
+    answer:
+      "We build modern, performance-focused websites using the right stack for your goals. Common options include Next.js for fast marketing sites and custom web apps, plus CMS solutions when you need easy content updates.",
+  },
+  {
+    question: "Will my website be mobile responsive and SEO-friendly?",
+    answer:
+      "Yes. We use mobile-first layouts and SEO best practices like fast loading, clean structure, and metadata so your site is easy for users and search engines to understand.",
+  },
+  {
+    question: "Can you build an e-commerce website?",
+    answer:
+      "Yes. We design and develop e-commerce websites with product catalogs, checkout flows, and integrations that fit your business needs.",
+  },
+  {
+    question: "Do you provide website maintenance and support?",
+    answer:
+      "Yes. We can provide ongoing maintenance, updates, and support to keep your website secure, reliable, and up to date.",
+  },
+];
+
 const pastWebsiteWork = [
   {
     name: "The WAK Movement",
@@ -160,6 +188,23 @@ export default function WebsiteDevelopmentPage() {
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10">
         <div className="grid grid-cols-1">
           <main>
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  mainEntity: faqItems.map((f) => ({
+                    "@type": "Question",
+                    name: f.question,
+                    acceptedAnswer: {
+                      "@type": "Answer",
+                      text: f.answer,
+                    },
+                  })),
+                }),
+              }}
+            />
             {/* Header image card */}
             <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               <div className="relative aspect-[16/7] min-h-[260px] bg-gray-900">

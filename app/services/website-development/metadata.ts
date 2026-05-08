@@ -33,7 +33,9 @@ export const metadata: Metadata = {
   },
   keywords: [
     "website development Kenya",
+    "website development Mombasa",
     "web design Kenya",
+    "web design Mombasa",
     "responsive web design",
     "Next.js development Kenya",
     "business website Kenya",

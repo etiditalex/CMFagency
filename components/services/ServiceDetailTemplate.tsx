@@ -164,7 +164,7 @@ export default function ServiceDetailTemplate({
                         <div className="relative mx-auto max-w-[980px]">
                           {/* Connection lines */}
                           <svg
-                            className="absolute inset-0 w-full h-full"
+                            className="hidden md:block absolute inset-0 w-full h-full"
                             viewBox="0 0 980 420"
                             preserveAspectRatio="none"
                             aria-hidden="true"
@@ -178,12 +178,12 @@ export default function ServiceDetailTemplate({
                           <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                             {/* Left boxes */}
                             <div className="md:col-span-4 space-y-6">
-                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                              <div className="rounded-xl bg-slate-900 px-7 py-6 text-secondary-500 font-extrabold text-2xl md:text-3xl leading-tight shadow-sm">
                                 Media
                                 <br />
                                 relations
                               </div>
-                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                              <div className="rounded-xl bg-slate-900 px-7 py-6 text-secondary-500 font-extrabold text-2xl md:text-3xl leading-tight shadow-sm">
                                 Website
                                 <br />
                                 blog
@@ -215,10 +215,10 @@ export default function ServiceDetailTemplate({
 
                             {/* Right boxes */}
                             <div className="md:col-span-4 space-y-6 md:text-right">
-                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                              <div className="rounded-xl bg-slate-900 px-7 py-6 text-secondary-500 font-extrabold text-2xl md:text-3xl leading-tight shadow-sm">
                                 Advertising
                               </div>
-                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                              <div className="rounded-xl bg-slate-900 px-7 py-6 text-secondary-500 font-extrabold text-2xl md:text-3xl leading-tight shadow-sm">
                                 Social
                                 <br />
                                 media
