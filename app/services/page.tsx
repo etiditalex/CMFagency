@@ -19,6 +19,8 @@ const services = [
     description: "Custom websites that are visually appealing and user-friendly, with web development and maintenance services.",
     href: "/services/website-development",
     features: ["Custom Web Design", "Responsive Development", "E-commerce Solutions", "Website Maintenance"],
+    backgroundImage:
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778223309/website_development_yk0lia.jpg",
   },
   {
     icon: Award,
@@ -83,33 +85,79 @@ export default function ServicesPage() {
 
                 <div className="divide-y divide-gray-200">
                   {services.map((service) => (
-                    <div key={service.href} className="p-6 md:p-8">
+                    <div key={service.href} className="relative overflow-hidden p-6 md:p-8">
+                      {service.backgroundImage ? (
+                        <>
+                          <div
+                            className="absolute inset-0 bg-cover bg-center"
+                            style={{ backgroundImage: `url(${service.backgroundImage})` }}
+                          />
+                          <div className="absolute inset-0 bg-black/55" />
+                        </>
+                      ) : null}
+
+                      <div className="relative">
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary-600/10 text-primary-700 grid place-items-center">
+                        <div
+                          className={[
+                            "flex-shrink-0 w-12 h-12 rounded-xl grid place-items-center",
+                            service.backgroundImage
+                              ? "bg-white/15 text-white backdrop-blur-sm"
+                              : "bg-primary-600/10 text-primary-700",
+                          ].join(" ")}
+                        >
                           <service.icon className="w-6 h-6" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-4 flex-wrap">
-                            <h3 className="text-xl md:text-2xl font-extrabold text-gray-900">
+                            <h3
+                              className={[
+                                "text-xl md:text-2xl font-extrabold",
+                                service.backgroundImage ? "text-white" : "text-gray-900",
+                              ].join(" ")}
+                            >
                               {service.title}
                             </h3>
                             <Link
                               href={service.href}
-                              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-900 font-semibold px-4 py-2"
+                              className={[
+                                "inline-flex items-center justify-center rounded-lg font-semibold px-4 py-2",
+                                service.backgroundImage
+                                  ? "border border-white/40 bg-white/10 text-white hover:bg-white/15 backdrop-blur-sm"
+                                  : "border border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
+                              ].join(" ")}
                             >
                               View details
                             </Link>
                           </div>
-                          <p className="mt-2 text-gray-700 leading-relaxed">{service.description}</p>
-                          <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-700">
+                          <p
+                            className={[
+                              "mt-2 leading-relaxed",
+                              service.backgroundImage ? "text-white/90" : "text-gray-700",
+                            ].join(" ")}
+                          >
+                            {service.description}
+                          </p>
+                          <ul
+                            className={[
+                              "mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2",
+                              service.backgroundImage ? "text-white/90" : "text-gray-700",
+                            ].join(" ")}
+                          >
                             {service.features.map((feature) => (
                               <li key={feature} className="flex items-start gap-3">
-                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-secondary-600 flex-shrink-0" />
+                                <span
+                                  className={[
+                                    "mt-2 h-1.5 w-1.5 rounded-full flex-shrink-0",
+                                    service.backgroundImage ? "bg-white/80" : "bg-secondary-600",
+                                  ].join(" ")}
+                                />
                                 <span>{feature}</span>
                               </li>
                             ))}
                           </ul>
                         </div>
+                      </div>
                       </div>
                     </div>
                   ))}

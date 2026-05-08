@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, ChevronRight, type LucideIcon } from "lucide-react";
@@ -19,6 +20,7 @@ type ServiceDetailTemplateProps = {
   title?: string;
   heroLabel?: string;
   description?: string;
+  introContent?: ReactNode;
   featuresTitle?: string;
   features?: string[];
   benefitsTitle?: string;
@@ -27,6 +29,8 @@ type ServiceDetailTemplateProps = {
   ctaDescription?: string;
   icon: LucideIcon;
   backgroundImageUrl?: string;
+  layout?: "withSidebar" | "fullWidth";
+  heroVariant?: "default" | "digitalMarketing";
 };
 
 export default function ServiceDetailTemplate({
@@ -34,6 +38,7 @@ export default function ServiceDetailTemplate({
   title,
   heroLabel,
   description,
+  introContent,
   featuresTitle,
   features,
   benefitsTitle,
@@ -42,6 +47,8 @@ export default function ServiceDetailTemplate({
   ctaDescription,
   icon: Icon,
   backgroundImageUrl,
+  layout = "withSidebar",
+  heroVariant = "default",
 }: ServiceDetailTemplateProps) {
   const titleText = title ?? "";
   const heroLabelText = heroLabel ?? "";
@@ -68,37 +75,52 @@ export default function ServiceDetailTemplate({
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          <aside className="lg:col-span-1">
-            <div className="bg-white border-2 border-secondary-600 rounded-lg p-6 sticky top-24">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">SERVICES</h2>
-              <nav className="space-y-2">
-                {SERVICES_NAV.map((item) => {
-                  const isActive = item.href === activeHref;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={[
-                        "block transition-colors duration-200",
-                        isActive
-                          ? "text-secondary-600 font-semibold flex items-center space-x-2"
-                          : "text-gray-700 hover:text-secondary-600 flex items-center space-x-2",
-                      ].join(" ")}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          </aside>
+        <div className={layout === "withSidebar" ? "grid grid-cols-1 lg:grid-cols-4 gap-10" : "grid grid-cols-1"}>
+          {layout === "withSidebar" ? (
+            <aside className="lg:col-span-1">
+              <div className="bg-white border-2 border-secondary-600 rounded-lg p-6 sticky top-24">
+                <h2 className="text-xl font-bold text-gray-900 mb-6">SERVICES</h2>
+                <nav className="space-y-2">
+                  {SERVICES_NAV.map((item) => {
+                    const isActive = item.href === activeHref;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={[
+                          "block transition-colors duration-200",
+                          isActive
+                            ? "text-secondary-600 font-semibold flex items-center space-x-2"
+                            : "text-gray-700 hover:text-secondary-600 flex items-center space-x-2",
+                        ].join(" ")}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+            </aside>
+          ) : null}
 
-          <main className="lg:col-span-3">
-            <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              <div className="relative aspect-[16/7] min-h-[260px] bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800">
-                {backgroundImageUrl ? (
+          <main className={layout === "withSidebar" ? "lg:col-span-3" : ""}>
+            <div
+              className={
+                heroVariant === "digitalMarketing"
+                  ? "relative left-1/2 right-1/2 -mx-[50vw] w-screen bg-white"
+                  : "relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+              }
+            >
+              <div
+                className={[
+                  "relative",
+                  heroVariant === "digitalMarketing"
+                    ? "py-10 md:py-14"
+                    : "bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800 aspect-[16/7] min-h-[260px]",
+                ].join(" ")}
+              >
+                {heroVariant === "digitalMarketing" ? null : backgroundImageUrl ? (
                   <>
                     {/* Background image uploaded by admin (stored as data URL). */}
                     <img
@@ -112,33 +134,122 @@ export default function ServiceDetailTemplate({
                 ) : (
                   <div className="absolute inset-0 bg-black/15" />
                 )}
-                <div className="absolute inset-0 flex items-end p-6 md:p-8">
-                  <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.55 }}
-                    className="max-w-3xl"
-                  >
-                    {(heroLabelText || titleText || descriptionText) && (
-                      <>
-                        {heroLabelText ? (
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center">
-                              <Icon className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-white/90 text-sm font-semibold tracking-wide">{heroLabelText}</span>
-                          </div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.55 }}
+                  className={
+                    heroVariant === "digitalMarketing"
+                      ? "w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
+                      : "absolute inset-0 flex items-end p-6 md:p-8"
+                  }
+                >
+                  {heroVariant === "digitalMarketing" ? (
+                    <div className="w-full">
+                      <div className="text-center">
+                        {titleText ? (
+                          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+                            {titleText}
+                          </h1>
                         ) : null}
-                        {titleText ? <h1 className="text-3xl md:text-4xl font-extrabold text-white">{titleText}</h1> : null}
-                        {descriptionText ? <p className="mt-3 text-white/90 leading-relaxed">{descriptionText}</p> : null}
-                      </>
+                        {descriptionText ? (
+                          <p className="mt-3 max-w-4xl mx-auto text-gray-600 leading-relaxed text-base md:text-lg">
+                            {descriptionText}
+                          </p>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-8 md:mt-10">
+                        <div className="relative mx-auto max-w-[980px]">
+                          {/* Connection lines */}
+                          <svg
+                            className="absolute inset-0 w-full h-full"
+                            viewBox="0 0 980 420"
+                            preserveAspectRatio="none"
+                            aria-hidden="true"
+                          >
+                            <line x1="250" y1="110" x2="410" y2="170" stroke="#0f172a" strokeWidth="3" />
+                            <line x1="730" y1="110" x2="570" y2="170" stroke="#0f172a" strokeWidth="3" />
+                            <line x1="250" y1="320" x2="410" y2="250" stroke="#0f172a" strokeWidth="3" />
+                            <line x1="730" y1="320" x2="570" y2="250" stroke="#0f172a" strokeWidth="3" />
+                          </svg>
+
+                          <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                            {/* Left boxes */}
+                            <div className="md:col-span-4 space-y-6">
+                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                                Media
+                                <br />
+                                relations
+                              </div>
+                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                                Website
+                                <br />
+                                blog
+                              </div>
+                            </div>
+
+                            {/* Center venn */}
+                            <div className="md:col-span-4 flex justify-center">
+                              <div className="relative h-[240px] w-[240px]">
+                                <div className="absolute left-1/2 top-[0px] -translate-x-[120px] h-[160px] w-[160px] rounded-full border-4 border-secondary-500/70 bg-white" />
+                                <div className="absolute left-1/2 top-[0px] -translate-x-[40px] h-[160px] w-[160px] rounded-full border-4 border-secondary-500/70 bg-white" />
+                                <div className="absolute left-1/2 top-[80px] -translate-x-[120px] h-[160px] w-[160px] rounded-full border-4 border-secondary-500/70 bg-white" />
+                                <div className="absolute left-1/2 top-[80px] -translate-x-[40px] h-[160px] w-[160px] rounded-full border-4 border-secondary-500/70 bg-white" />
+
+                                <div className="absolute left-1/2 top-[56px] -translate-x-[92px] text-xl font-semibold text-gray-900">
+                                  Earned
+                                </div>
+                                <div className="absolute left-1/2 top-[56px] translate-x-[12px] text-xl font-semibold text-gray-900">
+                                  Paid
+                                </div>
+                                <div className="absolute left-1/2 top-[136px] -translate-x-[92px] text-xl font-semibold text-gray-900">
+                                  Owned
+                                </div>
+                                <div className="absolute left-1/2 top-[136px] translate-x-[12px] text-xl font-semibold text-gray-900">
+                                  Shared
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right boxes */}
+                            <div className="md:col-span-4 space-y-6 md:text-right">
+                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                                Advertising
+                              </div>
+                              <div className="rounded-xl bg-slate-900 px-8 py-6 text-secondary-500 font-extrabold text-3xl leading-tight shadow-sm">
+                                Social
+                                <br />
+                                media
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                      (heroLabelText || titleText || descriptionText) && (
+                        <>
+                          {heroLabelText ? (
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <Icon className="w-6 h-6 text-white" />
+                              </div>
+                              <span className="text-white/90 text-sm font-semibold tracking-wide">{heroLabelText}</span>
+                            </div>
+                          ) : null}
+                          {titleText ? <h1 className="text-3xl md:text-4xl font-extrabold text-white">{titleText}</h1> : null}
+                          {descriptionText ? <p className="mt-3 text-white/90 leading-relaxed">{descriptionText}</p> : null}
+                        </>
+                      )
                     )}
-                  </motion.div>
-                </div>
+                </motion.div>
               </div>
             </div>
 
             <div className="mt-10 space-y-10">
+              {introContent ? introContent : null}
               {featuresArr.length > 0 ? (
                 <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
                   {featuresTitle ? (

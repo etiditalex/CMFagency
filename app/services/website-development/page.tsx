@@ -1,7 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Globe, CheckCircle, ArrowRight, ChevronRight } from "lucide-react";
+import {
+  CheckCircle,
+  ArrowRight,
+  LayoutTemplate,
+  ShoppingCart,
+  Code2,
+  Blocks,
+  Search,
+  Gauge,
+} from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -60,23 +69,72 @@ const servicesNav = [
   { label: "CONTENT CREATION", href: "/services/content-creation" },
 ];
 
-const features = [
-  "Custom Website Design",
-  "Responsive Web Development",
-  "E-commerce Solutions",
-  "Content Management Systems",
-  "Website Maintenance & Support",
-  "Performance Optimization",
-  "SEO-Friendly Development",
-  "Mobile-First Design",
+const tableOfContents = [
+  "Custom Web Development in Mombasa",
+  "Customized Website Development Services in Kenya",
+  "Web Design",
+  "eCommerce Web Design",
+  "Web Application Development",
+  "CMS Development",
+  "SEO Services",
+  "Website Speed Optimization",
+  "Here’s what you need to know about custom websites",
+  "Custom Websites FAQs",
+  "Testimonials",
+  "What Customers Say About Our Services",
 ];
 
-const benefits = [
-  "Visually appealing and user-friendly websites",
-  "Fast loading times and optimal performance",
-  "Mobile-responsive across all devices",
-  "Easy content management",
-  "Scalable solutions for business growth",
+const customizedWebsiteDevelopmentServices = [
+  "Custom eCommerce Design",
+  "Custom Website Redesign",
+  "Custom Web App Design",
+  "Custom Website End-to-End Design",
+  "Custom website design",
+  "Responsive design",
+  "E-commerce web design",
+  "UI/UX design",
+  "Landing page design",
+  "Search Engine Optimization",
+  "Website maintenance and support",
+];
+
+const webDevCards = [
+  {
+    title: "Web Design",
+    description:
+      "Get a custom web design at an affordable price. Our designs are fully responsive and optimized to work on all devices.",
+    icon: LayoutTemplate,
+  },
+  {
+    title: "eCommerce Web Design",
+    description:
+      "Our expert web developers will help you choose the correct eCommerce platform and design a store that converts.",
+    icon: ShoppingCart,
+  },
+  {
+    title: "Web Application Development",
+    description:
+      "We develop web applications that are powerful such as ecommerce portals, business portals, CMSs and custom business apps.",
+    icon: Code2,
+  },
+  {
+    title: "CMS Development",
+    description:
+      "We develop custom WordPress and headless CMS solutions so you can manage changes and updates easily without technical knowhow.",
+    icon: Blocks,
+  },
+  {
+    title: "SEO Services",
+    description:
+      "After developing a website you will want it to rank better in search engines. Our SEO services ensure your custom website is optimized for search.",
+    icon: Search,
+  },
+  {
+    title: "Website Speed Optimization",
+    description:
+      "If your website loading speed is low, we will help optimize your website to get your website loading fast on both desktop and mobile.",
+    icon: Gauge,
+  },
 ];
 
 export default function WebsiteDevelopmentPage() {
@@ -100,88 +158,19 @@ export default function WebsiteDevelopmentPage() {
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          {/* Sidebar */}
-          <aside className="lg:col-span-1">
-            <div className="bg-white border-2 border-secondary-600 rounded-lg p-6 sticky top-24">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">SERVICES</h2>
-              <nav className="space-y-2">
-                {servicesNav.map((item) => {
-                  const isActive = item.href === "/services/website-development";
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={[
-                        "block transition-colors duration-200",
-                        isActive
-                          ? "text-secondary-600 font-semibold flex items-center space-x-2"
-                          : "text-gray-700 hover:text-secondary-600 flex items-center space-x-2",
-                      ].join(" ")}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                      <span>{item.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Vision, Mission, and Core Values (consistent with About pages) */}
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">OUR VISION</h3>
-                <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To be the driving force behind businesses' success in a dynamic and ever-evolving
-                  market landscape.
-                </p>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">OUR MISSION</h3>
-                <p className="text-gray-700 text-sm leading-relaxed mb-6">
-                  To harness marketing as the catalyst for change and innovation, empowering
-                  businesses to thrive and define their existence in the marketplace.
-                </p>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">CORE VALUES</h3>
-                <ul className="space-y-3">
-                  {[
-                    {
-                      title: "Innovation",
-                      desc: "We embrace creativity, emerging trends, and modern technologies.",
-                    },
-                    {
-                      title: "Integrity",
-                      desc: "We operate with honesty, transparency, and accountability.",
-                    },
-                    {
-                      title: "Excellence",
-                      desc: "We are committed to the highest standards of quality and professionalism.",
-                    },
-                    {
-                      title: "Client-Centricity",
-                      desc: "Our clients' goals are at the center of everything we do.",
-                    },
-                    {
-                      title: "Impact & Results",
-                      desc: "We focus on outcomes and measurable impact for our clients.",
-                    },
-                  ].map((v) => (
-                    <li key={v.title} className="flex items-start space-x-2">
-                      <div className="flex-shrink-0 mt-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-secondary-600"></div>
-                      </div>
-                      <span className="text-gray-700 text-sm leading-relaxed">
-                        <strong className="text-gray-900">{v.title}:</strong> {v.desc}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main content */}
-          <main className="lg:col-span-3">
+        <div className="grid grid-cols-1">
+          <main>
             {/* Header image card */}
             <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              <div className="relative aspect-[16/7] min-h-[260px] bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800">
-                <div className="absolute inset-0 bg-black/15" />
+              <div className="relative aspect-[16/7] min-h-[260px] bg-gray-900">
+                <div
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage:
+                      "url(https://res.cloudinary.com/dyfnobo9r/image/upload/v1778223309/website_development_yk0lia.jpg)",
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/55" />
 
                 <div className="absolute inset-0 flex items-end p-6 md:p-8">
                   <motion.div
@@ -190,66 +179,106 @@ export default function WebsiteDevelopmentPage() {
                     transition={{ duration: 0.55 }}
                     className="max-w-3xl"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-11 h-11 bg-white/15 backdrop-blur-sm rounded-full flex items-center justify-center">
-                        <Globe className="w-6 h-6 text-white" />
-                      </div>
-                      <span className="text-white/90 text-sm font-semibold tracking-wide">
-                        WEB DEVELOPMENT
-                      </span>
-                    </div>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-white">
                       Website Development & Design
                     </h1>
-                    <p className="mt-3 text-white/90 leading-relaxed">
-                      Create custom websites that are visually appealing, user-friendly, and built to
-                      perform. We also offer ongoing maintenance so your website stays secure,
-                      modern, and reliable.
-                    </p>
                   </motion.div>
                 </div>
               </div>
             </div>
 
             <div className="mt-10 space-y-10">
-              {/* Features */}
+              {/* Intro + Table of Contents */}
               <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
                 <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
-                  OUR WEBSITE DEVELOPMENT SERVICES
+                  Custom Web Development in Mombasa
                 </h2>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {features.map((feature, index) => (
-                    <motion.div
-                      key={feature}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.45, delay: index * 0.03 }}
-                      className="flex items-start gap-3 rounded-lg bg-gray-50 p-4"
-                    >
-                      <CheckCircle className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-800 font-medium">{feature}</span>
-                    </motion.div>
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  We are a custom website development company in Kenya that offers bespoke website
+                  development services to our clients. We know how to develop a custom website that
+                  is impactful to your business and ready to help you achieve that.
+                </p>
+
+                <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50/40 p-5 md:p-6">
+                  <div className="text-lg font-extrabold text-gray-900">Table of Contents</div>
+                  <ol className="mt-3 space-y-1.5 text-sm text-gray-800 list-decimal pl-5">
+                    {tableOfContents.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div className="mt-6 space-y-4 text-gray-700 leading-relaxed">
+                  <p>
+                    To those who may be wondering what a custom website is and the difference from
+                    any other website, a custom website is built to the company&apos;s exact needs,
+                    preferences and designs of their choice.
+                  </p>
+                  <p>
+                    A custom website designer is usually done by experienced developers who most of
+                    the time spend a lot of time with a company team or project manager to understand
+                    whatever needs the company has that could be reflected in the website.
+                  </p>
+                  <p>
+                    We are a customer-centric custom web design agency that values communication and
+                    transparency. Our custom web design experts take every step important to them
+                    and thus keep you in the loop and update you on the progress of the project.
+                    This helps us to get feedback at every stage of development; from the initial
+                    consultation to the final delivery of your custom website. We understand the
+                    importance of deadlines and work tirelessly to ensure that we deliver your
+                    website within the agreed timeline and budget.
+                  </p>
+                </div>
+              </section>
+
+              {/* Customized services list */}
+              <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
+                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
+                  Customized Website Development Services in Kenya
+                </h2>
+
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3">
+                  {customizedWebsiteDevelopmentServices.map((item) => (
+                    <div key={item} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-700">{item}</span>
+                    </div>
                   ))}
                 </div>
               </section>
 
-              {/* Benefits */}
+              {/* Website development cards */}
               <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
-                  WHY CHOOSE OUR WEB DEVELOPMENT?
-                </h2>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {benefits.map((benefit, index) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {webDevCards.map((card, index) => (
                     <motion.div
-                      key={benefit}
-                      initial={{ opacity: 0, y: 14 }}
+                      key={card.title}
+                      initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ duration: 0.45, delay: index * 0.04 }}
-                      className="bg-gray-50 border border-gray-100 rounded-xl p-5"
+                      transition={{ duration: 0.4, delay: index * 0.04 }}
+                      className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-shadow duration-300 p-6"
                     >
-                      <p className="text-gray-700 leading-relaxed">{benefit}</p>
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-3">
+                          <card.icon className="h-7 w-7 text-gray-900" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-extrabold text-gray-900">{card.title}</h3>
+                          <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                            {card.description}
+                          </p>
+                          <div className="mt-5">
+                            <Link
+                              href="/contact"
+                              className="inline-flex items-center gap-2 text-sm font-bold text-secondary-700 hover:text-secondary-800"
+                            >
+                              <span>GET STARTED</span>
+                              <ArrowRight className="h-4 w-4" />
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -257,15 +286,10 @@ export default function WebsiteDevelopmentPage() {
 
               {/* Past Website Work */}
               <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
-                      OUR PAST WEBSITE WORK
-                    </h2>
-                    <p className="mt-2 text-gray-600">
-                      A few websites we’ve designed and developed for brands and businesses.
-                    </p>
-                  </div>
+                <div className="text-center">
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">
+                    OUR PAST WEBSITE WORK
+                  </h2>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -307,24 +331,6 @@ export default function WebsiteDevelopmentPage() {
                 </div>
               </section>
 
-              {/* CTA */}
-              <section className="p-8 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-2xl text-white">
-                <h2 className="text-2xl md:text-3xl font-extrabold mb-3">
-                  Ready to Build Your Online Presence?
-                </h2>
-                <p className="text-white/90 leading-relaxed max-w-2xl">
-                  Let&apos;s create a website that represents your brand and drives results.
-                </p>
-                <div className="mt-6">
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-2 bg-white text-primary-700 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    <span>Get Started</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </section>
             </div>
           </main>
         </div>
