@@ -9,7 +9,7 @@ import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
 const tableOfContents = [
   "Social Media Management",
   "Social Media Marketing",
-  "Enter Your Subheading",
+  "Content strategy",
   "Getting the right mix",
   "NOT SURE HOW TO START?",
   "Social Media Marketing Prices in Kenya",
@@ -156,7 +156,7 @@ export default function SocialMediaMarketingPage() {
 
             <section className="pt-4 text-left">
               <div className="text-left text-xs font-extrabold tracking-widest uppercase text-emerald-600">
-                ENTER YOUR SUBHEADING
+                CONTENT STRATEGY
               </div>
               <h2 className="text-left mt-3 text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
                 Getting The Right Mix
