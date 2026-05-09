@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin } from "lucide-react";
+import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin, Megaphone } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -12,6 +12,14 @@ const services = [
     description: "Social media marketing, email marketing, and online reputation management to reach target audiences.",
     href: "/services/digital-marketing",
     features: ["Social Media Marketing", "Email Marketing", "SEO & PPC", "Online Reputation Management"],
+  },
+  {
+    icon: Megaphone,
+    title: "Social Media Marketing",
+    description:
+      "Strategy, creative direction, paid social, and community engagement across platforms like Instagram, Facebook, and LinkedIn.",
+    href: "/services/social-media-marketing",
+    features: ["Content & calendar planning", "Paid social campaigns", "Audience targeting & reporting", "Brand voice & creatives"],
   },
   {
     icon: Globe,
@@ -69,8 +77,8 @@ export default function ServicesPage() {
                 Marketing services built to help you grow
               </h1>
               <p className="mt-4 text-gray-600 leading-relaxed max-w-3xl">
-                Explore our core services — from digital marketing and website development to branding, research, events,
-                and content creation.
+                Explore our core services — from digital marketing and social media to website development, branding,
+                research, events, and content creation.
               </p>
             </motion.div>
 

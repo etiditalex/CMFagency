@@ -28,6 +28,7 @@ export default function Footer() {
 
   const services = [
     { name: "Digital Marketing", href: "/services/digital-marketing" },
+    { name: "Social Media Marketing", href: "/services/social-media-marketing" },
     { name: "Website Development & Design", href: "/services/website-development" },
     { name: "Branding & Creative Services", href: "/services/branding" },
     { name: "Market Research & Analysis", href: "/services/market-research" },

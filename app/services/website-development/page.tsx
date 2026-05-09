@@ -90,6 +90,7 @@ const pastWebsiteWork = [
 const servicesNav = [
   { label: "ALL SERVICES", href: "/services" },
   { label: "DIGITAL MARKETING", href: "/services/digital-marketing" },
+  { label: "SOCIAL MEDIA MARKETING", href: "/services/social-media-marketing" },
   { label: "WEBSITE DEVELOPMENT", href: "/services/website-development" },
   { label: "BRANDING", href: "/services/branding" },
   { label: "MARKET RESEARCH", href: "/services/market-research" },

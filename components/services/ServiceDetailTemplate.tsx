@@ -8,6 +8,7 @@ import { ArrowRight, CheckCircle, ChevronRight, type LucideIcon } from "lucide-r
 const SERVICES_NAV = [
   { label: "ALL SERVICES", href: "/services" },
   { label: "DIGITAL MARKETING", href: "/services/digital-marketing" },
+  { label: "SOCIAL MEDIA MARKETING", href: "/services/social-media-marketing" },
   { label: "WEBSITE DEVELOPMENT", href: "/services/website-development" },
   { label: "BRANDING", href: "/services/branding" },
   { label: "MARKET RESEARCH", href: "/services/market-research" },
@@ -30,7 +31,7 @@ type ServiceDetailTemplateProps = {
   icon: LucideIcon;
   backgroundImageUrl?: string;
   layout?: "withSidebar" | "fullWidth";
-  heroVariant?: "default" | "digitalMarketing";
+  heroVariant?: "default" | "digitalMarketing" | "simple";
 };
 
 export default function ServiceDetailTemplate({
@@ -57,7 +58,7 @@ export default function ServiceDetailTemplate({
   const benefitsArr = benefits ?? [];
 
   return (
-    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
+    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50 overflow-x-hidden">
       <div className="bg-white border-b border-gray-200">
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-4">
           <div className="text-sm text-gray-600">
@@ -107,7 +108,7 @@ export default function ServiceDetailTemplate({
           <main className={layout === "withSidebar" ? "lg:col-span-3" : ""}>
             <div
               className={
-                heroVariant === "digitalMarketing"
+                heroVariant === "digitalMarketing" || heroVariant === "simple"
                   ? "relative left-1/2 right-1/2 -mx-[50vw] w-screen bg-white"
                   : "relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
               }
@@ -117,10 +118,12 @@ export default function ServiceDetailTemplate({
                   "relative",
                   heroVariant === "digitalMarketing"
                     ? "py-10 md:py-14"
+                    : heroVariant === "simple"
+                      ? "py-10 md:py-14"
                     : "bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800 aspect-[16/7] min-h-[260px]",
                 ].join(" ")}
               >
-                {heroVariant === "digitalMarketing" ? null : backgroundImageUrl ? (
+                {heroVariant === "digitalMarketing" || heroVariant === "simple" ? null : backgroundImageUrl ? (
                   <>
                     {/* Background image uploaded by admin (stored as data URL). */}
                     <img
@@ -142,6 +145,8 @@ export default function ServiceDetailTemplate({
                   className={
                     heroVariant === "digitalMarketing"
                       ? "w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
+                      : heroVariant === "simple"
+                        ? "w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
                       : "absolute inset-0 flex items-end p-6 md:p-8"
                   }
                 >
@@ -226,6 +231,25 @@ export default function ServiceDetailTemplate({
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  ) : heroVariant === "simple" ? (
+                    <div className="w-full">
+                      <div className="w-full text-left">
+                        {heroLabelText ? (
+                          <div className="text-left text-xs font-extrabold tracking-widest uppercase text-emerald-600">
+                            {heroLabelText}
+                          </div>
+                        ) : null}
+                        {titleText ? (
+                          <h1 className="text-left mt-3 text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">
+                            {titleText}
+                          </h1>
+                        ) : null}
+                        <div className="mt-5 h-1 w-12 rounded-full bg-emerald-500" />
+                        {descriptionText ? (
+                          <p className="text-left mt-8 text-gray-600 leading-relaxed max-w-4xl">{descriptionText}</p>
+                        ) : null}
                       </div>
                     </div>
                   ) : (
