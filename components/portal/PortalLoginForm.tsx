@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { KeyRound, Lock, Mail, Shield } from "lucide-react";
+import { KeyRound, Lock, Mail } from "lucide-react";
 
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import { supabase } from "@/lib/supabase";
 
 function isMissingPortalMembersTable(err: unknown) {
@@ -25,6 +27,11 @@ export type PortalLoginFormProps = {
   showEmployerBanner?: boolean;
   /** Tighter card styling when used inside the job board. */
   layout?: "standalone" | "embedded";
+  /** Where to send the user after successful 2FA verification. */
+  redirectTo?: string;
+  /** Logo above the card title (defaults to Changer Fusions brand logo). */
+  logoSrc?: string;
+  logoAlt?: string;
   className?: string;
 };
 
@@ -36,6 +43,9 @@ export function PortalLoginForm({
   initialErrorMessage = null,
   showEmployerBanner = false,
   layout = "standalone",
+  redirectTo = "/dashboard",
+  logoSrc = BRAND_LOGO_URL,
+  logoAlt = "Changer Fusions",
   className = "",
 }: PortalLoginFormProps) {
   const router = useRouter();
@@ -113,7 +123,7 @@ export function PortalLoginForm({
           const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
           const status = await statusRes.json().catch(() => ({ verified: false }));
           if (status.verified) {
-            router.replace("/dashboard");
+            router.replace(redirectTo);
           } else {
             const { data: sessionData } = await supabase.auth.getSession();
             const t = sessionData.session?.access_token;
@@ -134,7 +144,7 @@ export function PortalLoginForm({
         const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
         const status = await statusRes.json().catch(() => ({ verified: false }));
         if (status.verified) {
-          router.replace("/dashboard");
+          router.replace(redirectTo);
         } else {
           const { data: sessionData } = await supabase.auth.getSession();
           const t = sessionData.session?.access_token;
@@ -282,7 +292,7 @@ export function PortalLoginForm({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error((json as { error?: string }).error ?? "Invalid or expired code.");
-      router.replace("/dashboard");
+      router.replace(redirectTo);
     } catch (e: unknown) {
       setError((e as { message?: string })?.message ?? "Invalid or expired code.");
     } finally {
@@ -360,8 +370,15 @@ export function PortalLoginForm({
       <div className={`bg-white rounded-2xl ${cardShadow} border border-gray-100 overflow-hidden`}>
         <div className={`border-b border-gray-100 ${layout === "embedded" ? "p-5" : "p-8"}`}>
           <div className="flex items-center justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-primary-600 to-secondary-600 text-white flex items-center justify-center shadow-lg">
-              {step === "code" ? <KeyRound className="w-7 h-7" /> : <Shield className="w-7 h-7" />}
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
+              <Image
+                src={logoSrc}
+                alt={logoAlt}
+                width={56}
+                height={56}
+                className="object-contain p-1.5"
+                priority
+              />
             </div>
           </div>
           <h2

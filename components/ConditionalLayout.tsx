@@ -27,6 +27,7 @@ export default function ConditionalLayout({
   const isDashboard = pathname?.startsWith("/dashboard");
   const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
   const isFusionAdminLogin = pathname === "/fusion-xpress/admin-login";
+  const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -52,6 +53,17 @@ export default function ConditionalLayout({
 
   // KCM member portal pages have their own shell and should render without site navbar/top bar/footer.
   if (isKcmMemberPortal) {
+    return (
+      <>
+        <main className="min-h-screen">{children}</main>
+        <CookieBanner />
+        <ScrollToTopButton />
+      </>
+    );
+  }
+
+  // Teams Work portal pages should render without site chrome.
+  if (isTeamsWorkPortal) {
     return (
       <>
         <main className="min-h-screen">{children}</main>

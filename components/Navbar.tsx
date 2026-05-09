@@ -17,6 +17,7 @@ export default function Navbar() {
   const [testimonialsOpen, setTestimonialsOpen] = useState(false);
   const [eventsOpen, setEventsOpen] = useState(false);
   const [kcmOpen, setKcmOpen] = useState(false);
+  const [fusionXpressOpen, setFusionXpressOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
   const [careersNewsIndex, setCareersNewsIndex] = useState(0);
@@ -121,6 +122,11 @@ export default function Navbar() {
     { href: "/kcm", label: "KCM Membership" },
     { href: "/kcm/cfm-tickets", label: "CFM Tickets" },
     { href: "/kcm/member-portal", label: "KCM Member Portal" },
+  ];
+
+  const fusionXpressLinks = [
+    { href: "/fusion-xpress", label: "Fusion Xpress" },
+    { href: "/teams-work/portal", label: "Teams Work portal" },
   ];
 
   // Quick actions for CFMA 2026 (no images)
@@ -754,13 +760,47 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
-            {/* Fusion Xpress (Admin portal) */}
-            <Link
-              href="/fusion-xpress"
-              className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
+            <div
+              className="relative"
+              onMouseEnter={() => setFusionXpressOpen(true)}
+              onMouseLeave={() => setFusionXpressOpen(false)}
             >
-              <span>Fusion Xpress</span>
-            </Link>
+              <button
+                type="button"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={fusionXpressOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setFusionXpressOpen((p) => !p);
+                }}
+              >
+                <span>Fusion Xpress</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {fusionXpressOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {fusionXpressLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
           </div>
 
@@ -1125,13 +1165,40 @@ export default function Navbar() {
               </div>
               
               <div className="pt-4 border-t border-gray-200 space-y-3">
-                <Link
-                  href="/fusion-xpress"
-                  onClick={() => setIsOpen(false)}
-                  className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
-                >
-                  Fusion Xpress
-                </Link>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setFusionXpressOpen(!fusionXpressOpen)}
+                    className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                  >
+                    <span>Fusion Xpress</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {fusionXpressOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pl-4 space-y-2 mt-2"
+                      >
+                        {fusionXpressLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setFusionXpressOpen(false);
+                            }}
+                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
                 <Link
                   href="/track-application"
