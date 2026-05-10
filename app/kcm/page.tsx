@@ -336,7 +336,7 @@ export default function KcmPage() {
                     </div>
                     <div className="p-4 md:p-8">
                       <h3 className="text-left text-xl font-extrabold leading-tight sm:text-2xl md:text-[2.05rem]">
-                        Join Our Kenya-Coast Model Community
+                        Join Kenya-Coast Model Community
                       </h3>
                       <p className="mt-3 text-left text-sm leading-relaxed text-white/95 md:text-lg md:leading-snug">
                         Be part of Kenya-Coast models&apos; growing network, built to connect emerging
