@@ -29,6 +29,12 @@ function rowsToSheetRows(rows: Record<string, unknown>[]) {
   });
 }
 
+function omitTopModelInterest(obj: Record<string, unknown>): Record<string, unknown> {
+  const copy = { ...obj };
+  delete copy.top_model_interest;
+  return copy;
+}
+
 export async function buildSingleMemberXlsxBuffer(payload: {
   exported_at: string;
   membership: Record<string, unknown>;
@@ -40,7 +46,7 @@ export async function buildSingleMemberXlsxBuffer(payload: {
   const wb = XLSX.utils.book_new();
 
   const overviewRow = {
-    ...prefixKeys(payload.membership, "membership_"),
+    ...prefixKeys(omitTopModelInterest(payload.membership), "membership_"),
     ...(payload.profile ? prefixKeys(payload.profile, "profile_") : {}),
     exported_at: payload.exported_at,
   };
@@ -70,7 +76,6 @@ export function flattenMembershipForExcel(row: Record<string, unknown>): Record<
     experience: cellValue(row.experience),
     fashion_category: cellValue(row.fashion_category),
     fashion_category_other: cellValue(row.fashion_category_other),
-    top_model_interest: cellValue(row.top_model_interest),
     payment_amount_kes: cellValue(row.payment_amount_kes),
     payment_confirmed: cellValue(row.payment_confirmed),
     payment_status: cellValue(row.payment_status),

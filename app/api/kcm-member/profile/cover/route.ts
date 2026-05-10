@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getKcmAdminClient, getKcmMemberSession } from "@/lib/kcm-member-auth";
+import { profileCategoryOrFromFashion } from "@/lib/kcm-profile-category";
 
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -61,6 +62,17 @@ export async function POST(req: NextRequest) {
       .eq("membership_id", session.membershipId)
       .maybeSingle();
 
+    const { data: mem } = await admin
+      .from("kcm_memberships")
+      .select("fashion_category")
+      .eq("id", session.membershipId)
+      .maybeSingle();
+
+    const cat = profileCategoryOrFromFashion(
+      (existing as { profile_category?: string | null } | null)?.profile_category,
+      (mem as { fashion_category?: string | null } | null)?.fashion_category
+    );
+
     const { error: profileErr } = await admin.from("kcm_member_profiles").upsert(
       {
         membership_id: session.membershipId,
@@ -70,7 +82,7 @@ export async function POST(req: NextRequest) {
         display_name: (existing as { display_name?: string | null } | null)?.display_name ?? null,
         bio: (existing as { bio?: string | null } | null)?.bio ?? null,
         portfolio_text: (existing as { portfolio_text?: string | null } | null)?.portfolio_text ?? null,
-        profile_category: (existing as { profile_category?: string | null } | null)?.profile_category ?? "creative",
+        profile_category: cat,
         professional_title: (existing as { professional_title?: string | null } | null)?.professional_title ?? null,
         social_instagram: (existing as { social_instagram?: string | null } | null)?.social_instagram ?? null,
         social_facebook: (existing as { social_facebook?: string | null } | null)?.social_facebook ?? null,
@@ -102,6 +114,17 @@ export async function DELETE() {
       .eq("membership_id", session.membershipId)
       .maybeSingle();
 
+    const { data: memRow } = await admin
+      .from("kcm_memberships")
+      .select("fashion_category")
+      .eq("id", session.membershipId)
+      .maybeSingle();
+
+    const catDel = profileCategoryOrFromFashion(
+      (existing as { profile_category?: string | null } | null)?.profile_category,
+      (memRow as { fashion_category?: string | null } | null)?.fashion_category
+    );
+
     if (existing?.cover_url) {
       const storagePath = extractStoragePathFromPublicUrl(existing.cover_url);
       if (storagePath) {
@@ -118,7 +141,7 @@ export async function DELETE() {
         display_name: (existing as { display_name?: string | null } | null)?.display_name ?? null,
         bio: (existing as { bio?: string | null } | null)?.bio ?? null,
         portfolio_text: (existing as { portfolio_text?: string | null } | null)?.portfolio_text ?? null,
-        profile_category: (existing as { profile_category?: string | null } | null)?.profile_category ?? "creative",
+        profile_category: catDel,
         professional_title: (existing as { professional_title?: string | null } | null)?.professional_title ?? null,
         social_instagram: (existing as { social_instagram?: string | null } | null)?.social_instagram ?? null,
         social_facebook: (existing as { social_facebook?: string | null } | null)?.social_facebook ?? null,

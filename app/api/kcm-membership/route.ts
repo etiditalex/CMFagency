@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { fashionCategoryToProfileCategory } from "@/lib/kcm-profile-category";
 
 type Body = {
   membership_id?: string;
@@ -49,6 +50,65 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const { data: mem, error: memErr } = await admin
+      .from("kcm_memberships")
+      .select("email,fashion_category,fashion_category_other,first_name,second_name")
+      .eq("id", membershipId)
+      .maybeSingle();
+
+    if (!memErr && mem) {
+      const { data: existingProf } = await admin
+        .from("kcm_member_profiles")
+        .select(
+          "display_name,bio,portfolio_text,avatar_url,cover_url,professional_title,social_instagram,social_facebook,social_tiktok,social_x"
+        )
+        .eq("membership_id", membershipId)
+        .maybeSingle();
+
+      const mapped = fashionCategoryToProfileCategory(
+        (mem as { fashion_category?: string | null }).fashion_category
+      );
+
+      let professionalTitle =
+        (existingProf as { professional_title?: string | null } | null)?.professional_title ?? null;
+      const fc = String((mem as { fashion_category?: string | null }).fashion_category ?? "")
+        .trim()
+        .toLowerCase();
+      if (fc === "other") {
+        const t = String((mem as { fashion_category_other?: string | null }).fashion_category_other ?? "").trim();
+        if (t) professionalTitle = t.slice(0, 180);
+      }
+
+      const fn = String((mem as { first_name?: string | null }).first_name ?? "").trim();
+      const sn = String((mem as { second_name?: string | null }).second_name ?? "").trim();
+      const nameFromMembership = `${fn} ${sn}`.trim();
+      const displayName =
+        (existingProf as { display_name?: string | null } | null)?.display_name?.trim() ||
+        (nameFromMembership || null);
+
+      const { error: profErr } = await admin.from("kcm_member_profiles").upsert(
+        {
+          membership_id: membershipId,
+          email: String((mem as { email: string }).email),
+          profile_category: mapped,
+          professional_title: professionalTitle,
+          display_name: displayName,
+          bio: (existingProf as { bio?: string | null } | null)?.bio ?? null,
+          portfolio_text: (existingProf as { portfolio_text?: string | null } | null)?.portfolio_text ?? null,
+          avatar_url: (existingProf as { avatar_url?: string | null } | null)?.avatar_url ?? null,
+          cover_url: (existingProf as { cover_url?: string | null } | null)?.cover_url ?? null,
+          social_instagram: (existingProf as { social_instagram?: string | null } | null)?.social_instagram ?? null,
+          social_facebook: (existingProf as { social_facebook?: string | null } | null)?.social_facebook ?? null,
+          social_tiktok: (existingProf as { social_tiktok?: string | null } | null)?.social_tiktok ?? null,
+          social_x: (existingProf as { social_x?: string | null } | null)?.social_x ?? null,
+        },
+        { onConflict: "membership_id" }
+      );
+      if (profErr) {
+        return NextResponse.json({ error: profErr.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ ok: true });

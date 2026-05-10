@@ -21,6 +21,7 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
+import { labelForKcmProfileCategory, profileCategoryOrFromFashion } from "@/lib/kcm-profile-category";
 
 type PortfolioItem = {
   id: string;
@@ -42,12 +43,14 @@ type PortalState = {
     email: string;
     payment_status: string;
     status: string;
+    fashion_category?: string | null;
+    fashion_category_other?: string | null;
   };
   profile: {
     display_name: string | null;
     avatar_url: string | null;
     cover_url: string | null;
-    profile_category: "high_fashion_model" | "pageant_model" | null;
+    profile_category: string | null;
     professional_title: string | null;
     bio: string | null;
     portfolio_text: string | null;
@@ -118,6 +121,13 @@ type KcmMemberPortalPageProps = {
 export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPageProps) {
   const [checking, setChecking] = useState(true);
   const [data, setData] = useState<PortalState | null>(null);
+  const displayedCategory = useMemo(() => {
+    if (!data) return "model";
+    return profileCategoryOrFromFashion(
+      data.profile?.profile_category,
+      data.membership.fashion_category
+    );
+  }, [data]);
   const [error, setError] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
@@ -127,7 +137,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
 
   const [displayName, setDisplayName] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
-  const [profileCategory, setProfileCategory] = useState<"high_fashion_model" | "pageant_model">("high_fashion_model");
   const [professionalTitle, setProfessionalTitle] = useState("");
   const [bio, setBio] = useState("");
   const [portfolioText, setPortfolioText] = useState("");
@@ -171,7 +180,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
       setData(json);
       setDisplayName(json.profile?.display_name ?? `${json.membership.first_name} ${json.membership.second_name}`.trim());
       setCoverUrl(json.profile?.cover_url ?? null);
-      setProfileCategory(json.profile?.profile_category === "pageant_model" ? "pageant_model" : "high_fashion_model");
       setProfessionalTitle(json.profile?.professional_title ?? "");
       setBio(json.profile?.bio ?? "");
       setPortfolioText(json.profile?.portfolio_text ?? "");
@@ -302,7 +310,6 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           display_name: displayName,
-          profile_category: profileCategory,
           professional_title: professionalTitle,
           bio,
           portfolio_text: portfolioText,
@@ -526,7 +533,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   }, [data?.membership.email, displayName]);
 
   const shareProfile = async () => {
-    const title = professionalTitle || `${profileCategory === "pageant_model" ? "Pageant Model" : "High Fashion Model"} Profile`;
+    const title = professionalTitle || `${labelForKcmProfileCategory(displayedCategory)} profile`;
     const text = `${displayName || data?.membership.first_name} - ${title}`;
     const url = typeof window !== "undefined" ? window.location.href : "";
     try {
@@ -858,7 +865,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <div className="min-w-0 flex-1 self-center pb-0 sm:self-end sm:pb-1">
                         <p className="break-words text-base text-gray-700 [overflow-wrap:anywhere] sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
-                          {profileCategory === "pageant_model" ? "Pageant model" : "High Fashion model"}
+                          {labelForKcmProfileCategory(displayedCategory)}
                         </p>
                       </div>
                     </div>
@@ -996,16 +1003,12 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
-                      <select
-                        value={profileCategory}
-                        onChange={(e) =>
-                          setProfileCategory(e.target.value === "pageant_model" ? "pageant_model" : "high_fashion_model")
-                        }
-                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
-                      >
-                        <option value="high_fashion_model">High Fashion model</option>
-                        <option value="pageant_model">Pageant model</option>
-                      </select>
+                      <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
+                        {labelForKcmProfileCategory(displayedCategory)}
+                      </p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
+                        This matches the fashion category you chose on your KCM registration form.
+                      </p>
                     </div>
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Professional title</label>
@@ -1014,7 +1017,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                         value={professionalTitle}
                         onChange={(e) => setProfessionalTitle(e.target.value)}
                         className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm"
-                        placeholder={profileCategory === "pageant_model" ? "Award-winning Pageant Model" : "Runway and Editorial Model"}
+                        placeholder="Your professional headline"
                       />
                     </div>
                   </div>

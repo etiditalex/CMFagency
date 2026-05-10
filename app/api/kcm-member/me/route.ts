@@ -11,7 +11,9 @@ export async function GET() {
 
     const { data: membership, error: mErr } = await admin
       .from("kcm_memberships")
-      .select("id,first_name,second_name,contact,email,payment_status,payment_confirmed,status,created_at")
+      .select(
+        "id,first_name,second_name,contact,email,fashion_category,fashion_category_other,payment_status,payment_confirmed,status,created_at"
+      )
       .eq("id", session.membershipId)
       .maybeSingle();
     if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
