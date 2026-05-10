@@ -28,7 +28,7 @@ const faqItems = [
   {
     question: "Will my website be mobile responsive and SEO-friendly?",
     answer:
-      "Yes. We use mobile-first layouts and SEO best practices like fast loading, clean structure, and metadata so your site is easy for users and search engines to understand.",
+      "Yes. We use mobile-first layouts and SEO best practices like fast loading, clean structure, and metadata so your site is easy for users and search engines to understand. For ongoing monthly SEO retainers and local search growth in Kenya, many clients pair web builds with our dedicated SEO service.",
   },
   {
     question: "Can you build an e-commerce website?",
@@ -255,6 +255,13 @@ export default function WebsiteDevelopmentPage() {
                 </div>
 
                 <div className="mt-6 space-y-4 text-gray-700 leading-relaxed">
+                  <p>
+                    Launching a fast, structured site is only part of the journey —{" "}
+                    <Link href="/services/seo" className="font-semibold text-secondary-700 underline-offset-2 hover:underline">
+                      ongoing SEO services in Kenya
+                    </Link>{" "}
+                    help you earn qualified organic traffic after go-live.
+                  </p>
                   <p>
                     To those who may be wondering what a custom website is and the difference from
                     any other website, a custom website is built to the company&apos;s exact needs,

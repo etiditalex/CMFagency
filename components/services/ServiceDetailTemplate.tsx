@@ -8,6 +8,7 @@ import { ArrowRight, CheckCircle, ChevronRight, type LucideIcon } from "lucide-r
 const SERVICES_NAV = [
   { label: "ALL SERVICES", href: "/services" },
   { label: "DIGITAL MARKETING", href: "/services/digital-marketing" },
+  { label: "SEO", href: "/services/seo" },
   { label: "SOCIAL MEDIA MARKETING", href: "/services/social-media-marketing" },
   { label: "WEBSITE DEVELOPMENT", href: "/services/website-development" },
   { label: "BRANDING", href: "/services/branding" },
@@ -22,6 +23,8 @@ type ServiceDetailTemplateProps = {
   heroLabel?: string;
   description?: string;
   introContent?: ReactNode;
+  /** Rendered after the features grid (e.g. full-bleed mid-page CTA). */
+  afterFeaturesContent?: ReactNode;
   featuresTitle?: string;
   features?: string[];
   benefitsTitle?: string;
@@ -31,7 +34,7 @@ type ServiceDetailTemplateProps = {
   icon: LucideIcon;
   backgroundImageUrl?: string;
   layout?: "withSidebar" | "fullWidth";
-  heroVariant?: "default" | "digitalMarketing" | "simple";
+  heroVariant?: "default" | "digitalMarketing" | "simple" | "fullWidthImage";
 };
 
 export default function ServiceDetailTemplate({
@@ -40,6 +43,7 @@ export default function ServiceDetailTemplate({
   heroLabel,
   description,
   introContent,
+  afterFeaturesContent,
   featuresTitle,
   features,
   benefitsTitle,
@@ -105,11 +109,11 @@ export default function ServiceDetailTemplate({
             </aside>
           ) : null}
 
-          <main className={layout === "withSidebar" ? "lg:col-span-3" : ""}>
+          <main className={layout === "withSidebar" ? "min-w-0 lg:col-span-3" : "min-w-0"}>
             <div
               className={
-                heroVariant === "digitalMarketing" || heroVariant === "simple"
-                  ? "relative left-1/2 right-1/2 -mx-[50vw] w-screen bg-white"
+                heroVariant === "digitalMarketing" || heroVariant === "simple" || heroVariant === "fullWidthImage"
+                  ? "relative ml-[calc(50%-50vw)] w-screen max-w-[100vw] bg-white"
                   : "relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
               }
             >
@@ -120,7 +124,9 @@ export default function ServiceDetailTemplate({
                     ? "py-10 md:py-14"
                     : heroVariant === "simple"
                       ? "py-10 md:py-14"
-                    : "bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800 aspect-[16/7] min-h-[260px]",
+                      : heroVariant === "fullWidthImage"
+                        ? "aspect-[16/9] min-h-[220px] sm:aspect-[16/7] sm:min-h-[280px] md:aspect-[16/6] md:min-h-[380px] lg:min-h-[440px]"
+                        : "bg-gradient-to-br from-primary-700 via-secondary-600 to-primary-800 aspect-[16/7] min-h-[260px]",
                 ].join(" ")}
               >
                 {heroVariant === "digitalMarketing" || heroVariant === "simple" ? null : backgroundImageUrl ? (
@@ -132,7 +138,7 @@ export default function ServiceDetailTemplate({
                       className="absolute inset-0 w-full h-full object-cover object-center"
                       loading="eager"
                     />
-                    <div className="absolute inset-0 bg-black/40" />
+                    <div className={heroVariant === "fullWidthImage" ? "absolute inset-0 bg-black/60" : "absolute inset-0 bg-black/40"} />
                   </>
                 ) : (
                   <div className="absolute inset-0 bg-black/15" />
@@ -147,7 +153,9 @@ export default function ServiceDetailTemplate({
                       ? "w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
                       : heroVariant === "simple"
                         ? "w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
-                      : "absolute inset-0 flex items-end p-6 md:p-8"
+                        : heroVariant === "fullWidthImage"
+                          ? "absolute inset-0 flex items-center justify-center px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"
+                          : "absolute inset-0 flex items-end p-6 md:p-8"
                   }
                 >
                   {heroVariant === "digitalMarketing" ? (
@@ -252,6 +260,24 @@ export default function ServiceDetailTemplate({
                         ) : null}
                       </div>
                     </div>
+                  ) : heroVariant === "fullWidthImage" ? (
+                    <div className="w-full max-w-5xl px-1 text-center sm:px-2">
+                      {heroLabelText ? (
+                        <div className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-extrabold tracking-widest text-white uppercase backdrop-blur-sm">
+                          {heroLabelText}
+                        </div>
+                      ) : null}
+                      {titleText ? (
+                        <h1 className="mt-4 text-balance text-3xl font-extrabold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl">
+                          {titleText}
+                        </h1>
+                      ) : null}
+                      {descriptionText ? (
+                        <p className="mt-4 text-base text-white/90 leading-relaxed md:text-lg">
+                          {descriptionText}
+                        </p>
+                      ) : null}
+                    </div>
                   ) : (
                       (heroLabelText || titleText || descriptionText) && (
                         <>
@@ -296,6 +322,8 @@ export default function ServiceDetailTemplate({
                   </div>
                 </section>
               ) : null}
+
+              {afterFeaturesContent ? afterFeaturesContent : null}
 
               {benefitsArr.length > 0 ? (
                 <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">

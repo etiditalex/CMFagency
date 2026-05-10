@@ -98,6 +98,7 @@ export default function Navbar() {
   const servicesLinks = [
     { href: "/services", label: "All Services" },
     { href: "/services/digital-marketing", label: "Digital Marketing" },
+    { href: "/services/seo", label: "SEO" },
     { href: "/services/social-media-marketing", label: "Social Media Marketing" },
     { href: "/services/website-development", label: "Website Development" },
     { href: "/services/branding", label: "Branding & Creative" },

@@ -9,7 +9,7 @@ import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
 const tableOfContents = [
   "Social Media Management",
   "Social Media Marketing",
-  "Content strategy",
+  "Enter Your Subheading",
   "Getting the right mix",
   "NOT SURE HOW TO START?",
   "Social Media Marketing Prices in Kenya",
@@ -143,6 +143,16 @@ export default function SocialMediaMarketingPage() {
                 for businesses, and maintaining platforms while generating enquiries can take a huge amount of time.
                 We help you stay consistent, creative, and strategic while you focus on running your business.
               </p>
+              <p className="mt-5">
+                Combine social campaigns with{" "}
+                <Link
+                  href="/services/seo"
+                  className="font-semibold text-emerald-700 underline-offset-2 hover:underline"
+                >
+                  professional SEO in Kenya
+                </Link>{" "}
+                so people discover you on Google as well as on social feeds.
+              </p>
 
               <div className="mt-6 font-semibold text-gray-900">Our social media marketing services include:</div>
               <ul className="mt-3 list-disc pl-6 space-y-2 text-gray-700">
@@ -156,7 +166,7 @@ export default function SocialMediaMarketingPage() {
 
             <section className="pt-4 text-left">
               <div className="text-left text-xs font-extrabold tracking-widest uppercase text-emerald-600">
-                CONTENT STRATEGY
+                ENTER YOUR SUBHEADING
               </div>
               <h2 className="text-left mt-3 text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
                 Getting The Right Mix

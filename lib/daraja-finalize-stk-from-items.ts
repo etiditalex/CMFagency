@@ -5,6 +5,8 @@ import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owne
 import { sendReceiptEmail } from "@/lib/send-receipt-email";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
+import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
+import { sendServiceInvoicePaidEmail } from "@/lib/send-service-invoice-email";
 
 export type CallbackMetadataItem = { Name: string; Value: string | number };
 
@@ -101,6 +103,39 @@ export async function finalizeDarajaStkFromMetadataItems(
       metadata: updatedMeta,
     } as Record<string, unknown>)
     .eq("id", tx.id);
+
+  if (updatedMeta.service_invoice_id) {
+    const invId = String(updatedMeta.service_invoice_id);
+    const mark = await markServiceInvoicePaid(supabase, invId, tx.id);
+    if (!mark.ok) {
+      console.error(`${logPrefix} service invoice mark failed:`, mark.error);
+    }
+    await supabase
+      .from("transactions")
+      .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+      .eq("id", tx.id)
+      .is("fulfilled_at", null);
+
+    const toEmail = tx.email?.trim?.();
+    if (toEmail) {
+      const { data: invRow } = await supabase
+        .from("service_invoices")
+        .select("invoice_number,package_title,amount_kes,customer_name")
+        .eq("id", invId)
+        .maybeSingle();
+      const ir = invRow as { invoice_number?: number; package_title?: string; amount_kes?: number; customer_name?: string } | null;
+      const label = ir?.invoice_number != null ? `CF-${new Date().getFullYear()}-${String(ir.invoice_number).padStart(6, "0")}` : invId.slice(0, 8);
+      void sendServiceInvoicePaidEmail({
+        to: toEmail,
+        customerName: ir?.customer_name ?? tx.payer_name?.trim?.() ?? toEmail,
+        invoiceLabel: label,
+        packageTitle: ir?.package_title ?? "Service package",
+        amountKes: Number(ir?.amount_kes ?? tx.amount ?? 0),
+        reference: String(tx.reference),
+      }).catch((err) => console.warn(`${logPrefix} service invoice paid email:`, err instanceof Error ? err.message : err));
+    }
+    return "completed";
+  }
 
   if (isLipaPolePoleMetadata(updatedMeta)) {
     const lipa = await applyLipaPolePolePaymentSuccess({

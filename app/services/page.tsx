@@ -1,11 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin, Megaphone } from "lucide-react";
+import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin, Megaphone, Search } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
 const services = [
+  {
+    icon: Search,
+    title: "SEO",
+    description: "Search engine optimization to improve rankings, grow qualified traffic, and increase conversions.",
+    href: "/services/seo",
+    features: ["Technical SEO", "On-page SEO", "Local SEO", "Content SEO"],
+  },
   {
     icon: TrendingUp,
     title: "Digital Marketing",

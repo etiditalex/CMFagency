@@ -25,7 +25,13 @@ export function normalizeInstallmentEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export function isLipaPolePoleMetadata(meta: unknown): meta is Record<string, unknown> {
+/** Lipa Pole Pole checkout metadata on `transactions.metadata`. */
+export type LipaPolePoleMetadata = Record<string, unknown> & {
+  lipa_pole_pole: true;
+  lipa_pole_pole_plan_id: string;
+};
+
+export function isLipaPolePoleMetadata(meta: unknown): meta is LipaPolePoleMetadata {
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) return false;
   const m = meta as Record<string, unknown>;
   return m.lipa_pole_pole === true && typeof m.lipa_pole_pole_plan_id === "string";

@@ -23,20 +23,26 @@ const focusCards = [
     description:
       "One of the most effective digital marketing strategies out there, search engine optimization (SEO) works to improve your website’s rankings in search engine ranking pages (SERPs), so that your site earns more traffic.",
     icon: Search,
+    ctaHref: "/services/seo",
+    ctaLabel: "View SEO services in Kenya",
   },
   {
     title: "PPC Services",
     description:
       "We’ll advertise your business online through Pay Per Click marketing, ensuring adverts are publicized in the right places, at the right times and to the right people, in order to effectively raise brand awareness and generate leads.",
     icon: MousePointerClick,
+    ctaHref: "/contact",
+    ctaLabel: "GET STARTED",
   },
   {
     title: "Social Media Marketing",
     description:
       "Social media marketing/advertising is an offshoot of digital marketing in which you pay social media platforms like Facebook, Instagram, or Twitter to display your content to targeted audiences.",
     icon: Megaphone,
+    ctaHref: "/services/social-media-marketing",
+    ctaLabel: "Explore social media marketing",
   },
-];
+] as const;
 
 const b2bBullets = ["Raise brand awareness", "Maximize impact and ROI", "Increase sales", "Generate leads"];
 
@@ -189,10 +195,10 @@ export default function DigitalMarketingPage() {
                         <p className="mt-3 text-sm text-gray-600 leading-relaxed">{card.description}</p>
                         <div className="mt-6">
                           <Link
-                            href="/contact"
-                            className="inline-flex items-center gap-2 text-sm font-extrabold text-secondary-700 hover:text-secondary-800"
+                            href={card.ctaHref}
+                            className="inline-flex min-h-11 touch-manipulation items-center gap-2 text-sm font-extrabold text-secondary-700 hover:text-secondary-800"
                           >
-                            <span>GET STARTED</span>
+                            <span>{card.ctaLabel}</span>
                             <span aria-hidden="true">→</span>
                           </Link>
                         </div>

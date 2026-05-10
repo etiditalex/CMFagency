@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyLipaPolePolePaymentSuccess, isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
+import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
 
 /** Row shape needed to record Paystack success + fulfill (votes/tickets). */
 export type PaystackFulfillmentRow = {
@@ -102,6 +103,21 @@ export async function finalizePaystackTransactionSuccess(
       .from("transactions")
       .update({ metadata: mergedMeta } as Record<string, unknown>)
       .eq("id", tx.id);
+    if (!tx.fulfilled_at) {
+      await supabase
+        .from("transactions")
+        .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+        .eq("id", tx.id)
+        .is("fulfilled_at", null);
+    }
+    return { fulfillErr: null };
+  }
+
+  if (metaForSuccess.service_invoice_id) {
+    const paid = await markServiceInvoicePaid(supabase, String(metaForSuccess.service_invoice_id), tx.id);
+    if (!paid.ok) {
+      console.error("[finalizePaystack] service invoice mark failed:", paid.error);
+    }
     if (!tx.fulfilled_at) {
       await supabase
         .from("transactions")

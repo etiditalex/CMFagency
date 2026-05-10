@@ -8,6 +8,7 @@ import { sendReceiptEmail } from "@/lib/send-receipt-email";
 import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
 import { isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
+import { sendServiceInvoicePaidEmail } from "@/lib/send-service-invoice-email";
 
 export const dynamic = "force-dynamic";
 
@@ -152,6 +153,33 @@ export async function POST(req: Request) {
         });
       } catch (e) {
         console.warn("[paystack/webhook] Lipa Pole Pole email error:", e instanceof Error ? e.message : e);
+      }
+      return new Response("ok", { status: 200 });
+    }
+
+    if (metaFresh.service_invoice_id) {
+      const invId = String(metaFresh.service_invoice_id);
+      const { data: invRow } = await supabase
+        .from("service_invoices")
+        .select("invoice_number,package_title,amount_kes,customer_name")
+        .eq("id", invId)
+        .maybeSingle();
+      const ir = invRow as { invoice_number?: number; package_title?: string; amount_kes?: number; customer_name?: string } | null;
+      const label =
+        ir?.invoice_number != null
+          ? `CF-${new Date().getFullYear()}-${String(ir.invoice_number).padStart(6, "0")}`
+          : invId.slice(0, 8);
+      try {
+        await sendServiceInvoicePaidEmail({
+          to: toEmail,
+          customerName: ir?.customer_name ?? (tx as { payer_name?: string | null }).payer_name?.trim?.() ?? toEmail,
+          invoiceLabel: label,
+          packageTitle: ir?.package_title ?? "Service package",
+          amountKes: Number(ir?.amount_kes ?? tx.amount ?? 0),
+          reference: String(tx.reference),
+        });
+      } catch (e) {
+        console.warn("[paystack/webhook] service invoice email:", e instanceof Error ? e.message : e);
       }
       return new Response("ok", { status: 200 });
     }
