@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { getSeoPackageById } from "@/lib/service-packages-catalog";
+import { getServicePackageById } from "@/lib/service-packages-catalog";
 import { sendServiceInvoiceCreatedEmail } from "@/lib/send-service-invoice-email";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Valid customer_email is required" }, { status: 400 });
     }
 
-    const pkg = getSeoPackageById(packageId);
+    const pkg = getServicePackageById(packageId);
     if (!pkg) return NextResponse.json({ error: "Unknown package_id" }, { status: 400 });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

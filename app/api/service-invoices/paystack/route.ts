@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { getSeoPackageById } from "@/lib/service-packages-catalog";
+import { getServicePackageById } from "@/lib/service-packages-catalog";
 import { ensureSeoServiceCampaign } from "@/lib/ensure-service-seo-campaigns";
 
 export const dynamic = "force-dynamic";
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This invoice is already paid." }, { status: 400 });
     }
 
-    const pkg = getSeoPackageById(inv.package_slug);
+    const pkg = getServicePackageById(inv.package_slug);
     if (!pkg || pkg.amountKes !== inv.amount_kes) {
       return NextResponse.json({ error: "Invoice package mismatch" }, { status: 400 });
     }
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Could not resolve SEO billing campaign. Ensure an admin exists and database migrations are applied.",
+            "Could not resolve billing campaign. Ensure an admin exists and database migrations are applied.",
         },
         { status: 500 }
       );

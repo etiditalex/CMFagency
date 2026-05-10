@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SEO_SERVICE_PACKAGES } from "@/lib/service-packages-catalog";
+import { ALL_SERVICE_PACKAGES } from "@/lib/service-packages-catalog";
 import type { CampaignRow } from "@/lib/ensure-cfma-campaigns";
 
 async function resolveAdminUserId(supabaseAdmin: SupabaseClient): Promise<string | null> {
@@ -20,14 +20,14 @@ async function resolveAdminUserId(supabaseAdmin: SupabaseClient): Promise<string
 }
 
 /**
- * Ensures ticket campaigns exist for SEO monthly packages (used by transactions + Paystack).
+ * Ensures ticket campaigns exist for service-package billing (SEO, social media, …).
  */
 export async function ensureSeoServiceCampaign(
   supabaseAdmin: SupabaseClient,
   campaignSlug: string
 ): Promise<CampaignRow | null> {
   const slugNorm = campaignSlug.trim().toLowerCase();
-  const tier = SEO_SERVICE_PACKAGES.find((p) => p.campaignSlug === slugNorm);
+  const tier = ALL_SERVICE_PACKAGES.find((p) => p.campaignSlug === slugNorm);
   if (!tier) return null;
 
   const { data: existing } = await supabaseAdmin

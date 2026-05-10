@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Megaphone, PhoneCall } from "lucide-react";
 import ServiceDetailTemplate from "@/components/services/ServiceDetailTemplate";
 import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
+import SeoPackageCheckoutModal from "@/components/service-invoices/SeoPackageCheckoutModal";
+import { SOCIAL_MEDIA_SERVICE_PACKAGES } from "@/lib/service-packages-catalog";
 
 const tableOfContents = [
   "Social Media Management",
@@ -28,6 +31,7 @@ const tableOfContents = [
 
 const packages = [
   {
+    id: "smm-basic",
     name: "Basic",
     tagline: "For individuals managing a small business’ social media on their own",
     price: "20,000",
@@ -42,6 +46,7 @@ const packages = [
     ],
   },
   {
+    id: "smm-standard",
     name: "Standard",
     tagline: "For teams that want to source UGC, track competitors, or create shoppable posts",
     price: "35,000",
@@ -58,6 +63,7 @@ const packages = [
     ],
   },
   {
+    id: "smm-enterprise",
     name: "Enterprise",
     tagline: "For large companies and agencies that need more accounts, support, or features",
     price: "55,000",
@@ -110,10 +116,13 @@ export default function SocialMediaMarketingPage() {
   const { loading, page } = useManagedPublicPage(route);
   const isManaged = !!page;
 
+  const [checkoutPkg, setCheckoutPkg] = useState<{ id: string; title: string; amountKes: number } | null>(null);
+
   return (
     loading && !page ? (
       <div className="pt-28 min-h-screen bg-gray-50" />
     ) : (
+      <>
       <ServiceDetailTemplate
         activeHref={route}
         title={isManaged ? page?.title ?? "" : "Social Media Marketing"}
@@ -227,31 +236,55 @@ export default function SocialMediaMarketingPage() {
 
             <section className="pt-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {packages.map((pkg) => (
-                  <div key={pkg.name} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden h-full">
-                    <div className="p-6 md:p-7 flex flex-col h-full">
-                      <div className="text-lg font-extrabold text-gray-900">{pkg.name}</div>
-                      <p className="mt-2 text-sm text-gray-600 leading-relaxed">{pkg.tagline}</p>
+                {packages.map((pkg) => {
+                  const catalog = SOCIAL_MEDIA_SERVICE_PACKAGES.find((p) => p.packageId === pkg.id);
+                  return (
+                    <div
+                      key={pkg.id}
+                      id={pkg.id}
+                      className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+                    >
+                      <div className="flex h-full flex-col p-6 md:p-7">
+                        <div className="text-lg font-extrabold text-gray-900">{pkg.name}</div>
+                        <p className="mt-2 text-sm leading-relaxed text-gray-600">{pkg.tagline}</p>
 
-                      <div className="mt-7 flex items-end gap-2">
-                        <div className="text-4xl md:text-5xl font-extrabold text-emerald-500 leading-none">
-                          {pkg.price}
+                        <div className="mt-7 flex items-end gap-2">
+                          <div className="text-4xl font-extrabold leading-none text-emerald-500 md:text-5xl">
+                            {pkg.price}
+                          </div>
+                          <div className="pb-1 text-sm font-bold text-emerald-600">Ksh</div>
+                          <div className="pb-1 text-xs font-semibold text-gray-500">{pkg.cadence}</div>
                         </div>
-                        <div className="pb-1 text-sm font-bold text-emerald-600">Ksh</div>
-                        <div className="pb-1 text-xs font-semibold text-gray-500">{pkg.cadence}</div>
-                      </div>
 
-                      <ul className="mt-7 divide-y divide-gray-100">
-                        {pkg.items.map((item) => (
-                          <li key={item} className="flex items-start gap-3 py-3 text-sm text-gray-700">
-                            <span className="mt-1.5 text-emerald-600 font-extrabold">✓</span>
-                            <span className="leading-relaxed">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                        <ul className="mt-7 flex flex-1 flex-col divide-y divide-gray-100">
+                          {pkg.items.map((item) => (
+                            <li key={item} className="flex items-start gap-3 py-3 text-sm text-gray-700">
+                              <span className="mt-1.5 font-extrabold text-emerald-600">✓</span>
+                              <span className="leading-relaxed">{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        {catalog ? (
+                          <div className="mt-8 border-t border-gray-100 pt-6">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCheckoutPkg({
+                                  id: catalog.packageId,
+                                  title: catalog.title,
+                                  amountKes: catalog.amountKes,
+                                })
+                              }
+                              className="inline-flex min-h-[44px] w-full touch-manipulation items-center justify-center rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-emerald-700"
+                            >
+                              Checkout &amp; invoice
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -294,6 +327,14 @@ export default function SocialMediaMarketingPage() {
         backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
         icon={Megaphone}
       />
+      <SeoPackageCheckoutModal
+        open={checkoutPkg !== null}
+        onClose={() => setCheckoutPkg(null)}
+        packageId={checkoutPkg?.id ?? ""}
+        packageTitle={checkoutPkg?.title ?? ""}
+        amountKes={checkoutPkg?.amountKes ?? 0}
+      />
+      </>
     )
   );
 }

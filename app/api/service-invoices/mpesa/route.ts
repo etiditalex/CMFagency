@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { getSeoPackageById } from "@/lib/service-packages-catalog";
+import { getServicePackageById } from "@/lib/service-packages-catalog";
 import { ensureSeoServiceCampaign } from "@/lib/ensure-service-seo-campaigns";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This invoice is already paid." }, { status: 400 });
     }
 
-    const pkg = getSeoPackageById(inv.package_slug);
+    const pkg = getServicePackageById(inv.package_slug);
     if (!pkg || pkg.amountKes !== inv.amount_kes) {
       return NextResponse.json({ error: "Invoice package mismatch" }, { status: 400 });
     }
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
       PhoneNumber: phone,
       CallBackURL: callbackUrl,
       AccountReference: reference.slice(0, 12),
-      TransactionDesc: `SEO ${pkg.title}`.slice(0, 20),
+      TransactionDesc: `${pkg.title}`.slice(0, 20),
     };
 
     const stkRes = await fetch(stkPushUrl, {
