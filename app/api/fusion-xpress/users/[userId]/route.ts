@@ -14,6 +14,7 @@ const ALLOWED_FEATURES = [
   "applications",
   "kcm_membership",
   "teams_work",
+  "kcm_payouts_inflow",
 ] as const;
 
 type Body = {

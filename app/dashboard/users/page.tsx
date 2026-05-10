@@ -36,6 +36,7 @@ const FEATURES: { key: string; label: string; icon: typeof Wallet }[] = [
   { key: "managers", label: "Managers", icon: UserCog },
   { key: "email", label: "Email", icon: MessagesSquare },
   { key: "kcm_membership", label: "KCM membership", icon: Crown },
+  { key: "kcm_payouts_inflow", label: "KCM inflow in payouts", icon: Wallet },
   { key: "teams_work", label: "Teams Work", icon: ClipboardCheck },
 ];
 
@@ -413,7 +414,10 @@ export default function DashboardUsersPage() {
                     const allOn = v === "pro" || v === "enterprise";
                     setFeatures((prev) =>
                       Object.fromEntries(
-                        FEATURES.map((f) => [f.key, f.key === "kcm_membership" || f.key === "teams_work" ? false : allOn])
+                        FEATURES.map((f) => [
+                          f.key,
+                          f.key === "kcm_membership" || f.key === "kcm_payouts_inflow" || f.key === "teams_work" ? false : allOn,
+                        ])
                       )
                     );
                   }}

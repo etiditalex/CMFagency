@@ -33,6 +33,8 @@ export async function GET(req: Request) {
 
   try {
     const isAdminScope = legacyAdmin || portal?.role === "admin";
+    const includeKcmInflow =
+      Array.isArray(portal?.features) && (portal?.features ?? []).map((f) => String(f).toLowerCase()).includes("kcm_payouts_inflow");
     // Admins: all visible campaigns via RLS. Others: own campaigns only.
     const campaignsQuery = supabase.from("campaigns").select("id").order("created_at", { ascending: false });
     const { data: campaigns, error: cErr } = isAdminScope
@@ -41,11 +43,32 @@ export async function GET(req: Request) {
     if (cErr) throw cErr;
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
+    // Optional: add KCM registration inflow into the M-Pesa totals (per-user feature flag).
+    let kcmPaidKes = 0;
+    if (includeKcmInflow) {
+      const { data: membershipRows, error: kmErr } = await supabase
+        .from("kcm_memberships")
+        .select("payment_status,payment_confirmed,payment_amount_kes");
+      if (kmErr) throw kmErr;
+      for (const row of (membershipRows ?? []) as Array<{
+        payment_status?: string | null;
+        payment_confirmed?: boolean | null;
+        payment_amount_kes?: number | null;
+      }>) {
+        const paid =
+          String(row.payment_status ?? "").toLowerCase() === "success" || !!row.payment_confirmed;
+        if (!paid) continue;
+        const amt = Number(row.payment_amount_kes ?? 0);
+        if (!Number.isFinite(amt) || amt <= 0) continue;
+        kcmPaidKes += amt;
+      }
+    }
+
     if (campaignIds.length === 0) {
       return NextResponse.json({
-        mpesa: 0,
+        mpesa: kcmPaidKes,
         paystack: 0,
-        mpesaAvailable: 0,
+        mpesaAvailable: kcmPaidKes,
         mpesaPendingApproval: 0,
         mpesaInTransit: 0,
         mpesaPaidOut: 0,
@@ -77,6 +100,7 @@ export async function GET(req: Request) {
       if (isMpesa(t.provider)) mpesa += amt;
       else paystack += amt;
     }
+    mpesa += kcmPaidKes;
 
     // Pending M-Pesa withdrawals (reduce available) - use supabase (RLS allows own rows)
     const { data: withdrawals } = await supabase
