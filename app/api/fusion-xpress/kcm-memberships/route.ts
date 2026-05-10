@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     let query = admin
       .from("kcm_memberships")
       .select(
-        "id,first_name,second_name,contact,email,experience,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,status,review_notes,created_at,updated_at",
+        "id,first_name,second_name,contact,email,experience,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })
@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
         social_facebook: string | null;
         social_tiktok: string | null;
         social_x: string | null;
+        updated_at: string | null;
       }
     > = {};
     let portfolioItemCountMap: Record<string, number> = {};
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
       const { data: profiles } = await admin
         .from("kcm_member_profiles")
         .select(
-          "membership_id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x"
+          "membership_id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x,updated_at"
         )
         .in("membership_id", ids);
       for (const p of (profiles ?? []) as Array<{
@@ -75,6 +76,7 @@ export async function GET(req: NextRequest) {
         social_facebook: string | null;
         social_tiktok: string | null;
         social_x: string | null;
+        updated_at: string | null;
       }>) {
         profileMap[String(p.membership_id)] = {
           display_name: p.display_name ?? null,
@@ -88,6 +90,7 @@ export async function GET(req: NextRequest) {
           social_facebook: p.social_facebook ?? null,
           social_tiktok: p.social_tiktok ?? null,
           social_x: p.social_x ?? null,
+          updated_at: p.updated_at ?? null,
         };
       }
 
@@ -160,6 +163,7 @@ export async function GET(req: NextRequest) {
                 social_facebook: null,
                 social_tiktok: null,
                 social_x: null,
+                updated_at: null,
                 portfolio_item_count: itemCount,
               }
             : null,

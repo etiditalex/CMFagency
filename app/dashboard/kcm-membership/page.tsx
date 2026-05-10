@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ type Membership = {
   payment_confirmed: boolean;
   payment_status: "pending" | "success" | "failed";
   mpesa_receipt: string | null;
+  paid_at?: string | null;
   account_status?: "active" | "inactive";
   profile_completed?: boolean;
   profile?: {
@@ -38,6 +39,7 @@ type Membership = {
     social_tiktok?: string | null;
     social_x?: string | null;
     portfolio_item_count?: number;
+    updated_at?: string | null;
   } | null;
   contributions?: {
     total_contributions_kes: number;
@@ -61,6 +63,8 @@ export default function DashboardKcmMembershipPage() {
   const [rows, setRows] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
 
@@ -174,6 +178,65 @@ export default function DashboardKcmMembershipPage() {
     void loadRegistrationFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, isManager, user?.id, router]);
+
+  const downloadMembership = async (id: string, fileSafeName: string) => {
+    setDownloadingId(id);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+
+      const res = await fetch(`/api/fusion-xpress/kcm-memberships/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not export membership data.");
+
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kcm-member-${fileSafeName.replace(/[^\w\-]+/g, "_")}-${id.slice(0, 8)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Export failed.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const deleteMembership = async (id: string, displayLabel: string) => {
+    const ok = window.confirm(
+      `Permanently delete ${displayLabel}? This removes their membership record, portal profile, portfolio uploads metadata, wallet history, and sessions. This cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingId(id);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+
+      const res = await fetch(`/api/fusion-xpress/kcm-memberships/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to delete membership.");
+      setRows((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to delete membership.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const updateStatus = async (id: string, status: MembershipStatus, reviewNotes: string) => {
     setSavingId(id);
@@ -331,18 +394,19 @@ export default function DashboardKcmMembershipPage() {
               <th className="px-4 py-3 font-bold text-gray-600">Payment / Contributions</th>
               <th className="px-4 py-3 font-bold text-gray-600">Status</th>
               <th className="px-4 py-3 font-bold text-gray-600">Review notes</th>
+              <th className="px-4 py-3 font-bold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                   Loading memberships...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                   No KCM membership submissions yet.
                 </td>
               </tr>
@@ -353,6 +417,17 @@ export default function DashboardKcmMembershipPage() {
                   row={row}
                   disabled={savingId === row.id}
                   onSave={(status, reviewNotes) => updateStatus(row.id, status, reviewNotes)}
+                  onDownload={() =>
+                    void downloadMembership(
+                      row.id,
+                      `${row.first_name}-${row.second_name}`.trim() || row.email
+                    )
+                  }
+                  onDelete={() =>
+                    void deleteMembership(row.id, `${row.first_name} ${row.second_name}`.trim() || row.email)
+                  }
+                  downloadBusy={downloadingId === row.id}
+                  deleteBusy={deletingId === row.id}
                 />
               ))
             )}
@@ -363,14 +438,40 @@ export default function DashboardKcmMembershipPage() {
   );
 }
 
+function socialLink(label: string, value: string | null | undefined) {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const isUrl = /^https?:\/\//i.test(raw);
+  return (
+    <div className="flex flex-wrap gap-x-1 text-[10px]">
+      <span className="font-semibold text-gray-600">{label}:</span>
+      {isUrl ? (
+        <a href={raw} target="_blank" rel="noopener noreferrer" className="break-all text-secondary-700 underline">
+          {raw}
+        </a>
+      ) : (
+        <span className="break-all text-gray-700">{raw}</span>
+      )}
+    </div>
+  );
+}
+
 function Row({
   row,
   disabled,
   onSave,
+  onDownload,
+  onDelete,
+  downloadBusy,
+  deleteBusy,
 }: {
   row: Membership;
   disabled: boolean;
   onSave: (status: MembershipStatus, reviewNotes: string) => void;
+  onDownload: () => void;
+  onDelete: () => void;
+  downloadBusy: boolean;
+  deleteBusy: boolean;
 }) {
   const [status, setStatus] = useState<MembershipStatus>(row.status);
   const [reviewNotes, setReviewNotes] = useState(row.review_notes ?? "");
@@ -392,37 +493,69 @@ function Row({
           {row.account_status ?? "inactive"}
         </div>
       </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
-            {row.profile?.avatar_url ? (
-              <Image src={row.profile.avatar_url} alt={`${row.first_name} avatar`} fill className="object-cover" />
-            ) : null}
+      <td className="max-w-md px-4 py-3">
+        <div className="flex gap-2">
+          <div className="flex shrink-0 flex-col gap-1">
+            <div className="relative h-12 w-12 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
+              {row.profile?.avatar_url ? (
+                <Image src={row.profile.avatar_url} alt={`${row.first_name} avatar`} fill className="object-cover" />
+              ) : null}
+            </div>
+            <div className="relative h-10 w-24 overflow-hidden rounded border border-gray-200 bg-gray-100">
+              {row.profile?.cover_url ? (
+                <Image src={row.profile.cover_url} alt="" fill className="object-cover" sizes="96px" />
+              ) : (
+                <span className="flex h-full items-center justify-center text-[9px] text-gray-400">No cover</span>
+              )}
+            </div>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1 space-y-1.5">
             <div className="truncate text-xs font-semibold text-gray-700">
               {row.profile?.display_name || "No display name"}
             </div>
             <div className="text-[11px] text-gray-500">
               {row.profile_completed ? "Profile set up" : "Profile pending"}
+              {row.profile?.updated_at ? (
+                <span className="block text-[10px] text-gray-400">
+                  Portal profile updated: {new Date(row.profile.updated_at).toLocaleString()}
+                </span>
+              ) : null}
             </div>
             {row.profile?.profile_category ? (
-              <div className="mt-1 text-[10px] uppercase tracking-wide text-secondary-700">
+              <div className="text-[10px] uppercase tracking-wide text-secondary-700">
                 {String(row.profile.profile_category).replace(/_/g, " ")}
               </div>
             ) : null}
             {row.profile?.professional_title ? (
-              <div className="mt-0.5 line-clamp-2 text-[10px] text-gray-500">{row.profile.professional_title}</div>
+              <div className="line-clamp-2 text-[10px] text-gray-600">{row.profile.professional_title}</div>
             ) : null}
-            {(row.profile?.portfolio_item_count ?? 0) > 0 || row.profile?.portfolio_text?.trim() ? (
-              <div className="mt-1 text-[10px] leading-snug text-gray-500">
-                {(row.profile?.portfolio_item_count ?? 0) > 0 ? (
-                  <span>{row.profile?.portfolio_item_count} portfolio file(s)</span>
-                ) : null}
-                {(row.profile?.portfolio_item_count ?? 0) > 0 && row.profile?.portfolio_text?.trim() ? " · " : null}
-                {row.profile?.portfolio_text?.trim() ? <span>Written portfolio</span> : null}
+            {row.profile?.bio?.trim() ? (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-600">Bio</div>
+                <p className="max-h-28 overflow-y-auto whitespace-pre-wrap text-[10px] leading-snug text-gray-700">
+                  {row.profile.bio}
+                </p>
               </div>
             ) : null}
+            {row.profile?.portfolio_text?.trim() ? (
+              <div>
+                <div className="text-[10px] font-semibold text-gray-600">Written portfolio</div>
+                <p className="max-h-24 overflow-y-auto whitespace-pre-wrap text-[10px] leading-snug text-gray-700">
+                  {row.profile.portfolio_text}
+                </p>
+              </div>
+            ) : null}
+            {(row.profile?.portfolio_item_count ?? 0) > 0 ? (
+              <div className="text-[10px] text-gray-600">
+                {row.profile?.portfolio_item_count} portfolio file(s) — full URLs in JSON export
+              </div>
+            ) : null}
+            <div className="space-y-0.5 border-t border-gray-100 pt-1">
+              {socialLink("Instagram", row.profile?.social_instagram)}
+              {socialLink("Facebook", row.profile?.social_facebook)}
+              {socialLink("TikTok", row.profile?.social_tiktok)}
+              {socialLink("X", row.profile?.social_x)}
+            </div>
           </div>
         </div>
       </td>
@@ -434,6 +567,9 @@ function Row({
       <td className="px-4 py-3 text-gray-700">
         <div>{row.payment_confirmed ? `KES ${Number(row.payment_amount_kes ?? 0).toLocaleString()}` : "Not confirmed"}</div>
         <div className="text-xs text-gray-500">Status: {row.payment_status}</div>
+        {row.paid_at ? (
+          <div className="text-xs text-gray-500">Paid at: {new Date(row.paid_at).toLocaleString()}</div>
+        ) : null}
         {row.mpesa_receipt ? <div className="text-xs text-gray-400">Receipt: {row.mpesa_receipt}</div> : null}
         <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-[11px]">
           <div className="font-semibold text-gray-700">
@@ -481,6 +617,28 @@ function Row({
         >
           {disabled ? "Saving..." : "Save"}
         </button>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onDownload}
+            disabled={downloadBusy || deleteBusy}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {downloadBusy ? "Downloading…" : "Download JSON"}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={downloadBusy || deleteBusy}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleteBusy ? "Deleting…" : "Delete"}
+          </button>
+        </div>
       </td>
     </tr>
   );

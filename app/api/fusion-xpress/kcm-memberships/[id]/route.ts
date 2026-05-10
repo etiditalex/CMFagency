@@ -1,5 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+
+async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
+  const { data: membership, error: memErr } = await admin
+    .from("kcm_memberships")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (memErr || !membership) return null;
+
+  const { data: profile } = await admin.from("kcm_member_profiles").select("*").eq("membership_id", id).maybeSingle();
+
+  const { data: portfolio_items } = await admin
+    .from("kcm_member_portfolio_items")
+    .select("*")
+    .eq("membership_id", id)
+    .order("sort_order", { ascending: true });
+
+  const { data: wallet_transactions } = await admin
+    .from("kcm_member_wallet_transactions")
+    .select("*")
+    .eq("membership_id", id)
+    .order("created_at", { ascending: false });
+
+  return {
+    exported_at: new Date().toISOString(),
+    membership,
+    profile: profile ?? null,
+    portfolio_items: portfolio_items ?? [],
+    wallet_transactions: wallet_transactions ?? [],
+  };
+}
+
+export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAdminOrManager(_req);
+    if ("error" in auth) return auth.error;
+    const { admin } = auth;
+
+    const { id } = await ctx.params;
+    if (!id) return NextResponse.json({ error: "Missing membership id." }, { status: 400 });
+
+    const payload = await loadKcmMembershipExport(admin, id);
+    if (!payload) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+
+    return NextResponse.json(payload);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Unexpected error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireAdminOrManager(_req);
+    if ("error" in auth) return auth.error;
+    const { admin } = auth;
+
+    const { id } = await ctx.params;
+    if (!id) return NextResponse.json({ error: "Missing membership id." }, { status: 400 });
+
+    const { data: existing } = await admin.from("kcm_memberships").select("id").eq("id", id).maybeSingle();
+    if (!existing) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+
+    const { error } = await admin.from("kcm_memberships").delete().eq("id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ ok: true, deleted_id: id });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Unexpected error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
 
 type Body = {
   status?: "new" | "in_review" | "approved" | "rejected";
@@ -34,7 +108,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       })
       .eq("id", id)
       .select(
-        "id,first_name,second_name,contact,email,experience,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,status,review_notes,created_at,updated_at"
+        "id,first_name,second_name,contact,email,experience,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at"
       )
       .maybeSingle();
 
@@ -44,7 +118,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     const { data: profile } = await admin
       .from("kcm_member_profiles")
       .select(
-        "display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x"
+        "display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x,updated_at"
       )
       .eq("membership_id", id)
       .maybeSingle();
@@ -67,6 +141,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       social_facebook?: string | null;
       social_tiktok?: string | null;
       social_x?: string | null;
+      updated_at?: string | null;
     } | null;
 
     const { data: walletRows } = await admin
@@ -112,6 +187,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
             social_facebook: profRow?.social_facebook ?? null,
             social_tiktok: profRow?.social_tiktok ?? null,
             social_x: profRow?.social_x ?? null,
+            updated_at: profRow?.updated_at ?? null,
             portfolio_item_count: n,
           }
         : null;

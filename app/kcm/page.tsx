@@ -198,7 +198,7 @@ export default function KcmPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary-950/95 via-primary-900/82 via-45% to-primary-900/18" />
         <div className="absolute inset-y-0 left-0 w-[56%] bg-gradient-to-r from-primary-950/88 to-transparent md:w-[52%]" />
-        <div className="absolute inset-0 flex items-center">
+        <div className="absolute inset-0 flex items-center pb-16 md:pb-20">
           <div className="container-custom w-full">
             <div className="max-w-3xl text-white">
               <h1 className="max-w-2xl text-left text-2xl font-extrabold leading-[1.08] tracking-tight sm:text-3xl md:text-5xl">
@@ -210,6 +210,23 @@ export default function KcmPage() {
                 providing a centralized space for registration and membership.
               </p>
             </div>
+          </div>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 z-10 pb-5 pt-2 md:pb-8 md:pt-4">
+          <div className="container-custom flex flex-wrap items-center justify-start gap-3">
+            <button
+              type="button"
+              onClick={() => setIsRegisterModalOpen(true)}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50"
+            >
+              Become a Member
+            </button>
+            <Link
+              href="/kcm/member-portal"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-white/80 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
+            >
+              Sign in
+            </Link>
           </div>
         </div>
       </section>
