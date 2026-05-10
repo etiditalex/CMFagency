@@ -59,7 +59,7 @@ const STATUS_OPTIONS: MembershipStatus[] = ["new", "in_review", "approved", "rej
 export default function DashboardKcmMembershipPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isManager } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, isManager, hasFeature } = usePortal();
 
   const [rows, setRows] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,14 +172,14 @@ export default function DashboardKcmMembershipPage() {
       router.replace("/fusion-xpress");
       return;
     }
-    if (!isAdmin && !isManager) {
+    if (!hasFeature("kcm_membership")) {
       router.replace("/dashboard");
       return;
     }
     void load("");
-    void loadRegistrationFee();
+    if (isAdmin || isManager) void loadRegistrationFee();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, isManager, user?.id, router]);
+  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, hasFeature, isAdmin, isManager, user?.id, router]);
 
   const parseExportError = async (res: Response) => {
     const text = await res.text();
@@ -331,7 +331,7 @@ export default function DashboardKcmMembershipPage() {
     );
   }
 
-  if (!isAuthenticated || !user || !isPortalMember || (!isAdmin && !isManager)) return null;
+  if (!isAuthenticated || !user || !isPortalMember || !hasFeature("kcm_membership")) return null;
 
   return (
     <div className="text-left">
@@ -399,6 +399,7 @@ export default function DashboardKcmMembershipPage() {
         </div>
       </div>
 
+      {(isAdmin || isManager) ? (
       <div className="mt-6 rounded-lg border border-primary-200 bg-primary-50/90 p-4 md:p-5">
         <h3 className="text-sm font-bold text-primary-950">KCM registration fee</h3>
         <p className="mt-1 text-xs text-primary-900">
@@ -438,6 +439,7 @@ export default function DashboardKcmMembershipPage() {
           </p>
         ) : null}
       </div>
+      ) : null}
 
       {error && <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 

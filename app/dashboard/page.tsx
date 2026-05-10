@@ -258,7 +258,7 @@ export default function DashboardHomePage() {
       // When client has no campaigns, return empty (don't run unfiltered queries).
       const hasCampaigns = campaignIds.length > 0;
       const kcmSummaryPromise =
-        isAdmin
+        hasFeature("kcm_membership")
           ? (async () => {
               const {
                 data: { session },
@@ -366,7 +366,7 @@ export default function DashboardHomePage() {
         setTotalTicketsIssued(ticketUnits);
       }
 
-      if (isAdmin) {
+      if (hasFeature("kcm_membership")) {
         const kcmSummary = resolvedKcmSummary ?? (await kcmSummaryPromise);
         if (kcmSummary) {
           setKcmMembershipPaidKes(Number(kcmSummary.totalMembershipPaidKes ?? 0) || 0);
@@ -391,7 +391,7 @@ export default function DashboardHomePage() {
       setDataLoading(false);
       refreshInFlightRef.current = false;
     }
-  }, [user?.id, isFullAdmin, isEmployer, isAdmin]);
+  }, [user?.id, isFullAdmin, isEmployer, isAdmin, hasFeature]);
 
   const loadTrending = useCallback(async () => {
     if (!hasFeature("voting")) return;
@@ -998,7 +998,7 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        {isAdmin && (
+        {hasFeature("kcm_membership") && (
           <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
             <div className="flex items-center justify-end">
               <Link

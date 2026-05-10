@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
 
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireFusionKcmMembershipAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId } = auth;
-
-    const { data: memberRow } = await admin.from("portal_members").select("role").eq("user_id", userId).maybeSingle();
-    const isPortalAdmin = memberRow?.role === "admin";
-    const isLegacyAdmin = !memberRow
-      ? (await admin.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle()).data != null
-      : false;
-    if (!isPortalAdmin && !isLegacyAdmin) {
-      return NextResponse.json({ error: "Forbidden: admin access required" }, { status: 403 });
-    }
+    const { admin } = auth;
 
     const { data: memberships, error: mErr } = await admin
       .from("kcm_memberships")

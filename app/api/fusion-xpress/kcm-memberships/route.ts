@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { buildAllMembersXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
 
 export async function GET(req: NextRequest) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireFusionKcmMembershipAccess(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 

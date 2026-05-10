@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   BadgePercent,
   BarChart3,
+  Crown,
   KeyRound,
   MessagesSquare,
   Pencil,
@@ -33,6 +34,7 @@ const FEATURES: { key: string; label: string; icon: typeof Wallet }[] = [
   { key: "coupons", label: "Coupons", icon: BadgePercent },
   { key: "managers", label: "Managers", icon: UserCog },
   { key: "email", label: "Email", icon: MessagesSquare },
+  { key: "kcm_membership", label: "KCM membership", icon: Crown },
 ];
 
 function isMissingAdminUsersTable(err: any) {
@@ -408,7 +410,9 @@ export default function DashboardUsersPage() {
                     setTier(v);
                     const allOn = v === "pro" || v === "enterprise";
                     setFeatures((prev) =>
-                      Object.fromEntries(FEATURES.map((f) => [f.key, allOn]))
+                      Object.fromEntries(
+                        FEATURES.map((f) => [f.key, f.key === "kcm_membership" ? false : allOn])
+                      )
                     );
                   }}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"

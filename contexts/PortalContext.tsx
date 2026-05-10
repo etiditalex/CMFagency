@@ -19,7 +19,26 @@ type PortalFeature =
   | "voting"
   | "reports"
   | "events"
-  | "applications";
+  | "applications"
+  | "kcm_membership";
+
+/** All assignable dashboard features (stored on portal_members.features). */
+const ALL_PORTAL_FEATURES: PortalFeature[] = [
+  "payouts",
+  "coupons",
+  "managers",
+  "email",
+  "create_campaign",
+  "ticketing",
+  "voting",
+  "reports",
+  "events",
+  "applications",
+  "kcm_membership",
+];
+
+/** Pro/Enterprise tier defaults: everything except KCM (assigned explicitly per user). */
+const TIER_DEFAULT_FEATURES: PortalFeature[] = ALL_PORTAL_FEATURES.filter((k) => k !== "kcm_membership");
 
 type PortalContextValue = {
   loading: boolean;
@@ -118,7 +137,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
             setIsPortalMember(true);
             setRole("admin");
             setTier("enterprise");
-            setFeatures(["payouts", "coupons", "managers", "email", "create_campaign", "ticketing", "voting", "reports", "events", "applications"]);
+            setFeatures([...ALL_PORTAL_FEATURES]);
           } else {
             setIsPortalMember(false);
             setRole(null);
@@ -154,7 +173,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
           setIsPortalMember(true);
           setRole("admin");
           setTier("enterprise");
-          setFeatures(["payouts", "coupons", "managers", "email", "applications"]);
+          setFeatures([...ALL_PORTAL_FEATURES]);
           return;
         }
 
@@ -169,24 +188,12 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       const t = String((memberRow as any).tier ?? "basic").toLowerCase();
       const validTier = ["basic", "pro", "enterprise"].includes(t) ? (t as PortalTier) : "basic";
       const rawFeatures = (memberRow as any).features;
-      const allFeatureKeys = [
-        "payouts",
-        "coupons",
-        "managers",
-        "email",
-        "create_campaign",
-        "ticketing",
-        "voting",
-        "reports",
-        "events",
-        "applications",
-      ] as const;
       const fs: PortalFeature[] = Array.isArray(rawFeatures)
-        ? rawFeatures.filter((f: string) => allFeatureKeys.includes(f as PortalFeature))
+        ? rawFeatures.filter((f: string) => ALL_PORTAL_FEATURES.includes(f as PortalFeature))
         : [];
-      // Backward compat: if features column missing/empty, derive from tier (pro/enterprise = all)
+      // Backward compat: if features column missing/empty, derive from tier (pro/enterprise = all except KCM)
       const derivedFeatures: PortalFeature[] =
-        fs.length > 0 ? fs : validTier === "pro" || validTier === "enterprise" ? [...allFeatureKeys] : [];
+        fs.length > 0 ? fs : validTier === "pro" || validTier === "enterprise" ? [...TIER_DEFAULT_FEATURES] : [];
       setIsPortalMember(true);
       if (r === "employer") {
         setRole("employer");
@@ -195,11 +202,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       } else {
         setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
         setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);
-        setFeatures(
-          r === "admin" || r === "manager"
-            ? ([...allFeatureKeys] as PortalFeature[])
-            : derivedFeatures
-        );
+        setFeatures(r === "admin" || r === "manager" ? [...ALL_PORTAL_FEATURES] : derivedFeatures);
       }
     } finally {
       setLoading(false);

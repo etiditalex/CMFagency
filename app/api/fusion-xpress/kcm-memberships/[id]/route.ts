@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildSingleMemberXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
-import { requireAdminOrManager } from "@/lib/fusion-require-admin";
+import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
 
 async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
   const { data: membership, error: memErr } = await admin
@@ -37,7 +37,7 @@ async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireFusionKcmMembershipAccess(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
 
 export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdminOrManager(_req);
+    const auth = await requireFusionKcmMembershipAccess(_req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
@@ -104,7 +104,7 @@ const ALLOWED_STATUSES = new Set(["new", "in_review", "approved", "rejected"]);
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdminOrManager(req);
+    const auth = await requireFusionKcmMembershipAccess(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
