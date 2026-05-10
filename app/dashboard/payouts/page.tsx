@@ -320,8 +320,11 @@ export default function DashboardPayoutsPage() {
             <div className="mt-4 bg-white rounded-md shadow-sm p-6 border border-primary-200">
               <div className="flex items-center gap-2 text-primary-800 font-extrabold">
                 <Wallet className="w-5 h-5" />
-                KCM membership summary
+                KCM membership collections (separate)
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                This is shown for reporting only. It does not change your M-Pesa wallet totals above.
+              </p>
               <div className="mt-2 text-sm text-gray-700">
                 Membership paid: <span className="font-semibold">KES {formatKes(kcmSummary.totalMembershipPaidKes)}</span>
                 <span className="text-gray-500"> · </span>
