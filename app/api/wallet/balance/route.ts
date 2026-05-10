@@ -23,6 +23,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: authResult.error }, { status: authResult.status });
   }
   const { userId, portal, legacyAdmin } = authResult.auth;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
 
   const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
     global: (() => {
@@ -44,10 +45,15 @@ export async function GET(req: Request) {
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
     // Optional: add KCM registration + contributions inflow into the M-Pesa totals (per-user feature flag).
+    // NOTE: KCM tables have restrictive RLS; use service role when available.
     let kcmPaidKes = 0;
     let kcmContributionKes = 0;
     if (includeKcmInflow) {
-      const { data: membershipRows, error: kmErr } = await supabase
+      const kcmClient = serviceKey
+        ? createClient(env.supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+        : supabase;
+
+      const { data: membershipRows, error: kmErr } = await kcmClient
         .from("kcm_memberships")
         .select("payment_status,payment_confirmed,payment_amount_kes");
       if (kmErr) throw kmErr;
@@ -64,7 +70,7 @@ export async function GET(req: Request) {
         kcmPaidKes += amt;
       }
 
-      const { data: contribRows, error: kcErr } = await supabase
+      const { data: contribRows, error: kcErr } = await kcmClient
         .from("kcm_member_wallet_transactions")
         .select("amount_kes,status");
       if (kcErr) throw kcErr;
