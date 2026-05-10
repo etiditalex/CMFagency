@@ -219,7 +219,7 @@ export default function KcmPage() {
             <div className="overflow-hidden rounded-xl border border-white/25 bg-white/10">
               <div className="relative aspect-[16/9] w-full">
                 <Image
-                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776152776/kcm_c4wxka.jpg"
+                  src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1778397713/coast_fashion_models_x5mw8q.jpg"
                   alt="Kenya Coast Models community"
                   fill
                   className="object-cover object-center"
