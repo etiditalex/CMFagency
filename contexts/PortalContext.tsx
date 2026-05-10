@@ -20,7 +20,8 @@ type PortalFeature =
   | "reports"
   | "events"
   | "applications"
-  | "kcm_membership";
+  | "kcm_membership"
+  | "teams_work";
 
 /** All assignable dashboard features (stored on portal_members.features). */
 const ALL_PORTAL_FEATURES: PortalFeature[] = [
@@ -35,10 +36,13 @@ const ALL_PORTAL_FEATURES: PortalFeature[] = [
   "events",
   "applications",
   "kcm_membership",
+  "teams_work",
 ];
 
-/** Pro/Enterprise tier defaults: everything except KCM (assigned explicitly per user). */
-const TIER_DEFAULT_FEATURES: PortalFeature[] = ALL_PORTAL_FEATURES.filter((k) => k !== "kcm_membership");
+/** Pro/Enterprise tier defaults: everything except special gated modules (assigned explicitly per user). */
+const TIER_DEFAULT_FEATURES: PortalFeature[] = ALL_PORTAL_FEATURES.filter(
+  (k) => k !== "kcm_membership" && k !== "teams_work"
+);
 
 type PortalContextValue = {
   loading: boolean;

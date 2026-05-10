@@ -50,6 +50,11 @@ export default function DashboardPayoutsPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [kcmSummary, setKcmSummary] = useState<{
+    totalMembershipPaidKes: number;
+    membershipPaidCount: number;
+    totalContributionKes: number;
+  } | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user?.id) return;
@@ -63,9 +68,12 @@ export default function DashboardPayoutsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [balRes, wdRes] = await Promise.all([
+      const [balRes, wdRes, kcmRes] = await Promise.all([
         fetch("/api/wallet/balance", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/wallet/withdrawals", { headers: { Authorization: `Bearer ${token}` } }),
+        hasFeature("kcm_membership")
+          ? fetch("/api/fusion-xpress/kcm-memberships/summary", { headers: { Authorization: `Bearer ${token}` } })
+          : Promise.resolve(null),
       ]);
 
       const balJson = (await balRes.json()) as Balance & { error?: string };
@@ -84,12 +92,31 @@ export default function DashboardPayoutsPage() {
         scope: balJson.scope ?? "owned_campaigns",
       });
       setWithdrawals(wdJson.withdrawals ?? []);
+
+      if (kcmRes) {
+        const kj = (await kcmRes.json().catch(() => ({}))) as {
+          totalMembershipPaidKes?: number;
+          membershipPaidCount?: number;
+          totalContributionKes?: number;
+        };
+        if (kcmRes.ok) {
+          setKcmSummary({
+            totalMembershipPaidKes: Number(kj.totalMembershipPaidKes ?? 0) || 0,
+            membershipPaidCount: Number(kj.membershipPaidCount ?? 0) || 0,
+            totalContributionKes: Number(kj.totalContributionKes ?? 0) || 0,
+          });
+        } else {
+          setKcmSummary(null);
+        }
+      } else {
+        setKcmSummary(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, hasFeature]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -288,6 +315,23 @@ export default function DashboardPayoutsPage() {
               </div>
             </div>
           </div>
+
+          {hasFeature("kcm_membership") && kcmSummary ? (
+            <div className="mt-4 bg-white rounded-md shadow-sm p-6 border border-primary-200">
+              <div className="flex items-center gap-2 text-primary-800 font-extrabold">
+                <Wallet className="w-5 h-5" />
+                KCM membership summary
+              </div>
+              <div className="mt-2 text-sm text-gray-700">
+                Membership paid: <span className="font-semibold">KES {formatKes(kcmSummary.totalMembershipPaidKes)}</span>
+                <span className="text-gray-500"> · </span>
+                Paid members: <span className="font-semibold">{kcmSummary.membershipPaidCount.toLocaleString()}</span>
+              </div>
+              <div className="mt-1 text-sm text-gray-700">
+                Contributions: <span className="font-semibold">KES {formatKes(kcmSummary.totalContributionKes)}</span>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
             <h3 className="font-extrabold text-gray-900">M-Pesa Wallet</h3>

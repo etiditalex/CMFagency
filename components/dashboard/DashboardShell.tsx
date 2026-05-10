@@ -64,7 +64,8 @@ type NavItem = {
     | "voting"
     | "reports"
     | "events"
-    | "kcm_membership";
+    | "kcm_membership"
+    | "teams_work";
   /** Show if user has any of these features (for All Campaigns). */
   featureKeysAny?: ("ticketing" | "voting")[];
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
@@ -90,7 +91,7 @@ const NAV: NavItem[] = [
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
   { label: "Contestants", href: "/dashboard/contestants", icon: UserPlus, section: "main", featureKey: "voting" },
-  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "main" },
+  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "main", featureKey: "teams_work" },
   { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "main", featureKey: "kcm_membership" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
   { label: "Logs", href: "/dashboard/logs", icon: Activity, section: "main", adminOnly: true },

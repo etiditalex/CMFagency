@@ -60,7 +60,7 @@ function todayYmd() {
 export default function DashboardTeamsWorkPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isEmployer } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, isEmployer, hasFeature } = usePortal();
 
   const [tab, setTab] = useState<"me" | "admin">("me");
 
@@ -87,13 +87,17 @@ export default function DashboardTeamsWorkPage() {
       router.replace("/fusion-xpress");
       return;
     }
+    if (!hasFeature("teams_work")) {
+      router.replace("/dashboard");
+      return;
+    }
     if (isEmployer) {
       setError("Employers do not have access to Teams Work.");
       setLoading(false);
       return;
     }
     setLoading(false);
-  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isEmployer, router, user]);
+  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isEmployer, hasFeature, router, user]);
 
   useEffect(() => {
     if (!canUseAdminTab && tab === "admin") setTab("me");
