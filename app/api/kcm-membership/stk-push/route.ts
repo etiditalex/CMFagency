@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getKcmRegistrationFeeKes } from "@/lib/kcm-registration-fee";
 
+const FASHION_CATEGORIES = new Set(["model", "event_organizer", "designer", "other"]);
+
 type Body = {
   first_name?: string;
   second_name?: string;
   contact?: string;
   email?: string;
   experience?: string;
+  fashion_category?: string;
+  fashion_category_other?: string;
 };
 
 function normalizeKenyaPhone(raw: string): string {
@@ -64,10 +68,24 @@ export async function POST(req: NextRequest) {
     const contactRaw = String(body.contact ?? "").trim();
     const email = String(body.email ?? "").trim().toLowerCase();
     const experience = String(body.experience ?? "").trim();
+    const fashionCategory = String(body.fashion_category ?? "").trim().toLowerCase();
+    const fashionOtherRaw = String(body.fashion_category_other ?? "").trim();
     const phone = normalizeKenyaPhone(contactRaw);
 
     if (!firstName || !secondName || !contactRaw || !email || !experience) {
       return NextResponse.json({ error: "Please fill in all required fields first." }, { status: 400 });
+    }
+    if (!FASHION_CATEGORIES.has(fashionCategory)) {
+      return NextResponse.json({ error: "Please select a fashion category." }, { status: 400 });
+    }
+    if (fashionCategory === "other" && !fashionOtherRaw) {
+      return NextResponse.json(
+        { error: "Please describe your category when you select Other." },
+        { status: 400 }
+      );
+    }
+    if (fashionOtherRaw.length > 500) {
+      return NextResponse.json({ error: "Category description is too long (max 500 characters)." }, { status: 400 });
     }
     if (!isValidKeMsisdn(phone)) {
       return NextResponse.json(
@@ -133,6 +151,8 @@ export async function POST(req: NextRequest) {
         contact: contactRaw,
         email,
         experience,
+        fashion_category: fashionCategory,
+        fashion_category_other: fashionCategory === "other" ? fashionOtherRaw : null,
         top_model_interest: false,
         payment_amount_kes: amountKes,
         payment_confirmed: false,

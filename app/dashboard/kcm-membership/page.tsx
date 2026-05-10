@@ -18,6 +18,8 @@ type Membership = {
   contact: string;
   email: string;
   experience: string;
+  fashion_category?: string | null;
+  fashion_category_other?: string | null;
   top_model_interest: boolean;
   payment_amount_kes: number;
   payment_confirmed: boolean;
@@ -447,6 +449,7 @@ export default function DashboardKcmMembershipPage() {
               <th className="px-4 py-3 font-bold text-gray-600">Name</th>
               <th className="px-4 py-3 font-bold text-gray-600">Profile</th>
               <th className="px-4 py-3 font-bold text-gray-600">Contact</th>
+              <th className="px-4 py-3 font-bold text-gray-600">Fashion category</th>
               <th className="px-4 py-3 font-bold text-gray-600">Experience</th>
               <th className="px-4 py-3 font-bold text-gray-600">Top model</th>
               <th className="px-4 py-3 font-bold text-gray-600">Payment / Contributions</th>
@@ -458,13 +461,13 @@ export default function DashboardKcmMembershipPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                   Loading memberships...
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                   No KCM membership submissions yet.
                 </td>
               </tr>
@@ -494,6 +497,15 @@ export default function DashboardKcmMembershipPage() {
       </div>
     </div>
   );
+}
+
+function registrationFashionCategoryLabel(row: Membership): string {
+  const c = row.fashion_category?.trim();
+  if (!c) return "—";
+  if (c === "other" && row.fashion_category_other?.trim()) {
+    return `Other: ${row.fashion_category_other.trim()}`;
+  }
+  return c.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
 function socialLink(label: string, value: string | null | undefined) {
@@ -618,6 +630,9 @@ function Row({
         </div>
       </td>
       <td className="px-4 py-3 text-gray-700">{row.contact}</td>
+      <td className="max-w-[10rem] px-4 py-3 text-xs text-gray-700">
+        {registrationFashionCategoryLabel(row)}
+      </td>
       <td className="max-w-xs px-4 py-3 text-gray-700">
         <p className="line-clamp-4">{row.experience}</p>
       </td>

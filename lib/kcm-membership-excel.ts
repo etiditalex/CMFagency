@@ -68,6 +68,8 @@ export function flattenMembershipForExcel(row: Record<string, unknown>): Record<
     contact: cellValue(row.contact),
     email: cellValue(row.email),
     experience: cellValue(row.experience),
+    fashion_category: cellValue(row.fashion_category),
+    fashion_category_other: cellValue(row.fashion_category_other),
     top_model_interest: cellValue(row.top_model_interest),
     payment_amount_kes: cellValue(row.payment_amount_kes),
     payment_confirmed: cellValue(row.payment_confirmed),

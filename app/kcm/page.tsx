@@ -7,11 +7,15 @@ import Link from "next/link";
 
 import { KCM_REGISTRATION_FEE_DEFAULT_KES } from "@/lib/kcm-registration-fee";
 
+type KcmFashionCategory = "model" | "event_organizer" | "designer" | "other";
+
 type FormState = {
   firstName: string;
   secondName: string;
   contact: string;
   email: string;
+  fashionCategory: KcmFashionCategory | "";
+  fashionCategoryOther: string;
   experience: string;
   paymentConfirmed: boolean;
 };
@@ -21,6 +25,8 @@ const initialState: FormState = {
   secondName: "",
   contact: "",
   email: "",
+  fashionCategory: "",
+  fashionCategoryOther: "",
   experience: "",
   paymentConfirmed: false,
 };
@@ -100,6 +106,14 @@ export default function KcmPage() {
       setError("Enter contact and email first, then initiate payment.");
       return;
     }
+    if (!form.fashionCategory) {
+      setError("Please select a fashion category before payment.");
+      return;
+    }
+    if (form.fashionCategory === "other" && !form.fashionCategoryOther.trim()) {
+      setError("Please describe your category when you select Other.");
+      return;
+    }
     setPaymentLoading(true);
     try {
       const response = await fetch("/api/kcm-membership/stk-push", {
@@ -112,6 +126,9 @@ export default function KcmPage() {
           contact: form.contact.trim(),
           email: form.email.trim().toLowerCase(),
           experience: form.experience.trim(),
+          fashion_category: form.fashionCategory,
+          fashion_category_other:
+            form.fashionCategory === "other" ? form.fashionCategoryOther.trim() : "",
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -489,6 +506,53 @@ export default function KcmPage() {
                       placeholder="you@example.com"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="fashionCategory" className="mb-1.5 block text-sm font-medium text-gray-700">
+                      Fashion category
+                    </label>
+                    <select
+                      id="fashionCategory"
+                      required
+                      value={form.fashionCategory}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          fashionCategory: e.target.value as KcmFashionCategory | "",
+                          fashionCategoryOther:
+                            e.target.value === "other" ? prev.fashionCategoryOther : "",
+                        }))
+                      }
+                      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                    >
+                      <option value="">Select a category</option>
+                      <option value="model">Model</option>
+                      <option value="event_organizer">Event Organizer</option>
+                      <option value="designer">Designer</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  {form.fashionCategory === "other" ? (
+                    <div>
+                      <label htmlFor="fashionCategoryOther" className="mb-1.5 block text-sm font-medium text-gray-700">
+                        Specify your category
+                      </label>
+                      <input
+                        id="fashionCategoryOther"
+                        type="text"
+                        required
+                        value={form.fashionCategoryOther}
+                        onChange={(e) =>
+                          setForm((prev) => ({ ...prev, fashionCategoryOther: e.target.value }))
+                        }
+                        maxLength={500}
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+                        placeholder="e.g. Photographer, stylist, brand owner…"
+                      />
+                    </div>
+                  ) : null}
                 </div>
 
                 <div>

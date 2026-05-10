@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     let query = admin
       .from("kcm_memberships")
       .select(
-        "id,first_name,second_name,contact,email,experience,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
+        "id,first_name,second_name,contact,email,experience,fashion_category,fashion_category_other,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })
