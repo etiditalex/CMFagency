@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         status: "unpaid",
         due_date: due.toISOString().slice(0, 10),
       } as Record<string, unknown>)
-      .select("id,invoice_number,access_token,amount_kes,package_title")
+      .select("id,invoice_number,access_token,amount_kes,package_title,due_date")
       .single();
 
     if (insErr || !inserted) {
@@ -84,6 +84,7 @@ export async function POST(req: Request) {
       access_token: string;
       amount_kes: number;
       package_title: string;
+      due_date?: string | null;
     };
 
     const invoiceLabel = `CF-${new Date().getFullYear()}-${String(row.invoice_number).padStart(6, "0")}`;
@@ -91,14 +92,18 @@ export async function POST(req: Request) {
     const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || req.headers.get("origin") || "").replace(/\/$/, "");
     const viewUrl = siteBase ? `${siteBase}/invoice/${row.access_token}` : `/invoice/${row.access_token}`;
 
-    void sendServiceInvoiceCreatedEmail({
+    const emailResult = await sendServiceInvoiceCreatedEmail({
       to: customerEmail,
       customerName,
       invoiceLabel,
       packageTitle: row.package_title,
       amountKes: row.amount_kes,
       accessToken: row.access_token,
-    }).catch((e) => console.warn("[service-invoices/create] email:", e instanceof Error ? e.message : e));
+      dueDate: row.due_date ?? null,
+    });
+    if (!emailResult.ok) {
+      console.error("[service-invoices/create] invoice email failed:", emailResult.error);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -107,6 +112,8 @@ export async function POST(req: Request) {
       access_token: row.access_token,
       view_url: viewUrl,
       amount_kes: row.amount_kes,
+      email_sent: emailResult.ok,
+      ...(emailResult.ok ? {} : { email_error: emailResult.error ?? "send_failed" }),
     });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Unexpected error" }, { status: 500 });

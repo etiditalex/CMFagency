@@ -12,22 +12,41 @@ export async function sendServiceInvoiceCreatedEmail(params: {
   packageTitle: string;
   amountKes: number;
   accessToken: string;
+  /** ISO date string `YYYY-MM-DD` or null */
+  dueDate?: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
   const payUrl = `${baseUrl()}/invoice/${encodeURIComponent(params.accessToken)}`;
-  const subject = `Proforma invoice ${params.invoiceLabel} — Changer Fusions`;
+  const subject = `Invoice ${params.invoiceLabel} — Changer Fusions`;
   const amountFmt = `KSh ${params.amountKes.toLocaleString("en-KE")}`;
+  const dueLine =
+    params.dueDate && /^\d{4}-\d{2}-\d{2}$/.test(params.dueDate)
+      ? new Date(params.dueDate + "T12:00:00").toLocaleDateString("en-KE", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
 
   const html = `
 <!DOCTYPE html>
-<html><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#111827;padding:24px;">
+<html><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#111827;padding:24px;max-width:560px;">
   <p>Hi ${escapeHtml(params.customerName)},</p>
-  <p>Thank you for choosing <strong>Changer Fusions</strong>. Your proforma invoice is ready.</p>
-  <p><strong>${escapeHtml(params.packageTitle)}</strong><br/>${amountFmt} / month</p>
+  <p>Thank you for choosing <strong>Changer Fusions</strong>. Your proforma invoice is attached below as a summary — the same details are on your secure payment page.</p>
+  <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:20px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+    <tr style="background:#f9fafb;"><td style="padding:10px 14px;font-size:13px;color:#6b7280;">Invoice number</td><td style="padding:10px 14px;font-weight:700;text-align:right;">${escapeHtml(params.invoiceLabel)}</td></tr>
+    <tr><td style="padding:10px 14px;font-size:13px;color:#6b7280;border-top:1px solid #e5e7eb;">Service</td><td style="padding:10px 14px;text-align:right;border-top:1px solid #e5e7eb;">${escapeHtml(params.packageTitle)}</td></tr>
+    <tr style="background:#f9fafb;"><td style="padding:10px 14px;font-size:13px;color:#6b7280;border-top:1px solid #e5e7eb;">Amount (monthly)</td><td style="padding:10px 14px;font-weight:700;text-align:right;border-top:1px solid #e5e7eb;">${amountFmt}</td></tr>
+    ${
+      dueLine
+        ? `<tr><td style="padding:10px 14px;font-size:13px;color:#6b7280;border-top:1px solid #e5e7eb;">Due date</td><td style="padding:10px 14px;text-align:right;border-top:1px solid #e5e7eb;">${escapeHtml(dueLine)}</td></tr>`
+        : ""
+    }
+  </table>
   <p style="margin:24px 0;">
-    <a href="${payUrl}" style="display:inline-block;background:#1d8a63;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">View invoice &amp; pay</a>
+    <a href="${payUrl}" style="display:inline-block;background:#1d8a63;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;">Open invoice &amp; pay</a>
   </p>
-  <p style="font-size:14px;color:#6b7280;">You can pay securely with <strong>card / mobile money (Paystack)</strong> or <strong>M-Pesa</strong> from the invoice page.</p>
-  <p style="font-size:13px;color:#9ca3af;">Invoice ref: ${escapeHtml(params.invoiceLabel)}</p>
+  <p style="font-size:14px;color:#6b7280;">Pay securely with <strong>card / mobile money (Paystack)</strong> or <strong>M-Pesa</strong> on the invoice page.</p>
+  <p style="font-size:13px;color:#9ca3af;margin-top:24px;">— Changer Fusions · Mombasa, Kenya</p>
 </body></html>`;
 
   return sendHtmlEmail(params.to, subject, html);

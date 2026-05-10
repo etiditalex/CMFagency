@@ -183,7 +183,7 @@ ${dropLineForm.message}`;
           : ""
       }
       introContent={
-        <div className="min-w-0 overflow-x-clip">
+        <div className="min-w-0">
           {/* Table of Contents — directly after hero */}
           <section className="relative ml-[calc(50%-50vw)] w-screen max-w-[100vw] border-b border-gray-200 bg-white">
             <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-7 md:py-10">
@@ -631,43 +631,43 @@ ${dropLineForm.message}`;
             id="explore-more-seo-services"
             className="relative ml-[calc(50%-50vw)] w-screen max-w-[100vw] border-b border-gray-200 bg-white"
           >
-            <div className="w-full px-4 py-10 sm:px-6 md:py-12 lg:px-10 xl:px-14 2xl:px-16">
-              <h2 className="text-left text-2xl font-extrabold tracking-tight text-gray-900 text-pretty break-words sm:text-3xl md:text-4xl">
+            <div className="w-full max-w-none px-4 py-10 sm:px-6 md:py-12 lg:px-10 xl:px-14 2xl:px-16">
+              <h2 className="w-full text-balance text-left text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">
                 Explore more search engine optimization (SEO) services
               </h2>
-              <p className="mt-4 max-w-3xl text-left text-base leading-relaxed text-gray-600">
+              <p className="mt-4 w-full max-w-none text-left text-base leading-relaxed text-gray-600 md:text-lg">
                 SEO works best alongside a strong digital presence. Explore related services from our Mombasa team or get
                 in touch for a tailored plan.
               </p>
-              <ul className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-                <li>
+              <ul className="mt-8 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
+                <li className="min-w-0">
                   <Link
                     href="/services/digital-marketing"
-                    className="inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-5 py-3 text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white"
+                    className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white sm:px-5"
                   >
                     Digital marketing in Kenya
                   </Link>
                 </li>
-                <li>
+                <li className="min-w-0">
                   <Link
                     href="/services/website-development"
-                    className="inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-5 py-3 text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white"
+                    className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white sm:px-5"
                   >
                     Website development &amp; SEO-friendly builds
                   </Link>
                 </li>
-                <li>
+                <li className="min-w-0">
                   <Link
                     href="/services/social-media-marketing"
-                    className="inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-5 py-3 text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white"
+                    className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white sm:px-5"
                   >
                     Social media marketing
                   </Link>
                 </li>
-                <li>
+                <li className="min-w-0 sm:col-span-2 xl:col-span-1">
                   <Link
                     href="/contact"
-                    className="inline-flex min-h-11 touch-manipulation items-center justify-center rounded-xl border-2 border-secondary-600 bg-secondary-600 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-secondary-700"
+                    className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border-2 border-secondary-600 bg-secondary-600 px-4 py-3 text-center text-sm font-bold text-white transition-colors hover:bg-secondary-700 sm:px-5"
                   >
                     Contact the SEO team
                   </Link>
