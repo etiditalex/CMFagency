@@ -44,6 +44,28 @@ export function profileCategoryOrFromFashion(
   return fashionCategoryToProfileCategory(membershipFashion);
 }
 
+/**
+ * Member/admin UI: when registration chose "other", show the member's written category
+ * (`fashion_category_other`), falling back to profile professional title if needed (legacy).
+ */
+export function portalFashionCategoryDisplay(opts: {
+  profileCategory: string | null | undefined;
+  membershipFashion: string | null | undefined;
+  fashionCategoryOther: string | null | undefined;
+  professionalTitle: string | null | undefined;
+}): string {
+  const fc = String(opts.membershipFashion ?? "").trim().toLowerCase();
+  const resolved = profileCategoryOrFromFashion(opts.profileCategory, opts.membershipFashion);
+  const isOther = resolved === "other" || fc === "other";
+  if (isOther) {
+    const fromRegistration = String(opts.fashionCategoryOther ?? "").trim();
+    if (fromRegistration) return fromRegistration;
+    const fromProfile = String(opts.professionalTitle ?? "").trim();
+    if (fromProfile) return fromProfile;
+  }
+  return labelForKcmProfileCategory(resolved);
+}
+
 export function labelForKcmProfileCategory(cat: string | null | undefined): string {
   const s = String(cat ?? "").trim().toLowerCase();
   switch (s) {

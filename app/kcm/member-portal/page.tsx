@@ -21,7 +21,7 @@ import {
   UserRound,
   Wallet,
 } from "lucide-react";
-import { labelForKcmProfileCategory, profileCategoryOrFromFashion } from "@/lib/kcm-profile-category";
+import { labelForKcmProfileCategory, portalFashionCategoryDisplay } from "@/lib/kcm-profile-category";
 
 type PortfolioItem = {
   id: string;
@@ -121,12 +121,14 @@ type KcmMemberPortalPageProps = {
 export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPageProps) {
   const [checking, setChecking] = useState(true);
   const [data, setData] = useState<PortalState | null>(null);
-  const displayedCategory = useMemo(() => {
-    if (!data) return "model";
-    return profileCategoryOrFromFashion(
-      data.profile?.profile_category,
-      data.membership.fashion_category
-    );
+  const categoryDisplayLabel = useMemo(() => {
+    if (!data) return labelForKcmProfileCategory("model");
+    return portalFashionCategoryDisplay({
+      profileCategory: data.profile?.profile_category,
+      membershipFashion: data.membership.fashion_category,
+      fashionCategoryOther: data.membership.fashion_category_other,
+      professionalTitle: data.profile?.professional_title,
+    });
   }, [data]);
   const [error, setError] = useState<string | null>(null);
 
@@ -533,7 +535,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
   }, [data?.membership.email, displayName]);
 
   const shareProfile = async () => {
-    const title = professionalTitle || `${labelForKcmProfileCategory(displayedCategory)} profile`;
+    const title = professionalTitle || `${categoryDisplayLabel} profile`;
     const text = `${displayName || data?.membership.first_name} - ${title}`;
     const url = typeof window !== "undefined" ? window.location.href : "";
     try {
@@ -865,7 +867,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                       <div className="min-w-0 flex-1 self-center pb-0 sm:self-end sm:pb-1">
                         <p className="break-words text-base text-gray-700 [overflow-wrap:anywhere] sm:text-lg">@{handle}</p>
                         <p className="pt-0.5 text-xs font-semibold uppercase tracking-wide text-secondary-700">
-                          {labelForKcmProfileCategory(displayedCategory)}
+                          {categoryDisplayLabel}
                         </p>
                       </div>
                     </div>
@@ -1004,7 +1006,7 @@ export function KcmMemberPortalPage({ section = "dashboard" }: KcmMemberPortalPa
                     <div>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
                       <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900">
-                        {labelForKcmProfileCategory(displayedCategory)}
+                        {categoryDisplayLabel}
                       </p>
                       <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
                         This matches the fashion category you chose on your KCM registration form.

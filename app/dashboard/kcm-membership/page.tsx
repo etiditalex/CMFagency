@@ -500,8 +500,10 @@ export default function DashboardKcmMembershipPage() {
 function registrationFashionCategoryLabel(row: Membership): string {
   const c = row.fashion_category?.trim();
   if (!c) return "—";
-  if (c === "other" && row.fashion_category_other?.trim()) {
-    return `Other: ${row.fashion_category_other.trim()}`;
+  if (c.toLowerCase() === "other") {
+    const custom = row.fashion_category_other?.trim();
+    if (custom) return custom;
+    return "Other";
   }
   return c.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
