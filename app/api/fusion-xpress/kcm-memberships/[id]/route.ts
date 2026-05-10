@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
         wallet_transactions: payload.wallet_transactions as Record<string, unknown>[],
       });
       const safeId = id.replace(/[^\w-]+/g, "").slice(0, 12) || "member";
-      return new NextResponse(buf, {
+      return new NextResponse(new Uint8Array(buf), {
         headers: {
           "Content-Type": KCM_MEMBERSHIP_XLSX_MIME,
           "Content-Disposition": `attachment; filename="kcm-member-${safeId}.xlsx"`,

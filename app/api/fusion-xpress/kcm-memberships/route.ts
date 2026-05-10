@@ -186,7 +186,7 @@ export async function GET(req: NextRequest) {
     if (format === "xlsx") {
       const buf = await buildAllMembersXlsxBuffer(enriched as Record<string, unknown>[]);
       const stamp = new Date().toISOString().slice(0, 10);
-      return new NextResponse(buf, {
+      return new NextResponse(new Uint8Array(buf), {
         headers: {
           "Content-Type": KCM_MEMBERSHIP_XLSX_MIME,
           "Content-Disposition": `attachment; filename="kcm-members-export-${stamp}.xlsx"`,

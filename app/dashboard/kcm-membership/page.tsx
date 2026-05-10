@@ -184,7 +184,7 @@ export default function DashboardKcmMembershipPage() {
     const text = await res.text();
     try {
       const j = JSON.parse(text) as { error?: string };
-      return j.error ?? text || "Export failed.";
+      return j.error ?? (text || "Export failed.");
     } catch {
       return text || "Export failed.";
     }
