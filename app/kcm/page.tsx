@@ -205,8 +205,9 @@ export default function KcmPage() {
                 Kenya Coast Models Membership
               </h1>
               <p className="mt-2 max-w-2xl text-left text-xs leading-relaxed text-white/90 sm:mt-3 sm:text-sm md:mt-4 md:text-[1.12rem] md:leading-relaxed">
-                Kenya Coast Models is a dynamic platform designed to unify and manage models across
-                the coastal region by providing a centralized space for registration and membership.
+                Kenya Coast Models is a dynamic platform designed to unify and coordinate models,
+                designers, brand owners, and fashion professionals across the coastal region by
+                providing a centralized space for registration and membership.
               </p>
             </div>
           </div>
@@ -233,9 +234,10 @@ export default function KcmPage() {
                 Why Become a member?
               </h2>
               <p className="mt-3 text-left text-sm leading-relaxed text-white/95 sm:text-base md:mt-4 md:text-lg">
-                Kenya Coast Models is a dynamic platform designed to unify and manage models across
-                the coastal region by providing a centralized space for registration and membership.
-                Through this platform, aspiring and professional models can easily join a growing
+                Kenya Coast Models is a dynamic platform designed to unify and coordinate models,
+                designers, brand owners, and fashion professionals across the coastal region by
+                providing a centralized space for registration and membership. Through this platform,
+                aspiring and professional models can easily join a growing
                 network that connects them to exclusive, untapped opportunities within the fashion
                 and creative industry. By becoming a member, models gain visibility, credibility,
                 and access to curated gigs, events, and collaborations, empowering them to grow
