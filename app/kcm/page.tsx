@@ -13,7 +13,6 @@ type FormState = {
   contact: string;
   email: string;
   experience: string;
-  topModelInterest: "yes" | "no" | "";
   paymentConfirmed: boolean;
 };
 
@@ -23,7 +22,6 @@ const initialState: FormState = {
   contact: "",
   email: "",
   experience: "",
-  topModelInterest: "",
   paymentConfirmed: false,
 };
 
@@ -146,11 +144,6 @@ export default function KcmPage() {
       setSubmitting(false);
       return;
     }
-    if (!form.topModelInterest) {
-      setError("Please answer the top model recognition question.");
-      setSubmitting(false);
-      return;
-    }
     if (!membershipId) {
       setError("Missing membership payment session. Please initiate payment again.");
       setSubmitting(false);
@@ -163,7 +156,7 @@ export default function KcmPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           membership_id: membershipId,
-          top_model_interest: form.topModelInterest === "yes",
+          top_model_interest: false,
         }),
       });
 
@@ -558,48 +551,6 @@ export default function KcmPage() {
                     </>
                   )}
                 </div>
-
-                {form.paymentConfirmed && (
-                  <fieldset className="space-y-3 rounded-xl border border-gray-200 p-4">
-                    <legend className="px-1 text-sm font-semibold text-gray-900">
-                      Are you interested to be recognized as the top model in the coast?
-                    </legend>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        type="radio"
-                        name="topModelInterest"
-                        value="yes"
-                        required
-                        checked={form.topModelInterest === "yes"}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            topModelInterest: e.target.value as "yes",
-                          }))
-                        }
-                        className="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      Yes, I am interested.
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        type="radio"
-                        name="topModelInterest"
-                        value="no"
-                        required
-                        checked={form.topModelInterest === "no"}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            topModelInterest: e.target.value as "no",
-                          }))
-                        }
-                        className="h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      Not at the moment.
-                    </label>
-                  </fieldset>
-                )}
 
                 <button
                   type="submit"
