@@ -3,6 +3,73 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildSingleMemberXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
 import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
+import { sendKcmMembershipApprovedEmail } from "@/lib/send-kcm-membership-approved-email";
+
+function pad3(n: number): string {
+  return String(Math.max(0, Math.trunc(n))).padStart(3, "0");
+}
+
+function isValidEmail(s: string): boolean {
+  const v = s.trim();
+  return v.includes("@") && v.includes(".") && v.length <= 254;
+}
+
+async function allocateKcmMembershipNumber(admin: SupabaseClient, membershipId: string): Promise<string | null> {
+  const { data: existing, error: eErr } = await admin
+    .from("kcm_memberships")
+    .select("membership_number")
+    .eq("id", membershipId)
+    .maybeSingle();
+  if (eErr || !existing) return null;
+
+  const already = String((existing as { membership_number?: string | null }).membership_number ?? "").trim();
+  if (already) return already;
+
+  const year = new Date().getFullYear();
+  // Try a few times in case of a unique constraint collision.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { data: latestRow } = await admin
+      .from("kcm_memberships")
+      .select("membership_number")
+      .like("membership_number", `KCM/${year}/%`)
+      .order("membership_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const latest = String((latestRow as { membership_number?: string | null } | null)?.membership_number ?? "").trim();
+    const lastNum = latest ? Number.parseInt(latest.split("/").pop() ?? "", 10) : 0;
+    const nextNum = (Number.isFinite(lastNum) ? lastNum : 0) + 1 + attempt;
+    const membershipNumber = `KCM/${year}/${pad3(nextNum)}`;
+
+    const { data: updated, error: upErr } = await admin
+      .from("kcm_memberships")
+      .update({
+        membership_number: membershipNumber,
+        approved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", membershipId)
+      .is("membership_number", null)
+      .select("membership_number")
+      .maybeSingle();
+
+    if (!upErr && updated) {
+      const saved = String((updated as { membership_number?: string | null }).membership_number ?? "").trim();
+      if (saved) return saved;
+    }
+
+    // If DB doesn't have the columns yet, stop trying.
+    if (upErr && String((upErr as any).code ?? "") === "42703") return null;
+  }
+
+  // Fall back to read (maybe another process wrote it).
+  const { data: after } = await admin
+    .from("kcm_memberships")
+    .select("membership_number")
+    .eq("id", membershipId)
+    .maybeSingle();
+  return String((after as { membership_number?: string | null } | null)?.membership_number ?? "").trim() || null;
+}
 
 async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
   const { data: membership, error: memErr } = await admin
@@ -119,6 +186,15 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
 
+    const { data: beforeRow } = await admin
+      .from("kcm_memberships")
+      .select("status,email,first_name,second_name,membership_number")
+      .eq("id", id)
+      .maybeSingle();
+    const prevStatus = String((beforeRow as { status?: string | null } | null)?.status ?? "").trim();
+    const memberEmail = String((beforeRow as { email?: string | null } | null)?.email ?? "").trim().toLowerCase();
+    const memberFirstName = String((beforeRow as { first_name?: string | null } | null)?.first_name ?? "").trim();
+
     const { data, error } = await admin
       .from("kcm_memberships")
       .update({
@@ -134,6 +210,22 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+
+    const becameApproved = nextStatus === "approved" && prevStatus !== "approved";
+    if (becameApproved && isValidEmail(memberEmail)) {
+      const membershipNumber =
+        (String((beforeRow as { membership_number?: string | null } | null)?.membership_number ?? "").trim() ||
+          (await allocateKcmMembershipNumber(admin, id)) ||
+          null);
+      if (membershipNumber) {
+        // Non-fatal: membership stays approved even if email fails.
+        void sendKcmMembershipApprovedEmail({
+          to: memberEmail,
+          firstName: memberFirstName || "Member",
+          membershipNumber,
+        }).catch(() => {});
+      }
+    }
 
     const { data: profile } = await admin
       .from("kcm_member_profiles")
