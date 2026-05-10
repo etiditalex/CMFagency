@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+
+import { buildAllMembersXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
 import { requireAdminOrManager } from "@/lib/fusion-require-admin";
 
 export async function GET(req: NextRequest) {
@@ -9,7 +11,12 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status")?.trim() || "";
-    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") ?? "100", 10) || 100, 1), 300);
+    const format = searchParams.get("format")?.trim().toLowerCase() ?? "";
+    const defaultCap = format === "xlsx" ? 5000 : 300;
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get("limit") ?? (format === "xlsx" ? "5000" : "100"), 10) || (format === "xlsx" ? 5000 : 100), 1),
+      defaultCap
+    );
     const offset = Math.max(parseInt(searchParams.get("offset") ?? "0", 10), 0);
 
     let query = admin
@@ -57,12 +64,20 @@ export async function GET(req: NextRequest) {
     > = {};
 
     if (ids.length > 0) {
-      const { data: profiles } = await admin
-        .from("kcm_member_profiles")
-        .select(
-          "membership_id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x,updated_at"
-        )
-        .in("membership_id", ids);
+      const [{ data: profiles }, { data: itemRows }, { data: walletRows }] = await Promise.all([
+        admin
+          .from("kcm_member_profiles")
+          .select(
+            "membership_id,display_name,avatar_url,cover_url,profile_category,professional_title,bio,portfolio_text,social_instagram,social_facebook,social_tiktok,social_x,updated_at"
+          )
+          .in("membership_id", ids),
+        admin.from("kcm_member_portfolio_items").select("membership_id").in("membership_id", ids),
+        admin
+          .from("kcm_member_wallet_transactions")
+          .select("membership_id,amount_kes,status,paid_at,created_at")
+          .in("membership_id", ids),
+      ]);
+
       for (const p of (profiles ?? []) as Array<{
         membership_id: string;
         display_name: string | null;
@@ -94,19 +109,11 @@ export async function GET(req: NextRequest) {
         };
       }
 
-      const { data: itemRows } = await admin
-        .from("kcm_member_portfolio_items")
-        .select("membership_id")
-        .in("membership_id", ids);
       for (const row of itemRows ?? []) {
         const mid = String((row as { membership_id: string }).membership_id);
         portfolioItemCountMap[mid] = (portfolioItemCountMap[mid] ?? 0) + 1;
       }
 
-      const { data: walletRows } = await admin
-        .from("kcm_member_wallet_transactions")
-        .select("membership_id,amount_kes,status,paid_at,created_at")
-        .in("membership_id", ids);
       for (const row of (walletRows ?? []) as Array<{
         membership_id: string;
         amount_kes: number;
@@ -175,6 +182,17 @@ export async function GET(req: NextRequest) {
           itemCount > 0,
       };
     });
+
+    if (format === "xlsx") {
+      const buf = await buildAllMembersXlsxBuffer(enriched as Record<string, unknown>[]);
+      const stamp = new Date().toISOString().slice(0, 10);
+      return new NextResponse(buf, {
+        headers: {
+          "Content-Type": KCM_MEMBERSHIP_XLSX_MIME,
+          "Content-Disposition": `attachment; filename="kcm-members-export-${stamp}.xlsx"`,
+        },
+      });
+    }
 
     return NextResponse.json({
       memberships: enriched,

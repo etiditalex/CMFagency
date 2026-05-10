@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { buildSingleMemberXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
 import { requireAdminOrManager } from "@/lib/fusion-require-admin";
 
 async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
@@ -34,17 +35,36 @@ async function loadKcmMembershipExport(admin: SupabaseClient, id: string) {
   };
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const auth = await requireAdminOrManager(_req);
+    const auth = await requireAdminOrManager(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
     const { id } = await ctx.params;
     if (!id) return NextResponse.json({ error: "Missing membership id." }, { status: 400 });
 
+    const format = new URL(req.url).searchParams.get("format")?.trim().toLowerCase();
+
     const payload = await loadKcmMembershipExport(admin, id);
     if (!payload) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+
+    if (format === "xlsx") {
+      const buf = await buildSingleMemberXlsxBuffer({
+        exported_at: payload.exported_at,
+        membership: payload.membership as Record<string, unknown>,
+        profile: payload.profile as Record<string, unknown> | null,
+        portfolio_items: payload.portfolio_items as Record<string, unknown>[],
+        wallet_transactions: payload.wallet_transactions as Record<string, unknown>[],
+      });
+      const safeId = id.replace(/[^\w-]+/g, "").slice(0, 12) || "member";
+      return new NextResponse(buf, {
+        headers: {
+          "Content-Type": KCM_MEMBERSHIP_XLSX_MIME,
+          "Content-Disposition": `attachment; filename="kcm-member-${safeId}.xlsx"`,
+        },
+      });
+    }
 
     return NextResponse.json(payload);
   } catch (e: unknown) {

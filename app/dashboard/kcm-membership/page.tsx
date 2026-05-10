@@ -65,6 +65,7 @@ export default function DashboardKcmMembershipPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
 
@@ -179,6 +180,16 @@ export default function DashboardKcmMembershipPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isAdmin, isManager, user?.id, router]);
 
+  const parseExportError = async (res: Response) => {
+    const text = await res.text();
+    try {
+      const j = JSON.parse(text) as { error?: string };
+      return j.error ?? text || "Export failed.";
+    } catch {
+      return text || "Export failed.";
+    }
+  };
+
   const downloadMembership = async (id: string, fileSafeName: string) => {
     setDownloadingId(id);
     setError(null);
@@ -189,23 +200,58 @@ export default function DashboardKcmMembershipPage() {
       const token = session?.access_token;
       if (!token) throw new Error("Session expired. Please sign in again.");
 
-      const res = await fetch(`/api/fusion-xpress/kcm-memberships/${id}`, {
+      const res = await fetch(`/api/fusion-xpress/kcm-memberships/${encodeURIComponent(id)}?format=xlsx`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Could not export membership data.");
+      if (!res.ok) throw new Error(await parseExportError(res));
 
-      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json;charset=utf-8" });
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `kcm-member-${fileSafeName.replace(/[^\w\-]+/g, "_")}-${id.slice(0, 8)}.json`;
+      a.download = `kcm-member-${fileSafeName.replace(/[^\w\-]+/g, "_")}-${id.slice(0, 8)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Export failed.");
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const downloadAllMembersExcel = async () => {
+    setDownloadingAll(true);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+
+      const params = new URLSearchParams();
+      params.set("format", "xlsx");
+      params.set("limit", "5000");
+      if (statusFilter) params.set("status", statusFilter);
+
+      const res = await fetch(`/api/fusion-xpress/kcm-memberships?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(await parseExportError(res));
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filterPart = statusFilter ? `-${statusFilter}` : "";
+      a.download = `kcm-members-export${filterPart}-${stamp}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Export failed.");
+    } finally {
+      setDownloadingAll(false);
     }
   };
 
@@ -291,7 +337,10 @@ export default function DashboardKcmMembershipPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-extrabold text-gray-900 md:text-2xl">KCM Membership</h2>
-          <p className="mt-1 text-gray-600">Review and manage Kenya Coast Models membership registrations.</p>
+          <p className="mt-1 text-gray-600">
+            Review and manage Kenya Coast Models membership registrations. Download member data as Excel (.xlsx)
+            for one person or for everyone matching the status filter.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -310,6 +359,15 @@ export default function DashboardKcmMembershipPage() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => void downloadAllMembersExcel()}
+            disabled={loading || downloadingAll || downloadingId !== null}
+            className="inline-flex items-center gap-2 rounded-md border border-primary-300 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Download className={`h-4 w-4 ${downloadingAll ? "animate-pulse" : ""}`} />
+            {downloadingAll ? "Preparing…" : "Download Excel (all)"}
+          </button>
           <button
             type="button"
             onClick={() => void load(statusFilter)}
@@ -426,8 +484,8 @@ export default function DashboardKcmMembershipPage() {
                   onDelete={() =>
                     void deleteMembership(row.id, `${row.first_name} ${row.second_name}`.trim() || row.email)
                   }
-                  downloadBusy={downloadingId === row.id}
-                  deleteBusy={deletingId === row.id}
+                  downloadBusy={downloadingId === row.id || downloadingAll}
+                  deleteBusy={deletingId === row.id || downloadingAll}
                 />
               ))
             )}
@@ -547,7 +605,7 @@ function Row({
             ) : null}
             {(row.profile?.portfolio_item_count ?? 0) > 0 ? (
               <div className="text-[10px] text-gray-600">
-                {row.profile?.portfolio_item_count} portfolio file(s) — full URLs in JSON export
+                {row.profile?.portfolio_item_count} portfolio file(s) — URLs in Excel export
               </div>
             ) : null}
             <div className="space-y-0.5 border-t border-gray-100 pt-1">
@@ -627,7 +685,7 @@ function Row({
             className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Download className="h-3.5 w-3.5" />
-            {downloadBusy ? "Downloading…" : "Download JSON"}
+            {downloadBusy ? "Downloading…" : "Download Excel"}
           </button>
           <button
             type="button"
