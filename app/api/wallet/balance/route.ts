@@ -43,8 +43,9 @@ export async function GET(req: Request) {
     if (cErr) throw cErr;
     const campaignIds = (campaigns ?? []).map((c: { id: string }) => c.id);
 
-    // Optional: add KCM registration inflow into the M-Pesa totals (per-user feature flag).
+    // Optional: add KCM registration + contributions inflow into the M-Pesa totals (per-user feature flag).
     let kcmPaidKes = 0;
+    let kcmContributionKes = 0;
     if (includeKcmInflow) {
       const { data: membershipRows, error: kmErr } = await supabase
         .from("kcm_memberships")
@@ -62,13 +63,26 @@ export async function GET(req: Request) {
         if (!Number.isFinite(amt) || amt <= 0) continue;
         kcmPaidKes += amt;
       }
+
+      const { data: contribRows, error: kcErr } = await supabase
+        .from("kcm_member_wallet_transactions")
+        .select("amount_kes,status");
+      if (kcErr) throw kcErr;
+      for (const row of (contribRows ?? []) as Array<{ amount_kes?: number | null; status?: string | null }>) {
+        const status = String(row.status ?? "").toLowerCase();
+        if (status !== "success") continue;
+        const amt = Number(row.amount_kes ?? 0);
+        if (!Number.isFinite(amt) || amt <= 0) continue;
+        kcmContributionKes += amt;
+      }
     }
+    const kcmTotalKes = kcmPaidKes + kcmContributionKes;
 
     if (campaignIds.length === 0) {
       return NextResponse.json({
-        mpesa: kcmPaidKes,
+        mpesa: kcmTotalKes,
         paystack: 0,
-        mpesaAvailable: kcmPaidKes,
+        mpesaAvailable: kcmTotalKes,
         mpesaPendingApproval: 0,
         mpesaInTransit: 0,
         mpesaPaidOut: 0,
@@ -100,7 +114,7 @@ export async function GET(req: Request) {
       if (isMpesa(t.provider)) mpesa += amt;
       else paystack += amt;
     }
-    mpesa += kcmPaidKes;
+    mpesa += kcmTotalKes;
 
     // Pending M-Pesa withdrawals (reduce available) - use supabase (RLS allows own rows)
     const { data: withdrawals } = await supabase
