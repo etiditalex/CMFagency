@@ -4,20 +4,43 @@ import {
   finalizeDarajaStkFromMetadataItems,
   type CallbackMetadataItem,
 } from "@/lib/daraja-finalize-stk-from-items";
+import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
+import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
 export const dynamic = "force-dynamic";
 
-function parseStkQueryResult(body: unknown): { resultCode: number; items: CallbackMetadataItem[] } {
-  if (!body || typeof body !== "object") return { resultCode: -1, items: [] };
+/** STK Query `ResultCode` while Safaricom still processing — do not mark the row failed. */
+const STK_QUERY_STILL_PENDING_CODES = new Set([500001]);
+
+type ParsedStkQuery = {
+  parseOk: boolean;
+  resultCode: number;
+  resultDesc: string;
+  items: CallbackMetadataItem[];
+};
+
+function parseStkQueryResult(body: unknown): ParsedStkQuery {
+  if (!body || typeof body !== "object") {
+    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
+  }
   const o = body as Record<string, unknown>;
   const inner = (o.Result as Record<string, unknown>) ?? o["result"];
   const root =
     inner && typeof inner === "object" ? (inner as Record<string, unknown>) : o;
   const rcRaw = root.ResultCode ?? root.resultCode ?? o.ResultCode;
-  const resultCode = Number(rcRaw ?? -1);
+  if (rcRaw === undefined || rcRaw === null || rcRaw === "") {
+    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
+  }
+  const resultCode = Number(rcRaw);
+  if (!Number.isFinite(resultCode)) {
+    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
+  }
+  const rdRaw =
+    root.ResultDesc ?? root.resultDesc ?? o.ResultDesc ?? o.ResponseDescription ?? o.responseDescription;
+  const resultDesc = String(rdRaw ?? "");
   const meta = (root.CallbackMetadata ?? o.CallbackMetadata) as { Item?: CallbackMetadataItem[] } | undefined;
   const items = meta?.Item ?? [];
-  return { resultCode, items };
+  return { parseOk: true, resultCode, resultDesc, items };
 }
 
 /**
@@ -119,13 +142,89 @@ export async function POST(req: Request) {
   });
 
   const queryJson: unknown = await queryRes.json().catch(() => ({}));
-  const { resultCode, items } = parseStkQueryResult(queryJson);
+
+  if (!queryRes.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Daraja STK query HTTP error",
+        http_status: queryRes.status,
+      },
+      { status: 502 }
+    );
+  }
+
+  const parsed = parseStkQueryResult(queryJson);
+  if (!parsed.parseOk) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Could not parse Daraja STK query response",
+      },
+      { status: 502 }
+    );
+  }
+
+  const { resultCode, resultDesc, items } = parsed;
 
   if (resultCode !== 0) {
+    if (STK_QUERY_STILL_PENDING_CODES.has(resultCode)) {
+      return NextResponse.json({
+        ok: true,
+        status: "pending",
+        daraja_result_code: resultCode,
+        daraja_result_desc: resultDesc,
+      });
+    }
+
+    const prevMeta =
+      typeof (tx as { metadata?: unknown }).metadata === "object" &&
+      (tx as { metadata?: unknown }).metadata !== null &&
+      !Array.isArray((tx as { metadata?: unknown }).metadata)
+        ? { ...((tx as { metadata: Record<string, unknown> }).metadata) }
+        : {};
+    const { error: failUpErr } = await supabase
+      .from("transactions")
+      .update({
+        status: "failed",
+        verified_at: new Date().toISOString(),
+        metadata: {
+          ...prevMeta,
+          daraja_result_code: resultCode,
+          daraja_result_desc: resultDesc,
+          reconciled_via: "daraja_verify_ref_stk_query",
+        },
+      } as Record<string, unknown>)
+      .eq("id", (tx as { id: string }).id)
+      .eq("status", "pending");
+
+    if (failUpErr) {
+      return NextResponse.json({ ok: false, error: failUpErr.message }, { status: 500 });
+    }
+
+    void notifyCampaignOwnerPaymentIncomplete(supabase, {
+      campaignId: String((tx as { campaign_id: string }).campaign_id),
+      reference: String((tx as { reference: string }).reference),
+      amount: Number((tx as { amount: number | null }).amount ?? 0),
+      currency: String((tx as { currency?: string | null }).currency ?? "KES"),
+      provider: "M-Pesa (Daraja)",
+      payerEmail: (tx as { email?: string | null }).email,
+      payerName: (tx as { payer_name?: string | null }).payer_name,
+      reason: resultDesc ? `M-Pesa (STK query): ${resultDesc}` : `M-Pesa STK query result code ${resultCode}`,
+    });
+    const toEmail = (tx as { email?: string | null }).email?.trim?.();
+    if (toEmail) {
+      sendPurchaseReminderByRef(String((tx as { reference: string }).reference), supabase).catch((err) =>
+        console.warn("[Daraja verify-ref] Purchase reminder email error:", err instanceof Error ? err.message : err)
+      );
+    }
+
     return NextResponse.json({
       ok: true,
-      status: "pending",
+      status: "failed",
+      completed: false,
       daraja_result_code: resultCode,
+      daraja_result_desc: resultDesc,
     });
   }
 
