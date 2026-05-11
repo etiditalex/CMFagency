@@ -1,5 +1,11 @@
-/** Skip very new STK / checkout rows so we do not hammer verify during active payment. */
-const PENDING_MIN_AGE_MS = 45_000;
+/** Paystack: avoid verify spam while the hosted checkout is still open. */
+const PAYSTACK_PENDING_MIN_AGE_MS = 25_000;
+
+/**
+ * M-Pesa STK usually resolves in seconds; reconciling after a short delay lets
+ * verify-ref mark cancelled/timeout as failed without waiting almost a minute.
+ */
+const DARAJA_PENDING_MIN_AGE_MS = 4_000;
 
 export type ReconcileTxRow = {
   reference: string;
@@ -20,7 +26,8 @@ export async function reconcileStalePendingTransactions(rows: ReconcileTxRow[]):
     if (p !== "paystack" && p !== "daraja") return false;
     const created = t.created_at ? Date.parse(String(t.created_at)) : NaN;
     if (Number.isNaN(created)) return false;
-    return now - created >= PENDING_MIN_AGE_MS;
+    const minAge = p === "paystack" ? PAYSTACK_PENDING_MIN_AGE_MS : DARAJA_PENDING_MIN_AGE_MS;
+    return now - created >= minAge;
   });
   if (pending.length === 0) return false;
 

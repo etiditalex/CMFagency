@@ -18,6 +18,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import {
+  reconcileStalePendingTransactions,
+  type ReconcileTxRow,
+} from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
@@ -386,13 +390,16 @@ export default function CampaignReportPage() {
       const campaignData = campaignRow as Campaign;
       setCampaign(campaignData);
 
-      let txQuery = supabase
-        .from("transactions")
-        .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
-        .eq("campaign_id", campaignId);
-      if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
-      if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
-      const txLimited = txQuery.order("created_at", { ascending: false }).limit(50);
+      const buildRecentTxQuery = () => {
+        let txQuery = supabase
+          .from("transactions")
+          .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
+          .eq("campaign_id", campaignId);
+        if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
+        if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
+        return txQuery.order("created_at", { ascending: false }).limit(50);
+      };
+      const txLimited = buildRecentTxQuery();
 
       const conQuery = supabase
         .from("contestants")
@@ -457,7 +464,12 @@ export default function CampaignReportPage() {
       ]);
 
       if (txRes.error) throw txRes.error;
-      const txRows = txRes.data ?? [];
+      let txRows = txRes.data ?? [];
+      const touchedPending = await reconcileStalePendingTransactions(txRows as ReconcileTxRow[]);
+      if (touchedPending) {
+        const again = await buildRecentTxQuery();
+        if (!again.error && again.data) txRows = again.data;
+      }
       let displayTx = txRows as TxRow[];
       if (!isAdmin) {
         displayTx = displayTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
@@ -477,7 +489,7 @@ export default function CampaignReportPage() {
         tiRows.reduce((acc: number, r: TicketIssueRow) => acc + (Number(r.quantity ?? 0) || 0), 0)
       );
 
-      let byContestant: Record<string, number> = {};
+      const byContestant: Record<string, number> = {};
 
       if (campaignData.type === "vote") {
         const rows = voteTxRows ?? [];
