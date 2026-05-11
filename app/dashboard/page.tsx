@@ -20,6 +20,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { reconcileStalePendingTransactions } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 import { fetchAllSupabasePages } from "@/lib/supabase-fetch-all-pages";
 
@@ -30,6 +31,25 @@ type TrendingItem = {
   category: string;
   votes: number;
   imageUrl: string | null;
+};
+
+/** RPC `dashboard_reportable_success_metrics` rollup row (jsonb). */
+type DashboardMetricsRollup = {
+  currency?: unknown;
+  resolved_type?: unknown;
+  campaign_id?: unknown;
+  amount_sum?: unknown;
+  amount?: unknown;
+  qty_effective_sum?: unknown;
+};
+
+/** Fallback path: raw `reportable_transactions` row. */
+type DashboardReportableRow = {
+  amount?: unknown;
+  currency?: unknown;
+  resolved_type?: unknown;
+  campaign_id?: unknown;
+  quantity?: unknown;
 };
 
 function isMissingPortalMembersTable(err: any) {
@@ -289,28 +309,28 @@ export default function DashboardHomePage() {
         setTotalVotes(0);
         setTotalTicketsIssued(0);
       } else {
-        const [txRes, successRows, kcmSummary] = await Promise.all([
+        const [txRes, kcmSummary] = await Promise.all([
           supabase
             .from("transactions")
             .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
             .order("created_at", { ascending: false })
             .limit(10),
-          fetchAllSupabasePages(async (from, to) => {
-            const r = await supabase
-              .from("reportable_transactions")
-              .select("amount,currency,resolved_type,campaign_id,quantity")
-              .eq("status", "success")
-              .in("campaign_id", campaignIds)
-              .order("id", { ascending: true })
-              .range(from, to);
-            return { data: r.data as any[] | null, error: r.error };
-          }),
           kcmSummaryPromise,
         ]);
         resolvedKcmSummary = kcmSummary;
 
         if (txRes.error) throw txRes.error;
-        const rawTx = (txRes.data ?? []) as any[];
+        let rawTx = (txRes.data ?? []) as any[];
+        const touchedPending = await reconcileStalePendingTransactions(rawTx);
+        if (touchedPending) {
+          const again = await supabase
+            .from("transactions")
+            .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
+            .order("created_at", { ascending: false })
+            .limit(10);
+          if (!again.error && again.data) rawTx = again.data as any[];
+        }
+
         const visibleTx = isAdmin
           ? rawTx
           : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
@@ -332,32 +352,74 @@ export default function DashboardHomePage() {
           }
         }
 
-        setSuccessfulPayments(successRows.length);
+        const { data: metricsJson, error: metricsErr } = await supabase.rpc("dashboard_reportable_success_metrics", {
+          p_campaign_ids: campaignIds,
+        });
+
         const rev: Record<string, number> = {};
         const revTickets: Record<string, number> = {};
         const revVotes: Record<string, number> = {};
         const revMerchandise: Record<string, number> = {};
         let voteUnits = 0;
         let ticketUnits = 0;
-        for (const t of successRows as any[]) {
-          const cur = String(t.currency ?? "").toUpperCase() || "—";
-          const amt = Number(t.amount ?? 0);
-          const ctype = String(t.resolved_type ?? "").toLowerCase();
-          const qtyRaw = Math.trunc(Number(t.quantity ?? 0));
-          const qty = qtyRaw > 0 ? qtyRaw : 1;
-          const isMerchandise = merchandiseCampaignId && String(t.campaign_id ?? "") === String(merchandiseCampaignId);
-          if (!Number.isFinite(amt)) continue;
-          rev[cur] = (rev[cur] ?? 0) + amt;
-          if (isMerchandise) {
-            revMerchandise[cur] = (revMerchandise[cur] ?? 0) + amt;
-          } else if (ctype === "vote") {
-            revVotes[cur] = (revVotes[cur] ?? 0) + amt;
-            voteUnits += qty;
-          } else if (ctype === "ticket") {
-            revTickets[cur] = (revTickets[cur] ?? 0) + amt;
-            ticketUnits += qty;
+        let successPaymentCount = 0;
+
+        if (!metricsErr && metricsJson && typeof metricsJson === "object") {
+          const m = metricsJson as { successful_count?: number | string; rollups?: unknown };
+          successPaymentCount = Math.trunc(Number(m.successful_count ?? 0)) || 0;
+          const rollups = Array.isArray(m.rollups) ? (m.rollups as DashboardMetricsRollup[]) : [];
+          for (const t of rollups) {
+            const cur = String(t.currency ?? "").toUpperCase() || "—";
+            const amt = Number(t.amount_sum ?? t.amount ?? 0);
+            const ctype = String(t.resolved_type ?? "").toLowerCase();
+            const qtyEff = Math.trunc(Number(t.qty_effective_sum ?? 0));
+            const isMerchandise = merchandiseCampaignId && String(t.campaign_id ?? "") === String(merchandiseCampaignId);
+            if (!Number.isFinite(amt)) continue;
+            rev[cur] = (rev[cur] ?? 0) + amt;
+            if (isMerchandise) {
+              revMerchandise[cur] = (revMerchandise[cur] ?? 0) + amt;
+            } else if (ctype === "vote") {
+              revVotes[cur] = (revVotes[cur] ?? 0) + amt;
+              voteUnits += qtyEff > 0 ? qtyEff : 0;
+            } else if (ctype === "ticket") {
+              revTickets[cur] = (revTickets[cur] ?? 0) + amt;
+              ticketUnits += qtyEff > 0 ? qtyEff : 0;
+            }
+          }
+        } else {
+          const successRows = await fetchAllSupabasePages(async (from, to) => {
+            const r = await supabase
+              .from("reportable_transactions")
+              .select("amount,currency,resolved_type,campaign_id,quantity")
+              .eq("status", "success")
+              .in("campaign_id", campaignIds)
+              .order("id", { ascending: true })
+              .range(from, to);
+            return { data: r.data as DashboardReportableRow[] | null, error: r.error };
+          });
+          successPaymentCount = successRows.length;
+          for (const t of successRows) {
+            const cur = String(t.currency ?? "").toUpperCase() || "—";
+            const amt = Number(t.amount ?? 0);
+            const ctype = String(t.resolved_type ?? "").toLowerCase();
+            const qtyRaw = Math.trunc(Number(t.quantity ?? 0));
+            const qty = qtyRaw > 0 ? qtyRaw : 1;
+            const isMerchandise = merchandiseCampaignId && String(t.campaign_id ?? "") === String(merchandiseCampaignId);
+            if (!Number.isFinite(amt)) continue;
+            rev[cur] = (rev[cur] ?? 0) + amt;
+            if (isMerchandise) {
+              revMerchandise[cur] = (revMerchandise[cur] ?? 0) + amt;
+            } else if (ctype === "vote") {
+              revVotes[cur] = (revVotes[cur] ?? 0) + amt;
+              voteUnits += qty;
+            } else if (ctype === "ticket") {
+              revTickets[cur] = (revTickets[cur] ?? 0) + amt;
+              ticketUnits += qty;
+            }
           }
         }
+
+        setSuccessfulPayments(successPaymentCount);
         setRevenueByCurrency(rev);
         setRevenueByCurrencyTickets(revTickets);
         setRevenueByCurrencyVotes(revVotes);
@@ -525,7 +587,6 @@ export default function DashboardHomePage() {
         setError(null);
         setSessionChecking(false);
         await refreshData();
-        await loadTrending();
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
         if (!cancelled) setSessionChecking(false);
@@ -536,7 +597,7 @@ export default function DashboardHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, loadTrending, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
 
   useEffect(() => {
     if (!lastUpdatedAt) return;

@@ -4,7 +4,7 @@ import { getVoteTransactionTotalsForCampaignsFlat } from "@/lib/vote-transaction
 
 /** Avoid oversized `.in()` lists; safe with hundreds of categories. */
 const CAMPAIGN_ID_CHUNK = 40;
-const VOTING_ALL_CACHE_TTL_MS = 30_000;
+const VOTING_ALL_CACHE_TTL_MS = 60_000;
 
 type CampaignRaw = {
   id: string;

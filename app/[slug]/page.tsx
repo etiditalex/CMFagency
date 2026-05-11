@@ -321,11 +321,11 @@ export default function CampaignPage() {
   useEffect(() => {
     if (!campaign || campaign.type !== "vote") return;
     // Initial tallies come from `page-data`; avoid an immediate second full aggregation on load.
-    const interval = setInterval(fetchVoteCounts, 5000);
+    const interval = setInterval(fetchVoteCounts, 12_000);
     return () => clearInterval(interval);
   }, [campaign, fetchVoteCounts]);
 
-  /** Right after Paystack/M-Pesa reports success, refresh public totals (don’t wait for the 5s poll). */
+  /** Right after Paystack/M-Pesa reports success, refresh public totals (don’t wait for the background poll). */
   useEffect(() => {
     if (txStatus?.status !== "success") return;
     if (campaign?.type !== "vote" || !slug) return;
@@ -353,7 +353,8 @@ export default function CampaignPage() {
     reminderRequestedRef.current = false;
 
     let cancelled = false;
-    let interval: number | undefined;
+    /** Browser timers are numeric IDs; `clearInterval` accepts them in the client bundle. */
+    const pollRef: { id: number | undefined } = { id: undefined };
 
     const fetchStatus = async () => {
       try {
@@ -450,7 +451,7 @@ export default function CampaignPage() {
         }
 
         if (next.status === "success" || next.status === "failed" || next.status === "abandoned") {
-          if (interval) window.clearInterval(interval);
+          if (pollRef.id) window.clearInterval(pollRef.id);
         }
       } catch {
         // Non-fatal: keep polling briefly
@@ -458,15 +459,15 @@ export default function CampaignPage() {
     };
 
     fetchStatus();
-    interval = window.setInterval(fetchStatus, 2000);
+    pollRef.id = window.setInterval(fetchStatus, 2000) as number;
 
     const stopTimeout = window.setTimeout(() => {
-      if (interval) window.clearInterval(interval);
+      if (pollRef.id) window.clearInterval(pollRef.id);
     }, 300_000);
 
     return () => {
       cancelled = true;
-      if (interval) window.clearInterval(interval);
+      if (pollRef.id) window.clearInterval(pollRef.id);
       window.clearTimeout(stopTimeout);
     };
   }, [ref]);
