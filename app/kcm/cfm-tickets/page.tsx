@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import {
   PaymentClientError,
   messageForPaymentFailure,
 } from "@/lib/payment-user-message";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
+import { cloudinaryLoader } from "@/lib/cloudinary";
 import { cfmTicketsJsonLd } from "./structured-data";
 
 /** Normalize to Kenya 254XXXXXXXXX for M-Pesa / stored payer phone. */
@@ -518,31 +520,65 @@ export default function CfmTicketsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(cfmTicketsJsonLd) }}
       />
-      <main className="relative min-h-screen overflow-x-clip max-md:bg-gray-100 pb-8 pt-32 max-md:pt-36 md:pt-36 sm:pb-10 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
-        {/* Hero photo + overlay: desktop only; mobile uses flat background */}
-        <div
-          className="pointer-events-none absolute inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
-          style={{
-            backgroundImage:
-              "url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg')",
-          }}
-          aria-hidden
-        />
-        <div className="pointer-events-none absolute inset-0 hidden bg-black/25 md:block" aria-hidden />
+      <main className="relative min-h-screen overflow-x-clip bg-gray-50 pb-8 pt-32 max-md:pt-36 md:pt-36 sm:pb-10 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+        <section aria-labelledby="cfm-tickets-heading" className="relative z-10">
+          {/* Full-bleed hero (white background, Changer Fusions accents) */}
+          <div className="md:relative md:ml-[calc(50%-50vw)] md:w-screen bg-white border-b border-gray-200">
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="grid items-center gap-8 py-9 sm:py-11 md:grid-cols-2 md:gap-10 md:py-14">
+                <div className="min-w-0 text-center md:text-left">
+                  <h1
+                    id="cfm-tickets-heading"
+                    className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl md:text-5xl text-center md:text-left"
+                  >
+                    Coast Fashion &amp; Modelling Awards 2026
+                  </h1>
+                  <p className="mt-3 text-sm font-semibold text-gray-700 sm:text-base text-center md:text-left">
+                    City Blue Creekside Hotel, Mombasa · 15th Aug 2026 · 7:00 PM
+                  </p>
+                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base mx-auto md:mx-0 text-center md:text-left">
+                    Secure your seat early. Select your package below and checkout via M‑Pesa or card.
+                  </p>
 
-        <section className="relative z-10 mt-3 min-w-0 max-md:mx-0 max-md:mt-2 max-md:max-w-none max-md:px-0 sm:mt-4 md:mt-6 md:w-full md:max-w-none md:px-0">
-          {/* Desktop: full-viewport-width white panel so the hero image never shows beside this page */}
-          <div className="min-w-0 md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
-          <article className="mx-auto w-full min-w-0 max-w-5xl overflow-hidden border border-white/35 bg-white shadow-2xl max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:border-gray-200 max-md:shadow-none md:rounded-2xl md:border-x md:border-white/35 md:shadow-2xl lg:rounded-3xl">
-            <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 px-4 py-4 text-white max-[360px]:px-3 max-[360px]:py-3 sm:px-6 sm:py-5 md:px-8 md:py-6 max-md:py-3.5 max-md:px-4">
-              <h1
-                id="cfm-tickets-heading"
-                className="scroll-mt-36 text-lg font-extrabold leading-tight max-[360px]:text-base sm:text-2xl md:text-3xl max-md:font-bold max-md:leading-snug"
-              >
-                Choose Your Ticket Package
-              </h1>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center md:justify-start">
+                    <a
+                      href="#packages"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    >
+                      Buy tickets
+                    </a>
+                    <a
+                      href="#packages"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-200 bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                    >
+                      View packages
+                    </a>
+                  </div>
+                </div>
+
+                <div className="relative flex w-full justify-center md:justify-end">
+                  <div className="relative aspect-[4/5] w-full max-w-[520px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+                    <Image
+                      loader={cloudinaryLoader}
+                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1778484100/cfm_tickets_fx0rpu.jpg"
+                      alt="Coast Fashion & Modelling Awards 2026 ticket poster"
+                      fill
+                      className="object-contain object-center"
+                      sizes="(max-width: 768px) 92vw, 520px"
+                      priority
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
+          <div id="packages" className="scroll-mt-36" />
+
+          {/* Desktop: full-viewport-width white panel for checkout */}
+          <div className="min-w-0 md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
+            <div className="mx-auto w-full max-w-7xl px-0 sm:px-6 lg:px-8">
+              <article className="w-full min-w-0 overflow-hidden bg-white max-md:max-w-none max-md:rounded-none md:mt-8 md:mr-auto md:ml-0 md:max-w-5xl">
             {/* Mobile: ≤320px single-column tiers; wider mobile keeps 3 cols with capped height */}
             <div className="bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-0 max-md:py-2 max-md:pb-2">
                 <div className="max-md:flex max-md:flex-col max-md:min-h-0 max-md:max-h-[min(52dvh,26rem)] max-[320px]:max-h-none max-[320px]:overflow-visible min-[321px]:max-md:overflow-y-auto">
@@ -902,7 +938,8 @@ export default function CfmTicketsPage() {
                 </div>
               </div>
             </form>
-          </article>
+              </article>
+            </div>
           <CfmTicketsPosterCarousel />
           </div>
         </section>
