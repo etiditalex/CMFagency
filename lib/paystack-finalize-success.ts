@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyLipaPolePolePaymentSuccess, isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
+import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 /** Row shape needed to record Paystack success + fulfill (votes/tickets). */
 export type PaystackFulfillmentRow = {
@@ -128,35 +129,17 @@ export async function finalizePaystackTransactionSuccess(
     return { fulfillErr: null };
   }
 
-  let fulfillErr: string | null = null;
-
-  if (tx.campaign_type === "vote") {
-    if (!tx.contestant_id) {
-      fulfillErr = "vote_missing_contestant_id";
-    } else {
-      // contestant_id is stored on the transaction at checkout (Paystack init / M-Pesa STK); same id is written here.
-      const { error: vErr } = await supabase.from("votes").upsert(
-        {
-          transaction_id: tx.id,
-          campaign_id: tx.campaign_id,
-          contestant_id: tx.contestant_id,
-          votes: tx.quantity,
-        },
-        { onConflict: "transaction_id" }
-      );
-      if (vErr) fulfillErr = vErr.message;
-    }
-  } else if (tx.campaign_type === "ticket") {
-    const { error: tErr } = await supabase.from("ticket_issues").upsert(
-      {
-        transaction_id: tx.id,
-        campaign_id: tx.campaign_id,
-        quantity: tx.quantity,
-      },
-      { onConflict: "transaction_id" }
-    );
-    if (tErr) fulfillErr = tErr.message;
-  }
+  const { fulfillErr } = await upsertVoteOrTicketForSuccessfulTx(
+    supabase,
+    {
+      id: tx.id,
+      campaign_id: tx.campaign_id,
+      campaign_type: tx.campaign_type,
+      contestant_id: tx.contestant_id,
+      quantity: tx.quantity,
+    },
+    "[finalizePaystack]"
+  );
 
   if (fulfillErr) {
     await supabase

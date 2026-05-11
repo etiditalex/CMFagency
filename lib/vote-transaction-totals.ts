@@ -30,13 +30,25 @@ async function fetchVoteTotalsPaged(supabase: SupabaseClient, campaignId: string
   const rows = await fetchAllSupabasePages(async (from, to) => {
     const r = await supabase
       .from("transactions")
-      .select("contestant_id,quantity")
+      .select("contestant_id,quantity,campaigns!inner(type)")
       .eq("campaign_id", campaignId)
-      .eq("campaign_type", "vote")
+      .eq("campaigns.type", "vote")
       .eq("status", "success")
       .not("contestant_id", "is", null)
       .order("id", { ascending: true })
       .range(from, to);
+    if (r.error) {
+      const legacy = await supabase
+        .from("transactions")
+        .select("contestant_id,quantity")
+        .eq("campaign_id", campaignId)
+        .eq("campaign_type", "vote")
+        .eq("status", "success")
+        .not("contestant_id", "is", null)
+        .order("id", { ascending: true })
+        .range(from, to);
+      return { data: legacy.data as TxRow[] | null, error: legacy.error };
+    }
     return { data: r.data as TxRow[] | null, error: r.error };
   });
   return aggregateTxRows(rows);

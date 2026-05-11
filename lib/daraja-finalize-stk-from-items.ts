@@ -7,6 +7,7 @@ import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
 import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
 import { sendServiceInvoicePaidEmail } from "@/lib/send-service-invoice-email";
+import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 export type CallbackMetadataItem = { Name: string; Value: string | number };
 
@@ -40,8 +41,64 @@ export async function finalizeDarajaStkFromMetadataItems(
   items: CallbackMetadataItem[],
   logPrefix = "[Daraja]"
 ): Promise<"amount_mismatch" | "completed"> {
-  const { data: already } = await supabase.from("transactions").select("status").eq("id", tx.id).maybeSingle();
-  if (already && String((already as { status?: string }).status ?? "") === "success") {
+  const { data: existingRow } = await supabase
+    .from("transactions")
+    .select("id,status,metadata,campaign_id,campaign_type,contestant_id,quantity,fulfilled_at,coupon_id")
+    .eq("id", tx.id)
+    .maybeSingle();
+
+  if (existingRow && String((existingRow as { status?: string }).status ?? "") === "success") {
+    const er = existingRow as {
+      metadata?: unknown;
+      campaign_id: string;
+      campaign_type: string;
+      contestant_id: string | null;
+      quantity: number;
+      fulfilled_at: string | null;
+      coupon_id?: string | null;
+    };
+    const metaRec =
+      typeof er.metadata === "object" && er.metadata !== null && !Array.isArray(er.metadata)
+        ? (er.metadata as Record<string, unknown>)
+        : {};
+    if (metaRec.merchandise_cart === true || isLipaPolePoleMetadata(metaRec) || metaRec.service_invoice_id) {
+      return "completed";
+    }
+    const { fulfillErr, effectiveType } = await upsertVoteOrTicketForSuccessfulTx(
+      supabase,
+      {
+        id: tx.id,
+        campaign_id: er.campaign_id,
+        campaign_type: er.campaign_type,
+        contestant_id: er.contestant_id ?? tx.contestant_id,
+        quantity: Number(er.quantity ?? tx.quantity),
+      },
+      logPrefix
+    );
+    if (fulfillErr) {
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: Object.assign({}, metaRec, { fulfillment_error: fulfillErr }),
+        } as Record<string, unknown>)
+        .eq("id", tx.id);
+    } else if (effectiveType === "vote" || effectiveType === "ticket") {
+      if (!er.fulfilled_at) {
+        await supabase
+          .from("transactions")
+          .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+          .eq("id", tx.id)
+          .is("fulfilled_at", null);
+        const couponId = er.coupon_id ?? tx.coupon_id;
+        if (couponId) {
+          const { data: cou } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+          if (cou) {
+            const nextCount = ((cou as { used_count: number }).used_count ?? 0) + 1;
+            await supabase.from("coupons").update({ used_count: nextCount }).eq("id", couponId);
+          }
+        }
+      }
+    }
     return "completed";
   }
 
@@ -185,30 +242,25 @@ export async function finalizeDarajaStkFromMetadataItems(
   }
 
   if (tx.fulfilled_at) {
-    if (!meta.merchandise_cart && tx.campaign_type === "vote" && tx.contestant_id) {
-      const { data: vRow } = await supabase.from("votes").select("id").eq("transaction_id", tx.id).maybeSingle();
-      if (!vRow) {
-        await supabase.from("votes").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            contestant_id: tx.contestant_id,
-            votes: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
-      }
-    } else if (!meta.merchandise_cart && tx.campaign_type === "ticket") {
-      const { data: tRow } = await supabase.from("ticket_issues").select("id").eq("transaction_id", tx.id).maybeSingle();
-      if (!tRow) {
-        await supabase.from("ticket_issues").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            quantity: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
+    if (!meta.merchandise_cart) {
+      const { fulfillErr } = await upsertVoteOrTicketForSuccessfulTx(
+        supabase,
+        {
+          id: tx.id,
+          campaign_id: tx.campaign_id,
+          campaign_type: tx.campaign_type,
+          contestant_id: tx.contestant_id,
+          quantity: tx.quantity,
+        },
+        logPrefix
+      );
+      if (fulfillErr) {
+        await supabase
+          .from("transactions")
+          .update({
+            metadata: Object.assign({}, meta, { fulfillment_error: fulfillErr }),
+          } as Record<string, unknown>)
+          .eq("id", tx.id);
       }
     }
     return "completed";
@@ -258,40 +310,17 @@ export async function finalizeDarajaStkFromMetadataItems(
       .eq("id", tx.id)
       .is("fulfilled_at", null);
   } else {
-    let fulfillErr: string | null = null;
-    if (tx.campaign_type === "vote") {
-      if (!tx.contestant_id) {
-        fulfillErr = "vote_missing_contestant_id";
-        console.error(`${logPrefix} Vote success but contestant_id is null`, tx.id);
-      } else {
-        const { error: voteErr } = await supabase.from("votes").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            contestant_id: tx.contestant_id,
-            votes: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
-        if (voteErr) {
-          fulfillErr = voteErr.message;
-          console.error(`${logPrefix} votes upsert failed:`, voteErr.message);
-        }
-      }
-    } else {
-      const { error: ticketErr } = await supabase.from("ticket_issues").upsert(
-        {
-          transaction_id: tx.id,
-          campaign_id: tx.campaign_id,
-          quantity: tx.quantity,
-        },
-        { onConflict: "transaction_id" }
-      );
-      if (ticketErr) {
-        fulfillErr = ticketErr.message;
-        console.error(`${logPrefix} ticket_issues upsert failed:`, ticketErr.message);
-      }
-    }
+    const { fulfillErr } = await upsertVoteOrTicketForSuccessfulTx(
+      supabase,
+      {
+        id: tx.id,
+        campaign_id: tx.campaign_id,
+        campaign_type: tx.campaign_type,
+        contestant_id: tx.contestant_id,
+        quantity: tx.quantity,
+      },
+      logPrefix
+    );
 
     if (!fulfillErr) {
       await supabase
