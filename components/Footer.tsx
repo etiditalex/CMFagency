@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, House, UserPlus, Award, Crown, Shield } from "lucide-react";
 import Image from "next/image";
-import AdSenseBlock from "@/components/AdSenseBlock";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
@@ -164,12 +163,6 @@ export default function Footer() {
 
             <NewsletterSubscribeForm variant="footer" />
           </div>
-        </div>
-
-        {/* Google AdSense - footer ad (only shows when NEXT_PUBLIC_ADSENSE_SLOT is set in Vercel) */}
-        <div className="mt-10 pt-8 border-t border-gray-800">
-          <p className="text-xs text-gray-500 mb-3 text-center">Advertisement</p>
-          <AdSenseBlock />
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-8">

@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import AdSenseBlock from "@/components/AdSenseBlock";
 import Hero from "@/components/home/Hero";
 import HeroSupportSection from "@/components/home/HeroSupportSection";
 import FeaturedEvents from "@/components/home/FeaturedEvents";
@@ -68,6 +69,12 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <section className="border-y border-gray-200 bg-gray-50/80" aria-label="Advertisement">
+        <div className="container-custom py-6 md:py-8">
+          <p className="text-xs text-gray-500 mb-3 text-center">Advertisement</p>
+          <AdSenseBlock />
+        </div>
+      </section>
       <HeroSupportSection />
       <FeaturedEvents />
       <CoreValues />

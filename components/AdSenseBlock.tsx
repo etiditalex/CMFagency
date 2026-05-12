@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const ADSENSE_CLIENT = "ca-pub-7231529725117325";
-// Homepage_Footer_Ad slot; override with NEXT_PUBLIC_ADSENSE_SLOT if needed
+// Display slot (e.g. homepage below hero); override with NEXT_PUBLIC_ADSENSE_SLOT if needed
 const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT || "2949826143";
 const ADSENSE_READY_EVENT = "adsense:ready";
 
