@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { getUpcomingEventBySlug } from "@/lib/events-server";
+import { shareableEventImageUrlForOgRender } from "@/lib/event-share-image";
+import { getFusionEventShareFieldsBySlug, getUpcomingEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 export const runtime = "edge";
@@ -17,7 +18,15 @@ type Props = { params: Promise<{ id?: string }> };
 export default async function OpenGraphImage({ params }: Props) {
   const { id: slug } = await params;
   const event = slug ? await getUpcomingEventBySlug(slug) : null;
-  const image = event?.image_url || event?.default_image_url || EVENTS_BANNER_OG.url;
+  const shareFields = event || !slug ? null : await getFusionEventShareFieldsBySlug(slug);
+  const primary =
+    event?.image_url ||
+    event?.default_image_url ||
+    shareFields?.image_url ||
+    shareFields?.default_image_url ||
+    null;
+  const image =
+    shareableEventImageUrlForOgRender(primary, slug ?? null) || EVENTS_BANNER_OG.url;
   const title = event?.title || "Upcoming Event";
   const subtitle =
     event?.location || event?.event_date || "Changer Fusions";

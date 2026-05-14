@@ -51,6 +51,28 @@ export type PastEventRow = {
   gallery: string[] | null;
 };
 
+/** Image fields only, by slug (no date filter) — for share metadata when upcoming/past query misses. */
+export const getFusionEventShareFieldsBySlug = cache(
+  async (slug: string): Promise<{
+    image_url: string | null;
+    default_image_url: string | null;
+    gallery: unknown;
+  } | null> => {
+    if (!slug || !supabase) return null;
+    const { data, error } = await supabase
+      .from("fusion_events")
+      .select("image_url, default_image_url, gallery")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) return null;
+    return data as {
+      image_url: string | null;
+      default_image_url: string | null;
+      gallery: unknown;
+    } | null;
+  }
+);
+
 /** Cached server-side fetch for a past event by slug (for metadata / share previews). */
 export const getPastEventBySlug = cache(
   async (slug: string): Promise<PastEventRow | null> => {

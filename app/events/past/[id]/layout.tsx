@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { resolveEventShareImageUrl } from "@/lib/event-share-image";
-import { getPastEventBySlug } from "@/lib/events-server";
+import { getFusionEventShareFieldsBySlug, getPastEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const SITE_URL = "https://cmfagency.co.ke";
@@ -20,15 +20,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getPastEventBySlug(slug);
-  const generatedOg = `${SITE_URL}/events/past/${slug}/opengraph-image`;
+  const shareFallback = event ? null : await getFusionEventShareFieldsBySlug(slug);
+  const imageUrl = event?.image_url ?? shareFallback?.image_url ?? null;
+  const defaultImageUrl = event?.default_image_url ?? shareFallback?.default_image_url ?? null;
+  const gallerySource = event?.gallery ?? shareFallback?.gallery;
   const galleryFirst =
-    Array.isArray(event?.gallery) && event.gallery.length > 0
-      ? String(event.gallery[0])
+    Array.isArray(gallerySource) && gallerySource.length > 0
+      ? String(gallerySource[0])
       : null;
+  const generatedOg = `${SITE_URL}/events/past/${slug}/opengraph-image`;
   const shareImage = resolveEventShareImageUrl({
-    imageUrl: event?.image_url,
-    defaultImageUrl: event?.default_image_url,
+    imageUrl,
+    defaultImageUrl,
     galleryFirst,
+    slug,
     generatedOgImageUrl: generatedOg,
   });
 

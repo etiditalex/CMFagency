@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { resolveEventShareImageUrl } from "@/lib/event-share-image";
-import { getUpcomingEventBySlug } from "@/lib/events-server";
+import { getFusionEventShareFieldsBySlug, getUpcomingEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const CFMA_SLUG = "coast-fashion-modelling-awards-2026";
@@ -58,10 +58,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getUpcomingEventBySlug(slug);
+  const shareFallback = event ? null : await getFusionEventShareFieldsBySlug(slug);
+  const imageUrl = event?.image_url ?? shareFallback?.image_url ?? null;
+  const defaultImageUrl = event?.default_image_url ?? shareFallback?.default_image_url ?? null;
   const generatedOg = `${SITE_URL}/events/upcoming/${slug}/opengraph-image`;
   const shareImage = resolveEventShareImageUrl({
-    imageUrl: event?.image_url,
-    defaultImageUrl: event?.default_image_url,
+    imageUrl,
+    defaultImageUrl,
+    slug,
     generatedOgImageUrl: generatedOg,
   });
   const title = event?.title
