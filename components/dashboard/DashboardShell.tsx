@@ -13,6 +13,7 @@ import {
   Calendar,
   ClipboardCheck,
   FilePenLine,
+  FileText,
   Download,
   Inbox,
   LayoutDashboard,
@@ -79,6 +80,7 @@ const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
   { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "main", featureKey: "reports" },
+  { label: "Invoices", href: "/dashboard/invoices", icon: FileText, section: "main" },
   {
     label: "Sales & votes",
     href: "/dashboard/insights",
