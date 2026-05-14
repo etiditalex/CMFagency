@@ -8,12 +8,21 @@ import { FileText, Loader2, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { INVOICE_MPESA_ACCOUNT, INVOICE_MPESA_PAYBILL } from "@/lib/invoice-payment-details";
 import { supabase } from "@/lib/supabase";
 
 type Line = { id: string; description: string; quantity: string; unitAmountKes: string };
 
 function newLine(): Line {
   return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, description: "", quantity: "1", unitAmountKes: "" };
+}
+
+function lineRowTotalKes(qtyStr: string, unitStr: string): number | null {
+  const q = Number(qtyStr);
+  const u = Number(unitStr);
+  if (!Number.isFinite(q) || q <= 0) return null;
+  if (!Number.isFinite(u) || u < 0) return null;
+  return Math.round(q * Math.round(u));
 }
 
 function parseFilenameFromDisposition(header: string | null): string | null {
@@ -69,6 +78,18 @@ export default function DashboardInvoicesPage() {
         Number(r.unitAmountKes) >= 0
     );
   }, [billToName, lines]);
+
+  /** Grand total for complete lines only (same rows as the generated PDF). */
+  const grandTotalKes = useMemo(() => {
+    let grand = 0;
+    for (const r of lines) {
+      if (!r.description.trim()) continue;
+      const lt = lineRowTotalKes(r.quantity, r.unitAmountKes);
+      if (lt == null) continue;
+      grand += lt;
+    }
+    return grand;
+  }, [lines]);
 
   const addRow = () => setLines((prev) => [...prev, newLine()]);
   const removeRow = (id: string) => setLines((prev) => (prev.length <= 1 ? prev : prev.filter((x) => x.id !== id)));
@@ -164,6 +185,15 @@ export default function DashboardInvoicesPage() {
           <div className="font-bold text-gray-900">Changer Fusions</div>
           <div>Ambalal Building, Nkruma Road · Ambalal, Mombasa, Kenya</div>
           <div className="mt-1 text-gray-500">Logo and layout match public invoices; amounts are in KSh.</div>
+          <div className="mt-3 text-xs text-gray-700 leading-relaxed border-t border-gray-200 pt-3">
+            <span className="font-bold text-gray-900">M-Pesa Paybill</span> {INVOICE_MPESA_PAYBILL}
+            <span className="mx-2 text-gray-300">·</span>
+            <span className="font-bold text-gray-900">Account No.</span> {INVOICE_MPESA_ACCOUNT}
+            <span className="block mt-1 text-gray-600">
+              Use the invoice reference shown on the PDF as the payment description. Printed PDFs include a signature
+              line for the authorized signatory.
+            </span>
+          </div>
         </div>
       </div>
 
@@ -254,48 +284,71 @@ export default function DashboardInvoicesPage() {
                 <th className="px-3 py-2 font-bold text-gray-800">Description</th>
                 <th className="px-3 py-2 font-bold text-gray-800 w-24">Qty</th>
                 <th className="px-3 py-2 font-bold text-gray-800 w-32">Unit (KSh)</th>
+                <th className="px-3 py-2 font-bold text-gray-800 w-36 text-right tabular-nums">Line total (KSh)</th>
                 <th className="w-12 px-2 py-2" />
               </tr>
             </thead>
             <tbody>
-              {lines.map((row) => (
-                <tr key={row.id} className="border-b border-gray-100 last:border-0">
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      value={row.description}
-                      onChange={(e) => updateLine(row.id, { description: e.target.value })}
-                      placeholder="Service or product"
-                      className="w-full min-w-[180px] rounded border border-gray-200 px-2 py-1.5 text-sm"
-                    />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      value={row.quantity}
-                      onChange={(e) => updateLine(row.id, { quantity: e.target.value })}
-                      inputMode="decimal"
-                      className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
-                    />
-                  </td>
-                  <td className="px-3 py-2 align-top">
-                    <input
-                      value={row.unitAmountKes}
-                      onChange={(e) => updateLine(row.id, { unitAmountKes: e.target.value })}
-                      inputMode="numeric"
-                      className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
-                    />
-                  </td>
-                  <td className="px-2 py-2 align-top text-center">
-                    <button
-                      type="button"
-                      onClick={() => removeRow(row.id)}
-                      className="inline-flex p-1.5 rounded text-gray-500 hover:bg-red-50 hover:text-red-700"
-                      aria-label="Remove line"
+              {lines.map((row) => {
+                const draftTotal = lineRowTotalKes(row.quantity, row.unitAmountKes);
+                const included = row.description.trim() && draftTotal != null;
+                const showAmount = draftTotal != null;
+                return (
+                  <tr key={row.id} className="border-b border-gray-100">
+                    <td className="px-3 py-2 align-top">
+                      <input
+                        value={row.description}
+                        onChange={(e) => updateLine(row.id, { description: e.target.value })}
+                        placeholder="Service or product"
+                        className="w-full min-w-[180px] rounded border border-gray-200 px-2 py-1.5 text-sm"
+                      />
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      <input
+                        value={row.quantity}
+                        onChange={(e) => updateLine(row.id, { quantity: e.target.value })}
+                        inputMode="decimal"
+                        className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
+                      />
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      <input
+                        value={row.unitAmountKes}
+                        onChange={(e) => updateLine(row.id, { unitAmountKes: e.target.value })}
+                        inputMode="numeric"
+                        className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm"
+                      />
+                    </td>
+                    <td
+                      className={`px-3 py-2 align-top text-right tabular-nums text-sm font-semibold ${
+                        included ? "text-gray-900" : showAmount ? "text-gray-400" : "text-gray-400"
+                      }`}
+                      title={showAmount && !included ? "Add a description to include this line in the total and PDF" : undefined}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {showAmount ? draftTotal.toLocaleString("en-KE") : "—"}
+                    </td>
+                    <td className="px-2 py-2 align-top text-center">
+                      <button
+                        type="button"
+                        onClick={() => removeRow(row.id)}
+                        className="inline-flex p-1.5 rounded text-gray-500 hover:bg-red-50 hover:text-red-700"
+                        aria-label="Remove line"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr className="bg-gray-50 border-t-2 border-gray-300">
+                <td colSpan={3} className="px-3 py-3 text-right text-sm font-extrabold text-gray-900">
+                  Total (all invoiced lines)
+                </td>
+                <td className="px-3 py-3 text-right text-base font-extrabold tabular-nums text-gray-900">
+                  KSh {grandTotalKes.toLocaleString("en-KE")}
+                </td>
+                <td />
+              </tr>
             </tbody>
           </table>
         </div>

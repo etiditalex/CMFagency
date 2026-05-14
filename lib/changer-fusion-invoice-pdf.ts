@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { INVOICE_MPESA_ACCOUNT, INVOICE_MPESA_PAYBILL } from "@/lib/invoice-payment-details";
 
 export type InvoiceLineItem = {
   description: string;
@@ -128,7 +129,55 @@ function drawTableHeader(
 function addCompanyFooter(page: PDFPage, fontReg: PDFFont) {
   const t = "Thank you for your business · Changer Fusions";
   const w = fontReg.widthOfTextAtSize(t, 8);
-  page.drawText(t, { x: (PAGE_W - w) / 2, y: 28, size: 8, font: fontReg, color: BRAND_GRAY });
+  page.drawText(t, { x: (PAGE_W - w) / 2, y: 22, size: 8, font: fontReg, color: BRAND_GRAY });
+}
+
+/** Minimum y (pdf-lib: above bottom) before drawing paybill + signature + tagline. */
+const MIN_Y_BEFORE_PAYMENT_BLOCK = 132;
+
+function drawPaymentAndSignature(
+  page: PDFPage,
+  fontReg: PDFFont,
+  fontBold: PDFFont,
+  invoiceRef: string,
+  topY: number
+): void {
+  let y = topY;
+  y -= 6;
+  page.drawText("Payment — M-Pesa Paybill", { x: M, y, size: 10, font: fontBold, color: BRAND_DARK });
+  y -= 13;
+  page.drawText(`Paybill No: ${INVOICE_MPESA_PAYBILL}`, { x: M, y, size: 9, font: fontReg, color: BRAND_DARK });
+  y -= 12;
+  page.drawText(`Account No: ${INVOICE_MPESA_ACCOUNT}`, { x: M, y, size: 9, font: fontReg, color: BRAND_DARK });
+  y -= 11;
+  const payNote = `Use invoice reference ${invoiceRef} as the payment description / narration where applicable.`;
+  for (const ln of wrapLines(payNote, fontReg, 8, BODY_W)) {
+    page.drawText(ln, { x: M, y, size: 8, font: fontReg, color: BRAND_GRAY });
+    y -= 10;
+  }
+  y -= 12;
+  page.drawText("Authorized signature", { x: M, y, size: 9, font: fontBold, color: BRAND_DARK });
+  y -= 6;
+  const lineW = 230;
+  const lineY = y;
+  const lineColor = rgb(0.25, 0.26, 0.28);
+  page.drawLine({
+    start: { x: M, y: lineY },
+    end: { x: M + lineW, y: lineY },
+    thickness: 0.6,
+    color: lineColor,
+  });
+  page.drawText("For Changer Fusions", { x: M, y: lineY - 11, size: 8, font: fontReg, color: BRAND_GRAY });
+
+  const dateLineW = 160;
+  const dx = PAGE_W - M - dateLineW;
+  page.drawLine({
+    start: { x: dx, y: lineY },
+    end: { x: dx + dateLineW, y: lineY },
+    thickness: 0.6,
+    color: lineColor,
+  });
+  page.drawText("Date", { x: dx, y: lineY - 11, size: 8, font: fontReg, color: BRAND_GRAY });
 }
 
 export async function buildChangerFusionInvoicePdfBytes(input: BuildChangerFusionInvoicePdfInput): Promise<Uint8Array> {
@@ -323,12 +372,24 @@ export async function buildChangerFusionInvoicePdfBytes(input: BuildChangerFusio
     "Ambalal, Mombasa, Kenya",
     `Reference on payment: ${input.invoiceRef}`,
   ];
-  y = Math.min(y, M + 140);
+  y = Math.min(y, M + 200);
   for (const ln of addrLines) {
-    if (y < M + 40) break;
+    if (y < M + 48) {
+      page = doc.addPage([PAGE_W, PAGE_H]);
+      y = H - M - 16;
+    }
     page.drawText(ln, { x: M, y: y, size: 8, font: fontReg, color: BRAND_GRAY });
     y -= 10;
   }
+
+  if (y < MIN_Y_BEFORE_PAYMENT_BLOCK) {
+    page = doc.addPage([PAGE_W, PAGE_H]);
+    y = H - M - 8;
+    page.drawText(`Changer Fusions · ${input.invoiceRef}`, { x: M, y, size: 9, font: fontReg, color: BRAND_GRAY });
+    y -= 20;
+  }
+
+  drawPaymentAndSignature(page, fontReg, fontBold, input.invoiceRef, y);
 
   addCompanyFooter(page, fontReg);
 
