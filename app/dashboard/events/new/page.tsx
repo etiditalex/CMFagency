@@ -51,6 +51,7 @@ export default function NewEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
   const [freeRegistration, setFreeRegistration] = useState(false);
+  const [lipaPolePole, setLipaPolePole] = useState(false);
   const [useTieredTickets, setUseTieredTickets] = useState(false);
   const [ticketTiers, setTicketTiers] = useState<FusionTicketTier[]>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
@@ -127,6 +128,7 @@ export default function NewEventPage() {
         ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
         free_registration: freeRegistration,
         free_registration_ask_party_size: freeRegistration,
+        lipa_pole_pole: freeRegistration ? false : lipaPolePole,
         ticket_tiers:
           useTieredTickets && ticketTiers.length > 0
             ? ticketTiers.map((t) => tierToStoredJson(t))
@@ -364,11 +366,28 @@ export default function NewEventPage() {
             id="free-reg"
             type="checkbox"
             checked={freeRegistration}
-            onChange={(e) => setFreeRegistration(e.target.checked)}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setFreeRegistration(v);
+              if (v) setLipaPolePole(false);
+            }}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="free-reg" className="text-sm font-medium text-gray-700">
             Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
+          </label>
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            id="lipa-pole-pole"
+            type="checkbox"
+            checked={lipaPolePole}
+            disabled={freeRegistration}
+            onChange={(e) => setLipaPolePole(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
+          />
+          <label htmlFor="lipa-pole-pole" className={`text-sm font-medium ${freeRegistration ? "text-gray-400" : "text-gray-700"}`}>
+            Lipa Pole Pole event (installment ticket payments). Marks this listing in the dashboard so the team knows tickets can be paid in parts when checkout supports it.
           </label>
         </div>
         <div className="flex items-start gap-2">

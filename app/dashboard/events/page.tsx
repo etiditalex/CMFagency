@@ -21,6 +21,7 @@ type EventRow = {
   created_at: string;
   created_by?: string | null;
   ticket_price_kes?: number | null;
+  lipa_pole_pole?: boolean | null;
 };
 
 export default function DashboardEventsPage() {
@@ -55,7 +56,7 @@ export default function DashboardEventsPage() {
       try {
         let query = supabase
           .from("fusion_events")
-          .select("id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes")
+          .select("id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes,lipa_pole_pole")
           .order("event_date", { ascending: false });
 
         if (!isFullAdmin && user?.id) {
@@ -167,6 +168,7 @@ export default function DashboardEventsPage() {
                 <th className="px-6 py-3 font-bold text-gray-600">Date</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Location</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Price (KES)</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Lipa Pole Pole</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Status</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Actions</th>
               </tr>
@@ -174,7 +176,7 @@ export default function DashboardEventsPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-8 text-gray-600" colSpan={5}>
+                  <td className="px-6 py-8 text-gray-600" colSpan={7}>
                     No events yet.{" "}
                     <Link href="/dashboard/events/new" className="text-primary-600 font-semibold hover:underline">
                       Create your first event
@@ -206,6 +208,15 @@ export default function DashboardEventsPage() {
                         {e.ticket_price_kes != null
                           ? `KES ${Number(e.ticket_price_kes).toLocaleString("en-KE")}`
                           : "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {e.lipa_pole_pole ? (
+                          <span className="inline-flex px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-900">
+                            Yes
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs font-medium">No</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span

@@ -59,6 +59,7 @@ export default function EditEventPage() {
   const [mapUrl, setMapUrl] = useState("");
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [freeRegistration, setFreeRegistration] = useState(false);
+  const [lipaPolePole, setLipaPolePole] = useState(false);
   const [registrations, setRegistrations] = useState<
     Array<{
       id: string;
@@ -139,6 +140,7 @@ export default function EditEventPage() {
             : ""
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
+        setLipaPolePole(Boolean((ev as { lipa_pole_pole?: boolean }).lipa_pole_pole));
         const rawTiers = (ev as { ticket_tiers?: unknown[] | null }).ticket_tiers;
         const tiers =
           Array.isArray(rawTiers) && rawTiers.length > 0
@@ -270,6 +272,7 @@ export default function EditEventPage() {
           ticket_price_kes: ticketPriceKes.trim() ? Number(ticketPriceKes.trim()) : null,
           free_registration: freeRegistration,
           free_registration_ask_party_size: freeRegistration,
+          lipa_pole_pole: freeRegistration ? false : lipaPolePole,
           ticket_tiers: useTieredTickets && ticketTiers.length > 0 ? ticketTiers.map((t) => tierToStoredJson(t)) : null,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
@@ -494,11 +497,31 @@ export default function EditEventPage() {
             id="free-reg-edit"
             type="checkbox"
             checked={freeRegistration}
-            onChange={(e) => setFreeRegistration(e.target.checked)}
+            onChange={(e) => {
+              const v = e.target.checked;
+              setFreeRegistration(v);
+              if (v) setLipaPolePole(false);
+            }}
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="free-reg-edit" className="text-sm font-medium text-gray-700">
             Free registration only (no ticket sale). Visitors register and receive an email invitation with QR code for gate entry.
+          </label>
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            id="lipa-pole-pole-edit"
+            type="checkbox"
+            checked={lipaPolePole}
+            disabled={freeRegistration}
+            onChange={(e) => setLipaPolePole(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
+          />
+          <label
+            htmlFor="lipa-pole-pole-edit"
+            className={`text-sm font-medium ${freeRegistration ? "text-gray-400" : "text-gray-700"}`}
+          >
+            Lipa Pole Pole event (installment ticket payments). Marks this listing in the dashboard so the team knows tickets can be paid in parts when checkout supports it.
           </label>
         </div>
 
