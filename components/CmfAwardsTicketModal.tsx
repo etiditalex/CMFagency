@@ -69,7 +69,7 @@ type Props = {
   tiers?: TicketTierInput[] | null;
   /**
    * Lipa Pole Pole: pay a custom first amount, then balance later (email reminders every 3 days via cron).
-   * Omit for CFMA / blog defaults (enabled). Pass `false` for Fusion events without the dashboard flag.
+   * Omit or leave unset to enable (CFMA, tiered events, blog). Pass `false` only to hide the option.
    */
   lipaPolePoleEnabled?: boolean;
 };

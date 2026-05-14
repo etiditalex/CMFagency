@@ -245,11 +245,6 @@ export default function UpcomingEventsPage() {
           imageUrl: (tieredEvent.image_url || tieredEvent.default_image_url) ?? undefined,
         } : undefined}
         tiers={tieredEvent?.ticket_tiers ?? undefined}
-        lipaPolePoleEnabled={
-          tieredEvent == null || tieredEvent.slug === "coast-fashion-modelling-awards-2026"
-            ? undefined
-            : tieredEvent.lipa_pole_pole === true
-        }
       />
     </div>
   );

@@ -801,9 +801,6 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
             imageUrl: (event.image_url || event.default_image_url) ?? undefined,
           }}
           tiers={event.ticket_tiers ?? undefined}
-          lipaPolePoleEnabled={
-            event.slug === CFMA_2026_ID ? undefined : event.lipa_pole_pole === true
-          }
         />
       )}
     </div>

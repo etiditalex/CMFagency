@@ -12,6 +12,17 @@ import {
   messageForPaymentFailure,
   PaymentClientError,
 } from "@/lib/payment-user-message";
+import { LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
+
+/** Match `/api/cfm-tickets/installment/plan` so plan phone equals STK phone. */
+function normalizeKenyaPhoneForPlan(raw: string): string {
+  const phoneRaw = raw.trim().replace(/\s/g, "");
+  if (phoneRaw.startsWith("+254")) return `254${phoneRaw.slice(4)}`;
+  if (phoneRaw.startsWith("254")) return phoneRaw;
+  if (phoneRaw.startsWith("0") && phoneRaw.length >= 10) return `254${phoneRaw.slice(1)}`;
+  if (phoneRaw.length === 9 && /^[17]/.test(phoneRaw)) return `254${phoneRaw}`;
+  return phoneRaw;
+}
 
 type Campaign = {
   id: string;
@@ -225,6 +236,8 @@ export default function CampaignPage() {
   const [contestantId, setContestantId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [lipaPayMode, setLipaPayMode] = useState<"full" | "installment">("full");
+  const [lipaFirstPayKes, setLipaFirstPayKes] = useState("");
   const [votingStartMs, setVotingStartMs] = useState<number>(FALLBACK_VOTING_START_MS);
   const [voteSuccessToastShow, setVoteSuccessToastShow] = useState(false);
 
@@ -285,6 +298,11 @@ export default function CampaignPage() {
     return () => {
       cancelled = true;
     };
+  }, [slug]);
+
+  useEffect(() => {
+    setLipaPayMode("full");
+    setLipaFirstPayKes("");
   }, [slug]);
 
   /** Optional `?c=` id for a hint only — selection still requires an explicit tap. */
@@ -499,6 +517,20 @@ export default function CampaignPage() {
     return qty * campaign.unit_amount;
   }, [campaign, qty]);
 
+  const allowLipa =
+    campaign?.type === "ticket" &&
+    String(campaign.currency ?? "").toUpperCase() === "KES" &&
+    total >= LIPA_POLE_POLE_MIN_KES;
+
+  const phoneNormPlan = useMemo(() => normalizeKenyaPhoneForPlan(phone), [phone]);
+
+  const lipaDepositKes = Math.trunc(Number(lipaFirstPayKes.trim()) || 0);
+  const lipaDepositOk =
+    lipaPayMode !== "installment" ||
+    (Number.isFinite(lipaDepositKes) &&
+      lipaDepositKes >= LIPA_POLE_POLE_MIN_KES &&
+      lipaDepositKes <= total);
+
   const isKes = String(campaign?.currency ?? "").toUpperCase() === "KES";
   // Show M-Pesa option for KES campaigns; backend will error if Daraja not configured
   const showMpesaOption = isKes;
@@ -522,6 +554,150 @@ export default function CampaignPage() {
         throw new PaymentClientError("Please select a contestant.");
       }
 
+      const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
+
+      if (allowLipa && lipaPayMode === "installment") {
+        const depositKes = Math.trunc(Number(lipaFirstPayKes.trim()));
+        if (
+          !Number.isFinite(depositKes) ||
+          depositKes < LIPA_POLE_POLE_MIN_KES ||
+          depositKes > total
+        ) {
+          throw new PaymentClientError(
+            `Enter an amount between KES ${LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")} and KES ${total.toLocaleString("en-KE")}.`
+          );
+        }
+        if (!/^254[17]\d{8}$/.test(phoneNormPlan)) {
+          throw new PaymentClientError(
+            "Enter a valid Safaricom number (e.g. 254712345678) for Lipa Pole Pole."
+          );
+        }
+        if (!email.trim()) throw new PaymentClientError("Email is required for Lipa Pole Pole.");
+        const emailRegexLipa = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegexLipa.test(email.trim())) {
+          throw new PaymentClientError("Please enter a valid email address.");
+        }
+
+        const planRes = await fetch("/api/cfm-tickets/installment/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: campaign.slug,
+            email: email.trim(),
+            phone: phoneNormPlan,
+            payer_name: payerName,
+            ticket_quantity: q,
+          }),
+        });
+        const planJson = (await planRes.json()) as { plan_id?: string; error?: string };
+        if (!planRes.ok || !planJson.plan_id) {
+          throw new PaymentClientError(planJson.error ?? "Could not start Lipa Pole Pole plan.");
+        }
+        const planId = planJson.plan_id;
+
+        if (paymentMethod === "mpesa" && isKes) {
+          const res = await fetch("/api/daraja/stk-push", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug: campaign.slug,
+              phone: phoneNormPlan,
+              email: email.trim(),
+              payer_name: payerName,
+              quantity: q,
+              contestant_id: null,
+              lipa_pole_pole_plan_id: planId,
+              lipa_pole_pole_deposit_kes: depositKes,
+            }),
+          });
+          const rawLipa = await res.text();
+          let jsonLipa: { reference?: string; error?: string } = {};
+          if (rawLipa) {
+            try {
+              jsonLipa = JSON.parse(rawLipa);
+            } catch {
+              /* non-JSON */
+            }
+          }
+          if (!res.ok) {
+            throw new PaymentClientError(jsonLipa.error ?? "M-Pesa payment could not be started.");
+          }
+          if (jsonLipa.reference) {
+            router.replace(`/receipt?ref=${encodeURIComponent(jsonLipa.reference)}`);
+          }
+          return;
+        }
+
+        const useInlineLipa = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+        const resLipa = await fetch("/api/paystack/initialize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: campaign.slug,
+            email: email.trim(),
+            payer_name: payerName,
+            quantity: q,
+            contestant_id: null,
+            inline: useInlineLipa,
+            lipa_pole_pole_plan_id: planId,
+            lipa_pole_pole_deposit_kes: depositKes,
+          }),
+        });
+
+        const rawPs = await resLipa.text();
+        let jsonPs: {
+          authorization_url?: string;
+          reference?: string;
+          amount_subunit?: number;
+          email?: string;
+          currency?: string;
+          error?: string;
+        } = {};
+        if (rawPs) {
+          try {
+            jsonPs = JSON.parse(rawPs) as typeof jsonPs;
+          } catch {
+            /* non-JSON */
+          }
+        }
+
+        if (!resLipa.ok) {
+          throw new PaymentClientError(jsonPs.error ?? "Card payment could not be started.");
+        }
+
+        if (useInlineLipa && jsonPs.reference && jsonPs.amount_subunit != null && jsonPs.email && jsonPs.currency) {
+          const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+          const { default: PaystackPop } = await import("@paystack/inline-js");
+          const paystack = new PaystackPop();
+          paystack.newTransaction({
+            key: paystackKey,
+            email: jsonPs.email,
+            amount: jsonPs.amount_subunit,
+            currency: jsonPs.currency,
+            reference: jsonPs.reference,
+            channels: ["card", "mobile_money"],
+            onSuccess: () => {
+              router.replace(`/receipt?ref=${encodeURIComponent(jsonPs.reference!)}`);
+            },
+            onCancel: () => {
+              setSubmitting(false);
+            },
+            onError: () => {
+              setError(GENERIC_PAYMENT_FAILURE);
+              setSubmitting(false);
+            },
+          });
+          return;
+        }
+
+        if (jsonPs.authorization_url) {
+          window.location.href = jsonPs.authorization_url;
+          return;
+        }
+
+        throw new PaymentClientError(jsonPs.error ?? "Card payment could not be started.");
+      }
+
       if (paymentMethod === "mpesa" && isKes) {
         if (!phone.trim()) {
           throw new PaymentClientError("M-Pesa number is required (e.g. 254712345678)");
@@ -538,7 +714,7 @@ export default function CampaignPage() {
             slug: campaign.slug,
             phone: phone.trim(),
             email: email.trim(),
-            payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
+            payer_name: payerName,
             quantity: q,
             contestant_id: campaign.type === "vote" ? contestantId : null,
           }),
@@ -551,14 +727,14 @@ export default function CampaignPage() {
           } catch {}
         }
         if (!res.ok) {
-          throw new Error();
+          throw new PaymentClientError(json.error ?? "M-Pesa payment could not be started.");
         }
          if (json.reference) {
-          const q =
+          const receiptQ =
             campaign.type === "vote"
               ? `ref=${encodeURIComponent(json.reference)}&vote=1&slug=${encodeURIComponent(campaign.slug)}`
               : `ref=${encodeURIComponent(json.reference)}`;
-          router.replace(`/receipt?${q}`);
+          router.replace(`/receipt?${receiptQ}`);
         }
         return;
       }
@@ -576,7 +752,7 @@ export default function CampaignPage() {
         body: JSON.stringify({
           slug: campaign.slug,
           email: email.trim(),
-          payer_name: [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null,
+          payer_name: payerName,
           quantity: q,
           contestant_id: campaign.type === "vote" ? contestantId : null,
           inline: useInline,
@@ -602,7 +778,7 @@ export default function CampaignPage() {
       }
 
       if (!res.ok) {
-        throw new Error();
+        throw new PaymentClientError(json.error ?? "Card payment could not be started.");
       }
 
       if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
@@ -617,11 +793,11 @@ export default function CampaignPage() {
           reference: json.reference,
           channels: ["card", "mobile_money"],
           onSuccess: () => {
-            const q =
+            const receiptQ =
               campaign.type === "vote"
                 ? `ref=${encodeURIComponent(json.reference!)}&vote=1&slug=${encodeURIComponent(campaign.slug)}`
                 : `ref=${encodeURIComponent(json.reference!)}`;
-            router.replace(`/receipt?${q}`);
+            router.replace(`/receipt?${receiptQ}`);
           },
           onCancel: () => {
             setSubmitting(false);
@@ -639,7 +815,7 @@ export default function CampaignPage() {
         return;
       }
 
-      throw new Error();
+      throw new PaymentClientError(json.error ?? "Card payment could not be started.");
     } catch (e: unknown) {
       setError(messageForPaymentFailure(e));
     } finally {
@@ -1098,6 +1274,81 @@ export default function CampaignPage() {
                 </div>
               </div>
 
+              {allowLipa && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3">
+                  <div className="font-semibold text-gray-900">How would you like to pay?</div>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="campaignLipaMode"
+                      checked={lipaPayMode === "full"}
+                      onChange={() => {
+                        setLipaPayMode("full");
+                        setLipaFirstPayKes("");
+                      }}
+                      className="mt-1 w-4 h-4 text-emerald-700 border-gray-300 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm text-gray-800 leading-snug">
+                      <span className="font-semibold">Pay full amount now</span> — {campaign.currency}{" "}
+                      {total.toLocaleString()} in one payment.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="campaignLipaMode"
+                      checked={lipaPayMode === "installment"}
+                      onChange={() => {
+                        setLipaPayMode("installment");
+                        setLipaFirstPayKes((prev) => {
+                          if (prev.trim()) return prev;
+                          const suggest = Math.min(
+                            total,
+                            Math.max(LIPA_POLE_POLE_MIN_KES, Math.floor(total / 4))
+                          );
+                          return String(suggest);
+                        });
+                      }}
+                      className="mt-1 w-4 h-4 text-emerald-700 border-gray-300 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm text-gray-800 leading-snug">
+                      <span className="font-semibold">Lipa Pole Pole</span> — pay part now (min KES{" "}
+                      {LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")}), then the rest later. Email reminders every 3
+                      days if you still owe. Top up on the{" "}
+                      <a
+                        href="/kcm/cfm-tickets"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-700 font-semibold underline"
+                      >
+                        CFM Tickets
+                      </a>{" "}
+                      page with the same email and phone.
+                    </span>
+                  </label>
+                  {lipaPayMode === "installment" && (
+                    <div className="pt-1">
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        Amount to pay now ({campaign.currency})
+                      </label>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={LIPA_POLE_POLE_MIN_KES}
+                        max={total}
+                        value={lipaFirstPayKes}
+                        onChange={(e) => setLipaFirstPayKes(e.target.value)}
+                        className="w-full max-w-xs px-3 py-2 border border-emerald-300 rounded-lg text-gray-900 font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        Between {LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")} and {total.toLocaleString("en-KE")}{" "}
+                        (your total for this checkout).
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-start gap-2">
                 <input
                   id="terms"
@@ -1122,7 +1373,7 @@ export default function CampaignPage() {
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || (allowLipa && lipaPayMode === "installment" && !lipaDepositOk)}
                 className={`w-full btn-primary inline-flex items-center justify-center gap-2 ${submitting && "opacity-60"}`}
               >
                 {submitting ? (
