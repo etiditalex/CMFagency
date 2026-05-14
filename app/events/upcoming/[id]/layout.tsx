@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { resolveEventShareImageUrl } from "@/lib/event-share-image";
 import { getUpcomingEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
@@ -57,7 +58,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getUpcomingEventBySlug(slug);
-  const image = `${SITE_URL}/events/upcoming/${slug}/opengraph-image`;
+  const generatedOg = `${SITE_URL}/events/upcoming/${slug}/opengraph-image`;
+  const shareImage = resolveEventShareImageUrl({
+    imageUrl: event?.image_url,
+    defaultImageUrl: event?.default_image_url,
+    generatedOgImageUrl: generatedOg,
+  });
   const title = event?.title
     ? `${event.title} | Upcoming Events | Changer Fusions`
     : "Upcoming Event | Changer Fusions";
@@ -76,20 +82,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `${SITE_URL}/events/upcoming/${slug}`,
       siteName: "Changer Fusions",
       images: [
-        {
-          url: image,
-          width: 1200,
-          height: 630,
-          alt: event?.title || "Upcoming Event",
-          type: "image/png",
-        },
+        shareImage === generatedOg
+          ? {
+              url: shareImage,
+              width: 1200,
+              height: 630,
+              alt: event?.title || "Upcoming Event",
+              type: "image/png",
+            }
+          : { url: shareImage, alt: event?.title || "Upcoming Event" },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image],
+      images: [shareImage],
     },
     alternates: { canonical: `${SITE_URL}/events/upcoming/${slug}` },
   };

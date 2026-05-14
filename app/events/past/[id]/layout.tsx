@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { resolveEventShareImageUrl } from "@/lib/event-share-image";
 import { getPastEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
@@ -19,7 +20,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const event = await getPastEventBySlug(slug);
-  const image = `${SITE_URL}/events/past/${slug}/opengraph-image`;
+  const generatedOg = `${SITE_URL}/events/past/${slug}/opengraph-image`;
+  const galleryFirst =
+    Array.isArray(event?.gallery) && event.gallery.length > 0
+      ? String(event.gallery[0])
+      : null;
+  const shareImage = resolveEventShareImageUrl({
+    imageUrl: event?.image_url,
+    defaultImageUrl: event?.default_image_url,
+    galleryFirst,
+    generatedOgImageUrl: generatedOg,
+  });
 
   const title = event?.title
     ? `${event.title} | Past Events | Changer Fusions`
@@ -40,20 +51,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: `${SITE_URL}/events/past/${slug}`,
       siteName: "Changer Fusions",
       images: [
-        {
-          url: image,
-          width: 1200,
-          height: 630,
-          alt: event?.title || "Past Event",
-          type: "image/png",
-        },
+        shareImage === generatedOg
+          ? {
+              url: shareImage,
+              width: 1200,
+              height: 630,
+              alt: event?.title || "Past Event",
+              type: "image/png",
+            }
+          : { url: shareImage, alt: event?.title || "Past Event" },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image],
+      images: [shareImage],
     },
     alternates: { canonical: `${SITE_URL}/events/past/${slug}` },
   };
