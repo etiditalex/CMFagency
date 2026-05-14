@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
-import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
+import { normalizeKenyaCurrencyForPayments, resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 
 type InitBody = {
@@ -139,6 +139,10 @@ export async function POST(req: Request) {
       );
     }
 
+    campaign = {
+      ...campaign,
+      currency: normalizeKenyaCurrencyForPayments(campaign.currency),
+    };
     const maxVotes = 1000000;
     const maxTicketsPerTxn = 10000;
     const effectiveMax = campaign.type === "vote" ? maxVotes : Math.min(Number(campaign.max_per_txn), maxTicketsPerTxn);

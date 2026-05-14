@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ArrowRight, Ticket } from "lucide-react";
+import { Loader2, MapPin, ArrowRight, Ticket } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
+import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { supabase } from "@/lib/supabase";
 
 const DEFAULT_HERO = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
@@ -62,6 +63,7 @@ const CFMA_2026_EVENT: EventRow = {
 export default function UpcomingEventsPage() {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [tieredEvent, setTieredEvent] = useState<EventRow | null>(null);
+  const [buyLoadingEventId, setBuyLoadingEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -212,16 +214,47 @@ export default function UpcomingEventsPage() {
                           <Ticket className="w-4 h-4" />
                           Buy Ticket Online
                         </button>
-                      ) : (
-                        <Link
-                          href={`/${event.ticket_campaign_slug}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                      ) : event.ticket_campaign_slug?.trim() ? (
+                        <button
+                          type="button"
+                          disabled={buyLoadingEventId === event.id}
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setBuyLoadingEventId(event.id);
+                            try {
+                              const slug = event.ticket_campaign_slug!.trim();
+                              const tier = await resolveFusionModalTicketTier(slug, event.ticket_price_kes);
+                              if (tier === "navigate") {
+                                window.location.href = `/${slug}`;
+                                return;
+                              }
+                              setTieredEvent({
+                                ...event,
+                                ticket_tiers: [
+                                  {
+                                    id: tier.id,
+                                    label: tier.label,
+                                    slug: tier.slug,
+                                    unit_amount_kes: tier.unit_amount_kes,
+                                  },
+                                ],
+                              });
+                              setTicketModalOpen(true);
+                            } finally {
+                              setBuyLoadingEventId(null);
+                            }
+                          }}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black disabled:opacity-70 text-white font-semibold py-2.5 px-4 text-sm transition-colors"
                         >
-                          <Ticket className="w-4 h-4" />
-                          Buy Ticket Online
-                        </Link>
-                      )}
+                          {buyLoadingEventId === event.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden />
+                          ) : (
+                            <Ticket className="w-4 h-4 shrink-0" />
+                          )}
+                          {buyLoadingEventId === event.id ? "Opening checkout…" : "Buy Ticket Online"}
+                        </button>
+                      ) : null}
                     </div>
                   )}
                 </div>

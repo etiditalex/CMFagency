@@ -2,6 +2,25 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const LIPA_POLE_POLE_MIN_KES = 50;
 
+/**
+ * Whole-shilling Kenya amounts for M-Pesa STK + Lipa Pole Pole (not minor units).
+ * Accepts common dashboard / Paystack variants so LPP is not hidden by currency string alone.
+ */
+export function isKenyaShillingsForLipa(currencyRaw: string | null | undefined): boolean {
+  const c = String(currencyRaw ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\./g, "");
+  return c === "KES" || c === "KSH" || c === "KSHS";
+}
+
+/** Map common DB / form variants to the ISO-style code Paystack and our checks expect. */
+export function normalizeKenyaCurrencyForPayments(currencyRaw: string | null | undefined): string {
+  const u = String(currencyRaw ?? "").trim().toUpperCase();
+  if (u === "KSH" || u === "KSHS") return "KES";
+  return String(currencyRaw ?? "").trim();
+}
+
 export type CfmInstallmentPlanRow = {
   id: string;
   installment_token: string;

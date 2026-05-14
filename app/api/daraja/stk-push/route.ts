@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
-import { resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
+import { resolveInstallmentPaymentKes, isKenyaShillingsForLipa, normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 
 type StkPushBody = {
@@ -153,7 +153,11 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
-    if (String(campaign.currency).toUpperCase() !== "KES") {
+    campaign = {
+      ...campaign,
+      currency: normalizeKenyaCurrencyForPayments(campaign.currency),
+    };
+    if (!isKenyaShillingsForLipa(campaign.currency)) {
       return NextResponse.json({ error: "M-Pesa is only available for KES campaigns" }, { status: 400 });
     }
 

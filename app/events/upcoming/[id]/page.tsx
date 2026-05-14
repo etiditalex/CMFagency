@@ -10,6 +10,7 @@ import {
   Download,
   ExternalLink,
   Handshake,
+  Loader2,
   MapPin,
   ArrowRight,
   Ticket,
@@ -17,11 +18,12 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
 import SponsorDropdown from "@/components/SponsorDropdown";
+import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
@@ -47,6 +49,7 @@ type DbEvent = {
   image_url: string | null;
   default_image_url: string | null;
   ticket_campaign_slug: string | null;
+  ticket_price_kes?: number | null;
   ticket_tiers?: TicketTierRow[] | null;
   payment_link: string | null;
   document_url: string | null;
@@ -579,12 +582,14 @@ function CfmaEventDetail() {
 
 function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [modalTiersOverride, setModalTiersOverride] = useState<TicketTierRow[] | null>(null);
+  const [buyLoading, setBuyLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(event.event_date);
   const imgUrl = event.image_url || event.default_image_url || "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892266/IMG_9928_tv36eu.jpg";
   const objectPosition = (event.image_focus as string | null) || "center center";
   const eventDate = new Date(event.event_date);
   const endDate = event.end_date ? new Date(event.end_date) : null;
-  const hasTicket = !!event.ticket_campaign_slug;
+  const hasTicket = !!event.ticket_campaign_slug?.trim();
   const hasTieredTickets = (event.ticket_tiers?.length ?? 0) > 0;
   const hasPayment = !!event.payment_link;
   const hasFreeReg = !!event.free_registration;
@@ -597,6 +602,58 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
     return [startIso, ...(endIso ? [endIso] : [])];
   })();
   const tiers = (event.ticket_tiers ?? []) as TicketTierRow[];
+
+  const inlineGeneralTiers = useMemo((): TicketTierRow[] | null => {
+    if (!hasTicket || hasTieredTickets || hasFreeReg) return null;
+    const slug = event.ticket_campaign_slug!.trim();
+    const p = Number(event.ticket_price_kes);
+    if (!Number.isFinite(p) || p < 1) return null;
+    return [{ id: `ga-${slug}`, label: "General admission", slug, unit_amount_kes: Math.round(p) }];
+  }, [hasTicket, hasTieredTickets, hasFreeReg, event.ticket_campaign_slug, event.ticket_price_kes]);
+
+  const closeTicketModal = () => {
+    setTicketModalOpen(false);
+    setModalTiersOverride(null);
+  };
+
+  const openTieredCheckout = () => {
+    setModalTiersOverride(null);
+    setTicketModalOpen(true);
+  };
+
+  const openGeneralCheckout = async () => {
+    if (inlineGeneralTiers) {
+      setTicketModalOpen(true);
+      return;
+    }
+    const slug = event.ticket_campaign_slug?.trim();
+    if (!slug) return;
+    setBuyLoading(true);
+    try {
+      const tier = await resolveFusionModalTicketTier(slug, event.ticket_price_kes);
+      if (tier === "navigate") {
+        window.location.href = `/${slug}`;
+        return;
+      }
+      setModalTiersOverride([
+        { id: tier.id, label: tier.label, slug: tier.slug, unit_amount_kes: tier.unit_amount_kes },
+      ]);
+      setTicketModalOpen(true);
+    } finally {
+      setBuyLoading(false);
+    }
+  };
+
+  const tiersForModal = useMemo((): TicketTierRow[] => {
+    if (modalTiersOverride) return modalTiersOverride;
+    if (hasTieredTickets) return (event.ticket_tiers ?? []) as TicketTierRow[];
+    return inlineGeneralTiers ?? [];
+  }, [modalTiersOverride, hasTieredTickets, event.ticket_tiers, inlineGeneralTiers]);
+
+  const shouldMountTicketModal =
+    (hasTieredTickets && tiersForModal.length > 0) ||
+    inlineGeneralTiers != null ||
+    modalTiersOverride != null;
 
   return (
     <div className="pt-16 sm:pt-20 min-h-screen bg-gray-50">
@@ -680,13 +737,14 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   </select>
                 </div>
 
-                {hasTieredTickets && tiers.length > 0 && !hasFreeReg && (
+                {!hasFreeReg && ((hasTieredTickets && tiers.length > 0) || (hasTicket && !hasTieredTickets)) && (
                   <div className="mt-4 space-y-2 sm:space-y-3">
-                    {tiers.map((t) => (
+                    {hasTieredTickets &&
+                      tiers.map((t) => (
                       <button
                         key={t.id || t.slug}
                         type="button"
-                        onClick={() => setTicketModalOpen(true)}
+                        onClick={() => openTieredCheckout()}
                         className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 p-3 sm:p-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -702,6 +760,31 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                         )}
                       </button>
                     ))}
+                    {hasTicket && !hasTieredTickets && (
+                      <button
+                        type="button"
+                        onClick={() => void openGeneralCheckout()}
+                        disabled={buyLoading}
+                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-70 p-3 sm:p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="font-extrabold text-gray-900 text-sm sm:text-base">Ticket</div>
+                          <div className="font-extrabold text-gray-900 text-sm sm:text-base whitespace-nowrap">
+                            {buyLoading ? (
+                              <span className="inline-flex items-center gap-2 text-gray-600">
+                                <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden />
+                                Loading…
+                              </span>
+                            ) : event.ticket_price_kes != null && Number(event.ticket_price_kes) > 0 ? (
+                              <>Ksh {Number(event.ticket_price_kes).toLocaleString("en-KE")}</>
+                            ) : (
+                              <span className="text-gray-600 font-semibold text-xs sm:text-sm">Tap to load price</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-600">Pay in full or use Lipa Pole Pole in checkout.</div>
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -719,7 +802,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   {hasTieredTickets && !hasFreeReg && (
                     <button
                       type="button"
-                      onClick={() => setTicketModalOpen(true)}
+                      onClick={() => openTieredCheckout()}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
                     >
                       <Ticket className="w-5 h-5" />
@@ -727,15 +810,19 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                     </button>
                   )}
                   {hasTicket && !hasFreeReg && !hasTieredTickets && (
-                    <Link
-                      href={`/${event.ticket_campaign_slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                    <button
+                      type="button"
+                      disabled={buyLoading}
+                      onClick={() => void openGeneralCheckout()}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-70 text-white font-semibold py-3 px-4 transition-colors"
                     >
-                      <Ticket className="w-5 h-5" />
-                      Buy Ticket Online
-                    </Link>
+                      {buyLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin shrink-0" aria-hidden />
+                      ) : (
+                        <Ticket className="w-5 h-5 shrink-0" />
+                      )}
+                      {buyLoading ? "Opening checkout…" : "Buy Ticket Online"}
+                    </button>
                   )}
                   {hasPayment && !hasFreeReg && (
                     <a
@@ -788,10 +875,10 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
         </motion.div>
       </div>
 
-      {hasTieredTickets && (
+      {shouldMountTicketModal && (
         <CmfAwardsTicketModal
           open={ticketModalOpen}
-          onClose={() => setTicketModalOpen(false)}
+          onClose={closeTicketModal}
           event={{
             title: event.title,
             shortTitle: event.title,
@@ -800,7 +887,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
             location: event.location ?? undefined,
             imageUrl: (event.image_url || event.default_image_url) ?? undefined,
           }}
-          tiers={event.ticket_tiers ?? undefined}
+          tiers={tiersForModal}
         />
       )}
     </div>
@@ -889,7 +976,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { getVoteTransactionTotalsByCampaign } from "@/lib/vote-transaction-totals";
+import { normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
 
 function isCampaignInPublicWindow(c: { starts_at?: string | null; ends_at?: string | null }) {
   const t = Date.now();
@@ -96,7 +97,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     title: row.title,
     description: row.description,
     image_url: row.image_url,
-    currency: row.currency,
+    currency: normalizeKenyaCurrencyForPayments(row.currency),
     unit_amount: row.unit_amount,
     max_per_txn: row.max_per_txn,
   };

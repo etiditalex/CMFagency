@@ -12,7 +12,7 @@ import {
   messageForPaymentFailure,
   PaymentClientError,
 } from "@/lib/payment-user-message";
-import { LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
+import { isKenyaShillingsForLipa, LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
 
 /** Match `/api/cfm-tickets/installment/plan` so plan phone equals STK phone. */
 function normalizeKenyaPhoneForPlan(raw: string): string {
@@ -519,7 +519,7 @@ export default function CampaignPage() {
 
   const allowLipa =
     campaign?.type === "ticket" &&
-    String(campaign.currency ?? "").toUpperCase() === "KES" &&
+    isKenyaShillingsForLipa(campaign.currency) &&
     total >= LIPA_POLE_POLE_MIN_KES;
 
   const phoneNormPlan = useMemo(() => normalizeKenyaPhoneForPlan(phone), [phone]);
@@ -531,7 +531,7 @@ export default function CampaignPage() {
       lipaDepositKes >= LIPA_POLE_POLE_MIN_KES &&
       lipaDepositKes <= total);
 
-  const isKes = String(campaign?.currency ?? "").toUpperCase() === "KES";
+  const isKes = isKenyaShillingsForLipa(campaign?.currency);
   // Show M-Pesa option for KES campaigns; backend will error if Daraja not configured
   const showMpesaOption = isKes;
 
