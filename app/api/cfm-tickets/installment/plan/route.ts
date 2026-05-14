@@ -149,7 +149,8 @@ export async function POST(req: Request) {
     }
 
     const installment_token = crypto.randomBytes(24).toString("hex");
-    const nextReminder = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    /** First balance reminder after 3 days; cron sends then sets next_reminder_at +3d again. */
+    const nextReminder = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: inserted, error: insErr } = await admin
       .from("cfm_installment_plans")

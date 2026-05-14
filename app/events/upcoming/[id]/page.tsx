@@ -55,6 +55,7 @@ type DbEvent = {
   gallery: string[] | null;
   image_focus?: string | null;
   free_registration?: boolean | null;
+  lipa_pole_pole?: boolean | null;
 };
 
 function buildGoogleCalendarUrl(event: Pick<DbEvent, "title" | "event_date" | "end_date" | "time" | "location" | "description">): string {
@@ -800,6 +801,9 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
             imageUrl: (event.image_url || event.default_image_url) ?? undefined,
           }}
           tiers={event.ticket_tiers ?? undefined}
+          lipaPolePoleEnabled={
+            event.slug === CFMA_2026_ID ? undefined : event.lipa_pole_pole === true
+          }
         />
       )}
     </div>
@@ -888,7 +892,7 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole")
         .eq("slug", slugParam)
         .gte("event_date", today)
         .maybeSingle();

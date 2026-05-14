@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
 import PaystackPop from "@paystack/inline-js";
 import { normalizePeoplePerPackage } from "@/lib/fusion-event-ticket-tier";
+import { LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
 import {
   GENERIC_PAYMENT_FAILURE,
   messageForPaymentFailure,
@@ -66,6 +67,11 @@ type Props = {
   /** When provided, modal shows this event and tiers (Fusion Xpress tiered events). Otherwise CFMA 2026 defaults. */
   event?: EventTicketModalEvent | null;
   tiers?: TicketTierInput[] | null;
+  /**
+   * Lipa Pole Pole: pay a custom first amount, then balance later (email reminders every 3 days via cron).
+   * Omit for CFMA / blog defaults (enabled). Pass `false` for Fusion events without the dashboard flag.
+   */
+  lipaPolePoleEnabled?: boolean;
 };
 
 function normalizeTiers(
@@ -91,7 +97,13 @@ function normalizeTiers(
   }));
 }
 
-export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, tiers: tiersProp }: Props) {
+export default function CmfAwardsTicketModal({
+  open,
+  onClose,
+  event: eventProp,
+  tiers: tiersProp,
+  lipaPolePoleEnabled,
+}: Props) {
   const EVENT = eventProp ?? DEFAULT_EVENT;
   const TICKET_TIERS = useMemo(() => normalizeTiers(tiersProp), [tiersProp]);
   const shortTitle = EVENT.shortTitle ?? EVENT.title;
@@ -125,6 +137,8 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
   const [promoError, setPromoError] = useState<string | null>(null);
   const [validatingPromo, setValidatingPromo] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [lipaPayMode, setLipaPayMode] = useState<"full" | "installment">("full");
+  const [lipaFirstPayKes, setLipaFirstPayKes] = useState("");
 
   const lineItems = useMemo(() => {
     return TICKET_TIERS.filter((t) => (quantities[t.id] ?? 0) > 0).map((t) => {
@@ -154,6 +168,16 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
     [lineItems]
   );
 
+  const allowLipa =
+    (lipaPolePoleEnabled ?? true) && !appliedCoupon && totalWithVat >= LIPA_POLE_POLE_MIN_KES;
+
+  const lipaDepositKes = Math.trunc(Number(lipaFirstPayKes.trim()) || 0);
+  const lipaDepositOk =
+    lipaPayMode !== "installment" ||
+    (Number.isFinite(lipaDepositKes) &&
+      lipaDepositKes >= LIPA_POLE_POLE_MIN_KES &&
+      lipaDepositKes <= totalWithVat);
+
   const canProceedFromStep1 = totalTickets > 0;
   const isSingleTier = lineItems.length === 1;
   // CFMA tickets are KES - always show M-Pesa option; backend errors if Daraja not configured
@@ -178,12 +202,18 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
     }
     return true;
   }, [details, paymentMethod, showMpesaOption, phoneValid]);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim());
   const canPay =
     isSingleTier &&
     totalTickets > 0 &&
+    lipaDepositOk &&
     (paymentMethod === "mpesa"
-      ? showMpesaOption && phoneValid && details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())
-      : details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()));
+      ? showMpesaOption &&
+          phoneValid &&
+          details.email.trim().length > 0 &&
+          emailOk &&
+          (lipaPayMode !== "installment" || allowLipa)
+      : details.email.trim().length > 0 && emailOk && (lipaPayMode !== "installment" || allowLipa));
 
   const reset = useCallback(() => {
     setStep(1);
@@ -205,6 +235,8 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
     setAppliedCoupon(null);
     setPromoError(null);
     setAgreedToTerms(false);
+    setLipaPayMode("full");
+    setLipaFirstPayKes("");
   }, [TICKET_TIERS]);
 
   const goBack = () => {
@@ -295,46 +327,83 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
         );
       }
       const item = lineItems[0];
+      const payerName = [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null;
+      const emailTrim = details.email.trim();
 
-      if (paymentMethod === "mpesa" && showMpesaOption) {
-        const res = await fetch("/api/daraja/stk-push", {
+      const useInstallment = allowLipa && lipaPayMode === "installment";
+
+      if (useInstallment) {
+        const depositKes = Math.trunc(Number(lipaFirstPayKes.trim()));
+        if (
+          !Number.isFinite(depositKes) ||
+          depositKes < LIPA_POLE_POLE_MIN_KES ||
+          depositKes > totalWithVat
+        ) {
+          throw new PaymentClientError(
+            `Enter an amount between KES ${LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")} and KES ${totalWithVat.toLocaleString("en-KE")}.`
+          );
+        }
+
+        const planRes = await fetch("/api/cfm-tickets/installment/plan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             slug: item.slug,
+            email: emailTrim,
             phone: phoneNorm,
-            email: details.email.trim(),
-            payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
-            quantity: item.quantity,
-            coupon_code: appliedCoupon ? promoCode.trim() : undefined,
+            payer_name: payerName,
+            ticket_quantity: item.quantity,
           }),
         });
-        const raw = await res.text();
-        let json: { reference?: string; error?: string } = {};
-        if (raw) {
-          try {
-            json = JSON.parse(raw);
-          } catch {}
+        const planJson = (await planRes.json()) as { plan_id?: string; error?: string };
+        if (!planRes.ok || !planJson.plan_id) {
+          throw new PaymentClientError(planJson.error ?? "Could not start Lipa Pole Pole plan.");
         }
-        if (!res.ok) throw new Error();
-        if (json.reference) {
-          onClose();
-          window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
-        }
-        return;
-      }
+        const planId = planJson.plan_id;
 
-      const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+        if (paymentMethod === "mpesa" && showMpesaOption) {
+          const res = await fetch("/api/daraja/stk-push", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              slug: item.slug,
+              phone: phoneNorm,
+              email: emailTrim,
+              payer_name: payerName,
+              quantity: item.quantity,
+              lipa_pole_pole_plan_id: planId,
+              lipa_pole_pole_deposit_kes: depositKes,
+            }),
+          });
+          const raw = await res.text();
+          let json: { reference?: string; error?: string } = {};
+          if (raw) {
+            try {
+              json = JSON.parse(raw);
+            } catch {}
+          }
+          if (!res.ok) {
+            throw new PaymentClientError(json.error ?? "M-Pesa payment could not be started.");
+          }
+          if (json.reference) {
+            onClose();
+            window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
+          }
+          return;
+        }
+
+        const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             slug: item.slug,
-            email: details.email.trim(),
-            payer_name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(" ") || null,
+            email: emailTrim,
+            payer_name: payerName,
             quantity: item.quantity,
             inline: useInline,
-            coupon_code: appliedCoupon ? promoCode.trim() : undefined,
+            lipa_pole_pole_plan_id: planId,
+            lipa_pole_pole_deposit_kes: depositKes,
           }),
         });
 
@@ -354,7 +423,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
         }
 
         if (!res.ok) {
-          throw new Error();
+          throw new PaymentClientError(json.error ?? "Card payment could not be started.");
         }
 
         if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
@@ -386,7 +455,102 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
           return;
         }
 
-        throw new Error();
+        throw new PaymentClientError(json.error ?? "Card payment could not be started.");
+      }
+
+      if (paymentMethod === "mpesa" && showMpesaOption) {
+        const res = await fetch("/api/daraja/stk-push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: item.slug,
+            phone: phoneNorm,
+            email: emailTrim,
+            payer_name: payerName,
+            quantity: item.quantity,
+            coupon_code: appliedCoupon ? promoCode.trim() : undefined,
+          }),
+        });
+        const raw = await res.text();
+        let json: { reference?: string; error?: string } = {};
+        if (raw) {
+          try {
+            json = JSON.parse(raw);
+          } catch {}
+        }
+        if (!res.ok) {
+          throw new PaymentClientError(json.error ?? "M-Pesa payment could not be started.");
+        }
+        if (json.reference) {
+          onClose();
+          window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
+        }
+        return;
+      }
+
+      const useInline = !!process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+      const res = await fetch("/api/paystack/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: item.slug,
+          email: emailTrim,
+          payer_name: payerName,
+          quantity: item.quantity,
+          inline: useInline,
+          coupon_code: appliedCoupon ? promoCode.trim() : undefined,
+        }),
+      });
+
+      const raw = await res.text();
+      let json: {
+        authorization_url?: string;
+        reference?: string;
+        amount_subunit?: number;
+        email?: string;
+        currency?: string;
+        error?: string;
+      } = {};
+      if (raw) {
+        try {
+          json = JSON.parse(raw);
+        } catch {}
+      }
+
+      if (!res.ok) {
+        throw new PaymentClientError(json.error ?? "Card payment could not be started.");
+      }
+
+      if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
+        const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+        const paystack = new PaystackPop();
+        paystack.newTransaction({
+          key: paystackKey,
+          email: json.email,
+          amount: json.amount_subunit,
+          currency: json.currency,
+          reference: json.reference,
+          channels: ["card", "mobile_money"],
+          onSuccess: () => {
+            onClose();
+            window.location.href = `/receipt?ref=${encodeURIComponent(json.reference!)}`;
+          },
+          onCancel: () => setSubmitting(false),
+          onError: () => {
+            setError(GENERIC_PAYMENT_FAILURE);
+            setSubmitting(false);
+          },
+        });
+        return;
+      }
+
+      if (json.authorization_url) {
+        onClose();
+        window.location.href = json.authorization_url;
+        return;
+      }
+
+      throw new PaymentClientError(json.error ?? "Card payment could not be started.");
     } catch (e: unknown) {
       setError(messageForPaymentFailure(e));
     } finally {
@@ -408,6 +572,20 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
       setPromoError(null);
     }
   }, [lineItems, appliedCoupon]);
+
+  useEffect(() => {
+    if (appliedCoupon) {
+      setLipaPayMode("full");
+      setLipaFirstPayKes("");
+    }
+  }, [appliedCoupon]);
+
+  useEffect(() => {
+    if (!allowLipa && lipaPayMode === "installment") {
+      setLipaPayMode("full");
+      setLipaFirstPayKes("");
+    }
+  }, [allowLipa, lipaPayMode]);
 
   useEffect(() => {
     if (!open) return;
@@ -792,29 +970,141 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                           Total: KES {totalWithVat.toLocaleString()}
                         </div>
                       </div>
+                      {allowLipa && (
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-3">
+                          <div className="font-semibold text-gray-900">How would you like to pay?</div>
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="lipaPayMode"
+                              checked={lipaPayMode === "full"}
+                              onChange={() => {
+                                setLipaPayMode("full");
+                                setLipaFirstPayKes("");
+                              }}
+                              className="mt-1 w-4 h-4 text-emerald-700 border-gray-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-gray-800 leading-snug">
+                              <span className="font-semibold">Pay full amount now</span> — KES{" "}
+                              {totalWithVat.toLocaleString("en-KE")} in one payment.
+                            </span>
+                          </label>
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="lipaPayMode"
+                              checked={lipaPayMode === "installment"}
+                              onChange={() => {
+                                setLipaPayMode("installment");
+                                setLipaFirstPayKes((prev) => {
+                                  if (prev.trim()) return prev;
+                                  const suggest = Math.min(
+                                    totalWithVat,
+                                    Math.max(LIPA_POLE_POLE_MIN_KES, Math.floor(totalWithVat / 4))
+                                  );
+                                  return String(suggest);
+                                });
+                              }}
+                              className="mt-1 w-4 h-4 text-emerald-700 border-gray-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-gray-800 leading-snug">
+                              <span className="font-semibold">Lipa Pole Pole</span> — pay what you can today (at least KES{" "}
+                              {LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")}), then clear the balance later. If you still
+                              owe money, we send email reminders every 3 days. Top up anytime on the{" "}
+                              <a
+                                href="/kcm/cfm-tickets"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary-700 font-semibold underline"
+                              >
+                                CFM Tickets
+                              </a>{" "}
+                              page using the same email and phone.
+                            </span>
+                          </label>
+                          {lipaPayMode === "installment" && (
+                            <div className="pt-1">
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                Amount to pay now (KES)
+                              </label>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                min={LIPA_POLE_POLE_MIN_KES}
+                                max={totalWithVat}
+                                value={lipaFirstPayKes}
+                                onChange={(e) => setLipaFirstPayKes(e.target.value)}
+                                className="w-full max-w-xs px-3 py-2 border border-emerald-300 rounded-lg text-gray-900 font-semibold focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                              />
+                              <p className="text-xs text-gray-600 mt-1">
+                                Between KES {LIPA_POLE_POLE_MIN_KES.toLocaleString("en-KE")} and KES{" "}
+                                {totalWithVat.toLocaleString("en-KE")} (your package total).
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
                         <div className="text-2xl font-bold text-gray-900">
                           Kes. {totalWithVat.toLocaleString()}
                         </div>
+                        {allowLipa && lipaPayMode === "installment" && lipaDepositOk && (
+                          <p className="text-sm text-gray-600 mt-2">
+                            Paying today:{" "}
+                            <span className="font-bold text-gray-900">
+                              KES {lipaDepositKes.toLocaleString("en-KE")}
+                            </span>{" "}
+                            · Remaining after this payment:{" "}
+                            <span className="font-semibold">
+                              KES {(totalWithVat - lipaDepositKes).toLocaleString("en-KE")}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                         {paymentMethod === "mpesa" && showMpesaOption ? (
                           <>
                             <div className="font-medium text-gray-900">Pay with M-Pesa</div>
                             <p className="text-sm text-gray-600 mt-1">
-                              We&apos;ll send a prompt to <span className="font-medium">{details.phone || "your phone"}</span>.
-                              Enter your M-Pesa PIN to complete payment.
+                              {allowLipa && lipaPayMode === "installment" && lipaDepositOk ? (
+                                <>
+                                  We&apos;ll send a prompt for{" "}
+                                  <span className="font-semibold">KES {lipaDepositKes.toLocaleString("en-KE")}</span> to{" "}
+                                  <span className="font-medium">{details.phone || "your phone"}</span>. Enter your M-Pesa
+                                  PIN to confirm.
+                                </>
+                              ) : (
+                                <>
+                                  We&apos;ll send a prompt to{" "}
+                                  <span className="font-medium">{details.phone || "your phone"}</span>. Enter your M-Pesa
+                                  PIN to complete payment.
+                                </>
+                              )}
                             </p>
                           </>
                         ) : (
                           <>
                             <div className="font-medium text-gray-900">Pay with Card</div>
                             <p className="text-sm text-gray-600 mt-1">
-                              We&apos;ll use <span className="font-medium">{details.email}</span>
-                              {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
-                                ? " and open a secure popup to choose your payment method."
-                                : " and redirect you to Paystack to complete payment."}
+                              {allowLipa && lipaPayMode === "installment" && lipaDepositOk ? (
+                                <>
+                                  We&apos;ll charge{" "}
+                                  <span className="font-semibold">KES {lipaDepositKes.toLocaleString("en-KE")}</span>{" "}
+                                  toward your Lipa Pole Pole plan using{" "}
+                                  <span className="font-medium">{details.email}</span>
+                                  {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                                    ? " (secure popup)."
+                                    : " via Paystack redirect."}
+                                </>
+                              ) : (
+                                <>
+                                  We&apos;ll use <span className="font-medium">{details.email}</span>
+                                  {process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+                                    ? " and open a secure popup to choose your payment method."
+                                    : " and redirect you to Paystack to complete payment."}
+                                </>
+                              )}
                             </p>
                           </>
                         )}

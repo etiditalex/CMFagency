@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Daily (Vercel Cron): email buyers with an outstanding Lipa Pole Pole balance.
+ * Plans get `next_reminder_at` set to now+3d on creation; after each email, cron sets the next slot +3d.
  * Set CRON_SECRET and Authorization: Bearer <CRON_SECRET> on the cron request (Vercel injects when configured).
  */
 export async function GET(req: Request) {

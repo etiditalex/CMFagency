@@ -36,6 +36,7 @@ type EventRow = {
   ticket_tiers?: TicketTierRow[] | null;
   image_focus?: string | null;
   free_registration?: boolean | null;
+  lipa_pole_pole?: boolean | null;
 };
 
 // CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
@@ -55,6 +56,7 @@ const CFMA_2026_EVENT: EventRow = {
   ticket_tiers: null,
   image_focus: "center center",
   free_registration: false,
+  lipa_pole_pole: true,
 };
 
 export default function UpcomingEventsPage() {
@@ -69,7 +71,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error: queryError } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration,lipa_pole_pole")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -243,6 +245,11 @@ export default function UpcomingEventsPage() {
           imageUrl: (tieredEvent.image_url || tieredEvent.default_image_url) ?? undefined,
         } : undefined}
         tiers={tieredEvent?.ticket_tiers ?? undefined}
+        lipaPolePoleEnabled={
+          tieredEvent == null || tieredEvent.slug === "coast-fashion-modelling-awards-2026"
+            ? undefined
+            : tieredEvent.lipa_pole_pole === true
+        }
       />
     </div>
   );

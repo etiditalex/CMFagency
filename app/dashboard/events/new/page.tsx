@@ -387,7 +387,7 @@ export default function NewEventPage() {
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 disabled:opacity-50"
           />
           <label htmlFor="lipa-pole-pole" className={`text-sm font-medium ${freeRegistration ? "text-gray-400" : "text-gray-700"}`}>
-            Lipa Pole Pole event (installment ticket payments). Marks this listing in the dashboard so the team knows tickets can be paid in parts when checkout supports it.
+            Lipa Pole Pole event: ticket checkout offers pay-what-you-can-today (min KES 50) toward the full package, plus email balance reminders every 3 days until paid. Top-ups use the CFM Tickets page with the same email and phone. Not available with promo codes or free-only events.
           </label>
         </div>
         <div className="flex items-start gap-2">
