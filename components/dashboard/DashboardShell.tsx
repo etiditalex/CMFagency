@@ -53,6 +53,7 @@ import {
   visitorManagementHref,
 } from "@/lib/visitors/industry-options";
 import { supabase } from "@/lib/supabase";
+import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
 type PortalTier = "basic" | "pro" | "enterprise";
 
@@ -289,7 +290,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const currentType = sp?.get("type") ?? null;
   const visitorIndustry = sp?.get("industry") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer } = usePortal();
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly } =
+    usePortal();
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);
@@ -299,13 +301,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     routerRef.current = router;
   }, [logout, router]);
 
-  const redirectToAdminLogin = () => {
-    router.replace("/fusion-xpress/admin-login");
+  const redirectAfterLogout = () => {
+    router.replace(
+      isVisitorOnly ? "/fusion-xpress/smart-visitor-management/sign-in" : "/fusion-xpress/admin-login"
+    );
   };
 
   const handleDashboardLogout = async () => {
     await logout();
-    redirectToAdminLogin();
+    redirectAfterLogout();
   };
 
   useEffect(() => {
@@ -315,7 +319,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = setTimeout(() => {
         Promise.resolve(logoutRef.current()).finally(() => {
-          routerRef.current.replace("/fusion-xpress/admin-login");
+          routerRef.current.replace(
+            isVisitorOnly
+              ? "/fusion-xpress/smart-visitor-management/sign-in"
+              : "/fusion-xpress/admin-login"
+          );
         });
       }, INACTIVITY_TIMEOUT_MS);
     };
@@ -348,9 +356,20 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       window.removeEventListener("touchstart", handleActivity);
       window.removeEventListener("mousemove", throttledMove);
     };
-  }, [isAuthenticated, isPortalMember]);
+  }, [isAuthenticated, isPortalMember, isVisitorOnly]);
+
+  useEffect(() => {
+    if (!isVisitorOnly || portalLoading) return;
+    if (pathname === "/dashboard") {
+      router.replace(VISITOR_ONLY_DASHBOARD_PREFIX);
+    }
+  }, [isVisitorOnly, pathname, portalLoading, router]);
 
   const canSeeItem = (item: NavItem) => {
+    if (isVisitorOnly) {
+      if (item.href === "/dashboard/account") return true;
+      return item.featureKey === "visitor_management";
+    }
     if (isEmployer) {
       if (item.href === "/dashboard/job-listings") return true;
       return item.href === "/dashboard" || item.href === "/dashboard/account";

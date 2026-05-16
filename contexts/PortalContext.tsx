@@ -5,11 +5,12 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { isVisitorOnlyPortalUser } from "@/lib/visitors/visitor-only-access";
 
-type PortalRole = "admin" | "manager" | "client" | "employer";
-type PortalTier = "basic" | "pro" | "enterprise";
+export type PortalRole = "admin" | "manager" | "client" | "employer";
+export type PortalTier = "basic" | "pro" | "enterprise";
 
-type PortalFeature =
+export type PortalFeature =
   | "payouts"
   | "coupons"
   | "managers"
@@ -68,6 +69,8 @@ type PortalContextValue = {
   isFullAdmin: boolean;
   /** Hiring account: job board in dashboard only. */
   isEmployer: boolean;
+  /** Client with only Smart Visitor Management (no other dashboard modules). */
+  isVisitorOnly: boolean;
   refresh: () => Promise<void>;
 };
 
@@ -99,6 +102,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isManager = useMemo(() => role === "manager", [role]);
   const isFullAdmin = useMemo(() => role === "admin", [role]);
   const isEmployer = useMemo(() => role === "employer", [role]);
+  const isVisitorOnly = useMemo(
+    () => isVisitorOnlyPortalUser(role, features, isAdmin),
+    [role, features, isAdmin]
+  );
   const hasFeature = useMemo(
     () => (key: PortalFeature) => isAdmin || features.includes(key),
     [isAdmin, features]
@@ -247,9 +254,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       isManager,
       isFullAdmin,
       isEmployer,
+      isVisitorOnly,
       refresh,
     }),
-    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin, isEmployer]
+    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin, isEmployer, isVisitorOnly]
   );
 
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;

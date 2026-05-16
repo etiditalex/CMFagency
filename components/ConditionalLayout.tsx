@@ -27,6 +27,9 @@ export default function ConditionalLayout({
   const isDashboard = pathname?.startsWith("/dashboard");
   const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
   const isFusionAdminLogin = pathname === "/fusion-xpress/admin-login";
+  const isVisitorManagementAuth =
+    pathname === "/fusion-xpress/smart-visitor-management/sign-in" ||
+    pathname === "/fusion-xpress/smart-visitor-management/sign-up";
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
 
   // For verify-email pages, hide navbar and show full-screen layout
@@ -73,8 +76,8 @@ export default function ConditionalLayout({
     );
   }
 
-  // Fusion Xpress standalone admin login should render distraction-free without site chrome.
-  if (isFusionAdminLogin) {
+  // Fusion Xpress standalone admin / visitor auth — no site navbar (fixed header would clip form top).
+  if (isFusionAdminLogin || isVisitorManagementAuth) {
     return (
       <>
         <main className="min-h-screen">{children}</main>

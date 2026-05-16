@@ -3,9 +3,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  Bell,
   Building2,
-  CheckCircle2,
   ClipboardList,
   Download,
   FileText,
@@ -15,22 +13,20 @@ import {
   IdCard,
   KeyRound,
   Link2,
-  LogIn,
   LogOut,
   Lock,
   MapPin,
   Monitor,
   Palmtree,
-  QrCode,
-  Shield,
   Trophy,
   UtensilsCrossed,
-  UserCheck,
-  Users,
 } from "lucide-react";
 
 const HERO_BANNER =
   "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778921950/banner_1_trzov5.jpg";
+
+const CHECKIN_SHOWCASE_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778936390/signup_tnucab.jpg";
 
 const HOW_IT_WORKS = [
   {
@@ -222,44 +218,6 @@ const INDUSTRY_USE_CASES: {
   },
 ];
 
-const FEATURES = [
-  {
-    icon: ClipboardList,
-    title: "Visitor pre-registration",
-    description: "Guests register before arrival so reception and security are prepared.",
-  },
-  {
-    icon: QrCode,
-    title: "QR code visitor passes",
-    description: "Approved visitors receive a digital pass they can show at the gate or front desk.",
-  },
-  {
-    icon: UserCheck,
-    title: "Host approval workflow",
-    description: "Hosts approve or decline visits before guests are issued access credentials.",
-  },
-  {
-    icon: Shield,
-    title: "Security / reception check-in",
-    description: "Staff scan or verify passes and record who entered the premises.",
-  },
-  {
-    icon: LogIn,
-    title: "Entry and exit logs",
-    description: "Complete audit trail of check-ins and check-outs for compliance and safety.",
-  },
-  {
-    icon: Bell,
-    title: "Real-time host notifications",
-    description: "Hosts are alerted when their visitor arrives or needs attention.",
-  },
-  {
-    icon: BarChart3,
-    title: "Visitor analytics dashboard",
-    description: "Trends, peak hours, and visit volumes in one Fusion Xpress module.",
-  },
-];
-
 export const metadata = {
   title: "Smart Visitor Management | Fusion Xpress",
   description:
@@ -270,7 +228,7 @@ export default function SmartVisitorManagementPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Full-width hero — reference-style two-column layout */}
-      <section className="relative mt-20 w-full overflow-hidden md:mt-24">
+      <section className="relative mt-16 w-full overflow-hidden sm:mt-20 md:mt-24">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700" />
         <div
           className="absolute inset-0 pointer-events-none"
@@ -283,38 +241,44 @@ export default function SmartVisitorManagementPage() {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-secondary-400/20 blur-3xl pointer-events-none" />
 
         <div className="relative container-custom">
-          <div className="grid min-h-[min(88vh,720px)] grid-cols-1 items-center gap-10 py-14 md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
+          <div className="grid min-h-0 grid-cols-1 items-center gap-8 py-10 sm:gap-10 sm:py-14 md:min-h-[min(80vh,720px)] md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
             <div className="max-w-xl text-white lg:pr-4">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary-200 sm:text-sm">
+              <p className="text-[0.7rem] font-bold uppercase tracking-[0.12em] text-secondary-200 sm:text-xs sm:tracking-[0.2em]">
                 Fusion Xpress · Smart Visitor Management
               </p>
-              <h1 className="mt-4 text-3xl font-extrabold leading-[1.12] tracking-tight sm:text-4xl md:text-[2.65rem] lg:text-5xl">
+              <h1 className="mt-3 text-2xl font-extrabold leading-[1.15] tracking-tight sm:mt-4 sm:text-4xl md:text-[2.65rem] lg:text-5xl">
                 QR Code Visitor Management System.
                 <span className="block mt-1 text-white/95">Easy to use and secure.</span>
               </h1>
-              <p className="mt-5 text-base leading-relaxed text-white/90 sm:text-lg md:max-w-lg">
+              <p className="mt-4 text-sm leading-relaxed text-white/90 sm:mt-5 sm:text-base md:text-lg md:max-w-lg">
                 Digitize guest check-ins, visitor passes, and access control for offices, estates,
                 schools, hospitals, and corporate spaces. Replace manual visitor books with a smart
                 QR-based system—get started in minutes, no extra hardware required.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="mt-6 flex w-full max-w-md flex-col gap-2.5 sm:mt-8 sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <Link
                   href="/contact?subject=Smart%20Visitor%20Management%20Demo"
-                  className="inline-flex items-center justify-center rounded-full bg-secondary-400 px-8 py-3.5 text-sm font-bold text-primary-950 shadow-lg shadow-black/15 transition-colors hover:bg-secondary-300 sm:text-base"
+                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary-400 px-6 py-3 text-sm font-bold text-primary-950 shadow-lg shadow-black/15 transition-colors hover:bg-secondary-300 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
                 >
                   Request Demo
                 </Link>
                 <Link
-                  href="/fusion-xpress/admin-login"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-white/90 bg-transparent px-8 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/10 sm:text-base"
+                  href="/fusion-xpress/smart-visitor-management/sign-up"
+                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-white/90 bg-transparent px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
                 >
-                  Add Visitor Module
+                  Sign Up
+                </Link>
+                <Link
+                  href="/fusion-xpress/smart-visitor-management/sign-in"
+                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
+                >
+                  Sign In
                 </Link>
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-xl lg:max-w-none lg:mx-0">
-              <div className="relative aspect-[4/3] w-full">
+            <div className="relative mx-auto w-full max-w-sm sm:max-w-xl lg:max-w-none lg:mx-0">
+              <div className="relative aspect-[5/4] w-full sm:aspect-[4/3]">
                 <Image
                   src={HERO_BANNER}
                   alt="Fusion Xpress visitor management — dashboard, kiosk check-in, mobile passes, and QR badges"
@@ -330,10 +294,10 @@ export default function SmartVisitorManagementPage() {
       </section>
 
       {/* How it works — full width */}
-      <section className="w-full bg-white py-16 md:py-20 lg:py-24">
+      <section className="w-full bg-white py-12 sm:py-16 md:py-20 lg:py-24">
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">
               How Fusion Xpress Visitor Management Works
             </h2>
             <p className="mt-4 text-base leading-relaxed text-gray-600 md:text-lg">
@@ -341,7 +305,7 @@ export default function SmartVisitorManagementPage() {
             </p>
           </div>
 
-          <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-8 lg:mt-16 lg:grid-cols-4 lg:gap-6 xl:gap-8">
+          <div className="mt-8 grid grid-cols-1 gap-8 sm:mt-12 sm:grid-cols-2 sm:gap-8 lg:mt-16 lg:grid-cols-4 lg:gap-6 xl:gap-8">
             {HOW_IT_WORKS.map((item, index) => (
               <div key={item.step} className="flex flex-col items-center text-center">
                 <div
@@ -372,10 +336,10 @@ export default function SmartVisitorManagementPage() {
         </div>
       </section>
 
-      <section className="w-full border-t border-gray-100 bg-gray-50/80 py-16 md:py-20 lg:py-24">
+      <section className="w-full border-t border-gray-100 bg-gray-50/80 py-12 sm:py-16 md:py-20 lg:py-24">
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">
               Key Features
             </h2>
             <p className="mt-4 text-base leading-relaxed text-gray-600 md:text-lg">
@@ -389,7 +353,7 @@ export default function SmartVisitorManagementPage() {
               return (
                 <article
                   key={feature.title}
-                  className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm transition-shadow hover:shadow-md sm:px-6 sm:py-8"
                 >
                   <div
                     className={`flex h-16 w-16 items-center justify-center rounded-2xl ${feature.iconWrap}`}
@@ -413,10 +377,10 @@ export default function SmartVisitorManagementPage() {
         </div>
       </section>
 
-      <section className="w-full border-t border-gray-100 bg-gray-50 py-16 md:py-20 lg:py-24">
+      <section className="w-full border-t border-gray-100 bg-gray-50 py-12 sm:py-16 md:py-20 lg:py-24">
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl">
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">
               Built for your industry
             </h2>
             <p className="mt-4 text-base leading-relaxed text-gray-600 md:text-lg">
@@ -430,7 +394,7 @@ export default function SmartVisitorManagementPage() {
               return (
                 <article
                   key={item.title}
-                  className="flex flex-col items-center rounded-2xl border border-gray-200/80 bg-white px-6 py-10 text-center shadow-sm transition-shadow hover:shadow-md"
+                  className="flex flex-col items-center rounded-2xl border border-gray-200/80 bg-white px-5 py-8 text-center shadow-sm transition-shadow hover:shadow-md sm:px-6 sm:py-10"
                 >
                   <div
                     className={`flex h-14 w-14 items-center justify-center rounded-2xl ${item.iconWrap}`}
@@ -451,91 +415,44 @@ export default function SmartVisitorManagementPage() {
         </div>
       </section>
 
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-10 max-w-6xl mx-auto">
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-              From events to everyday access
-            </h2>
-            <p className="mt-4 text-gray-600 leading-relaxed">
-              You already trust Fusion Xpress for ticketing, voting, and campaign operations. Smart
-              Visitor Management brings the same reliability to front-desk workflows—pre-registration,
-              host approvals, QR passes, and real-time logs—without paper sign-in sheets.
-            </p>
-            <ul className="mt-6 space-y-3">
-              {[
-                "Works for single sites or multi-building estates",
-                "Role-based dashboard for admins, reception, and hosts",
-                "Designed to connect to your backend when you go live",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2 text-gray-700">
-                  <CheckCircle2 className="w-5 h-5 text-secondary-600 flex-shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-secondary-200 bg-gradient-to-br from-secondary-50 to-white p-8 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary-600 flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-secondary-800">Built for</p>
-                <p className="text-lg font-extrabold text-gray-900">Modern workplaces</p>
+      {/* Swift check-in showcase — full width */}
+      <section className="w-full border-t border-gray-100 bg-white py-12 sm:py-16 md:py-20 lg:py-24">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
+          <div className="grid grid-cols-1 items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+            <div className="flex justify-center lg:justify-start">
+              <div className="relative w-full max-w-md sm:max-w-lg lg:max-w-xl">
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-[0_24px_60px_rgba(15,47,100,0.1)] sm:aspect-[4/5]">
+                  <Image
+                    src={CHECKIN_SHOWCASE_IMAGE}
+                    alt="Visitor welcome kiosk — digital check-in form with name, contact, email, and signature"
+                    fill
+                    className="object-contain object-center p-4 sm:p-6"
+                    sizes="(max-width: 1024px) 90vw, 45vw"
+                  />
+                </div>
               </div>
             </div>
-            <p className="mt-5 text-sm text-gray-600 leading-relaxed">
-              Whether you manage a corporate HQ, residential estate, school campus, or clinic reception,
-              give every guest a consistent, professional check-in experience.
-            </p>
-          </div>
-        </section>
 
-        <section className="mt-16">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 text-center">
-            Everything you need in one module
-          </h2>
-          <p className="mt-3 text-center text-gray-600 max-w-2xl mx-auto">
-            A complete visitor lifecycle—from booking to checkout—with analytics your team can act on.
-          </p>
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((f) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={f.title}
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-primary-200 transition-all"
-                >
-                  <div className="w-11 h-11 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary-700" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-bold text-gray-900">{f.title}</h3>
-                  <p className="mt-2 text-sm text-gray-600 leading-relaxed">{f.description}</p>
-                </div>
-              );
-            })}
+            <div className="max-w-xl lg:max-w-none">
+              <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-tight">
+                Check-in your visitors swiftly and safely
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-gray-600 md:text-lg">
+                A fully customisable system that suits a wide range of business needs—from corporate
+                reception and estates to clinics, campuses, and hospitality venues.
+              </p>
+              <h3 className="mt-8 text-xl font-bold text-gray-900 md:text-2xl">
+                Register, display, and go
+              </h3>
+              <p className="mt-3 text-base leading-relaxed text-gray-600 md:text-lg">
+                Set up your Fusion Xpress visitor module and have check-in QR codes ready for your
+                front desk in minutes—no extra hardware required.
+              </p>
+            </div>
           </div>
-        </section>
-
-        <section className="mt-16 rounded-3xl border border-primary-200 bg-gradient-to-r from-primary-50 via-white to-secondary-50 p-8 md:p-12 text-center">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-            Ready to modernize your front desk?
-          </h2>
-          <p className="mt-3 text-gray-600 max-w-xl mx-auto">
-            Enable the Visitor Management module in your Fusion Xpress dashboard or talk to our team
-            for a guided demo.
-          </p>
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/contact?subject=Smart%20Visitor%20Management%20Demo" className="btn-primary">
-              Request Demo
-            </Link>
-            <Link href="/fusion-xpress/admin-login" className="btn-outline">
-              Sign in to Fusion Xpress
-            </Link>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
+
