@@ -41,10 +41,17 @@ import {
   User,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronDown,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import {
+  VISITOR_MANAGEMENT_NAV_CHILDREN,
+  VISITOR_MANAGEMENT_PATH,
+  industryLabel,
+  visitorManagementHref,
+} from "@/lib/visitors/industry-options";
 import { supabase } from "@/lib/supabase";
 
 type PortalTier = "basic" | "pro" | "enterprise";
@@ -72,6 +79,8 @@ type NavItem = {
   /** Show if user has any of these features (for All Campaigns). */
   featureKeysAny?: ("ticketing" | "voting")[];
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
+  /** Expandable industry links under Visitor Management */
+  children?: { label: string; industrySlug: string }[];
 };
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
@@ -93,10 +102,11 @@ const NAV: NavItem[] = [
   { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "main", featureKey: "reports" },
   {
     label: "Visitor Management",
-    href: "/dashboard/visitor-management",
+    href: VISITOR_MANAGEMENT_PATH,
     icon: UserCheck,
     section: "main",
     featureKey: "visitor_management",
+    children: [...VISITOR_MANAGEMENT_NAV_CHILDREN],
   },
   { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
@@ -140,11 +150,144 @@ function isActivePath(pathname: string, currentType: string | null, href: string
   return String(currentType ?? "").toLowerCase() === expectedType.toLowerCase();
 }
 
+function isVisitorSection(pathname: string) {
+  return pathname === VISITOR_MANAGEMENT_PATH || pathname.startsWith(`${VISITOR_MANAGEMENT_PATH}/`);
+}
+
+function isVisitorChildActive(pathname: string, industryParam: string | null, industrySlug: string) {
+  if (!isVisitorSection(pathname)) return false;
+  if (industrySlug === "all") return !industryParam || industryParam === "all";
+  return industryParam === industrySlug;
+}
+
+function DashboardNavItem({
+  item,
+  pathname,
+  currentType,
+  visitorIndustry,
+  visitorNavOpen,
+  setVisitorNavOpen,
+  showLabels,
+  onNavigate,
+  pendingApplicationsCount,
+}: {
+  item: NavItem;
+  pathname: string;
+  currentType: string | null;
+  visitorIndustry: string | null;
+  visitorNavOpen: boolean;
+  setVisitorNavOpen: (open: boolean) => void;
+  showLabels: boolean;
+  onNavigate?: () => void;
+  pendingApplicationsCount: number;
+}) {
+  const Icon = item.icon;
+
+  if (item.children?.length) {
+    const parentActive = isVisitorSection(pathname);
+    const isOpen = showLabels && (visitorNavOpen || parentActive);
+
+    if (!showLabels) {
+      return (
+        <Link
+          href={item.href}
+          prefetch={false}
+          onClick={onNavigate}
+          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
+            parentActive
+              ? "bg-primary-600/20 border border-primary-500/30 text-white"
+              : "text-white/80 hover:bg-white/5 hover:text-white"
+          }`}
+          title={item.label}
+        >
+          <Icon
+            className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+          />
+        </Link>
+      );
+    }
+
+    return (
+      <div className="space-y-0.5">
+        <button
+          type="button"
+          onClick={() => setVisitorNavOpen(!visitorNavOpen)}
+          className={`group flex w-full items-center rounded-md transition-colors ${
+            parentActive
+              ? "bg-primary-600/20 border border-primary-500/30 text-white"
+              : "text-white/80 hover:bg-white/5 hover:text-white"
+          } gap-3 px-3 py-2.5`}
+        >
+          <Icon
+            className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+          />
+          <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
+          <ChevronDown
+            className={`w-4 h-4 flex-shrink-0 text-white/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {isOpen ? (
+          <div className="ml-3 space-y-0.5 border-l border-white/10 pl-2">
+            {item.children.map((child) => {
+              const childActive = isVisitorChildActive(pathname, visitorIndustry, child.industrySlug);
+              return (
+                <Link
+                  key={child.industrySlug}
+                  href={visitorManagementHref(child.industrySlug)}
+                  prefetch={false}
+                  onClick={onNavigate}
+                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    childActive
+                      ? "bg-primary-600/25 text-white border border-primary-500/20"
+                      : "text-white/70 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  {child.label}
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  const active = isActivePath(pathname, currentType, item.href);
+  return (
+    <Link
+      href={item.href}
+      prefetch={false}
+      onClick={onNavigate}
+      className={`group flex items-center rounded-md transition-colors ${
+        active
+          ? "bg-primary-600/20 border border-primary-500/30 text-white"
+          : "text-white/80 hover:bg-white/5 hover:text-white"
+      } ${showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
+      title={!showLabels ? item.label : undefined}
+    >
+      <Icon
+        className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+      />
+      {showLabels && (
+        <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
+          <span className="truncate">{item.label}</span>
+          {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
+              {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
+            </span>
+          )}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "";
   const sp = useSearchParams();
   const router = useRouter();
   const currentType = sp?.get("type") ?? null;
+  const visitorIndustry = sp?.get("industry") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer } = usePortal();
 
@@ -221,6 +364,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     return TIER_ORDER[userTier] >= TIER_ORDER[item.minTier];
   };
 
+  const [visitorNavOpen, setVisitorNavOpen] = useState(() => isVisitorSection(pathname));
+
+  useEffect(() => {
+    if (isVisitorSection(pathname)) setVisitorNavOpen(true);
+  }, [pathname]);
+
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -289,8 +438,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }, [isAuthenticated, isPortalMember, isAdmin]);
 
   const active = useMemo(() => {
+    if (isVisitorSection(pathname)) {
+      if (visitorIndustry && visitorIndustry !== "all") {
+        return industryLabel(visitorIndustry);
+      }
+      return "Visitor Management";
+    }
     return NAV.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";
-  }, [currentType, pathname]);
+  }, [currentType, pathname, visitorIndustry]);
 
   const breadcrumbTail = active === "Dashboard" ? "Read" : active;
 
@@ -373,37 +528,19 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
               )}
               <div className="mt-2 space-y-1">
-                {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
-                  const Icon = item.icon;
-                  const active = isActivePath(pathname, currentType, item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      prefetch={false}
-                      className={`group flex items-center rounded-md transition-colors ${
-                        active
-                          ? "bg-primary-600/20 border border-primary-500/30 text-white"
-                          : "text-white/80 hover:bg-white/5 hover:text-white"
-                      } ${showDesktopSidebarFull ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
-                      title={!showDesktopSidebarFull ? item.label : undefined}
-                    >
-                      <Icon
-                        className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
-                      />
-                      {showDesktopSidebarFull && (
-                        <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
-                          <span className="truncate">{item.label}</span>
-                          {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-                            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
-                              {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+                {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
+                  <DashboardNavItem
+                    key={item.href}
+                    item={item}
+                    pathname={pathname}
+                    currentType={currentType}
+                    visitorIndustry={visitorIndustry}
+                    visitorNavOpen={visitorNavOpen}
+                    setVisitorNavOpen={setVisitorNavOpen}
+                    showLabels={showDesktopSidebarFull}
+                    pendingApplicationsCount={pendingApplicationsCount}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -463,35 +600,20 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 <div key={s.key}>
                   <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
                   <div className="mt-2 space-y-1">
-                    {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => {
-                      const Icon = item.icon;
-                      const active = isActivePath(pathname, currentType, item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          prefetch={false}
-                          onClick={() => setMobileOpen(false)}
-                          className={`group flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
-                            active
-                              ? "bg-primary-600/20 border border-primary-500/30 text-white"
-                              : "text-white/80 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <Icon
-                            className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
-                          />
-                          <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
-                            <span className="truncate">{item.label}</span>
-                            {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-                              <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
-                                {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
-                              </span>
-                            )}
-                          </span>
-                        </Link>
-                      );
-                    })}
+                    {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
+                      <DashboardNavItem
+                        key={item.href}
+                        item={item}
+                        pathname={pathname}
+                        currentType={currentType}
+                        visitorIndustry={visitorIndustry}
+                        visitorNavOpen={visitorNavOpen}
+                        setVisitorNavOpen={setVisitorNavOpen}
+                        showLabels
+                        onNavigate={() => setMobileOpen(false)}
+                        pendingApplicationsCount={pendingApplicationsCount}
+                      />
+                    ))}
                   </div>
                 </div>
               ))}

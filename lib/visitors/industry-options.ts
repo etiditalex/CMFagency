@@ -18,3 +18,15 @@ export function industryLabel(slug: string | null | undefined): string {
 export function isVisitorIndustrySlug(slug: string): slug is VisitorIndustrySlug {
   return VISITOR_INDUSTRIES.some((i) => i.slug === slug);
 }
+
+export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
+
+export function visitorManagementHref(industrySlug?: string | null): string {
+  if (!industrySlug || industrySlug === "all") return VISITOR_MANAGEMENT_PATH;
+  return `${VISITOR_MANAGEMENT_PATH}?industry=${encodeURIComponent(industrySlug)}`;
+}
+
+export const VISITOR_MANAGEMENT_NAV_CHILDREN = [
+  { label: "All industries", industrySlug: "all" as const },
+  ...VISITOR_INDUSTRIES.map((i) => ({ label: i.label, industrySlug: i.slug })),
+];

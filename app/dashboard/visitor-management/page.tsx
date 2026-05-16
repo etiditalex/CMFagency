@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import { getIndustryDemo } from "@/lib/visitors/industry-demos";
-import { VISITOR_INDUSTRIES, industryLabel } from "@/lib/visitors/industry-options";
+import { industryLabel, isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
 import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
@@ -30,20 +30,27 @@ import {
   visitorStats,
 } from "@/lib/visitors/utils";
 
-const DEFAULT_INDUSTRY = VISITOR_INDUSTRIES[0].slug;
+const DEFAULT_INDUSTRY = "retail-hospitality";
 
 export default function DashboardVisitorManagementPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
+
+  const industryFilter = useMemo(() => {
+    const param = searchParams?.get("industry");
+    if (!param || param === "all") return "all";
+    return isVisitorIndustrySlug(param) ? param : DEFAULT_INDUSTRY;
+  }, [searchParams]);
+
+  const formIndustry = industryFilter === "all" ? DEFAULT_INDUSTRY : industryFilter;
 
   const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
   const [loadingVisitors, setLoadingVisitors] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
   const [usingMockData, setUsingMockData] = useState(false);
-  const [industryFilter, setIndustryFilter] = useState<string>(DEFAULT_INDUSTRY);
-  const [formIndustry, setFormIndustry] = useState<string>(DEFAULT_INDUSTRY);
   const [demoSubmissions, setDemoSubmissions] = useState<VisitorDemoSubmission[]>([]);
   const [loadingDemos, setLoadingDemos] = useState(true);
   const [patchingId, setPatchingId] = useState<string | null>(null);
@@ -255,36 +262,17 @@ export default function DashboardVisitorManagementPage() {
 
   return (
     <div className="space-y-6 -mx-2 sm:mx-0">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-            <UserCheck className="w-7 h-7 text-primary-600" />
-            Visitor Management
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Pre-register guests, approve visits, and manage QR passes.
-            {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <label className="text-sm font-medium text-gray-700">
-            <span className="sr-only">Industry</span>
-            <select
-              value={industryFilter}
-              onChange={(e) => setIndustryFilter(e.target.value)}
-              className="w-full sm:w-56 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900"
-            >
-              <option value="all">All industries</option>
-              {VISITOR_INDUSTRIES.map((i) => (
-                <option key={i.slug} value={i.slug}>
-                  {i.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+      <div>
+        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+          <UserCheck className="w-7 h-7 text-primary-600" />
+          {industryFilter === "all" ? "Visitor Management" : industryLabel(industryFilter)}
+        </h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Pre-register guests, approve visits, and manage QR passes. Switch industry using the
+          Visitor Management menu in the sidebar.
+          {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
+        </p>
       </div>
-
       {setupRequired && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Run <code className="font-mono text-xs">database/visitor_management_patch_01.sql</code> in the
@@ -316,41 +304,32 @@ export default function DashboardVisitorManagementPage() {
         })}
       </div>
 
-      <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
-          <div>
+      {industryFilter !== "all" ? (
+        <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
+          <div className="mb-6">
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <Plus className="w-5 h-5 text-primary-600" />
-              Register visitor
+              Register visitor — {industryLabel(industryFilter)}
             </h2>
             <p className="mt-1 text-sm text-gray-600">
               {selectedDemo?.subtitle ?? "Industry registration"} — saved to Supabase.
             </p>
           </div>
-          <label className="block text-sm w-full sm:w-64">
-            <span className="font-medium text-gray-700">Form template</span>
-            <select
-              value={formIndustry}
-              onChange={(e) => setFormIndustry(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold"
-            >
-              {VISITOR_INDUSTRIES.map((i) => (
-                <option key={i.slug} value={i.slug}>
-                  {i.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {selectedDemo ? (
+            <IndustryDemoForm
+              key={formIndustry}
+              demo={selectedDemo}
+              variant="dashboard"
+              onDashboardSubmit={handleIndustryFormSubmit}
+            />
+          ) : null}
         </div>
-        {selectedDemo ? (
-          <IndustryDemoForm
-            key={formIndustry}
-            demo={selectedDemo}
-            variant="dashboard"
-            onDashboardSubmit={handleIndustryFormSubmit}
-          />
-        ) : null}
-      </div>
+      ) : (
+        <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          Select an industry under <strong>Visitor Management</strong> in the sidebar to register
+          guests with industry-specific fields.
+        </p>
+      )}
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
