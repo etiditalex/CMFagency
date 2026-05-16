@@ -29,7 +29,6 @@ export default function VisitorSignUpForm() {
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
@@ -74,25 +73,24 @@ export default function VisitorSignUpForm() {
           password,
         }),
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string; emailWarning?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+        emailWarning?: string;
+        verifyUrl?: string;
+      };
       if (!res.ok) throw new Error(json.error ?? "Registration failed");
-      setSuccess(json.message ?? "Account created. Check your email for a login code.");
-      setTimeout(() => router.push("/fusion-xpress/smart-visitor-management/sign-in"), 2500);
+      const verifyPath =
+        json.verifyUrl ??
+        `/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email.trim())}`;
+      router.push(verifyPath);
+      return;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="mt-8 rounded-xl border border-secondary-200 bg-secondary-50 p-6 text-center">
-        <p className="font-semibold text-gray-900">{success}</p>
-        <p className="mt-2 text-sm text-gray-600">Redirecting you to sign in…</p>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={onSubmit} className="mt-5 sm:mt-6">

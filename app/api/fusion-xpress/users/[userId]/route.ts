@@ -15,6 +15,7 @@ const ALLOWED_FEATURES = [
   "kcm_membership",
   "teams_work",
   "kcm_payouts_inflow",
+  "visitor_management",
 ] as const;
 
 type Body = {
@@ -115,6 +116,87 @@ export async function PATCH(
       await admin.from("admin_users").upsert({ user_id: userId }, { onConflict: "user_id" });
     } else if (role !== "admin" && existing.role === "admin") {
       await admin.from("admin_users").delete().eq("user_id", userId);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Unexpected error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE: Remove a portal member and their auth account (full admin only).
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const { userId } = await params;
+    if (!userId) return NextResponse.json({ error: "Missing user id" }, { status: 400 });
+
+    const authHeader = req.headers.get("authorization");
+    const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return NextResponse.json({ error: "Missing authorization" }, { status: 401 });
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: callerData, error: callerErr } = await admin.auth.getUser(token);
+    if (callerErr || !callerData?.user) {
+      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    }
+
+    const callerId = String(callerData.user.id ?? "");
+    const { data: callerMember } = await admin
+      .from("portal_members")
+      .select("role")
+      .eq("user_id", callerId)
+      .maybeSingle();
+    const isFullAdmin = callerMember?.role === "admin";
+    const isLegacyAdmin = !callerMember
+      ? (await admin.from("admin_users").select("user_id").eq("user_id", callerId).maybeSingle()).data != null
+      : false;
+
+    if (!isFullAdmin && !isLegacyAdmin) {
+      return NextResponse.json({ error: "Forbidden: full admin access required" }, { status: 403 });
+    }
+
+    if (userId === callerId) {
+      return NextResponse.json({ error: "You cannot delete your own account" }, { status: 400 });
+    }
+
+    const { data: target } = await admin
+      .from("portal_members")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!target) {
+      return NextResponse.json({ error: "User not found in portal" }, { status: 404 });
+    }
+
+    if (target.role === "admin") {
+      return NextResponse.json({ error: "Cannot delete an admin account from here" }, { status: 400 });
+    }
+
+    await admin.from("visitors").delete().eq("owner_id", userId);
+    await admin.from("portal_login_codes").delete().eq("user_id", userId);
+    await admin.from("portal_user_totp").delete().eq("user_id", userId);
+    await admin.from("portal_members").delete().eq("user_id", userId);
+    await admin.from("admin_users").delete().eq("user_id", userId);
+
+    const { error: deleteAuthErr } = await admin.auth.admin.deleteUser(userId);
+    if (deleteAuthErr) {
+      return NextResponse.json({ error: deleteAuthErr.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

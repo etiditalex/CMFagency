@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true,
+      email_confirm: false,
       user_metadata: {
         name: contactName,
         business_name: businessName,
@@ -111,10 +111,10 @@ export async function POST(req: NextRequest) {
     }
 
     const emailResult = await sendVisitorLoginCodeEmail(admin, userId, email, {
-      subject: "Welcome to Fusion Xpress Visitor Management",
-      headline: "Your account is ready",
+      subject: "Verify your Fusion Xpress Visitor Management email",
+      headline: "Verify your email address",
       intro:
-        "Your Smart Visitor Management account was created. Sign in with your email and password, then enter this code:",
+        "Thank you for signing up. Enter this code on the verification page to activate your organization account:",
     });
 
     if ("error" in emailResult && emailResult.error) {
@@ -130,7 +130,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         ok: true,
-        message: "Account created. Check your email for a login code, then sign in.",
+        message: "Account created. Check your email for a verification code.",
+        verifyUrl: `/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email)}`,
       },
       { status: 201 }
     );

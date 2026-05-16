@@ -82,7 +82,15 @@ export default function VisitorSignInForm() {
         email: email.trim(),
         password,
       });
-      if (signInErr) throw signInErr;
+      if (signInErr) {
+        const msg = signInErr.message.toLowerCase();
+        if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+          throw new Error(
+            "Please verify your email first. Check your inbox or use the verification page linked below."
+          );
+        }
+        throw signInErr;
+      }
 
       const userId = data.user?.id;
       if (!userId) throw new Error("Sign in failed.");
@@ -192,7 +200,17 @@ export default function VisitorSignInForm() {
       </p>
 
       {error ? (
-        <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          <p>{error}</p>
+          {error.toLowerCase().includes("verify your email") ? (
+            <Link
+              href={`/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email.trim())}`}
+              className="mt-2 inline-block font-semibold text-primary-700 hover:underline"
+            >
+              Go to email verification
+            </Link>
+          ) : null}
+        </div>
       ) : null}
       {resetSent ? <p className="mt-4 text-sm text-primary-700">Password reset link sent.</p> : null}
 

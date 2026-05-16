@@ -29,7 +29,8 @@ export default function ConditionalLayout({
   const isFusionAdminLogin = pathname === "/fusion-xpress/admin-login";
   const isVisitorManagementAuth =
     pathname === "/fusion-xpress/smart-visitor-management/sign-in" ||
-    pathname === "/fusion-xpress/smart-visitor-management/sign-up";
+    pathname === "/fusion-xpress/smart-visitor-management/sign-up" ||
+    pathname === "/fusion-xpress/smart-visitor-management/verify-email";
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
 
   // For verify-email pages, hide navbar and show full-screen layout

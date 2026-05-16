@@ -19,6 +19,7 @@ import {
   UserPlus,
   Vote,
   Wallet,
+  Trash2,
   X,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
@@ -83,6 +84,7 @@ export default function DashboardUsersPage() {
   const [totpConfirmCode, setTotpConfirmCode] = useState("");
   const [totpSetupLoading, setTotpSetupLoading] = useState(false);
   const [totpConfirmLoading, setTotpConfirmLoading] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -317,6 +319,41 @@ export default function DashboardUsersPage() {
       setError(e?.message ?? "Verification failed");
     } finally {
       setTotpConfirmLoading(false);
+    }
+  };
+
+  const deleteUser = async (target: (typeof users)[0]) => {
+    const label = target.email || target.user_id;
+    if (
+      !window.confirm(
+        `Delete account ${label}? This removes their portal access and auth login permanently.`
+      )
+    ) {
+      return;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return;
+    setDeletingUserId(target.user_id);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch(`/api/fusion-xpress/users/${target.user_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json?.error ?? "Failed to delete user");
+      setSuccess(`Deleted ${label}`);
+      if (editingUser?.user_id === target.user_id) {
+        setEditingUser(null);
+        setEditForm(null);
+      }
+      loadUsers();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to delete user");
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -608,6 +645,18 @@ export default function DashboardUsersPage() {
                                 Set up 2FA
                               </button>
                             )
+                          )}
+                          {isFullAdmin && u.role !== "admin" && u.user_id !== user?.id && (
+                            <button
+                              type="button"
+                              onClick={() => deleteUser(u)}
+                              disabled={deletingUserId === u.user_id}
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-red-200 hover:bg-red-50 text-red-700 font-medium disabled:opacity-50"
+                              title="Delete this account"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {deletingUserId === u.user_id ? "Deleting…" : "Delete"}
+                            </button>
                           )}
                         </div>
                       </td>
