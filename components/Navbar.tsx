@@ -127,6 +127,7 @@ export default function Navbar() {
 
   const fusionXpressLinks = [
     { href: "/fusion-xpress", label: "Fusion Xpress" },
+    { href: "/fusion-xpress/smart-visitor-management", label: "Smart Visitor Management" },
     { href: "/teams-work/portal", label: "Teams Work portal" },
   ];
 

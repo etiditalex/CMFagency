@@ -30,6 +30,7 @@ import {
   Shield,
   ShoppingBag,
   Ticket,
+  UserCheck,
   UserCog,
   UserPlus,
   Vote,
@@ -66,7 +67,8 @@ type NavItem = {
     | "reports"
     | "events"
     | "kcm_membership"
-    | "teams_work";
+    | "teams_work"
+    | "visitor_management";
   /** Show if user has any of these features (for All Campaigns). */
   featureKeysAny?: ("ticketing" | "voting")[];
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
@@ -89,6 +91,13 @@ const NAV: NavItem[] = [
     featureKey: "reports",
   },
   { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "main", featureKey: "reports" },
+  {
+    label: "Visitor Management",
+    href: "/dashboard/visitor-management",
+    icon: UserCheck,
+    section: "main",
+    featureKey: "visitor_management",
+  },
   { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },

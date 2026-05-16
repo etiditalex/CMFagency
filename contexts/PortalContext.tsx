@@ -22,7 +22,8 @@ type PortalFeature =
   | "applications"
   | "kcm_membership"
   | "teams_work"
-  | "kcm_payouts_inflow";
+  | "kcm_payouts_inflow"
+  | "visitor_management";
 
 /** All assignable dashboard features (stored on portal_members.features). */
 const ALL_PORTAL_FEATURES: PortalFeature[] = [
@@ -39,11 +40,16 @@ const ALL_PORTAL_FEATURES: PortalFeature[] = [
   "kcm_membership",
   "teams_work",
   "kcm_payouts_inflow",
+  "visitor_management",
 ];
 
 /** Pro/Enterprise tier defaults: everything except special gated modules (assigned explicitly per user). */
 const TIER_DEFAULT_FEATURES: PortalFeature[] = ALL_PORTAL_FEATURES.filter(
-  (k) => k !== "kcm_membership" && k !== "teams_work" && k !== "kcm_payouts_inflow"
+  (k) =>
+    k !== "kcm_membership" &&
+    k !== "teams_work" &&
+    k !== "kcm_payouts_inflow" &&
+    k !== "visitor_management"
 );
 
 type PortalContextValue = {

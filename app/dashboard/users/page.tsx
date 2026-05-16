@@ -14,6 +14,7 @@ import {
   Shield,
   Smartphone,
   Ticket,
+  UserCheck,
   UserCog,
   UserPlus,
   Vote,
@@ -38,6 +39,7 @@ const FEATURES: { key: string; label: string; icon: typeof Wallet }[] = [
   { key: "kcm_membership", label: "KCM membership", icon: Crown },
   { key: "kcm_payouts_inflow", label: "KCM inflow in payouts", icon: Wallet },
   { key: "teams_work", label: "Teams Work", icon: ClipboardCheck },
+  { key: "visitor_management", label: "Visitor Management", icon: UserCheck },
 ];
 
 function isMissingAdminUsersTable(err: any) {
@@ -416,7 +418,12 @@ export default function DashboardUsersPage() {
                       Object.fromEntries(
                         FEATURES.map((f) => [
                           f.key,
-                          f.key === "kcm_membership" || f.key === "kcm_payouts_inflow" || f.key === "teams_work" ? false : allOn,
+                          f.key === "kcm_membership" ||
+                          f.key === "kcm_payouts_inflow" ||
+                          f.key === "teams_work" ||
+                          f.key === "visitor_management"
+                            ? false
+                            : allOn,
                         ])
                       )
                     );
