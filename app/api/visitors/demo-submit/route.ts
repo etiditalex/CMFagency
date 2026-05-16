@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         : body;
 
     const full_name = safeText(values.fullName ?? values.full_name, 200);
-    const phone_number = safeText(values.phoneNumber ?? values.phone_number, 40);
+    const phone_number = safeText(values.phone ?? values.phoneNumber ?? values.phone_number, 40);
     const email = safeText(values.email, 200);
 
     const { error } = await admin.from("visitor_demo_submissions").insert({

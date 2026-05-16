@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { mapVisitorRow, isMissingVisitorsTable, type VisitorRow } from "@/lib/visitors/db-mapper";
+import { getIndustryDemo } from "@/lib/visitors/industry-demos";
+import { mapIndustryFormToVisitor } from "@/lib/visitors/industry-form-mapper";
+import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { requireVisitorManagementAccess } from "@/lib/visitors/require-visitor-management";
 
 function safeText(v: unknown, max: number) {
@@ -42,6 +45,11 @@ export async function GET(req: NextRequest) {
       q = q.eq("owner_id", userId);
     }
 
+    const industrySlug = req.nextUrl.searchParams.get("industrySlug")?.trim() ?? "";
+    if (industrySlug && isVisitorIndustrySlug(industrySlug)) {
+      q = q.eq("industry_slug", industrySlug);
+    }
+
     const { data, error } = await q;
     if (error) {
       if (isMissingVisitorsTable(error)) {
@@ -69,6 +77,41 @@ export async function POST(req: NextRequest) {
     const { admin, userId } = auth;
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+
+    const industrySlug = safeText(body.industrySlug ?? body.industry_slug, 80);
+    if (industrySlug && getIndustryDemo(industrySlug)) {
+      const values =
+        body.values && typeof body.values === "object" && !Array.isArray(body.values)
+          ? (body.values as Record<string, unknown>)
+          : body;
+
+      const mapped = mapIndustryFormToVisitor(industrySlug, values);
+      if ("error" in mapped) {
+        return NextResponse.json({ error: mapped.error }, { status: 400 });
+      }
+
+      const row = {
+        owner_id: userId,
+        ...mapped.row,
+        status: "pending",
+        source: "dashboard",
+      };
+
+      const { data, error } = await admin.from("visitors").insert(row).select().single();
+      if (error) {
+        if (isMissingVisitorsTable(error)) {
+          return NextResponse.json(
+            {
+              error: "Visitor tables not set up. Run database/visitor_management_patch_01.sql in Supabase.",
+            },
+            { status: 503 }
+          );
+        }
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ visitor: mapVisitorRow(data as VisitorRow) }, { status: 201 });
+    }
 
     const full_name = safeText(body.fullName ?? body.full_name, 200);
     const phone_number = safeText(body.phoneNumber ?? body.phone_number, 40);

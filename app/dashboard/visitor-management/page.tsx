@@ -14,12 +14,15 @@ import {
   X,
 } from "lucide-react";
 
+import IndustryDemoForm from "@/components/fusion-xpress/visitor-management/IndustryDemoForm";
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import { getIndustryDemo } from "@/lib/visitors/industry-demos";
+import { VISITOR_INDUSTRIES, industryLabel } from "@/lib/visitors/industry-options";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
-import type { VisitorFormInput, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
+import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
   formatVisitDateTime,
   statusBadgeClass,
@@ -27,16 +30,7 @@ import {
   visitorStats,
 } from "@/lib/visitors/utils";
 
-const EMPTY_FORM: VisitorFormInput = {
-  fullName: "",
-  phoneNumber: "",
-  idPassportNumber: "",
-  vehiclePlateNumber: "",
-  host: "",
-  purposeOfVisit: "",
-  visitDate: "",
-  visitTime: "",
-};
+const DEFAULT_INDUSTRY = VISITOR_INDUSTRIES[0].slug;
 
 export default function DashboardVisitorManagementPage() {
   const router = useRouter();
@@ -48,10 +42,10 @@ export default function DashboardVisitorManagementPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
   const [usingMockData, setUsingMockData] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<VisitorFormInput>(EMPTY_FORM);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [industryFilter, setIndustryFilter] = useState<string>(DEFAULT_INDUSTRY);
+  const [formIndustry, setFormIndustry] = useState<string>(DEFAULT_INDUSTRY);
+  const [demoSubmissions, setDemoSubmissions] = useState<VisitorDemoSubmission[]>([]);
+  const [loadingDemos, setLoadingDemos] = useState(true);
   const [patchingId, setPatchingId] = useState<string | null>(null);
   const [detailVisitor, setDetailVisitor] = useState<VisitorRecord | null>(null);
   const [qrPreview, setQrPreview] = useState<VisitorRecord | null>(null);
@@ -61,7 +55,7 @@ export default function DashboardVisitorManagementPage() {
     return data.session?.access_token ?? null;
   }, []);
 
-  const loadVisitors = useCallback(async () => {
+  const loadVisitors = useCallback(async (industrySlug?: string) => {
     setLoadingVisitors(true);
     setLoadError(null);
     setSetupRequired(false);
@@ -69,7 +63,11 @@ export default function DashboardVisitorManagementPage() {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
 
-      const res = await fetch("/api/visitors", {
+      const qs =
+        industrySlug && industrySlug !== "all"
+          ? `?industrySlug=${encodeURIComponent(industrySlug)}`
+          : "";
+      const res = await fetch(`/api/visitors${qs}`, {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -102,6 +100,38 @@ export default function DashboardVisitorManagementPage() {
     }
   }, [getToken]);
 
+  const loadDemoSubmissions = useCallback(
+    async (industrySlug?: string) => {
+      setLoadingDemos(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        const qs =
+          industrySlug && industrySlug !== "all"
+            ? `?industrySlug=${encodeURIComponent(industrySlug)}`
+            : "";
+        const res = await fetch(`/api/visitors/demo-submissions${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          submissions?: VisitorDemoSubmission[];
+        };
+        if (res.ok && Array.isArray(json.submissions)) {
+          setDemoSubmissions(json.submissions);
+        } else {
+          setDemoSubmissions([]);
+        }
+      } catch {
+        setDemoSubmissions([]);
+      } finally {
+        setLoadingDemos(false);
+      }
+    },
+    [getToken]
+  );
+
   useEffect(() => {
     if (authLoading || portalLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
@@ -112,7 +142,8 @@ export default function DashboardVisitorManagementPage() {
       router.replace("/dashboard");
       return;
     }
-    loadVisitors();
+    loadVisitors(industryFilter);
+    loadDemoSubmissions(industryFilter);
   }, [
     authLoading,
     portalLoading,
@@ -122,7 +153,11 @@ export default function DashboardVisitorManagementPage() {
     router,
     user,
     loadVisitors,
+    loadDemoSubmissions,
+    industryFilter,
   ]);
+
+  const selectedDemo = useMemo(() => getIndustryDemo(formIndustry), [formIndustry]);
 
   const stats = useMemo(() => visitorStats(visitors), [visitors]);
 
@@ -175,28 +210,13 @@ export default function DashboardVisitorManagementPage() {
     [updateVisitor, getToken, usingMockData]
   );
 
-  const handleSubmitBooking = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-    if (
-      !form.fullName.trim() ||
-      !form.phoneNumber.trim() ||
-      !form.host.trim() ||
-      !form.purposeOfVisit.trim() ||
-      !form.visitDate ||
-      !form.visitTime
-    ) {
-      setFormError("Please fill in all required fields.");
-      return;
-    }
-
-    if (usingMockData) {
-      setFormError("Run database/visitor_management_patch_01.sql in Supabase to save visitors.");
-      return;
-    }
-
-    setSaving(true);
-    try {
+  const handleIndustryFormSubmit = useCallback(
+    async (values: Record<string, string | string[]>) => {
+      if (usingMockData) {
+        throw new Error(
+          "Run database/visitor_management_patch_01.sql in Supabase to save visitors."
+        );
+      }
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
       const res = await fetch("/api/visitors", {
@@ -205,22 +225,20 @@ export default function DashboardVisitorManagementPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ industrySlug: formIndustry, values }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         visitor?: VisitorRecord;
         error?: string;
       };
       if (!res.ok) throw new Error(json.error ?? "Failed to save visitor");
-      if (json.visitor) setVisitors((prev) => [json.visitor!, ...prev]);
-      setForm(EMPTY_FORM);
-      setShowForm(false);
-    } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : "Failed to save visitor");
-    } finally {
-      setSaving(false);
-    }
-  };
+      if (json.visitor) {
+        setVisitors((prev) => [json.visitor!, ...prev]);
+        await loadVisitors(industryFilter);
+      }
+    },
+    [usingMockData, getToken, formIndustry, industryFilter, loadVisitors]
+  );
 
   const statCards = [
     { label: "Today's Visitors", value: stats.todaysVisitors, icon: Calendar, tone: "text-primary-700 bg-primary-50 border-primary-100" },
@@ -248,14 +266,23 @@ export default function DashboardVisitorManagementPage() {
             {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm((s) => !s)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          {showForm ? "Hide form" : "Book visitor"}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <label className="text-sm font-medium text-gray-700">
+            <span className="sr-only">Industry</span>
+            <select
+              value={industryFilter}
+              onChange={(e) => setIndustryFilter(e.target.value)}
+              className="w-full sm:w-56 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900"
+            >
+              <option value="all">All industries</option>
+              {VISITOR_INDUSTRIES.map((i) => (
+                <option key={i.slug} value={i.slug}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
       {setupRequired && (
@@ -289,123 +316,55 @@ export default function DashboardVisitorManagementPage() {
         })}
       </div>
 
-      {showForm && (
-        <form
-          onSubmit={handleSubmitBooking}
-          className="rounded-xl border border-gray-200 bg-gray-50/80 p-4 sm:p-6 space-y-4"
-        >
-          <h2 className="text-lg font-bold text-gray-900">New visitor booking</h2>
-          {formError && (
-            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{formError}</p>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">Full Name *</span>
-              <input
-                type="text"
-                value={form.fullName}
-                onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">Phone Number *</span>
-              <input
-                type="tel"
-                value={form.phoneNumber}
-                onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">ID / Passport Number</span>
-              <input
-                type="text"
-                value={form.idPassportNumber}
-                onChange={(e) => setForm((f) => ({ ...f, idPassportNumber: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">Vehicle Plate Number</span>
-              <input
-                type="text"
-                value={form.vehiclePlateNumber}
-                onChange={(e) => setForm((f) => ({ ...f, vehiclePlateNumber: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block text-sm sm:col-span-2">
-              <span className="font-medium text-gray-700">Host / Person to Visit *</span>
-              <input
-                type="text"
-                value={form.host}
-                onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
-            <label className="block text-sm sm:col-span-2">
-              <span className="font-medium text-gray-700">Purpose of Visit *</span>
-              <input
-                type="text"
-                value={form.purposeOfVisit}
-                onChange={(e) => setForm((f) => ({ ...f, purposeOfVisit: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">Visit Date *</span>
-              <input
-                type="date"
-                value={form.visitDate}
-                onChange={(e) => setForm((f) => ({ ...f, visitDate: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
-            <label className="block text-sm">
-              <span className="font-medium text-gray-700">Visit Time *</span>
-              <input
-                type="time"
-                value={form.visitTime}
-                onChange={(e) => setForm((f) => ({ ...f, visitTime: e.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                required
-              />
-            </label>
+      <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary-600" />
+              Register visitor
+            </h2>
+            <p className="mt-1 text-sm text-gray-600">
+              {selectedDemo?.subtitle ?? "Industry registration"} — saved to Supabase.
+            </p>
           </div>
-          <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="btn-primary text-sm py-2 px-4 disabled:opacity-60">
-              {saving ? "Saving…" : "Save booking"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(false);
-                setForm(EMPTY_FORM);
-                setFormError(null);
-              }}
-              className="btn-outline text-sm py-2 px-4"
+          <label className="block text-sm w-full sm:w-64">
+            <span className="font-medium text-gray-700">Form template</span>
+            <select
+              value={formIndustry}
+              onChange={(e) => setFormIndustry(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold"
             >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+              {VISITOR_INDUSTRIES.map((i) => (
+                <option key={i.slug} value={i.slug}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {selectedDemo ? (
+          <IndustryDemoForm
+            key={formIndustry}
+            demo={selectedDemo}
+            variant="dashboard"
+            onDashboardSubmit={handleIndustryFormSubmit}
+          />
+        ) : null}
+      </div>
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-800">All visitors</span>
+          <span className="text-sm font-bold text-gray-800">
+            {industryFilter === "all"
+              ? "All visitors"
+              : `Visitors — ${industryLabel(industryFilter)}`}
+          </span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 font-semibold">Industry</th>
                 <th className="px-4 py-3 font-semibold">Visitor Name</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Host</th>
@@ -419,6 +378,7 @@ export default function DashboardVisitorManagementPage() {
             <tbody>
               {visitors.map((v) => (
                 <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{industryLabel(v.industrySlug)}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{v.fullName}</td>
                   <td className="px-4 py-3 text-gray-600">{v.phoneNumber}</td>
                   <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={v.host}>
@@ -472,6 +432,51 @@ export default function DashboardVisitorManagementPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <span className="text-sm font-bold text-gray-800">
+            Public demo submissions
+            {industryFilter !== "all" ? ` — ${industryLabel(industryFilter)}` : ""}
+          </span>
+          <p className="text-xs text-gray-500 mt-0.5">
+            From Smart Visitor Management marketing demo forms (visitor_demo_submissions).
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          {loadingDemos ? (
+            <p className="text-sm text-gray-500 py-6 text-center">Loading submissions…</p>
+          ) : demoSubmissions.length === 0 ? (
+            <p className="text-sm text-gray-500 py-6 text-center">No public demo submissions yet.</p>
+          ) : (
+            <table className="w-full min-w-[700px] text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
+                  <th className="px-4 py-3 font-semibold">Industry</th>
+                  <th className="px-4 py-3 font-semibold">Name</th>
+                  <th className="px-4 py-3 font-semibold">Phone</th>
+                  <th className="px-4 py-3 font-semibold">Email</th>
+                  <th className="px-4 py-3 font-semibold">Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {demoSubmissions.map((d) => (
+                  <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                    <td className="px-4 py-3 text-gray-600">{industryLabel(d.industrySlug)}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{d.fullName ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">{d.phoneNumber ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">{d.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      {new Date(d.createdAt).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -542,6 +547,7 @@ function DetailModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: ()
             ["Purpose", visitor.purposeOfVisit],
             ["Visit", formatVisitDateTime(visitor.visitDate, visitor.visitTime)],
             ["Status", statusLabel(visitor.status)],
+            ["Industry", industryLabel(visitor.industrySlug)],
           ].map(([k, val]) => (
             <div key={k} className="flex gap-2">
               <dt className="font-medium text-gray-500 w-28 flex-shrink-0">{k}</dt>
@@ -549,6 +555,21 @@ function DetailModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: ()
             </div>
           ))}
         </dl>
+        {visitor.formExtra && Object.keys(visitor.formExtra).length > 0 ? (
+          <div className="mt-4 border-t border-gray-100 pt-3">
+            <p className="text-xs font-semibold uppercase text-gray-500 mb-2">Form details</p>
+            <dl className="space-y-1 text-sm max-h-40 overflow-y-auto">
+              {Object.entries(visitor.formExtra).map(([key, val]) => (
+                <div key={key} className="flex gap-2">
+                  <dt className="font-medium text-gray-500 w-28 flex-shrink-0 capitalize">{key}</dt>
+                  <dd className="text-gray-900 break-words">
+                    {Array.isArray(val) ? val.join(", ") : String(val ?? "—")}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ) : null}
         {visitor.qrCodeToken && (
           <div className="mt-6 flex flex-col items-center gap-2 border-t border-gray-100 pt-4">
             <p className="text-xs font-semibold text-gray-500 uppercase">Visitor pass</p>
@@ -581,3 +602,4 @@ function QrModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: () => 
     </div>
   );
 }
+

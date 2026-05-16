@@ -64,58 +64,6 @@ function contactFields(requiredEmail = false): DemoField[] {
 
 export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
-    slug: "health-aged-care",
-    title: "Fusion Xpress Health & Aged Care Demo",
-    subtitle: "New Patient / Visitor Form",
-    sections: [
-      {
-        fields: [
-          visitorsField(),
-          ...contactFields(),
-          { name: "idNumber", label: "National ID / Passport", type: "text", required: true },
-          { name: "medicareNumber", label: "Medicare / NHIF Number", type: "text" },
-          { name: "medicareExpiry", label: "Cover Expiry", type: "date" },
-        ],
-      },
-      {
-        title: "Social & Lifestyle History",
-        fields: [
-          {
-            name: "alcohol",
-            label: "1. Alcohol",
-            type: "checkbox-group",
-            checkboxes: [
-              { value: "drinker", label: "Drinker" },
-              { value: "non-drinker", label: "Non-drinker" },
-            ],
-          },
-          {
-            name: "tobacco",
-            label: "2. Tobacco",
-            type: "checkbox-group",
-            checkboxes: [
-              { value: "never", label: "Never smoke" },
-              { value: "ceased", label: "Ceased smoking" },
-              { value: "current", label: "Current smoker" },
-            ],
-          },
-          {
-            name: "exercise",
-            label: "3. How often do you exercise per week?",
-            type: "select",
-            placeholder: "Number of days",
-            options: [
-              { value: "0", label: "0 days" },
-              { value: "1-2", label: "1–2 days" },
-              { value: "3-4", label: "3–4 days" },
-              { value: "5+", label: "5+ days" },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
     slug: "retail-hospitality",
     title: "Fusion Xpress Retail & Hospitality Demo",
     subtitle: "Guest Check-in Form",
@@ -163,6 +111,58 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
             label: "Special requests",
             type: "textarea",
             placeholder: "Allergies, high chair, accessibility needs…",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "health-aged-care",
+    title: "Fusion Xpress Health & Aged Care Demo",
+    subtitle: "New Patient / Visitor Form",
+    sections: [
+      {
+        fields: [
+          visitorsField(),
+          ...contactFields(),
+          { name: "idNumber", label: "National ID / Passport", type: "text", required: true },
+          { name: "medicareNumber", label: "Medicare / NHIF Number", type: "text" },
+          { name: "medicareExpiry", label: "Cover Expiry", type: "date" },
+        ],
+      },
+      {
+        title: "Social & Lifestyle History",
+        fields: [
+          {
+            name: "alcohol",
+            label: "1. Alcohol",
+            type: "checkbox-group",
+            checkboxes: [
+              { value: "drinker", label: "Drinker" },
+              { value: "non-drinker", label: "Non-drinker" },
+            ],
+          },
+          {
+            name: "tobacco",
+            label: "2. Tobacco",
+            type: "checkbox-group",
+            checkboxes: [
+              { value: "never", label: "Never smoke" },
+              { value: "ceased", label: "Ceased smoking" },
+              { value: "current", label: "Current smoker" },
+            ],
+          },
+          {
+            name: "exercise",
+            label: "3. How often do you exercise per week?",
+            type: "select",
+            placeholder: "Number of days",
+            options: [
+              { value: "0", label: "0 days" },
+              { value: "1-2", label: "1–2 days" },
+              { value: "3-4", label: "3–4 days" },
+              { value: "5+", label: "5+ days" },
+            ],
           },
         ],
       },

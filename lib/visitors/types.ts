@@ -19,8 +19,21 @@ export type VisitorRecord = {
   status: VisitorStatus;
   /** Set when status becomes approved */
   qrCodeToken: string | null;
+  industrySlug?: string | null;
+  source?: string;
+  formExtra?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+};
+
+export type VisitorDemoSubmission = {
+  id: string;
+  industrySlug: string;
+  fullName: string | null;
+  phoneNumber: string | null;
+  email: string | null;
+  formPayload: Record<string, unknown>;
+  createdAt: string;
 };
 
 export type VisitorFormInput = {

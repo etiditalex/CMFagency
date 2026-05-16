@@ -9,6 +9,10 @@ import type { DemoField } from "@/lib/visitors/industry-demos";
 
 type IndustryDemoFormProps = {
   demo: IndustryDemo;
+  /** Public marketing page vs Fusion Xpress dashboard */
+  variant?: "public" | "dashboard";
+  /** Dashboard: persist via authenticated visitors API */
+  onDashboardSubmit?: (values: Record<string, string | string[]>) => Promise<void>;
 };
 
 function textInputClass() {
@@ -153,7 +157,12 @@ function initialValues(demo: IndustryDemo): Record<string, string | string[]> {
   return values;
 }
 
-export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
+export default function IndustryDemoForm({
+  demo,
+  variant = "public",
+  onDashboardSubmit,
+}: IndustryDemoFormProps) {
+  const isDashboard = variant === "dashboard";
   const [values, setValues] = useState(() => initialValues(demo));
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -168,6 +177,12 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
     setSubmitError(null);
     setSubmitting(true);
     try {
+      if (isDashboard && onDashboardSubmit) {
+        await onDashboardSubmit(values);
+        setSubmitted(true);
+        return;
+      }
+
       const res = await fetch("/api/visitors/demo-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,10 +202,13 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
     return (
       <div className="mx-auto max-w-lg rounded-2xl border border-secondary-200 bg-secondary-50/50 p-8 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-secondary-600" />
-        <h2 className="mt-4 text-xl font-bold text-gray-900">Demo form submitted</h2>
+        <h2 className="mt-4 text-xl font-bold text-gray-900">
+          {isDashboard ? "Visitor registered" : "Demo form submitted"}
+        </h2>
         <p className="mt-2 text-sm text-gray-600">
-          Your demo submission was saved. Our team can review industry demo entries in the Fusion
-          Xpress dashboard when the module is fully enabled.
+          {isDashboard
+            ? "The visitor record was saved. You can approve the visit and issue a QR pass from the table below."
+            : "Your demo submission was saved. Our team can review industry demo entries in the Fusion Xpress dashboard when the module is fully enabled."}
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
@@ -201,18 +219,23 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
             }}
             className="btn-outline text-sm py-2"
           >
-            Try again
+            {isDashboard ? "Register another" : "Try again"}
           </button>
-          <Link href="/fusion-xpress/smart-visitor-management" className="btn-primary text-sm py-2">
-            Back to Smart Visitor Management
-          </Link>
+          {!isDashboard ? (
+            <Link href="/fusion-xpress/smart-visitor-management" className="btn-primary text-sm py-2">
+              Back to Smart Visitor Management
+            </Link>
+          ) : null}
         </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-10 overflow-visible">
+    <form
+      onSubmit={handleSubmit}
+      className={`space-y-10 overflow-visible ${isDashboard ? "max-w-2xl" : "mx-auto max-w-lg"}`}
+    >
       {demo.sections.map((section, sIdx) => (
         <div key={sIdx} className="space-y-5 overflow-visible">
           {section.title ? (
@@ -242,18 +265,26 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
           disabled={submitting}
           className="btn-primary flex-1 py-3 text-sm font-bold disabled:opacity-60"
         >
-          {submitting ? "Submitting…" : "Submit demo form"}
+          {submitting
+            ? "Submitting…"
+            : isDashboard
+              ? "Save visitor"
+              : "Submit demo form"}
         </button>
-        <Link
-          href="/contact?subject=Smart%20Visitor%20Management%20Demo"
-          className="btn-outline flex-1 py-3 text-center text-sm font-bold"
-        >
-          Request live demo
-        </Link>
+        {!isDashboard ? (
+          <Link
+            href="/contact?subject=Smart%20Visitor%20Management%20Demo"
+            className="btn-outline flex-1 py-3 text-center text-sm font-bold"
+          >
+            Request live demo
+          </Link>
+        ) : null}
       </div>
-      <p className="text-center text-xs text-gray-500">
-        Demo preview · Fusion Xpress · Changer Fusions
-      </p>
+      {!isDashboard ? (
+        <p className="text-center text-xs text-gray-500">
+          Demo preview · Fusion Xpress · Changer Fusions
+        </p>
+      ) : null}
     </form>
   );
 }

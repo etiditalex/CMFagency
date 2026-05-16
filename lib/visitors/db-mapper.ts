@@ -44,8 +44,39 @@ export function mapVisitorRow(row: VisitorRow): VisitorRecord {
     visitTime: normalizeVisitTime(row.visit_time),
     status: row.status,
     qrCodeToken: row.qr_code_token,
+    industrySlug: row.industry_slug,
+    source: row.source,
+    formExtra:
+      row.form_extra && typeof row.form_extra === "object" && !Array.isArray(row.form_extra)
+        ? (row.form_extra as Record<string, unknown>)
+        : {},
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  };
+}
+
+export type DemoSubmissionRow = {
+  id: string;
+  industry_slug: string;
+  full_name: string | null;
+  phone_number: string | null;
+  email: string | null;
+  form_payload: Record<string, unknown> | null;
+  created_at: string;
+};
+
+export function mapDemoSubmissionRow(row: DemoSubmissionRow) {
+  return {
+    id: row.id,
+    industrySlug: row.industry_slug,
+    fullName: row.full_name,
+    phoneNumber: row.phone_number,
+    email: row.email,
+    formPayload:
+      row.form_payload && typeof row.form_payload === "object" && !Array.isArray(row.form_payload)
+        ? (row.form_payload as Record<string, unknown>)
+        : {},
+    createdAt: row.created_at,
   };
 }
 
