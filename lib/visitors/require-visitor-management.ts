@@ -16,7 +16,9 @@ function parseFeatures(raw: unknown): string[] {
 
 export type VisitorManagementAuth =
   | {
-      admin: ReturnType<typeof createClient>;
+      /** Untyped until Supabase generated types include visitor tables. */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      admin: any;
       userId: string;
       isAdmin: boolean;
     }
