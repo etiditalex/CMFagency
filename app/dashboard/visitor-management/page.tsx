@@ -16,9 +16,8 @@ import {
 } from "lucide-react";
 
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
-import RegisterGuestForm, {
-  type RegisterGuestPayload,
-} from "@/components/fusion-xpress/visitor-management/RegisterGuestForm";
+import RegisterGuestModal from "@/components/fusion-xpress/visitor-management/RegisterGuestModal";
+import type { RegisterGuestPayload } from "@/components/fusion-xpress/visitor-management/RegisterGuestForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
@@ -74,6 +73,8 @@ export default function DashboardVisitorManagementPage() {
   const [patchingId, setPatchingId] = useState<string | null>(null);
   const [detailVisitor, setDetailVisitor] = useState<VisitorRecord | null>(null);
   const [qrPreview, setQrPreview] = useState<VisitorRecord | null>(null);
+  const [registerGuestOpen, setRegisterGuestOpen] = useState(false);
+  const [registerGuestNotice, setRegisterGuestNotice] = useState<string | null>(null);
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -269,6 +270,7 @@ export default function DashboardVisitorManagementPage() {
       if (json.visitor) {
         setVisitors((prev) => [json.visitor!, ...prev]);
         await loadVisitors(industryFilter);
+        setRegisterGuestNotice(`${json.visitor.fullName} registered. Approve them in the list below.`);
       }
     },
     [usingMockData, getToken, registerIndustrySlug, industryFilter, loadVisitors]
@@ -337,23 +339,35 @@ export default function DashboardVisitorManagementPage() {
         })}
       </div>
 
-      <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <Plus className="w-5 h-5 text-primary-600" />
-            Register a guest
-          </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Add someone visiting your organization. Guests can also check in via your QR welcome screen;
-            use this when reception registers them on behalf.
-          </p>
-        </div>
-        <RegisterGuestForm
-          key={registerIndustrySlug}
-          defaultIndustrySlug={registerIndustrySlug}
-          onSubmit={handleRegisterGuest}
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="text-sm text-gray-600">
+          Register guests manually when reception adds them, or let visitors check in via your QR welcome screen.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setRegisterGuestNotice(null);
+            setRegisterGuestOpen(true);
+          }}
+          className="inline-flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Register guest
+        </button>
       </div>
+
+      {registerGuestNotice ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {registerGuestNotice}
+        </p>
+      ) : null}
+
+      <RegisterGuestModal
+        open={registerGuestOpen}
+        onClose={() => setRegisterGuestOpen(false)}
+        defaultIndustrySlug={registerIndustrySlug}
+        onSubmit={handleRegisterGuest}
+      />
 
       {!isVisitorOnly && industryFilter === "all" ? (
         <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">

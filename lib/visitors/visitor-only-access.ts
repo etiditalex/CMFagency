@@ -1,4 +1,5 @@
 import type { PortalFeature } from "@/contexts/PortalContext";
+import { VISITOR_MANAGEMENT_ACCOUNTS_PATH } from "@/lib/visitors/industry-options";
 
 const PORTAL_FEATURE_KEYS = new Set<PortalFeature>([
   "payouts",
@@ -48,6 +49,12 @@ export function hasVisitorManagementAccess(
 export const VISITOR_ONLY_DASHBOARD_PREFIX = "/dashboard/visitor-management";
 
 export function isVisitorOnlyAllowedDashboardPath(pathname: string): boolean {
+  if (
+    pathname === VISITOR_MANAGEMENT_ACCOUNTS_PATH ||
+    pathname.startsWith(`${VISITOR_MANAGEMENT_ACCOUNTS_PATH}/`)
+  ) {
+    return false;
+  }
   if (pathname === VISITOR_ONLY_DASHBOARD_PREFIX || pathname.startsWith(`${VISITOR_ONLY_DASHBOARD_PREFIX}/`)) {
     return true;
   }

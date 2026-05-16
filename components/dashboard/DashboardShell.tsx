@@ -47,8 +47,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import {
+  VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
+  type VisitorManagementNavChild,
   industryLabel,
   visitorManagementHref,
 } from "@/lib/visitors/industry-options";
@@ -80,8 +82,8 @@ type NavItem = {
   /** Show if user has any of these features (for All Campaigns). */
   featureKeysAny?: ("ticketing" | "voting")[];
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
-  /** Expandable industry links under Visitor Management */
-  children?: { label: string; industrySlug: string }[];
+  /** Expandable links under Visitor Management (industry filters + admin tools). */
+  children?: VisitorManagementNavChild[];
 };
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
@@ -155,10 +157,28 @@ function isVisitorSection(pathname: string) {
   return pathname === VISITOR_MANAGEMENT_PATH || pathname.startsWith(`${VISITOR_MANAGEMENT_PATH}/`);
 }
 
-function isVisitorChildActive(pathname: string, industryParam: string | null, industrySlug: string) {
-  if (!isVisitorSection(pathname)) return false;
+function isVisitorIndustryChildActive(
+  pathname: string,
+  industryParam: string | null,
+  industrySlug: string
+) {
+  if (pathname !== VISITOR_MANAGEMENT_PATH) return false;
   if (industrySlug === "all") return !industryParam || industryParam === "all";
   return industryParam === industrySlug;
+}
+
+function isVisitorNavChildActive(
+  pathname: string,
+  industryParam: string | null,
+  child: VisitorManagementNavChild
+) {
+  if ("href" in child) return pathname === child.href;
+  return isVisitorIndustryChildActive(pathname, industryParam, child.industrySlug);
+}
+
+function visitorNavChildHref(child: VisitorManagementNavChild) {
+  if ("href" in child) return child.href;
+  return visitorManagementHref(child.industrySlug);
 }
 
 function DashboardNavItem({
@@ -171,6 +191,7 @@ function DashboardNavItem({
   showLabels,
   onNavigate,
   pendingApplicationsCount,
+  isAdmin,
 }: {
   item: NavItem;
   pathname: string;
@@ -181,6 +202,7 @@ function DashboardNavItem({
   showLabels: boolean;
   onNavigate?: () => void;
   pendingApplicationsCount: number;
+  isAdmin: boolean;
 }) {
   const Icon = item.icon;
 
@@ -229,24 +251,27 @@ function DashboardNavItem({
         </button>
         {isOpen ? (
           <div className="ml-3 space-y-0.5 border-l border-white/10 pl-2">
-            {item.children.map((child) => {
-              const childActive = isVisitorChildActive(pathname, visitorIndustry, child.industrySlug);
-              return (
-                <Link
-                  key={child.industrySlug}
-                  href={visitorManagementHref(child.industrySlug)}
-                  prefetch={false}
-                  onClick={onNavigate}
-                  className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    childActive
-                      ? "bg-primary-600/25 text-white border border-primary-500/20"
-                      : "text-white/70 hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  {child.label}
-                </Link>
-              );
-            })}
+            {item.children
+              .filter((child) => !("adminOnly" in child && child.adminOnly) || isAdmin)
+              .map((child) => {
+                const childActive = isVisitorNavChildActive(pathname, visitorIndustry, child);
+                const childKey = "href" in child ? child.href : child.industrySlug;
+                return (
+                  <Link
+                    key={childKey}
+                    href={visitorNavChildHref(child)}
+                    prefetch={false}
+                    onClick={onNavigate}
+                    className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                      childActive
+                        ? "bg-primary-600/25 text-white border border-primary-500/20"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {child.label}
+                  </Link>
+                );
+              })}
           </div>
         ) : null}
       </div>
@@ -294,11 +319,16 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     usePortal();
 
   const navItems = useMemo(() => {
-    if (!isVisitorOnly) return NAV;
-    return NAV.map((item) =>
-      item.href === VISITOR_MANAGEMENT_PATH ? { ...item, children: undefined } : item
-    );
-  }, [isVisitorOnly]);
+    return NAV.map((item) => {
+      if (item.href !== VISITOR_MANAGEMENT_PATH) return item;
+      if (isVisitorOnly) return { ...item, children: undefined };
+      const children: VisitorManagementNavChild[] = [
+        ...VISITOR_MANAGEMENT_NAV_CHILDREN,
+        ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
+      ];
+      return { ...item, children };
+    });
+  }, [isVisitorOnly, isAdmin]);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);
@@ -565,6 +595,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     setVisitorNavOpen={setVisitorNavOpen}
                     showLabels={showDesktopSidebarFull}
                     pendingApplicationsCount={pendingApplicationsCount}
+                    isAdmin={isAdmin}
                   />
                 ))}
               </div>
@@ -638,6 +669,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         showLabels
                         onNavigate={() => setMobileOpen(false)}
                         pendingApplicationsCount={pendingApplicationsCount}
+                        isAdmin={isAdmin}
                       />
                     ))}
                   </div>

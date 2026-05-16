@@ -20,6 +20,9 @@ export type RegisterGuestPayload = {
 type RegisterGuestFormProps = {
   defaultIndustrySlug?: string;
   onSubmit: (payload: RegisterGuestPayload) => Promise<void>;
+  /** Called after a successful registration (e.g. close modal). */
+  onSuccess?: () => void;
+  onCancel?: () => void;
 };
 
 function todayIso() {
@@ -35,7 +38,12 @@ function nowTime() {
   return `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`;
 }
 
-export default function RegisterGuestForm({ defaultIndustrySlug, onSubmit }: RegisterGuestFormProps) {
+export default function RegisterGuestForm({
+  defaultIndustrySlug,
+  onSubmit,
+  onSuccess,
+  onCancel,
+}: RegisterGuestFormProps) {
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [host, setHost] = useState("");
@@ -74,6 +82,7 @@ export default function RegisterGuestForm({ defaultIndustrySlug, onSubmit }: Reg
       setVehiclePlateNumber("");
       setVisitDate(todayIso());
       setVisitTime(nowTime());
+      onSuccess?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not register guest");
     } finally {
@@ -125,13 +134,25 @@ export default function RegisterGuestForm({ defaultIndustrySlug, onSubmit }: Reg
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-3 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto sm:min-w-[200px]"
-      >
-        {loading ? "Saving…" : "Register guest"}
-      </button>
+      <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 sm:w-auto"
+          >
+            Cancel
+          </button>
+        ) : null}
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary-600 px-4 py-3 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-60 sm:w-auto sm:min-w-[160px]"
+        >
+          {loading ? "Saving…" : "Register guest"}
+        </button>
+      </div>
     </form>
   );
 }

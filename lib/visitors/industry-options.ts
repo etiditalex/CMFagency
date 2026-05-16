@@ -20,13 +20,35 @@ export function isVisitorIndustrySlug(slug: string): slug is VisitorIndustrySlug
 }
 
 export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
+export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/accounts`;
 
 export function visitorManagementHref(industrySlug?: string | null): string {
   if (!industrySlug || industrySlug === "all") return VISITOR_MANAGEMENT_PATH;
   return `${VISITOR_MANAGEMENT_PATH}?industry=${encodeURIComponent(industrySlug)}`;
 }
 
-export const VISITOR_MANAGEMENT_NAV_CHILDREN = [
+export type VisitorManagementIndustryNavChild = {
+  label: string;
+  industrySlug: string;
+};
+
+export type VisitorManagementLinkNavChild = {
+  label: string;
+  href: string;
+  adminOnly?: boolean;
+};
+
+export type VisitorManagementNavChild =
+  | VisitorManagementIndustryNavChild
+  | VisitorManagementLinkNavChild;
+
+export const VISITOR_MANAGEMENT_NAV_CHILDREN: VisitorManagementIndustryNavChild[] = [
   { label: "All industries", industrySlug: "all" as const },
   ...VISITOR_INDUSTRIES.map((i) => ({ label: i.label, industrySlug: i.slug })),
 ];
+
+export const VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Accounts Manager",
+  href: VISITOR_MANAGEMENT_ACCOUNTS_PATH,
+  adminOnly: true,
+};
