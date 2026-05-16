@@ -17,12 +17,11 @@ import {
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { supabase } from "@/lib/supabase";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
 import type { VisitorFormInput, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
-  createVisitorId,
   formatVisitDateTime,
-  generateQrToken,
   statusBadgeClass,
   statusLabel,
   visitorStats,
@@ -44,12 +43,64 @@ export default function DashboardVisitorManagementPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
-  const [visitors, setVisitors] = useState<VisitorRecord[]>(MOCK_VISITORS);
+  const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
+  const [loadingVisitors, setLoadingVisitors] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [usingMockData, setUsingMockData] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<VisitorFormInput>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [patchingId, setPatchingId] = useState<string | null>(null);
   const [detailVisitor, setDetailVisitor] = useState<VisitorRecord | null>(null);
   const [qrPreview, setQrPreview] = useState<VisitorRecord | null>(null);
+
+  const getToken = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  }, []);
+
+  const loadVisitors = useCallback(async () => {
+    setLoadingVisitors(true);
+    setLoadError(null);
+    setSetupRequired(false);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+
+      const res = await fetch("/api/visitors", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        visitors?: VisitorRecord[];
+        setupRequired?: boolean;
+        message?: string;
+        error?: string;
+      };
+
+      if (!res.ok) throw new Error(json.error ?? "Failed to load visitors");
+
+      if (json.setupRequired) {
+        setSetupRequired(true);
+        setUsingMockData(true);
+        setVisitors(MOCK_VISITORS);
+        setLoadError(json.message ?? null);
+        return;
+      }
+
+      setUsingMockData(false);
+      setVisitors(Array.isArray(json.visitors) ? json.visitors : []);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to load visitors";
+      setLoadError(msg);
+      setUsingMockData(true);
+      setVisitors(MOCK_VISITORS);
+    } finally {
+      setLoadingVisitors(false);
+    }
+  }, [getToken]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -59,8 +110,19 @@ export default function DashboardVisitorManagementPage() {
     }
     if (!hasFeature("visitor_management")) {
       router.replace("/dashboard");
+      return;
     }
-  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, hasFeature, router, user]);
+    loadVisitors();
+  }, [
+    authLoading,
+    portalLoading,
+    isAuthenticated,
+    isPortalMember,
+    hasFeature,
+    router,
+    user,
+    loadVisitors,
+  ]);
 
   const stats = useMemo(() => visitorStats(visitors), [visitors]);
 
@@ -74,21 +136,46 @@ export default function DashboardVisitorManagementPage() {
   }, []);
 
   const setStatus = useCallback(
-    (id: string, status: VisitorStatus) => {
-      if (status === "approved") {
-        updateVisitor(id, { status, qrCodeToken: generateQrToken(id) });
+    async (id: string, status: VisitorStatus) => {
+      if (usingMockData) {
+        if (status === "approved") {
+          updateVisitor(id, { status, qrCodeToken: `FX-VIS-${id}` });
+        } else if (status === "rejected") {
+          updateVisitor(id, { status, qrCodeToken: null });
+        } else {
+          updateVisitor(id, { status });
+        }
         return;
       }
-      if (status === "rejected") {
-        updateVisitor(id, { status, qrCodeToken: null });
-        return;
+
+      setPatchingId(id);
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Not signed in");
+        const res = await fetch(`/api/visitors/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          visitor?: VisitorRecord;
+          error?: string;
+        };
+        if (!res.ok) throw new Error(json.error ?? "Failed to update visitor");
+        if (json.visitor) updateVisitor(id, json.visitor);
+      } catch (e: unknown) {
+        console.error(e);
+      } finally {
+        setPatchingId(null);
       }
-      updateVisitor(id, { status });
     },
-    [updateVisitor]
+    [updateVisitor, getToken, usingMockData]
   );
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     if (
@@ -103,26 +190,36 @@ export default function DashboardVisitorManagementPage() {
       return;
     }
 
-    const id = createVisitorId();
-    const now = new Date().toISOString();
-    const record: VisitorRecord = {
-      id,
-      fullName: form.fullName.trim(),
-      phoneNumber: form.phoneNumber.trim(),
-      idPassportNumber: form.idPassportNumber.trim(),
-      vehiclePlateNumber: form.vehiclePlateNumber.trim(),
-      host: form.host.trim(),
-      purposeOfVisit: form.purposeOfVisit.trim(),
-      visitDate: form.visitDate,
-      visitTime: form.visitTime,
-      status: "pending",
-      qrCodeToken: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-    setVisitors((prev) => [record, ...prev]);
-    setForm(EMPTY_FORM);
-    setShowForm(false);
+    if (usingMockData) {
+      setFormError("Run database/visitor_management_patch_01.sql in Supabase to save visitors.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/visitors", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        visitor?: VisitorRecord;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(json.error ?? "Failed to save visitor");
+      if (json.visitor) setVisitors((prev) => [json.visitor!, ...prev]);
+      setForm(EMPTY_FORM);
+      setShowForm(false);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to save visitor");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const statCards = [
@@ -147,7 +244,8 @@ export default function DashboardVisitorManagementPage() {
             Visitor Management
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            Pre-register guests, approve visits, and manage QR passes. Mock data — ready for API wiring.
+            Pre-register guests, approve visits, and manage QR passes.
+            {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
           </p>
         </div>
         <button
@@ -159,6 +257,22 @@ export default function DashboardVisitorManagementPage() {
           {showForm ? "Hide form" : "Book visitor"}
         </button>
       </div>
+
+      {setupRequired && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Run <code className="font-mono text-xs">database/visitor_management_patch_01.sql</code> in the
+          Supabase SQL Editor to enable live visitor records.
+        </p>
+      )}
+      {loadError && !setupRequired ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {loadError}
+        </p>
+      ) : null}
+
+      {loadingVisitors ? (
+        <p className="text-sm text-gray-500 py-8 text-center">Loading visitors…</p>
+      ) : null}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {statCards.map((c) => {
@@ -265,8 +379,8 @@ export default function DashboardVisitorManagementPage() {
             </label>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="btn-primary text-sm py-2 px-4">
-              Save booking
+            <button type="submit" disabled={saving} className="btn-primary text-sm py-2 px-4 disabled:opacity-60">
+              {saving ? "Saving…" : "Save booking"}
             </button>
             <button
               type="button"

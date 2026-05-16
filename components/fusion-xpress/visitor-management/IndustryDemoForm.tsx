@@ -156,14 +156,31 @@ function initialValues(demo: IndustryDemo): Record<string, string | string[]> {
 export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
   const [values, setValues] = useState(() => initialValues(demo));
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleChange = (name: string, value: string | string[]) => {
     setValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/visitors/demo-submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ industrySlug: demo.slug, values }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to submit demo form.");
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to submit demo form.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -172,8 +189,8 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
         <CheckCircle2 className="mx-auto h-12 w-12 text-secondary-600" />
         <h2 className="mt-4 text-xl font-bold text-gray-900">Demo form submitted</h2>
         <p className="mt-2 text-sm text-gray-600">
-          This is a preview only—no data was sent to a server. When you go live, this form can
-          connect to Fusion Xpress Visitor Management.
+          Your demo submission was saved. Our team can review industry demo entries in the Fusion
+          Xpress dashboard when the module is fully enabled.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <button
@@ -214,9 +231,18 @@ export default function IndustryDemoForm({ demo }: IndustryDemoFormProps) {
         </div>
       ))}
 
+      {submitError ? (
+        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {submitError}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-        <button type="submit" className="btn-primary flex-1 py-3 text-sm font-bold">
-          Submit demo form
+        <button
+          type="submit"
+          disabled={submitting}
+          className="btn-primary flex-1 py-3 text-sm font-bold disabled:opacity-60"
+        >
+          {submitting ? "Submitting…" : "Submit demo form"}
         </button>
         <Link
           href="/contact?subject=Smart%20Visitor%20Management%20Demo"
