@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
+import { VISITOR_INDUSTRIES } from "@/lib/visitors/industry-options";
+
 const inputClass =
   "mt-1.5 w-full min-h-[48px] rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm";
 
@@ -31,6 +33,7 @@ export default function VisitorSignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
+  const [organizationIndustry, setOrganizationIndustry] = useState<string>("retail-hospitality");
   const [country, setCountry] = useState("Kenya");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -58,6 +61,7 @@ export default function VisitorSignUpForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           businessName,
+          organizationIndustry,
           country,
           addressLine1,
           addressLine2,
@@ -92,17 +96,39 @@ export default function VisitorSignUpForm() {
 
   return (
     <form onSubmit={onSubmit} className="mt-5 sm:mt-6">
+      <p className="mb-5 text-sm leading-relaxed text-gray-600">
+        Create an account for your <strong className="text-gray-900">organization</strong> to run Smart
+        Visitor Management. You will register <em>guests</em> who visit your premises after you sign in.
+      </p>
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
       ) : null}
 
       {step === 1 ? (
         <>
-          <StepBadge n={1} label="Project details" />
+          <StepBadge n={1} label="Organization details" />
           <div className="space-y-4">
             <label className="block text-sm">
-              <span className="font-medium text-gray-700">Business name *</span>
+              <span className="font-medium text-gray-700">Organization / business name *</span>
               <input type="text" required value={businessName} onChange={(e) => setBusinessName(e.target.value)} className={inputClass} />
+            </label>
+            <label className="block text-sm">
+              <span className="font-medium text-gray-700">Your industry *</span>
+              <select
+                required
+                value={organizationIndustry}
+                onChange={(e) => setOrganizationIndustry(e.target.value)}
+                className={inputClass}
+              >
+                {VISITOR_INDUSTRIES.map((i) => (
+                  <option key={i.slug} value={i.slug}>
+                    {i.label}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block text-xs text-gray-500">
+                Helps tailor your visitor management workspace (not a marketing demo form).
+              </span>
             </label>
             <label className="block text-sm">
               <span className="font-medium text-gray-700">Country or region *</span>
@@ -150,7 +176,7 @@ export default function VisitorSignUpForm() {
         </>
       ) : (
         <>
-          <StepBadge n={2} label="Login details" />
+          <StepBadge n={2} label="Account login" />
           <div className="space-y-4">
             <label className="block text-sm">
               <span className="font-medium text-gray-700">Your email *</span>
@@ -210,4 +236,5 @@ export default function VisitorSignUpForm() {
     </form>
   );
 }
+
 

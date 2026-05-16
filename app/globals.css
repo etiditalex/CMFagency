@@ -68,8 +68,12 @@
     text-align: left !important;
   }
   
-  /* Navigation and buttons should remain left-aligned */
-  nav, button, a, input, textarea, select {
+  /* Navigation, forms, and controls should remain left-aligned (not justified) */
+  nav, button, a, input, textarea, select, label, form, option {
+    text-align: left;
+  }
+
+  label span {
     text-align: left;
   }
 }

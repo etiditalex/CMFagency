@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { sendVisitorLoginCodeEmail } from "@/lib/visitors/send-visitor-login-code";
+import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest) {
     const state = String(body.state ?? "").trim();
     const postcode = String(body.postcode ?? "").trim();
     const website = String(body.website ?? "").trim();
+    const organizationIndustry = String(
+      body.organizationIndustry ?? body.organization_industry ?? ""
+    ).trim();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
@@ -46,6 +50,9 @@ export async function POST(req: NextRequest) {
     }
     if (!country || !addressLine1 || !suburb || !state || !postcode) {
       return NextResponse.json({ error: "Complete your business address to continue" }, { status: 400 });
+    }
+    if (!organizationIndustry || !isVisitorIndustrySlug(organizationIndustry)) {
+      return NextResponse.json({ error: "Select your organization industry" }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -66,6 +73,7 @@ export async function POST(req: NextRequest) {
         name: contactName,
         business_name: businessName,
         account_type: "visitor_management",
+        organization_industry: organizationIndustry,
         country,
         address_line_1: addressLine1,
         address_line_2: addressLine2,

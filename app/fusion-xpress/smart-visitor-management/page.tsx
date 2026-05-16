@@ -406,7 +406,7 @@ export default function SmartVisitorManagementPage() {
                     href={item.href}
                     className="mt-5 text-sm font-bold text-secondary-600 transition-colors hover:text-primary-700"
                   >
-                    Demo Form
+                    Preview demo
                   </Link>
                 </article>
               );

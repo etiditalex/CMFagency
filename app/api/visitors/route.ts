@@ -124,6 +124,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required visitor fields." }, { status: 400 });
     }
 
+    const industry_slug = safeText(body.industrySlug ?? body.industry_slug, 80);
+
     const row = {
       owner_id: userId,
       full_name,
@@ -137,6 +139,7 @@ export async function POST(req: NextRequest) {
       status: "pending",
       source: "dashboard",
       form_extra: {},
+      ...(industry_slug && isVisitorIndustrySlug(industry_slug) ? { industry_slug } : {}),
     };
 
     const { data, error } = await admin.from("visitors").insert(row).select().single();

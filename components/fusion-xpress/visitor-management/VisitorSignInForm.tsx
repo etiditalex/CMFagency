@@ -188,7 +188,7 @@ export default function VisitorSignInForm() {
       <p className="mt-2 text-sm text-gray-600">
         {step === "code"
           ? "Enter the 6-digit code we sent to your email."
-          : "Access your Smart Visitor Management dashboard only."}
+          : "Sign in as your organization to manage guest check-ins, approvals, and QR passes."}
       </p>
 
       {error ? (

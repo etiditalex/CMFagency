@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -14,13 +15,18 @@ import {
   X,
 } from "lucide-react";
 
-import IndustryDemoForm from "@/components/fusion-xpress/visitor-management/IndustryDemoForm";
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
+import RegisterGuestForm, {
+  type RegisterGuestPayload,
+} from "@/components/fusion-xpress/visitor-management/RegisterGuestForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
-import { getIndustryDemo } from "@/lib/visitors/industry-demos";
-import { industryLabel, isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
+import {
+  industryLabel,
+  isVisitorIndustrySlug,
+  VISITOR_MANAGEMENT_PATH,
+} from "@/lib/visitors/industry-options";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
 import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
@@ -36,7 +42,7 @@ export default function DashboardVisitorManagementPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin, isVisitorOnly } = usePortal();
 
   const industryFilter = useMemo(() => {
     const param = searchParams?.get("industry");
@@ -44,7 +50,19 @@ export default function DashboardVisitorManagementPage() {
     return isVisitorIndustrySlug(param) ? param : DEFAULT_INDUSTRY;
   }, [searchParams]);
 
-  const formIndustry = industryFilter === "all" ? DEFAULT_INDUSTRY : industryFilter;
+  const [organizationIndustry, setOrganizationIndustry] = useState(DEFAULT_INDUSTRY);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.auth.getUser().then(({ data }) => {
+      const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
+      const slug = String(meta?.organization_industry ?? "").trim();
+      if (isVisitorIndustrySlug(slug)) setOrganizationIndustry(slug);
+    });
+  }, [user?.id]);
+
+  const registerIndustrySlug =
+    industryFilter === "all" ? organizationIndustry : industryFilter;
 
   const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
   const [loadingVisitors, setLoadingVisitors] = useState(true);
@@ -141,8 +159,15 @@ export default function DashboardVisitorManagementPage() {
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
+    if (isVisitorOnly && industryFilter !== "all") {
+      router.replace(VISITOR_MANAGEMENT_PATH);
+    }
+  }, [authLoading, portalLoading, isVisitorOnly, industryFilter, router]);
+
+  useEffect(() => {
+    if (authLoading || portalLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
-      router.replace("/fusion-xpress");
+      router.replace("/fusion-xpress/smart-visitor-management/sign-in");
       return;
     }
     if (!hasFeature("visitor_management")) {
@@ -150,21 +175,20 @@ export default function DashboardVisitorManagementPage() {
       return;
     }
     loadVisitors(industryFilter);
-    loadDemoSubmissions(industryFilter);
+    if (isAdmin) loadDemoSubmissions(industryFilter);
   }, [
     authLoading,
     portalLoading,
     isAuthenticated,
     isPortalMember,
     hasFeature,
+    isAdmin,
     router,
     user,
     loadVisitors,
     loadDemoSubmissions,
     industryFilter,
   ]);
-
-  const selectedDemo = useMemo(() => getIndustryDemo(formIndustry), [formIndustry]);
 
   const stats = useMemo(() => visitorStats(visitors), [visitors]);
 
@@ -217,8 +241,8 @@ export default function DashboardVisitorManagementPage() {
     [updateVisitor, getToken, usingMockData]
   );
 
-  const handleIndustryFormSubmit = useCallback(
-    async (values: Record<string, string | string[]>) => {
+  const handleRegisterGuest = useCallback(
+    async (payload: RegisterGuestPayload) => {
       if (usingMockData) {
         throw new Error(
           "Run database/visitor_management_patch_01.sql in Supabase to save visitors."
@@ -232,19 +256,22 @@ export default function DashboardVisitorManagementPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ industrySlug: formIndustry, values }),
+        body: JSON.stringify({
+          ...payload,
+          industrySlug: payload.industrySlug ?? registerIndustrySlug,
+        }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         visitor?: VisitorRecord;
         error?: string;
       };
-      if (!res.ok) throw new Error(json.error ?? "Failed to save visitor");
+      if (!res.ok) throw new Error(json.error ?? "Failed to register guest");
       if (json.visitor) {
         setVisitors((prev) => [json.visitor!, ...prev]);
         await loadVisitors(industryFilter);
       }
     },
-    [usingMockData, getToken, formIndustry, industryFilter, loadVisitors]
+    [usingMockData, getToken, registerIndustrySlug, industryFilter, loadVisitors]
   );
 
   const statCards = [
@@ -268,10 +295,16 @@ export default function DashboardVisitorManagementPage() {
           {industryFilter === "all" ? "Visitor Management" : industryLabel(industryFilter)}
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          Pre-register guests, approve visits, and manage QR passes. Switch industry using the
-          Visitor Management menu in the sidebar.
+          {isVisitorOnly
+            ? "Register guests arriving at your organization, approve visits, and issue QR passes. This is your operations dashboard—not the public marketing demo."
+            : "Pre-register guests, approve visits, and manage QR passes."}
           {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
         </p>
+        {isVisitorOnly ? (
+          <p className="mt-2 text-xs text-primary-700 font-medium">
+            Your organization: {industryLabel(organizationIndustry)}
+          </p>
+        ) : null}
       </div>
       {setupRequired && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -304,32 +337,33 @@ export default function DashboardVisitorManagementPage() {
         })}
       </div>
 
-      {industryFilter !== "all" ? (
-        <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary-600" />
-              Register visitor — {industryLabel(industryFilter)}
-            </h2>
-            <p className="mt-1 text-sm text-gray-600">
-              {selectedDemo?.subtitle ?? "Industry registration"} — saved to Supabase.
-            </p>
-          </div>
-          {selectedDemo ? (
-            <IndustryDemoForm
-              key={formIndustry}
-              demo={selectedDemo}
-              variant="dashboard"
-              onDashboardSubmit={handleIndustryFormSubmit}
-            />
-          ) : null}
+      <div className="rounded-xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white p-4 sm:p-6">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-primary-600" />
+            Register a guest
+          </h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Add someone visiting your organization. Guests can also check in via your QR welcome screen;
+            use this when reception registers them on behalf.
+          </p>
         </div>
-      ) : (
+        <RegisterGuestForm
+          key={registerIndustrySlug}
+          defaultIndustrySlug={registerIndustrySlug}
+          onSubmit={handleRegisterGuest}
+        />
+      </div>
+
+      {!isVisitorOnly && industryFilter === "all" ? (
         <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Select an industry under <strong>Visitor Management</strong> in the sidebar to register
-          guests with industry-specific fields.
+          Filter by industry in the sidebar to narrow the list. Prospect{" "}
+          <Link href="/fusion-xpress/smart-visitor-management" className="font-semibold text-primary-700 hover:underline">
+            demo forms
+          </Link>{" "}
+          are on the public marketing site only—not part of your client dashboard.
         </p>
-      )}
+      ) : null}
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
@@ -415,14 +449,15 @@ export default function DashboardVisitorManagementPage() {
       </div>
 
 
+      {isAdmin ? (
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
           <span className="text-sm font-bold text-gray-800">
-            Public demo submissions
+            Marketing demo leads (admin)
             {industryFilter !== "all" ? ` — ${industryLabel(industryFilter)}` : ""}
           </span>
           <p className="text-xs text-gray-500 mt-0.5">
-            From Smart Visitor Management marketing demo forms (visitor_demo_submissions).
+            Submissions from public industry demo forms on the marketing site—not your client guest records.
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -458,6 +493,7 @@ export default function DashboardVisitorManagementPage() {
           )}
         </div>
       </div>
+      ) : null}
 
       {detailVisitor && (
         <DetailModal visitor={detailVisitor} onClose={() => setDetailVisitor(null)} />
@@ -581,4 +617,5 @@ function QrModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: () => 
     </div>
   );
 }
+
 

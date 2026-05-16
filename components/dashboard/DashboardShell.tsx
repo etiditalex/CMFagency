@@ -293,6 +293,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly } =
     usePortal();
 
+  const navItems = useMemo(() => {
+    if (!isVisitorOnly) return NAV;
+    return NAV.map((item) =>
+      item.href === VISITOR_MANAGEMENT_PATH ? { ...item, children: undefined } : item
+    );
+  }, [isVisitorOnly]);
+
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);
   const routerRef = useRef(router);
@@ -463,8 +470,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       }
       return "Visitor Management";
     }
-    return NAV.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";
-  }, [currentType, pathname, visitorIndustry]);
+    return navItems.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";
+  }, [currentType, pathname, visitorIndustry, navItems]);
 
   const breadcrumbTail = active === "Dashboard" ? "Read" : active;
 
@@ -547,7 +554,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
               )}
               <div className="mt-2 space-y-1">
-                {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
+                {navItems.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
                   <DashboardNavItem
                     key={item.href}
                     item={item}
@@ -619,7 +626,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 <div key={s.key}>
                   <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
                   <div className="mt-2 space-y-1">
-                    {NAV.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
+                    {navItems.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
                       <DashboardNavItem
                         key={item.href}
                         item={item}
