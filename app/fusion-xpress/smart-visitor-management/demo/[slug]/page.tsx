@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-import IndustryDemoForm from "@/components/fusion-xpress/visitor-management/IndustryDemoForm";
+import { Suspense } from "react";
+
+import IndustryDemoFormClient from "@/components/fusion-xpress/visitor-management/IndustryDemoFormClient";
 import {
   getIndustryDemo,
   INDUSTRY_DEMO_SLUGS,
@@ -53,7 +55,13 @@ export default async function IndustryDemoFormPage({ params }: PageProps) {
           </header>
 
           <div className="mt-10">
-            <IndustryDemoForm demo={demo} />
+            <Suspense
+              fallback={
+                <p className="py-8 text-center text-sm text-gray-500">Loading check-in form…</p>
+              }
+            >
+              <IndustryDemoFormClient demo={demo} />
+            </Suspense>
           </div>
         </div>
       </div>

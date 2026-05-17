@@ -64,7 +64,11 @@
   
   /* Hero section titles should remain left-aligned */
   section[class*="relative min-h-screen"] h1,
-  section[class*="relative min-h-screen"] h2 {
+  section[class*="relative min-h-screen"] h2,
+  .smart-visitor-hero h1,
+  .smart-visitor-hero h2,
+  .smart-visitor-hero h3,
+  .smart-visitor-hero p {
     text-align: left !important;
   }
   

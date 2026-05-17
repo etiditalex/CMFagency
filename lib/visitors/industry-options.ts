@@ -22,6 +22,21 @@ export function isVisitorIndustrySlug(slug: string): slug is VisitorIndustrySlug
 export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
 export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/accounts`;
 
+export function industryCheckInPath(industrySlug: string, ownerId: string): string {
+  const qs = new URLSearchParams({ owner: ownerId.trim() });
+  return `/fusion-xpress/smart-visitor-management/demo/${encodeURIComponent(industrySlug)}?${qs.toString()}`;
+}
+
+export function industryCheckInUrl(
+  industrySlug: string,
+  ownerId: string,
+  siteOrigin?: string
+): string {
+  const base = (siteOrigin ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const path = industryCheckInPath(industrySlug, ownerId);
+  return base ? `${base}${path}` : path;
+}
+
 export function visitorManagementHref(industrySlug?: string | null): string {
   if (!industrySlug || industrySlug === "all") return VISITOR_MANAGEMENT_PATH;
   return `${VISITOR_MANAGEMENT_PATH}?industry=${encodeURIComponent(industrySlug)}`;

@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Calendar,
   Clock,
+  Copy,
   Eye,
+  Link2,
   LogIn,
   LogOut,
   Plus,
@@ -22,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import {
+  industryCheckInUrl,
   industryLabel,
   isVisitorIndustrySlug,
   VISITOR_MANAGEMENT_PATH,
@@ -29,6 +32,8 @@ import {
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
 import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
+  formatActualCheckDetail,
+  formatActualCheckTimes,
   formatVisitDateTime,
   statusBadgeClass,
   statusLabel,
@@ -75,6 +80,16 @@ export default function DashboardVisitorManagementPage() {
   const [qrPreview, setQrPreview] = useState<VisitorRecord | null>(null);
   const [registerGuestOpen, setRegisterGuestOpen] = useState(false);
   const [registerGuestNotice, setRegisterGuestNotice] = useState<string | null>(null);
+  const [checkInLinkCopied, setCheckInLinkCopied] = useState(false);
+
+  const publicCheckInUrl = useMemo(() => {
+    if (!user?.id) return "";
+    return industryCheckInUrl(
+      registerIndustrySlug,
+      user.id,
+      typeof window !== "undefined" ? window.location.origin : undefined
+    );
+  }, [user?.id, registerIndustrySlug]);
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -362,6 +377,44 @@ export default function DashboardVisitorManagementPage() {
         </p>
       ) : null}
 
+      {user?.id && !usingMockData ? (
+        <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-bold text-primary-900">
+                <Link2 className="h-4 w-4 shrink-0" />
+                Your public check-in link
+              </p>
+              <p className="mt-1 text-xs text-primary-800/90">
+                Share this URL or QR so visitors complete your{" "}
+                {industryLabel(registerIndustrySlug)} form, see their check-in time, and appear here
+                instantly. Confirmation emails send when they opt in.
+              </p>
+              <p className="mt-2 break-all font-mono text-xs text-gray-800 bg-white/80 rounded-lg border border-primary-100 px-3 py-2">
+                {publicCheckInUrl || "…"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!publicCheckInUrl) return;
+                try {
+                  await navigator.clipboard.writeText(publicCheckInUrl);
+                  setCheckInLinkCopied(true);
+                  window.setTimeout(() => setCheckInLinkCopied(false), 2000);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-lg border border-primary-300 bg-white px-4 py-2 text-sm font-semibold text-primary-800 hover:bg-primary-50"
+            >
+              <Copy className="h-4 w-4" />
+              {checkInLinkCopied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <RegisterGuestModal
         open={registerGuestOpen}
         onClose={() => setRegisterGuestOpen(false)}
@@ -396,7 +449,8 @@ export default function DashboardVisitorManagementPage() {
                 <th className="px-4 py-3 font-semibold">Phone</th>
                 <th className="px-4 py-3 font-semibold">Host</th>
                 <th className="px-4 py-3 font-semibold">Purpose</th>
-                <th className="px-4 py-3 font-semibold">Visit Date/Time</th>
+                <th className="px-4 py-3 font-semibold">Scheduled</th>
+                <th className="px-4 py-3 font-semibold">Check-in / out</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">QR Code</th>
                 <th className="px-4 py-3 font-semibold">Actions</th>
@@ -416,6 +470,12 @@ export default function DashboardVisitorManagementPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                     {formatVisitDateTime(v.visitDate, v.visitTime)}
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                    <span className="font-medium text-gray-900">{formatActualCheckTimes(v)}</span>
+                    {v.source === "demo_form" ? (
+                      <span className="mt-0.5 block text-xs text-primary-700">Industry form</span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -574,7 +634,8 @@ function DetailModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: ()
             ["Vehicle", visitor.vehiclePlateNumber || "—"],
             ["Host", visitor.host],
             ["Purpose", visitor.purposeOfVisit],
-            ["Visit", formatVisitDateTime(visitor.visitDate, visitor.visitTime)],
+            ["Scheduled visit", formatVisitDateTime(visitor.visitDate, visitor.visitTime)],
+            ["Actual check-in / out", formatActualCheckDetail(visitor)],
             ["Status", statusLabel(visitor.status)],
             ["Industry", industryLabel(visitor.industrySlug)],
           ].map(([k, val]) => (

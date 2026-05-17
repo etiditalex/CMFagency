@@ -17,6 +17,10 @@ export type VisitorRecord = {
   visitDate: string;
   visitTime: string;
   status: VisitorStatus;
+  /** Actual check-in timestamp from kiosk / industry form */
+  checkedInAt?: string | null;
+  /** Actual check-out timestamp */
+  checkedOutAt?: string | null;
   /** Set when status becomes approved */
   qrCodeToken: string | null;
   industrySlug?: string | null;

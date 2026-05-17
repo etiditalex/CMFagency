@@ -4,16 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
+import VisitorCheckInConfirmation, {
+  type CheckInSession,
+} from "@/components/fusion-xpress/visitor-management/VisitorCheckInConfirmation";
 import type { IndustryDemo } from "@/lib/visitors/industry-demos";
 import type { DemoField } from "@/lib/visitors/industry-demos";
 
 type IndustryDemoFormProps = {
   demo: IndustryDemo;
+  /** Business owner id from ?owner= on the check-in URL */
+  ownerId?: string;
   /** Public marketing page vs Fusion Xpress dashboard */
   variant?: "public" | "dashboard";
   /** Dashboard: persist via authenticated visitors API */
   onDashboardSubmit?: (values: Record<string, string | string[]>) => Promise<void>;
 };
+
+function demoHasEmailField(demo: IndustryDemo) {
+  return demo.sections.some((s) => s.fields.some((f) => f.name === "email" || f.type === "email"));
+}
 
 function textInputClass() {
   return "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20";
@@ -159,12 +168,17 @@ function initialValues(demo: IndustryDemo): Record<string, string | string[]> {
 
 export default function IndustryDemoForm({
   demo,
+  ownerId,
   variant = "public",
   onDashboardSubmit,
 }: IndustryDemoFormProps) {
   const isDashboard = variant === "dashboard";
+  const isLiveCheckIn = Boolean(ownerId?.trim()) && !isDashboard;
+  const showEmailOptIn = isLiveCheckIn && demoHasEmailField(demo);
   const [values, setValues] = useState(() => initialValues(demo));
   const [submitted, setSubmitted] = useState(false);
+  const [checkInSession, setCheckInSession] = useState<CheckInSession | null>(null);
+  const [sendConfirmationEmail, setSendConfirmationEmail] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -183,6 +197,28 @@ export default function IndustryDemoForm({
         return;
       }
 
+      if (isLiveCheckIn) {
+        const res = await fetch("/api/visitors/check-in", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            industrySlug: demo.slug,
+            ownerId: ownerId!.trim(),
+            values,
+            sendConfirmationEmail: showEmailOptIn ? sendConfirmationEmail : false,
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          checkIn?: CheckInSession;
+        };
+        if (!res.ok) throw new Error(json.error ?? "Check-in failed.");
+        if (!json.checkIn) throw new Error("Check-in response incomplete.");
+        setCheckInSession(json.checkIn);
+        setSubmitted(true);
+        return;
+      }
+
       const res = await fetch("/api/visitors/demo-submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -197,6 +233,27 @@ export default function IndustryDemoForm({
       setSubmitting(false);
     }
   };
+
+  if (submitted && checkInSession) {
+    return (
+      <VisitorCheckInConfirmation
+        session={checkInSession}
+        onCheckOut={async () => {
+          const res = await fetch(
+            `/api/visitors/${encodeURIComponent(checkInSession.visitorId)}/check-out`,
+            { method: "POST" }
+          );
+          const json = (await res.json().catch(() => ({}))) as { error?: string };
+          if (!res.ok) throw new Error(json.error ?? "Check-out failed");
+        }}
+        onRegisterAnother={() => {
+          setSubmitted(false);
+          setCheckInSession(null);
+          setValues(initialValues(demo));
+        }}
+      />
+    );
+  }
 
   if (submitted) {
     return (
@@ -259,19 +316,41 @@ export default function IndustryDemoForm({
           {submitError}
         </p>
       ) : null}
-      <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+
+      {showEmailOptIn ? (
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={sendConfirmationEmail}
+            onChange={(e) => setSendConfirmationEmail(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          I would like a confirmation email
+        </label>
+      ) : null}
+
+      {!isLiveCheckIn && !ownerId && !isDashboard ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Preview mode: add your business check-in link (<code className="text-xs">?owner=…</code>) to
+          record live check-ins on your dashboard.
+        </p>
+      ) : null}
+
+      <div className={`flex flex-col gap-3 pt-2 ${isLiveCheckIn ? "" : "sm:flex-row"}`}>
         <button
           type="submit"
           disabled={submitting}
           className="btn-primary flex-1 py-3 text-sm font-bold disabled:opacity-60"
         >
           {submitting
-            ? "Submitting…"
+            ? "Please wait…"
             : isDashboard
               ? "Save visitor"
-              : "Submit demo form"}
+              : isLiveCheckIn
+                ? "Check In"
+                : "Submit demo form"}
         </button>
-        {!isDashboard ? (
+        {!isDashboard && !isLiveCheckIn ? (
           <Link
             href="/contact?subject=Smart%20Visitor%20Management%20Demo"
             className="btn-outline flex-1 py-3 text-center text-sm font-bold"
@@ -282,7 +361,7 @@ export default function IndustryDemoForm({
       </div>
       {!isDashboard ? (
         <p className="text-center text-xs text-gray-500">
-          Demo preview · Fusion Xpress · Changer Fusions
+          {isLiveCheckIn ? "Fusion Xpress · Changer Fusions" : "Demo preview · Fusion Xpress · Changer Fusions"}
         </p>
       ) : null}
     </form>

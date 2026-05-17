@@ -23,10 +23,13 @@ import {
 } from "lucide-react";
 
 const HERO_BANNER =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778921950/banner_1_trzov5.jpg";
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778990421/banner_2_la4bzj.jpg";
 
 const CHECKIN_SHOWCASE_IMAGE =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778936390/signup_tnucab.jpg";
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778990811/call_to_action_vhh84w.jpg";
+
+const ANALYTICS_SHOWCASE_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1778991196/checkin_f3o8f5.jpg";
 
 const HOW_IT_WORKS = [
   {
@@ -228,7 +231,7 @@ export default function SmartVisitorManagementPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Full-width hero — reference-style two-column layout */}
-      <section className="relative mt-16 w-full overflow-hidden sm:mt-20 md:mt-24">
+      <section className="smart-visitor-hero relative mt-16 w-full overflow-hidden sm:mt-20 md:mt-24">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700" />
         <div
           className="absolute inset-0 pointer-events-none"
@@ -241,44 +244,38 @@ export default function SmartVisitorManagementPage() {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-secondary-400/20 blur-3xl pointer-events-none" />
 
         <div className="relative container-custom">
-          <div className="grid min-h-0 grid-cols-1 items-center gap-8 py-10 sm:gap-10 sm:py-14 md:min-h-[min(80vh,720px)] md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
-            <div className="max-w-xl text-white lg:pr-4">
-              <p className="text-[0.7rem] font-bold uppercase tracking-[0.12em] text-secondary-200 sm:text-xs sm:tracking-[0.2em]">
+          <div className="grid min-h-0 grid-cols-1 items-center gap-6 py-8 sm:gap-10 sm:py-14 md:min-h-[min(80vh,720px)] md:gap-10 md:py-16 lg:grid-cols-2 lg:gap-12 lg:py-20">
+            <div className="order-2 w-full max-w-xl justify-self-start text-left text-white lg:order-1 lg:pr-4">
+              <p className="!text-left text-[0.7rem] font-bold uppercase tracking-[0.12em] text-secondary-200 sm:text-xs sm:tracking-[0.2em]">
                 Fusion Xpress · Smart Visitor Management
               </p>
-              <h1 className="mt-3 text-2xl font-extrabold leading-[1.15] tracking-tight sm:mt-4 sm:text-4xl md:text-[2.65rem] lg:text-5xl">
+              <h1 className="!text-left mt-3 text-2xl font-extrabold leading-[1.15] tracking-tight sm:mt-4 sm:text-4xl md:text-[2.65rem] lg:text-5xl">
                 QR Code Visitor Management System.
-                <span className="block mt-1 text-white/95">Easy to use and secure.</span>
+                <span className="block mt-1 text-left text-white/95">Easy to use and secure.</span>
               </h1>
-              <p className="mt-4 text-sm leading-relaxed text-white/90 sm:mt-5 sm:text-base md:text-lg md:max-w-lg">
+              <p className="!text-left mt-4 text-sm leading-relaxed text-white/90 sm:mt-5 sm:text-base md:text-lg md:max-w-lg">
                 Digitize guest check-ins, visitor passes, and access control for offices, estates,
                 schools, hospitals, and corporate spaces. Replace manual visitor books with a smart
                 QR-based system—get started in minutes, no extra hardware required.
               </p>
-              <div className="mt-6 flex w-full max-w-md flex-col gap-2.5 sm:mt-8 sm:max-w-none sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-                <Link
-                  href="/contact?subject=Smart%20Visitor%20Management%20Demo"
-                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-secondary-400 px-6 py-3 text-sm font-bold text-primary-950 shadow-lg shadow-black/15 transition-colors hover:bg-secondary-300 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
-                >
-                  Request Demo
-                </Link>
+              <div className="mt-6 flex flex-row flex-nowrap items-center justify-start gap-3 sm:mt-8">
                 <Link
                   href="/fusion-xpress/smart-visitor-management/sign-up"
-                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-white/90 bg-transparent px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
+                  className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full bg-secondary-400 px-5 py-3 text-sm font-bold text-primary-950 shadow-lg shadow-black/15 transition-colors hover:bg-secondary-300 active:scale-[0.99] sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
                 >
                   Sign Up
                 </Link>
                 <Link
                   href="/fusion-xpress/smart-visitor-management/sign-in"
-                  className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-white/40 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20 active:scale-[0.99] sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
+                  className="inline-flex min-h-[48px] flex-1 items-center justify-center rounded-full border-2 border-white/90 bg-transparent px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 active:scale-[0.99] sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
                 >
                   Sign In
                 </Link>
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-sm sm:max-w-xl lg:max-w-none lg:mx-0">
-              <div className="relative aspect-[5/4] w-full sm:aspect-[4/3]">
+            <div className="order-1 relative mx-auto w-full max-w-md sm:max-w-xl lg:order-2 lg:max-w-none lg:mx-0">
+              <div className="relative aspect-[4/3] w-full lg:aspect-[5/4]">
                 <Image
                   src={HERO_BANNER}
                   alt="Fusion Xpress visitor management — dashboard, kiosk check-in, mobile passes, and QR badges"
@@ -433,21 +430,98 @@ export default function SmartVisitorManagementPage() {
               </div>
             </div>
 
+            <div className="flex w-full flex-col justify-center text-left lg:pl-4 xl:pl-8">
+              <div className="mx-auto w-full max-w-lg lg:mx-0">
+                <h2 className="text-3xl font-bold leading-tight tracking-tight text-gray-900 sm:text-4xl md:text-[2.65rem] md:leading-[1.12]">
+                  Check-in your visitors swiftly and safely
+                </h2>
+                <p className="mt-4 max-w-md text-base leading-relaxed text-gray-600">
+                  A fully customisable system that suits a wide range of business needs.
+                </p>
+                <h3 className="mt-10 text-2xl font-bold leading-snug text-gray-900 sm:text-[1.65rem]">
+                  Register, Display, and Go
+                </h3>
+                <p className="mt-2 max-w-md text-base leading-relaxed text-gray-600">
+                  Register your business now and get check-in QR codes ready to use in 3 minutes!
+                </p>
+                <Link
+                  href="/fusion-xpress/smart-visitor-management/sign-up"
+                  className="mt-10 inline-flex min-h-[48px] items-center justify-center self-start rounded-full bg-secondary-400 px-10 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-secondary-500"
+                >
+                  Sign Up Now
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Analytics & security — text left, check-in confirmation right */}
+      <section className="w-full border-t border-gray-100 bg-white py-12 sm:py-16 md:py-20 lg:py-24">
+        <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
+          <div className="grid grid-cols-1 items-center gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-12 xl:gap-16">
             <div className="max-w-xl lg:max-w-none">
               <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-tight">
-                Check-in your visitors swiftly and safely
+                Powerful analytics at your fingertips
               </h2>
               <p className="mt-5 text-base leading-relaxed text-gray-600 md:text-lg">
-                A fully customisable system that suits a wide range of business needs—from corporate
-                reception and estates to clinics, campuses, and hospitality venues.
+                Real-time visitor records, check-in history, and customer ratings help you track
+                customer flow and satisfaction levels. Download reports in PDF or CSV format anytime.
               </p>
-              <h3 className="mt-8 text-xl font-bold text-gray-900 md:text-2xl">
-                Register, display, and go
-              </h3>
-              <p className="mt-3 text-base leading-relaxed text-gray-600 md:text-lg">
-                Set up your Fusion Xpress visitor module and have check-in QR codes ready for your
-                front desk in minutes—no extra hardware required.
-              </p>
+              <Link
+                href="/privacy"
+                className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full border-2 border-secondary-500 bg-transparent px-8 py-3 text-sm font-bold text-secondary-700 transition-colors hover:bg-secondary-50 sm:text-base"
+              >
+                Learn About Security
+              </Link>
+            </div>
+
+            <div className="flex justify-center lg:justify-end">
+              <div className="relative w-full max-w-xs sm:max-w-sm lg:max-w-md">
+                <div className="relative aspect-[9/16] w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-[0_24px_60px_rgba(15,47,100,0.1)]">
+                  <Image
+                    src={ANALYTICS_SHOWCASE_IMAGE}
+                    alt="Visitor check-in confirmation on mobile — reception time, menu options, and check out"
+                    fill
+                    className="object-contain object-center p-3 sm:p-4"
+                    sizes="(max-width: 1024px) 85vw, 22rem"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA — full width */}
+      <section className="relative w-full overflow-hidden">
+        <div
+          className="absolute inset-0 bg-gradient-to-r from-secondary-400 via-secondary-500 to-secondary-600"
+          aria-hidden
+        ></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" aria-hidden />
+        <div className="relative w-full px-4 py-14 text-center sm:px-6 sm:py-16 md:py-20 lg:px-10 xl:px-14">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="text-2xl font-bold leading-tight text-white sm:text-3xl md:text-4xl md:leading-tight">
+              Ready to modernise your visitor management?
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-white/95 sm:mt-5 sm:text-lg">
+              Join organisations already using Fusion Xpress Smart Visitor Management. Set up takes
+              less than 3 minutes — no hardware or IT support required.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:gap-4">
+              <Link
+                href="/fusion-xpress/smart-visitor-management/sign-up"
+                className="inline-flex min-h-[48px] w-full min-w-[200px] items-center justify-center rounded-full bg-white px-8 py-3 text-base font-bold text-secondary-700 shadow-lg transition-colors hover:bg-white/95 sm:w-auto"
+              >
+                Get Started Free
+              </Link>
+              <Link
+                href="/contact?subject=Smart%20Visitor%20Management%20Demo"
+                className="inline-flex min-h-[48px] w-full min-w-[200px] items-center justify-center rounded-full border-2 border-white bg-transparent px-8 py-3 text-base font-bold text-white transition-colors hover:bg-white/10 sm:w-auto"
+              >
+                Try a Live Demo
+              </Link>
             </div>
           </div>
         </div>

@@ -1,5 +1,40 @@
 import type { VisitorRecord, VisitorStatus } from "./types";
+import {
+  formatCheckInClock,
+  formatCheckInDateLabel,
+} from "@/lib/visitors/format-check-in-display";
 import { TODAY_YMD } from "./mock-data";
+
+/** Live check-in / check-out timestamps when recorded on-site. */
+export function formatActualCheckTimes(visitor: VisitorRecord): string {
+  if (!visitor.checkedInAt && !visitor.checkedOutAt) return "—";
+  const inLabel = visitor.checkedInAt
+    ? formatCheckInClock(visitor.checkedInAt)
+    : null;
+  const outLabel = visitor.checkedOutAt
+    ? formatCheckInClock(visitor.checkedOutAt)
+    : null;
+  if (inLabel && outLabel) return `${inLabel} → ${outLabel}`;
+  if (inLabel) return `In ${inLabel}`;
+  if (outLabel) return `Out ${outLabel}`;
+  return "—";
+}
+
+export function formatActualCheckDetail(visitor: VisitorRecord): string {
+  if (!visitor.checkedInAt && !visitor.checkedOutAt) return "—";
+  const parts: string[] = [];
+  if (visitor.checkedInAt) {
+    parts.push(
+      `Checked in ${formatCheckInDateLabel(visitor.checkedInAt)} at ${formatCheckInClock(visitor.checkedInAt)}`
+    );
+  }
+  if (visitor.checkedOutAt) {
+    parts.push(
+      `Checked out ${formatCheckInDateLabel(visitor.checkedOutAt)} at ${formatCheckInClock(visitor.checkedOutAt)}`
+    );
+  }
+  return parts.join(" · ");
+}
 
 export function formatVisitDateTime(visitDate: string, visitTime: string) {
   const d = new Date(`${visitDate}T${visitTime || "00:00"}`);

@@ -8,6 +8,11 @@ function pickStr(values: Record<string, unknown>, keys: string[], max: number): 
   return "";
 }
 
+function pickTimeNow(): string {
+  const t = new Date();
+  return `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}:00`;
+}
+
 function pickDate(values: Record<string, unknown>): string {
   const keys = ["visitDate", "viewingDate", "checkInDate", "checkOutDate"];
   for (const k of keys) {
@@ -98,7 +103,7 @@ export function mapIndustryFormToVisitor(
       host: pickHost(values),
       purpose_of_visit: pickPurpose(industrySlug, values),
       visit_date: pickDate(values),
-      visit_time: "09:00:00",
+      visit_time: pickTimeNow(),
       industry_slug: industrySlug,
       form_extra: values,
     },

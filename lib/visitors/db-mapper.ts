@@ -43,6 +43,8 @@ export function mapVisitorRow(row: VisitorRow): VisitorRecord {
     visitDate: row.visit_date,
     visitTime: normalizeVisitTime(row.visit_time),
     status: row.status,
+    checkedInAt: row.checked_in_at,
+    checkedOutAt: row.checked_out_at,
     qrCodeToken: row.qr_code_token,
     industrySlug: row.industry_slug,
     source: row.source,
