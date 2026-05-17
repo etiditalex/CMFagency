@@ -35,7 +35,7 @@ export default async function IndustryDemoFormPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white">
-      <div className="w-full px-4 pb-16 pt-32 sm:px-6 sm:pt-36 md:pt-40 lg:px-10">
+      <div className="w-full px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-10">
         <div className="mx-auto max-w-lg">
           <nav aria-label="Breadcrumb" className="mb-6">
             <Link

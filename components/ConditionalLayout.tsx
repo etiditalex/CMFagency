@@ -31,6 +31,9 @@ export default function ConditionalLayout({
     pathname === "/fusion-xpress/smart-visitor-management/sign-in" ||
     pathname === "/fusion-xpress/smart-visitor-management/sign-up" ||
     pathname === "/fusion-xpress/smart-visitor-management/verify-email";
+  const isIndustryCheckInForm = pathname?.startsWith(
+    "/fusion-xpress/smart-visitor-management/demo/"
+  );
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
 
   // For verify-email pages, hide navbar and show full-screen layout
@@ -77,8 +80,8 @@ export default function ConditionalLayout({
     );
   }
 
-  // Fusion Xpress standalone admin / visitor auth — no site navbar (fixed header would clip form top).
-  if (isFusionAdminLogin || isVisitorManagementAuth) {
+  // Fusion Xpress admin, visitor auth, and public industry check-in forms — no site chrome.
+  if (isFusionAdminLogin || isVisitorManagementAuth || isIndustryCheckInForm) {
     return (
       <>
         <main className="min-h-screen">{children}</main>
