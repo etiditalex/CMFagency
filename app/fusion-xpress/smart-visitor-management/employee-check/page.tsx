@@ -158,11 +158,36 @@ export default function EmployeeCheckPage() {
     ) => {
       setSubmitting(true);
       try {
+        let latitude: number;
+        let longitude: number;
+        let accuracyMeters: number;
+        try {
+          const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+          const pos = await getBrowserPosition();
+          latitude = pos.latitude;
+          longitude = pos.longitude;
+          accuracyMeters = pos.accuracyMeters;
+        } catch (e: unknown) {
+          setPhase({
+            kind: "done",
+            ok: false,
+            message:
+              e instanceof Error
+                ? e.message
+                : "Location is required to sign in or out at your workplace.",
+            gateToken: opts.gate,
+          });
+          return;
+        }
+
         const deviceId = getOrCreateBrowserDeviceId();
-        const body: Record<string, string> = {
+        const body: Record<string, string | number> = {
           action,
           deviceId,
           deviceLabel: browserDeviceLabel(),
+          latitude,
+          longitude,
+          accuracyMeters,
         };
         if (opts.gate) body.gate = opts.gate;
         if (opts.employeeId) body.employeeId = opts.employeeId;
@@ -281,7 +306,11 @@ export default function EmployeeCheckPage() {
             <div className="py-8 flex flex-col items-center gap-3 text-gray-600">
               <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
               <p className="text-sm font-medium">
-                {submitting ? "Recording…" : isGateMode ? "Opening sign-in…" : "Loading your pass…"}
+                {submitting
+                  ? "Checking your location…"
+                  : isGateMode
+                    ? "Opening sign-in…"
+                    : "Loading your pass…"}
               </p>
             </div>
           ) : null}
@@ -466,8 +495,8 @@ export default function EmployeeCheckPage() {
 
           <p className="mt-6 text-xs text-gray-500 text-center">
             {isGateMode
-              ? "Your phone is linked to your member ID. Only you can sign in or out on this device."
-              : "Directors receive email when you sign in."}
+              ? "Your phone is linked to your member ID. Location must be on — sign-in/out only works at your registered workplace (Basic & Enterprise)."
+              : "Turn on location to sign in or out at your workplace. Directors receive email when you sign in."}
           </p>
         </div>
       </div>

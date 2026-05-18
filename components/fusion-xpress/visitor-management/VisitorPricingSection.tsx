@@ -68,6 +68,12 @@ const EMPLOYEE_ROWS: FeatureRow[] = [
     enterprise: true,
   },
   {
+    label: "GPS tracking (workplace sign-in / sign-out)",
+    trial: false,
+    basic: true,
+    enterprise: true,
+  },
+  {
     label: "Staff / CRM teams & reporting times (Real Estate)",
     trial: false,
     basic: false,

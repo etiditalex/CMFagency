@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendVisitorLoginCodeEmail } from "@/lib/visitors/send-visitor-login-code";
 import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
+import { geocodeAndSaveOrgLocationFromAddress } from "@/lib/visitors/org-location-db";
 import { ensureVisitorTrialSubscription } from "@/lib/visitors/subscription-db";
 
 export async function POST(req: NextRequest) {
@@ -112,6 +113,15 @@ export async function POST(req: NextRequest) {
     }
 
     await ensureVisitorTrialSubscription(admin, userId).catch(() => {});
+
+    await geocodeAndSaveOrgLocationFromAddress(admin, userId, {
+      addressLine1,
+      addressLine2,
+      suburb,
+      state,
+      postcode,
+      country,
+    }).catch(() => {});
 
     const emailResult = await sendVisitorLoginCodeEmail(admin, userId, email, {
       subject: "Verify your Fusion Xpress Visitor Management email",

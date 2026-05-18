@@ -55,7 +55,7 @@ const nextConfig = {
       // Allow camera for same-origin (Gate scanner); disable other powerful features unless needed.
       {
         key: 'Permissions-Policy',
-        value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+        value: 'camera=(self), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()',
       },
       ...(isProd
         ? [

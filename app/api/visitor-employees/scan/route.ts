@@ -19,12 +19,16 @@ export async function POST(req: NextRequest) {
       token: body.token ?? body.qrToken ?? body.qr_code_token,
       gate: body.gate ?? body.gateToken,
       employeeId: body.employeeId,
+      memberCode: body.memberCode ?? body.member_code,
       action: body.action ?? body.mode,
       deviceId: body.deviceId ?? body.device_id,
       deviceLabel: body.deviceLabel ?? body.device_label,
       userAgent: body.userAgent ?? userAgent,
       platform: body.platform,
       language: body.language,
+      latitude: body.latitude ?? body.lat,
+      longitude: body.longitude ?? body.lng ?? body.lon,
+      accuracyMeters: body.accuracyMeters ?? body.accuracy_meters ?? body.accuracy,
     };
 
     const gateToken = String(scanInput.gate ?? "").trim();

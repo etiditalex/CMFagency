@@ -11,6 +11,12 @@ import {
 import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/employees/device-fingerprint";
 import { notifyEmployeeAttendance } from "@/lib/employees/notify-employee-attendance";
 import type { EmployeeAttendanceEventType, EmployeeRecord } from "@/lib/employees/types";
+import { isValidCoordinate } from "@/lib/visitors/geocode";
+import { validateEmployeeScanGps } from "@/lib/visitors/validate-employee-gps";
+
+function isValidScanCoords(lat: unknown, lon: unknown): boolean {
+  return isValidCoordinate(lat, lon);
+}
 
 export type EmployeeScanAction = "sign_in" | "sign_out" | "toggle";
 
@@ -82,6 +88,10 @@ export async function processEmployeeQrScan(
     qrToken?: unknown;
     action?: unknown;
     mode?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    accuracyMeters?: unknown;
+    accuracy?: unknown;
   }
 ): Promise<EmployeeScanResult> {
   const token = parseToken(input.token ?? input.qrToken);
@@ -105,6 +115,15 @@ export async function processEmployeeQrScan(
   }
 
   const ownerId = String(rowData.owner_id);
+
+  const gpsCheck = await validateEmployeeScanGps(admin, ownerId, {
+    latitude: input.latitude,
+    longitude: input.longitude,
+    accuracyMeters: input.accuracyMeters ?? input.accuracy,
+  });
+  if (!gpsCheck.ok) {
+    return { ok: false, error: gpsCheck.error, status: gpsCheck.status };
+  }
 
   if (employee.status !== "active") {
     return { ok: false, error: "This staff member is inactive.", status: 403 };
@@ -178,16 +197,24 @@ export async function processEmployeeQrScan(
     return { ok: false, error: updateErr.message, status: 500 };
   }
 
+  const attendanceInsert: Record<string, unknown> = {
+    employee_id: employee.id,
+    owner_id: ownerId,
+    event_type: eventType,
+    device_id: device.deviceId,
+    device_label: device.deviceLabel,
+    device_info: device.deviceInfo,
+    gps_verified: gpsCheck.verified,
+  };
+  if (gpsCheck.verified && isValidScanCoords(input.latitude, input.longitude)) {
+    attendanceInsert.scan_latitude = Number(input.latitude);
+    attendanceInsert.scan_longitude = Number(input.longitude);
+    attendanceInsert.gps_distance_m = gpsCheck.distanceM;
+  }
+
   const { data: attendanceRow, error: attErr } = await admin
     .from("visitor_employee_attendance")
-    .insert({
-      employee_id: employee.id,
-      owner_id: ownerId,
-      event_type: eventType,
-      device_id: device.deviceId,
-      device_label: device.deviceLabel,
-      device_info: device.deviceInfo,
-    })
+    .insert(attendanceInsert)
     .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
     .single();
 

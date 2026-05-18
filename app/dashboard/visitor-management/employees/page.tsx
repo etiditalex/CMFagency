@@ -25,6 +25,7 @@ import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/e
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
+import WorkplaceLocationPanel from "@/components/fusion-xpress/visitor-management/employees/WorkplaceLocationPanel";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -510,6 +511,7 @@ export default function VisitorManagementEmployeesPage() {
       </div>
 
       {setupRequired ? <EmployeeSetupBanner /> : null}
+      {!setupRequired ? <WorkplaceLocationPanel businessName={organizationName} /> : null}
       {loadError && !setupRequired ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
