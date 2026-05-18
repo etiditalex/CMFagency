@@ -21,6 +21,8 @@ export function isVisitorIndustrySlug(slug: string): slug is VisitorIndustrySlug
 
 export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
 export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/accounts`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_PATH = `${VISITOR_MANAGEMENT_PATH}/employees`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
 
 export function industryCheckInPath(industrySlug: string, ownerId: string): string {
   const qs = new URLSearchParams({ owner: ownerId.trim() });
@@ -66,4 +68,9 @@ export const VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD: VisitorManagementLinkNavChil
   label: "Accounts Manager",
   href: VISITOR_MANAGEMENT_ACCOUNTS_PATH,
   adminOnly: true,
+};
+
+export const VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Employees",
+  href: VISITOR_MANAGEMENT_EMPLOYEES_PATH,
 };

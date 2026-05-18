@@ -48,6 +48,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
   type VisitorManagementNavChild,
@@ -321,9 +322,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const navItems = useMemo(() => {
     return NAV.map((item) => {
       if (item.href !== VISITOR_MANAGEMENT_PATH) return item;
-      if (isVisitorOnly) return { ...item, children: undefined };
+      if (isVisitorOnly) {
+        return { ...item, children: [VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD] };
+      }
       const children: VisitorManagementNavChild[] = [
         ...VISITOR_MANAGEMENT_NAV_CHILDREN,
+        VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
       ];
       return { ...item, children };

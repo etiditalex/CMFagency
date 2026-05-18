@@ -317,6 +317,16 @@ export default function DashboardVisitorManagementPage() {
             : "Pre-register guests, approve visits, and manage QR passes."}
           {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
         </p>
+        <p className="mt-2 text-sm">
+          <Link
+            href="/dashboard/visitor-management/employees"
+            className="font-semibold text-primary-700 hover:underline"
+          >
+            Employee attendance →
+          </Link>
+          {" "}
+          — staff sign-in/out with QR passes and director email alerts.
+        </p>
         {isVisitorOnly ? (
           <p className="mt-2 text-xs text-primary-700 font-medium">
             Your organization: {industryLabel(organizationIndustry)}
