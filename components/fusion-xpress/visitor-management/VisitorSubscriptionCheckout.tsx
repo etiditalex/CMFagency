@@ -168,7 +168,6 @@ export default function VisitorSubscriptionCheckout({
       if (json.reference) pollPayment(json.reference);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "M-Pesa failed");
-    } finally {
       setBusy(null);
     }
   };
