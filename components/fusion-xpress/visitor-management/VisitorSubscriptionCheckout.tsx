@@ -135,7 +135,6 @@ export default function VisitorSubscriptionCheckout({
       throw new Error("Missing Paystack redirect URL");
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Payment failed");
-    } finally {
       setBusy(null);
     }
   };

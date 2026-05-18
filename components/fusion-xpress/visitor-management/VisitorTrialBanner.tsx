@@ -9,6 +9,7 @@ import { VISITOR_MANAGEMENT_SUBSCRIPTION_PATH } from "@/lib/visitors/industry-op
 import {
   formatSubscriptionExpiryDate,
   isExemptFromVisitorSubscription,
+  VISITOR_TRIAL_DAYS,
   type VisitorSubscriptionState,
 } from "@/lib/visitors/subscription";
 import { supabase } from "@/lib/supabase";
@@ -62,7 +63,7 @@ export default function VisitorTrialBanner() {
         <p className="flex flex-wrap items-start gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
           <span>
-            <strong>{VISITOR_TRIAL_DAYS} Day Free Trial</strong> expires on{" "}
+            <strong>7 Day Free Trial</strong> expires on{" "}
             <strong>{expiryLabel}</strong>, please subscribe to the plan you signed up for initially via{" "}
             <Link
               href={VISITOR_MANAGEMENT_SUBSCRIPTION_PATH}
