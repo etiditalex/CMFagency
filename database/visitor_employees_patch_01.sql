@@ -154,3 +154,6 @@ with check (
 
 grant select, insert, update, delete on public.visitor_employees to authenticated;
 grant select, insert on public.visitor_employee_attendance to authenticated;
+
+-- Refresh PostgREST schema cache (fixes "Could not find the table in the schema cache")
+notify pgrst, 'reload schema';

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  EMPLOYEES_SETUP_MESSAGE,
   isMissingEmployeesTable,
+  isMissingEmployeesTableMessage,
   mapEmployeeRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
@@ -37,10 +39,15 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
           employees: [],
           setupRequired: true,
-          message: "Run database/visitor_employees_patch_01.sql in Supabase SQL Editor.",
+          message: EMPLOYEES_SETUP_MESSAGE,
         });
       }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        isMissingEmployeesTableMessage(error.message)
+          ? { employees: [], setupRequired: true, message: EMPLOYEES_SETUP_MESSAGE }
+          : { error: error.message },
+        { status: isMissingEmployeesTableMessage(error.message) ? 200 : 500 }
+      );
     }
 
     const employees = ((data ?? []) as EmployeeRow[]).map(mapEmployeeRow);
@@ -84,7 +91,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Employee tables not set up. Run database/visitor_employees_patch_01.sql in Supabase.",
+              EMPLOYEES_SETUP_MESSAGE,
           },
           { status: 503 }
         );

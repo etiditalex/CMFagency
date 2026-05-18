@@ -68,12 +68,25 @@ export function mapAttendanceRow(row: EmployeeAttendanceRow): EmployeeAttendance
   };
 }
 
+const EMPLOYEES_TABLE = "visitor_employees";
+
 export function isMissingEmployeesTable(err: unknown): boolean {
-  const msg = String((err as { message?: string })?.message ?? "");
-  const code = String((err as { code?: string })?.code ?? "");
+  const msg = String((err as { message?: string })?.message ?? "").toLowerCase();
+  const code = String((err as { code?: string })?.code ?? "").toUpperCase();
+  if (code === "42P01" || code === "PGRST205" || code === "PGRST204") return true;
+  if (!msg.includes(EMPLOYEES_TABLE)) return false;
   return (
-    code === "42P01" ||
-    (msg.includes("visitor_employees") && msg.includes("does not exist")) ||
+    msg.includes("does not exist") ||
+    msg.includes("schema cache") ||
+    msg.includes("could not find the table") ||
+    msg.includes("relation") ||
     msg.includes("visitor_employees_patch")
   );
 }
+
+export function isMissingEmployeesTableMessage(message: string): boolean {
+  return isMissingEmployeesTable({ message });
+}
+
+export const EMPLOYEES_SETUP_MESSAGE =
+  "Run database/visitor_employees_patch_01.sql in the Supabase SQL Editor (after visitor_management_patch_01.sql). Then open Project Settings → API and click “Reload schema” if the error persists.";

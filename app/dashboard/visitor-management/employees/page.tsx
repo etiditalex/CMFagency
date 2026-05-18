@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Clock,
+  Download,
   LogIn,
   LogOut,
   Plus,
@@ -18,6 +19,9 @@ import {
 
 import AddEmployeeModal from "@/components/fusion-xpress/visitor-management/employees/AddEmployeeModal";
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
+import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
+import { isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
+import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import type { EmployeeAttendanceRecord, EmployeeFormInput, EmployeeRecord } from "@/lib/employees/types";
@@ -47,6 +51,8 @@ export default function VisitorManagementEmployeesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [qrEmployee, setQrEmployee] = useState<EmployeeRecord | null>(null);
   const [patchingId, setPatchingId] = useState<string | null>(null);
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
+  const [organizationName, setOrganizationName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
 
   const getToken = useCallback(async () => {
@@ -79,7 +85,16 @@ export default function VisitorManagementEmployeesPage() {
         message?: string;
         error?: string;
       };
-      if (!empRes.ok) throw new Error(empJson.error ?? "Failed to load employees");
+      if (!empRes.ok) {
+        const errMsg = empJson.error ?? "Failed to load employees";
+        if (isMissingEmployeesTableMessage(errMsg) || empJson.setupRequired) {
+          setSetupRequired(true);
+          setEmployees([]);
+          setLoadError(empJson.message ?? errMsg);
+          return;
+        }
+        throw new Error(errMsg);
+      }
 
       if (empJson.setupRequired) {
         setSetupRequired(true);
@@ -98,12 +113,49 @@ export default function VisitorManagementEmployeesPage() {
         setAttendance([]);
       }
     } catch (e: unknown) {
-      setLoadError(e instanceof Error ? e.message : "Failed to load employees");
+      const msg = e instanceof Error ? e.message : "Failed to load employees";
+      if (isMissingEmployeesTableMessage(msg)) {
+        setSetupRequired(true);
+        setLoadError(msg);
+      } else {
+        setLoadError(msg);
+      }
       setEmployees([]);
     } finally {
       setLoading(false);
     }
   }, [getToken]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void supabase.auth.getUser().then(({ data }) => {
+      const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
+      const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
+      if (name) setOrganizationName(name);
+    });
+  }, [user?.id]);
+
+  const handleDownloadPdf = useCallback(
+    async (emp: EmployeeRecord) => {
+      if (!emp.qrCodeToken) return;
+      setDownloadingPdfId(emp.id);
+      try {
+        await downloadEmployeeQrPdf({
+          token: emp.qrCodeToken,
+          fullName: emp.fullName,
+          department: emp.department,
+          jobTitle: emp.jobTitle,
+          employeeCode: emp.employeeCode,
+          organizationName,
+        });
+      } catch (e: unknown) {
+        setNotice(e instanceof Error ? e.message : "Could not create PDF");
+      } finally {
+        setDownloadingPdfId(null);
+      }
+    },
+    [organizationName]
+  );
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -244,12 +296,7 @@ export default function VisitorManagementEmployeesPage() {
         ) : null}
       </div>
 
-      {setupRequired ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Run <code className="font-mono text-xs">database/visitor_employees_patch_01.sql</code> in
-          the Supabase SQL Editor to enable the employee module.
-        </p>
-      ) : null}
+      {setupRequired ? <EmployeeSetupBanner /> : null}
       {loadError && !setupRequired ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
@@ -310,7 +357,7 @@ export default function VisitorManagementEmployeesPage() {
 
       {qrEmployee?.qrCodeToken ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl border border-gray-200 text-center">
+          <div className="relative w-full max-w-sm rounded-xl bg-white p-6 shadow-xl border border-gray-200 text-center">
             <button
               type="button"
               onClick={() => setQrEmployee(null)}
@@ -322,15 +369,26 @@ export default function VisitorManagementEmployeesPage() {
             <p className="text-sm font-bold text-gray-900 mb-4">QR pass — {qrEmployee.fullName}</p>
             <EmployeeQrCode token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} size={200} />
             <p className="mt-4 text-xs text-gray-500">
-              Print or save this code. Scanning toggles sign-in and sign-out automatically.
+              Download the PDF for printing. Each scan records sign-in/out time and emails directors.
             </p>
-            <button
-              type="button"
-              onClick={() => setQrEmployee(null)}
-              className="mt-4 w-full rounded-lg bg-primary-600 py-2.5 text-sm font-bold text-white"
-            >
-              Done
-            </button>
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={downloadingPdfId === qrEmployee.id}
+                onClick={() => void handleDownloadPdf(qrEmployee)}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-primary-300 bg-primary-50 py-2.5 text-sm font-bold text-primary-800 hover:bg-primary-100 disabled:opacity-50"
+              >
+                <Download className="h-4 w-4" />
+                {downloadingPdfId === qrEmployee.id ? "Creating PDF…" : "Download QR PDF"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setQrEmployee(null)}
+                className="w-full rounded-lg bg-primary-600 py-2.5 text-sm font-bold text-white"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -396,6 +454,17 @@ export default function VisitorManagementEmployeesPage() {
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             QR
+                          </button>
+                        ) : null}
+                        {emp.qrCodeToken ? (
+                          <button
+                            type="button"
+                            disabled={downloadingPdfId === emp.id || setupRequired}
+                            onClick={() => void handleDownloadPdf(emp)}
+                            className="inline-flex items-center gap-1 rounded-md border border-primary-200 px-2 py-1 text-xs font-semibold text-primary-800 hover:bg-primary-50 disabled:opacity-50"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            PDF
                           </button>
                         ) : null}
                         {emp.status === "active" ? (

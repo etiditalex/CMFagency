@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  EMPLOYEES_SETUP_MESSAGE,
+  isMissingEmployeesTable,
   mapAttendanceRow,
   mapEmployeeRow,
   type EmployeeAttendanceRow,
@@ -47,6 +49,9 @@ export async function processEmployeeQrScan(
     .maybeSingle();
 
   if (findErr) {
+    if (isMissingEmployeesTable(findErr)) {
+      return { ok: false, error: EMPLOYEES_SETUP_MESSAGE, status: 503 };
+    }
     return { ok: false, error: findErr.message, status: 500 };
   }
   if (!row) {
