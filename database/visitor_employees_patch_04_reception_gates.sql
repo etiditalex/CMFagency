@@ -2,6 +2,7 @@
 -- One scannable QR per team (staff / CRM) mounted at reception.
 -- Run after visitor_employees_patch_01.sql (and 03 if using CRM teams).
 -- -----------------------------------------------------------------------------
+-- Uses md5() (built-in) for stable gate tokens — not pgcrypto digest().
 
 create table if not exists public.visitor_employee_reception_gates (
   owner_id uuid not null references auth.users (id) on delete cascade,
@@ -26,7 +27,7 @@ as $$
 begin
   if new.gate_token is null or trim(new.gate_token) = '' then
     new.gate_token := 'FX-EMP-GATE-' || upper(substr(
-      encode(digest(new.owner_id::text || ':' || new.member_type, 'sha256'), 'hex'),
+      md5(new.owner_id::text || ':' || new.member_type),
       1,
       20
     ));
