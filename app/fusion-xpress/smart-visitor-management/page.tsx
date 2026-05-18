@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+
+import VisitorPricingSection from "@/components/fusion-xpress/visitor-management/VisitorPricingSection";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -492,6 +494,8 @@ export default function SmartVisitorManagementPage() {
           </div>
         </div>
       </section>
+
+      <VisitorPricingSection />
 
       {/* Final CTA — full width */}
       <section className="relative w-full overflow-hidden">

@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { applyLipaPolePolePaymentSuccess, isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
+import { fulfillVisitorManagementSubscriptionPayment } from "@/lib/visitors/activate-subscription-payment";
+import { isVisitorSubscriptionPaymentMetadata } from "@/lib/visitors/subscription-pricing";
 import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 /** Row shape needed to record Paystack success + fulfill (votes/tickets). */
@@ -61,6 +63,23 @@ export async function finalizePaystackTransactionSuccess(
   if (!updatedRows?.length) {
     console.error("[finalizePaystack] status update matched no rows for id:", tx.id);
     return { fulfillErr: "transaction_status_update_no_rows" };
+  }
+
+  if (isVisitorSubscriptionPaymentMetadata(metaForSuccess)) {
+    const result = await fulfillVisitorManagementSubscriptionPayment(supabase, {
+      id: tx.id,
+      metadata: metaForSuccess,
+    });
+    if (!result.ok && !result.skipped) {
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: { ...metaForSuccess, fulfillment_error: result.error ?? "subscription_failed" },
+        } as Record<string, unknown>)
+        .eq("id", tx.id);
+      return { fulfillErr: result.error ?? "subscription_failed" };
+    }
+    return { fulfillErr: null };
   }
 
   if (metaBase.merchandise_cart === true) {

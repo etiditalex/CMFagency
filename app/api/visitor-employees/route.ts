@@ -8,6 +8,7 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { assertVisitorSubscriptionAllows } from "@/lib/visitors/require-visitor-subscription";
 
 function safeText(v: unknown, max: number) {
   const s = typeof v === "string" ? v.trim() : "";
@@ -67,7 +68,15 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId } = auth;
+    const { admin, userId, isAdmin } = auth;
+
+    const subBlock = await assertVisitorSubscriptionAllows(
+      admin,
+      userId,
+      isAdmin,
+      "employee_module"
+    );
+    if (subBlock) return subBlock;
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const full_name = safeText(body.fullName ?? body.full_name, 200);

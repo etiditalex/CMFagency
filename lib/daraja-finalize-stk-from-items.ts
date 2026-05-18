@@ -7,6 +7,8 @@ import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
 import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
 import { sendServiceInvoicePaidEmail } from "@/lib/send-service-invoice-email";
+import { fulfillVisitorManagementSubscriptionPayment } from "@/lib/visitors/activate-subscription-payment";
+import { isVisitorSubscriptionPaymentMetadata } from "@/lib/visitors/subscription-pricing";
 import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 export type CallbackMetadataItem = { Name: string; Value: string | number };
@@ -61,7 +63,15 @@ export async function finalizeDarajaStkFromMetadataItems(
       typeof er.metadata === "object" && er.metadata !== null && !Array.isArray(er.metadata)
         ? (er.metadata as Record<string, unknown>)
         : {};
-    if (metaRec.merchandise_cart === true || isLipaPolePoleMetadata(metaRec) || metaRec.service_invoice_id) {
+    if (
+      metaRec.merchandise_cart === true ||
+      isLipaPolePoleMetadata(metaRec) ||
+      metaRec.service_invoice_id ||
+      isVisitorSubscriptionPaymentMetadata(metaRec)
+    ) {
+      if (isVisitorSubscriptionPaymentMetadata(metaRec)) {
+        await fulfillVisitorManagementSubscriptionPayment(supabase, { id: tx.id, metadata: metaRec });
+      }
       return "completed";
     }
     const { fulfillErr, effectiveType } = await upsertVoteOrTicketForSuccessfulTx(
@@ -262,6 +272,22 @@ export async function finalizeDarajaStkFromMetadataItems(
           } as Record<string, unknown>)
           .eq("id", tx.id);
       }
+    }
+    return "completed";
+  }
+
+  if (isVisitorSubscriptionPaymentMetadata(meta)) {
+    const result = await fulfillVisitorManagementSubscriptionPayment(supabase, {
+      id: tx.id,
+      metadata: meta,
+    });
+    if (!result.ok && !result.skipped) {
+      await supabase
+        .from("transactions")
+        .update({
+          metadata: Object.assign({}, meta, { fulfillment_error: result.error ?? "subscription_failed" }),
+        } as Record<string, unknown>)
+        .eq("id", tx.id);
     }
     return "completed";
   }

@@ -46,11 +46,13 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/VisitorTrialBanner";
 import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
+  VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
   type VisitorManagementNavChild,
   industryLabel,
   visitorManagementHref,
@@ -323,7 +325,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     return NAV.map((item) => {
       if (item.href !== VISITOR_MANAGEMENT_PATH) return item;
       if (isVisitorOnly) {
-        return { ...item, children: [VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD] };
+        return {
+          ...item,
+          children: [
+            VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+            VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
+          ],
+        };
       }
       const children: VisitorManagementNavChild[] = [
         ...VISITOR_MANAGEMENT_NAV_CHILDREN,
@@ -741,6 +749,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
           <div className="max-w-4xl lg:max-w-5xl mx-auto">
             <div className="bg-white rounded-md border border-gray-200 shadow-sm p-4 sm:p-6 md:p-8">
+              {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
               {children}
             </div>
           </div>

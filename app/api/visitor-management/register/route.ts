@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendVisitorLoginCodeEmail } from "@/lib/visitors/send-visitor-login-code";
 import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
+import { ensureVisitorTrialSubscription } from "@/lib/visitors/subscription-db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ error: pmErr.message ?? "Could not complete account setup" }, { status: 500 });
     }
+
+    await ensureVisitorTrialSubscription(admin, userId).catch(() => {});
 
     const emailResult = await sendVisitorLoginCodeEmail(admin, userId, email, {
       subject: "Verify your Fusion Xpress Visitor Management email",
