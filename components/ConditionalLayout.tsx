@@ -31,6 +31,8 @@ export default function ConditionalLayout({
     pathname === "/fusion-xpress/smart-visitor-management/sign-in" ||
     pathname === "/fusion-xpress/smart-visitor-management/sign-up" ||
     pathname === "/fusion-xpress/smart-visitor-management/verify-email";
+  const isEmployeeAttendanceCheck =
+    pathname === "/fusion-xpress/smart-visitor-management/employee-check";
   const isIndustryCheckInForm = pathname?.startsWith(
     "/fusion-xpress/smart-visitor-management/demo/"
   );
@@ -80,8 +82,13 @@ export default function ConditionalLayout({
     );
   }
 
-  // Fusion Xpress admin, visitor auth, and public industry check-in forms — no site chrome.
-  if (isFusionAdminLogin || isVisitorManagementAuth || isIndustryCheckInForm) {
+  // Fusion Xpress admin, visitor auth, employee attendance kiosk, and industry check-in — no site chrome.
+  if (
+    isFusionAdminLogin ||
+    isVisitorManagementAuth ||
+    isEmployeeAttendanceCheck ||
+    isIndustryCheckInForm
+  ) {
     return (
       <>
         <main className="min-h-screen">{children}</main>
