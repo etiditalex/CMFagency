@@ -121,7 +121,7 @@ export default function VisitorCheckInConfirmation({
         </p>
       ) : null}
 
-      {!checkedOut && onCheckOut ? (
+      {!checkedOut && onCheckOut && session.visitorId ? (
         <button
           type="button"
           onClick={handleCheckOut}

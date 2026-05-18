@@ -1,7 +1,4 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-
 import { Suspense } from "react";
 
 import IndustryDemoFormClient from "@/components/fusion-xpress/visitor-management/IndustryDemoFormClient";
@@ -34,37 +31,14 @@ export default async function IndustryDemoFormPage({ params }: PageProps) {
   if (!demo) notFound();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
-      <div className="w-full px-4 pb-16 pt-8 sm:px-6 sm:pt-10 lg:px-10">
-        <div className="mx-auto max-w-lg">
-          <nav aria-label="Breadcrumb" className="mb-6">
-            <Link
-              href="/fusion-xpress/smart-visitor-management"
-              className="inline-flex items-center gap-2 py-1.5 text-sm font-semibold leading-normal text-primary-600 hover:text-primary-800"
-            >
-              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-              <span>Smart Visitor Management</span>
-            </Link>
-          </nav>
-
-          <header className="text-center">
-            <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-gray-900 md:text-3xl">
-              {demo.title}
-            </h1>
-            <p className="mt-2 text-base leading-relaxed text-gray-500">{demo.subtitle}</p>
-          </header>
-
-          <div className="mt-10">
-            <Suspense
-              fallback={
-                <p className="py-8 text-center text-sm text-gray-500">Loading check-in form…</p>
-              }
-            >
-              <IndustryDemoFormClient demo={demo} />
-            </Suspense>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Suspense
+      fallback={
+        <p className="min-h-screen py-16 text-center text-sm text-gray-500">
+          Loading check-in form…
+        </p>
+      }
+    >
+      <IndustryDemoFormClient demo={demo} />
+    </Suspense>
   );
 }
