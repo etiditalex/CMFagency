@@ -140,6 +140,19 @@ export async function processEmployeeQrScan(
     userAgent: input.userAgent,
   });
 
+  if (
+    employee.registeredDeviceId &&
+    device.deviceId !== "unknown-device" &&
+    employee.registeredDeviceId !== device.deviceId
+  ) {
+    return {
+      ok: false,
+      error:
+        "This pass is linked to another phone. Use your own device or ask your manager to reset your device link.",
+      status: 403,
+    };
+  }
+
   const occurredAt = new Date().toISOString();
   const nextAttendanceStatus = eventType === "sign_in" ? "in" : "out";
 

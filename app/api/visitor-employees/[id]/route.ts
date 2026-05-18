@@ -81,6 +81,9 @@ export async function PATCH(
       }
       patch.member_type = raw;
     }
+    if (body.clearDeviceLink === true || body.clear_device_link === true) {
+      patch.registered_device_id = null;
+    }
 
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "No fields to update." }, { status: 400 });

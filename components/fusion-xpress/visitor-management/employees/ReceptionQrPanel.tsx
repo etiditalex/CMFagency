@@ -103,9 +103,9 @@ export default function ReceptionQrPanel({
       </div>
       <div className="p-4 space-y-4">
         <p className="text-xs text-emerald-900/90">
-          Download one QR per team and mount at reception. When scanned, staff open the{" "}
-          <strong>sign-in page</strong> on their phone, pick their name, and sign in or out.
-          {isRealEstate ? " Use separate codes for Staff and CRM." : null}
+          Download one QR per team and mount at reception. Staff enter their <strong>member ID</strong>{" "}
+          once to link their phone; after that they only tap sign in or out (no shared name list).
+          {isRealEstate ? " Use separate QR posters for Staff and CRM." : null}
         </p>
         {setupRequired ? (
           <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">

@@ -28,11 +28,9 @@ export async function POST(req: NextRequest) {
     };
 
     const gateToken = String(scanInput.gate ?? "").trim();
-    const employeeId = String(scanInput.employeeId ?? "").trim();
-    const result =
-      gateToken && employeeId
-        ? await processEmployeeGateScan(admin, scanInput)
-        : await processEmployeeQrScan(admin, scanInput);
+    const result = gateToken
+      ? await processEmployeeGateScan(admin, scanInput)
+      : await processEmployeeQrScan(admin, scanInput);
 
     if (!result.ok) {
       const errMsg = result.error;

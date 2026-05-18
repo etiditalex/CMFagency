@@ -281,12 +281,44 @@ export default function VisitorManagementEmployeesPage() {
         const teamNote = isRealEstate
           ? ` (${memberTypeLabel(json.employee.memberType)} team)`
           : "";
-        setNotice(`${json.employee.fullName}${teamNote} added. Share their QR pass for sign-in/out.`);
+        const idNote = json.employee.employeeCode
+          ? ` Member ID: ${json.employee.employeeCode}.`
+          : "";
+        setNotice(
+          `${json.employee.fullName}${teamNote} added.${idNote} They use this ID once at reception to link their phone.`
+        );
         setQrEmployee(json.employee);
       }
       await loadEmployees();
     },
     [getToken, loadEmployees, isRealEstate]
+  );
+
+  const clearEmployeeDevice = useCallback(
+    async (id: string, fullName: string) => {
+      setPatchingId(id);
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Not signed in");
+        const res = await fetch(`/api/visitor-employees/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ clearDeviceLink: true }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) throw new Error(json.error ?? "Reset failed");
+        setNotice(`${fullName}'s phone link cleared. They can enter their member ID again at reception.`);
+        await loadEmployees();
+      } catch (e: unknown) {
+        setNotice(e instanceof Error ? e.message : "Could not reset phone link");
+      } finally {
+        setPatchingId(null);
+      }
+    },
+    [getToken, loadEmployees]
   );
 
   const setEmployeeMemberType = useCallback(
@@ -636,6 +668,7 @@ export default function VisitorManagementEmployeesPage() {
               <thead>
                 <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3 font-semibold">Name</th>
+                  <th className="px-4 py-3 font-semibold">Member ID</th>
                   {isRealEstate ? (
                     <th className="px-4 py-3 font-semibold">Team</th>
                   ) : null}
@@ -653,6 +686,9 @@ export default function VisitorManagementEmployeesPage() {
                 {displayedEmployees.map((emp) => (
                   <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-700">
+                      {emp.employeeCode || "—"}
+                    </td>
                     {isRealEstate ? (
                       <td className="px-4 py-3">
                         <select
@@ -748,6 +784,16 @@ export default function VisitorManagementEmployeesPage() {
                           <Pencil className="w-3.5 h-3.5" />
                           Times
                         </button>
+                        {emp.registeredDeviceId ? (
+                          <button
+                            type="button"
+                            disabled={patchingId === emp.id || setupRequired}
+                            onClick={() => void clearEmployeeDevice(emp.id, emp.fullName)}
+                            className="text-xs font-semibold text-violet-700 hover:underline disabled:opacity-50"
+                          >
+                            Reset phone
+                          </button>
+                        ) : null}
                         {emp.status === "active" ? (
                           <button
                             type="button"

@@ -190,7 +190,7 @@ export default function AddEmployeeModal({
               type="text"
               value={employeeCode}
               onChange={(e) => setEmployeeCode(e.target.value)}
-              placeholder="Optional internal ID"
+              placeholder="Optional — auto-generated (e.g. STF-A1B2C3)"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
             />
           </label>

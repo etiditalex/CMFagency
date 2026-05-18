@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, LogIn, LogOut, Search, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, LogIn, LogOut, XCircle } from "lucide-react";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import {
@@ -19,27 +19,26 @@ type EmployeePreview = {
   id: string;
   fullName: string;
   department: string;
+  employeeCode?: string;
   attendanceStatus: "in" | "out";
   lastSignedInAt: string | null;
   lastSignedOutAt: string | null;
-};
-
-type RosterEntry = {
-  id: string;
-  fullName: string;
-  department: string;
-  attendanceStatus: "in" | "out";
 };
 
 type PagePhase =
   | { kind: "loading" }
   | { kind: "ready"; employee: EmployeePreview }
   | {
-      kind: "gate";
+      kind: "gate-bound";
       gateToken: string;
-      teamLabel: string;
       memberType: EmployeeMemberType;
-      roster: RosterEntry[];
+      employee: EmployeePreview;
+    }
+  | {
+      kind: "gate-setup";
+      gateToken: string;
+      memberType: EmployeeMemberType;
+      teamLabel: string;
     }
   | { kind: "error"; message: string }
   | {
@@ -60,8 +59,7 @@ export default function EmployeeCheckPage() {
 
   const [phase, setPhase] = useState<PagePhase>({ kind: "loading" });
   const [submitting, setSubmitting] = useState(false);
-  const [search, setSearch] = useState("");
-  const [picked, setPicked] = useState<RosterEntry | null>(null);
+  const [memberCodeInput, setMemberCodeInput] = useState("");
 
   const loadPersonalPass = useCallback(async (qrToken: string) => {
     if (!qrToken) {
@@ -99,22 +97,25 @@ export default function EmployeeCheckPage() {
     }
   }, []);
 
-  const loadGateRoster = useCallback(async (gate: string) => {
+  const loadGateSession = useCallback(async (gate: string) => {
     if (!gate) {
       setPhase({ kind: "error", message: "Invalid reception QR. Ask your manager for a new poster." });
       return;
     }
 
     setPhase({ kind: "loading" });
-    setPicked(null);
-    setSearch("");
+    setMemberCodeInput("");
     try {
-      const res = await fetch(`/api/visitor-employees/roster?gate=${encodeURIComponent(gate)}`, {
+      const deviceId = getOrCreateBrowserDeviceId();
+      const qs = new URLSearchParams({ gate });
+      if (deviceId) qs.set("deviceId", deviceId);
+      const res = await fetch(`/api/visitor-employees/roster?${qs.toString()}`, {
         cache: "no-store",
       });
       const json = (await res.json().catch(() => ({}))) as {
         gate?: { memberType: EmployeeMemberType; teamLabel: string };
-        roster?: RosterEntry[];
+        boundEmployee?: EmployeePreview & { employeeCode: string };
+        needsSetup?: boolean;
         error?: string;
       };
       if (!res.ok) {
@@ -122,12 +123,20 @@ export default function EmployeeCheckPage() {
         return;
       }
       const memberType = json.gate?.memberType ?? "staff";
+      if (json.boundEmployee && !json.needsSetup) {
+        setPhase({
+          kind: "gate-bound",
+          gateToken: gate,
+          memberType,
+          employee: json.boundEmployee,
+        });
+        return;
+      }
       setPhase({
-        kind: "gate",
+        kind: "gate-setup",
         gateToken: gate,
-        teamLabel: json.gate?.teamLabel ?? receptionGateTitle(memberType).replace(" — sign in", ""),
         memberType,
-        roster: Array.isArray(json.roster) ? json.roster : [],
+        teamLabel: json.gate?.teamLabel ?? memberType,
       });
     } catch (e: unknown) {
       setPhase({
@@ -138,14 +147,14 @@ export default function EmployeeCheckPage() {
   }, []);
 
   useEffect(() => {
-    if (isGateMode) void loadGateRoster(gateToken);
+    if (isGateMode) void loadGateSession(gateToken);
     else void loadPersonalPass(token);
-  }, [isGateMode, gateToken, token, loadGateRoster, loadPersonalPass]);
+  }, [isGateMode, gateToken, token, loadGateSession, loadPersonalPass]);
 
   const runScan = useCallback(
     async (
       action: "sign_in" | "sign_out",
-      opts: { token?: string; gate?: string; employeeId?: string }
+      opts: { token?: string; gate?: string; employeeId?: string; memberCode?: string }
     ) => {
       setSubmitting(true);
       try {
@@ -157,6 +166,7 @@ export default function EmployeeCheckPage() {
         };
         if (opts.gate) body.gate = opts.gate;
         if (opts.employeeId) body.employeeId = opts.employeeId;
+        if (opts.memberCode) body.memberCode = opts.memberCode;
         if (opts.token) body.token = opts.token;
 
         const res = await fetch("/api/visitor-employees/scan", {
@@ -221,37 +231,22 @@ export default function EmployeeCheckPage() {
     [token, runScan]
   );
 
-  const handleGatePick = useCallback(
-    (entry: RosterEntry) => {
-      if (!gateToken) return;
-      if (entry.attendanceStatus === "out") {
-        void runScan("sign_in", { gate: gateToken, employeeId: entry.id });
-        return;
-      }
-      setPicked(entry);
-    },
-    [gateToken, runScan]
-  );
-
-  const filteredRoster = useMemo(() => {
-    if (phase.kind !== "gate") return [];
-    const q = search.trim().toLowerCase();
-    if (!q) return phase.roster;
-    return phase.roster.filter(
-      (e) =>
-        e.fullName.toLowerCase().includes(q) ||
-        e.department.toLowerCase().includes(q)
-    );
-  }, [phase, search]);
-
+  const gateBound = phase.kind === "gate-bound" ? phase : null;
+  const gateSetup = phase.kind === "gate-setup" ? phase : null;
   const ready = phase.kind === "ready" ? phase.employee : null;
-  const gate = phase.kind === "gate" ? phase : null;
   const done = phase.kind === "done" ? phase : null;
   const signedInDone = done?.eventType === "sign_in";
 
-  const backToGate = () => {
-    if (gateToken) void loadGateRoster(gateToken);
+  const reload = () => {
+    if (gateToken) void loadGateSession(gateToken);
     else if (token) void loadPersonalPass(token);
+  };
+
+  const handleMemberCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = memberCodeInput.trim();
+    if (!code || !gateToken) return;
+    void runScan("sign_in", { gate: gateToken, memberCode: code });
   };
 
   return (
@@ -272,9 +267,11 @@ export default function EmployeeCheckPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 mb-1 text-center">
             Employee attendance
           </p>
-          {gate ? (
+          {isGateMode ? (
             <h1 className="text-lg font-extrabold text-gray-900 text-center mb-4">
-              {receptionGateTitle(gate.memberType)}
+              {receptionGateTitle(
+                gateBound?.memberType ?? gateSetup?.memberType ?? "staff"
+              )}
             </h1>
           ) : (
             <p className="text-center text-sm text-gray-500 mb-4">Sign in or sign out</p>
@@ -296,82 +293,89 @@ export default function EmployeeCheckPage() {
             </div>
           ) : null}
 
-          {gate && phase.kind === "gate" && !picked ? (
-            <div className="space-y-3">
+          {gateSetup ? (
+            <form onSubmit={handleMemberCodeSubmit} className="space-y-4">
               <p className="text-sm text-gray-600 text-center">
-                Tap your name to sign in. If you are already signed in, tap your name to sign out.
+                <strong>First time on this phone:</strong> enter your unique member ID from your manager.
+                Your phone will be linked so next time you only sign in or out — no name list.
               </p>
-              <label className="relative block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <label className="block">
+                <span className="text-xs font-semibold uppercase text-gray-600 tracking-wide">
+                  Member ID
+                </span>
                 <input
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name…"
-                  className="w-full rounded-lg border border-gray-300 py-2.5 pl-9 pr-3 text-sm"
+                  type="text"
+                  value={memberCodeInput}
+                  onChange={(e) => setMemberCodeInput(e.target.value.toUpperCase())}
+                  placeholder="e.g. STF-A1B2C3"
                   autoComplete="off"
+                  autoCapitalize="characters"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-3 text-center text-lg font-mono font-bold tracking-wider"
+                  required
                 />
               </label>
-              {filteredRoster.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  {gate.roster.length === 0
-                    ? "No active team members yet. Ask your manager to add staff."
-                    : "No match for your search."}
-                </p>
-              ) : (
-                <ul className="max-h-[min(50vh,320px)] overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg">
-                  {filteredRoster.map((entry) => (
-                    <li key={entry.id}>
-                      <button
-                        type="button"
-                        onClick={() => handleGatePick(entry)}
-                        className="w-full px-4 py-3 flex items-center justify-between gap-2 text-left hover:bg-primary-50/80 transition-colors"
-                      >
-                        <span>
-                          <span className="block font-semibold text-gray-900">{entry.fullName}</span>
-                          {entry.department ? (
-                            <span className="block text-xs text-gray-500">{entry.department}</span>
-                          ) : null}
-                        </span>
-                        <span
-                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            entry.attendanceStatus === "in"
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                              : "bg-slate-50 text-slate-600 border-slate-200"
-                          }`}
-                        >
-                          {entry.attendanceStatus === "in" ? "In" : "Sign in"}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+              <button
+                type="submit"
+                disabled={submitting || !memberCodeInput.trim()}
+                className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                Link phone & sign in
+              </button>
+              <p className="text-[10px] text-gray-500 text-center">
+                {gateSetup.teamLabel} team · do not use someone else&apos;s ID
+              </p>
+            </form>
           ) : null}
 
-          {gate && picked ? (
+          {gateBound ? (
             <div className="py-2 space-y-4 text-center">
-              <p className="text-lg font-bold text-gray-900">{picked.fullName}</p>
-              <LogIn className="w-10 h-10 mx-auto text-emerald-600" />
-              <p className="text-sm font-semibold text-emerald-800">You are signed in</p>
-              <p className="text-xs text-gray-500">Tap below when you leave.</p>
-              <button
-                type="button"
-                onClick={() =>
-                  void runScan("sign_out", { gate: gateToken, employeeId: picked.id })
-                }
-                className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-bold text-slate-800 hover:bg-slate-100"
-              >
-                Sign out now
-              </button>
-              <button
-                type="button"
-                onClick={() => setPicked(null)}
-                className="text-xs font-semibold text-primary-700 hover:underline"
-              >
-                ← Choose someone else
-              </button>
+              <p className="text-lg font-bold text-gray-900">{gateBound.employee.fullName}</p>
+              {gateBound.employee.employeeCode ? (
+                <p className="text-xs font-mono text-gray-500">ID: {gateBound.employee.employeeCode}</p>
+              ) : null}
+              {gateBound.employee.department ? (
+                <p className="text-sm text-gray-600">{gateBound.employee.department}</p>
+              ) : null}
+              {gateBound.employee.attendanceStatus === "in" ? (
+                <>
+                  <LogIn className="w-10 h-10 mx-auto text-emerald-600" />
+                  <p className="text-sm font-semibold text-emerald-800">You are signed in</p>
+                  {gateBound.employee.lastSignedInAt ? (
+                    <p className="text-xs text-gray-500">
+                      Since {formatEmployeeTimestamp(gateBound.employee.lastSignedInAt)}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void runScan("sign_out", {
+                        gate: gateBound.gateToken,
+                        employeeId: gateBound.employee.id,
+                      })
+                    }
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-bold text-slate-800 hover:bg-slate-100"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <LogOut className="w-10 h-10 mx-auto text-slate-400" />
+                  <p className="text-sm text-gray-600">Tap to sign in</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void runScan("sign_in", {
+                        gate: gateBound.gateToken,
+                        employeeId: gateBound.employee.id,
+                      })
+                    }
+                    className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-700"
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
             </div>
           ) : null}
 
@@ -437,10 +441,10 @@ export default function EmployeeCheckPage() {
                   {done.gateToken ? (
                     <button
                       type="button"
-                      onClick={backToGate}
+                      onClick={reload}
                       className="text-sm font-semibold text-primary-700 hover:underline"
                     >
-                      Back to team list
+                      Continue
                     </button>
                   ) : null}
                 </>
@@ -450,7 +454,7 @@ export default function EmployeeCheckPage() {
                   <p className="text-sm text-red-700">{done.message}</p>
                   <button
                     type="button"
-                    onClick={backToGate}
+                    onClick={reload}
                     className="text-sm font-semibold text-primary-700 hover:underline"
                   >
                     Try again
@@ -462,8 +466,8 @@ export default function EmployeeCheckPage() {
 
           <p className="mt-6 text-xs text-gray-500 text-center">
             {isGateMode
-              ? "Scan the reception QR to open this page. Directors receive email when you sign in."
-              : "Directors receive email when you sign in. Use the reception QR for your team where available."}
+              ? "Your phone is linked to your member ID. Only you can sign in or out on this device."
+              : "Directors receive email when you sign in."}
           </p>
         </div>
       </div>

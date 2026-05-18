@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     }
 
     const gate = req.nextUrl.searchParams.get("gate")?.trim() ?? "";
-    const result = await listRosterForGate(admin, gate);
+    const deviceId = req.nextUrl.searchParams.get("deviceId")?.trim() ?? "";
+    const result = await listRosterForGate(admin, gate, deviceId);
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status });
@@ -24,7 +25,8 @@ export async function GET(req: NextRequest) {
         memberType: result.gate.memberType,
         teamLabel: memberTypeLabel(result.gate.memberType),
       },
-      roster: result.roster,
+      boundEmployee: result.boundEmployee,
+      needsSetup: result.needsSetup,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
