@@ -64,6 +64,7 @@ export default function VisitorSubscriptionCheckout({
           };
           if (json.payment_completed || json.subscription?.plan === plan) {
             stopPoll();
+            setBusy(null);
             setMsg("Payment received. Your plan is now active.");
             onPaid();
           }
