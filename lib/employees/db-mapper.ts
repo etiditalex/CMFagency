@@ -1,7 +1,9 @@
 import type {
   EmployeeAttendanceRecord,
   EmployeeAttendanceStatus,
+  EmployeeMemberType,
   EmployeeRecord,
+  EmployeeReportingSettings,
   EmployeeStatus,
 } from "@/lib/employees/types";
 
@@ -19,8 +21,48 @@ export type EmployeeRow = {
   registered_device_id: string | null;
   last_signed_in_at: string | null;
   last_signed_out_at: string | null;
+  member_type?: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ReportingSettingsRow = {
+  owner_id: string;
+  staff_reporting_sign_in: string;
+  staff_reporting_sign_out: string;
+  crm_reporting_sign_in: string;
+  crm_reporting_sign_out: string;
+  updated_at: string;
+};
+
+function normalizeTime(t: string | null | undefined): string {
+  const s = String(t ?? "").trim();
+  const m = s.match(/^(\d{2}):(\d{2})/);
+  return m ? `${m[1]}:${m[2]}` : "09:00";
+}
+
+function parseMemberType(raw: string | null | undefined): EmployeeMemberType {
+  return String(raw ?? "").toLowerCase() === "crm" ? "crm" : "staff";
+}
+
+export function mapReportingSettingsRow(
+  row: ReportingSettingsRow | null
+): EmployeeReportingSettings {
+  return {
+    staffReportingSignIn: normalizeTime(row?.staff_reporting_sign_in),
+    staffReportingSignOut: normalizeTime(row?.staff_reporting_sign_out),
+    crmReportingSignIn: normalizeTime(row?.crm_reporting_sign_in ?? "08:30"),
+    crmReportingSignOut: normalizeTime(row?.crm_reporting_sign_out ?? "18:00"),
+    updatedAt: row?.updated_at ?? null,
+  };
+}
+
+export const DEFAULT_REPORTING_SETTINGS: EmployeeReportingSettings = {
+  staffReportingSignIn: "09:00",
+  staffReportingSignOut: "17:00",
+  crmReportingSignIn: "08:30",
+  crmReportingSignOut: "18:00",
+  updatedAt: null,
 };
 
 export type EmployeeAttendanceRow = {
@@ -37,6 +79,7 @@ export type EmployeeAttendanceRow = {
 export function mapEmployeeRow(row: EmployeeRow): EmployeeRecord {
   return {
     id: row.id,
+    memberType: parseMemberType(row.member_type),
     fullName: row.full_name,
     email: row.email,
     department: row.department ?? "",

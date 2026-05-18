@@ -21,16 +21,21 @@ export async function GET(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
 
+    const memberType = req.nextUrl.searchParams.get("memberType")?.trim().toLowerCase() ?? "";
+
     let q = admin
       .from("visitor_employees")
       .select(
-        "id,owner_id,full_name,email,department,job_title,employee_code,qr_code_token,status,attendance_status,registered_device_id,last_signed_in_at,last_signed_out_at,created_at,updated_at"
+        "id,owner_id,full_name,email,department,job_title,employee_code,qr_code_token,status,attendance_status,registered_device_id,last_signed_in_at,last_signed_out_at,member_type,created_at,updated_at"
       )
       .order("full_name", { ascending: true })
       .limit(500);
 
     if (!isAdmin) {
       q = q.eq("owner_id", userId);
+    }
+    if (memberType === "staff" || memberType === "crm") {
+      q = q.eq("member_type", memberType);
     }
 
     const { data, error } = await q;
@@ -73,6 +78,8 @@ export async function POST(req: NextRequest) {
     const emailRaw = safeText(body.email, 200);
     const email = emailRaw && emailRaw.includes("@") ? emailRaw : null;
     const employee_code = safeText(body.employeeCode ?? body.employee_code, 64) || null;
+    const memberTypeRaw = String(body.memberType ?? body.member_type ?? "staff").toLowerCase();
+    const member_type = memberTypeRaw === "crm" ? "crm" : "staff";
 
     const row = {
       owner_id: userId,
@@ -81,6 +88,7 @@ export async function POST(req: NextRequest) {
       department: safeText(body.department, 120),
       job_title: safeText(body.jobTitle ?? body.job_title, 120),
       employee_code,
+      member_type,
       status: "active" as const,
       attendance_status: "out" as const,
     };

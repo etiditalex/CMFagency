@@ -1,24 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-import type { EmployeeFormInput } from "@/lib/employees/types";
+import type { EmployeeFormInput, EmployeeMemberType } from "@/lib/employees/types";
 
 type AddEmployeeModalProps = {
   open: boolean;
   onClose: () => void;
   onSubmit: (payload: EmployeeFormInput) => Promise<void>;
+  /** Real estate: choose staff vs CRM when adding */
+  showMemberType?: boolean;
+  defaultMemberType?: EmployeeMemberType;
+  title?: string;
 };
 
-export default function AddEmployeeModal({ open, onClose, onSubmit }: AddEmployeeModalProps) {
+export default function AddEmployeeModal({
+  open,
+  onClose,
+  onSubmit,
+  showMemberType = false,
+  defaultMemberType = "staff",
+  title = "Add staff member",
+}: AddEmployeeModalProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [employeeCode, setEmployeeCode] = useState("");
+  const [memberType, setMemberType] = useState<EmployeeMemberType>(defaultMemberType);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) setMemberType(defaultMemberType);
+  }, [open, defaultMemberType]);
 
   if (!open) return null;
 
@@ -28,6 +44,7 @@ export default function AddEmployeeModal({ open, onClose, onSubmit }: AddEmploye
     setDepartment("");
     setJobTitle("");
     setEmployeeCode("");
+    setMemberType(defaultMemberType);
     setError(null);
   };
 
@@ -51,6 +68,7 @@ export default function AddEmployeeModal({ open, onClose, onSubmit }: AddEmploye
         department: department.trim() || undefined,
         jobTitle: jobTitle.trim() || undefined,
         employeeCode: employeeCode.trim() || undefined,
+        memberType: showMemberType ? memberType : undefined,
       });
       reset();
       onClose();
@@ -70,7 +88,7 @@ export default function AddEmployeeModal({ open, onClose, onSubmit }: AddEmploye
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 id="add-employee-title" className="text-lg font-bold text-gray-900">
-            Add staff member
+            {title}
           </h2>
           <button
             type="button"
@@ -86,6 +104,40 @@ export default function AddEmployeeModal({ open, onClose, onSubmit }: AddEmploye
             <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
               {error}
             </p>
+          ) : null}
+          {showMemberType ? (
+            <fieldset className="block">
+              <legend className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                Team *
+              </legend>
+              <p className="mt-0.5 mb-2 text-xs text-gray-500">
+                Mark whether this person is general <strong>staff</strong> or on the{" "}
+                <strong>CRM</strong> team. Reporting times can differ by team.
+              </p>
+              <div
+                className="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 bg-gray-50 p-1"
+                role="group"
+                aria-label="Team"
+              >
+                {(["staff", "crm"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setMemberType(type)}
+                    className={`rounded-md px-3 py-2.5 text-sm font-semibold transition-colors ${
+                      memberType === type
+                        ? type === "crm"
+                          ? "bg-violet-600 text-white shadow-sm"
+                          : "bg-primary-600 text-white shadow-sm"
+                        : "text-gray-600 hover:bg-white"
+                    }`}
+                    aria-pressed={memberType === type}
+                  >
+                    {type === "crm" ? "CRM" : "Staff"}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           ) : null}
           <label className="block">
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">

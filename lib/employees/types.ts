@@ -1,9 +1,20 @@
 export type EmployeeStatus = "active" | "inactive";
 export type EmployeeAttendanceStatus = "out" | "in";
 export type EmployeeAttendanceEventType = "sign_in" | "sign_out";
+/** General staff vs real-estate CRM team (separate reporting windows). */
+export type EmployeeMemberType = "staff" | "crm";
+
+export type EmployeeReportingSettings = {
+  staffReportingSignIn: string;
+  staffReportingSignOut: string;
+  crmReportingSignIn: string;
+  crmReportingSignOut: string;
+  updatedAt: string | null;
+};
 
 export type EmployeeRecord = {
   id: string;
+  memberType: EmployeeMemberType;
   fullName: string;
   email: string | null;
   department: string;
@@ -35,4 +46,5 @@ export type EmployeeFormInput = {
   department?: string;
   jobTitle?: string;
   employeeCode?: string;
+  memberType?: EmployeeMemberType;
 };

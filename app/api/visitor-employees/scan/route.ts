@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { isMissingEmployeesTable } from "@/lib/employees/db-mapper";
 import { processEmployeeQrScan } from "@/lib/employees/process-employee-scan";
+import { processEmployeeGateScan } from "@/lib/employees/process-reception-gate";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
 
 export async function POST(req: NextRequest) {
@@ -14,15 +15,24 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const userAgent = req.headers.get("user-agent") ?? undefined;
 
-    const result = await processEmployeeQrScan(admin, {
+    const scanInput = {
       token: body.token ?? body.qrToken ?? body.qr_code_token,
+      gate: body.gate ?? body.gateToken,
+      employeeId: body.employeeId,
       action: body.action ?? body.mode,
       deviceId: body.deviceId ?? body.device_id,
       deviceLabel: body.deviceLabel ?? body.device_label,
       userAgent: body.userAgent ?? userAgent,
       platform: body.platform,
       language: body.language,
-    });
+    };
+
+    const gateToken = String(scanInput.gate ?? "").trim();
+    const employeeId = String(scanInput.employeeId ?? "").trim();
+    const result =
+      gateToken && employeeId
+        ? await processEmployeeGateScan(admin, scanInput)
+        : await processEmployeeQrScan(admin, scanInput);
 
     if (!result.ok) {
       const errMsg = result.error;

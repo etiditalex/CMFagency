@@ -1,20 +1,31 @@
-import type { EmployeeAttendanceRecord, EmployeeRecord } from "@/lib/employees/types";
+import type {
+  EmployeeAttendanceRecord,
+  EmployeeRecord,
+  EmployeeReportingSettings,
+} from "@/lib/employees/types";
+import { DEFAULT_REPORTING_SETTINGS } from "@/lib/employees/db-mapper";
+import { memberTypeLabel } from "@/lib/employees/real-estate";
+import {
+  reportingWindowForMember,
+  signInReportingStatus,
+  signInStatusLabel,
+} from "@/lib/employees/reporting-time";
 import { formatEmployeeEmailDateTime } from "@/lib/employees/utils";
 
 async function loadXlsx() {
   return import("xlsx");
 }
 
-export async function downloadEmployeeAttendanceExcel(params: {
-  employees: EmployeeRecord[];
-  attendance: EmployeeAttendanceRecord[];
-  employeeNameById: Map<string, string>;
-  organizationName?: string;
-}): Promise<void> {
-  const XLSX = await loadXlsx();
-
-  const staffRows = params.employees.map((e) => ({
+function employeeSummaryRow(
+  e: EmployeeRecord,
+  reportingSettings: EmployeeReportingSettings,
+  includeReporting: boolean
+) {
+  const window = reportingWindowForMember(reportingSettings, e.memberType);
+  const reportingStatus = signInReportingStatus(e.lastSignedInAt, window.signIn);
+  const base = {
     Name: e.fullName,
+    Team: memberTypeLabel(e.memberType),
     Department: e.department || "",
     "Job title": e.jobTitle || "",
     "Employee code": e.employeeCode || "",
@@ -23,21 +34,79 @@ export async function downloadEmployeeAttendanceExcel(params: {
     "Last sign-in": e.lastSignedInAt ? formatEmployeeEmailDateTime(e.lastSignedInAt) : "",
     "Last sign-out": e.lastSignedOutAt ? formatEmployeeEmailDateTime(e.lastSignedOutAt) : "",
     "QR token": e.qrCodeToken || "",
-  }));
+  };
+  if (!includeReporting) return base;
+  return {
+    ...base,
+    "Expected sign-in": window.signIn,
+    "Expected sign-out": window.signOut,
+    "Sign-in vs reporting": signInStatusLabel(reportingStatus),
+  };
+}
 
-  const eventRows = params.attendance.map((a) => ({
-    "Staff name": params.employeeNameById.get(a.employeeId) ?? a.employeeId,
-    Event: a.eventType === "sign_in" ? "Sign in" : "Sign out",
-    "Date & time": formatEmployeeEmailDateTime(a.createdAt),
-    Device: a.deviceLabel || a.deviceId || "",
-  }));
+export async function downloadEmployeeAttendanceExcel(params: {
+  employees: EmployeeRecord[];
+  attendance: EmployeeAttendanceRecord[];
+  employeeNameById: Map<string, string>;
+  organizationName?: string;
+  isRealEstate?: boolean;
+  reportingSettings?: EmployeeReportingSettings;
+}): Promise<void> {
+  const XLSX = await loadXlsx();
+  const reporting = params.reportingSettings ?? DEFAULT_REPORTING_SETTINGS;
+  const isRealEstate = params.isRealEstate === true;
+
+  const employeeById = new Map(params.employees.map((e) => [e.id, e]));
+
+  const buildSummaryRows = (list: EmployeeRecord[]) =>
+    list.map((e) => employeeSummaryRow(e, reporting, isRealEstate));
+
+  const staffTeam = params.employees.filter((e) => e.memberType === "staff");
+  const crmTeam = params.employees.filter((e) => e.memberType === "crm");
+
+  const eventRows = params.attendance.map((a) => {
+    const emp = employeeById.get(a.employeeId);
+    const row: Record<string, string> = {
+      "Staff name": params.employeeNameById.get(a.employeeId) ?? a.employeeId,
+      Event: a.eventType === "sign_in" ? "Sign in" : "Sign out",
+      "Date & time": formatEmployeeEmailDateTime(a.createdAt),
+      Device: a.deviceLabel || a.deviceId || "",
+    };
+    if (isRealEstate && emp) {
+      row.Team = memberTypeLabel(emp.memberType);
+    }
+    return row;
+  });
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.json_to_sheet(staffRows.length ? staffRows : [{ note: "No staff" }]),
-    "Staff summary"
-  );
+
+  if (isRealEstate) {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(
+        buildSummaryRows(staffTeam).length ? buildSummaryRows(staffTeam) : [{ note: "No staff team members" }]
+      ),
+      "Staff team"
+    );
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(
+        buildSummaryRows(crmTeam).length ? buildSummaryRows(crmTeam) : [{ note: "No CRM team members" }]
+      ),
+      "CRM team"
+    );
+  } else {
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(
+        buildSummaryRows(params.employees).length
+          ? buildSummaryRows(params.employees)
+          : [{ note: "No staff" }]
+      ),
+      "Staff summary"
+    );
+  }
+
   XLSX.utils.book_append_sheet(
     wb,
     XLSX.utils.json_to_sheet(eventRows.length ? eventRows : [{ note: "No attendance events" }]),

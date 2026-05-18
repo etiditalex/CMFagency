@@ -74,6 +74,13 @@ export async function PATCH(
       const iso = parseIso(body.lastSignedOutAt ?? body.last_signed_out_at);
       patch.last_signed_out_at = iso;
     }
+    if (body.memberType !== undefined || body.member_type !== undefined) {
+      const raw = String(body.memberType ?? body.member_type).toLowerCase();
+      if (raw !== "staff" && raw !== "crm") {
+        return NextResponse.json({ error: "Team must be staff or crm." }, { status: 400 });
+      }
+      patch.member_type = raw;
+    }
 
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "No fields to update." }, { status: 400 });

@@ -57,7 +57,7 @@ export async function lookupEmployeeByToken(
   const { data: row, error: findErr } = await admin
     .from("visitor_employees")
     .select(
-      "id,owner_id,full_name,email,department,job_title,employee_code,qr_code_token,status,attendance_status,registered_device_id,last_signed_in_at,last_signed_out_at,created_at,updated_at"
+      "id,owner_id,full_name,email,department,job_title,employee_code,qr_code_token,status,attendance_status,registered_device_id,last_signed_in_at,last_signed_out_at,member_type,created_at,updated_at"
     )
     .eq("qr_code_token", token)
     .maybeSingle();

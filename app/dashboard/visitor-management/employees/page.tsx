@@ -23,12 +23,33 @@ import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-managemen
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
+import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
+import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
-import { isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
+import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
+import {
+  isRealEstateIndustry,
+  memberTypeBadgeClass,
+  memberTypeLabel,
+} from "@/lib/employees/real-estate";
+import {
+  reportingWindowForMember,
+  signInReportingStatus,
+  signInStatusClass,
+  signInStatusLabel,
+} from "@/lib/employees/reporting-time";
 import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import type { EmployeeAttendanceRecord, EmployeeFormInput, EmployeeRecord } from "@/lib/employees/types";
+import type {
+  EmployeeAttendanceRecord,
+  EmployeeFormInput,
+  EmployeeMemberType,
+  EmployeeRecord,
+  EmployeeReportingSettings,
+} from "@/lib/employees/types";
+
+const MEMBER_TYPES: EmployeeMemberType[] = ["staff", "crm"];
 import {
   employeeAttendanceBadgeClass,
   employeeAttendanceLabel,
@@ -60,6 +81,11 @@ export default function VisitorManagementEmployeesPage() {
   const [editTimesEmployee, setEditTimesEmployee] = useState<EmployeeRecord | null>(null);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [isRealEstate, setIsRealEstate] = useState(false);
+  const [memberTab, setMemberTab] = useState<EmployeeMemberType>("staff");
+  const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
+    DEFAULT_REPORTING_SETTINGS
+  );
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -138,8 +164,32 @@ export default function VisitorManagementEmployeesPage() {
       const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
       const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
       if (name) setOrganizationName(name);
+      const industry = String(meta?.organization_industry ?? "").trim();
+      setIsRealEstate(isRealEstateIndustry(industry));
     });
   }, [user?.id]);
+
+  const loadReportingSettings = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/visitor-employees/reporting-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        settings?: EmployeeReportingSettings;
+      };
+      if (res.ok && json.settings) setReportingSettings(json.settings);
+    } catch {
+      /* keep defaults */
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isRealEstate || setupRequired) return;
+    void loadReportingSettings();
+  }, [isRealEstate, setupRequired, loadReportingSettings]);
 
   const handleDownloadPdf = useCallback(
     async (emp: EmployeeRecord) => {
@@ -185,11 +235,25 @@ export default function VisitorManagementEmployeesPage() {
     loadEmployees,
   ]);
 
-  const stats = useMemo(() => employeeStats(employees), [employees]);
+  const displayedEmployees = useMemo(() => {
+    if (!isRealEstate) return employees;
+    return employees.filter((e) => e.memberType === memberTab);
+  }, [employees, isRealEstate, memberTab]);
+
+  const stats = useMemo(
+    () => employeeStats(isRealEstate ? displayedEmployees : employees),
+    [employees, displayedEmployees, isRealEstate]
+  );
 
   const employeeNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const e of employees) m.set(e.id, e.fullName);
+    return m;
+  }, [employees]);
+
+  const employeeById = useMemo(() => {
+    const m = new Map<string, EmployeeRecord>();
+    for (const e of employees) m.set(e.id, e);
     return m;
   }, [employees]);
 
@@ -214,12 +278,47 @@ export default function VisitorManagementEmployeesPage() {
         setEmployees((prev) =>
           [...prev, json.employee!].sort((a, b) => a.fullName.localeCompare(b.fullName))
         );
-        setNotice(`${json.employee.fullName} added. Share their QR pass for sign-in/out.`);
+        const teamNote = isRealEstate
+          ? ` (${memberTypeLabel(json.employee.memberType)} team)`
+          : "";
+        setNotice(`${json.employee.fullName}${teamNote} added. Share their QR pass for sign-in/out.`);
         setQrEmployee(json.employee);
       }
       await loadEmployees();
     },
-    [getToken, loadEmployees]
+    [getToken, loadEmployees, isRealEstate]
+  );
+
+  const setEmployeeMemberType = useCallback(
+    async (id: string, memberType: EmployeeMemberType) => {
+      setPatchingId(id);
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Not signed in");
+        const res = await fetch(`/api/visitor-employees/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ memberType }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          employee?: EmployeeRecord;
+          error?: string;
+        };
+        if (!res.ok) throw new Error(json.error ?? "Update failed");
+        if (json.employee) {
+          setEmployees((prev) => prev.map((e) => (e.id === id ? json.employee! : e)));
+          setNotice(`${json.employee.fullName} marked as ${memberTypeLabel(json.employee.memberType)}.`);
+        }
+      } catch (e: unknown) {
+        setNotice(e instanceof Error ? e.message : "Could not update team");
+      } finally {
+        setPatchingId(null);
+      }
+    },
+    [getToken]
   );
 
   const setEmployeeStatus = useCallback(
@@ -310,17 +409,19 @@ export default function VisitorManagementEmployeesPage() {
         attendance,
         employeeNameById,
         organizationName,
+        isRealEstate,
+        reportingSettings,
       });
     } catch (e: unknown) {
       setNotice(e instanceof Error ? e.message : "Excel export failed");
     } finally {
       setExportingExcel(false);
     }
-  }, [employees, attendance, employeeNameById, organizationName]);
+  }, [employees, attendance, employeeNameById, organizationName, isRealEstate, reportingSettings]);
 
   const statCards = [
     {
-      label: "Total staff",
+      label: isRealEstate ? `Total ${memberTypeLabel(memberTab)}` : "Total staff",
       value: stats.total,
       icon: Users,
       tone: "text-primary-700 bg-primary-50 border-primary-100",
@@ -359,6 +460,13 @@ export default function VisitorManagementEmployeesPage() {
         <p className="mt-1 text-sm text-gray-600">
           Add staff manually, issue a unique QR pass per person, and record sign-in and sign-out.
           Organisation directors receive email when someone reports to work or leaves.
+          {isRealEstate ? (
+            <>
+              {" "}
+              As a real estate account, set separate reporting times for <strong>staff</strong> and{" "}
+              <strong>CRM</strong> teams below.
+            </>
+          ) : null}
         </p>
         {!isVisitorOnly ? (
           <p className="mt-2 text-sm">
@@ -400,8 +508,8 @@ export default function VisitorManagementEmployeesPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-gray-600">
-          Use the reception kiosk to scan staff QR codes, or let employees scan their pass on their
-          phone.
+          Mount the reception team QR at the desk. Scanning opens the sign-in page on a phone. Use the
+          kiosk scanner for individual passes if needed.
         </p>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -426,9 +534,24 @@ export default function VisitorManagementEmployeesPage() {
         </div>
       </div>
 
+      <ReceptionQrPanel
+        disabled={setupRequired}
+        isRealEstate={isRealEstate}
+        organizationName={organizationName}
+      />
+
       <NotificationAdminsPanel disabled={setupRequired} />
 
-      <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAddEmployee} />
+      {isRealEstate ? <ReportingTimesPanel disabled={setupRequired} /> : null}
+
+      <AddEmployeeModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSubmit={handleAddEmployee}
+        showMemberType={isRealEstate}
+        defaultMemberType={isRealEstate ? memberTab : "staff"}
+        title={isRealEstate ? "Add employee" : "Add staff member"}
+      />
 
       <EditEmployeeTimesModal
         employee={editTimesEmployee}
@@ -475,15 +598,37 @@ export default function VisitorManagementEmployeesPage() {
       ) : null}
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-          <Users className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-800">Staff members</span>
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
+            <Users className="w-4 h-4 text-gray-500" />
+            {isRealEstate ? `${memberTypeLabel(memberTab)} team` : "Staff members"}
+          </span>
+          {isRealEstate ? (
+            <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 text-xs font-semibold">
+              {(["staff", "crm"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setMemberTab(tab)}
+                  className={`rounded-md px-3 py-1.5 transition-colors ${
+                    memberTab === tab
+                      ? "bg-primary-600 text-white"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {memberTypeLabel(tab)}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         {loading ? (
           <p className="p-6 text-sm text-gray-500 text-center">Loading…</p>
-        ) : employees.length === 0 ? (
+        ) : displayedEmployees.length === 0 ? (
           <p className="p-6 text-sm text-gray-500 text-center">
-            No employees yet. Add your first staff member to generate QR passes.
+            {isRealEstate
+              ? `No ${memberTypeLabel(memberTab).toLowerCase()} members yet. Add someone to this team to generate QR passes.`
+              : "No employees yet. Add your first staff member to generate QR passes."}
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -491,17 +636,44 @@ export default function VisitorManagementEmployeesPage() {
               <thead>
                 <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3 font-semibold">Name</th>
+                  {isRealEstate ? (
+                    <th className="px-4 py-3 font-semibold">Team</th>
+                  ) : null}
                   <th className="px-4 py-3 font-semibold">Department</th>
                   <th className="px-4 py-3 font-semibold">Attendance</th>
                   <th className="px-4 py-3 font-semibold">Last sign-in</th>
+                  {isRealEstate ? (
+                    <th className="px-4 py-3 font-semibold">Reporting</th>
+                  ) : null}
                   <th className="px-4 py-3 font-semibold">Status</th>
                   <th className="px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {employees.map((emp) => (
+                {displayedEmployees.map((emp) => (
                   <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                    {isRealEstate ? (
+                      <td className="px-4 py-3">
+                        <select
+                          value={emp.memberType}
+                          disabled={setupRequired || patchingId === emp.id}
+                          onChange={(e) => {
+                            const next = e.target.value as EmployeeMemberType;
+                            if (next === emp.memberType) return;
+                            void setEmployeeMemberType(emp.id, next);
+                          }}
+                          className={`rounded-lg border px-2 py-1 text-xs font-semibold cursor-pointer disabled:opacity-50 ${memberTypeBadgeClass(emp.memberType)}`}
+                          aria-label={`Team for ${emp.fullName}`}
+                        >
+                          {MEMBER_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {memberTypeLabel(t)}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    ) : null}
                     <td className="px-4 py-3 text-gray-600">
                       {emp.department || "—"}
                       {emp.jobTitle ? (
@@ -518,6 +690,25 @@ export default function VisitorManagementEmployeesPage() {
                     <td className="px-4 py-3 text-gray-600">
                       {formatEmployeeTimestamp(emp.lastSignedInAt)}
                     </td>
+                    {isRealEstate ? (
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${signInStatusClass(
+                            signInReportingStatus(
+                              emp.lastSignedInAt,
+                              reportingWindowForMember(reportingSettings, emp.memberType).signIn
+                            )
+                          )}`}
+                        >
+                          {signInStatusLabel(
+                            signInReportingStatus(
+                              emp.lastSignedInAt,
+                              reportingWindowForMember(reportingSettings, emp.memberType).signIn
+                            )
+                          )}
+                        </span>
+                      </td>
+                    ) : null}
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${employeeStatusBadgeClass(emp.status)}`}
@@ -606,10 +797,19 @@ export default function VisitorManagementEmployeesPage() {
           <p className="p-6 text-sm text-gray-500 text-center">No attendance events yet.</p>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {attendance.map((row) => (
+            {attendance.map((row) => {
+              const emp = employeeById.get(row.employeeId);
+              return (
               <li key={row.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-gray-900 flex flex-wrap items-center gap-2">
                   {employeeNameById.get(row.employeeId) ?? "Staff"}
+                  {isRealEstate && emp ? (
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${memberTypeBadgeClass(emp.memberType)}`}
+                    >
+                      {memberTypeLabel(emp.memberType)}
+                    </span>
+                  ) : null}
                 </span>
                 <span
                   className={
@@ -643,7 +843,8 @@ export default function VisitorManagementEmployeesPage() {
                   ) : null}
                 </span>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
