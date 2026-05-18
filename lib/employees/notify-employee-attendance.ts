@@ -18,9 +18,14 @@ function parseNotificationEmails(raw: unknown): string[] {
   return [];
 }
 
+type NotificationAdminRow = {
+  email: string;
+  notify_sign_in: boolean;
+  notify_sign_out: boolean;
+};
+
 /**
- * Notifies the organisation owner and director notification emails when
- * a staff member signs in or out.
+ * Notifies account owner (sign-in and sign-out) plus configured notification admins.
  */
 export async function notifyEmployeeAttendance(
   admin: SupabaseClient,
@@ -34,13 +39,14 @@ export async function notifyEmployeeAttendance(
     businessName?: string;
   }
 ): Promise<void> {
-  const recipients = new Set<string>();
+  const ownerRecipients = new Set<string>();
+  const adminRecipients = new Set<string>();
 
   const { data: ownerRes } = await admin.auth.admin.getUserById(params.ownerId);
   const ownerEmail = String(ownerRes?.user?.email ?? "")
     .trim()
     .toLowerCase();
-  if (ownerEmail.includes("@")) recipients.add(ownerEmail);
+  if (ownerEmail.includes("@")) ownerRecipients.add(ownerEmail);
 
   const meta = (ownerRes?.user?.user_metadata ?? {}) as Record<string, unknown>;
   const businessName =
@@ -50,19 +56,45 @@ export async function notifyEmployeeAttendance(
 
   for (const key of ["director_emails", "director_notification_emails", "notification_emails"]) {
     for (const email of parseNotificationEmails(meta[key])) {
-      recipients.add(email);
+      ownerRecipients.add(email);
     }
   }
 
-  if (recipients.size === 0) return;
+  const { data: adminRows } = await admin
+    .from("visitor_employee_notification_admins")
+    .select("email,notify_sign_in,notify_sign_out")
+    .eq("owner_id", params.ownerId);
 
-  await sendEmployeeAttendanceNotificationEmail({
-    to: [...recipients],
+  for (const row of (adminRows ?? []) as NotificationAdminRow[]) {
+    const email = String(row.email ?? "")
+      .trim()
+      .toLowerCase();
+    if (!email.includes("@")) continue;
+    const wantsIn = params.eventType === "sign_in" && row.notify_sign_in !== false;
+    const wantsOut = params.eventType === "sign_out" && row.notify_sign_out === true;
+    if (wantsIn || wantsOut) adminRecipients.add(email);
+  }
+
+  const payload = {
     employeeName: params.employeeName,
     department: params.department,
     businessName,
     eventType: params.eventType,
     occurredAt: params.occurredAt,
     deviceLabel: params.deviceLabel,
-  });
+  };
+
+  if (ownerRecipients.size > 0) {
+    await sendEmployeeAttendanceNotificationEmail({
+      to: [...ownerRecipients],
+      ...payload,
+    });
+  }
+
+  if (adminRecipients.size > 0) {
+    await sendEmployeeAttendanceNotificationEmail({
+      to: [...adminRecipients],
+      ...payload,
+    });
+  }
 }

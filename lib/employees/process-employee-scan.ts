@@ -12,6 +12,8 @@ import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/e
 import { notifyEmployeeAttendance } from "@/lib/employees/notify-employee-attendance";
 import type { EmployeeAttendanceEventType, EmployeeRecord } from "@/lib/employees/types";
 
+export type EmployeeScanAction = "sign_in" | "sign_out" | "toggle";
+
 export type EmployeeScanResult =
   | {
       ok: true;
@@ -31,11 +33,23 @@ function parseToken(raw: unknown): string {
   return s.slice(0, 128);
 }
 
-export async function processEmployeeQrScan(
+function parseScanAction(raw: unknown): EmployeeScanAction {
+  const s = String(raw ?? "")
+    .trim()
+    .toLowerCase();
+  if (s === "sign_in" || s === "sign-in" || s === "in") return "sign_in";
+  if (s === "sign_out" || s === "sign-out" || s === "out") return "sign_out";
+  return "toggle";
+}
+
+export async function lookupEmployeeByToken(
   admin: SupabaseClient,
-  input: DeviceFingerprintInput & { token?: unknown; qrToken?: unknown }
-): Promise<EmployeeScanResult> {
-  const token = parseToken(input.token ?? input.qrToken);
+  tokenRaw: unknown
+): Promise<
+  | { ok: true; employee: EmployeeRecord }
+  | { ok: false; error: string; status: number }
+> {
+  const token = parseToken(tokenRaw);
   if (!token) {
     return { ok: false, error: "Missing employee QR token.", status: 400 };
   }
@@ -58,9 +72,67 @@ export async function processEmployeeQrScan(
     return { ok: false, error: "Invalid or unknown employee QR code.", status: 404 };
   }
 
-  const employee = mapEmployeeRow(row as EmployeeRow);
+  return { ok: true, employee: mapEmployeeRow(row as EmployeeRow) };
+}
+
+export async function processEmployeeQrScan(
+  admin: SupabaseClient,
+  input: DeviceFingerprintInput & {
+    token?: unknown;
+    qrToken?: unknown;
+    action?: unknown;
+    mode?: unknown;
+  }
+): Promise<EmployeeScanResult> {
+  const token = parseToken(input.token ?? input.qrToken);
+  if (!token) {
+    return { ok: false, error: "Missing employee QR token.", status: 400 };
+  }
+
+  const lookup = await lookupEmployeeByToken(admin, token);
+  if (!lookup.ok) return lookup;
+
+  const employee = lookup.employee;
+
+  const { data: rowData, error: findErr } = await admin
+    .from("visitor_employees")
+    .select("owner_id")
+    .eq("id", employee.id)
+    .maybeSingle();
+
+  if (findErr || !rowData?.owner_id) {
+    return { ok: false, error: "Employee not found.", status: 404 };
+  }
+
+  const ownerId = String(rowData.owner_id);
+
   if (employee.status !== "active") {
     return { ok: false, error: "This staff member is inactive.", status: 403 };
+  }
+
+  const scanAction = parseScanAction(input.action ?? input.mode);
+  let eventType: EmployeeAttendanceEventType;
+
+  if (scanAction === "sign_in") {
+    if (employee.attendanceStatus === "in") {
+      return {
+        ok: false,
+        error: "Already signed in. Scan your QR again at the kiosk when you leave to sign out.",
+        status: 409,
+      };
+    }
+    eventType = "sign_in";
+  } else if (scanAction === "sign_out") {
+    if (employee.attendanceStatus === "out") {
+      return {
+        ok: false,
+        error: "You are not signed in. Scan to sign in first.",
+        status: 409,
+      };
+    }
+    eventType = "sign_out";
+  } else {
+    eventType = employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
   }
 
   const device = normalizeDeviceFingerprint({
@@ -68,8 +140,6 @@ export async function processEmployeeQrScan(
     userAgent: input.userAgent,
   });
 
-  const eventType: EmployeeAttendanceEventType =
-    employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
   const occurredAt = new Date().toISOString();
   const nextAttendanceStatus = eventType === "sign_in" ? "in" : "out";
 
@@ -99,7 +169,7 @@ export async function processEmployeeQrScan(
     .from("visitor_employee_attendance")
     .insert({
       employee_id: employee.id,
-      owner_id: (row as EmployeeRow).owner_id,
+      owner_id: ownerId,
       event_type: eventType,
       device_id: device.deviceId,
       device_label: device.deviceLabel,
@@ -114,7 +184,6 @@ export async function processEmployeeQrScan(
 
   mapAttendanceRow(attendanceRow as EmployeeAttendanceRow);
 
-  const ownerId = String((row as EmployeeRow).owner_id);
   void notifyEmployeeAttendance(admin, {
     ownerId,
     employeeName: employee.fullName,

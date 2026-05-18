@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
 
     const result = await processEmployeeQrScan(admin, {
       token: body.token ?? body.qrToken ?? body.qr_code_token,
+      action: body.action ?? body.mode,
       deviceId: body.deviceId ?? body.device_id,
       deviceLabel: body.deviceLabel ?? body.device_label,
       userAgent: body.userAgent ?? userAgent,

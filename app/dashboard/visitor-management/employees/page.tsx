@@ -12,14 +12,18 @@ import {
   Plus,
   QrCode,
   ScanLine,
+  Pencil,
   UserCog,
   Users,
   X,
 } from "lucide-react";
 
 import AddEmployeeModal from "@/components/fusion-xpress/visitor-management/employees/AddEmployeeModal";
+import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-management/employees/EditEmployeeTimesModal";
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
+import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
+import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +57,8 @@ export default function VisitorManagementEmployeesPage() {
   const [patchingId, setPatchingId] = useState<string | null>(null);
   const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null);
   const [organizationName, setOrganizationName] = useState("");
+  const [editTimesEmployee, setEditTimesEmployee] = useState<EmployeeRecord | null>(null);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const getToken = useCallback(async () => {
@@ -73,7 +79,7 @@ export default function VisitorManagementEmployeesPage() {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         }),
-        fetch("/api/visitor-employees/attendance?limit=30", {
+        fetch("/api/visitor-employees/attendance?limit=500", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         }),
@@ -245,6 +251,73 @@ export default function VisitorManagementEmployeesPage() {
     [getToken]
   );
 
+  const saveEmployeeTimes = useCallback(
+    async (
+      id: string,
+      payload: {
+        lastSignedInAt: string | null;
+        lastSignedOutAt: string | null;
+        attendanceStatus: "in" | "out";
+      }
+    ) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch(`/api/visitor-employees/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        employee?: EmployeeRecord;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(json.error ?? "Failed to save times");
+      if (json.employee) {
+        setEmployees((prev) => prev.map((e) => (e.id === id ? json.employee! : e)));
+      }
+      await loadEmployees();
+    },
+    [getToken, loadEmployees]
+  );
+
+  const saveAttendanceTime = useCallback(
+    async (attendanceId: string, createdAt: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch(`/api/visitor-employees/attendance/${encodeURIComponent(attendanceId)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ createdAt }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to update event time");
+      await loadEmployees();
+    },
+    [getToken, loadEmployees]
+  );
+
+  const handleExportExcel = useCallback(async () => {
+    setExportingExcel(true);
+    try {
+      await downloadEmployeeAttendanceExcel({
+        employees,
+        attendance,
+        employeeNameById,
+        organizationName,
+      });
+    } catch (e: unknown) {
+      setNotice(e instanceof Error ? e.message : "Excel export failed");
+    } finally {
+      setExportingExcel(false);
+    }
+  }, [employees, attendance, employeeNameById, organizationName]);
+
   const statCards = [
     {
       label: "Total staff",
@@ -353,7 +426,15 @@ export default function VisitorManagementEmployeesPage() {
         </div>
       </div>
 
+      <NotificationAdminsPanel disabled={setupRequired} />
+
       <AddEmployeeModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={handleAddEmployee} />
+
+      <EditEmployeeTimesModal
+        employee={editTimesEmployee}
+        onClose={() => setEditTimesEmployee(null)}
+        onSave={saveEmployeeTimes}
+      />
 
       {qrEmployee?.qrCodeToken ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -467,6 +548,15 @@ export default function VisitorManagementEmployeesPage() {
                             PDF
                           </button>
                         ) : null}
+                        <button
+                          type="button"
+                          disabled={setupRequired}
+                          onClick={() => setEditTimesEmployee(emp)}
+                          className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-white"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Times
+                        </button>
                         {emp.status === "active" ? (
                           <button
                             type="button"
@@ -497,9 +587,20 @@ export default function VisitorManagementEmployeesPage() {
       </div>
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-800">Recent sign-in / sign-out</span>
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
+            <Clock className="w-4 h-4 text-gray-500" />
+            Attendance log
+          </span>
+          <button
+            type="button"
+            disabled={setupRequired || exportingExcel || employees.length === 0}
+            onClick={() => void handleExportExcel()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-primary-50 disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {exportingExcel ? "Exporting…" : "Download Excel"}
+          </button>
         </div>
         {attendance.length === 0 ? (
           <p className="p-6 text-sm text-gray-500 text-center">No attendance events yet.</p>
@@ -517,9 +618,29 @@ export default function VisitorManagementEmployeesPage() {
                 >
                   {row.eventType === "sign_in" ? "Signed in" : "Signed out"}
                 </span>
-                <span className="text-gray-500 text-xs">
+                <span className="text-gray-500 text-xs flex flex-wrap items-center gap-2">
                   {formatEmployeeTimestamp(row.createdAt)}
                   {row.deviceLabel ? ` · ${row.deviceLabel}` : ""}
+                  {!setupRequired ? (
+                    <button
+                      type="button"
+                      className="font-semibold text-primary-700 hover:underline"
+                      onClick={async () => {
+                        const d = new Date(row.createdAt);
+                        const pad = (n: number) => String(n).padStart(2, "0");
+                        const defaultLocal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                        const raw = window.prompt("Edit event date & time", defaultLocal);
+                        if (!raw) return;
+                        try {
+                          await saveAttendanceTime(row.id, new Date(raw).toISOString());
+                        } catch (e: unknown) {
+                          setNotice(e instanceof Error ? e.message : "Could not update time");
+                        }
+                      }}
+                    >
+                      Edit time
+                    </button>
+                  ) : null}
                 </span>
               </li>
             ))}
@@ -527,11 +648,6 @@ export default function VisitorManagementEmployeesPage() {
         )}
       </div>
 
-      <p className="text-xs text-gray-500 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-        <strong>Director notifications:</strong> emails go to your account owner address. Add extra
-        director addresses in account metadata as{" "}
-        <code className="font-mono">director_emails</code> (comma-separated) to notify supervisors.
-      </p>
     </div>
   );
 }

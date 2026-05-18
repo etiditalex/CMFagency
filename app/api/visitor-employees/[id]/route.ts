@@ -13,6 +13,13 @@ function safeText(v: unknown, max: number) {
   return s.slice(0, max);
 }
 
+function parseIso(v: unknown): string | null {
+  if (typeof v !== "string" || !v.trim()) return null;
+  const d = new Date(v.trim());
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -51,6 +58,21 @@ export async function PATCH(
         return NextResponse.json({ error: "Invalid status." }, { status: 400 });
       }
       patch.status = status;
+    }
+    if (body.attendanceStatus !== undefined || body.attendance_status !== undefined) {
+      const st = String(body.attendanceStatus ?? body.attendance_status).toLowerCase();
+      if (st !== "in" && st !== "out") {
+        return NextResponse.json({ error: "Invalid attendance status." }, { status: 400 });
+      }
+      patch.attendance_status = st;
+    }
+    if (body.lastSignedInAt !== undefined || body.last_signed_in_at !== undefined) {
+      const iso = parseIso(body.lastSignedInAt ?? body.last_signed_in_at);
+      patch.last_signed_in_at = iso;
+    }
+    if (body.lastSignedOutAt !== undefined || body.last_signed_out_at !== undefined) {
+      const iso = parseIso(body.lastSignedOutAt ?? body.last_signed_out_at);
+      patch.last_signed_out_at = iso;
     }
 
     if (Object.keys(patch).length === 0) {

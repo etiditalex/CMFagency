@@ -88,6 +88,7 @@ export default function EmployeeKioskPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
+          action: "toggle",
           deviceId,
           deviceLabel: `Kiosk · ${browserDeviceLabel()}`,
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
