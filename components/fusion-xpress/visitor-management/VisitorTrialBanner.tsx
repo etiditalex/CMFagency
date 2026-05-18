@@ -63,7 +63,7 @@ export default function VisitorTrialBanner() {
         <p className="flex flex-wrap items-start gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
           <span>
-            <strong>7 Day Free Trial</strong> expires on{" "}
+            <strong>{VISITOR_TRIAL_DAYS} Day Free Trial</strong> expires on{" "}
             <strong>{expiryLabel}</strong>, please subscribe to the plan you signed up for initially via{" "}
             <Link
               href={VISITOR_MANAGEMENT_SUBSCRIPTION_PATH}

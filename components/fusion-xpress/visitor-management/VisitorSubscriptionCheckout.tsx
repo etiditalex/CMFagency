@@ -48,6 +48,7 @@ export default function VisitorSubscriptionCheckout({
       pollRef.current = setInterval(async () => {
         if (Date.now() - start > 120000) {
           stopPoll();
+          setBusy(null);
           return;
         }
         try {
