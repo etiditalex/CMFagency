@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
+import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -426,6 +427,16 @@ export default function EmployeeSummaryReportsPage() {
                   />
                 </div>
 
+                {summary.totals.duplicatesOmitted > 0 ? (
+                  <p className="no-print rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                    <strong>{summary.totals.duplicatesOmitted}</strong> duplicate scan
+                    {summary.totals.duplicatesOmitted === 1 ? "" : "s"} omitted from totals. Each person
+                    counts at most one sign-in and one sign-out per day.
+                  </p>
+                ) : null}
+
+                <AttendanceSummaryRankingsPanel rankings={summary.rankings} />
+
                 <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-inside-avoid">
                   <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
                     <h2 className="text-sm font-bold text-gray-900">Per-employee summary</h2>
@@ -438,6 +449,7 @@ export default function EmployeeSummaryReportsPage() {
                           <th className="px-4 py-2 font-semibold">Name</th>
                           <th className="px-4 py-2 font-semibold">Team</th>
                           <th className="px-4 py-2 font-semibold">Department</th>
+                          <th className="px-4 py-2 font-semibold text-center">Days</th>
                           <th className="px-4 py-2 font-semibold text-center">Sign ins</th>
                           <th className="px-4 py-2 font-semibold text-center">Sign outs</th>
                           <th className="px-4 py-2 font-semibold">First sign-in</th>
@@ -447,7 +459,7 @@ export default function EmployeeSummaryReportsPage() {
                       <tbody>
                         {summary.employeeSummaries.length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                            <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                               No attendance recorded in this period.
                             </td>
                           </tr>
@@ -459,6 +471,9 @@ export default function EmployeeSummaryReportsPage() {
                                 {memberTypeLabel(row.memberType as "staff" | "crm")}
                               </td>
                               <td className="px-4 py-2 text-gray-600">{row.department || "—"}</td>
+                              <td className="px-4 py-2 text-center font-semibold text-gray-900">
+                                {row.daysAttended}
+                              </td>
                               <td className="px-4 py-2 text-center font-semibold text-emerald-800">
                                 {row.signInCount}
                               </td>

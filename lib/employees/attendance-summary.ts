@@ -7,9 +7,12 @@ import {
   startOfDay,
 } from "date-fns";
 
+import { dedupeAttendanceByEmployeeDay, localDayKey } from "@/lib/employees/daily-attendance-rules";
+import { formatReportingTime } from "@/lib/employees/reporting-time";
 import type {
   EmployeeAttendanceEventType,
   EmployeeAttendanceRecord,
+  EmployeeMemberType,
   EmployeeRecord,
 } from "@/lib/employees/types";
 
@@ -35,8 +38,30 @@ export type AttendanceSummaryEmployeeRow = {
   memberType: string;
   signInCount: number;
   signOutCount: number;
+  daysAttended: number;
   firstSignIn: string | null;
   lastSignOut: string | null;
+  avgFirstSignInMinutes: number | null;
+};
+
+export type AttendanceSummaryRankEntry = {
+  rank: number;
+  employeeId: string;
+  fullName: string;
+  department: string;
+  memberType: EmployeeMemberType;
+  metric: string;
+  detail: string;
+};
+
+export type AttendanceSummaryTeamRankings = {
+  mostAttendant: AttendanceSummaryRankEntry[];
+  earliestArrival: AttendanceSummaryRankEntry[];
+};
+
+export type AttendanceSummaryRankings = {
+  staff: AttendanceSummaryTeamRankings;
+  crm: AttendanceSummaryTeamRankings;
 };
 
 export type AttendanceSummaryEventRow = {
@@ -58,11 +83,14 @@ export type AttendanceSummaryPayload = {
     signIns: number;
     signOuts: number;
     events: number;
+    rawEvents: number;
+    duplicatesOmitted: number;
     uniqueEmployees: number;
   };
   dailySeries: AttendanceSummaryDailyPoint[];
   hourlySeries: AttendanceSummaryHourlyPoint[];
   employeeSummaries: AttendanceSummaryEmployeeRow[];
+  rankings: AttendanceSummaryRankings;
   events: AttendanceSummaryEventRow[];
 };
 
@@ -97,6 +125,62 @@ function eventLabel(type: EmployeeAttendanceEventType): string {
   return type === "sign_in" ? "Sign in" : "Sign out";
 }
 
+function minutesFromMidnight(iso: string): number {
+  const d = new Date(iso);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function minutesToTime24(avgMinutes: number): string {
+  const h = Math.floor(avgMinutes / 60) % 24;
+  const m = Math.round(avgMinutes % 60);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+const RANK_LIMIT = 10;
+
+function buildTeamRankings(
+  rows: AttendanceSummaryEmployeeRow[],
+  memberType: EmployeeMemberType
+): AttendanceSummaryTeamRankings {
+  const team = rows.filter((r) => r.memberType === memberType);
+
+  const mostAttendant = [...team]
+    .filter((r) => r.daysAttended > 0)
+    .sort((a, b) => {
+      if (b.daysAttended !== a.daysAttended) return b.daysAttended - a.daysAttended;
+      return b.signInCount - a.signInCount;
+    })
+    .slice(0, RANK_LIMIT)
+    .map((r, i) => ({
+      rank: i + 1,
+      employeeId: r.employeeId,
+      fullName: r.fullName,
+      department: r.department,
+      memberType,
+      metric: `${r.daysAttended} day${r.daysAttended === 1 ? "" : "s"}`,
+      detail: `${r.signInCount} sign-in · ${r.signOutCount} sign-out (deduped)`,
+    }));
+
+  const earliestArrival = [...team]
+    .filter((r) => r.avgFirstSignInMinutes !== null)
+    .sort((a, b) => (a.avgFirstSignInMinutes ?? 9999) - (b.avgFirstSignInMinutes ?? 9999))
+    .slice(0, RANK_LIMIT)
+    .map((r, i) => {
+      const t24 = minutesToTime24(r.avgFirstSignInMinutes!);
+      return {
+        rank: i + 1,
+        employeeId: r.employeeId,
+        fullName: r.fullName,
+        department: r.department,
+        memberType,
+        metric: formatReportingTime(t24),
+        detail: `Avg first sign-in (${r.daysAttended} day${r.daysAttended === 1 ? "" : "s"})`,
+      };
+    });
+
+  return { mostAttendant, earliestArrival };
+}
+
 export function buildAttendanceSummary(params: {
   from: string;
   to: string;
@@ -108,10 +192,11 @@ export function buildAttendanceSummary(params: {
   formatDisplayDate: (iso: string) => string;
 }): AttendanceSummaryPayload {
   const employeeById = new Map(params.employees.map((e) => [e.id, e]));
-  const inRange = params.attendance.filter((a) => {
+  const rawInRange = params.attendance.filter((a) => {
     const t = new Date(a.createdAt).getTime();
     return t >= params.fromDate.getTime() && t <= params.toDate.getTime();
   });
+  const inRange = dedupeAttendanceByEmployeeDay(rawInRange);
 
   const dailyMap = new Map<string, { signIns: number; signOuts: number }>();
   for (const day of eachDayOfInterval({ start: params.fromDate, end: params.toDate })) {
@@ -129,6 +214,8 @@ export function buildAttendanceSummary(params: {
     {
       signInCount: number;
       signOutCount: number;
+      daysAttended: Set<string>;
+      firstSignInMinutesByDay: number[];
       firstSignIn: string | null;
       lastSignOut: string | null;
     }
@@ -139,10 +226,10 @@ export function buildAttendanceSummary(params: {
 
   for (const a of inRange) {
     const d = new Date(a.createdAt);
-    const dayKey = format(d, "yyyy-MM-dd");
+    const chartDayKey = localDayKey(a.createdAt);
     const hour = d.getHours();
-    if (!dailyMap.has(dayKey)) dailyMap.set(dayKey, { signIns: 0, signOuts: 0 });
-    const dayBucket = dailyMap.get(dayKey)!;
+    if (!dailyMap.has(chartDayKey)) dailyMap.set(chartDayKey, { signIns: 0, signOuts: 0 });
+    const dayBucket = dailyMap.get(chartDayKey)!;
     const hourBucket = hourlyMap.get(hour)!;
 
     if (a.eventType === "sign_in") {
@@ -157,11 +244,21 @@ export function buildAttendanceSummary(params: {
 
     let row = perEmployee.get(a.employeeId);
     if (!row) {
-      row = { signInCount: 0, signOutCount: 0, firstSignIn: null, lastSignOut: null };
+      row = {
+        signInCount: 0,
+        signOutCount: 0,
+        daysAttended: new Set(),
+        firstSignInMinutesByDay: [],
+        firstSignIn: null,
+        lastSignOut: null,
+      };
       perEmployee.set(a.employeeId, row);
     }
+    const dayKey = localDayKey(a.createdAt);
     if (a.eventType === "sign_in") {
       row.signInCount += 1;
+      row.daysAttended.add(dayKey);
+      row.firstSignInMinutesByDay.push(minutesFromMidnight(a.createdAt));
       if (!row.firstSignIn || a.createdAt < row.firstSignIn) row.firstSignIn = a.createdAt;
     } else {
       row.signOutCount += 1;
@@ -190,6 +287,13 @@ export function buildAttendanceSummary(params: {
   const employeeSummaries: AttendanceSummaryEmployeeRow[] = [...perEmployee.entries()]
     .map(([employeeId, stats]) => {
       const emp = employeeById.get(employeeId);
+      const avgFirstSignInMinutes =
+        stats.firstSignInMinutesByDay.length > 0
+          ? Math.round(
+              stats.firstSignInMinutesByDay.reduce((s, m) => s + m, 0) /
+                stats.firstSignInMinutesByDay.length
+            )
+          : null;
       return {
         employeeId,
         fullName: emp?.fullName ?? "Unknown",
@@ -198,11 +302,18 @@ export function buildAttendanceSummary(params: {
         memberType: emp?.memberType ?? "staff",
         signInCount: stats.signInCount,
         signOutCount: stats.signOutCount,
+        daysAttended: stats.daysAttended.size,
         firstSignIn: stats.firstSignIn,
         lastSignOut: stats.lastSignOut,
+        avgFirstSignInMinutes,
       };
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  const rankings: AttendanceSummaryRankings = {
+    staff: buildTeamRankings(employeeSummaries, "staff"),
+    crm: buildTeamRankings(employeeSummaries, "crm"),
+  };
 
   const events: AttendanceSummaryEventRow[] = inRange
     .map((a) => {
@@ -228,11 +339,14 @@ export function buildAttendanceSummary(params: {
       signIns,
       signOuts,
       events: inRange.length,
+      rawEvents: rawInRange.length,
+      duplicatesOmitted: Math.max(0, rawInRange.length - inRange.length),
       uniqueEmployees: perEmployee.size,
     },
     dailySeries,
     hourlySeries,
     employeeSummaries,
+    rankings,
     events,
   };
 }

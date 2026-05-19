@@ -5,6 +5,7 @@ import {
   mapEmployeeRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
+import { findEmployeeDuplicate } from "@/lib/employees/employee-uniqueness";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 
 function safeText(v: unknown, max: number) {
@@ -87,6 +88,34 @@ export async function PATCH(
 
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: "No fields to update." }, { status: 400 });
+    }
+
+    const { data: existingRow } = await admin
+      .from("visitor_employees")
+      .select("id,owner_id,full_name,email")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!existingRow) {
+      return NextResponse.json({ error: "Employee not found." }, { status: 404 });
+    }
+    if (!isAdmin && String(existingRow.owner_id) !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const nextName = safeText(patch.full_name ?? existingRow.full_name, 200);
+    const nextEmail =
+      patch.email !== undefined
+        ? (patch.email as string | null)
+        : (existingRow.email as string | null);
+
+    const duplicate = await findEmployeeDuplicate(admin, String(existingRow.owner_id), {
+      email: nextEmail,
+      fullName: nextName,
+      excludeEmployeeId: id,
+    });
+    if (duplicate) {
+      return NextResponse.json({ error: duplicate.message }, { status: 400 });
     }
 
     let q = admin.from("visitor_employees").update(patch).eq("id", id);

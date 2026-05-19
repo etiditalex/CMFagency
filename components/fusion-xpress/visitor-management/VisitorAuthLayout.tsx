@@ -21,16 +21,10 @@ export default function VisitorAuthLayout({ mode, children }: VisitorAuthLayoutP
   const goPrev = () => setSlide((s) => (s - 1 + total) % total);
   const goNext = () => setSlide((s) => (s + 1) % total);
 
-  const ctaHref =
-    mode === "sign-in"
-      ? "/fusion-xpress/smart-visitor-management/sign-up"
-      : "/fusion-xpress/smart-visitor-management/sign-in";
-  const ctaLabel = mode === "sign-in" ? "Sign Up" : "Sign In";
-
   return (
     <main className="flex min-h-[100dvh] flex-col bg-white">
       <header className="sticky top-0 z-20 shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-sm supports-[backdrop-filter]:bg-white/90">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-end gap-x-3 gap-y-2 px-3 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-end px-3 py-2.5 sm:px-6 sm:py-3">
           <nav className="flex items-center gap-2 sm:gap-3" aria-label="Account">
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-in"
@@ -52,12 +46,6 @@ export default function VisitorAuthLayout({ mode, children }: VisitorAuthLayoutP
               Sign Up
             </Link>
           </nav>
-          <Link
-            href={ctaHref}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-secondary-400 px-4 py-2 text-sm font-bold text-gray-900 shadow-sm transition hover:bg-secondary-300 active:scale-[0.98]"
-          >
-            {ctaLabel}
-          </Link>
         </div>
       </header>
 

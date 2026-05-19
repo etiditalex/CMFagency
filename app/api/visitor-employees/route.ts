@@ -7,6 +7,7 @@ import {
   mapEmployeeRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
+import { findEmployeeDuplicate } from "@/lib/employees/employee-uniqueness";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 import { assertVisitorSubscriptionAllows } from "@/lib/visitors/require-visitor-subscription";
 
@@ -90,6 +91,14 @@ export async function POST(req: NextRequest) {
     const employee_code = safeText(body.employeeCode ?? body.employee_code, 64) || null;
     const memberTypeRaw = String(body.memberType ?? body.member_type ?? "staff").toLowerCase();
     const member_type = memberTypeRaw === "crm" ? "crm" : "staff";
+
+    const duplicate = await findEmployeeDuplicate(admin, userId, {
+      email,
+      fullName: full_name,
+    });
+    if (duplicate) {
+      return NextResponse.json({ error: duplicate.message }, { status: 400 });
+    }
 
     const row = {
       owner_id: userId,

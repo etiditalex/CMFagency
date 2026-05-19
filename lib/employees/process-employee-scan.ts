@@ -8,6 +8,10 @@ import {
   type EmployeeAttendanceRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
+import {
+  todayLocalBounds,
+  validateDailyAttendanceTransition,
+} from "@/lib/employees/daily-attendance-rules";
 import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/employees/device-fingerprint";
 import { notifyEmployeeAttendance } from "@/lib/employees/notify-employee-attendance";
 import type { EmployeeAttendanceEventType, EmployeeRecord } from "@/lib/employees/types";
@@ -133,25 +137,34 @@ export async function processEmployeeQrScan(
   let eventType: EmployeeAttendanceEventType;
 
   if (scanAction === "sign_in") {
-    if (employee.attendanceStatus === "in") {
-      return {
-        ok: false,
-        error: "Already signed in. Scan your QR again at the kiosk when you leave to sign out.",
-        status: 409,
-      };
-    }
     eventType = "sign_in";
   } else if (scanAction === "sign_out") {
-    if (employee.attendanceStatus === "out") {
-      return {
-        ok: false,
-        error: "You are not signed in. Scan to sign in first.",
-        status: 409,
-      };
-    }
     eventType = "sign_out";
   } else {
     eventType = employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
+  }
+
+  const { startIso, endIso } = todayLocalBounds();
+  const { data: todayRows, error: todayErr } = await admin
+    .from("visitor_employee_attendance")
+    .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+    .eq("employee_id", employee.id)
+    .gte("created_at", startIso)
+    .lte("created_at", endIso)
+    .order("created_at", { ascending: true });
+
+  if (todayErr && !isMissingEmployeesTable(todayErr)) {
+    return { ok: false, error: todayErr.message, status: 500 };
+  }
+
+  const todayEvents = ((todayRows ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
+  const dailyCheck = validateDailyAttendanceTransition({
+    todayEvents,
+    nextEvent: eventType,
+    currentStatus: employee.attendanceStatus,
+  });
+  if (!dailyCheck.ok) {
+    return { ok: false, error: dailyCheck.error, status: 409 };
   }
 
   const device = normalizeDeviceFingerprint({
