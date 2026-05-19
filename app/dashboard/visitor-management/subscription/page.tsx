@@ -29,11 +29,13 @@ const PLANS: {
 }[] = [
   {
     id: "professional",
-    blurb: "Visitor management, employee attendance, QR downloads, and workplace GPS.",
+    blurb:
+      "Unlimited visitors, employee attendance, QR PDFs, workplace GPS, summary reports, Excel export, and director notifications.",
   },
   {
     id: "enterprise",
-    blurb: "Everything in Professional, plus Real Estate CRM/staff teams and priority support.",
+    blurb:
+      "Everything in Professional, plus Real Estate staff/CRM teams, separate reporting windows, CRM site GPS visits, and priority support.",
   },
 ];
 

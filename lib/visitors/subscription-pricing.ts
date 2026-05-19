@@ -6,6 +6,9 @@ export type PaidVisitorPlan = Exclude<VisitorSubscriptionPlan, "trial">;
 
 export const VISITOR_SUBSCRIPTION_CAMPAIGN_SLUG = "visitor-management-subscription";
 
+/** Paystack charges in this currency; must match list prices (USD). */
+export const VISITOR_PAYSTACK_CURRENCY = "USD";
+
 type PriceRow = { usd: number; kes: number };
 
 const MONTHLY_PRICES: Record<PaidVisitorPlan, PriceRow> = {
@@ -49,7 +52,6 @@ export function getVisitorSubscriptionPrice(
   return PRICES[plan][interval];
 }
 
-/** Paystack / card amount (stored as USD list price; charged in AUD via Paystack). */
 export function getVisitorSubscriptionAmountUsd(
   plan: PaidVisitorPlan,
   interval: VisitorBillingInterval

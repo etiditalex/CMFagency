@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CampaignRow } from "@/lib/ensure-cfma-campaigns";
-import { VISITOR_SUBSCRIPTION_CAMPAIGN_SLUG } from "@/lib/visitors/subscription-pricing";
+import {
+  VISITOR_PAYSTACK_CURRENCY,
+  VISITOR_SUBSCRIPTION_CAMPAIGN_SLUG,
+} from "@/lib/visitors/subscription-pricing";
 
 /**
  * Billing campaign for Smart Visitor Management subscriptions (Paystack + M-Pesa).
@@ -54,7 +57,7 @@ export async function ensureVisitorSubscriptionCampaign(
       slug,
       title: "Smart Visitor Management — subscription",
       description: "Fusion Xpress Smart Visitor Management plan (Professional or Enterprise).",
-      currency: "AUD",
+      currency: VISITOR_PAYSTACK_CURRENCY,
       unit_amount: 1,
       max_per_txn: 1,
       is_active: true,

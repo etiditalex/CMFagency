@@ -1,98 +1,15 @@
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 
-import {
-  VISITOR_CHECKIN_TRIAL_LIMIT,
-  VISITOR_PREREGISTER_TRIAL_LIMIT,
-} from "@/lib/visitors/subscription";
 import { getVisitorSubscriptionPrice } from "@/lib/visitors/subscription-pricing";
+import {
+  VISITOR_CHECKIN_MARKETING_ROWS,
+  VISITOR_EMPLOYEE_MARKETING_ROWS,
+  VISITOR_REAL_ESTATE_MARKETING_ROWS,
+  type MarketingFeatureRow,
+} from "@/lib/visitors/subscription-marketing-features";
 
 type PlanCol = "trial" | "professional" | "enterprise";
-
-type FeatureRow = {
-  label: string;
-  trial: string | boolean;
-  professional: string | boolean;
-  enterprise: string | boolean;
-};
-
-const CHECKIN_ROWS: FeatureRow[] = [
-  {
-    label: "Contactless check-in via smart QR codes",
-    trial: `Up to ${VISITOR_CHECKIN_TRIAL_LIMIT.toLocaleString()}`,
-    professional: "Unlimited",
-    enterprise: "Unlimited",
-  },
-  {
-    label: "Pre-register expected guests",
-    trial: `Up to ${VISITOR_PREREGISTER_TRIAL_LIMIT}`,
-    professional: "Unlimited",
-    enterprise: "Unlimited",
-  },
-  {
-    label: "Automatically check out guests",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Fast visitor record entry via copy & paste",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Data export into CSV or PDF",
-    trial: true,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Group check-in (up to 5 people)",
-    trial: true,
-    professional: true,
-    enterprise: true,
-  },
-];
-
-const EMPLOYEE_ROWS: FeatureRow[] = [
-  {
-    label: "Employee attendance module",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Reception QR + phone-linked member ID",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Download employee & reception QR (PDF)",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "GPS tracking (workplace sign-in / sign-out)",
-    trial: true,
-    professional: true,
-    enterprise: true,
-  },
-  {
-    label: "Staff / CRM teams & reporting times (Real Estate)",
-    trial: false,
-    professional: false,
-    enterprise: true,
-  },
-  {
-    label: "Attendance Excel export & notification admins",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-];
 
 function CellValue({ value }: { value: string | boolean }) {
   if (typeof value === "string") {
@@ -107,11 +24,13 @@ function CellValue({ value }: { value: string | boolean }) {
 
 function FeatureTable({
   title,
+  subtitle,
   rows,
   highlightCol,
 }: {
   title: string;
-  rows: FeatureRow[];
+  subtitle?: string;
+  rows: MarketingFeatureRow[];
   highlightCol: PlanCol;
 }) {
   const cols: PlanCol[] = ["trial", "professional", "enterprise"];
@@ -125,7 +44,10 @@ function FeatureTable({
     <div className="mt-12 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
         <span className="w-1 h-6 rounded-full bg-primary-600" aria-hidden />
-        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+          {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -190,8 +112,13 @@ export default function VisitorPricingSection() {
             <h3 className="text-xl font-bold text-gray-900">Free for 7 days</h3>
             <p className="mt-3 text-4xl font-extrabold text-primary-600">Free</p>
             <p className="mt-2 text-sm text-gray-600">
-              Try core visitor features for 7 days — no credit card required.
+              Limited visitor check-ins, exports, group check-in, and workplace GPS trial.
             </p>
+            <ul className="mt-3 text-xs text-gray-600 space-y-1 list-disc list-inside flex-1">
+              <li>Up to 1,000 check-ins</li>
+              <li>Up to 500 pre-registrations</li>
+              <li>No employee module or QR downloads</li>
+            </ul>
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-up"
               className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg border-2 border-primary-600 px-4 py-2.5 text-sm font-bold text-primary-700 hover:bg-primary-50"
@@ -212,9 +139,12 @@ export default function VisitorPricingSection() {
             <p className="mt-1 text-sm font-semibold text-primary-700">
               Annual — ${proAnnual.usd.toFixed(2)}/year (12 months)
             </p>
-            <p className="mt-2 text-sm text-gray-600 flex-1">
-              Visitor management, employee attendance, QR downloads, and workplace GPS sign-in/out.
-            </p>
+            <ul className="mt-3 text-sm text-gray-600 space-y-1.5 flex-1">
+              <li>Unlimited visitors & pre-registration</li>
+              <li>Full employee attendance + QR PDFs</li>
+              <li>Workplace GPS, summary reports & Excel</li>
+              <li>Director email notifications</li>
+            </ul>
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-up"
               className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-700"
@@ -223,8 +153,9 @@ export default function VisitorPricingSection() {
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
-            <h3 className="text-xl font-bold text-gray-900">Enterprise</h3>
+          <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm flex flex-col ring-1 ring-emerald-100">
+            <span className="text-xs font-bold uppercase tracking-wide text-emerald-800">Real estate</span>
+            <h3 className="text-xl font-bold text-gray-900 mt-1">Enterprise</h3>
             <p className="mt-3">
               <span className="text-4xl font-extrabold text-primary-600">${entMonthly.usd.toFixed(2)}</span>
               <span className="text-sm text-gray-500 ml-1">/ month</span>
@@ -232,22 +163,37 @@ export default function VisitorPricingSection() {
             <p className="mt-1 text-sm font-semibold text-primary-700">
               Annual — ${entAnnual.usd.toFixed(2)}/year (12 months)
             </p>
-            <p className="mt-2 text-sm text-gray-600 flex-1">
-              Everything in Professional, plus Real Estate CRM/staff teams, priority support, and all add-ons.
-            </p>
+            <ul className="mt-3 text-sm text-gray-600 space-y-1.5 flex-1">
+              <li>Everything in Professional</li>
+              <li>Staff & CRM teams with separate reporting times</li>
+              <li>CRM site GPS — project visits & visit rankings</li>
+              <li>Priority support</li>
+            </ul>
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-up"
-              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg border-2 border-primary-600 px-4 py-2.5 text-sm font-bold text-primary-700 hover:bg-primary-50"
+              className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg border-2 border-emerald-600 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-50"
             >
               Get Enterprise
             </Link>
           </div>
         </div>
 
-        <div className="mt-12 w-full space-y-0">
-          <FeatureTable title="Check-in & check-out" rows={CHECKIN_ROWS} highlightCol="professional" />
-          <FeatureTable title="Employee module" rows={EMPLOYEE_ROWS} highlightCol="professional" />
-        </div>
+        <FeatureTable
+          title="Check-in & check-out"
+          rows={VISITOR_CHECKIN_MARKETING_ROWS}
+          highlightCol="professional"
+        />
+        <FeatureTable
+          title="Employee & attendance"
+          rows={VISITOR_EMPLOYEE_MARKETING_ROWS}
+          highlightCol="professional"
+        />
+        <FeatureTable
+          title="Real Estate (Enterprise)"
+          subtitle="For property developers and agencies — staff plus CRM field teams."
+          rows={VISITOR_REAL_ESTATE_MARKETING_ROWS}
+          highlightCol="enterprise"
+        />
       </div>
     </section>
   );
