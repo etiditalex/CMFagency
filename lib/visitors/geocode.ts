@@ -51,6 +51,108 @@ function buildAddressQuery(parts: {
     .join(", ");
 }
 
+/** ISO 3166-1 alpha-2 for Nominatim countrycodes filter. */
+export function countryToIso2(country: string): string | undefined {
+  const c = String(country ?? "").trim().toLowerCase();
+  if (!c) return undefined;
+  if (c === "ke" || c.includes("kenya")) return "ke";
+  if (c === "ug" || c.includes("uganda")) return "ug";
+  if (c === "tz" || c.includes("tanzania")) return "tz";
+  if (c.length === 2 && /^[a-z]{2}$/.test(c)) return c;
+  return undefined;
+}
+
+const NOMINATIM_UA =
+  "CMFAgency-FusionXpress/1.0 (https://cmfagency.co.ke; contact@cmfagency.co.ke)";
+
+async function nominatimSearch(
+  query: string,
+  countryCode?: string
+): Promise<GeocodeResult | null> {
+  const q = query.trim();
+  if (!q || q.length < 4) return null;
+
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", q);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "1");
+  url.searchParams.set("addressdetails", "0");
+  if (countryCode) url.searchParams.set("countrycodes", countryCode);
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        "User-Agent": NOMINATIM_UA,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) return null;
+
+    const rows = (await res.json().catch(() => [])) as Array<{
+      lat?: string;
+      lon?: string;
+      display_name?: string;
+    }>;
+
+    const hit = rows[0];
+    if (!hit?.lat || !hit?.lon) return null;
+
+    const latitude = Number(hit.lat);
+    const longitude = Number(hit.lon);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+    return {
+      latitude,
+      longitude,
+      displayName: String(hit.display_name ?? q),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function geocodeQueryVariants(parts: {
+  addressLine1: string;
+  addressLine2?: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  country: string;
+}): string[] {
+  const line1 = String(parts.addressLine1 ?? "").trim();
+  const line2 = String(parts.addressLine2 ?? "").trim();
+  const suburb = String(parts.suburb ?? "").trim();
+  const state = String(parts.state ?? "").trim();
+  const postcode = String(parts.postcode ?? "").trim();
+  const country = String(parts.country ?? "").trim();
+
+  const variants: string[] = [];
+
+  const full = buildAddressQuery(parts);
+  if (full) variants.push(full);
+
+  if (line1 && suburb && state && country) {
+    variants.push([line1, suburb, state, country].join(", "));
+  }
+  if (line1 && line2 && suburb && country) {
+    variants.push([line1, line2, suburb, country].join(", "));
+  }
+  if (line1 && country) variants.push([line1, country].join(", "));
+  if (suburb && state && country) variants.push([suburb, state, country].join(", "));
+  if (suburb && country) variants.push([suburb, country].join(", "));
+  if (state && country) variants.push([state, country].join(", "));
+  if (postcode && country) variants.push([postcode, country].join(", "));
+
+  // Mombasa-area fallback when only street + Kenya
+  if (line1 && country.toLowerCase().includes("kenya") && !suburb) {
+    variants.push([line1, "Mombasa", country].join(", "));
+  }
+
+  return [...new Set(variants.filter((v) => v.length >= 4))];
+}
+
 /** Geocode a postal address via OpenStreetMap Nominatim (no API key). */
 export async function geocodeAddress(parts: {
   addressLine1: string;
@@ -60,41 +162,19 @@ export async function geocodeAddress(parts: {
   postcode: string;
   country: string;
 }): Promise<GeocodeResult | null> {
-  const q = buildAddressQuery(parts);
-  if (!q || q.length < 8) return null;
+  const countryCode = countryToIso2(parts.country);
+  const queries = geocodeQueryVariants(parts);
 
-  const url = new URL("https://nominatim.openstreetmap.org/search");
-  url.searchParams.set("q", q);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "1");
+  if (queries.length === 0) return null;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://cmfagency.co.ke";
-  const res = await fetch(url.toString(), {
-    headers: {
-      "User-Agent": `CMFAgency-FusionXpress/1.0 (${siteUrl})`,
-      Accept: "application/json",
-    },
-    next: { revalidate: 0 },
-  });
+  for (let i = 0; i < queries.length; i++) {
+    const hit = await nominatimSearch(queries[i], countryCode);
+    if (hit) return hit;
+    // Nominatim usage policy: max 1 request per second
+    if (i < queries.length - 1) {
+      await new Promise((r) => setTimeout(r, 1100));
+    }
+  }
 
-  if (!res.ok) return null;
-
-  const rows = (await res.json().catch(() => [])) as Array<{
-    lat?: string;
-    lon?: string;
-    display_name?: string;
-  }>;
-
-  const hit = rows[0];
-  if (!hit?.lat || !hit?.lon) return null;
-
-  const latitude = Number(hit.lat);
-  const longitude = Number(hit.lon);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-
-  return {
-    latitude,
-    longitude,
-    displayName: String(hit.display_name ?? q),
-  };
+  return null;
 }

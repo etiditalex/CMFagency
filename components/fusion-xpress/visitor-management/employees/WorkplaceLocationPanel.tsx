@@ -80,6 +80,18 @@ export default function WorkplaceLocationPanel({ businessName }: Props) {
       if (!token || !user) throw new Error("Not signed in");
 
       const meta = user.user_metadata ?? {};
+      const addressLine1 = String(
+        meta.address_line_1 ?? meta.addressLine1 ?? businessName ?? ""
+      ).trim();
+      const suburb = String(meta.suburb ?? meta.city ?? "").trim();
+      const country = String(meta.country ?? "Kenya").trim() || "Kenya";
+
+      if (!addressLine1 && !suburb) {
+        throw new Error(
+          "Your signup address is missing. Use “Set pin to this device” while at reception, or update your business address in account settings."
+        );
+      }
+
       const res = await fetch("/api/visitor-management/org-location", {
         method: "PUT",
         headers: {
@@ -89,12 +101,12 @@ export default function WorkplaceLocationPanel({ businessName }: Props) {
         body: JSON.stringify({
           regeocode: true,
           geofenceRadiusM: radius,
-          addressLine1: String(meta.address_line_1 ?? ""),
-          addressLine2: String(meta.address_line_2 ?? ""),
-          suburb: String(meta.suburb ?? ""),
-          state: String(meta.state ?? ""),
-          postcode: String(meta.postcode ?? ""),
-          country: String(meta.country ?? ""),
+          addressLine1,
+          addressLine2: String(meta.address_line_2 ?? meta.addressLine2 ?? ""),
+          suburb,
+          state: String(meta.state ?? meta.county ?? "").trim(),
+          postcode: String(meta.postcode ?? meta.postal_code ?? ""),
+          country,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as {
@@ -162,7 +174,8 @@ export default function WorkplaceLocationPanel({ businessName }: Props) {
         <div>
           <h2 className="text-sm font-bold text-gray-900">GPS tracking (workplace)</h2>
           <p className="text-xs text-gray-600 mt-1">
-            Staff and CRM must be within this area to sign in or out. Set this pin while standing at reception.
+            Staff and CRM must be within this area to sign in or out. If geocoding your address fails, tap{" "}
+            <strong>Set pin to this device</strong> while standing at reception.
           </p>
         </div>
       </div>
@@ -220,20 +233,20 @@ export default function WorkplaceLocationPanel({ businessName }: Props) {
         <button
           type="button"
           disabled={saving}
-          onClick={() => void geocodeFromSignupAddress()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300 bg-white px-3 py-2 text-xs font-bold text-sky-900 hover:bg-sky-50 disabled:opacity-50"
-        >
-          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          Geocode signup address
-        </button>
-        <button
-          type="button"
-          disabled={saving}
           onClick={() => void useCurrentDeviceLocation()}
           className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-xs font-bold text-white hover:bg-sky-800 disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
-          Set pin to this device
+          Set pin to this device (recommended)
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void geocodeFromSignupAddress()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-sky-300 bg-white px-3 py-2 text-xs font-bold text-sky-900 hover:bg-sky-50 disabled:opacity-50"
+        >
+          {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          Try geocode signup address
         </button>
       </div>
     </section>

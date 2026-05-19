@@ -117,12 +117,24 @@ export async function geocodeAndSaveOrgLocationFromAddress(
   },
   geofenceRadiusM = 150
 ): Promise<{ ok: true; location: OrgLocation } | { ok: false; error: string }> {
+  const hasUsableAddress =
+    Boolean(String(address.addressLine1 ?? "").trim()) ||
+    Boolean(String(address.suburb ?? "").trim());
+
+  if (!hasUsableAddress) {
+    return {
+      ok: false,
+      error:
+        "Add your business address on your account profile, or use “Set pin to this device” while standing at reception.",
+    };
+  }
+
   const coords = await geocodeAddress(address);
   if (!coords) {
     return {
       ok: false,
       error:
-        "Could not locate this address on the map. Check the address or set your workplace pin in the dashboard.",
+        "We could not find that address on the map (the geocoder may be busy or the address is incomplete). Use “Set pin to this device” while at your workplace — that is the most reliable option.",
     };
   }
   return upsertOrgLocation(admin, ownerId, coords, address, geofenceRadiusM);

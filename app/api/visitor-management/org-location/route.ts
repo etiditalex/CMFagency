@@ -79,8 +79,17 @@ export async function PUT(req: NextRequest) {
     }
 
     if (body.regeocode === true || body.action === "geocode") {
-      if (!address.addressLine1 || !address.suburb) {
-        return NextResponse.json({ error: "Address line and suburb are required to geocode." }, { status: 400 });
+      if (!address.addressLine1 && !address.suburb) {
+        return NextResponse.json(
+          {
+            error:
+              "Provide a street address or suburb/city on your profile, or use “Set pin to this device” on the Employees page.",
+          },
+          { status: 400 }
+        );
+      }
+      if (!address.country) {
+        address.country = "Kenya";
       }
       const saved = await geocodeAndSaveOrgLocationFromAddress(admin, userId, address, geofenceRadiusM);
       if (!saved.ok) return NextResponse.json({ error: saved.error }, { status: 400 });
