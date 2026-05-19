@@ -246,7 +246,7 @@ export default function VisitorSubscriptionSettingsPage() {
               }`}
             >
               <h2 className="text-lg font-bold text-gray-900">{VISITOR_PLAN_LABELS[plan.id]}</h2>
-              <p className="mt-2 text-lg font-extrabold text-primary-600">{prices.aud}</p>
+              <p className="mt-2 text-lg font-extrabold text-primary-600">{prices.usd}</p>
               <p className="text-xs font-semibold text-gray-600">{prices.kes}</p>
               <p className="mt-3 text-sm text-gray-600 flex-1">{plan.blurb}</p>
               <button

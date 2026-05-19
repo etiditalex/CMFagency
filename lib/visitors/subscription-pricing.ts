@@ -6,16 +6,28 @@ export type PaidVisitorPlan = Exclude<VisitorSubscriptionPlan, "trial">;
 
 export const VISITOR_SUBSCRIPTION_CAMPAIGN_SLUG = "visitor-management-subscription";
 
-type PriceRow = { aud: number; kes: number };
+type PriceRow = { usd: number; kes: number };
+
+const MONTHLY_PRICES: Record<PaidVisitorPlan, PriceRow> = {
+  professional: { usd: 12.6, kes: 1638 },
+  enterprise: { usd: 35.09, kes: 4575 },
+};
+
+function annualFromMonthly(monthly: PriceRow): PriceRow {
+  return {
+    usd: Math.round(monthly.usd * 12 * 100) / 100,
+    kes: monthly.kes * 12,
+  };
+}
 
 const PRICES: Record<PaidVisitorPlan, Record<VisitorBillingInterval, PriceRow>> = {
   professional: {
-    monthly: { aud: 20, kes: 2600 },
-    annual: { aud: 200, kes: 26000 },
+    monthly: MONTHLY_PRICES.professional,
+    annual: annualFromMonthly(MONTHLY_PRICES.professional),
   },
   enterprise: {
-    monthly: { aud: 35.09, kes: 4575 },
-    annual: { aud: 421.15, kes: 54900 },
+    monthly: MONTHLY_PRICES.enterprise,
+    annual: annualFromMonthly(MONTHLY_PRICES.enterprise),
   },
 };
 
@@ -37,36 +49,51 @@ export function getVisitorSubscriptionPrice(
   return PRICES[plan][interval];
 }
 
-export function getVisitorSubscriptionAmountAud(plan: PaidVisitorPlan, interval: VisitorBillingInterval): number {
-  return getVisitorSubscriptionPrice(plan, interval).aud;
+/** Paystack / card amount (stored as USD list price; charged in AUD via Paystack). */
+export function getVisitorSubscriptionAmountUsd(
+  plan: PaidVisitorPlan,
+  interval: VisitorBillingInterval
+): number {
+  return getVisitorSubscriptionPrice(plan, interval).usd;
 }
 
-export function getVisitorSubscriptionAmountKes(plan: PaidVisitorPlan, interval: VisitorBillingInterval): number {
+/** @deprecated Use getVisitorSubscriptionAmountUsd */
+export function getVisitorSubscriptionAmountAud(
+  plan: PaidVisitorPlan,
+  interval: VisitorBillingInterval
+): number {
+  return getVisitorSubscriptionAmountUsd(plan, interval);
+}
+
+export function getVisitorSubscriptionAmountKes(
+  plan: PaidVisitorPlan,
+  interval: VisitorBillingInterval
+): number {
   return getVisitorSubscriptionPrice(plan, interval).kes;
 }
 
-/** Paystack amount in smallest currency unit (cents for AUD). */
+/** Paystack amount in smallest currency unit (cents). */
 export function getVisitorSubscriptionPaystackSubunit(
   plan: PaidVisitorPlan,
   interval: VisitorBillingInterval
 ): number {
-  return Math.round(getVisitorSubscriptionAmountAud(plan, interval) * 100);
+  return Math.round(getVisitorSubscriptionAmountUsd(plan, interval) * 100);
 }
 
 export function formatVisitorSubscriptionPriceLabel(
   plan: PaidVisitorPlan,
   interval: VisitorBillingInterval
-): { aud: string; kes: string } {
+): { usd: string; kes: string } {
   const row = getVisitorSubscriptionPrice(plan, interval);
-  const audFmt =
+  const usdFmt =
     interval === "monthly"
-      ? `$${row.aud.toFixed(2)} AUD / month`
-      : `$${row.aud.toFixed(2)} AUD / year`;
+      ? `$${row.usd.toFixed(2)} / month`
+      : `$${row.usd.toFixed(2)} / year (12 months)`;
   const kesFmt =
     interval === "monthly"
       ? `KES ${row.kes.toLocaleString()} / month`
-      : `KES ${row.kes.toLocaleString()} / year`;
-  return { aud: audFmt, kes: kesFmt };
+      : `KES ${row.kes.toLocaleString()} / year (12 months)`;
+  return { usd: usdFmt, kes: kesFmt };
 }
 
 export function computeSubscriptionPeriodEndsAt(

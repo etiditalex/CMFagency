@@ -186,7 +186,7 @@ export default function VisitorSubscriptionCheckout({
           Pay for {VISITOR_PLAN_LABELS[plan]} — {billingInterval === "annual" ? "Annual" : "Monthly"}
         </p>
         <p className="mt-1 text-sm text-gray-600">
-          <span className="font-semibold text-primary-700">{prices.aud}</span>
+          <span className="font-semibold text-primary-700">{prices.usd}</span>
           <span className="mx-2 text-gray-400">·</span>
           <span className="font-semibold text-gray-800">{prices.kes}</span> via M-Pesa
         </p>

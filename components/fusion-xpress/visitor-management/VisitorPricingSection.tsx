@@ -5,6 +5,7 @@ import {
   VISITOR_CHECKIN_TRIAL_LIMIT,
   VISITOR_PREREGISTER_TRIAL_LIMIT,
 } from "@/lib/visitors/subscription";
+import { getVisitorSubscriptionPrice } from "@/lib/visitors/subscription-pricing";
 
 type PlanCol = "trial" | "professional" | "enterprise";
 
@@ -167,6 +168,11 @@ function FeatureTable({
 }
 
 export default function VisitorPricingSection() {
+  const proMonthly = getVisitorSubscriptionPrice("professional", "monthly");
+  const proAnnual = getVisitorSubscriptionPrice("professional", "annual");
+  const entMonthly = getVisitorSubscriptionPrice("enterprise", "monthly");
+  const entAnnual = getVisitorSubscriptionPrice("enterprise", "annual");
+
   return (
     <section className="w-full border-t border-gray-100 bg-gray-50 py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
@@ -200,10 +206,12 @@ export default function VisitorPricingSection() {
             </span>
             <h3 className="text-xl font-bold text-gray-900">Professional</h3>
             <p className="mt-3">
-              <span className="text-4xl font-extrabold text-primary-600">$20</span>
-              <span className="text-sm text-gray-500 ml-1">AUD / month</span>
+              <span className="text-4xl font-extrabold text-primary-600">${proMonthly.usd.toFixed(2)}</span>
+              <span className="text-sm text-gray-500 ml-1">/ month</span>
             </p>
-            <p className="mt-1 text-sm font-semibold text-primary-700">Save with annual billing — $200/year</p>
+            <p className="mt-1 text-sm font-semibold text-primary-700">
+              Annual — ${proAnnual.usd.toFixed(2)}/year (12 months)
+            </p>
             <p className="mt-2 text-sm text-gray-600 flex-1">
               Visitor management, employee attendance, QR downloads, and workplace GPS sign-in/out.
             </p>
@@ -218,10 +226,12 @@ export default function VisitorPricingSection() {
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col">
             <h3 className="text-xl font-bold text-gray-900">Enterprise</h3>
             <p className="mt-3">
-              <span className="text-4xl font-extrabold text-primary-600">$35.09</span>
-              <span className="text-sm text-gray-500 ml-1">AUD / month</span>
+              <span className="text-4xl font-extrabold text-primary-600">${entMonthly.usd.toFixed(2)}</span>
+              <span className="text-sm text-gray-500 ml-1">/ month</span>
             </p>
-            <p className="mt-1 text-sm font-semibold text-primary-700">Save with annual billing — $421.15/year</p>
+            <p className="mt-1 text-sm font-semibold text-primary-700">
+              Annual — ${entAnnual.usd.toFixed(2)}/year (12 months)
+            </p>
             <p className="mt-2 text-sm text-gray-600 flex-1">
               Everything in Professional, plus Real Estate CRM/staff teams, priority support, and all add-ons.
             </p>

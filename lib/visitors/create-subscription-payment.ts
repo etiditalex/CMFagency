@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { ensureVisitorSubscriptionCampaign } from "@/lib/ensure-visitor-subscription-campaign";
 import {
   buildVisitorSubscriptionPaymentMetadata,
-  getVisitorSubscriptionAmountAud,
+  getVisitorSubscriptionAmountUsd,
   getVisitorSubscriptionAmountKes,
   getVisitorSubscriptionPaystackSubunit,
   parseBillingInterval,
@@ -57,7 +57,7 @@ export async function createVisitorSubscriptionPayment(
     return { ok: false, status: 400, error: "Subscription payments are paused. Contact support." };
   }
 
-  const amountAud = getVisitorSubscriptionAmountAud(plan, billingInterval);
+  const amountAud = getVisitorSubscriptionAmountUsd(plan, billingInterval);
   const amountKes = getVisitorSubscriptionAmountKes(plan, billingInterval);
   const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
 
