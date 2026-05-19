@@ -5,7 +5,11 @@ import { sendVisitorLoginCodeEmail } from "@/lib/visitors/send-visitor-login-cod
 import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
 import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
 import { geocodeAndSaveOrgLocationFromAddress } from "@/lib/visitors/org-location-db";
-import { ensureVisitorTrialSubscription } from "@/lib/visitors/subscription-db";
+import { isVisitorPromoEnterpriseEmail } from "@/lib/visitors/promo-enterprise-accounts";
+import {
+  ensureVisitorPromoEnterpriseSubscription,
+  ensureVisitorTrialSubscription,
+} from "@/lib/visitors/subscription-db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -112,7 +116,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: pmErr.message ?? "Could not complete account setup" }, { status: 500 });
     }
 
-    await ensureVisitorTrialSubscription(admin, userId).catch(() => {});
+    if (isVisitorPromoEnterpriseEmail(email)) {
+      await ensureVisitorPromoEnterpriseSubscription(admin, userId).catch(() => {});
+    } else {
+      await ensureVisitorTrialSubscription(admin, userId).catch(() => {});
+    }
 
     await geocodeAndSaveOrgLocationFromAddress(admin, userId, {
       addressLine1,

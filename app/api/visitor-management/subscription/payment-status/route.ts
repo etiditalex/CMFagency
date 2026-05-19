@@ -3,10 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import { requireVisitorManagementAccess } from "@/lib/visitors/require-visitor-management";
 import { visitorDemoSubscriptionState } from "@/lib/visitors/subscription";
-import {
-  ensureVisitorTrialSubscription,
-  getVisitorSubscription,
-} from "@/lib/visitors/subscription-db";
+import { resolveVisitorSubscriptionForOwner } from "@/lib/visitors/subscription-db";
 import { isVisitorSubscriptionPaymentMetadata } from "@/lib/visitors/subscription-pricing";
 
 export const dynamic = "force-dynamic";
@@ -57,10 +54,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let subscription = await getVisitorSubscription(admin, userId);
-    if (!subscription.trialEndsAt && subscription.plan === "trial" && !subscription.subscribedAt) {
-      subscription = await ensureVisitorTrialSubscription(admin, userId);
-    }
+    const subscription = await resolveVisitorSubscriptionForOwner(admin, userId, email);
 
     return NextResponse.json({
       reference: ref || null,

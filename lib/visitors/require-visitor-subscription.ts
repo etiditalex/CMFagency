@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  ensureVisitorTrialSubscription,
-  getVisitorSubscription,
-} from "@/lib/visitors/subscription-db";
 import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
+import { resolveVisitorSubscriptionForOwner } from "@/lib/visitors/subscription-db";
 import {
   planHasFeature,
   type VisitorPlanFeatureKey,
@@ -23,10 +20,7 @@ export async function assertVisitorSubscriptionAllows(
   if (isAdmin) return null;
   if (isVisitorDemoAccount(email)) return null;
 
-  let subscription = await getVisitorSubscription(admin, userId);
-  if (!subscription.trialEndsAt && subscription.plan === "trial" && !subscription.subscribedAt) {
-    subscription = await ensureVisitorTrialSubscription(admin, userId);
-  }
+  const subscription = await resolveVisitorSubscriptionForOwner(admin, userId, email);
 
   if (!subscription.isActive) {
     return NextResponse.json(

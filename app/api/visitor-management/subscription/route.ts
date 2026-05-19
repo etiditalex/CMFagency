@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import { requireVisitorManagementAccess } from "@/lib/visitors/require-visitor-management";
 import { visitorDemoSubscriptionState } from "@/lib/visitors/subscription";
+import { isVisitorPromoEnterpriseEmail } from "@/lib/visitors/promo-enterprise-accounts";
 import {
-  ensureVisitorTrialSubscription,
-  getVisitorSubscription,
+  hasPaidSubscription,
   isMissingSubscriptionTable,
+  resolveVisitorSubscriptionForOwner,
 } from "@/lib/visitors/subscription-db";
 
 export async function GET(req: NextRequest) {
@@ -30,12 +31,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    let subscription = await getVisitorSubscription(admin, userId);
-    if (!subscription.trialEndsAt && subscription.plan === "trial" && !subscription.subscribedAt) {
-      subscription = await ensureVisitorTrialSubscription(admin, userId);
-    }
+    const subscription = await resolveVisitorSubscriptionForOwner(admin, userId, email);
 
-    return NextResponse.json({ exempt: false, subscription });
+    const { data: row } = await admin
+      .from("visitor_management_subscriptions")
+      .select("last_payment_reference,last_transaction_id")
+      .eq("owner_id", userId)
+      .maybeSingle();
+
+    const promoEnterprise =
+      isVisitorPromoEnterpriseEmail(email) &&
+      subscription.plan === "enterprise" &&
+      subscription.isActive &&
+      !hasPaidSubscription(row as { last_payment_reference?: string | null; last_transaction_id?: string | null });
+
+    return NextResponse.json({
+      exempt: false,
+      subscription,
+      ...(promoEnterprise ? { promoEnterprise: true } : {}),
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     if (isMissingSubscriptionTable(e)) {

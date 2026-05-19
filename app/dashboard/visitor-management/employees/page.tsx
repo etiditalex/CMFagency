@@ -541,19 +541,6 @@ export default function VisitorManagementEmployeesPage() {
           <UserCog className="w-7 h-7 text-primary-600" />
           Employee attendance
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Add staff manually, issue a unique QR pass per person, and record sign-in and sign-out.
-          Organisation directors receive email when someone reports to work or leaves. Staff who
-          sign in after your latest reporting time are marked <strong className="text-red-700">late</strong>.
-          Configure windows below (default: report 7:00–8:00 AM, sign out from 5:00 PM).
-          {isRealEstate ? (
-            <>
-              {" "}
-              Real estate accounts can set separate times for <strong>staff</strong> and{" "}
-              <strong>CRM</strong> teams.
-            </>
-          ) : null}
-        </p>
         {!isVisitorOnly ? (
           <p className="mt-2 text-sm">
             <Link href={VISITOR_MANAGEMENT_PATH} className="font-semibold text-primary-700 hover:underline">
