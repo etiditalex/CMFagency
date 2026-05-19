@@ -53,7 +53,7 @@ export async function ensureVisitorSubscriptionCampaign(
       type: "ticket",
       slug,
       title: "Smart Visitor Management — subscription",
-      description: "Fusion Xpress Smart Visitor Management plan (Basic or Enterprise).",
+      description: "Fusion Xpress Smart Visitor Management plan (Professional or Enterprise).",
       currency: "AUD",
       unit_amount: 1,
       max_per_txn: 1,

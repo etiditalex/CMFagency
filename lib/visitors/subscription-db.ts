@@ -74,7 +74,7 @@ export async function updateVisitorSubscriptionPlan(
     updated_at: new Date().toISOString(),
   };
 
-  if (plan === "basic" || plan === "enterprise") {
+  if (plan === "professional" || plan === "enterprise") {
     patch.subscribed_at = new Date().toISOString();
     patch.billing_interval = billingInterval ?? "monthly";
   }

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const { plan, billingInterval } = parseSubscriptionPaymentBody(body);
     if (!plan) {
-      return NextResponse.json({ error: "Choose Basic or Enterprise." }, { status: 400 });
+      return NextResponse.json({ error: "Choose Professional or Enterprise." }, { status: 400 });
     }
 
     const useInline = body.inline === true;

@@ -62,12 +62,19 @@ import { supabase } from "@/lib/supabase";
 import {
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_PATH,
+  VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
 } from "@/lib/visitors/industry-options";
+import {
+  isExemptFromVisitorSubscription,
+  planHasFeature,
+  type VisitorSubscriptionState,
+} from "@/lib/visitors/subscription";
 
 export default function VisitorManagementEmployeesPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } =
+    usePortal();
 
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [attendance, setAttendance] = useState<EmployeeAttendanceRecord[]>([]);
@@ -86,6 +93,9 @@ export default function VisitorManagementEmployeesPage() {
   const [memberTab, setMemberTab] = useState<EmployeeMemberType>("staff");
   const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
     DEFAULT_REPORTING_SETTINGS
+  );
+  const [visitorSubscription, setVisitorSubscription] = useState<VisitorSubscriptionState | null>(
+    null
   );
 
   const getToken = useCallback(async () => {
@@ -170,6 +180,33 @@ export default function VisitorManagementEmployeesPage() {
     });
   }, [user?.id]);
 
+  const loadVisitorSubscription = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/visitor-management/subscription", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        subscription?: VisitorSubscriptionState;
+      };
+      if (res.ok && json.subscription) setVisitorSubscription(json.subscription);
+    } catch {
+      /* optional */
+    }
+  }, [getToken]);
+
+  const canDownloadQr = useMemo(() => {
+    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly })) return true;
+    if (!visitorSubscription) return false;
+    return planHasFeature(
+      visitorSubscription.plan,
+      "employee_qr_download",
+      visitorSubscription.isActive
+    );
+  }, [isAdmin, isVisitorOnly, visitorSubscription]);
+
   const loadReportingSettings = useCallback(async () => {
     try {
       const token = await getToken();
@@ -195,6 +232,12 @@ export default function VisitorManagementEmployeesPage() {
   const handleDownloadPdf = useCallback(
     async (emp: EmployeeRecord) => {
       if (!emp.qrCodeToken) return;
+      if (!canDownloadQr) {
+        setNotice(
+          "QR PDF download is included on the Professional and Enterprise plans. Upgrade in Subscription settings."
+        );
+        return;
+      }
       setDownloadingPdfId(emp.id);
       try {
         await downloadEmployeeQrPdf({
@@ -211,7 +254,7 @@ export default function VisitorManagementEmployeesPage() {
         setDownloadingPdfId(null);
       }
     },
-    [organizationName]
+    [canDownloadQr, organizationName]
   );
 
   useEffect(() => {
@@ -225,6 +268,7 @@ export default function VisitorManagementEmployeesPage() {
       return;
     }
     loadEmployees();
+    void loadVisitorSubscription();
   }, [
     authLoading,
     portalLoading,
@@ -234,6 +278,7 @@ export default function VisitorManagementEmployeesPage() {
     router,
     user,
     loadEmployees,
+    loadVisitorSubscription,
   ]);
 
   const displayedEmployees = useMemo(() => {
@@ -568,10 +613,21 @@ export default function VisitorManagementEmployeesPage() {
         </div>
       </div>
 
+      {!canDownloadQr && !setupRequired ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Downloading employee and reception QR PDFs requires a{" "}
+          <strong>Professional</strong> or <strong>Enterprise</strong> subscription.{" "}
+          <Link href={VISITOR_MANAGEMENT_SUBSCRIPTION_PATH} className="font-semibold underline">
+            Upgrade plan
+          </Link>
+        </p>
+      ) : null}
+
       <ReceptionQrPanel
         disabled={setupRequired}
         isRealEstate={isRealEstate}
         organizationName={organizationName}
+        canDownloadQr={canDownloadQr}
       />
 
       <NotificationAdminsPanel disabled={setupRequired} />
@@ -607,18 +663,29 @@ export default function VisitorManagementEmployeesPage() {
             <p className="text-sm font-bold text-gray-900 mb-4">QR pass — {qrEmployee.fullName}</p>
             <EmployeeQrCode token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} size={200} />
             <p className="mt-4 text-xs text-gray-500">
-              Download the PDF for printing. Each scan records sign-in/out time and emails directors.
+              {canDownloadQr
+                ? "Download the PDF for printing. Each scan records sign-in/out time and emails directors."
+                : "View on screen during trial. Upgrade to Professional to download QR PDFs for printing."}
             </p>
             <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={downloadingPdfId === qrEmployee.id}
-                onClick={() => void handleDownloadPdf(qrEmployee)}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-primary-300 bg-primary-50 py-2.5 text-sm font-bold text-primary-800 hover:bg-primary-100 disabled:opacity-50"
-              >
-                <Download className="h-4 w-4" />
-                {downloadingPdfId === qrEmployee.id ? "Creating PDF…" : "Download QR PDF"}
-              </button>
+              {canDownloadQr ? (
+                <button
+                  type="button"
+                  disabled={downloadingPdfId === qrEmployee.id}
+                  onClick={() => void handleDownloadPdf(qrEmployee)}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-primary-300 bg-primary-50 py-2.5 text-sm font-bold text-primary-800 hover:bg-primary-100 disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />
+                  {downloadingPdfId === qrEmployee.id ? "Creating PDF…" : "Download QR PDF"}
+                </button>
+              ) : (
+                <Link
+                  href={VISITOR_MANAGEMENT_SUBSCRIPTION_PATH}
+                  className="w-full inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100"
+                >
+                  Upgrade to download QR PDF
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => setQrEmployee(null)}
@@ -766,7 +833,7 @@ export default function VisitorManagementEmployeesPage() {
                             QR
                           </button>
                         ) : null}
-                        {emp.qrCodeToken ? (
+                        {emp.qrCodeToken && canDownloadQr ? (
                           <button
                             type="button"
                             disabled={downloadingPdfId === emp.id || setupRequired}

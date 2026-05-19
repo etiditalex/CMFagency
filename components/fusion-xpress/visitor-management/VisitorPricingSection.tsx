@@ -6,12 +6,12 @@ import {
   VISITOR_PREREGISTER_TRIAL_LIMIT,
 } from "@/lib/visitors/subscription";
 
-type PlanCol = "trial" | "basic" | "enterprise";
+type PlanCol = "trial" | "professional" | "enterprise";
 
 type FeatureRow = {
   label: string;
   trial: string | boolean;
-  basic: string | boolean;
+  professional: string | boolean;
   enterprise: string | boolean;
 };
 
@@ -19,37 +19,37 @@ const CHECKIN_ROWS: FeatureRow[] = [
   {
     label: "Contactless check-in via smart QR codes",
     trial: `Up to ${VISITOR_CHECKIN_TRIAL_LIMIT.toLocaleString()}`,
-    basic: "Unlimited",
+    professional: "Unlimited",
     enterprise: "Unlimited",
   },
   {
     label: "Pre-register expected guests",
     trial: `Up to ${VISITOR_PREREGISTER_TRIAL_LIMIT}`,
-    basic: "Unlimited",
+    professional: "Unlimited",
     enterprise: "Unlimited",
   },
   {
     label: "Automatically check out guests",
     trial: false,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
   {
     label: "Fast visitor record entry via copy & paste",
     trial: false,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
   {
     label: "Data export into CSV or PDF",
     trial: true,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
   {
     label: "Group check-in (up to 5 people)",
     trial: true,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
 ];
@@ -58,31 +58,37 @@ const EMPLOYEE_ROWS: FeatureRow[] = [
   {
     label: "Employee attendance module",
     trial: false,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
   {
     label: "Reception QR + phone-linked member ID",
     trial: false,
-    basic: true,
+    professional: true,
+    enterprise: true,
+  },
+  {
+    label: "Download employee & reception QR (PDF)",
+    trial: false,
+    professional: true,
     enterprise: true,
   },
   {
     label: "GPS tracking (workplace sign-in / sign-out)",
-    trial: false,
-    basic: true,
+    trial: true,
+    professional: true,
     enterprise: true,
   },
   {
     label: "Staff / CRM teams & reporting times (Real Estate)",
     trial: false,
-    basic: false,
+    professional: false,
     enterprise: true,
   },
   {
     label: "Attendance Excel export & notification admins",
     trial: false,
-    basic: true,
+    professional: true,
     enterprise: true,
   },
 ];
@@ -107,10 +113,10 @@ function FeatureTable({
   rows: FeatureRow[];
   highlightCol: PlanCol;
 }) {
-  const cols: PlanCol[] = ["trial", "basic", "enterprise"];
+  const cols: PlanCol[] = ["trial", "professional", "enterprise"];
   const headers: Record<PlanCol, string> = {
     trial: "Free for 7 days",
-    basic: "Basic",
+    professional: "Professional",
     enterprise: "Enterprise",
   };
 
@@ -192,20 +198,20 @@ export default function VisitorPricingSection() {
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary-600 px-3 py-1 text-xs font-bold text-white">
               Most popular
             </span>
-            <h3 className="text-xl font-bold text-gray-900">Basic</h3>
+            <h3 className="text-xl font-bold text-gray-900">Professional</h3>
             <p className="mt-3">
-              <span className="text-4xl font-extrabold text-primary-600">$9.90</span>
+              <span className="text-4xl font-extrabold text-primary-600">$20</span>
               <span className="text-sm text-gray-500 ml-1">AUD / month</span>
             </p>
-            <p className="mt-1 text-sm font-semibold text-primary-700">Save with annual billing — $99/year</p>
+            <p className="mt-1 text-sm font-semibold text-primary-700">Save with annual billing — $200/year</p>
             <p className="mt-2 text-sm text-gray-600 flex-1">
-              Professional visitor management plus employee attendance at reception.
+              Visitor management, employee attendance, QR downloads, and workplace GPS sign-in/out.
             </p>
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-up"
               className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-700"
             >
-              Get started
+              Get Professional
             </Link>
           </div>
 
@@ -217,7 +223,7 @@ export default function VisitorPricingSection() {
             </p>
             <p className="mt-1 text-sm font-semibold text-primary-700">Save with annual billing — $421.15/year</p>
             <p className="mt-2 text-sm text-gray-600 flex-1">
-              Everything in Basic, plus Real Estate CRM/staff teams, priority support, and all add-ons.
+              Everything in Professional, plus Real Estate CRM/staff teams, priority support, and all add-ons.
             </p>
             <Link
               href="/fusion-xpress/smart-visitor-management/sign-up"
@@ -229,8 +235,8 @@ export default function VisitorPricingSection() {
         </div>
 
         <div className="mt-12 w-full space-y-0">
-          <FeatureTable title="Check-in & check-out" rows={CHECKIN_ROWS} highlightCol="basic" />
-          <FeatureTable title="Employee module" rows={EMPLOYEE_ROWS} highlightCol="basic" />
+          <FeatureTable title="Check-in & check-out" rows={CHECKIN_ROWS} highlightCol="professional" />
+          <FeatureTable title="Employee module" rows={EMPLOYEE_ROWS} highlightCol="professional" />
         </div>
       </div>
     </section>

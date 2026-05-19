@@ -9,9 +9,9 @@ export const VISITOR_SUBSCRIPTION_CAMPAIGN_SLUG = "visitor-management-subscripti
 type PriceRow = { aud: number; kes: number };
 
 const PRICES: Record<PaidVisitorPlan, Record<VisitorBillingInterval, PriceRow>> = {
-  basic: {
-    monthly: { aud: 9.9, kes: 1290 },
-    annual: { aud: 99, kes: 12900 },
+  professional: {
+    monthly: { aud: 20, kes: 2600 },
+    annual: { aud: 200, kes: 26000 },
   },
   enterprise: {
     monthly: { aud: 35.09, kes: 4575 },
@@ -25,7 +25,8 @@ export function parseBillingInterval(raw: string | null | undefined): VisitorBil
 
 export function parsePaidVisitorPlan(raw: string | null | undefined): PaidVisitorPlan | null {
   const s = String(raw ?? "").toLowerCase();
-  if (s === "basic" || s === "enterprise") return s;
+  if (s === "basic" || s === "professional") return "professional";
+  if (s === "enterprise") return s;
   return null;
 }
 

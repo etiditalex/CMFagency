@@ -495,7 +495,7 @@ export default function EmployeeCheckPage() {
 
           <p className="mt-6 text-xs text-gray-500 text-center">
             {isGateMode
-              ? "Your phone is linked to your member ID. Location must be on — sign-in/out only works at your registered workplace (Basic & Enterprise)."
+              ? "Your phone is linked to your member ID. Location must be on — sign-in/out only works at your registered workplace."
               : "Turn on location to sign in or out at your workplace. Directors receive email when you sign in."}
           </p>
         </div>

@@ -162,7 +162,7 @@ export default function WorkplaceLocationPanel({ businessName }: Props) {
         <div>
           <h2 className="text-sm font-bold text-gray-900">GPS tracking (workplace)</h2>
           <p className="text-xs text-gray-600 mt-1">
-            Staff and CRM must be within this area to sign in or out. Available on Basic and Enterprise plans.
+            Staff and CRM must be within this area to sign in or out. Set this pin while standing at reception.
           </p>
         </div>
       </div>

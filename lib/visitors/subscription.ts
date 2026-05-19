@@ -1,4 +1,4 @@
-export type VisitorSubscriptionPlan = "trial" | "basic" | "enterprise";
+export type VisitorSubscriptionPlan = "trial" | "professional" | "enterprise";
 
 export type VisitorSubscriptionRow = {
   owner_id: string;
@@ -27,15 +27,20 @@ export type VisitorSubscriptionState = {
 
 export const VISITOR_TRIAL_DAYS = 7;
 
+/** Dispatched on `window` when inline/M-Pesa subscription payment completes (client-only). */
+export const VISITOR_SUBSCRIPTION_PAID_EVENT = "visitor-subscription-paid";
+
 export const VISITOR_PLAN_LABELS: Record<VisitorSubscriptionPlan, string> = {
   trial: "Free for 7 days",
-  basic: "Basic",
+  professional: "Professional",
   enterprise: "Enterprise",
 };
 
+/** Maps stored plan slugs (including legacy `basic`) to the current plan id. */
 export function parseVisitorPlan(raw: string | null | undefined): VisitorSubscriptionPlan {
   const s = String(raw ?? "").toLowerCase();
-  if (s === "basic" || s === "enterprise") return s;
+  if (s === "basic" || s === "professional") return "professional";
+  if (s === "enterprise") return "enterprise";
   return "trial";
 }
 
@@ -48,7 +53,7 @@ export function mapSubscriptionRow(row: VisitorSubscriptionRow | null): VisitorS
   const isTrialExpired = isTrial && trialEndMs !== null && trialEndMs < now;
   const periodEndsAt = row?.current_period_ends_at ?? null;
   const periodEndMs = periodEndsAt ? new Date(periodEndsAt).getTime() : null;
-  const isPaidPlan = plan === "basic" || plan === "enterprise";
+  const isPaidPlan = plan === "professional" || plan === "enterprise";
   const isPaidActive =
     isPaidPlan &&
     (periodEndMs === null || Number.isNaN(periodEndMs) || periodEndMs >= now);
@@ -112,21 +117,23 @@ export type VisitorPlanFeatureKey =
   | "real_estate_crm"
   | "employee_excel"
   | "notification_admins"
-  | "gps_tracking";
+  | "gps_tracking"
+  | "employee_qr_download";
 
 const PLAN_FEATURES: Record<VisitorPlanFeatureKey, Record<VisitorSubscriptionPlan, boolean>> = {
-  unlimited_checkin: { trial: false, basic: true, enterprise: true },
-  unlimited_preregister: { trial: false, basic: true, enterprise: true },
-  auto_checkout: { trial: false, basic: true, enterprise: true },
-  fast_record_entry: { trial: false, basic: true, enterprise: true },
-  data_export: { trial: true, basic: true, enterprise: true },
-  group_checkin: { trial: true, basic: true, enterprise: true },
-  employee_module: { trial: false, basic: true, enterprise: true },
-  reception_qr_device: { trial: false, basic: true, enterprise: true },
-  real_estate_crm: { trial: false, basic: false, enterprise: true },
-  employee_excel: { trial: false, basic: true, enterprise: true },
-  notification_admins: { trial: false, basic: true, enterprise: true },
-  gps_tracking: { trial: false, basic: true, enterprise: true },
+  unlimited_checkin: { trial: false, professional: true, enterprise: true },
+  unlimited_preregister: { trial: false, professional: true, enterprise: true },
+  auto_checkout: { trial: false, professional: true, enterprise: true },
+  fast_record_entry: { trial: false, professional: true, enterprise: true },
+  data_export: { trial: true, professional: true, enterprise: true },
+  group_checkin: { trial: true, professional: true, enterprise: true },
+  employee_module: { trial: false, professional: true, enterprise: true },
+  reception_qr_device: { trial: false, professional: true, enterprise: true },
+  real_estate_crm: { trial: false, professional: false, enterprise: true },
+  employee_excel: { trial: false, professional: true, enterprise: true },
+  notification_admins: { trial: false, professional: true, enterprise: true },
+  gps_tracking: { trial: true, professional: true, enterprise: true },
+  employee_qr_download: { trial: false, professional: true, enterprise: true },
 };
 
 export function planHasFeature(

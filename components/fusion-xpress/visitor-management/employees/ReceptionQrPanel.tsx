@@ -19,12 +19,14 @@ type ReceptionQrPanelProps = {
   disabled?: boolean;
   isRealEstate?: boolean;
   organizationName?: string;
+  canDownloadQr?: boolean;
 };
 
 export default function ReceptionQrPanel({
   disabled,
   isRealEstate = false,
   organizationName = "",
+  canDownloadQr = true,
 }: ReceptionQrPanelProps) {
   const [gates, setGates] = useState<GateInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,15 +149,21 @@ export default function ReceptionQrPanel({
                       Run patch 04 in Supabase
                     </div>
                   )}
-                  <button
-                    type="button"
-                    disabled={disabled || setupRequired || !hasToken || downloading === gate.memberType}
-                    onClick={() => void handlePdf(gate)}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                  >
-                    <Download className="w-4 h-4" />
-                    {downloading === gate.memberType ? "Creating PDF…" : `Download ${label} QR PDF`}
-                  </button>
+                  {canDownloadQr ? (
+                    <button
+                      type="button"
+                      disabled={disabled || setupRequired || !hasToken || downloading === gate.memberType}
+                      onClick={() => void handlePdf(gate)}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloading === gate.memberType ? "Creating PDF…" : `Download ${label} QR PDF`}
+                    </button>
+                  ) : (
+                    <p className="w-full text-center text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                      QR PDF download requires a Professional or Enterprise subscription.
+                    </p>
+                  )}
                   {hasToken && previewUrl ? (
                     <p className="text-[10px] text-gray-400 text-center break-all">{previewUrl}</p>
                   ) : null}

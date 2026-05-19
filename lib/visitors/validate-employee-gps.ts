@@ -1,9 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getOrgLocation, isMissingOrgLocationTable } from "@/lib/visitors/org-location-db";
-import { getVisitorSubscription } from "@/lib/visitors/subscription-db";
 import { haversineDistanceMeters, isValidCoordinate } from "@/lib/visitors/geocode";
-import { planHasFeature } from "@/lib/visitors/subscription";
 
 export type ScanGpsInput = {
   latitude?: unknown;
@@ -15,33 +13,18 @@ export type GpsValidationResult =
   | { ok: true; verified: boolean; distanceM: number | null }
   | { ok: false; error: string; status: number };
 
-const MAX_ACCURACY_M = 120;
+const MAX_ACCURACY_M = 150;
+const ACCURACY_BUFFER_CAP_M = 40;
 
-export async function ownerRequiresGpsTracking(
-  admin: SupabaseClient,
-  ownerId: string
-): Promise<boolean> {
-  const subscription = await getVisitorSubscription(admin, ownerId);
-  return planHasFeature(subscription.plan, "gps_tracking", subscription.isActive);
-}
-
-/** Enforces GPS for paid plans with gps_tracking when workplace location is configured. */
+/**
+ * Enforces workplace geofence for every employee scan when a workplace pin exists.
+ * Trial and paid plans are treated the same — sign-in/out only at the registered site.
+ */
 export async function validateEmployeeScanGps(
   admin: SupabaseClient,
   ownerId: string,
   gps: ScanGpsInput
 ): Promise<GpsValidationResult> {
-  let requiresGps: boolean;
-  try {
-    requiresGps = await ownerRequiresGpsTracking(admin, ownerId);
-  } catch {
-    requiresGps = false;
-  }
-
-  if (!requiresGps) {
-    return { ok: true, verified: false, distanceM: null };
-  }
-
   let orgLocation;
   try {
     orgLocation = await getOrgLocation(admin, ownerId);
@@ -61,7 +44,7 @@ export async function validateEmployeeScanGps(
     return {
       ok: false,
       error:
-        "Your organisation workplace location is not configured yet. Ask your manager to complete setup in Visitor Management → Employees.",
+        "Your organisation workplace location is not configured yet. Ask your manager to complete setup in Visitor Management → Employees → GPS tracking.",
       status: 403,
     };
   }
@@ -93,7 +76,12 @@ export async function validateEmployeeScanGps(
     orgLocation.longitude
   );
 
-  if (distanceM > orgLocation.geofenceRadiusM) {
+  const accuracyBuffer = Number.isFinite(accuracy)
+    ? Math.min(accuracy, ACCURACY_BUFFER_CAP_M)
+    : 0;
+  const allowedRadiusM = orgLocation.geofenceRadiusM + accuracyBuffer;
+
+  if (distanceM > allowedRadiusM) {
     return {
       ok: false,
       error: `You must be at your registered workplace to sign in or out (${distanceM} m away; allowed within ${orgLocation.geofenceRadiusM} m).`,

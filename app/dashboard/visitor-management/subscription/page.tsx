@@ -13,6 +13,7 @@ import { VISITOR_MANAGEMENT_PATH } from "@/lib/visitors/industry-options";
 import {
   formatSubscriptionExpiryDate,
   VISITOR_PLAN_LABELS,
+  VISITOR_SUBSCRIPTION_PAID_EVENT,
   type VisitorSubscriptionState,
 } from "@/lib/visitors/subscription";
 import {
@@ -27,12 +28,12 @@ const PLANS: {
   blurb: string;
 }[] = [
   {
-    id: "basic",
-    blurb: "Visitor management + employee attendance, reception QR, and exports.",
+    id: "professional",
+    blurb: "Visitor management, employee attendance, QR downloads, and workplace GPS.",
   },
   {
     id: "enterprise",
-    blurb: "Everything in Basic, plus Real Estate CRM/staff teams and priority support.",
+    blurb: "Everything in Professional, plus Real Estate CRM/staff teams and priority support.",
   },
 ];
 
@@ -144,10 +145,14 @@ export default function VisitorSubscriptionSettingsPage() {
     };
   }, [searchParams, router]);
 
-  const onPaid = useCallback(() => {
-    void load();
-    setSelectedPlan(null);
-    setMessage("Payment successful. Thank you for subscribing.");
+  useEffect(() => {
+    const onPaid = () => {
+      void load();
+      setSelectedPlan(null);
+      setMessage("Payment successful. Thank you for subscribing.");
+    };
+    window.addEventListener(VISITOR_SUBSCRIPTION_PAID_EVENT, onPaid);
+    return () => window.removeEventListener(VISITOR_SUBSCRIPTION_PAID_EVENT, onPaid);
   }, [load]);
 
   if (authLoading || portalLoading || loading) {
@@ -258,11 +263,7 @@ export default function VisitorSubscriptionSettingsPage() {
       </div>
 
       {selectedPlan && subscription?.plan !== selectedPlan ? (
-        <VisitorSubscriptionCheckout
-          plan={selectedPlan}
-          billingInterval={billingInterval}
-          onPaid={onPaid}
-        />
+        <VisitorSubscriptionCheckout plan={selectedPlan} billingInterval={billingInterval} />
       ) : null}
 
       <p className="text-xs text-gray-500">

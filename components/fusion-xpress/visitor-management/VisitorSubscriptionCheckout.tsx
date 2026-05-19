@@ -9,20 +9,27 @@ import {
   type PaidVisitorPlan,
   type VisitorBillingInterval,
 } from "@/lib/visitors/subscription-pricing";
-import { VISITOR_PLAN_LABELS } from "@/lib/visitors/subscription";
+import {
+  VISITOR_PLAN_LABELS,
+  VISITOR_SUBSCRIPTION_PAID_EVENT,
+} from "@/lib/visitors/subscription";
 import { supabase } from "@/lib/supabase";
 
 type Props = {
   plan: PaidVisitorPlan;
   billingInterval: VisitorBillingInterval;
-  onPaid: () => void;
   disabled?: boolean;
 };
+
+function notifySubscriptionPaid() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(VISITOR_SUBSCRIPTION_PAID_EVENT));
+  }
+}
 
 export default function VisitorSubscriptionCheckout({
   plan,
   billingInterval,
-  onPaid,
   disabled,
 }: Props) {
   const [phone, setPhone] = useState("");
@@ -48,7 +55,6 @@ export default function VisitorSubscriptionCheckout({
       pollRef.current = setInterval(async () => {
         if (Date.now() - start > 120000) {
           stopPoll();
-          setBusy(null);
           return;
         }
         try {
@@ -67,14 +73,14 @@ export default function VisitorSubscriptionCheckout({
             stopPoll();
             setBusy(null);
             setMsg("Payment received. Your plan is now active.");
-            onPaid();
+            notifySubscriptionPaid();
           }
         } catch {
           /* keep polling */
         }
       }, 4000);
     },
-    [onPaid, plan, stopPoll]
+    [plan, stopPoll]
   );
 
   useEffect(() => () => stopPoll(), [stopPoll]);
