@@ -63,6 +63,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
@@ -564,11 +565,15 @@ export default function VisitorManagementEmployeesPage() {
       {setupRequired ? <EmployeeSetupBanner /> : null}
       {!setupRequired ? (
         <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-          Workplace GPS sign-in is configured under{" "}
+          Workplace GPS:{" "}
           <Link href={VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH} className="font-bold underline">
-            Employees → GPS tracking
+            GPS tracking
           </Link>
-          . Set your reception pin there before staff scan the QR.
+          . Attendance charts and printable summaries:{" "}
+          <Link href={VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH} className="font-bold underline">
+            Summary reports
+          </Link>
+          .
         </p>
       ) : null}
       {loadError && !setupRequired ? (

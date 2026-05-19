@@ -23,7 +23,20 @@ export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
 export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/accounts`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_PATH = `${VISITOR_MANAGEMENT_PATH}/employees`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/gps`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
+
+/** Sidebar sub-pages under Employees (not the main employees list). */
+export const VISITOR_MANAGEMENT_EMPLOYEES_NESTED_PATHS = [
+  VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
+] as const;
+
+export function isEmployeesNestedNavPath(pathname: string): boolean {
+  return VISITOR_MANAGEMENT_EMPLOYEES_NESTED_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_PATH = `${VISITOR_MANAGEMENT_PATH}/subscription`;
 
 export function industryCheckInPath(industrySlug: string, ownerId: string): string {
@@ -82,6 +95,12 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD: VisitorManagementLinkNavChi
 export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "GPS tracking",
   href: VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  underEmployees: true,
+};
+
+export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Summary reports",
+  href: VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   underEmployees: true,
 };
 

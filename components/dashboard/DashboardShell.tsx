@@ -50,8 +50,9 @@ import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/Vi
 import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
-  VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  isEmployeesNestedNavPath,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
@@ -182,7 +183,7 @@ function isVisitorNavChildActive(
     if (child.href === VISITOR_MANAGEMENT_EMPLOYEES_PATH) {
       return (
         pathname === child.href ||
-        (pathname.startsWith(`${child.href}/`) && pathname !== VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH)
+        (pathname.startsWith(`${child.href}/`) && !isEmployeesNestedNavPath(pathname))
       );
     }
     return pathname === child.href || pathname.startsWith(`${child.href}/`);
@@ -345,6 +346,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           children: [
             VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
+            VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
           ],
         };
@@ -353,6 +355,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         ...VISITOR_MANAGEMENT_NAV_CHILDREN,
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
+        VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
       ];
       return { ...item, children };
