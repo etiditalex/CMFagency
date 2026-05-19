@@ -68,13 +68,14 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId, isAdmin } = auth;
+    const { admin, userId, isAdmin, email: callerEmail } = auth;
 
     const subBlock = await assertVisitorSubscriptionAllows(
       admin,
       userId,
       isAdmin,
-      "employee_module"
+      "employee_module",
+      callerEmail
     );
     if (subBlock) return subBlock;
 

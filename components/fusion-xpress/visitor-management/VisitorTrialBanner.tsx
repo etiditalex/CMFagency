@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CreditCard } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { VISITOR_MANAGEMENT_SUBSCRIPTION_PATH } from "@/lib/visitors/industry-options";
 import {
@@ -15,13 +16,14 @@ import {
 import { supabase } from "@/lib/supabase";
 
 export default function VisitorTrialBanner() {
+  const { user } = useAuth();
   const { isAdmin, isVisitorOnly } = usePortal();
   const [subscription, setSubscription] = useState<VisitorSubscriptionState | null>(null);
   const [exempt, setExempt] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly })) {
+    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly, email: user?.email })) {
       setExempt(true);
       setLoading(false);
       return;
@@ -51,7 +53,7 @@ export default function VisitorTrialBanner() {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, isVisitorOnly]);
+  }, [isAdmin, isVisitorOnly, user?.email]);
 
   if (loading || exempt || !subscription) return null;
 
@@ -63,7 +65,7 @@ export default function VisitorTrialBanner() {
         <p className="flex flex-wrap items-start gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
           <span>
-            <strong>{VISITOR_TRIAL_DAYS} Day Free Trial</strong> expires on{" "}
+            <strong>7 Day Free Trial</strong> expires on{" "}
             <strong>{expiryLabel}</strong>, please subscribe to the plan you signed up for initially via{" "}
             <Link
               href={VISITOR_MANAGEMENT_SUBSCRIPTION_PATH}

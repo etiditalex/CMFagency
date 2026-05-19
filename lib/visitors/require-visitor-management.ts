@@ -21,6 +21,7 @@ export type VisitorManagementAuth =
       admin: any;
       userId: string;
       isAdmin: boolean;
+      email: string | null;
     }
   | { error: NextResponse };
 
@@ -44,6 +45,7 @@ export async function requireVisitorManagementAccess(
   }
 
   const userId = String(callerData.user.id ?? "");
+  const email = String(callerData.user.email ?? "").trim() || null;
 
   const { data: memberRow, error: memberErr } = await admin
     .from("portal_members")
@@ -65,7 +67,7 @@ export async function requireVisitorManagementAccess(
       if (!legacyAdmin) {
         return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
       }
-      return { admin, userId, isAdmin: true };
+      return { admin, userId, isAdmin: true, email };
     }
     return { error: NextResponse.json({ error: "Authorization error" }, { status: 500 }) };
   }
@@ -89,5 +91,5 @@ export async function requireVisitorManagementAccess(
     };
   }
 
-  return { admin, userId, isAdmin };
+  return { admin, userId, isAdmin, email };
 }

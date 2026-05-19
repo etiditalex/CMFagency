@@ -1,3 +1,5 @@
+import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
+
 export type VisitorSubscriptionPlan = "trial" | "professional" | "enterprise";
 
 export type VisitorSubscriptionRow = {
@@ -95,14 +97,56 @@ export function formatSubscriptionExpiryDate(iso: string | null | undefined): st
   });
 }
 
-/** Platform Fusion Xpress admins (not visitor-only clients) skip subscription enforcement. */
+/** Platform admins, non–visitor-only users, and demo accounts skip subscription enforcement. */
 export function isExemptFromVisitorSubscription(params: {
   isAdmin: boolean;
   isVisitorOnly: boolean;
+  email?: string | null;
 }): boolean {
   if (params.isAdmin) return true;
   if (!params.isVisitorOnly) return true;
+  if (isVisitorDemoAccount(params.email)) return true;
   return false;
+}
+
+/** Client-side feature gate: demo accounts and exempt users get every visitor plan feature. */
+export function accountHasVisitorFeature(params: {
+  isAdmin: boolean;
+  isVisitorOnly: boolean;
+  email?: string | null;
+  plan: VisitorSubscriptionPlan;
+  feature: VisitorPlanFeatureKey;
+  subscriptionActive: boolean;
+}): boolean {
+  if (
+    isExemptFromVisitorSubscription({
+      isAdmin: params.isAdmin,
+      isVisitorOnly: params.isVisitorOnly,
+      email: params.email,
+    })
+  ) {
+    return true;
+  }
+  return planHasFeature(params.plan, params.feature, params.subscriptionActive);
+}
+
+/** Active Enterprise subscription state used for demo accounts in API/UI. */
+export function visitorDemoSubscriptionState(): VisitorSubscriptionState {
+  const now = new Date();
+  const periodEnd = new Date(now);
+  periodEnd.setUTCFullYear(periodEnd.getUTCFullYear() + 10);
+
+  return {
+    plan: "enterprise",
+    trialEndsAt: null,
+    subscribedAt: now.toISOString(),
+    billingInterval: "annual",
+    currentPeriodEndsAt: periodEnd.toISOString(),
+    isActive: true,
+    isTrial: false,
+    isTrialExpired: false,
+    daysLeftOnTrial: null,
+  };
 }
 
 export type VisitorPlanFeatureKey =

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import { requireVisitorManagementAccess } from "@/lib/visitors/require-visitor-management";
+import { visitorDemoSubscriptionState } from "@/lib/visitors/subscription";
 import {
   ensureVisitorTrialSubscription,
   getVisitorSubscription,
@@ -13,10 +15,19 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireVisitorManagementAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId, isAdmin } = auth;
+    const { admin, userId, isAdmin, email } = auth;
 
     if (isAdmin) {
       return NextResponse.json({ exempt: true });
+    }
+
+    if (isVisitorDemoAccount(email)) {
+      return NextResponse.json({
+        exempt: true,
+        demo: true,
+        subscription: visitorDemoSubscriptionState(),
+        payment_completed: true,
+      });
     }
 
     const ref = req.nextUrl.searchParams.get("ref")?.trim() ?? "";

@@ -68,8 +68,7 @@ import {
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
 } from "@/lib/visitors/industry-options";
 import {
-  isExemptFromVisitorSubscription,
-  planHasFeature,
+  accountHasVisitorFeature,
   type VisitorSubscriptionState,
 } from "@/lib/visitors/subscription";
 
@@ -201,14 +200,16 @@ export default function VisitorManagementEmployeesPage() {
   }, [getToken]);
 
   const canDownloadQr = useMemo(() => {
-    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly })) return true;
-    if (!visitorSubscription) return false;
-    return planHasFeature(
-      visitorSubscription.plan,
-      "employee_qr_download",
-      visitorSubscription.isActive
-    );
-  }, [isAdmin, isVisitorOnly, visitorSubscription]);
+    if (!visitorSubscription && !user?.email) return false;
+    return accountHasVisitorFeature({
+      isAdmin,
+      isVisitorOnly,
+      email: user?.email,
+      plan: visitorSubscription?.plan ?? "trial",
+      feature: "employee_qr_download",
+      subscriptionActive: visitorSubscription?.isActive ?? false,
+    });
+  }, [isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
 
   const loadReportingSettings = useCallback(async () => {
     try {

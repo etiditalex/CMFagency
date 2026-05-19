@@ -5,6 +5,7 @@ import {
   ensureVisitorTrialSubscription,
   getVisitorSubscription,
 } from "@/lib/visitors/subscription-db";
+import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import {
   planHasFeature,
   type VisitorPlanFeatureKey,
@@ -16,9 +17,11 @@ export async function assertVisitorSubscriptionAllows(
   admin: SupabaseClient,
   userId: string,
   isAdmin: boolean,
-  feature: VisitorPlanFeatureKey
+  feature: VisitorPlanFeatureKey,
+  email?: string | null
 ): Promise<NextResponse | null> {
   if (isAdmin) return null;
+  if (isVisitorDemoAccount(email)) return null;
 
   let subscription = await getVisitorSubscription(admin, userId);
   if (!subscription.trialEndsAt && subscription.plan === "trial" && !subscription.subscribedAt) {

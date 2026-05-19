@@ -6,6 +6,7 @@ import {
   parseSubscriptionPaymentBody,
 } from "@/lib/visitors/create-subscription-payment";
 import { VISITOR_MANAGEMENT_SUBSCRIPTION_PATH } from "@/lib/visitors/industry-options";
+import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import { VISITOR_PLAN_LABELS } from "@/lib/visitors/subscription";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +15,17 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireVisitorManagementAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId, isAdmin } = auth;
+    const { admin, userId, isAdmin, email: callerEmail } = auth;
 
     if (isAdmin) {
       return NextResponse.json({ error: "Admins do not purchase visitor subscriptions." }, { status: 400 });
+    }
+
+    if (isVisitorDemoAccount(callerEmail)) {
+      return NextResponse.json(
+        { error: "This demo account already has full Enterprise access." },
+        { status: 400 }
+      );
     }
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;

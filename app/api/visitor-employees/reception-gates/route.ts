@@ -10,13 +10,14 @@ export async function GET(req: NextRequest) {
   try {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId, isAdmin } = auth;
+    const { admin, userId, isAdmin, email } = auth;
 
     const subBlock = await assertVisitorSubscriptionAllows(
       admin,
       userId,
       isAdmin,
-      "reception_qr_device"
+      "reception_qr_device",
+      email
     );
     if (subBlock) return subBlock;
 
