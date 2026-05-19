@@ -38,6 +38,9 @@ import {
   signInReportingStatus,
   signInStatusClass,
   signInStatusLabel,
+  signOutReportingStatus,
+  signOutStatusClass,
+  signOutStatusLabel,
 } from "@/lib/employees/reporting-time";
 import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
@@ -225,9 +228,9 @@ export default function VisitorManagementEmployeesPage() {
   }, [getToken]);
 
   useEffect(() => {
-    if (!isRealEstate || setupRequired) return;
+    if (setupRequired) return;
     void loadReportingSettings();
-  }, [isRealEstate, setupRequired, loadReportingSettings]);
+  }, [setupRequired, loadReportingSettings]);
 
   const handleDownloadPdf = useCallback(
     async (emp: EmployeeRecord) => {
@@ -537,12 +540,14 @@ export default function VisitorManagementEmployeesPage() {
         </h1>
         <p className="mt-1 text-sm text-gray-600">
           Add staff manually, issue a unique QR pass per person, and record sign-in and sign-out.
-          Organisation directors receive email when someone reports to work or leaves.
+          Organisation directors receive email when someone reports to work or leaves. Staff who
+          sign in after your latest reporting time are marked <strong className="text-red-700">late</strong>.
+          Configure windows below (default: report 7:00–8:00 AM, sign out from 5:00 PM).
           {isRealEstate ? (
             <>
               {" "}
-              As a real estate account, set separate reporting times for <strong>staff</strong> and{" "}
-              <strong>CRM</strong> teams below.
+              Real estate accounts can set separate times for <strong>staff</strong> and{" "}
+              <strong>CRM</strong> teams.
             </>
           ) : null}
         </p>
@@ -632,7 +637,9 @@ export default function VisitorManagementEmployeesPage() {
 
       <NotificationAdminsPanel disabled={setupRequired} />
 
-      {isRealEstate ? <ReportingTimesPanel disabled={setupRequired} /> : null}
+      {!setupRequired ? (
+        <ReportingTimesPanel disabled={setupRequired} isRealEstate={isRealEstate} />
+      ) : null}
 
       <AddEmployeeModal
         open={addOpen}
@@ -795,25 +802,23 @@ export default function VisitorManagementEmployeesPage() {
                     <td className="px-4 py-3 text-gray-600">
                       {formatEmployeeTimestamp(emp.lastSignedInAt)}
                     </td>
-                    {isRealEstate ? (
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${signInStatusClass(
-                            signInReportingStatus(
-                              emp.lastSignedInAt,
-                              reportingWindowForMember(reportingSettings, emp.memberType).signIn
-                            )
-                          )}`}
-                        >
-                          {signInStatusLabel(
-                            signInReportingStatus(
-                              emp.lastSignedInAt,
-                              reportingWindowForMember(reportingSettings, emp.memberType).signIn
-                            )
-                          )}
-                        </span>
-                      </td>
-                    ) : null}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${signInStatusClass(
+                          signInReportingStatus(
+                            emp.lastSignedInAt,
+                            reportingWindowForMember(reportingSettings, emp.memberType)
+                          )
+                        )}`}
+                      >
+                        {signInStatusLabel(
+                          signInReportingStatus(
+                            emp.lastSignedInAt,
+                            reportingWindowForMember(reportingSettings, emp.memberType)
+                          )
+                        )}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${employeeStatusBadgeClass(emp.status)}`}
@@ -914,6 +919,17 @@ export default function VisitorManagementEmployeesPage() {
           <ul className="divide-y divide-gray-100">
             {attendance.map((row) => {
               const emp = employeeById.get(row.employeeId);
+              const memberWindow = emp
+                ? reportingWindowForMember(reportingSettings, emp.memberType)
+                : null;
+              const signInStatus =
+                row.eventType === "sign_in" && memberWindow
+                  ? signInReportingStatus(row.createdAt, memberWindow)
+                  : null;
+              const signOutStatus =
+                row.eventType === "sign_out" && memberWindow
+                  ? signOutReportingStatus(row.createdAt, memberWindow.signOut)
+                  : null;
               return (
               <li key={row.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="font-medium text-gray-900 flex flex-wrap items-center gap-2">
@@ -925,10 +941,28 @@ export default function VisitorManagementEmployeesPage() {
                       {memberTypeLabel(emp.memberType)}
                     </span>
                   ) : null}
+                  {signInStatus && signInStatus !== "unknown" ? (
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signInStatusClass(signInStatus)}`}
+                    >
+                      {signInStatusLabel(signInStatus)}
+                    </span>
+                  ) : null}
+                  {signOutStatus && signOutStatus !== "unknown" ? (
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signOutStatusClass(signOutStatus)}`}
+                    >
+                      {signOutStatusLabel(signOutStatus)}
+                    </span>
+                  ) : null}
                 </span>
                 <span
                   className={
-                    row.eventType === "sign_in" ? "text-emerald-700 font-semibold" : "text-slate-600 font-semibold"
+                    row.eventType === "sign_in"
+                      ? signInStatus === "late"
+                        ? "text-red-700 font-semibold"
+                        : "text-emerald-700 font-semibold"
+                      : "text-slate-600 font-semibold"
                   }
                 >
                   {row.eventType === "sign_in" ? "Signed in" : "Signed out"}

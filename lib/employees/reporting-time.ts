@@ -1,22 +1,30 @@
 import type { EmployeeMemberType, EmployeeReportingSettings } from "@/lib/employees/types";
 
+export type MemberReportingWindow = {
+  signInStart: string;
+  signInLatest: string;
+  signOut: string;
+};
+
 export function reportingWindowForMember(
   settings: EmployeeReportingSettings,
   memberType: EmployeeMemberType
-): { signIn: string; signOut: string } {
+): MemberReportingWindow {
   if (memberType === "crm") {
     return {
-      signIn: settings.crmReportingSignIn,
+      signInStart: settings.crmReportingSignInStart,
+      signInLatest: settings.crmReportingSignIn,
       signOut: settings.crmReportingSignOut,
     };
   }
   return {
-    signIn: settings.staffReportingSignIn,
+    signInStart: settings.staffReportingSignInStart,
+    signInLatest: settings.staffReportingSignIn,
     signOut: settings.staffReportingSignOut,
   };
 }
 
-/** Format HH:mm for display (e.g. 9:00 AM). */
+/** Format HH:mm for display (e.g. 7:00 AM). */
 export function formatReportingTime(time24: string): string {
   const m = time24.match(/^(\d{2}):(\d{2})/);
   if (!m) return time24;
@@ -25,6 +33,10 @@ export function formatReportingTime(time24: string): string {
   const hour12 = h % 12 || 12;
   const ampm = h < 12 ? "AM" : "PM";
   return `${hour12}:${min} ${ampm}`;
+}
+
+export function formatSignInWindowLabel(window: MemberReportingWindow): string {
+  return `${formatReportingTime(window.signInStart)} – ${formatReportingTime(window.signInLatest)}`;
 }
 
 /** Minutes since midnight from ISO timestamp in local interpretation. */
@@ -41,19 +53,23 @@ function minutesFromTime(time24: string): number {
   return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
 }
 
+export type SignInReportingStatus = "on_time" | "late" | "early" | "unknown";
+
+/** On time when sign-in is within [signInStart, signInLatest]; after latest = late. */
 export function signInReportingStatus(
   signedInAt: string | null | undefined,
-  expectedSignIn: string
-): "on_time" | "late" | "early" | "unknown" {
+  window: MemberReportingWindow
+): SignInReportingStatus {
   const actual = minutesFromIso(signedInAt);
   if (actual === null) return "unknown";
-  const expected = minutesFromTime(expectedSignIn);
-  if (actual === expected) return "on_time";
-  if (actual > expected) return "late";
-  return "early";
+  const start = minutesFromTime(window.signInStart);
+  const latest = minutesFromTime(window.signInLatest);
+  if (actual < start) return "early";
+  if (actual > latest) return "late";
+  return "on_time";
 }
 
-export function signInStatusLabel(status: ReturnType<typeof signInReportingStatus>): string {
+export function signInStatusLabel(status: SignInReportingStatus): string {
   switch (status) {
     case "on_time":
       return "On time";
@@ -66,14 +82,50 @@ export function signInStatusLabel(status: ReturnType<typeof signInReportingStatu
   }
 }
 
-export function signInStatusClass(status: ReturnType<typeof signInReportingStatus>): string {
+export function signInStatusClass(status: SignInReportingStatus): string {
   switch (status) {
     case "on_time":
       return "text-emerald-700 bg-emerald-50 border-emerald-200";
     case "late":
-      return "text-amber-800 bg-amber-50 border-amber-200";
+      return "text-red-800 bg-red-50 border-red-300";
     case "early":
       return "text-sky-700 bg-sky-50 border-sky-200";
+    default:
+      return "text-gray-500 bg-gray-50 border-gray-200";
+  }
+}
+
+export type SignOutReportingStatus = "on_time" | "early" | "unknown";
+
+/** On time when sign-out is at or after expected sign-out time (e.g. 5:00 PM). */
+export function signOutReportingStatus(
+  signedOutAt: string | null | undefined,
+  expectedSignOut: string
+): SignOutReportingStatus {
+  const actual = minutesFromIso(signedOutAt);
+  if (actual === null) return "unknown";
+  const expected = minutesFromTime(expectedSignOut);
+  if (actual < expected) return "early";
+  return "on_time";
+}
+
+export function signOutStatusLabel(status: SignOutReportingStatus): string {
+  switch (status) {
+    case "on_time":
+      return "Left on time";
+    case "early":
+      return "Left early";
+    default:
+      return "—";
+  }
+}
+
+export function signOutStatusClass(status: SignOutReportingStatus): string {
+  switch (status) {
+    case "on_time":
+      return "text-emerald-700 bg-emerald-50 border-emerald-200";
+    case "early":
+      return "text-amber-800 bg-amber-50 border-amber-200";
     default:
       return "text-gray-500 bg-gray-50 border-gray-200";
   }

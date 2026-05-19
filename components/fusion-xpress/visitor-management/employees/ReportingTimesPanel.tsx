@@ -5,14 +5,18 @@ import { Clock, Save } from "lucide-react";
 
 import type { EmployeeReportingSettings } from "@/lib/employees/types";
 import { DEFAULT_REPORTING_SETTINGS } from "@/lib/employees/db-mapper";
-import { formatReportingTime } from "@/lib/employees/reporting-time";
+import { formatReportingTime, formatSignInWindowLabel } from "@/lib/employees/reporting-time";
 import { supabase } from "@/lib/supabase";
 
 type ReportingTimesPanelProps = {
   disabled?: boolean;
+  isRealEstate?: boolean;
 };
 
-export default function ReportingTimesPanel({ disabled }: ReportingTimesPanelProps) {
+export default function ReportingTimesPanel({
+  disabled,
+  isRealEstate = false,
+}: ReportingTimesPanelProps) {
   const [settings, setSettings] = useState<EmployeeReportingSettings>(DEFAULT_REPORTING_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -106,20 +110,42 @@ export default function ReportingTimesPanel({ disabled }: ReportingTimesPanelPro
     </label>
   );
 
+  const staffWindow = {
+    signInStart: settings.staffReportingSignInStart,
+    signInLatest: settings.staffReportingSignIn,
+    signOut: settings.staffReportingSignOut,
+  };
+
+  const crmWindow = {
+    signInStart: settings.crmReportingSignInStart,
+    signInLatest: settings.crmReportingSignIn,
+    signOut: settings.crmReportingSignOut,
+  };
+
   return (
     <section className="rounded-xl border border-primary-200 bg-primary-50/40 overflow-hidden">
       <div className="px-4 py-3 border-b border-primary-100 bg-white/80 flex items-center gap-2">
         <Clock className="w-4 h-4 text-primary-600" />
-        <span className="text-sm font-bold text-primary-900">Real Estate — reporting times</span>
+        <span className="text-sm font-bold text-primary-900">Reporting times</span>
       </div>
       <form onSubmit={handleSave} className="p-4 space-y-4">
         <p className="text-xs text-primary-900/80">
-          Set expected sign-in and sign-out times separately for <strong>staff</strong> and{" "}
-          <strong>CRM</strong> teams. Attendance is compared against these windows on your dashboard.
+          Set when staff should report to work and leave. Sign-in between the start and latest times
+          counts as <strong>on time</strong>; after the latest time is marked <strong className="text-red-700">late</strong>.
+          Sign-out is expected from the sign-out time (e.g. 5:00 PM).
+          {isRealEstate ? (
+            <>
+              {" "}
+              Real estate accounts can set different windows for <strong>staff</strong> and{" "}
+              <strong>CRM</strong> teams.
+            </>
+          ) : null}
         </p>
         {setupRequired ? (
           <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             Run <code className="font-mono">database/visitor_employees_patch_03_real_estate_crm.sql</code>{" "}
+            and{" "}
+            <code className="font-mono">database/visitor_employees_patch_06_reporting_windows.sql</code>{" "}
             in Supabase to save reporting times.
           </p>
         ) : null}
@@ -132,33 +158,43 @@ export default function ReportingTimesPanel({ disabled }: ReportingTimesPanelPro
         {loading ? (
           <p className="text-sm text-gray-500">Loading…</p>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${isRealEstate ? "sm:grid-cols-2" : ""}`}>
             <div className="rounded-lg border border-white bg-white p-3 space-y-3">
-              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">Staff</p>
-              {field("Expected sign-in", settings.staffReportingSignIn, (v) =>
+              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">
+                {isRealEstate ? "Staff team" : "Your organisation"}
+              </p>
+              {field("Sign-in from", settings.staffReportingSignInStart, (v) =>
+                setSettings((s) => ({ ...s, staffReportingSignInStart: v }))
+              )}
+              {field("Sign-in until (on time)", settings.staffReportingSignIn, (v) =>
                 setSettings((s) => ({ ...s, staffReportingSignIn: v }))
               )}
-              {field("Expected sign-out", settings.staffReportingSignOut, (v) =>
+              {field("Sign-out from", settings.staffReportingSignOut, (v) =>
                 setSettings((s) => ({ ...s, staffReportingSignOut: v }))
               )}
               <p className="text-[10px] text-gray-500">
-                Window: {formatReportingTime(settings.staffReportingSignIn)} –{" "}
+                Report between {formatSignInWindowLabel(staffWindow)} · leave from{" "}
                 {formatReportingTime(settings.staffReportingSignOut)}
               </p>
             </div>
-            <div className="rounded-lg border border-white bg-white p-3 space-y-3">
-              <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">CRM team</p>
-              {field("Expected sign-in", settings.crmReportingSignIn, (v) =>
-                setSettings((s) => ({ ...s, crmReportingSignIn: v }))
-              )}
-              {field("Expected sign-out", settings.crmReportingSignOut, (v) =>
-                setSettings((s) => ({ ...s, crmReportingSignOut: v }))
-              )}
-              <p className="text-[10px] text-gray-500">
-                Window: {formatReportingTime(settings.crmReportingSignIn)} –{" "}
-                {formatReportingTime(settings.crmReportingSignOut)}
-              </p>
-            </div>
+            {isRealEstate ? (
+              <div className="rounded-lg border border-white bg-white p-3 space-y-3">
+                <p className="text-xs font-bold text-gray-800 uppercase tracking-wide">CRM team</p>
+                {field("Sign-in from", settings.crmReportingSignInStart, (v) =>
+                  setSettings((s) => ({ ...s, crmReportingSignInStart: v }))
+                )}
+                {field("Sign-in until (on time)", settings.crmReportingSignIn, (v) =>
+                  setSettings((s) => ({ ...s, crmReportingSignIn: v }))
+                )}
+                {field("Sign-out from", settings.crmReportingSignOut, (v) =>
+                  setSettings((s) => ({ ...s, crmReportingSignOut: v }))
+                )}
+                <p className="text-[10px] text-gray-500">
+                  Report between {formatSignInWindowLabel(crmWindow)} · leave from{" "}
+                  {formatReportingTime(settings.crmReportingSignOut)}
+                </p>
+              </div>
+            ) : null}
           </div>
         )}
         <button

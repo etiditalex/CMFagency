@@ -28,8 +28,10 @@ export type EmployeeRow = {
 
 export type ReportingSettingsRow = {
   owner_id: string;
+  staff_reporting_sign_in_start?: string | null;
   staff_reporting_sign_in: string;
   staff_reporting_sign_out: string;
+  crm_reporting_sign_in_start?: string | null;
   crm_reporting_sign_in: string;
   crm_reporting_sign_out: string;
   updated_at: string;
@@ -49,19 +51,23 @@ export function mapReportingSettingsRow(
   row: ReportingSettingsRow | null
 ): EmployeeReportingSettings {
   return {
-    staffReportingSignIn: normalizeTime(row?.staff_reporting_sign_in),
-    staffReportingSignOut: normalizeTime(row?.staff_reporting_sign_out),
-    crmReportingSignIn: normalizeTime(row?.crm_reporting_sign_in ?? "08:30"),
-    crmReportingSignOut: normalizeTime(row?.crm_reporting_sign_out ?? "18:00"),
+    staffReportingSignInStart: normalizeTime(row?.staff_reporting_sign_in_start ?? "07:00"),
+    staffReportingSignIn: normalizeTime(row?.staff_reporting_sign_in ?? "08:00"),
+    staffReportingSignOut: normalizeTime(row?.staff_reporting_sign_out ?? "17:00"),
+    crmReportingSignInStart: normalizeTime(row?.crm_reporting_sign_in_start ?? "07:00"),
+    crmReportingSignIn: normalizeTime(row?.crm_reporting_sign_in ?? "08:00"),
+    crmReportingSignOut: normalizeTime(row?.crm_reporting_sign_out ?? "17:00"),
     updatedAt: row?.updated_at ?? null,
   };
 }
 
 export const DEFAULT_REPORTING_SETTINGS: EmployeeReportingSettings = {
-  staffReportingSignIn: "09:00",
+  staffReportingSignInStart: "07:00",
+  staffReportingSignIn: "08:00",
   staffReportingSignOut: "17:00",
-  crmReportingSignIn: "08:30",
-  crmReportingSignOut: "18:00",
+  crmReportingSignInStart: "07:00",
+  crmReportingSignIn: "08:00",
+  crmReportingSignOut: "17:00",
   updatedAt: null,
 };
 

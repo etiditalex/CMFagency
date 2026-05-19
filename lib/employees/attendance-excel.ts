@@ -22,7 +22,7 @@ function employeeSummaryRow(
   includeReporting: boolean
 ) {
   const window = reportingWindowForMember(reportingSettings, e.memberType);
-  const reportingStatus = signInReportingStatus(e.lastSignedInAt, window.signIn);
+  const reportingStatus = signInReportingStatus(e.lastSignedInAt, window);
   const base = {
     Name: e.fullName,
     Team: memberTypeLabel(e.memberType),
@@ -38,8 +38,8 @@ function employeeSummaryRow(
   if (!includeReporting) return base;
   return {
     ...base,
-    "Expected sign-in": window.signIn,
-    "Expected sign-out": window.signOut,
+    "Sign-in window": `${window.signInStart} – ${window.signInLatest}`,
+    "Sign-out from": window.signOut,
     "Sign-in vs reporting": signInStatusLabel(reportingStatus),
   };
 }
@@ -59,7 +59,7 @@ export async function downloadEmployeeAttendanceExcel(params: {
   const employeeById = new Map(params.employees.map((e) => [e.id, e]));
 
   const buildSummaryRows = (list: EmployeeRecord[]) =>
-    list.map((e) => employeeSummaryRow(e, reporting, isRealEstate));
+    list.map((e) => employeeSummaryRow(e, reporting, true));
 
   const staffTeam = params.employees.filter((e) => e.memberType === "staff");
   const crmTeam = params.employees.filter((e) => e.memberType === "crm");
@@ -103,7 +103,7 @@ export async function downloadEmployeeAttendanceExcel(params: {
           ? buildSummaryRows(params.employees)
           : [{ note: "No staff" }]
       ),
-      "Staff summary"
+      isRealEstate ? "Staff summary" : "Employees"
     );
   }
 

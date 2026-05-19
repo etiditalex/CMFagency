@@ -5,8 +5,13 @@ export type EmployeeAttendanceEventType = "sign_in" | "sign_out";
 export type EmployeeMemberType = "staff" | "crm";
 
 export type EmployeeReportingSettings = {
+  /** Earliest expected sign-in (e.g. 07:00). */
+  staffReportingSignInStart: string;
+  /** Latest on-time sign-in (e.g. 08:00); after this = late. */
   staffReportingSignIn: string;
+  /** Expected sign-out from this time (e.g. 17:00). */
   staffReportingSignOut: string;
+  crmReportingSignInStart: string;
   crmReportingSignIn: string;
   crmReportingSignOut: string;
   updatedAt: string | null;
