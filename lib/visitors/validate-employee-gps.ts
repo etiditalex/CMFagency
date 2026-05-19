@@ -44,7 +44,7 @@ export async function validateEmployeeScanGps(
     return {
       ok: false,
       error:
-        "Your organisation workplace location is not configured yet. Ask your manager to complete setup in Visitor Management → Employees → GPS tracking.",
+        "Your organisation workplace location is not configured yet. Ask your manager to set it up under Visitor Management → Employees → GPS tracking in the dashboard.",
       status: 403,
     };
   }

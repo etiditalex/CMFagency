@@ -49,7 +49,10 @@ import { usePortal } from "@/contexts/PortalContext";
 import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/VisitorTrialBanner";
 import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
@@ -175,7 +178,15 @@ function isVisitorNavChildActive(
   industryParam: string | null,
   child: VisitorManagementNavChild
 ) {
-  if ("href" in child) return pathname === child.href;
+  if ("href" in child) {
+    if (child.href === VISITOR_MANAGEMENT_EMPLOYEES_PATH) {
+      return (
+        pathname === child.href ||
+        (pathname.startsWith(`${child.href}/`) && pathname !== VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH)
+      );
+    }
+    return pathname === child.href || pathname.startsWith(`${child.href}/`);
+  }
   return isVisitorIndustryChildActive(pathname, industryParam, child.industrySlug);
 }
 
@@ -259,13 +270,17 @@ function DashboardNavItem({
               .map((child) => {
                 const childActive = isVisitorNavChildActive(pathname, visitorIndustry, child);
                 const childKey = "href" in child ? child.href : child.industrySlug;
+                const nestedUnderEmployees =
+                  "href" in child && "underEmployees" in child && child.underEmployees;
                 return (
                   <Link
                     key={childKey}
                     href={visitorNavChildHref(child)}
                     prefetch={false}
                     onClick={onNavigate}
-                    className={`block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`block rounded-md py-2 font-medium transition-colors ${
+                      nestedUnderEmployees ? "ml-3 px-3 text-xs" : "px-3 text-sm"
+                    } ${
                       childActive
                         ? "bg-primary-600/25 text-white border border-primary-500/20"
                         : "text-white/70 hover:bg-white/5 hover:text-white"
@@ -329,6 +344,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           ...item,
           children: [
             VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+            VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
           ],
         };
@@ -336,6 +352,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       const children: VisitorManagementNavChild[] = [
         ...VISITOR_MANAGEMENT_NAV_CHILDREN,
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+        VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
       ];
       return { ...item, children };

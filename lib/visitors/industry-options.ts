@@ -22,6 +22,7 @@ export function isVisitorIndustrySlug(slug: string): slug is VisitorIndustrySlug
 export const VISITOR_MANAGEMENT_PATH = "/dashboard/visitor-management";
 export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/accounts`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_PATH = `${VISITOR_MANAGEMENT_PATH}/employees`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_PATH = `${VISITOR_MANAGEMENT_PATH}/subscription`;
 
@@ -54,6 +55,8 @@ export type VisitorManagementLinkNavChild = {
   label: string;
   href: string;
   adminOnly?: boolean;
+  /** Nested visually under Employees in the Visitor Management sidebar. */
+  underEmployees?: boolean;
 };
 
 export type VisitorManagementNavChild =
@@ -74,6 +77,12 @@ export const VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD: VisitorManagementLinkNavChil
 export const VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "Employees",
   href: VISITOR_MANAGEMENT_EMPLOYEES_PATH,
+};
+
+export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "GPS tracking",
+  href: VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  underEmployees: true,
 };
 
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD: VisitorManagementLinkNavChild = {

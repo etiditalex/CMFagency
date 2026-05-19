@@ -25,7 +25,6 @@ import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/e
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
-import WorkplaceLocationPanel from "@/components/fusion-xpress/visitor-management/employees/WorkplaceLocationPanel";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -63,6 +62,7 @@ import {
 } from "@/lib/employees/utils";
 import { supabase } from "@/lib/supabase";
 import {
+  VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
@@ -561,7 +561,15 @@ export default function VisitorManagementEmployeesPage() {
       </div>
 
       {setupRequired ? <EmployeeSetupBanner /> : null}
-      {!setupRequired ? <WorkplaceLocationPanel businessName={organizationName} /> : null}
+      {!setupRequired ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+          Workplace GPS sign-in is configured under{" "}
+          <Link href={VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH} className="font-bold underline">
+            Employees → GPS tracking
+          </Link>
+          . Set your reception pin there before staff scan the QR.
+        </p>
+      ) : null}
       {loadError && !setupRequired ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
