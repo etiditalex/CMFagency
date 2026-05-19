@@ -3,15 +3,15 @@
 import { QRCodeSVG } from "qrcode.react";
 
 import { receptionGateQrPayload } from "@/lib/employees/reception-gate";
-import { employeeQrPayload } from "@/lib/employees/utils";
+import { crmSiteQrPayload, employeeQrPayload } from "@/lib/employees/utils";
 
 type EmployeeQrCodeProps = {
   token: string;
   size?: number;
   className?: string;
   employeeName?: string;
-  /** Reception desk QR encodes gate URL; default is personal employee pass */
-  variant?: "employee" | "gate";
+  /** Reception desk QR encodes gate URL; crm_site is project site GPS visits */
+  variant?: "employee" | "gate" | "crm_site";
 };
 
 export default function EmployeeQrCode({
@@ -25,7 +25,9 @@ export default function EmployeeQrCode({
   const value =
     variant === "gate"
       ? receptionGateQrPayload(token, origin)
-      : employeeQrPayload(token, origin);
+      : variant === "crm_site"
+        ? crmSiteQrPayload(token, origin)
+        : employeeQrPayload(token, origin);
 
   return (
     <div className={`inline-flex flex-col items-center gap-2 ${className}`}>

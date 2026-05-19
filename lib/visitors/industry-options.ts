@@ -24,12 +24,15 @@ export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/acco
 export const VISITOR_MANAGEMENT_EMPLOYEES_PATH = `${VISITOR_MANAGEMENT_PATH}/employees`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/crm-site-gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
+export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-site-check";
 
 /** Sidebar sub-pages under Employees (not the main employees list). */
 export const VISITOR_MANAGEMENT_EMPLOYEES_NESTED_PATHS = [
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
 ] as const;
 
 export function isEmployeesNestedNavPath(pathname: string): boolean {
@@ -70,6 +73,8 @@ export type VisitorManagementLinkNavChild = {
   adminOnly?: boolean;
   /** Nested visually under Employees in the Visitor Management sidebar. */
   underEmployees?: boolean;
+  /** Only shown when organisation industry is real-estate. */
+  realEstateOnly?: boolean;
 };
 
 export type VisitorManagementNavChild =
@@ -102,6 +107,13 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD: VisitorManagementLi
   label: "Summary reports",
   href: VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   underEmployees: true,
+};
+
+export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "CRM site GPS",
+  href: VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
+  underEmployees: true,
+  realEstateOnly: true,
 };
 
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD: VisitorManagementLinkNavChild = {

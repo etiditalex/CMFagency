@@ -40,3 +40,10 @@ export function employeeQrPayload(token: string, siteOrigin?: string): string {
   const path = `/fusion-xpress/smart-visitor-management/employee-check?token=${encodeURIComponent(token)}`;
   return base ? `${base}${path}` : path;
 }
+
+/** CRM field visit sign-in/out at project sites (real estate). */
+export function crmSiteQrPayload(token: string, siteOrigin?: string): string {
+  const base = (siteOrigin ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const path = `/fusion-xpress/smart-visitor-management/crm-site-check?token=${encodeURIComponent(token)}`;
+  return base ? `${base}${path}` : path;
+}

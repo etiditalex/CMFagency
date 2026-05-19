@@ -46,9 +46,11 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { useOrganizationIndustry } from "@/lib/hooks/useOrganizationIndustry";
 import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/VisitorTrialBanner";
 import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
@@ -336,31 +338,43 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly } =
     usePortal();
+  const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
   const navItems = useMemo(() => {
+    const filterVmChildren = (children: VisitorManagementNavChild[]) =>
+      children.filter((child) => {
+        if ("adminOnly" in child && child.adminOnly && !isAdmin) return false;
+        if ("realEstateOnly" in child && child.realEstateOnly && (!isRealEstate || industryLoading)) {
+          return false;
+        }
+        return true;
+      });
+
     return NAV.map((item) => {
       if (item.href !== VISITOR_MANAGEMENT_PATH) return item;
       if (isVisitorOnly) {
         return {
           ...item,
-          children: [
+          children: filterVmChildren([
             VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
+            VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
-          ],
+          ]),
         };
       }
-      const children: VisitorManagementNavChild[] = [
+      const children: VisitorManagementNavChild[] = filterVmChildren([
         ...VISITOR_MANAGEMENT_NAV_CHILDREN,
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
+        VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
-      ];
+      ]);
       return { ...item, children };
     });
-  }, [isVisitorOnly, isAdmin]);
+  }, [isVisitorOnly, isAdmin, isRealEstate, industryLoading]);
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoutRef = useRef(logout);

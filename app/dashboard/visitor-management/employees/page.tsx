@@ -62,6 +62,7 @@ import {
 } from "@/lib/employees/utils";
 import { supabase } from "@/lib/supabase";
 import {
+  VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
@@ -574,6 +575,16 @@ export default function VisitorManagementEmployeesPage() {
             Summary reports
           </Link>
           .
+          {isRealEstate ? (
+            <>
+              {" "}
+              CRM project site visits:{" "}
+              <Link href={VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH} className="font-bold underline">
+                CRM site GPS
+              </Link>
+              .
+            </>
+          ) : null}
         </p>
       ) : null}
       {loadError && !setupRequired ? (
@@ -682,8 +693,33 @@ export default function VisitorManagementEmployeesPage() {
               <X className="h-5 w-5" />
             </button>
             <p className="text-sm font-bold text-gray-900 mb-4">QR pass — {qrEmployee.fullName}</p>
-            <EmployeeQrCode token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} size={200} />
+            {isRealEstate && qrEmployee.memberType === "crm" ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">Workplace (reception)</p>
+                  <EmployeeQrCode
+                    token={qrEmployee.qrCodeToken}
+                    employeeName={qrEmployee.fullName}
+                    size={160}
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-emerald-800 mb-2">Project site GPS</p>
+                  <EmployeeQrCode
+                    token={qrEmployee.qrCodeToken}
+                    employeeName={qrEmployee.fullName}
+                    size={160}
+                    variant="crm_site"
+                  />
+                </div>
+              </div>
+            ) : (
+              <EmployeeQrCode token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} size={200} />
+            )}
             <p className="mt-4 text-xs text-gray-500">
+              {isRealEstate && qrEmployee.memberType === "crm"
+                ? "CRM: use workplace QR at the office and site GPS QR at each project. "
+                : null}
               {canDownloadQr
                 ? "Download the PDF for printing. Each scan records sign-in/out time and emails directors."
                 : "View on screen during trial. Upgrade to Professional to download QR PDFs for printing."}
