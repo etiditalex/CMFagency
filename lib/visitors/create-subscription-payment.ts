@@ -9,7 +9,6 @@ import {
   getVisitorSubscriptionPaystackSubunit,
   parseBillingInterval,
   parsePaidVisitorPlan,
-  VISITOR_PAYSTACK_CURRENCY,
   type PaidVisitorPlan,
   type VisitorBillingInterval,
 } from "@/lib/visitors/subscription-pricing";
@@ -29,7 +28,7 @@ export type CreateSubscriptionPaymentResult =
   | {
       ok: true;
       reference: string;
-      amountUsd: number;
+      amountAud: number;
       amountKes: number;
       paystackSubunit: number;
       currency: string;
@@ -58,7 +57,7 @@ export async function createVisitorSubscriptionPayment(
     return { ok: false, status: 400, error: "Subscription payments are paused. Contact support." };
   }
 
-  const amountUsd = getVisitorSubscriptionAmountUsd(plan, billingInterval);
+  const amountAud = getVisitorSubscriptionAmountUsd(plan, billingInterval);
   const amountKes = getVisitorSubscriptionAmountKes(plan, billingInterval);
   const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
 
@@ -73,7 +72,6 @@ export async function createVisitorSubscriptionPayment(
   metadata.payment_reference = reference;
 
   const isPaystack = provider === "paystack";
-  const paystackCurrency = VISITOR_PAYSTACK_CURRENCY;
   const insertPayload = {
     campaign_id: campaign.id,
     campaign_type: campaign.type,
@@ -82,9 +80,9 @@ export async function createVisitorSubscriptionPayment(
     email,
     payer_name: payerName,
     quantity: 1,
-    currency: isPaystack ? paystackCurrency : "KES",
-    unit_amount: isPaystack ? amountUsd : amountKes,
-    amount: isPaystack ? amountUsd : Math.round(amountKes),
+    currency: isPaystack ? "AUD" : "KES",
+    unit_amount: isPaystack ? amountAud : amountKes,
+    amount: isPaystack ? Math.round(amountAud) : Math.round(amountKes),
     discount_amount: 0,
     coupon_id: null,
     contestant_id: null,
@@ -92,7 +90,7 @@ export async function createVisitorSubscriptionPayment(
     metadata: {
       ...metadata,
       paystack_amount_subunit: getVisitorSubscriptionPaystackSubunit(plan, billingInterval),
-      paystack_currency: paystackCurrency,
+      paystack_currency: "AUD",
       mpesa_amount_kes: amountKes,
     },
   };
@@ -105,10 +103,10 @@ export async function createVisitorSubscriptionPayment(
   return {
     ok: true,
     reference,
-    amountUsd,
+    amountAud,
     amountKes,
     paystackSubunit: getVisitorSubscriptionPaystackSubunit(plan, billingInterval),
-    currency: paystackCurrency,
+    currency: "AUD",
     email,
     campaignId: campaign.id,
     metadata,

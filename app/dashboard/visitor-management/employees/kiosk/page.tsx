@@ -82,6 +82,30 @@ export default function EmployeeKioskPage() {
     setCameraError(null);
 
     try {
+      let latitude: number;
+      let longitude: number;
+      let accuracyMeters: number;
+      try {
+        const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+        const pos = await getBrowserPosition({
+          timeoutMs: 25000,
+          maximumAge: 60_000,
+        });
+        latitude = pos.latitude;
+        longitude = pos.longitude;
+        accuracyMeters = pos.accuracyMeters;
+      } catch (e: unknown) {
+        setFeedback({
+          ok: false,
+          title: "Scan failed",
+          detail:
+            e instanceof Error
+              ? e.message
+              : "Location is required to sign in or out. Allow location for this site in your browser and try again.",
+        });
+        return;
+      }
+
       const deviceId = getOrCreateBrowserDeviceId();
       const res = await fetch("/api/visitor-employees/scan", {
         method: "POST",
@@ -91,6 +115,9 @@ export default function EmployeeKioskPage() {
           action: "toggle",
           deviceId,
           deviceLabel: `Kiosk · ${browserDeviceLabel()}`,
+          latitude,
+          longitude,
+          accuracyMeters,
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
           platform: typeof navigator !== "undefined" ? navigator.platform : "",
           language: typeof navigator !== "undefined" ? navigator.language : "",
@@ -133,6 +160,12 @@ export default function EmployeeKioskPage() {
   const startCamera = useCallback(async () => {
     setCameraError(null);
     try {
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+        await getBrowserPosition({ timeoutMs: 15000, maximumAge: 120_000 }).catch(() => {
+          /* warm-up only; scan will retry with a fresh read */
+        });
+      }
       const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode(SCANNER_DIV_ID) as unknown as QrScanner;
       scannerRef.current = scanner;
@@ -186,10 +219,6 @@ export default function EmployeeKioskPage() {
           <ScanLine className="w-7 h-7 text-primary-600" />
           Staff QR kiosk
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Point the camera at an employee QR pass. Each scan records the device and toggles sign-in
-          or sign-out. Directors are emailed automatically.
-        </p>
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-gray-900 overflow-hidden">
@@ -227,7 +256,7 @@ export default function EmployeeKioskPage() {
       {scanning ? (
         <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Recording attendance…
+          Getting location and recording attendance…
         </p>
       ) : null}
 
