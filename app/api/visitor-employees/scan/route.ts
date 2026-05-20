@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
       latitude: body.latitude ?? body.lat,
       longitude: body.longitude ?? body.lng ?? body.lon,
       accuracyMeters: body.accuracyMeters ?? body.accuracy_meters ?? body.accuracy,
+      kioskScan: body.kioskScan ?? body.kiosk_scan,
+      scanSource: body.scanSource ?? body.scan_source,
     };
 
     const gateToken = String(scanInput.gate ?? "").trim();
@@ -59,6 +61,7 @@ export async function POST(req: NextRequest) {
         id: result.employee.id,
         fullName: result.employee.fullName,
         department: result.employee.department,
+        memberType: result.employee.memberType,
         attendanceStatus: result.employee.attendanceStatus,
       },
     });

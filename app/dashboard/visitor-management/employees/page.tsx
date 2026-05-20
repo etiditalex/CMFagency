@@ -604,8 +604,9 @@ export default function VisitorManagementEmployeesPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-gray-600">
-          Mount the reception team QR at the desk. Scanning opens the sign-in page on a phone. Use the
-          kiosk scanner for individual passes if needed.
+          <strong>Reception kiosk:</strong> one tablet scans every employee&apos;s personal QR (staff
+          and CRM). <strong>Reception team QR:</strong> for phones at the desk. Personal passes are for
+          each person&apos;s own device only.
         </p>
         <div className="flex flex-wrap gap-2">
           <Link

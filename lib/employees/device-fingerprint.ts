@@ -37,6 +37,9 @@ export function normalizeDeviceFingerprint(input: DeviceFingerprintInput): Devic
 /** Stable id for browser clients (call from client before scan). */
 export const EMPLOYEE_DEVICE_STORAGE_KEY = "fx_employee_device_id";
 
+/** Separate id for the shared reception kiosk tablet (not tied to one employee). */
+export const KIOSK_DEVICE_STORAGE_KEY = "fx_employee_kiosk_device_id";
+
 export function getOrCreateBrowserDeviceId(): string {
   if (typeof window === "undefined") return "";
   try {
@@ -50,6 +53,22 @@ export function getOrCreateBrowserDeviceId(): string {
     return id;
   } catch {
     return `dev_${Date.now()}`;
+  }
+}
+
+export function getOrCreateKioskDeviceId(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    const existing = window.localStorage.getItem(KIOSK_DEVICE_STORAGE_KEY);
+    if (existing && existing.length >= 8) return existing;
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `kiosk_${crypto.randomUUID()}`
+        : `kiosk_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    window.localStorage.setItem(KIOSK_DEVICE_STORAGE_KEY, id);
+    return id;
+  } catch {
+    return `kiosk_${Date.now()}`;
   }
 }
 

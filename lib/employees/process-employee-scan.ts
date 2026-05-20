@@ -85,6 +85,11 @@ export async function lookupEmployeeByToken(
   return { ok: true, employee: mapEmployeeRow(row as EmployeeRow) };
 }
 
+function isKioskScan(input: { kioskScan?: unknown; scanSource?: unknown }): boolean {
+  if (input.kioskScan === true || input.kioskScan === "true") return true;
+  return String(input.scanSource ?? "").toLowerCase() === "kiosk";
+}
+
 export async function processEmployeeQrScan(
   admin: SupabaseClient,
   input: DeviceFingerprintInput & {
@@ -96,8 +101,11 @@ export async function processEmployeeQrScan(
     longitude?: unknown;
     accuracyMeters?: unknown;
     accuracy?: unknown;
+    kioskScan?: unknown;
+    scanSource?: unknown;
   }
 ): Promise<EmployeeScanResult> {
+  const fromKiosk = isKioskScan(input);
   const token = parseToken(input.token ?? input.qrToken);
   if (!token) {
     return { ok: false, error: "Missing employee QR token.", status: 400 };
@@ -173,6 +181,7 @@ export async function processEmployeeQrScan(
   });
 
   if (
+    !fromKiosk &&
     employee.registeredDeviceId &&
     device.deviceId !== "unknown-device" &&
     employee.registeredDeviceId !== device.deviceId
@@ -194,7 +203,11 @@ export async function processEmployeeQrScan(
   };
   if (eventType === "sign_in") {
     employeePatch.last_signed_in_at = occurredAt;
-    if (!employee.registeredDeviceId && device.deviceId !== "unknown-device") {
+    if (
+      !fromKiosk &&
+      !employee.registeredDeviceId &&
+      device.deviceId !== "unknown-device"
+    ) {
       employeePatch.registered_device_id = device.deviceId;
     }
   } else {
@@ -249,9 +262,10 @@ export async function processEmployeeQrScan(
   const updatedEmployee: EmployeeRecord = {
     ...employee,
     attendanceStatus: nextAttendanceStatus,
-    registeredDeviceId:
-      employee.registeredDeviceId ??
-      (device.deviceId !== "unknown-device" ? device.deviceId : null),
+    registeredDeviceId: fromKiosk
+      ? employee.registeredDeviceId
+      : employee.registeredDeviceId ??
+        (device.deviceId !== "unknown-device" ? device.deviceId : null),
     lastSignedInAt: eventType === "sign_in" ? occurredAt : employee.lastSignedInAt,
     lastSignedOutAt: eventType === "sign_out" ? occurredAt : employee.lastSignedOutAt,
     updatedAt: occurredAt,
