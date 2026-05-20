@@ -189,9 +189,13 @@ export default function EmployeeKioskPage() {
       const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode(SCANNER_DIV_ID) as unknown as QrScanner;
       scannerRef.current = scanner;
+      const qrbox =
+        typeof window !== "undefined"
+          ? Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.82)
+          : 320;
       await scanner.start(
         { facingMode: "environment" },
-        { fps: 8, qrbox: 260, aspectRatio: 1 },
+        { fps: 10, qrbox: Math.max(240, qrbox), aspectRatio: 1 },
         (text) => void submitToken(text),
         () => {}
       );
@@ -231,47 +235,51 @@ export default function EmployeeKioskPage() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <div>
+    <div className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8 flex flex-col min-h-[calc(100dvh-5.5rem)] sm:min-h-[calc(100dvh-8rem)] max-w-none sm:max-w-2xl sm:mx-auto w-[calc(100%+2rem)] sm:w-full">
+      <div className="shrink-0 px-4 sm:px-0 pb-2 sm:pb-4">
         <Link
           href={VISITOR_MANAGEMENT_EMPLOYEES_PATH}
           className="text-sm font-semibold text-primary-700 hover:underline"
         >
           ← Employees
         </Link>
-        <h1 className="mt-2 text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-          <ScanLine className="w-7 h-7 text-primary-600" />
+        <h1 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+          <ScanLine className="w-6 h-6 sm:w-7 sm:h-7 text-primary-600 shrink-0" />
           Staff QR kiosk
         </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          One tablet at reception scans <strong>every</strong> employee&apos;s personal QR pass (staff
-          and CRM). Each person holds their pass to the camera — they do not use their own phone here.
+        <p className="hidden sm:block mt-2 text-sm text-gray-600">
+          One tablet at reception scans every employee&apos;s personal QR pass (staff and CRM).
         </p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-gray-900 overflow-hidden">
-        <div id={SCANNER_DIV_ID} className="w-full min-h-[280px]" />
+      <div className="relative flex-1 flex flex-col min-h-0 rounded-none sm:rounded-xl border-y sm:border border-gray-200 bg-gray-900 overflow-hidden">
+        <div
+          id={SCANNER_DIV_ID}
+          className="flex-1 w-full min-h-[calc(100dvh-10rem)] sm:min-h-[65vh] md:min-h-[70vh]"
+        />
         {!cameraActive ? (
-          <div className="p-6 text-center space-y-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gray-900">
             <button
               type="button"
               onClick={() => void startCamera()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-5 py-3 text-sm font-bold text-white"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg"
             >
-              <ScanLine className="w-4 h-4" />
+              <ScanLine className="w-5 h-5" />
               Start camera
             </button>
-            <p className="text-xs text-white/70">Allow camera and location when prompted.</p>
+            <p className="mt-3 text-xs text-white/70 max-w-xs">
+              Allow camera and location. Then scan any staff or CRM pass.
+            </p>
           </div>
         ) : (
-          <div className="p-3 text-center space-y-1">
+          <div className="shrink-0 p-2 sm:p-3 text-center space-y-1 bg-gray-950/80 border-t border-white/10">
             {locationReady ? (
-              <p className="text-xs text-emerald-300">Workplace GPS ready — scan any employee pass</p>
+              <p className="text-xs text-emerald-300">GPS ready — scan any employee pass</p>
             ) : null}
             <button
               type="button"
               onClick={() => void stopCamera()}
-              className="text-sm font-semibold text-white/80 hover:text-white"
+              className="text-sm font-semibold text-white/80 hover:text-white py-1"
             >
               Stop camera
             </button>
@@ -279,38 +287,40 @@ export default function EmployeeKioskPage() {
         )}
       </div>
 
-      {cameraError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {cameraError}
-        </p>
-      ) : null}
+      <div className="shrink-0 px-4 sm:px-0 pt-3 sm:pt-4 space-y-3">
+        {cameraError ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {cameraError}
+          </p>
+        ) : null}
 
-      {scanning ? (
-        <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Recording attendance…
-        </p>
-      ) : null}
+        {scanning ? (
+          <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Recording attendance…
+          </p>
+        ) : null}
 
-      {feedback ? (
-        <div
-          className={`rounded-xl border p-5 flex gap-3 ${
-            feedback.ok
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-red-200 bg-red-50 text-red-900"
-          }`}
-        >
-          {feedback.ok ? (
-            <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-600" />
-          ) : (
-            <XCircle className="w-8 h-8 shrink-0 text-red-600" />
-          )}
-          <div>
-            <p className="font-bold text-lg">{feedback.title}</p>
-            <p className="text-sm mt-1">{feedback.detail}</p>
+        {feedback ? (
+          <div
+            className={`rounded-xl border p-4 sm:p-5 flex gap-3 ${
+              feedback.ok
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-red-200 bg-red-50 text-red-900"
+            }`}
+          >
+            {feedback.ok ? (
+              <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-600" />
+            ) : (
+              <XCircle className="w-8 h-8 shrink-0 text-red-600" />
+            )}
+            <div>
+              <p className="font-bold text-lg">{feedback.title}</p>
+              <p className="text-sm mt-1">{feedback.detail}</p>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }

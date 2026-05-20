@@ -102,3 +102,14 @@
   animation-play-state: paused;
 }
 
+/* Staff QR kiosk — full-height camera on mobile */
+#employee-kiosk-qr-scanner {
+  min-height: inherit;
+}
+#employee-kiosk-qr-scanner video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: inherit;
+}
+
