@@ -23,7 +23,7 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [notifySignOut, setNotifySignOut] = useState(false);
+  const [notifySignOut, setNotifySignOut] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
@@ -91,7 +91,7 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
       if (json.admin) setAdmins((prev) => [...prev, json.admin!]);
       setEmail("");
       setFullName("");
-      setNotifySignOut(false);
+      setNotifySignOut(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not add admin");
     } finally {

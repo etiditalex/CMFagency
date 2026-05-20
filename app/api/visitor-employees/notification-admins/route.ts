@@ -31,7 +31,7 @@ function mapRow(row: {
     email: row.email,
     fullName: row.full_name ?? "",
     notifySignIn: row.notify_sign_in !== false,
-    notifySignOut: row.notify_sign_out === true,
+    notifySignOut: row.notify_sign_out !== false,
     createdAt: row.created_at,
   };
 }
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         email,
         full_name: safeText(body.fullName ?? body.full_name, 120),
         notify_sign_in: body.notifySignIn !== false,
-        notify_sign_out: body.notifySignOut === true,
+        notify_sign_out: body.notifySignOut !== false,
       })
       .select("id,email,full_name,notify_sign_in,notify_sign_out,created_at")
       .single();

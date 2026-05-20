@@ -250,14 +250,21 @@ export async function processEmployeeQrScan(
 
   mapAttendanceRow(attendanceRow as EmployeeAttendanceRow);
 
-  void notifyEmployeeAttendance(admin, {
-    ownerId,
-    employeeName: employee.fullName,
-    department: employee.department,
-    eventType,
-    occurredAt,
-    deviceLabel: device.deviceLabel,
-  });
+  try {
+    await notifyEmployeeAttendance(admin, {
+      ownerId,
+      employeeName: employee.fullName,
+      department: employee.department,
+      eventType,
+      occurredAt,
+      deviceLabel: device.deviceLabel,
+    });
+  } catch (e) {
+    console.warn(
+      "[processEmployeeQrScan] attendance email failed:",
+      e instanceof Error ? e.message : e
+    );
+  }
 
   const updatedEmployee: EmployeeRecord = {
     ...employee,

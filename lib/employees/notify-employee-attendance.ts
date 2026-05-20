@@ -71,7 +71,7 @@ export async function notifyEmployeeAttendance(
       .toLowerCase();
     if (!email.includes("@")) continue;
     const wantsIn = params.eventType === "sign_in" && row.notify_sign_in !== false;
-    const wantsOut = params.eventType === "sign_out" && row.notify_sign_out === true;
+    const wantsOut = params.eventType === "sign_out" && row.notify_sign_out !== false;
     if (wantsIn || wantsOut) adminRecipients.add(email);
   }
 
@@ -83,6 +83,20 @@ export async function notifyEmployeeAttendance(
     occurredAt: params.occurredAt,
     deviceLabel: params.deviceLabel,
   };
+
+  if (!process.env.RESEND_API_KEY?.trim()) {
+    console.warn("[notifyEmployeeAttendance] RESEND_API_KEY not set; skipping emails");
+    return;
+  }
+
+  if (ownerRecipients.size === 0 && adminRecipients.size === 0) {
+    console.warn(
+      "[notifyEmployeeAttendance] no recipients for owner",
+      params.ownerId,
+      params.eventType
+    );
+    return;
+  }
 
   if (ownerRecipients.size > 0) {
     await sendEmployeeAttendanceNotificationEmail({
