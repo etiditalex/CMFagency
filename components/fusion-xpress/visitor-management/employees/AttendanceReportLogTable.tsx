@@ -1,0 +1,326 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+
+import {
+  buildAttendanceDailyLogRows,
+  type AttendanceDailyLogRow,
+} from "@/lib/employees/attendance-daily-log";
+import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
+import type { EmployeeRecord } from "@/lib/employees/types";
+import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+
+type SortKey =
+  | "fullName"
+  | "memberId"
+  | "department"
+  | "signInLabel"
+  | "signInDate"
+  | "signInTime"
+  | "signOutLabel"
+  | "signOutTime"
+  | "sortKey";
+
+type SortDir = "asc" | "desc";
+
+function compareRows(a: AttendanceDailyLogRow, b: AttendanceDailyLogRow, key: SortKey): number {
+  if (key === "sortKey") return a.sortKey.localeCompare(b.sortKey);
+  const av = String(a[key] ?? "");
+  const bv = String(b[key] ?? "");
+  return av.localeCompare(bv, undefined, { numeric: true, sensitivity: "base" });
+}
+
+type AttendanceReportLogTableProps = {
+  events: AttendanceSummaryEventRow[];
+  employees: EmployeeRecord[];
+  title?: string;
+  subtitle?: string;
+};
+
+function SortableHeader({
+  label,
+  column,
+  sortKey,
+  sortDir,
+  onSort,
+  className = "",
+}: {
+  label: string;
+  column: SortKey;
+  sortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (col: SortKey) => void;
+  className?: string;
+}) {
+  const active = sortKey === column;
+  return (
+    <th className={`px-4 py-3.5 text-left font-semibold ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 hover:text-gray-800"
+      >
+        {label}
+        <span className="inline-flex flex-col text-gray-300">
+          <ChevronUp
+            className={`w-3 h-3 -mb-1 ${active && sortDir === "asc" ? "text-gray-600" : ""}`}
+            aria-hidden
+          />
+          <ChevronDown
+            className={`w-3 h-3 ${active && sortDir === "desc" ? "text-gray-600" : ""}`}
+            aria-hidden
+          />
+        </span>
+      </button>
+    </th>
+  );
+}
+
+export default function AttendanceReportLogTable({
+  events,
+  employees,
+  title = "Attendance log",
+  subtitle,
+}: AttendanceReportLogTableProps) {
+  const allRows = useMemo(
+    () => buildAttendanceDailyLogRows(events, employees),
+    [events, employees]
+  );
+
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
+  const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("sortKey");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const sortedRows = useMemo(() => {
+    const copy = [...allRows];
+    copy.sort((a, b) => {
+      const c = compareRows(a, b, sortKey);
+      return sortDir === "asc" ? c : -c;
+    });
+    return copy;
+  }, [allRows, sortKey, sortDir]);
+
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = sortedRows.slice(safePage * pageSize, safePage * pageSize + pageSize);
+
+  const allOnPageSelected =
+    pageRows.length > 0 && pageRows.every((r) => selected.has(r.id));
+  const someOnPageSelected = pageRows.some((r) => selected.has(r.id));
+
+  const handleSort = (col: SortKey) => {
+    if (sortKey === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(col);
+      setSortDir(col === "sortKey" ? "desc" : "asc");
+    }
+    setPage(0);
+  };
+
+  const toggleAllOnPage = () => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allOnPageSelected) {
+        for (const r of pageRows) next.delete(r.id);
+      } else {
+        for (const r of pageRows) next.add(r.id);
+      }
+      return next;
+    });
+  };
+
+  const toggleRow = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <section className="rounded-lg border border-gray-200 bg-white overflow-hidden print:border-gray-300">
+      <div className="px-4 py-3 border-b border-gray-100 print:hidden">
+        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+        {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
+      </div>
+
+      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 print:hidden">
+        <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
+              setPage(0);
+            }}
+            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            aria-label="Rows per page"
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <span className="text-gray-500">rows per page</span>
+        </label>
+        <p className="text-xs text-gray-500">
+          {sortedRows.length} record{sortedRows.length === 1 ? "" : "s"}
+          {selected.size > 0 ? ` · ${selected.size} selected` : ""}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-[#f6f7f9] border-b border-gray-200">
+              <th className="w-12 px-4 py-3.5 print:hidden">
+                <input
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someOnPageSelected && !allOnPageSelected;
+                  }}
+                  onChange={toggleAllOnPage}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  aria-label="Select all on this page"
+                />
+              </th>
+              <SortableHeader
+                label="Name"
+                column="fullName"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Member ID"
+                column="memberId"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Department"
+                column="department"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Sign in"
+                column="signInLabel"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Date"
+                column="signInDate"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Time"
+                column="signInTime"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Sign out"
+                column="signOutLabel"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Time"
+                column="signOutTime"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+            </tr>
+          </thead>
+          <tbody>
+            {pageRows.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                  No attendance recorded in this period.
+                </td>
+              </tr>
+            ) : (
+              pageRows.map((row) => (
+                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                  <td className="px-4 py-4 print:hidden">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(row.id)}
+                      onChange={() => toggleRow(row.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      aria-label={`Select ${row.fullName}`}
+                    />
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <Link
+                      href={`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}`}
+                      className="font-medium text-[#5b6abf] hover:text-[#4a59a8] hover:underline"
+                    >
+                      {row.fullName}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap font-mono text-xs sm:text-sm">
+                    {row.memberId}
+                  </td>
+                  <td className="px-4 py-4 text-gray-700">{row.department}</td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInLabel}</td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInDate}</td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInTime}</td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutLabel}</td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutTime}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {sortedRows.length > pageSize ? (
+        <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 text-sm text-gray-600 print:hidden">
+          <button
+            type="button"
+            disabled={safePage <= 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {safePage + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            disabled={safePage >= pageCount - 1}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
+
+      <p className="hidden print:block px-4 py-2 text-xs text-gray-500 border-t border-gray-200">
+        Times in East Africa Time (EAT)
+      </p>
+    </section>
+  );
+}

@@ -14,6 +14,7 @@ import {
   Users,
 } from "lucide-react";
 
+import AttendanceReportLogTable from "@/components/fusion-xpress/visitor-management/employees/AttendanceReportLogTable";
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
 import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
@@ -508,56 +509,14 @@ export default function EmployeeSummaryReportsPage() {
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-before-page">
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <h2 className="text-sm font-bold text-gray-900">Sign-in / sign-out log</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {summary.events.length} event{summary.events.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                  <div className="overflow-x-auto max-h-[420px] print:max-h-none overflow-y-auto">
-                    <table className="min-w-full text-sm">
-                      <thead className="sticky top-0 bg-white">
-                        <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                          <th className="px-4 py-2 font-semibold">Date</th>
-                          <th className="px-4 py-2 font-semibold">Time (EAT)</th>
-                          <th className="px-4 py-2 font-semibold">Employee</th>
-                          <th className="px-4 py-2 font-semibold">Event</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summary.events.length === 0 ? (
-                          <tr>
-                            <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                              No events in this period.
-                            </td>
-                          </tr>
-                        ) : (
-                          summary.events.map((ev) => (
-                            <tr key={ev.id} className="border-b border-gray-100">
-                              <td className="px-4 py-2 text-gray-700">{ev.displayDate}</td>
-                              <td className="px-4 py-2 text-gray-700">{ev.displayTime}</td>
-                              <td className="px-4 py-2 font-medium text-gray-900">
-                                {ev.employeeName}
-                              </td>
-                              <td className="px-4 py-2">
-                                <span
-                                  className={
-                                    ev.eventType === "sign_in"
-                                      ? "font-semibold text-emerald-800"
-                                      : "font-semibold text-sky-800"
-                                  }
-                                >
-                                  {ev.eventLabel}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
+                <div className="print:break-before-page">
+                  <AttendanceReportLogTable
+                    events={summary.events}
+                    employees={employees}
+                    title="Attendance log"
+                    subtitle={`${summary.events.length} scan${summary.events.length === 1 ? "" : "s"} in range · times in EAT`}
+                  />
+                </div>
 
                 <p className="hidden print:block text-xs text-gray-500 pt-4 border-t border-gray-200">
                   Totals: {summary.totals.signIns} sign-in · {summary.totals.signOuts} sign-out ·{" "}
