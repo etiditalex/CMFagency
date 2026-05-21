@@ -182,7 +182,10 @@ export async function resolveVisitorSubscriptionForOwner(
   let row = await getVisitorSubscriptionRow(admin, ownerId);
 
   if (row && isAdminExtensionActive(row)) {
-    return adminExtensionSubscriptionState(row);
+    return adminExtensionSubscriptionState({
+      admin_extension_ends_at: row.admin_extension_ends_at ?? null,
+      admin_extension_plan: row.admin_extension_plan ?? null,
+    });
   }
 
   if (row?.admin_extension_active) {
