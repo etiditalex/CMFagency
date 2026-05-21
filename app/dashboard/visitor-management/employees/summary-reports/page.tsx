@@ -14,16 +14,25 @@ import {
   Users,
 } from "lucide-react";
 
+import AttendanceEventLogPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceEventLogPanel";
 import AttendanceReportLogTable from "@/components/fusion-xpress/visitor-management/employees/AttendanceReportLogTable";
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
 import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import type { AttendanceSummaryPayload } from "@/lib/employees/attendance-summary";
-import { isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
-import { memberTypeLabel } from "@/lib/employees/real-estate";
-import type { EmployeeRecord } from "@/lib/employees/types";
+import {
+  DEFAULT_REPORTING_SETTINGS,
+  isMissingEmployeesTableMessage,
+} from "@/lib/employees/db-mapper";
+import { isRealEstateIndustry, memberTypeLabel } from "@/lib/employees/real-estate";
+import type {
+  EmployeeAttendanceRecord,
+  EmployeeRecord,
+  EmployeeReportingSettings,
+} from "@/lib/employees/types";
 import { formatEmployeeEmailDateTime } from "@/lib/employees/utils";
 import { eatDayKey, eatTodayDayKey } from "@/lib/time/eat";
 import { supabase } from "@/lib/supabase";
@@ -79,8 +88,20 @@ export default function EmployeeSummaryReportsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
   const [liveRefresh, setLiveRefresh] = useState(true);
+  const [attendance, setAttendance] = useState<EmployeeAttendanceRecord[]>([]);
+  const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
+    DEFAULT_REPORTING_SETTINGS
+  );
+  const [isRealEstate, setIsRealEstate] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const rangeIncludesToday = to >= todayIso();
+
+  const employeeNameById = useMemo(
+    () => new Map(employees.map((e) => [e.id, e.fullName])),
+    [employees]
+  );
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -93,8 +114,50 @@ export default function EmployeeSummaryReportsPage() {
       const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
       const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
       if (name) setOrganizationName(name);
+      const industry = String(meta?.industry ?? meta?.business_industry ?? "").trim();
+      setIsRealEstate(isRealEstateIndustry(industry));
     });
   }, [user?.id]);
+
+  const loadReportingSettings = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/visitor-employees/reporting-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        settings?: EmployeeReportingSettings;
+      };
+      if (res.ok && json.settings) setReportingSettings(json.settings);
+    } catch {
+      /* keep defaults */
+    }
+  }, [getToken]);
+
+  const loadAttendance = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const qs = new URLSearchParams({ from, to, limit: "2000" });
+      if (employeeId) qs.set("employeeId", employeeId);
+      const res = await fetch(`/api/visitor-employees/attendance?${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        attendance?: EmployeeAttendanceRecord[];
+      };
+      if (res.ok && Array.isArray(json.attendance)) {
+        setAttendance(json.attendance);
+      } else {
+        setAttendance([]);
+      }
+    } catch {
+      setAttendance([]);
+    }
+  }, [from, to, employeeId, getToken]);
 
   const loadEmployees = useCallback(async () => {
     try {
@@ -183,15 +246,62 @@ export default function EmployeeSummaryReportsPage() {
   useEffect(() => {
     if (setupRequired) return;
     void loadSummary();
-  }, [setupRequired, loadSummary]);
+    void loadAttendance();
+    void loadReportingSettings();
+  }, [setupRequired, loadSummary, loadAttendance, loadReportingSettings]);
 
   useEffect(() => {
     if (!liveRefresh || !rangeIncludesToday || setupRequired) return;
     const id = window.setInterval(() => {
       void loadSummary();
+      void loadAttendance();
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [liveRefresh, rangeIncludesToday, setupRequired, loadSummary]);
+  }, [liveRefresh, rangeIncludesToday, setupRequired, loadSummary, loadAttendance]);
+
+  const saveAttendanceTime = useCallback(
+    async (attendanceId: string, createdAt: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch(`/api/visitor-employees/attendance/${encodeURIComponent(attendanceId)}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ createdAt }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to update event time");
+      await Promise.all([loadSummary(), loadAttendance()]);
+    },
+    [getToken, loadSummary, loadAttendance]
+  );
+
+  const handleExportExcel = useCallback(async () => {
+    setExportingExcel(true);
+    try {
+      await downloadEmployeeAttendanceExcel({
+        employees,
+        attendance,
+        employeeNameById,
+        organizationName,
+        isRealEstate,
+        reportingSettings,
+      });
+    } catch (e: unknown) {
+      setNotice(e instanceof Error ? e.message : "Excel export failed");
+    } finally {
+      setExportingExcel(false);
+    }
+  }, [
+    employees,
+    attendance,
+    employeeNameById,
+    organizationName,
+    isRealEstate,
+    reportingSettings,
+  ]);
 
   const applyPreset = (id: DurationPreset) => {
     setPreset(id);
@@ -330,7 +440,10 @@ export default function EmployeeSummaryReportsPage() {
                 <button
                   type="button"
                   disabled={loading}
-                  onClick={() => void loadSummary()}
+                  onClick={() => {
+                    void loadSummary();
+                    void loadAttendance();
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-800 disabled:opacity-50"
                 >
                   {loading ? (
@@ -367,6 +480,11 @@ export default function EmployeeSummaryReportsPage() {
           {loadError ? (
             <p className="no-print rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
               {loadError}
+            </p>
+          ) : null}
+          {notice ? (
+            <p className="no-print rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              {notice}
             </p>
           ) : null}
 
@@ -509,12 +627,26 @@ export default function EmployeeSummaryReportsPage() {
                   </div>
                 </section>
 
-                <div className="print:break-before-page">
+                <div className="space-y-4 print:break-before-page">
                   <AttendanceReportLogTable
                     events={summary.events}
                     employees={employees}
-                    title="Attendance log"
-                    subtitle={`${summary.events.length} scan${summary.events.length === 1 ? "" : "s"} in range · times in EAT`}
+                    title="Attendance register"
+                    subtitle={`Daily sign-in / sign-out · ${summary.events.length} scan${summary.events.length === 1 ? "" : "s"} · times in EAT`}
+                  />
+                  <AttendanceEventLogPanel
+                    className="print:break-inside-avoid"
+                    attendance={attendance}
+                    employees={employees}
+                    employeeNameById={employeeNameById}
+                    reportingSettings={reportingSettings}
+                    isRealEstate={isRealEstate}
+                    setupRequired={setupRequired}
+                    exportingExcel={exportingExcel}
+                    onExportExcel={handleExportExcel}
+                    onSaveAttendanceTime={saveAttendanceTime}
+                    onError={setNotice}
+                    emptyMessage="No attendance events in this date range."
                   />
                 </div>
 

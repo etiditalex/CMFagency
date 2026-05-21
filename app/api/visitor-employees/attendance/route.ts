@@ -6,6 +6,7 @@ import {
   type EmployeeAttendanceRow,
 } from "@/lib/employees/db-mapper";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { eatDayBoundsUtc } from "@/lib/time/eat";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,8 +15,10 @@ export async function GET(req: NextRequest) {
     const { admin, userId, isAdmin } = auth;
 
     const employeeId = req.nextUrl.searchParams.get("employeeId")?.trim() ?? "";
+    const fromYmd = req.nextUrl.searchParams.get("from")?.trim() ?? "";
+    const toYmd = req.nextUrl.searchParams.get("to")?.trim() ?? "";
     const limit = Math.min(
-      200,
+      2000,
       Math.max(1, parseInt(req.nextUrl.searchParams.get("limit") ?? "50", 10) || 50)
     );
 
@@ -27,6 +30,14 @@ export async function GET(req: NextRequest) {
 
     if (!isAdmin) q = q.eq("owner_id", userId);
     if (employeeId) q = q.eq("employee_id", employeeId);
+    if (fromYmd) {
+      const fromBounds = eatDayBoundsUtc(fromYmd);
+      if (fromBounds) q = q.gte("created_at", fromBounds.startIso);
+    }
+    if (toYmd) {
+      const toBounds = eatDayBoundsUtc(toYmd);
+      if (toBounds) q = q.lte("created_at", toBounds.endIso);
+    }
 
     const { data, error } = await q;
     if (error) {

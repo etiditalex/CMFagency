@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  Clock,
   Download,
   LogIn,
   LogOut,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 
 import AddEmployeeModal from "@/components/fusion-xpress/visitor-management/employees/AddEmployeeModal";
+import AttendanceEventLogPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceEventLogPanel";
 import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-management/employees/EditEmployeeTimesModal";
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
@@ -37,9 +37,6 @@ import {
   signInReportingStatus,
   signInStatusClass,
   signInStatusLabel,
-  signOutReportingStatus,
-  signOutStatusClass,
-  signOutStatusLabel,
 } from "@/lib/employees/reporting-time";
 import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
@@ -300,12 +297,6 @@ export default function VisitorManagementEmployeesPage() {
   const employeeNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const e of employees) m.set(e.id, e.fullName);
-    return m;
-  }, [employees]);
-
-  const employeeById = useMemo(() => {
-    const m = new Map<string, EmployeeRecord>();
-    for (const e of employees) m.set(e.id, e);
     return m;
   }, [employees]);
 
@@ -935,106 +926,18 @@ export default function VisitorManagementEmployeesPage() {
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
-            <Clock className="w-4 h-4 text-gray-500" />
-            Attendance log
-          </span>
-          <button
-            type="button"
-            disabled={setupRequired || exportingExcel || employees.length === 0}
-            onClick={() => void handleExportExcel()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-primary-50 disabled:opacity-50"
-          >
-            <Download className="w-3.5 h-3.5" />
-            {exportingExcel ? "Exporting…" : "Download Excel"}
-          </button>
-        </div>
-        {attendance.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500 text-center">No attendance events yet.</p>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {attendance.map((row) => {
-              const emp = employeeById.get(row.employeeId);
-              const memberWindow = emp
-                ? reportingWindowForMember(reportingSettings, emp.memberType)
-                : null;
-              const signInStatus =
-                row.eventType === "sign_in" && memberWindow
-                  ? signInReportingStatus(row.createdAt, memberWindow)
-                  : null;
-              const signOutStatus =
-                row.eventType === "sign_out" && memberWindow
-                  ? signOutReportingStatus(row.createdAt, memberWindow.signOut)
-                  : null;
-              return (
-              <li key={row.id} className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="font-medium text-gray-900 flex flex-wrap items-center gap-2">
-                  {employeeNameById.get(row.employeeId) ?? "Staff"}
-                  {isRealEstate && emp ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${memberTypeBadgeClass(emp.memberType)}`}
-                    >
-                      {memberTypeLabel(emp.memberType)}
-                    </span>
-                  ) : null}
-                  {signInStatus && signInStatus !== "unknown" ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signInStatusClass(signInStatus)}`}
-                    >
-                      {signInStatusLabel(signInStatus)}
-                    </span>
-                  ) : null}
-                  {signOutStatus && signOutStatus !== "unknown" ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signOutStatusClass(signOutStatus)}`}
-                    >
-                      {signOutStatusLabel(signOutStatus)}
-                    </span>
-                  ) : null}
-                </span>
-                <span
-                  className={
-                    row.eventType === "sign_in"
-                      ? signInStatus === "late"
-                        ? "text-red-700 font-semibold"
-                        : "text-emerald-700 font-semibold"
-                      : "text-slate-600 font-semibold"
-                  }
-                >
-                  {row.eventType === "sign_in" ? "Signed in" : "Signed out"}
-                </span>
-                <span className="text-gray-500 text-xs flex flex-wrap items-center gap-2">
-                  {formatEmployeeTimestamp(row.createdAt)}
-                  {row.deviceLabel ? ` · ${row.deviceLabel}` : ""}
-                  {!setupRequired ? (
-                    <button
-                      type="button"
-                      className="font-semibold text-primary-700 hover:underline"
-                      onClick={async () => {
-                        const d = new Date(row.createdAt);
-                        const pad = (n: number) => String(n).padStart(2, "0");
-                        const defaultLocal = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                        const raw = window.prompt("Edit event date & time", defaultLocal);
-                        if (!raw) return;
-                        try {
-                          await saveAttendanceTime(row.id, new Date(raw).toISOString());
-                        } catch (e: unknown) {
-                          setNotice(e instanceof Error ? e.message : "Could not update time");
-                        }
-                      }}
-                    >
-                      Edit time
-                    </button>
-                  ) : null}
-                </span>
-              </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+      <AttendanceEventLogPanel
+        attendance={attendance}
+        employees={employees}
+        employeeNameById={employeeNameById}
+        reportingSettings={reportingSettings}
+        isRealEstate={isRealEstate}
+        setupRequired={setupRequired}
+        exportingExcel={exportingExcel}
+        onExportExcel={handleExportExcel}
+        onSaveAttendanceTime={saveAttendanceTime}
+        onError={setNotice}
+      />
 
     </div>
   );

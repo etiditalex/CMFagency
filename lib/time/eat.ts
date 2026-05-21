@@ -108,3 +108,21 @@ export function formatEatHourLabel(hour24: number): string {
   const ampm = h < 12 ? "AM" : "PM";
   return `${hour12}:00 ${ampm} EAT`;
 }
+
+/** Value for `<input type="datetime-local" />` interpreted in EAT. */
+export function eatDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: EAT_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(d);
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "00";
+  return `${pick("year")}-${pick("month")}-${pick("day")}T${pick("hour")}:${pick("minute")}`;
+}
