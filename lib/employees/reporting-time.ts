@@ -1,4 +1,5 @@
 import type { EmployeeMemberType, EmployeeReportingSettings } from "@/lib/employees/types";
+import { eatMinutesFromIso } from "@/lib/time/eat";
 
 export type MemberReportingWindow = {
   signInStart: string;
@@ -39,12 +40,9 @@ export function formatSignInWindowLabel(window: MemberReportingWindow): string {
   return `${formatReportingTime(window.signInStart)} – ${formatReportingTime(window.signInLatest)}`;
 }
 
-/** Minutes since midnight from ISO timestamp in local interpretation. */
+/** Minutes since midnight from ISO timestamp in EAT. */
 function minutesFromIso(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.getHours() * 60 + d.getMinutes();
+  return eatMinutesFromIso(iso);
 }
 
 function minutesFromTime(time24: string): number {

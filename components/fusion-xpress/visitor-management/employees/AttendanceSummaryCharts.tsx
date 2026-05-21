@@ -187,7 +187,7 @@ export default function AttendanceSummaryCharts({ dailySeries, hourlySeries, ran
       />
       <HourlyLineChart
         title="Hourly activity (all days combined)"
-        subtitle="Useful for peak arrival and departure times"
+        subtitle="Peak arrival and departure times · East Africa Time (EAT)"
         points={hourlySeries}
       />
     </div>

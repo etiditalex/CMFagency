@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isMissingEmployeesTable } from "@/lib/employees/db-mapper";
-import { lookupEmployeeByToken } from "@/lib/employees/process-employee-scan";
+import {
+  fetchTodayAttendanceStatus,
+  lookupEmployeeByToken,
+} from "@/lib/employees/process-employee-scan";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
 
 export async function GET(req: NextRequest) {
@@ -19,12 +22,14 @@ export async function GET(req: NextRequest) {
     }
 
     const e = result.employee;
+    const attendanceStatusToday = await fetchTodayAttendanceStatus(admin, e.id);
+
     return NextResponse.json({
       employee: {
         id: e.id,
         fullName: e.fullName,
         department: e.department,
-        attendanceStatus: e.attendanceStatus,
+        attendanceStatus: attendanceStatusToday,
         lastSignedInAt: e.lastSignedInAt,
         lastSignedOutAt: e.lastSignedOutAt,
       },

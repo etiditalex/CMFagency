@@ -1,20 +1,14 @@
-import { endOfDay, format, startOfDay } from "date-fns";
+import { eatDayKey, eatTodayBounds } from "@/lib/time/eat";
 
 import type { EmployeeAttendanceEventType, EmployeeAttendanceRecord } from "@/lib/employees/types";
 
-/** Calendar day key in local timezone for attendance rules and reporting. */
+/** Calendar day key in EAT for attendance rules and reporting. */
 export function localDayKey(iso: string | Date): string {
-  const d = typeof iso === "string" ? new Date(iso) : iso;
-  return format(d, "yyyy-MM-dd");
+  return eatDayKey(iso);
 }
 
 export function todayLocalBounds(): { startIso: string; endIso: string; dayKey: string } {
-  const now = new Date();
-  return {
-    startIso: startOfDay(now).toISOString(),
-    endIso: endOfDay(now).toISOString(),
-    dayKey: format(now, "yyyy-MM-dd"),
-  };
+  return eatTodayBounds();
 }
 
 /** One sign-in and one sign-out per employee per day (first sign-in, last sign-out). */
@@ -56,18 +50,32 @@ export function summarizeTodayEvents(events: EmployeeAttendanceRecord[]) {
 }
 
 /**
+ * In/out for today's rules only — does not carry yesterday's persisted status forward.
+ * A new calendar day with no events yet is always treated as signed out.
+ */
+export function effectiveAttendanceStatusForToday(
+  todayEvents: EmployeeAttendanceRecord[]
+): "in" | "out" {
+  const { hasSignIn, hasSignOut } = summarizeTodayEvents(todayEvents);
+  if (hasSignIn && !hasSignOut) return "in";
+  return "out";
+}
+
+/**
  * Enforces at most one sign-in / sign-out pair per calendar day.
  * After sign-out, the same person cannot sign in again until the next day.
  */
 export function validateDailyAttendanceTransition(params: {
   todayEvents: EmployeeAttendanceRecord[];
   nextEvent: EmployeeAttendanceEventType;
-  currentStatus: "in" | "out";
+  /** @deprecated Use todayEvents only; kept for call-site compatibility. */
+  currentStatus?: "in" | "out";
 }): { ok: true } | { ok: false; error: string } {
   const { hasSignIn, hasSignOut } = summarizeTodayEvents(params.todayEvents);
+  const currentStatus = effectiveAttendanceStatusForToday(params.todayEvents);
 
   if (params.nextEvent === "sign_in") {
-    if (params.currentStatus === "in") {
+    if (currentStatus === "in") {
       return {
         ok: false,
         error:

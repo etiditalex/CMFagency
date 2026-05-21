@@ -12,8 +12,10 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
-import { formatEmployeeTimestamp } from "@/lib/employees/utils";
-import { format } from "date-fns";
+import {
+  formatEmployeeReportDate,
+  formatEmployeeReportTime,
+} from "@/lib/employees/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -77,8 +79,8 @@ export async function GET(req: NextRequest) {
           toDate: parsed.toDate,
           attendance: [],
           employees: [],
-          formatDisplayTime: formatEmployeeTimestamp,
-          formatDisplayDate: (iso) => format(new Date(iso), "d MMM yyyy"),
+          formatDisplayTime: formatEmployeeReportTime,
+          formatDisplayDate: formatEmployeeReportDate,
         })
       );
     }
@@ -100,8 +102,8 @@ export async function GET(req: NextRequest) {
       toDate: parsed.toDate,
       attendance,
       employees,
-      formatDisplayTime: formatEmployeeTimestamp,
-      formatDisplayDate: (iso) => format(new Date(iso), "d MMM yyyy"),
+      formatDisplayTime: formatEmployeeReportTime,
+      formatDisplayDate: formatEmployeeReportDate,
     });
 
     return NextResponse.json({

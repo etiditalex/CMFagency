@@ -1,5 +1,9 @@
 import type { EmployeeAttendanceStatus, EmployeeRecord } from "@/lib/employees/types";
-import { formatCheckInClock, formatCheckInEmailDateTime } from "@/lib/visitors/format-check-in-display";
+import {
+  formatCheckInClock,
+  formatCheckInDateLabel,
+  formatCheckInEmailDateTime,
+} from "@/lib/visitors/format-check-in-display";
 
 export function employeeAttendanceLabel(status: EmployeeAttendanceStatus): string {
   return status === "in" ? "Signed in" : "Signed out";
@@ -23,6 +27,17 @@ export function formatEmployeeTimestamp(iso: string | null | undefined): string 
 
 export function formatEmployeeEmailDateTime(iso: string | null | undefined): string {
   return formatCheckInEmailDateTime(iso);
+}
+
+/** Report log time with explicit EAT label (e.g. "8:15 AM EAT"). */
+export function formatEmployeeReportTime(iso: string | null | undefined): string {
+  const clock = formatCheckInClock(iso);
+  return clock === "—" ? clock : `${clock} EAT`;
+}
+
+/** Report date in EAT (e.g. "19 May 2026"). */
+export function formatEmployeeReportDate(iso: string | null | undefined): string {
+  return formatCheckInDateLabel(iso) || "—";
 }
 
 export function employeeStats(employees: EmployeeRecord[]) {

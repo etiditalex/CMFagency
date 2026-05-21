@@ -1,14 +1,16 @@
-import {
-  eachDayOfInterval,
-  endOfDay,
-  format,
-  isValid,
-  parseISO,
-  startOfDay,
-} from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 import { dedupeAttendanceByEmployeeDay, localDayKey } from "@/lib/employees/daily-attendance-rules";
 import { formatReportingTime } from "@/lib/employees/reporting-time";
+import { formatCheckInEmailDateTime } from "@/lib/visitors/format-check-in-display";
+import {
+  eachEatDayKeys,
+  eatDaySpanInclusive,
+  eatHourFromIso,
+  eatMinutesFromIso,
+  eatRangeBoundsUtc,
+  formatEatHourLabel,
+} from "@/lib/time/eat";
 import type {
   EmployeeAttendanceEventType,
   EmployeeAttendanceRecord,
@@ -92,6 +94,9 @@ export type AttendanceSummaryPayload = {
   employeeSummaries: AttendanceSummaryEmployeeRow[];
   rankings: AttendanceSummaryRankings;
   events: AttendanceSummaryEventRow[];
+  /** Human-readable "generated at" in EAT. */
+  generatedAtDisplay: string;
+  timezoneLabel: "EAT";
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -105,16 +110,18 @@ export function parseAttendanceSummaryDateRange(
   if (!DATE_RE.test(from) || !DATE_RE.test(to)) {
     return { error: "Use valid from and to dates (YYYY-MM-DD)." };
   }
-  const fromDate = startOfDay(parseISO(from));
-  const toDate = endOfDay(parseISO(to));
+  const bounds = eatRangeBoundsUtc(from, to);
+  if (!bounds) {
+    return { error: "Invalid date range." };
+  }
+  const { fromDate, toDate } = bounds;
   if (!isValid(fromDate) || !isValid(toDate)) {
     return { error: "Invalid date range." };
   }
-  if (fromDate.getTime() > toDate.getTime()) {
+  if (from > to) {
     return { error: "Start date must be on or before end date." };
   }
-  const spanDays =
-    Math.ceil((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+  const spanDays = eatDaySpanInclusive(from, to);
   if (spanDays > 366) {
     return { error: "Maximum range is 366 days." };
   }
@@ -126,8 +133,7 @@ function eventLabel(type: EmployeeAttendanceEventType): string {
 }
 
 function minutesFromMidnight(iso: string): number {
-  const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+  return eatMinutesFromIso(iso) ?? 0;
 }
 
 function minutesToTime24(avgMinutes: number): string {
@@ -199,8 +205,7 @@ export function buildAttendanceSummary(params: {
   const inRange = dedupeAttendanceByEmployeeDay(rawInRange);
 
   const dailyMap = new Map<string, { signIns: number; signOuts: number }>();
-  for (const day of eachDayOfInterval({ start: params.fromDate, end: params.toDate })) {
-    const key = format(day, "yyyy-MM-dd");
+  for (const key of eachEatDayKeys(params.from, params.to)) {
     dailyMap.set(key, { signIns: 0, signOuts: 0 });
   }
 
@@ -225,9 +230,8 @@ export function buildAttendanceSummary(params: {
   let signOuts = 0;
 
   for (const a of inRange) {
-    const d = new Date(a.createdAt);
     const chartDayKey = localDayKey(a.createdAt);
-    const hour = d.getHours();
+    const hour = eatHourFromIso(a.createdAt);
     if (!dailyMap.has(chartDayKey)) dailyMap.set(chartDayKey, { signIns: 0, signOuts: 0 });
     const dayBucket = dailyMap.get(chartDayKey)!;
     const hourBucket = hourlyMap.get(hour)!;
@@ -279,7 +283,7 @@ export function buildAttendanceSummary(params: {
     .sort(([a], [b]) => a - b)
     .map(([hour, counts]) => ({
       hour,
-      label: format(new Date(2000, 0, 1, hour, 0), "ha").toLowerCase(),
+      label: formatEatHourLabel(hour),
       signIns: counts.signIns,
       signOuts: counts.signOuts,
     }));
@@ -348,5 +352,7 @@ export function buildAttendanceSummary(params: {
     employeeSummaries,
     rankings,
     events,
+    generatedAtDisplay: formatCheckInEmailDateTime(new Date().toISOString()),
+    timezoneLabel: "EAT",
   };
 }

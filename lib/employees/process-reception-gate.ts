@@ -11,7 +11,10 @@ import {
   type DeviceFingerprintInput,
 } from "@/lib/employees/device-fingerprint";
 import { parseReceptionGateToken } from "@/lib/employees/reception-gate";
-import { processEmployeeQrScan } from "@/lib/employees/process-employee-scan";
+import {
+  fetchTodayAttendanceStatus,
+  processEmployeeQrScan,
+} from "@/lib/employees/process-employee-scan";
 import type { EmployeeMemberType, EmployeeRecord } from "@/lib/employees/types";
 
 export type ReceptionGateRow = {
@@ -50,13 +53,17 @@ function normalizeMemberCode(raw: unknown): string {
     .replace(/\s+/g, "");
 }
 
-function mapBoundEmployee(employee: EmployeeRecord): BoundGateEmployee {
+async function mapBoundEmployee(
+  admin: SupabaseClient,
+  employee: EmployeeRecord
+): Promise<BoundGateEmployee> {
+  const attendanceStatus = await fetchTodayAttendanceStatus(admin, employee.id);
   return {
     id: employee.id,
     fullName: employee.fullName,
     department: employee.department,
     employeeCode: employee.employeeCode ?? "",
-    attendanceStatus: employee.attendanceStatus,
+    attendanceStatus,
     lastSignedInAt: employee.lastSignedInAt,
     lastSignedOutAt: employee.lastSignedOutAt,
   };
@@ -216,7 +223,7 @@ export async function listRosterForGate(
   return {
     ok: true,
     gate,
-    boundEmployee: bound ? mapBoundEmployee(bound) : null,
+    boundEmployee: bound ? await mapBoundEmployee(admin, bound) : null,
     needsSetup: !bound,
   };
 }

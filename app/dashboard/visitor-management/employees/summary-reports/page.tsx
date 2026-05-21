@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { format, startOfMonth, subDays } from "date-fns";
+import { format } from "date-fns";
 import {
   BarChart3,
   Loader2,
@@ -24,28 +24,32 @@ import { isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
 import type { EmployeeRecord } from "@/lib/employees/types";
 import { formatEmployeeEmailDateTime } from "@/lib/employees/utils";
+import { eatDayKey, eatTodayDayKey } from "@/lib/time/eat";
 import { supabase } from "@/lib/supabase";
 import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
 
 type DurationPreset = "today" | "7d" | "30d" | "month" | "custom";
 
 function todayIso(): string {
-  return format(new Date(), "yyyy-MM-dd");
+  return eatTodayDayKey();
+}
+
+function shiftEatDayKey(ymd: string, days: number): string {
+  const anchor = new Date(`${ymd}T12:00:00+03:00`);
+  anchor.setTime(anchor.getTime() + days * 86_400_000);
+  return eatDayKey(anchor);
 }
 
 function presetRange(preset: DurationPreset): { from: string; to: string } {
   const to = todayIso();
   if (preset === "today") return { from: to, to };
-  if (preset === "7d") return { from: format(subDays(new Date(), 6), "yyyy-MM-dd"), to };
-  if (preset === "30d") return { from: format(subDays(new Date(), 29), "yyyy-MM-dd"), to };
+  if (preset === "7d") return { from: shiftEatDayKey(to, -6), to };
+  if (preset === "30d") return { from: shiftEatDayKey(to, -29), to };
   if (preset === "month") {
-    const now = new Date();
-    return {
-      from: format(startOfMonth(now), "yyyy-MM-dd"),
-      to,
-    };
+    const [y, m] = to.split("-");
+    return { from: `${y}-${m}-01`, to };
   }
-  return { from: format(subDays(new Date(), 6), "yyyy-MM-dd"), to };
+  return { from: shiftEatDayKey(to, -6), to };
 }
 
 const PRESET_BUTTONS: { id: DurationPreset; label: string }[] = [
@@ -247,7 +251,8 @@ export default function EmployeeSummaryReportsPage() {
         </h1>
         <p className="mt-1 text-sm text-gray-600">
           Sign-in and sign-out attendance for your organisation. Choose a date range, view charts,
-          and print a summary for records.
+          and print a summary for records. All dates and times use{" "}
+          <strong>East Africa Time (EAT)</strong>.
         </p>
         <p className="mt-2 text-sm">
           <Link
@@ -371,12 +376,17 @@ export default function EmployeeSummaryReportsPage() {
               </h2>
               <p className="text-sm text-gray-700 mt-1">Period: {rangeLabel}</p>
               <p className="text-xs text-gray-500 mt-1">
-                Generated {formatEmployeeEmailDateTime(new Date().toISOString())}
+                Generated {summary?.generatedAtDisplay ?? formatEmployeeEmailDateTime(new Date().toISOString())}
               </p>
+              <p className="text-xs text-gray-500">All times in East Africa Time (EAT)</p>
             </div>
 
             {summary ? (
               <>
+                <p className="no-print text-xs text-gray-500">
+                  Generated {summary.generatedAtDisplay}
+                  {rangeIncludesToday ? " · Refreshes every minute while viewing today" : ""}
+                </p>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 no-print">
                   {[
                     {
@@ -510,7 +520,7 @@ export default function EmployeeSummaryReportsPage() {
                       <thead className="sticky top-0 bg-white">
                         <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
                           <th className="px-4 py-2 font-semibold">Date</th>
-                          <th className="px-4 py-2 font-semibold">Time</th>
+                          <th className="px-4 py-2 font-semibold">Time (EAT)</th>
                           <th className="px-4 py-2 font-semibold">Employee</th>
                           <th className="px-4 py-2 font-semibold">Event</th>
                         </tr>
