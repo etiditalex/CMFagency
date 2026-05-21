@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { isVisitorDemoAccount } from "@/lib/visitors/demo-accounts";
 import {
+  adminExtensionSubscriptionState,
+  isAdminExtensionActive,
+  syncExpiredAdminExtension,
+} from "@/lib/visitors/admin-subscription-extension";
+import {
   defaultPromoEnterpriseEndsAt,
   isVisitorPromoEnterpriseEmail,
 } from "@/lib/visitors/promo-enterprise-accounts";
@@ -14,8 +19,9 @@ import {
   type VisitorSubscriptionState,
 } from "@/lib/visitors/subscription";
 
-const SUBSCRIPTION_SELECT =
-  "owner_id,plan,trial_ends_at,subscribed_at,billing_interval,current_period_ends_at,last_payment_reference,last_transaction_id,created_at,updated_at";
+import { VISITOR_SUBSCRIPTION_SELECT_WITH_EXTENSION } from "@/lib/visitors/admin-subscription-extension";
+
+const SUBSCRIPTION_SELECT = VISITOR_SUBSCRIPTION_SELECT_WITH_EXTENSION;
 
 export function hasPaidSubscription(
   row:
@@ -126,6 +132,10 @@ export async function ensureVisitorPromoEnterpriseSubscription(
     current_period_ends_at: periodEnd,
     trial_ends_at: null,
     billing_interval: null,
+    admin_extension_active: true,
+    admin_extension_ends_at: periodEnd,
+    admin_extension_plan: "enterprise" as const,
+    admin_extension_note: "Complimentary 7-day Enterprise (promo)",
   };
 
   const { data, error } = await admin
@@ -146,6 +156,19 @@ export async function ensureVisitorPromoEnterpriseSubscription(
   return mapSubscriptionRow(data as VisitorSubscriptionRow);
 }
 
+async function getVisitorSubscriptionRow(
+  admin: SupabaseClient,
+  ownerId: string
+): Promise<VisitorSubscriptionRow | null> {
+  const { data, error } = await admin
+    .from("visitor_management_subscriptions")
+    .select(SUBSCRIPTION_SELECT)
+    .eq("owner_id", ownerId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data as VisitorSubscriptionRow;
+}
+
 /** Resolve subscription for a visitor-only account (demo, promo, trial, or paid). */
 export async function resolveVisitorSubscriptionForOwner(
   admin: SupabaseClient,
@@ -156,11 +179,23 @@ export async function resolveVisitorSubscriptionForOwner(
     return visitorDemoSubscriptionState();
   }
 
+  let row = await getVisitorSubscriptionRow(admin, ownerId);
+
+  if (row && isAdminExtensionActive(row)) {
+    return adminExtensionSubscriptionState(row);
+  }
+
+  if (row?.admin_extension_active) {
+    const synced = await syncExpiredAdminExtension(admin, ownerId, row);
+    if (synced) return synced;
+    row = await getVisitorSubscriptionRow(admin, ownerId);
+  }
+
   if (isVisitorPromoEnterpriseEmail(email)) {
     return ensureVisitorPromoEnterpriseSubscription(admin, ownerId);
   }
 
-  let subscription = await getVisitorSubscription(admin, ownerId);
+  let subscription = mapSubscriptionRow(row);
   if (!subscription.trialEndsAt && subscription.plan === "trial" && !subscription.subscribedAt) {
     subscription = await ensureVisitorTrialSubscription(admin, ownerId);
   }

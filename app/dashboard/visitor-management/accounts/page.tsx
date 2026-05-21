@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Building2, RefreshCw, Trash2, UserCheck } from "lucide-react";
 
+import VisitorAccountExtensionControls, {
+  type VisitorAccountExtensionInfo,
+  type VisitorAccountSubscriptionInfo,
+} from "@/components/fusion-xpress/visitor-management/accounts/VisitorAccountExtensionControls";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { industryLabel, VISITOR_MANAGEMENT_PATH } from "@/lib/visitors/industry-options";
@@ -18,6 +22,8 @@ type VisitorAccount = {
   organization_industry: string | null;
   email_confirmed: boolean;
   created_at: string | null;
+  subscription: VisitorAccountSubscriptionInfo;
+  extension: VisitorAccountExtensionInfo;
 };
 
 export default function VisitorManagementAccountsPage() {
@@ -29,6 +35,7 @@ export default function VisitorManagementAccountsPage() {
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<VisitorAccount[]>([]);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   const loadAccounts = useCallback(async () => {
     setLoading(true);
@@ -98,6 +105,7 @@ export default function VisitorManagementAccountsPage() {
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Failed to delete account");
       setAccounts((prev) => prev.filter((a) => a.user_id !== account.user_id));
+      if (expandedUserId === account.user_id) setExpandedUserId(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to delete account");
     } finally {
@@ -123,8 +131,8 @@ export default function VisitorManagementAccountsPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Accounts Manager</h1>
           <p className="mt-2 text-gray-600 text-sm sm:text-base max-w-2xl">
-            Organizations that signed up for visitor management. This view is for Fusion Xpress admins only
-            and is not shown to client accounts after login.
+            Grant complimentary Professional + Enterprise access for a set period, or turn it off
+            from here. Extensions apply per organisation account.
           </p>
         </div>
         <button
@@ -158,60 +166,93 @@ export default function VisitorManagementAccountsPage() {
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                   <th className="px-4 py-3">Business</th>
-                  <th className="px-4 py-3">Contact</th>
                   <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Plan</th>
+                  <th className="px-4 py-3">Extension</th>
                   <th className="px-4 py-3">Industry</th>
-                  <th className="px-4 py-3">Verified</th>
-                  <th className="px-4 py-3">Joined</th>
+                  <th className="px-4 py-3">Access</th>
                   {isFullAdmin && <th className="px-4 py-3 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {accounts.map((account) => (
-                  <tr key={account.user_id} className="hover:bg-gray-50/80">
-                    <td className="px-4 py-3 font-semibold text-gray-900">{account.business_name}</td>
-                    <td className="px-4 py-3 text-gray-700">{account.contact_name}</td>
-                    <td className="px-4 py-3 text-gray-700">{account.email}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {industryLabel(account.organization_industry)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${
-                          account.email_confirmed
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-amber-100 text-amber-900"
-                        }`}
-                      >
-                        {account.email_confirmed ? "Yes" : "Pending"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                      {account.created_at
-                        ? new Date(account.created_at).toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "—"}
-                    </td>
-                    {isFullAdmin && (
-                      <td className="px-4 py-3 text-right">
-                        {account.user_id !== user?.id && (
-                          <button
-                            type="button"
-                            onClick={() => deleteAccount(account)}
-                            disabled={deletingUserId === account.user_id}
-                            className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-red-200 hover:bg-red-50 text-red-700 font-medium disabled:opacity-50"
-                            title="Delete account"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            {deletingUserId === account.user_id ? "Deleting…" : "Delete"}
-                          </button>
+                  <Fragment key={account.user_id}>
+                    <tr className="hover:bg-gray-50/80">
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-gray-900">{account.business_name}</div>
+                        <div className="text-xs text-gray-500">{account.contact_name}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{account.email}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="font-semibold text-gray-900">
+                          {account.subscription.planLabel}
+                        </span>
+                        {account.subscription.isActive ? (
+                          <span className="ml-1 text-emerald-700 text-xs">· Active</span>
+                        ) : (
+                          <span className="ml-1 text-amber-800 text-xs">· Inactive</span>
                         )}
                       </td>
-                    )}
-                  </tr>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {account.extension.active ? (
+                          <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-900">
+                            Until {account.extension.endsLabel}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {industryLabel(account.organization_industry)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedUserId((id) =>
+                              id === account.user_id ? null : account.user_id
+                            )
+                          }
+                          className="text-xs font-bold text-primary-700 hover:underline"
+                        >
+                          {expandedUserId === account.user_id ? "Hide" : "Manage access"}
+                        </button>
+                      </td>
+                      {isFullAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          {account.user_id !== user?.id && (
+                            <button
+                              type="button"
+                              onClick={() => deleteAccount(account)}
+                              disabled={deletingUserId === account.user_id}
+                              className="inline-flex items-center gap-1 px-2 py-1.5 rounded border border-red-200 hover:bg-red-50 text-red-700 font-medium disabled:opacity-50"
+                              title="Delete account"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              {deletingUserId === account.user_id ? "Deleting…" : "Delete"}
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                    {expandedUserId === account.user_id ? (
+                      <tr>
+                        <td
+                          colSpan={isFullAdmin ? 7 : 6}
+                          className="px-4 py-3 bg-gray-50/80 border-b border-gray-100"
+                        >
+                          <VisitorAccountExtensionControls
+                            userId={account.user_id}
+                            email={account.email}
+                            subscription={account.subscription}
+                            extension={account.extension}
+                            onUpdated={() => void loadAccounts()}
+                            onError={setError}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

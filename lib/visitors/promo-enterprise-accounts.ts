@@ -2,7 +2,10 @@ import { normalizeVisitorAccountEmail } from "@/lib/visitors/demo-accounts";
 import { VISITOR_TRIAL_DAYS } from "@/lib/visitors/subscription";
 
 /** Complimentary full Enterprise access for 7 days, then standard expired trial until upgrade. */
-export const VISITOR_PROMO_ENTERPRISE_EMAILS: readonly string[] = ["inukaproperties@gmail.com"];
+export const VISITOR_PROMO_ENTERPRISE_EMAILS: readonly string[] = [
+  "inukaproperties@gmail.com",
+  "lemartmsa@gmail.com",
+];
 
 function promoEmailsFromEnv(): string[] {
   const raw = process.env.VISITOR_PROMO_ENTERPRISE_EMAILS ?? "";

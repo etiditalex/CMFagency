@@ -11,6 +11,12 @@ export type VisitorSubscriptionRow = {
   current_period_ends_at?: string | null;
   last_payment_reference?: string | null;
   last_transaction_id?: string | null;
+  admin_extension_active?: boolean;
+  admin_extension_ends_at?: string | null;
+  admin_extension_plan?: "enterprise" | null;
+  admin_extension_note?: string | null;
+  admin_extension_granted_by?: string | null;
+  admin_extension_granted_at?: string | null;
   created_at: string;
   updated_at: string;
 };
