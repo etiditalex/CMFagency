@@ -36,6 +36,7 @@ const nextConfig = {
   // Tree-shake barrel imports (smaller client bundles for icon-heavy pages).
   experimental: {
     optimizePackageImports: ['lucide-react', 'date-fns', 'framer-motion'],
+    turbopackUseSystemTlsCerts: true,
   },
   // Ensure Turbopack uses this project root (we have another lockfile on disk).
   turbopack: {
