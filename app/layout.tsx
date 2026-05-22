@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { connection } from "next/server";
-import { inter, montserrat } from "@/lib/fonts";
 import "./globals.css";
 import PageLoader from "@/components/PageLoader";
 import AdSenseLoader from "@/components/AdSenseLoader";
@@ -155,8 +154,8 @@ export default async function RootLayout({
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
-      <body className={inter.className}>
+    <html lang="en">
+      <body>
         {/* Google tag (gtag.js) */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-46VYE6KM7V"

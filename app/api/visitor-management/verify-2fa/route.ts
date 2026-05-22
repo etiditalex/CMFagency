@@ -1,4 +1,5 @@
 import { verify } from "otplib";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { createAdminClient } from "@/supabase/server";
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Set 2FA verified cookie (matches admin pattern)
-      const response = Response.json({
+      const response = NextResponse.json({
         success: true,
         message: "2FA verification successful",
       });

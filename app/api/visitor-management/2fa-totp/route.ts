@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         secret,
         label: `Visitor Management (${userId})`,
         issuer: "CMF Agency",
-        algorithm: "SHA1",
+        algorithm: "sha1",
       });
 
       // Store temporary secret (unverified)

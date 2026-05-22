@@ -9,7 +9,7 @@ import type { EmployeeAttendanceRecord, ShiftDefinition } from "@/lib/employees/
 
 export function parseTimeHHMM(timeStr: string): { hours: number; minutes: number } {
   const [hours, minutes] = timeStr.split(":").map((s) => parseInt(s, 10));
-  return { hours, minutes || 0 };
+  return { hours, minutes: minutes || 0 };
 }
 
 export function dateToTimeHHMM(date: Date): { hours: number; minutes: number } {

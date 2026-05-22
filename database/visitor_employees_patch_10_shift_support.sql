@@ -1,8 +1,8 @@
 -- Enable multi-shift support for retail/hospitality accounts
 -- Shifts: 1st (6am-3pm), 2nd (3:30pm-11pm)
 
--- Add shift columns to visitor_employees_reporting_settings
-ALTER TABLE visitor_employees_reporting_settings
+-- Add shift columns to visitor_employee_reporting_settings
+ALTER TABLE visitor_employee_reporting_settings
 ADD COLUMN IF NOT EXISTS shift_enabled boolean DEFAULT false,
 ADD COLUMN IF NOT EXISTS shift_1_start_time time without time zone DEFAULT '06:00',
 ADD COLUMN IF NOT EXISTS shift_1_end_time time without time zone DEFAULT '15:00',
@@ -51,20 +51,20 @@ SELECT
         ELSE NULL
     END as shifts,
     updated_at
-FROM visitor_employees_reporting_settings;
+FROM visitor_employee_reporting_settings;
 
 -- Add comment documenting shifts
-COMMENT ON COLUMN visitor_employees_reporting_settings.shift_enabled 
+COMMENT ON COLUMN visitor_employee_reporting_settings.shift_enabled 
 IS 'Enable multi-shift support for retail/hospitality accounts';
 
-COMMENT ON COLUMN visitor_employees_reporting_settings.shift_1_start_time 
+COMMENT ON COLUMN visitor_employee_reporting_settings.shift_1_start_time 
 IS 'Shift 1 start time (e.g., 06:00 for 6am)';
 
-COMMENT ON COLUMN visitor_employees_reporting_settings.shift_1_end_time 
+COMMENT ON COLUMN visitor_employee_reporting_settings.shift_1_end_time 
 IS 'Shift 1 end time (e.g., 15:00 for 3pm)';
 
-COMMENT ON COLUMN visitor_employees_reporting_settings.shift_2_start_time 
+COMMENT ON COLUMN visitor_employee_reporting_settings.shift_2_start_time 
 IS 'Shift 2 start time (e.g., 15:30 for 3:30pm)';
 
-COMMENT ON COLUMN visitor_employees_reporting_settings.shift_2_end_time 
+COMMENT ON COLUMN visitor_employee_reporting_settings.shift_2_end_time 
 IS 'Shift 2 end time (e.g., 23:00 for 11pm)';
