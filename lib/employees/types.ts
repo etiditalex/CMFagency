@@ -4,6 +4,15 @@ export type EmployeeAttendanceEventType = "sign_in" | "sign_out";
 /** General staff vs real-estate CRM team (separate reporting windows). */
 export type EmployeeMemberType = "staff" | "crm";
 
+export type ShiftDefinition = {
+  shiftNumber: 1 | 2;
+  startTime: string; // HH:mm format (e.g. "06:00" for 6am)
+  endTime: string; // HH:mm format (e.g. "15:00" for 3pm)
+  signInStartTime: string; // earliest sign-in (e.g. "06:00")
+  signInTime: string; // latest on-time sign-in (e.g. "08:00")
+  signOutTime: string; // expected sign-out (e.g. "15:00")
+};
+
 export type EmployeeReportingSettings = {
   /** Earliest expected sign-in (e.g. 07:00). */
   staffReportingSignInStart: string;
@@ -15,6 +24,18 @@ export type EmployeeReportingSettings = {
   crmReportingSignIn: string;
   crmReportingSignOut: string;
   updatedAt: string | null;
+  /** Multi-shift support for retail/hospitality (e.g. morning 6am-3pm, evening 3:30pm-11pm). */
+  shiftEnabled?: boolean;
+  shift1StartTime?: string; // HH:mm (e.g. "06:00")
+  shift1EndTime?: string; // HH:mm (e.g. "15:00")
+  shift2StartTime?: string; // HH:mm (e.g. "15:30")
+  shift2EndTime?: string; // HH:mm (e.g. "23:00")
+  shift1SignInStartTime?: string;
+  shift1SignInTime?: string;
+  shift1SignOutTime?: string;
+  shift2SignInStartTime?: string;
+  shift2SignInTime?: string;
+  shift2SignOutTime?: string;
 };
 
 export type EmployeeRecord = {
