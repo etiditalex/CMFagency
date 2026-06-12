@@ -80,6 +80,37 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  async function activeRegistrationMessage(forEmail: string): Promise<string | null> {
+    const { data } = await supabase
+      .from("cmfa_registrations")
+      .select("status")
+      .eq("event_slug", CMFA_EVENT_SLUG)
+      .eq("email", forEmail)
+      .in("status", ["pending", "approved"])
+      .maybeSingle();
+
+    if (!data) return null;
+    if ((data as { status: string }).status === "pending") {
+      return "This email already has a pending CMFA registration. Please wait for approval or contact the CMF team.";
+    }
+    return "This email is already registered and approved for CMFA.";
+  }
+
+  const mainDup = await activeRegistrationMessage(email);
+  if (mainDup) {
+    return NextResponse.json({ error: mainDup }, { status: 409 });
+  }
+
+  if (guest) {
+    const guestDup = await activeRegistrationMessage(guest.email);
+    if (guestDup) {
+      return NextResponse.json(
+        { error: `Guest email: ${guestDup}` },
+        { status: 409 }
+      );
+    }
+  }
+
   const mainReference = generateRef();
   const mainRow = {
     reference: mainReference,
@@ -100,6 +131,12 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (mainErr || !mainInsert) {
+    if (mainErr?.code === "23505") {
+      return NextResponse.json(
+        { error: "This email is already registered for CMFA." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: mainErr?.message ?? "Registration failed." }, { status: 500 });
   }
 
@@ -121,6 +158,12 @@ export async function POST(req: NextRequest) {
 
     if (guestErr) {
       await supabase.from("cmfa_registrations").delete().eq("id", (mainInsert as { id: string }).id);
+      if (guestErr.code === "23505") {
+        return NextResponse.json(
+          { error: "The guest email is already registered for CMFA." },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ error: guestErr.message }, { status: 500 });
     }
   }

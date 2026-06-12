@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   ClipboardCheck,
+  Download,
   Loader2,
   RefreshCw,
   XCircle,
@@ -58,6 +59,7 @@ export default function GateCmfaApprovalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [patchingId, setPatchingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -138,6 +140,36 @@ export default function GateCmfaApprovalsPage() {
     }
   };
 
+  const downloadApproved = async () => {
+    setDownloading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch("/api/cmfa/registrations/export?status=approved", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error ?? "Download failed");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cmfa-approved-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember || !hasFeature("reports")) return null;
 
@@ -159,15 +191,26 @@ export default function GateCmfaApprovalsPage() {
             Review in-house CMFA registrations. Approving sends a complimentary QR ticket by email.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => loadRows()}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => downloadApproved()}
+            disabled={downloading}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-200 bg-primary-50 hover:bg-primary-100 font-semibold text-primary-800 disabled:opacity-60"
+          >
+            <Download className={`w-4 h-4 ${downloading ? "animate-spin" : ""}`} />
+            {downloading ? "Preparing…" : "Download approved CSV"}
+          </button>
+          <button
+            type="button"
+            onClick={() => loadRows()}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">

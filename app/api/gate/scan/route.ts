@@ -183,6 +183,7 @@ export async function POST(req: NextRequest) {
       const cmfaCheckedInAt = (cmfaReg as { checked_in_at?: string | null }).checked_in_at;
       const cmfaRefStr = String((cmfaReg as { reference?: string }).reference ?? ref);
       const cmfaId = `CMFA-${cmfaRefStr.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
+      const cmfaRegId = (cmfaReg as { id: string }).id;
 
       if (cmfaCheckedInAt) {
         return NextResponse.json(
@@ -198,12 +199,35 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const { error: updateCmfaErr } = await supabaseAdmin
+      const checkInNow = new Date().toISOString();
+      const { data: checkedInRow, error: updateCmfaErr } = await supabaseAdmin
         .from("cmfa_registrations")
-        .update({ checked_in_at: new Date().toISOString() })
-        .eq("id", (cmfaReg as { id: string }).id);
+        .update({ checked_in_at: checkInNow })
+        .eq("id", cmfaRegId)
+        .is("checked_in_at", null)
+        .select("checked_in_at")
+        .maybeSingle();
 
       if (updateCmfaErr) return NextResponse.json({ error: updateCmfaErr.message }, { status: 500 });
+
+      if (!checkedInRow) {
+        const { data: existing } = await supabaseAdmin
+          .from("cmfa_registrations")
+          .select("checked_in_at")
+          .eq("id", cmfaRegId)
+          .maybeSingle();
+        return NextResponse.json(
+          {
+            valid: false,
+            duplicate: true,
+            name: cmfaName,
+            ticketId: cmfaId,
+            checked_in_at: (existing as { checked_in_at?: string | null })?.checked_in_at ?? checkInNow,
+            message: "This registration was already used. Do not allow entry.",
+          },
+          { headers: { "Cache-Control": "no-store" } }
+        );
+      }
 
       return NextResponse.json(
         {
