@@ -30,6 +30,21 @@ function qrCodeUrl(data: string, size = 150): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }
 
+const CFMA_GOLD_HEADER = { background: "linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)" };
+const DEFAULT_HEADER = { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" };
+
+function isCfmaEvent(eventTitle: string, reference: string): boolean {
+  if (reference.startsWith("cmfa_reg_")) return true;
+  const t = eventTitle.toLowerCase();
+  return (
+    t.includes("coast fashion") ||
+    t.includes("modelling awards") ||
+    t.includes("modeling awards") ||
+    t.includes("cmfa") ||
+    t.includes("cfma")
+  );
+}
+
 export function EventInviteEmail({
   eventTitle,
   holderName,
@@ -45,8 +60,11 @@ export function EventInviteEmail({
   const ticketId = reference.startsWith("cmfa_reg_")
     ? `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`
     : `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
-  // Encode only the reference in the QR so gate scanners get the exact value to look up
   const qrData = reference;
+  const cfmaEvent = isCfmaEvent(eventTitle, reference);
+  const headerStyle = cfmaEvent ? CFMA_GOLD_HEADER : DEFAULT_HEADER;
+  const locationStyle = cfmaEvent ? locationHighlightGold : locationHighlight;
+  const linkStyle = cfmaEvent ? organizerLinkGold : organizerLink;
 
   return (
     <Html>
@@ -54,7 +72,7 @@ export function EventInviteEmail({
       <Preview>Your invitation – {eventTitle}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Section style={{ ...header, background: "linear-gradient(135deg, #059669 0%, #047857 100%)" }}>
+          <Section style={{ ...header, ...headerStyle }}>
             <Heading style={headerTitle}>{eventTitle}</Heading>
             <Text style={headerSubtitle}>You&apos;re invited</Text>
           </Section>
@@ -87,7 +105,7 @@ export function EventInviteEmail({
             </Text>
 
             {eventLocation && (
-              <Text style={locationHighlight}>
+              <Text style={locationStyle}>
                 The event will take place at {eventLocation}.
               </Text>
             )}
@@ -126,7 +144,7 @@ export function EventInviteEmail({
             <Text style={organizerText}>
               Contact: {organizerName}
               {organizerEmail && (
-                <> · <Link href={`mailto:${organizerEmail}`} style={organizerLink}>{organizerEmail}</Link></>
+                <> · <Link href={`mailto:${organizerEmail}`} style={linkStyle}>{organizerEmail}</Link></>
               )}
             </Text>
           </Section>
@@ -214,6 +232,12 @@ const locationHighlight = {
   borderRadius: "0 8px 8px 0",
 };
 
+const locationHighlightGold = {
+  ...locationHighlight,
+  backgroundColor: "#fef9e7",
+  borderLeft: "4px solid #B8860B",
+};
+
 const referenceText = { marginTop: "20px", fontSize: "12px", color: "#666" };
 const code = { backgroundColor: "#e9ecef", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" };
 const hr = { borderColor: "#e9ecef", margin: "20px 0" };
@@ -248,4 +272,5 @@ const secondaryButton = {
 const organizerLabel = { margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#333" };
 const organizerText = { margin: "0", fontSize: "13px", color: "#555" };
 const organizerLink = { color: "#059669", textDecoration: "none" };
+const organizerLinkGold = { color: "#B8860B", textDecoration: "none" };
 const footer = { color: "#888", fontSize: "11px", margin: "0 24px 24px" };
