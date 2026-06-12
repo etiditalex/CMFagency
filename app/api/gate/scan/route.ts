@@ -135,7 +135,87 @@ export async function POST(req: NextRequest) {
     }
 
     if (attendeeErr) return NextResponse.json({ error: attendeeErr.message }, { status: 500 });
-    if (!attendee) return NextResponse.json({ error: "Ticket or registration not found" }, { status: 404 });
+    if (!attendee) {
+      // CMFA complimentary registration (approval required before gate entry)
+      let cmfaReg: {
+        id: string;
+        reference?: string;
+        name?: string | null;
+        email?: string | null;
+        status?: string;
+        checked_in_at?: string | null;
+      } | null = null;
+      let cmfaErr: { message: string } | null = null;
+
+      const byCmfaRef = await supabaseAdmin
+        .from("cmfa_registrations")
+        .select("id, reference, name, email, status, checked_in_at")
+        .eq("reference", ref)
+        .maybeSingle();
+      cmfaReg = byCmfaRef.data;
+      cmfaErr = byCmfaRef.error;
+
+      if (!cmfaErr && !cmfaReg && /^CMFA-[A-Z0-9]{8,12}$/i.test(ref)) {
+        const hex = ref.replace(/^CMFA-/i, "").toLowerCase();
+        const byCmfaSuffix = await supabaseAdmin
+          .from("cmfa_registrations")
+          .select("id, reference, name, email, status, checked_in_at")
+          .filter("reference", "ilike", "%\\_" + hex)
+          .maybeSingle();
+        cmfaReg = byCmfaSuffix.data;
+        cmfaErr = byCmfaSuffix.error;
+      }
+
+      if (cmfaErr) return NextResponse.json({ error: cmfaErr.message }, { status: 500 });
+      if (!cmfaReg) return NextResponse.json({ error: "Ticket or registration not found" }, { status: 404 });
+
+      if ((cmfaReg as { status?: string }).status !== "approved") {
+        return NextResponse.json(
+          { error: "This registration is not approved yet. Do not allow entry." },
+          { status: 400 }
+        );
+      }
+
+      const cmfaName =
+        (cmfaReg as { name?: string | null }).name?.trim?.() ||
+        (cmfaReg as { email?: string | null }).email?.trim?.() ||
+        "—";
+      const cmfaCheckedInAt = (cmfaReg as { checked_in_at?: string | null }).checked_in_at;
+      const cmfaRefStr = String((cmfaReg as { reference?: string }).reference ?? ref);
+      const cmfaId = `CMFA-${cmfaRefStr.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
+
+      if (cmfaCheckedInAt) {
+        return NextResponse.json(
+          {
+            valid: false,
+            duplicate: true,
+            name: cmfaName,
+            ticketId: cmfaId,
+            checked_in_at: cmfaCheckedInAt,
+            message: "This registration was already used. Do not allow entry.",
+          },
+          { headers: { "Cache-Control": "no-store" } }
+        );
+      }
+
+      const { error: updateCmfaErr } = await supabaseAdmin
+        .from("cmfa_registrations")
+        .update({ checked_in_at: new Date().toISOString() })
+        .eq("id", (cmfaReg as { id: string }).id);
+
+      if (updateCmfaErr) return NextResponse.json({ error: updateCmfaErr.message }, { status: 500 });
+
+      return NextResponse.json(
+        {
+          valid: true,
+          duplicate: false,
+          name: cmfaName,
+          ticketId: cmfaId,
+          message: "Valid. Allow entry.",
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
 
     const regName = (attendee as { name?: string | null }).name?.trim?.() || (attendee as { email?: string | null }).email?.trim?.() || "—";
     const regCheckedInAt = (attendee as { checked_in_at?: string | null }).checked_in_at;

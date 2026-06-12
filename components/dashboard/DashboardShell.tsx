@@ -208,6 +208,7 @@ function DashboardNavItem({
   showLabels,
   onNavigate,
   pendingApplicationsCount,
+  pendingCmfaCount,
   isAdmin,
 }: {
   item: NavItem;
@@ -219,6 +220,7 @@ function DashboardNavItem({
   showLabels: boolean;
   onNavigate?: () => void;
   pendingApplicationsCount: number;
+  pendingCmfaCount: number;
   isAdmin: boolean;
 }) {
   const Icon = item.icon;
@@ -321,6 +323,11 @@ function DashboardNavItem({
           {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
             <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
               {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
+            </span>
+          )}
+          {item.href === "/dashboard/gate" && pendingCmfaCount > 0 && (
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
+              {pendingCmfaCount > 99 ? "99+" : pendingCmfaCount}
             </span>
           )}
         </span>
@@ -485,6 +492,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
   const [search, setSearch] = useState("");
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
+  const [pendingCmfaCount, setPendingCmfaCount] = useState(0);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {
@@ -511,6 +519,33 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       document.body.style.overflow = prevOverflow;
     };
   }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isPortalMember || !hasFeature("reports")) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token || cancelled) return;
+        const res = await fetch("/api/cmfa/registrations/pending-count", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!cancelled && res.ok && typeof j.total === "number") setPendingCmfaCount(j.total);
+        else if (!cancelled) setPendingCmfaCount(0);
+      } catch {
+        if (!cancelled) setPendingCmfaCount(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isPortalMember, hasFeature]);
 
   useEffect(() => {
     if (!isAuthenticated || !isPortalMember || !isAdmin) {
@@ -641,6 +676,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     setVisitorNavOpen={setVisitorNavOpen}
                     showLabels={showDesktopSidebarFull}
                     pendingApplicationsCount={pendingApplicationsCount}
+                    pendingCmfaCount={pendingCmfaCount}
                     isAdmin={isAdmin}
                   />
                 ))}
@@ -715,6 +751,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         showLabels
                         onNavigate={() => setMobileOpen(false)}
                         pendingApplicationsCount={pendingApplicationsCount}
+                    pendingCmfaCount={pendingCmfaCount}
                         isAdmin={isAdmin}
                       />
                     ))}

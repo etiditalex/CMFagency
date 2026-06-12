@@ -111,14 +111,17 @@ export default function Navbar() {
 
   const eventsLinks = [
     { href: "/events", label: "All Events" },
-    { href: "/events/upcoming", label: "Upcoming Events" },
-    { href: "/events/register-as-model", label: "Register as a Model" },
     { href: "/events/past", label: "Past Events" },
   ];
 
+  const upcomingEventLinks = [
+    { href: "/events/upcoming", label: "All Upcoming Events", nested: false },
+    { href: "/events/upcoming/cmfa-registration", label: "CMFA Registration", nested: true },
+    { href: "/events/register-as-model", label: "Register as a Model", nested: true },
+  ];
+
   const eventsCol1 = [eventsLinks[0]];
-  const eventsCol2 = [eventsLinks[1], eventsLinks[2]]; // Upcoming + Register as a Model
-  const eventsCol3 = [eventsLinks[3]];
+  const eventsCol3 = [eventsLinks[1]];
   const kcmLinks = [
     { href: "/kcm", label: "KCM Membership" },
     { href: "/kcm/cfm-tickets", label: "CFM Tickets" },
@@ -654,18 +657,29 @@ export default function Navbar() {
                         ))}
                       </div>
 
-                      {/* Container 2 */}
+                      {/* Container 2: Upcoming Events */}
                       <div className="rounded-xl border border-gray-200 bg-gray-50/40 p-2">
                         <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
-                          Upcoming
+                          Upcoming Events
                         </div>
-                        {eventsCol2.map((item) => (
+                        {upcomingEventLinks.map((item) => (
                           <Link
                             key={item.href}
                             href={item.href}
-                            className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                            className={`block py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium ${
+                              item.nested ? "pl-5 pr-2 text-sm" : "px-2"
+                            }`}
                           >
-                            {item.label}
+                            {item.nested ? (
+                              <span className="inline-flex items-center gap-2">
+                                <span className="text-primary-400" aria-hidden>
+                                  └
+                                </span>
+                                {item.label}
+                              </span>
+                            ) : (
+                              item.label
+                            )}
                           </Link>
                         ))}
                       </div>
@@ -691,6 +705,12 @@ export default function Navbar() {
                         <div className="px-2 pb-2 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
                           CFMA 2026
                         </div>
+                        <Link
+                          href="/events/upcoming/cmfa-registration"
+                          className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        >
+                          CMFA Registration
+                        </Link>
                         <Link
                           href="/events/upcoming/coast-fashion-modelling-awards-2026"
                           className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
@@ -1127,6 +1147,26 @@ export default function Navbar() {
                           {item.label}
                         </Link>
                       ))}
+                      <div className="pt-1">
+                        <div className="py-1 text-xs font-extrabold tracking-widest text-gray-500 uppercase">
+                          Upcoming Events
+                        </div>
+                        {upcomingEventLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setEventsOpen(false);
+                            }}
+                            className={`block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 ${
+                              item.nested ? "pl-4 text-sm" : "text-sm font-medium"
+                            }`}
+                          >
+                            {item.nested ? `↳ ${item.label}` : item.label}
+                          </Link>
+                        ))}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

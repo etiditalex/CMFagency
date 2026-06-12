@@ -42,7 +42,9 @@ export function EventInviteEmail({
   calendarUrl,
   mapUrl,
 }: EventInviteEmailProps) {
-  const ticketId = `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
+  const ticketId = reference.startsWith("cmfa_reg_")
+    ? `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`
+    : `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
   // Encode only the reference in the QR so gate scanners get the exact value to look up
   const qrData = reference;
 

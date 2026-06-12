@@ -220,6 +220,14 @@ function CfmaEventDetail() {
             </div>
             <div className="mt-8 flex flex-col items-stretch sm:items-center gap-4">
               <div className="flex flex-col sm:flex-row sm:justify-center gap-3">
+                <Link
+                  href="/events/upcoming/cmfa-registration"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-6 py-3 shadow-lg whitespace-nowrap"
+                >
+                  <Ticket className="w-5 h-5" />
+                  CMFA Registration
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
                 <button
                   type="button"
                   onClick={() => setTicketModalOpen(true)}
@@ -318,6 +326,13 @@ function CfmaEventDetail() {
                       ))}
                     </div>
                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Link
+                        href="/events/upcoming/cmfa-registration"
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-4 py-3 shadow"
+                      >
+                        <Ticket className="w-4 h-4" />
+                        CMFA Registration
+                      </Link>
                       <a
                         href="#sec-enquiries"
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-600 hover:bg-secondary-700 text-white font-semibold px-4 py-3 shadow"

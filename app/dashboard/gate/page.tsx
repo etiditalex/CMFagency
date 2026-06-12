@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, ListChecks } from "lucide-react";
+import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, ListChecks, ClipboardCheck } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -54,6 +54,8 @@ function parseRefFromInput(input: string): string {
 
   // Free-reg invite QR may encode "REG-XXXX\nreg_slug_hex" — prefer reg_ so gate finds the attendee
   const tokens = trimmed.split(/\s+/);
+  const cmfaToken = tokens.map((t) => t.trim()).find((t) => /^cmfa_reg_[a-z0-9._-]+$/i.test(t) && REF_PATTERN.test(t));
+  if (cmfaToken) return cmfaToken;
   const regToken = tokens.map((t) => t.trim()).find((t) => /^reg_[a-z0-9._-]+$/i.test(t) && REF_PATTERN.test(t));
   if (regToken) return regToken;
 
@@ -341,6 +343,13 @@ export default function DashboardGatePage() {
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/gate/approvals"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 font-semibold text-amber-900"
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            CMFA approvals
+          </Link>
           <Link
             href="/dashboard/gate/check-ins"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900"
