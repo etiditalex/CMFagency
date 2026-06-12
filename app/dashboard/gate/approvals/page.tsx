@@ -53,7 +53,7 @@ export default function GateCmfaApprovalsPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
-  const [filter, setFilter] = useState<StatusFilter>("pending");
+  const [filter, setFilter] = useState<StatusFilter>("all");
   const [rows, setRows] = useState<RegistrationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,19 +120,38 @@ export default function GateCmfaApprovalsPage() {
         registration?: RegistrationRow;
       };
 
-      if (!res.ok) throw new Error(json.error ?? json.email_error ?? "Update failed");
+      const updatedRow = json.registration
+        ? ({
+            ...json.registration,
+            designation_label: cmfaDesignationLabel(json.registration.designation),
+          } as RegistrationRow)
+        : null;
+
+      if (!res.ok && !updatedRow) {
+        throw new Error(json.error ?? json.email_error ?? "Update failed");
+      }
+
+      if (updatedRow) {
+        setRows((prev) => prev.map((row) => (row.id === id ? { ...row, ...updatedRow } : row)));
+      }
 
       if (status === "approved") {
-        setNotice(
-          json.email_sent
-            ? `Approved — complimentary ticket emailed to ${json.registration?.email ?? "registrant"}.`
-            : `Approved, but email could not be sent: ${json.email_error ?? "unknown error"}.`
-        );
+        if (json.email_sent) {
+          setNotice(`Approved — complimentary ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
+        } else if (json.email_error) {
+          setNotice(`Approved, but email could not be sent: ${json.email_error}.`);
+        } else if (!res.ok) {
+          setNotice(json.error ?? "Approved with warnings.");
+        } else {
+          setNotice(`Approved — complimentary ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
+        }
       } else {
         setNotice("Registration rejected.");
       }
 
-      await loadRows();
+      if (!updatedRow) {
+        await loadRows();
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Update failed");
     } finally {
@@ -173,7 +192,7 @@ export default function GateCmfaApprovalsPage() {
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember || !hasFeature("reports")) return null;
 
-  const pendingCount = filter === "pending" ? rows.length : undefined;
+  const pendingCount = rows.filter((r) => r.status === "pending").length;
 
   return (
     <div className="text-left max-w-5xl">
@@ -226,7 +245,7 @@ export default function GateCmfaApprovalsPage() {
             }`}
           >
             {s === "all" ? "All" : cmfaStatusLabel(s)}
-            {s === "pending" && pendingCount !== undefined && pendingCount > 0 ? ` (${pendingCount})` : ""}
+            {s === "pending" && pendingCount > 0 ? ` (${pendingCount})` : ""}
           </button>
         ))}
       </div>
