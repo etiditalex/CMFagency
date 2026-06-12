@@ -21,6 +21,7 @@ export default function DashboardAccountPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [totpRequired, setTotpRequired] = useState(false);
   const [totpSetupUrl, setTotpSetupUrl] = useState<string | null>(null);
   const [totpSecret, setTotpSecret] = useState<string | null>(null);
   const [totpConfirmCode, setTotpConfirmCode] = useState("");
@@ -49,6 +50,7 @@ export default function DashboardAccountPage() {
     const res = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });
     const json = await res.json().catch(() => ({}));
     setTotpEnabled(!!(json as { hasTotp?: boolean }).hasTotp);
+    setTotpRequired(!!(json as { totpRequired?: boolean }).totpRequired);
   }, []);
 
   useEffect(() => {
@@ -250,7 +252,9 @@ export default function DashboardAccountPage() {
           Two-factor authentication
         </div>
         <p className="mt-2 text-sm text-gray-600">
-          Use an email code or Google Authenticator (or any TOTP app) when signing in to the portal.
+          {totpRequired
+            ? "Business accounts must use Google Authenticator when signing in. Set it up here if you have not already."
+            : "Use an email code or Google Authenticator (or any TOTP app) when signing in to the portal."}
         </p>
 
         {totpEnabled === null ? (
@@ -304,14 +308,16 @@ export default function DashboardAccountPage() {
               <Smartphone className="w-5 h-5" />
               Google Authenticator is enabled
             </span>
-            <button
-              type="button"
-              onClick={onTotpDisable}
-              disabled={totpDisableLoading}
-              className="px-4 py-2 border border-red-200 text-red-700 rounded-md hover:bg-red-50 disabled:opacity-60"
-            >
-              {totpDisableLoading ? "Disabling…" : "Disable"}
-            </button>
+            {!totpRequired ? (
+              <button
+                type="button"
+                onClick={onTotpDisable}
+                disabled={totpDisableLoading}
+                className="px-4 py-2 border border-red-200 text-red-700 rounded-md hover:bg-red-50 disabled:opacity-60"
+              >
+                {totpDisableLoading ? "Disabling…" : "Disable"}
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="mt-5">

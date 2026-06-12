@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { requiresMandatoryBusinessTotp } from "@/lib/auth/business-totp";
+
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -19,7 +21,23 @@ export async function POST(req: NextRequest) {
     if (userErr || !userData?.user) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-    await admin.from("portal_user_totp").delete().eq("user_id", userData.user.id);
+    const userId = userData.user.id;
+
+    const { data: memberRow } = await admin
+      .from("portal_members")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const meta = userData.user.user_metadata as Record<string, unknown> | undefined;
+    const accountType = String(meta?.account_type ?? meta?.accountType ?? "").trim();
+    if (requiresMandatoryBusinessTotp(memberRow?.role, accountType)) {
+      return NextResponse.json(
+        { error: "Google Authenticator is required for business accounts and cannot be disabled." },
+        { status: 403 }
+      );
+    }
+
+    await admin.from("portal_user_totp").delete().eq("user_id", userId);
 
     return NextResponse.json({ ok: true });
   } catch (e) {

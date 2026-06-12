@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Lock, Mail } from "lucide-react";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { businessTotpSetupUrl } from "@/lib/auth/business-totp";
 import { supabase } from "@/lib/supabase";
 
 function isMissingPortalMembersTable(err: unknown) {
@@ -65,6 +66,7 @@ export function PortalLoginForm({
   const [codeLoading, setCodeLoading] = useState(false);
   const [resendCodeLoading, setResendCodeLoading] = useState(false);
   const [hasTotp, setHasTotp] = useState(false);
+  const [totpRequired, setTotpRequired] = useState(false);
   type TwoFactorMethod = "email" | "totp";
   const [twoFactorMethod, setTwoFactorMethod] = useState<TwoFactorMethod>("email");
 
@@ -130,8 +132,13 @@ export function PortalLoginForm({
             const methodRes = t
               ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } })
               : null;
-            const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean }) : {};
+            const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean; totpRequired?: boolean }) : {};
+            if (methodData.totpRequired && !methodData.hasTotp) {
+              router.replace(businessTotpSetupUrl(redirectTo));
+              return;
+            }
             setHasTotp(!!methodData.hasTotp);
+            setTotpRequired(!!methodData.totpRequired);
             setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
             setStep("code");
             setLoginEmail(userEmail);
@@ -151,8 +158,13 @@ export function PortalLoginForm({
           const methodRes = t
             ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${t}` } })
             : null;
-          const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean }) : {};
+          const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean; totpRequired?: boolean }) : {};
+          if (methodData.totpRequired && !methodData.hasTotp) {
+            router.replace(businessTotpSetupUrl(redirectTo));
+            return;
+          }
           setHasTotp(!!methodData.hasTotp);
+          setTotpRequired(!!methodData.totpRequired);
           setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
           setStep("code");
           setLoginEmail(userEmail);
@@ -241,8 +253,16 @@ export function PortalLoginForm({
       if (!token) throw new Error("Session missing. Please try again.");
 
       const methodRes = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });
-      const methodData = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean };
+      const methodData = (await methodRes.json().catch(() => ({}))) as {
+        hasTotp?: boolean;
+        totpRequired?: boolean;
+      };
       const useTotp = !!methodData.hasTotp;
+
+      if (methodData.totpRequired && !useTotp) {
+        router.replace(businessTotpSetupUrl(redirectTo));
+        return;
+      }
 
       if (!useTotp) {
         const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
@@ -257,6 +277,7 @@ export function PortalLoginForm({
 
       setLoginEmail(email.trim());
       setHasTotp(useTotp);
+      setTotpRequired(!!methodData.totpRequired);
       setTwoFactorMethod(useTotp ? "totp" : "email");
       setStep("code");
       setCode("");
@@ -301,6 +322,10 @@ export function PortalLoginForm({
   };
 
   const onResendCode = async () => {
+    if (totpRequired) {
+      setError("Business accounts must sign in with Google Authenticator.");
+      return;
+    }
     setError(null);
     setResendCodeLoading(true);
     try {
@@ -362,8 +387,8 @@ export function PortalLoginForm({
           role="status"
         >
           <strong className="font-semibold">Hiring account:</strong> Use the email and password from your registration below.
-          After you enter the one-time code from your email, you will land in the dashboard—open <strong>Job listings</strong> in
-          the sidebar to create and publish roles. Listing details and filters are managed there, not on this public page.
+          On first sign-in you will set up Google Authenticator, then enter a code from the app to access the dashboard—open{" "}
+          <strong>Job listings</strong> in the sidebar to create and publish roles.
         </div>
       )}
 
@@ -399,7 +424,7 @@ export function PortalLoginForm({
             <form onSubmit={onVerifyCode} className="space-y-4">
               {twoFactorMethod === "totp" ? (
                 <p className="text-gray-600 text-sm">
-                  Enter the 6-digit code from your authenticator app (e.g. Google Authenticator).
+                  Enter the 6-digit code from Google Authenticator.
                 </p>
               ) : (
                 <p className="text-gray-600 text-sm">
@@ -430,7 +455,7 @@ export function PortalLoginForm({
                 >
                   {codeLoading ? "Verifying…" : "Verify and continue"}
                 </button>
-                {twoFactorMethod === "email" ? (
+                {twoFactorMethod === "email" && !totpRequired ? (
                   <button
                     type="button"
                     onClick={onResendCode}
@@ -442,7 +467,7 @@ export function PortalLoginForm({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {twoFactorMethod === "totp" ? (
+                {twoFactorMethod === "totp" && !totpRequired ? (
                   <button
                     type="button"
                     onClick={onResendCode}
@@ -451,7 +476,8 @@ export function PortalLoginForm({
                   >
                     Send code to email instead
                   </button>
-                ) : hasTotp ? (
+                ) : null}
+                {twoFactorMethod === "email" && hasTotp ? (
                   <button
                     type="button"
                     onClick={() => {

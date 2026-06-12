@@ -32,10 +32,10 @@ export default function VisitorVerifyEmailForm() {
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Verification failed");
-      setMessage("Email verified. You can sign in with your password and a login code.");
+      setMessage("Email verified. Sign in with your password — you will set up Google Authenticator on first login.");
       setTimeout(() => {
         router.push("/fusion-xpress/smart-visitor-management/sign-in");
-      }, 2000);
+      }, 2500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
@@ -76,7 +76,7 @@ export default function VisitorVerifyEmailForm() {
       <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">Verify your email</h1>
       <p className="mt-2 text-sm text-gray-600">
         We sent a 6-digit code to your inbox after sign-up. Enter it below, then sign in with your password
-        and a separate login code.
+        and set up Google Authenticator.
       </p>
 
       {error ? (

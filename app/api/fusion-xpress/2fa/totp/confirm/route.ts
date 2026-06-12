@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verify } from "otplib";
 
+const COOKIE_NAME = "portal_2fa_verified";
+const COOKIE_MAX_AGE = 60 * 60 * 24;
+
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -42,7 +45,18 @@ export async function POST(req: NextRequest) {
       .update({ verified_at: new Date().toISOString() })
       .eq("user_id", userId);
 
-    return NextResponse.json({ ok: true });
+    const completeLogin = body.completeLogin === true;
+    const res = NextResponse.json({ ok: true });
+    if (completeLogin) {
+      res.cookies.set(COOKIE_NAME, "1", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: COOKIE_MAX_AGE,
+        path: "/",
+      });
+    }
+    return res;
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });

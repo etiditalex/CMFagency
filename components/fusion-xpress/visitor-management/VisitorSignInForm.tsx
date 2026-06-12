@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, Smartphone } from "lucide-react";
+import { KeyRound, Lock, Mail } from "lucide-react";
 
+import { businessTotpSetupUrl } from "@/lib/auth/business-totp";
 import { supabase } from "@/lib/supabase";
 import { hasVisitorManagementAccess, VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
-type Step = "login" | "2fa-method" | "2fa-code";
+type Step = "login" | "code";
 
 function parseFeatures(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.map((f) => String(f).toLowerCase().trim()) : [];
@@ -51,10 +52,8 @@ export default function VisitorSignInForm() {
   const [step, setStep] = useState<Step>("login");
   const [code, setCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
-  const [resendCodeLoading, setResendCodeLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [has2faMethod, setHas2faMethod] = useState<{ hasTotp: boolean; methods: string[] } | null>(null);
-  const [selectedMethod, setSelectedMethod] = useState<"totp" | "email">("email");
+  const [hasTotp, setHasTotp] = useState(false);
+  const [totpRequired, setTotpRequired] = useState(true);
 
   const canSubmit = useMemo(() => email.trim() && password.length > 0, [email, password]);
 
@@ -72,8 +71,40 @@ export default function VisitorSignInForm() {
         /* not a visitor session */
       }
     };
-    check();
+    void check();
   }, [router]);
+
+  const afterPasswordSignIn = async (token: string) => {
+    const methodRes = await fetch("/api/fusion-xpress/2fa/method", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const methodData = (await methodRes.json().catch(() => ({}))) as {
+      hasTotp?: boolean;
+      totpRequired?: boolean;
+    };
+    const useTotp = !!methodData.hasTotp;
+    setHasTotp(useTotp);
+    setTotpRequired(methodData.totpRequired !== false);
+
+    if (methodData.totpRequired !== false && !useTotp) {
+      router.replace(businessTotpSetupUrl(VISITOR_ONLY_DASHBOARD_PREFIX));
+      return;
+    }
+
+    if (!useTotp) {
+      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sendRes.ok) {
+        const err = await sendRes.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
+      }
+    }
+
+    setStep("code");
+    setCode("");
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,62 +127,16 @@ export default function VisitorSignInForm() {
       }
 
       const uid = data.user?.id;
-      if (!uid) throw new Error("Sign in failed.");
+      const token = data.session?.access_token;
+      if (!uid || !token) throw new Error("Sign in failed.");
 
-      setUserId(uid);
       await assertVisitorPortalMember(uid);
-
-      // Check 2FA methods available
-      const methodRes = await fetch(`/api/visitor-management/2fa-totp?user_id=${uid}`);
-      const methods = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean; methods?: string[] };
-      setHas2faMethod({ hasTotp: !!methods.hasTotp, methods: methods.methods ?? [] });
-
-      // If no 2FA enabled, use email as default
-      if (!methods.hasTotp) {
-        setSelectedMethod("email");
-        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${data.session?.access_token}` },
-        });
-        if (!sendRes.ok) {
-          const err = await sendRes.json().catch(() => ({}));
-          throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
-        }
-        setStep("2fa-code");
-      } else {
-        // Show 2FA method selection
-        setStep("2fa-method");
-      }
-      setCode("");
+      await afterPasswordSignIn(token);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const onSelectMethod = async (method: "totp" | "email") => {
-    setSelectedMethod(method);
-    setCode("");
-    setError(null);
-
-    if (method === "email") {
-      setCodeLoading(true);
-      try {
-        const { data } = await supabase.auth.getSession();
-        const res = await fetch("/api/fusion-xpress/send-login-code", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${data.session?.access_token}` },
-        });
-        if (!res.ok) throw new Error("Failed to send code");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send code");
-        setCodeLoading(false);
-        return;
-      }
-      setCodeLoading(false);
-    }
-    setStep("2fa-code");
   };
 
   const onVerifyCode = async (e: React.FormEvent) => {
@@ -163,55 +148,23 @@ export default function VisitorSignInForm() {
       const token = data.session?.access_token;
       if (!token) throw new Error("Session expired. Sign in again.");
 
-      let verifyEndpoint = "/api/fusion-xpress/verify-login-code";
-      let verifyMethod = selectedMethod;
+      const codeDigits = code.trim().replace(/\D/g, "").slice(0, 6);
+      if (codeDigits.length !== 6) throw new Error("Enter the 6-digit code.");
 
-      // Use visitor-specific endpoint for TOTP
-      if (selectedMethod === "totp") {
-        verifyEndpoint = "/api/visitor-management/verify-2fa";
-        const res = await fetch(verifyEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ code, user_id: userId, method: "totp" }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error ?? "Invalid code");
-      } else {
-        // Email verification uses admin endpoint
-        const res = await fetch(verifyEndpoint, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ code, method: "email" }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(json.error ?? "Invalid code");
-      }
+      const res = await fetch("/api/fusion-xpress/verify-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ code: codeDigits, method: hasTotp ? "totp" : "email" }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Invalid code");
 
       router.replace(VISITOR_ONLY_DASHBOARD_PREFIX);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
       setCodeLoading(false);
-    }
-  };
-
-  const onResendCode = async () => {
-    setResendCodeLoading(true);
-    setError(null);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error("Session expired.");
-      const res = await fetch("/api/fusion-xpress/send-login-code", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to resend code.");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to resend code.");
-    } finally {
-      setResendCodeLoading(false);
     }
   };
 
@@ -244,14 +197,14 @@ export default function VisitorSignInForm() {
   return (
     <div className="mt-5 sm:mt-6">
       <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">
-        {step === "login" ? "Sign in to your account" : "Verify your login"}
+        {step === "login" ? "Sign in to your account" : "Verify with Google Authenticator"}
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         {step === "login"
           ? "Sign in as your organization to manage guest check-ins, approvals, and QR passes."
-          : step === "2fa-method"
-            ? "Choose how to verify your identity."
-            : "Enter the 6-digit code from your authenticator or email."}
+          : hasTotp
+            ? "Enter the 6-digit code from Google Authenticator."
+            : "Enter the 6-digit code sent to your email."}
       </p>
 
       {error ? (
@@ -269,79 +222,45 @@ export default function VisitorSignInForm() {
       ) : null}
       {resetSent ? <p className="mt-4 text-sm text-primary-700">Password reset link sent.</p> : null}
 
-      {step === "2fa-method" && has2faMethod ? (
-        <div className="mt-6 space-y-3">
-          {has2faMethod.hasTotp && (
-            <button
-              onClick={() => onSelectMethod("totp")}
-              className="flex min-h-[56px] w-full items-center gap-3 rounded-lg border-2 border-primary-300 bg-primary-50 px-4 py-3 text-left transition hover:bg-primary-100"
-            >
-              <Smartphone className="h-5 w-5 flex-shrink-0 text-primary-700" />
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">Google Authenticator</p>
-                <p className="text-xs text-gray-600">Use your authenticator app</p>
-              </div>
-            </button>
-          )}
-          <button
-            onClick={() => onSelectMethod("email")}
-            className="flex min-h-[56px] w-full items-center gap-3 rounded-lg border-2 border-gray-200 bg-white px-4 py-3 text-left transition hover:bg-gray-50"
-          >
-            <Mail className="h-5 w-5 flex-shrink-0 text-gray-600" />
-            <div className="flex-1">
-              <p className="font-semibold text-gray-900">Email</p>
-              <p className="text-xs text-gray-600">Code sent to your email</p>
-            </div>
-          </button>
-        </div>
-      ) : step === "2fa-code" ? (
+      {step === "code" ? (
         <form className="mt-6 space-y-4" onSubmit={onVerifyCode}>
           <label className="block text-sm font-medium text-gray-700" htmlFor="visitor-code">
             Verification code
           </label>
-          <input
-            id="visitor-code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className="w-full min-h-[52px] rounded-lg border border-gray-300 px-4 py-3 text-center text-lg font-mono tracking-[0.35em] focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-xl"
-            placeholder="000000"
-          />
-          <button
-            type="submit"
-            disabled={codeLoading || code.length !== 6}
-            className={btnPrimary}
-          >
+          <div className="relative">
+            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              id="visitor-code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className={`${inputClass} pl-10 text-center font-mono tracking-[0.35em]`}
+              placeholder="000000"
+            />
+          </div>
+          <button type="submit" disabled={codeLoading || code.length !== 6} className={btnPrimary}>
             {codeLoading ? "Verifying…" : "Verify and continue"}
           </button>
-          {selectedMethod === "email" && (
-            <button
-              type="button"
-              onClick={onResendCode}
-              disabled={resendCodeLoading}
-              className="text-sm font-semibold text-primary-700 hover:text-primary-900"
-            >
-              {resendCodeLoading ? "Sending…" : "Resend code"}
-            </button>
-          )}
-          {has2faMethod?.hasTotp && (
-            <button
-              type="button"
-              onClick={() => setStep("2fa-method")}
-              disabled={codeLoading}
-              className="text-sm font-semibold text-gray-600 hover:text-gray-900"
-            >
-              Use different method
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              setStep("login");
+              setCode("");
+              setError(null);
+            }}
+            className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+          >
+            Use a different account
+          </button>
         </form>
       ) : (
         <form className="mt-6 space-y-4" onSubmit={onSubmit}>
           <label className="block text-sm font-medium text-gray-700">Email</label>
-          <div className="relative mt-1">
+          <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="email"
@@ -353,7 +272,7 @@ export default function VisitorSignInForm() {
             />
           </div>
           <label className="block text-sm font-medium text-gray-700">Password</label>
-          <div className="relative mt-1">
+          <div className="relative">
             <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="password"
@@ -367,7 +286,7 @@ export default function VisitorSignInForm() {
           <div className="flex justify-start text-sm">
             <button
               type="button"
-              onClick={onForgotPassword}
+              onClick={() => void onForgotPassword()}
               className="min-h-[44px] font-semibold text-primary-700 hover:text-primary-900"
             >
               Forgot password?

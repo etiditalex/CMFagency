@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { requiresMandatoryBusinessTotp } from "@/lib/auth/business-totp";
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -26,7 +28,17 @@ export async function GET(req: NextRequest) {
       .not("verified_at", "is", null)
       .maybeSingle();
 
-    return NextResponse.json({ hasTotp: !!totpRow });
+    const { data: memberRow } = await admin
+      .from("portal_members")
+      .select("role")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+
+    const meta = userData.user.user_metadata as Record<string, unknown> | undefined;
+    const accountType = String(meta?.account_type ?? meta?.accountType ?? "").trim();
+    const totpRequired = requiresMandatoryBusinessTotp(memberRow?.role, accountType);
+
+    return NextResponse.json({ hasTotp: !!totpRow, totpRequired });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });

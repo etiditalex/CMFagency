@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
 import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
 
+import { requiresMandatoryBusinessTotp } from "@/lib/auth/business-totp";
+
 const CODE_EXPIRY_MINUTES = 10;
 
 export async function POST(req: NextRequest) {
@@ -29,9 +31,22 @@ export async function POST(req: NextRequest) {
     if (!email) return NextResponse.json({ error: "User has no email" }, { status: 400 });
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-    const { data: memberRow } = await admin.from("portal_members").select("user_id").eq("user_id", userId).maybeSingle();
+    const { data: memberRow } = await admin
+      .from("portal_members")
+      .select("user_id, role")
+      .eq("user_id", userId)
+      .maybeSingle();
     const { data: legacyAdmin } = await admin.from("admin_users").select("user_id").eq("user_id", userId).maybeSingle();
     if (!memberRow && !legacyAdmin) return NextResponse.json({ error: "Not a portal member" }, { status: 403 });
+
+    const meta = userData.user.user_metadata as Record<string, unknown> | undefined;
+    const accountType = String(meta?.account_type ?? meta?.accountType ?? "").trim();
+    if (requiresMandatoryBusinessTotp(memberRow?.role, accountType)) {
+      return NextResponse.json(
+        { error: "Business accounts must use Google Authenticator. Complete setup or enter your app code." },
+        { status: 403 }
+      );
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
