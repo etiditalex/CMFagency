@@ -82,9 +82,6 @@ export default function CmfaRegistrationPage() {
       </Link>
 
       <header className="mb-8">
-        <p className="text-xs font-bold tracking-[0.2em] uppercase text-white/60 mb-2">
-          In-house registration
-        </p>
         <h1 className="text-3xl md:text-4xl font-extrabold text-white/95 tracking-tight">
           CMFA Registration
         </h1>
