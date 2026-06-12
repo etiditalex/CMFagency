@@ -12,6 +12,7 @@ import {
   signOutStatusClass,
   signOutStatusLabel,
 } from "@/lib/employees/reporting-time";
+import { reportingWindowForEvent } from "@/lib/employees/shifts";
 import type {
   EmployeeAttendanceRecord,
   EmployeeRecord,
@@ -97,7 +98,9 @@ export default function AttendanceEventLogPanel({
           {attendance.map((row) => {
             const emp = employeeById.get(row.employeeId);
             const memberWindow = emp
-              ? reportingWindowForMember(reportingSettings, emp.memberType)
+              ? reportingSettings.shiftEnabled
+                ? reportingWindowForEvent(row.createdAt, reportingSettings, emp.memberType)
+                : reportingWindowForMember(reportingSettings, emp.memberType)
               : null;
             const signInStatus =
               row.eventType === "sign_in" && memberWindow

@@ -1,52 +1,12 @@
 import { eatDayKey } from "@/lib/time/eat";
 import type { EmployeeAttendanceRecord, ShiftDefinition } from "@/lib/employees/types";
+import { detectShiftForEvent } from "@/lib/employees/shifts";
 
 /**
  * Multi-shift support for retail/hospitality accounts.
  * Allows employees to sign in/out multiple times per day across shifts.
- * Example: Morning shift (6am-3pm), Evening shift (3:30pm-11pm)
+ * Example: Morning shift (6am-3pm), Evening shift (3pm-11pm)
  */
-
-export function parseTimeHHMM(timeStr: string): { hours: number; minutes: number } {
-  const [hours, minutes] = timeStr.split(":").map((s) => parseInt(s, 10));
-  return { hours, minutes: minutes || 0 };
-}
-
-export function dateToTimeHHMM(date: Date): { hours: number; minutes: number } {
-  return { hours: date.getHours(), minutes: date.getMinutes() };
-}
-
-export function compareTime(time1: { hours: number; minutes: number }, time2: { hours: number; minutes: number }): number {
-  const mins1 = time1.hours * 60 + time1.minutes;
-  const mins2 = time2.hours * 60 + time2.minutes;
-  return mins1 - mins2;
-}
-
-export function timeIsBetween(
-  currentTime: { hours: number; minutes: number },
-  startTime: { hours: number; minutes: number },
-  endTime: { hours: number; minutes: number }
-): boolean {
-  return compareTime(currentTime, startTime) >= 0 && compareTime(currentTime, endTime) <= 0;
-}
-
-/**
- * Determine which shift an employee is signing in/out for based on current time.
- * Returns shift number (1 or 2) or null if outside all shifts.
- */
-export function detectShiftForTime(
-  time: { hours: number; minutes: number },
-  shifts: ShiftDefinition[]
-): ShiftDefinition | null {
-  for (const shift of shifts) {
-    const startTime = parseTimeHHMM(shift.startTime);
-    const endTime = parseTimeHHMM(shift.endTime);
-    if (timeIsBetween(time, startTime, endTime)) {
-      return shift;
-    }
-  }
-  return null;
-}
 
 /**
  * Deduplicate attendance allowing multiple sign-in/out pairs per shift per day.
@@ -58,15 +18,12 @@ export function dedupeAttendanceByShift(
   shifts?: ShiftDefinition[]
 ): EmployeeAttendanceRecord[] {
   if (!shiftEnabled || !shifts || shifts.length === 0) {
-    // Fall back to single-shift (daily) deduplication
     return dedupeAttendanceByDay(events);
   }
 
   const byShift = new Map<string, EmployeeAttendanceRecord[]>();
   for (const e of events) {
-    // Detect shift from event timestamp
-    const eventTime = dateToTimeHHMM(new Date(e.createdAt));
-    const shift = detectShiftForTime(eventTime, shifts);
+    const shift = detectShiftForEvent(e.createdAt, shifts);
     const shiftNum = shift?.shiftNumber ?? "unknown";
     const key = `${e.employeeId}:${eatDayKey(e.createdAt)}:${shiftNum}`;
     const list = byShift.get(key) ?? [];
@@ -89,9 +46,6 @@ export function dedupeAttendanceByShift(
   return out.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
-/**
- * Single-shift (daily) deduplication: one sign-in + one sign-out per employee per day.
- */
 function dedupeAttendanceByDay(events: EmployeeAttendanceRecord[]): EmployeeAttendanceRecord[] {
   const byKey = new Map<string, EmployeeAttendanceRecord[]>();
   for (const e of events) {
@@ -116,46 +70,24 @@ function dedupeAttendanceByDay(events: EmployeeAttendanceRecord[]): EmployeeAtte
   return out.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 }
 
-/**
- * Summarize today's events across all shifts.
- * When shifts are enabled, counts may exceed 1 sign-in/out.
- */
-export function summarizeTodayEventsByShift(
-  events: EmployeeAttendanceRecord[],
-  shiftEnabled: boolean,
-  shifts?: ShiftDefinition[]
-) {
-  const signIns = events.filter((e) => e.eventType === "sign_in");
-  const signOuts = events.filter((e) => e.eventType === "sign_out");
+/** Last event determines in/out when multiple shifts are allowed per day. */
+export function effectiveShiftAttendanceStatus(todayEvents: EmployeeAttendanceRecord[]): "in" | "out" {
+  if (todayEvents.length === 0) return "out";
+  const last = todayEvents[todayEvents.length - 1];
+  return last.eventType === "sign_in" ? "in" : "out";
+}
 
-  if (!shiftEnabled || !shifts || shifts.length === 0) {
-    return {
-      signInCount: signIns.length,
-      signOutCount: signOuts.length,
-      hasSignIn: signIns.length > 0,
-      hasSignOut: signOuts.length > 0,
-      isCurrentlyIn: signIns.length > signOuts.length,
-    };
-  }
-
-  // Multi-shift: last event determines current status
-  const lastEvent = events[events.length - 1];
-  const isCurrentlyIn = lastEvent?.eventType === "sign_in";
-
-  return {
-    signInCount: signIns.length,
-    signOutCount: signOuts.length,
-    hasSignIn: signIns.length > 0,
-    hasSignOut: signOuts.length > 0,
-    isCurrentlyIn,
-    shiftCount: shifts.length,
-  };
+function eventsForShift(
+  todayEvents: EmployeeAttendanceRecord[],
+  shift: ShiftDefinition,
+  shifts: ShiftDefinition[]
+): EmployeeAttendanceRecord[] {
+  return todayEvents.filter((e) => detectShiftForEvent(e.createdAt, shifts)?.shiftNumber === shift.shiftNumber);
 }
 
 /**
  * Validate shift-aware attendance transition.
- * With shifts enabled, allows multiple sign-in/out pairs per day.
- * Without shifts, enforces single daily sign-in/out pair.
+ * With shifts enabled, allows multiple sign-in/out pairs per day (one pair per shift).
  */
 export function validateShiftAttendanceTransition(params: {
   todayEvents: EmployeeAttendanceRecord[];
@@ -163,63 +95,76 @@ export function validateShiftAttendanceTransition(params: {
   shiftEnabled: boolean;
   shifts?: ShiftDefinition[];
   currentTime?: Date;
-}): { ok: true } | { ok: false; error: string } {
+}): { ok: true; shiftNumber?: number } | { ok: false; error: string } {
   const { shiftEnabled, shifts, currentTime = new Date(), nextEvent, todayEvents } = params;
 
   if (!shiftEnabled || !shifts || shifts.length === 0) {
-    // Single-shift mode: enforce one sign-in/out pair per day
     return validateDailyAttendanceTransition({ todayEvents, nextEvent });
   }
 
-  // Multi-shift mode: detect which shift employee is signing in/out for
-  const eventTime = dateToTimeHHMM(currentTime);
-  const shift = detectShiftForTime(eventTime, shifts);
+  const statusToday = effectiveShiftAttendanceStatus(todayEvents);
 
+  if (nextEvent === "sign_out") {
+    if (statusToday === "out") {
+      return { ok: false, error: "Not signed in. Please sign in first." };
+    }
+    const lastSignIn = [...todayEvents].reverse().find((e) => e.eventType === "sign_in");
+    const activeShift = lastSignIn ? detectShiftForEvent(lastSignIn.createdAt, shifts) : null;
+    if (!activeShift) {
+      return { ok: false, error: "Could not determine your active shift. Contact your manager." };
+    }
+    const shiftEvents = eventsForShift(todayEvents, activeShift, shifts);
+    const shiftSignOuts = shiftEvents.filter((e) => e.eventType === "sign_out");
+    if (shiftSignOuts.length > 0) {
+      return {
+        ok: false,
+        error: `Already signed out for Shift ${activeShift.shiftNumber} today.`,
+      };
+    }
+    return { ok: true, shiftNumber: activeShift.shiftNumber };
+  }
+
+  const shift = detectShiftForEvent(currentTime.toISOString(), shifts);
   if (!shift) {
     return {
       ok: false,
-      error: `Current time (${currentTime.toLocaleTimeString()}) is outside all shift windows.`,
+      error: "Current time is outside all shift windows. Check reporting times with your manager.",
     };
   }
 
-  // Find events for this specific shift today
-  const shiftEvents = todayEvents.filter((e) => {
-    const eTime = dateToTimeHHMM(new Date(e.createdAt));
-    const eShift = detectShiftForTime(eTime, shifts);
-    return eShift?.shiftNumber === shift.shiftNumber;
-  });
-
+  const shiftEvents = eventsForShift(todayEvents, shift, shifts);
   const shiftSignIns = shiftEvents.filter((e) => e.eventType === "sign_in");
   const shiftSignOuts = shiftEvents.filter((e) => e.eventType === "sign_out");
-  const shiftStatus = shiftSignIns.length > shiftSignOuts.length ? "in" : "out";
+  const shiftComplete = shiftSignIns.length > 0 && shiftSignOuts.length > 0;
 
-  if (nextEvent === "sign_in") {
-    if (shiftStatus === "in") {
-      return {
-        ok: false,
-        error: `Already signed in for Shift ${shift.shiftNumber}. Please sign out first.`,
-      };
-    }
-  } else {
-    // sign_out
-    if (shiftStatus === "out") {
-      return {
-        ok: false,
-        error: `Not signed in for Shift ${shift.shiftNumber}. Please sign in first.`,
-      };
-    }
+  if (shiftComplete) {
+    return {
+      ok: false,
+      error: `You already completed Shift ${shift.shiftNumber} today.`,
+    };
   }
 
-  return { ok: true };
+  if (statusToday === "in") {
+    return {
+      ok: false,
+      error: "Already signed in. Sign out when your shift ends before starting another.",
+    };
+  }
+
+  if (shiftSignIns.length > 0) {
+    return {
+      ok: false,
+      error: `Already signed in for Shift ${shift.shiftNumber}. Sign out first.`,
+    };
+  }
+
+  return { ok: true, shiftNumber: shift.shiftNumber };
 }
 
-/**
- * Single-shift daily validation (fallback when shifts disabled).
- */
 function validateDailyAttendanceTransition(params: {
   todayEvents: EmployeeAttendanceRecord[];
   nextEvent: "sign_in" | "sign_out";
-}): { ok: true } | { ok: false; error: string } {
+}): { ok: true; shiftNumber?: number } | { ok: false; error: string } {
   const { todayEvents, nextEvent } = params;
   const signIns = todayEvents.filter((e) => e.eventType === "sign_in");
   const signOuts = todayEvents.filter((e) => e.eventType === "sign_out");
@@ -229,10 +174,14 @@ function validateDailyAttendanceTransition(params: {
     if (currentStatus === "in") {
       return { ok: false, error: "Already signed in today. Please sign out first." };
     }
-  } else {
-    if (currentStatus === "out") {
-      return { ok: false, error: "Not signed in. Please sign in first." };
+    if (signOuts.length > 0) {
+      return {
+        ok: false,
+        error: "You already signed out today. You cannot sign in again until the next working day.",
+      };
     }
+  } else if (currentStatus === "out") {
+    return { ok: false, error: "Not signed in. Please sign in first." };
   }
 
   return { ok: true };

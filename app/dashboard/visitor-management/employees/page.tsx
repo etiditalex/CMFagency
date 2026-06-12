@@ -32,6 +32,8 @@ import {
   memberTypeBadgeClass,
   memberTypeLabel,
 } from "@/lib/employees/real-estate";
+import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
+import { reportingWindowForEvent } from "@/lib/employees/shifts";
 import {
   reportingWindowForMember,
   signInReportingStatus,
@@ -91,6 +93,7 @@ export default function VisitorManagementEmployeesPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [isRealEstate, setIsRealEstate] = useState(false);
+  const [isRetailHospitality, setIsRetailHospitality] = useState(false);
   const [memberTab, setMemberTab] = useState<EmployeeMemberType>("staff");
   const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
     DEFAULT_REPORTING_SETTINGS
@@ -178,6 +181,7 @@ export default function VisitorManagementEmployeesPage() {
       if (name) setOrganizationName(name);
       const industry = String(meta?.organization_industry ?? "").trim();
       setIsRealEstate(isRealEstateIndustry(industry));
+      setIsRetailHospitality(isRetailHospitalityIndustry(industry));
     });
   }, [user?.id]);
 
@@ -642,7 +646,11 @@ export default function VisitorManagementEmployeesPage() {
       <NotificationAdminsPanel disabled={setupRequired} />
 
       {!setupRequired ? (
-        <ReportingTimesPanel disabled={setupRequired} isRealEstate={isRealEstate} />
+        <ReportingTimesPanel
+          disabled={setupRequired}
+          isRealEstate={isRealEstate}
+          isRetailHospitality={isRetailHospitality}
+        />
       ) : null}
 
       <AddEmployeeModal
@@ -836,14 +844,26 @@ export default function VisitorManagementEmployeesPage() {
                         className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${signInStatusClass(
                           signInReportingStatus(
                             emp.lastSignedInAt,
-                            reportingWindowForMember(reportingSettings, emp.memberType)
+                            reportingSettings.shiftEnabled && emp.lastSignedInAt
+                              ? reportingWindowForEvent(
+                                  emp.lastSignedInAt,
+                                  reportingSettings,
+                                  emp.memberType
+                                )
+                              : reportingWindowForMember(reportingSettings, emp.memberType)
                           )
                         )}`}
                       >
                         {signInStatusLabel(
                           signInReportingStatus(
                             emp.lastSignedInAt,
-                            reportingWindowForMember(reportingSettings, emp.memberType)
+                            reportingSettings.shiftEnabled && emp.lastSignedInAt
+                              ? reportingWindowForEvent(
+                                  emp.lastSignedInAt,
+                                  reportingSettings,
+                                  emp.memberType
+                                )
+                              : reportingWindowForMember(reportingSettings, emp.memberType)
                           )
                         )}
                       </span>

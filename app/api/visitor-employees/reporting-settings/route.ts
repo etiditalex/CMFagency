@@ -6,10 +6,13 @@ import {
   mapReportingSettingsRow,
   type ReportingSettingsRow,
 } from "@/lib/employees/db-mapper";
+import {
+  getOrganizationIndustrySlug,
+  REPORTING_SETTINGS_SELECT,
+  reportingSettingsForIndustry,
+} from "@/lib/employees/fetch-reporting-settings";
+import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
-
-const REPORTING_SELECT =
-  "owner_id,staff_reporting_sign_in_start,staff_reporting_sign_in,staff_reporting_sign_out,crm_reporting_sign_in_start,crm_reporting_sign_in,crm_reporting_sign_out,updated_at";
 
 function parseTime(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -32,6 +35,20 @@ function validateSignInWindow(start: string, latest: string): string | null {
   return null;
 }
 
+function validateShiftWindow(
+  label: string,
+  signInStart: string,
+  signInLatest: string,
+  signOut: string
+): string | null {
+  const windowErr = validateSignInWindow(signInStart, signInLatest);
+  if (windowErr) return `${label}: ${windowErr}`;
+  if (minutesFromTime(signOut) < minutesFromTime(signInStart)) {
+    return `${label}: Sign-out must be after sign-in start.`;
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireEmployeeAccess(req);
@@ -39,30 +56,42 @@ export async function GET(req: NextRequest) {
     const { admin, userId, isAdmin } = auth;
 
     const ownerId = isAdmin ? req.nextUrl.searchParams.get("ownerId")?.trim() || userId : userId;
+    const industrySlug = await getOrganizationIndustrySlug(admin, ownerId);
 
     const { data, error } = await admin
       .from("visitor_employee_reporting_settings")
-      .select(REPORTING_SELECT)
+      .select(REPORTING_SETTINGS_SELECT)
       .eq("owner_id", ownerId)
       .maybeSingle();
 
     if (error) {
       if (isMissingEmployeesTable(error) || String(error.message).includes("reporting_settings")) {
         return NextResponse.json({
-          settings: DEFAULT_REPORTING_SETTINGS,
+          settings: reportingSettingsForIndustry(null, industrySlug),
           setupRequired: true,
           message:
-            "Run database/visitor_employees_patch_03_real_estate_crm.sql and visitor_employees_patch_06_reporting_windows.sql in Supabase.",
+            "Run database/visitor_employees_patch_03_real_estate_crm.sql, visitor_employees_patch_06_reporting_windows.sql, and visitor_employees_patch_10_shift_support.sql in Supabase.",
+        });
+      }
+      if (String(error.message).includes("shift_enabled")) {
+        return NextResponse.json({
+          settings: reportingSettingsForIndustry(
+            (data as ReportingSettingsRow | null) ?? null,
+            industrySlug
+          ),
+          setupRequired: true,
+          message: "Run database/visitor_employees_patch_10_shift_support.sql in Supabase.",
         });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const settings = data
-      ? mapReportingSettingsRow(data as ReportingSettingsRow)
-      : DEFAULT_REPORTING_SETTINGS;
+    const settings = reportingSettingsForIndustry(
+      (data as ReportingSettingsRow | null) ?? null,
+      industrySlug
+    );
 
-    return NextResponse.json({ settings });
+    return NextResponse.json({ settings, isRetailHospitality: isRetailHospitalityIndustry(industrySlug) });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });
@@ -74,6 +103,9 @@ export async function PUT(req: NextRequest) {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
     const { admin, userId } = auth;
+
+    const industrySlug = await getOrganizationIndustrySlug(admin, userId);
+    const isRetailHospitality = isRetailHospitalityIndustry(industrySlug);
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
@@ -99,7 +131,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: crmWindowErr }, { status: 400 });
     }
 
-    const row = {
+    const shiftEnabled =
+      body.shiftEnabled === true ||
+      body.shift_enabled === true ||
+      (isRetailHospitality && body.shiftEnabled !== false && body.shift_enabled !== false);
+
+    const row: Record<string, unknown> = {
       owner_id: userId,
       staff_reporting_sign_in_start: staffInStart,
       staff_reporting_sign_in: staffIn,
@@ -107,12 +144,59 @@ export async function PUT(req: NextRequest) {
       crm_reporting_sign_in_start: crmInStart,
       crm_reporting_sign_in: crmIn,
       crm_reporting_sign_out: crmOut,
+      shift_enabled: shiftEnabled,
     };
+
+    if (shiftEnabled) {
+      const shift1SignInStart = parseTime(body.shift1SignInStartTime ?? body.shift_1_sign_in_start_time);
+      const shift1SignIn = parseTime(body.shift1SignInTime ?? body.shift_1_sign_in_time);
+      const shift1SignOut = parseTime(body.shift1SignOutTime ?? body.shift_1_sign_out_time);
+      const shift1Start = parseTime(body.shift1StartTime ?? body.shift_1_start_time);
+      const shift1End = parseTime(body.shift1EndTime ?? body.shift_1_end_time);
+      const shift2SignInStart = parseTime(body.shift2SignInStartTime ?? body.shift_2_sign_in_start_time);
+      const shift2SignIn = parseTime(body.shift2SignInTime ?? body.shift_2_sign_in_time);
+      const shift2SignOut = parseTime(body.shift2SignOutTime ?? body.shift_2_sign_out_time);
+      const shift2Start = parseTime(body.shift2StartTime ?? body.shift_2_start_time);
+      const shift2End = parseTime(body.shift2EndTime ?? body.shift_2_end_time);
+
+      if (
+        !shift1SignInStart ||
+        !shift1SignIn ||
+        !shift1SignOut ||
+        !shift1Start ||
+        !shift1End ||
+        !shift2SignInStart ||
+        !shift2SignIn ||
+        !shift2SignOut ||
+        !shift2Start ||
+        !shift2End
+      ) {
+        return NextResponse.json({ error: "All shift times must be HH:mm format." }, { status: 400 });
+      }
+
+      const shift1Err = validateShiftWindow("Shift 1", shift1SignInStart, shift1SignIn, shift1SignOut);
+      if (shift1Err) return NextResponse.json({ error: shift1Err }, { status: 400 });
+      const shift2Err = validateShiftWindow("Shift 2", shift2SignInStart, shift2SignIn, shift2SignOut);
+      if (shift2Err) return NextResponse.json({ error: shift2Err }, { status: 400 });
+
+      Object.assign(row, {
+        shift_1_start_time: shift1Start,
+        shift_1_end_time: shift1End,
+        shift_2_start_time: shift2Start,
+        shift_2_end_time: shift2End,
+        shift_1_sign_in_start_time: shift1SignInStart,
+        shift_1_sign_in_time: shift1SignIn,
+        shift_1_sign_out_time: shift1SignOut,
+        shift_2_sign_in_start_time: shift2SignInStart,
+        shift_2_sign_in_time: shift2SignIn,
+        shift_2_sign_out_time: shift2SignOut,
+      });
+    }
 
     const { data, error } = await admin
       .from("visitor_employee_reporting_settings")
       .upsert(row, { onConflict: "owner_id" })
-      .select(REPORTING_SELECT)
+      .select(REPORTING_SETTINGS_SELECT)
       .single();
 
     if (error) {
@@ -125,10 +209,14 @@ export async function PUT(req: NextRequest) {
           { status: 503 }
         );
       }
-      if (String(error.message).includes("staff_reporting_sign_in_start")) {
+      if (
+        String(error.message).includes("staff_reporting_sign_in_start") ||
+        String(error.message).includes("shift_")
+      ) {
         return NextResponse.json(
           {
-            error: "Run database/visitor_employees_patch_06_reporting_windows.sql in Supabase.",
+            error:
+              "Run database/visitor_employees_patch_06_reporting_windows.sql and visitor_employees_patch_10_shift_support.sql in Supabase.",
           },
           { status: 503 }
         );
@@ -136,7 +224,10 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ settings: mapReportingSettingsRow(data as ReportingSettingsRow) });
+    return NextResponse.json({
+      settings: mapReportingSettingsRow(data as ReportingSettingsRow),
+      isRetailHospitality,
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";
     return NextResponse.json({ error: msg }, { status: 500 });

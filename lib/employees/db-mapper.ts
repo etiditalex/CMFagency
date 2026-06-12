@@ -34,6 +34,17 @@ export type ReportingSettingsRow = {
   crm_reporting_sign_in_start?: string | null;
   crm_reporting_sign_in: string;
   crm_reporting_sign_out: string;
+  shift_enabled?: boolean | null;
+  shift_1_start_time?: string | null;
+  shift_1_end_time?: string | null;
+  shift_2_start_time?: string | null;
+  shift_2_end_time?: string | null;
+  shift_1_sign_in_start_time?: string | null;
+  shift_1_sign_in_time?: string | null;
+  shift_1_sign_out_time?: string | null;
+  shift_2_sign_in_start_time?: string | null;
+  shift_2_sign_in_time?: string | null;
+  shift_2_sign_out_time?: string | null;
   updated_at: string;
 };
 
@@ -58,6 +69,17 @@ export function mapReportingSettingsRow(
     crmReportingSignIn: normalizeTime(row?.crm_reporting_sign_in ?? "08:00"),
     crmReportingSignOut: normalizeTime(row?.crm_reporting_sign_out ?? "17:00"),
     updatedAt: row?.updated_at ?? null,
+    shiftEnabled: row?.shift_enabled === true,
+    shift1StartTime: normalizeTime(row?.shift_1_start_time ?? "06:00"),
+    shift1EndTime: normalizeTime(row?.shift_1_end_time ?? "15:00"),
+    shift2StartTime: normalizeTime(row?.shift_2_start_time ?? "15:00"),
+    shift2EndTime: normalizeTime(row?.shift_2_end_time ?? "23:00"),
+    shift1SignInStartTime: normalizeTime(row?.shift_1_sign_in_start_time ?? "06:00"),
+    shift1SignInTime: normalizeTime(row?.shift_1_sign_in_time ?? "08:00"),
+    shift1SignOutTime: normalizeTime(row?.shift_1_sign_out_time ?? "15:00"),
+    shift2SignInStartTime: normalizeTime(row?.shift_2_sign_in_start_time ?? "15:00"),
+    shift2SignInTime: normalizeTime(row?.shift_2_sign_in_time ?? "16:00"),
+    shift2SignOutTime: normalizeTime(row?.shift_2_sign_out_time ?? "23:00"),
   };
 }
 

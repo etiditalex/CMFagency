@@ -13,6 +13,12 @@ import {
   todayLocalBounds,
   validateDailyAttendanceTransition,
 } from "@/lib/employees/daily-attendance-rules";
+import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
+import {
+  effectiveShiftAttendanceStatus,
+  validateShiftAttendanceTransition,
+} from "@/lib/employees/shift-attendance-rules";
+import { shiftsFromSettings } from "@/lib/employees/shifts";
 
 /** Today's sign-in/out state for an employee (ignores stale persisted status from prior days). */
 export async function fetchTodayAttendanceStatus(
@@ -20,6 +26,12 @@ export async function fetchTodayAttendanceStatus(
   employeeId: string
 ): Promise<"in" | "out"> {
   const { startIso, endIso } = todayLocalBounds();
+  const { data: empRow } = await admin
+    .from("visitor_employees")
+    .select("owner_id")
+    .eq("id", employeeId)
+    .maybeSingle();
+
   const { data: todayRows } = await admin
     .from("visitor_employee_attendance")
     .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
@@ -29,6 +41,13 @@ export async function fetchTodayAttendanceStatus(
     .order("created_at", { ascending: true });
 
   const todayEvents = ((todayRows ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
+  const ownerId = String(empRow?.owner_id ?? "");
+  if (ownerId) {
+    const reportingSettings = await fetchOwnerReportingSettings(admin, ownerId);
+    if (reportingSettings.shiftEnabled) {
+      return effectiveShiftAttendanceStatus(todayEvents);
+    }
+  }
   return effectiveAttendanceStatusForToday(todayEvents);
 }
 import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/employees/device-fingerprint";
@@ -174,7 +193,12 @@ export async function processEmployeeQrScan(
   }
 
   const todayEvents = ((todayRows ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
-  const statusToday = effectiveAttendanceStatusForToday(todayEvents);
+  const reportingSettings = await fetchOwnerReportingSettings(admin, ownerId);
+  const shiftEnabled = reportingSettings.shiftEnabled === true;
+  const shifts = shiftsFromSettings(reportingSettings);
+  const statusToday = shiftEnabled
+    ? effectiveShiftAttendanceStatus(todayEvents)
+    : effectiveAttendanceStatusForToday(todayEvents);
 
   const scanAction = parseScanAction(input.action ?? input.mode);
   let eventType: EmployeeAttendanceEventType;
@@ -187,13 +211,23 @@ export async function processEmployeeQrScan(
     eventType = statusToday === "in" ? "sign_out" : "sign_in";
   }
 
-  const dailyCheck = validateDailyAttendanceTransition({
-    todayEvents,
-    nextEvent: eventType,
-  });
-  if (!dailyCheck.ok) {
-    return { ok: false, error: dailyCheck.error, status: 409 };
+  const transitionCheck = shiftEnabled
+    ? validateShiftAttendanceTransition({
+        todayEvents,
+        nextEvent: eventType,
+        shiftEnabled: true,
+        shifts,
+      })
+    : validateDailyAttendanceTransition({
+        todayEvents,
+        nextEvent: eventType,
+      });
+  if (!transitionCheck.ok) {
+    return { ok: false, error: transitionCheck.error, status: 409 };
   }
+
+  const shiftNumber =
+    shiftEnabled && "shiftNumber" in transitionCheck ? transitionCheck.shiftNumber : undefined;
 
   const device = normalizeDeviceFingerprint({
     ...input,
@@ -256,6 +290,9 @@ export async function processEmployeeQrScan(
     attendanceInsert.scan_latitude = Number(input.latitude);
     attendanceInsert.scan_longitude = Number(input.longitude);
     attendanceInsert.gps_distance_m = gpsCheck.distanceM;
+  }
+  if (shiftNumber !== undefined) {
+    attendanceInsert.shift_number = shiftNumber;
   }
 
   const { data: attendanceRow, error: attErr } = await admin

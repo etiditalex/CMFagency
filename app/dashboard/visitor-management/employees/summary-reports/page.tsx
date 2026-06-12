@@ -19,10 +19,16 @@ import AttendanceReportLogTable from "@/components/fusion-xpress/visitor-managem
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
 import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
+import SummaryReportExcelButton from "@/components/fusion-xpress/visitor-management/employees/SummaryReportExcelButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import type { AttendanceSummaryPayload } from "@/lib/employees/attendance-summary";
+import {
+  downloadAttendanceRegisterExcel,
+  downloadPerEmployeeSummaryExcel,
+  downloadStaffRankingsExcel,
+} from "@/lib/employees/summary-report-excel";
 import {
   DEFAULT_REPORTING_SETTINGS,
   isMissingEmployeesTableMessage,
@@ -70,6 +76,8 @@ const PRESET_BUTTONS: { id: DurationPreset; label: string }[] = [
   { id: "custom", label: "Custom" },
 ];
 
+type SummaryExportSection = "perEmployee" | "rankings" | "register" | "log";
+
 export default function EmployeeSummaryReportsPage() {
   const router = useRouter();
   const printRef = useRef<HTMLDivElement>(null);
@@ -93,7 +101,7 @@ export default function EmployeeSummaryReportsPage() {
     DEFAULT_REPORTING_SETTINGS
   );
   const [isRealEstate, setIsRealEstate] = useState(false);
-  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingSection, setExportingSection] = useState<SummaryExportSection | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const rangeIncludesToday = to >= todayIso();
@@ -278,23 +286,61 @@ export default function EmployeeSummaryReportsPage() {
     [getToken, loadSummary, loadAttendance]
   );
 
-  const handleExportExcel = useCallback(async () => {
-    setExportingExcel(true);
-    try {
-      await downloadEmployeeAttendanceExcel({
+  const exportMeta = useMemo(
+    () => ({
+      organizationName,
+      from: summary?.from ?? from,
+      to: summary?.to ?? to,
+    }),
+    [organizationName, summary?.from, summary?.to, from, to]
+  );
+
+  const runExport = useCallback(
+    async (section: SummaryExportSection, fn: () => Promise<void>) => {
+      setExportingSection(section);
+      try {
+        await fn();
+      } catch (e: unknown) {
+        setNotice(e instanceof Error ? e.message : "Excel export failed");
+      } finally {
+        setExportingSection(null);
+      }
+    },
+    []
+  );
+
+  const handleExportPerEmployeeSummary = useCallback(async () => {
+    if (!summary) return;
+    await runExport("perEmployee", () =>
+      downloadPerEmployeeSummaryExcel(summary.employeeSummaries, exportMeta)
+    );
+  }, [summary, exportMeta, runExport]);
+
+  const handleExportRankings = useCallback(async () => {
+    if (!summary) return;
+    await runExport("rankings", () => downloadStaffRankingsExcel(summary.rankings, exportMeta));
+  }, [summary, exportMeta, runExport]);
+
+  const handleExportRegister = useCallback(async () => {
+    if (!summary) return;
+    await runExport("register", () =>
+      downloadAttendanceRegisterExcel(summary.events, employees, exportMeta, reportingSettings)
+    );
+  }, [summary, employees, exportMeta, reportingSettings, runExport]);
+
+  const handleExportLog = useCallback(async () => {
+    await runExport("log", () =>
+      downloadEmployeeAttendanceExcel({
         employees,
         attendance,
         employeeNameById,
         organizationName,
         isRealEstate,
         reportingSettings,
-      });
-    } catch (e: unknown) {
-      setNotice(e instanceof Error ? e.message : "Excel export failed");
-    } finally {
-      setExportingExcel(false);
-    }
+      })
+    );
   }, [
+    runExport,
     employees,
     attendance,
     employeeNameById,
@@ -559,17 +605,30 @@ export default function EmployeeSummaryReportsPage() {
                 {summary.totals.duplicatesOmitted > 0 ? (
                   <p className="no-print rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
                     <strong>{summary.totals.duplicatesOmitted}</strong> duplicate scan
-                    {summary.totals.duplicatesOmitted === 1 ? "" : "s"} omitted from totals. Each person
-                    counts at most one sign-in and one sign-out per day.
+                    {summary.totals.duplicatesOmitted === 1 ? "" : "s"} omitted from totals.
+                    {reportingSettings.shiftEnabled
+                      ? " Each person counts at most one sign-in and one sign-out per shift per day."
+                      : " Each person counts at most one sign-in and one sign-out per day."}
                   </p>
                 ) : null}
 
-                <AttendanceSummaryRankingsPanel rankings={summary.rankings} />
+                <AttendanceSummaryRankingsPanel
+                  rankings={summary.rankings}
+                  exportingExcel={exportingSection === "rankings"}
+                  onExportExcel={() => void handleExportRankings()}
+                />
 
                 <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                    <h2 className="text-sm font-bold text-gray-900">Per-employee summary</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">{rangeLabel}</p>
+                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <h2 className="text-sm font-bold text-gray-900">Per-employee summary</h2>
+                      <p className="text-xs text-gray-500 mt-0.5">{rangeLabel}</p>
+                    </div>
+                    <SummaryReportExcelButton
+                      disabled={!summary}
+                      loading={exportingSection === "perEmployee"}
+                      onClick={() => void handleExportPerEmployeeSummary()}
+                    />
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
@@ -631,8 +690,11 @@ export default function EmployeeSummaryReportsPage() {
                   <AttendanceReportLogTable
                     events={summary.events}
                     employees={employees}
+                    reportingSettings={reportingSettings}
                     title="Attendance register"
                     subtitle={`Daily sign-in / sign-out · ${summary.events.length} scan${summary.events.length === 1 ? "" : "s"} · times in EAT`}
+                    exportingExcel={exportingSection === "register"}
+                    onExportExcel={() => void handleExportRegister()}
                   />
                   <AttendanceEventLogPanel
                     className="print:break-inside-avoid"
@@ -642,8 +704,8 @@ export default function EmployeeSummaryReportsPage() {
                     reportingSettings={reportingSettings}
                     isRealEstate={isRealEstate}
                     setupRequired={setupRequired}
-                    exportingExcel={exportingExcel}
-                    onExportExcel={handleExportExcel}
+                    exportingExcel={exportingSection === "log"}
+                    onExportExcel={() => void handleExportLog()}
                     onSaveAttendanceTime={saveAttendanceTime}
                     onError={setNotice}
                     emptyMessage="No attendance events in this date range."

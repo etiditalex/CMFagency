@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { isRealEstateIndustry } from "@/lib/employees/real-estate";
+import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
 import { supabase } from "@/lib/supabase";
 
 export function useOrganizationIndustry() {
@@ -30,5 +31,6 @@ export function useOrganizationIndustry() {
     industry,
     loading,
     isRealEstate: isRealEstateIndustry(industry),
+    isRetailHospitality: isRetailHospitalityIndustry(industry),
   };
 }

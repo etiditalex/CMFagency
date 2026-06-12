@@ -1,5 +1,6 @@
 "use client";
 
+import SummaryReportExcelButton from "@/components/fusion-xpress/visitor-management/employees/SummaryReportExcelButton";
 import type {
   AttendanceSummaryRankEntry,
   AttendanceSummaryRankings,
@@ -52,16 +53,32 @@ function RankTable({
 
 type Props = {
   rankings: AttendanceSummaryRankings;
+  exportingExcel?: boolean;
+  onExportExcel?: () => void;
 };
 
-export default function AttendanceSummaryRankingsPanel({ rankings }: Props) {
+export default function AttendanceSummaryRankingsPanel({
+  rankings,
+  exportingExcel = false,
+  onExportExcel,
+}: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-extrabold text-gray-900">Staff rankings</h2>
-        <p className="text-xs text-gray-500 mt-1">
-          Based on deduplicated attendance (one sign-in and one sign-out per person per day).
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-base font-extrabold text-gray-900">Staff rankings</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Based on deduplicated attendance (one sign-in and one sign-out per person per day).
+            </p>
+          </div>
+          {onExportExcel ? (
+            <SummaryReportExcelButton
+              loading={exportingExcel}
+              onClick={onExportExcel}
+            />
+          ) : null}
+        </div>
         <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <RankTable
             title="Most days attended"

@@ -1,6 +1,8 @@
 import { format, isValid, parseISO } from "date-fns";
 
 import { dedupeAttendanceByEmployeeDay, localDayKey } from "@/lib/employees/daily-attendance-rules";
+import { dedupeAttendanceByShift } from "@/lib/employees/shift-attendance-rules";
+import { shiftsFromSettings } from "@/lib/employees/shifts";
 import { formatReportingTime } from "@/lib/employees/reporting-time";
 import { formatCheckInEmailDateTime } from "@/lib/visitors/format-check-in-display";
 import {
@@ -16,6 +18,7 @@ import type {
   EmployeeAttendanceRecord,
   EmployeeMemberType,
   EmployeeRecord,
+  EmployeeReportingSettings,
 } from "@/lib/employees/types";
 
 export type AttendanceSummaryDailyPoint = {
@@ -196,13 +199,21 @@ export function buildAttendanceSummary(params: {
   employees: EmployeeRecord[];
   formatDisplayTime: (iso: string) => string;
   formatDisplayDate: (iso: string) => string;
+  reportingSettings?: EmployeeReportingSettings;
 }): AttendanceSummaryPayload {
   const employeeById = new Map(params.employees.map((e) => [e.id, e]));
   const rawInRange = params.attendance.filter((a) => {
     const t = new Date(a.createdAt).getTime();
     return t >= params.fromDate.getTime() && t <= params.toDate.getTime();
   });
-  const inRange = dedupeAttendanceByEmployeeDay(rawInRange);
+  const shiftEnabled = params.reportingSettings?.shiftEnabled === true;
+  const shifts =
+    shiftEnabled && params.reportingSettings
+      ? shiftsFromSettings(params.reportingSettings)
+      : undefined;
+  const inRange = shiftEnabled
+    ? dedupeAttendanceByShift(rawInRange, true, shifts)
+    : dedupeAttendanceByEmployeeDay(rawInRange);
 
   const dailyMap = new Map<string, { signIns: number; signOuts: number }>();
   for (const key of eachEatDayKeys(params.from, params.to)) {

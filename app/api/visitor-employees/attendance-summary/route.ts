@@ -11,6 +11,7 @@ import {
   type EmployeeAttendanceRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
+import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 import {
   formatEmployeeReportDate,
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
     }
 
     const attendance = ((attData ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
+    const reportingSettings = await fetchOwnerReportingSettings(admin, userId);
 
     const summary = buildAttendanceSummary({
       from: parsed.from,
@@ -104,6 +106,7 @@ export async function GET(req: NextRequest) {
       employees,
       formatDisplayTime: formatEmployeeReportTime,
       formatDisplayDate: formatEmployeeReportDate,
+      reportingSettings,
     });
 
     return NextResponse.json({

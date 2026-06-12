@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import SummaryReportExcelButton from "@/components/fusion-xpress/visitor-management/employees/SummaryReportExcelButton";
+
 import {
   buildAttendanceDailyLogRows,
   type AttendanceDailyLogRow,
 } from "@/lib/employees/attendance-daily-log";
 import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
-import type { EmployeeRecord } from "@/lib/employees/types";
+import type { EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
 import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -37,8 +39,11 @@ function compareRows(a: AttendanceDailyLogRow, b: AttendanceDailyLogRow, key: So
 type AttendanceReportLogTableProps = {
   events: AttendanceSummaryEventRow[];
   employees: EmployeeRecord[];
+  reportingSettings?: EmployeeReportingSettings;
   title?: string;
   subtitle?: string;
+  exportingExcel?: boolean;
+  onExportExcel?: () => void;
 };
 
 function SortableHeader({
@@ -83,12 +88,16 @@ function SortableHeader({
 export default function AttendanceReportLogTable({
   events,
   employees,
+  reportingSettings,
   title = "Attendance log",
   subtitle,
+  exportingExcel = false,
+  onExportExcel,
 }: AttendanceReportLogTableProps) {
+  const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const allRows = useMemo(
-    () => buildAttendanceDailyLogRows(events, employees),
-    [events, employees]
+    () => buildAttendanceDailyLogRows(events, employees, reportingSettings),
+    [events, employees, reportingSettings]
   );
 
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
@@ -147,9 +156,14 @@ export default function AttendanceReportLogTable({
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white overflow-hidden print:border-gray-300">
-      <div className="px-4 py-3 border-b border-gray-100 print:hidden">
-        <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-        {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
+      <div className="px-4 py-3 border-b border-gray-100 print:hidden flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-bold text-gray-900">{title}</h2>
+          {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
+        </div>
+        {onExportExcel ? (
+          <SummaryReportExcelButton loading={exportingExcel} onClick={onExportExcel} />
+        ) : null}
       </div>
 
       <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 print:hidden">
@@ -249,12 +263,22 @@ export default function AttendanceReportLogTable({
                 sortDir={sortDir}
                 onSort={handleSort}
               />
+              {shiftEnabled ? (
+                <>
+                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                    Shift
+                  </th>
+                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                    Hours worked
+                  </th>
+                </>
+              ) : null}
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={shiftEnabled ? 11 : 9} className="px-4 py-12 text-center text-gray-500">
                   No attendance recorded in this period.
                 </td>
               </tr>
@@ -287,6 +311,14 @@ export default function AttendanceReportLogTable({
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInTime}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutLabel}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutTime}</td>
+                  {shiftEnabled ? (
+                    <>
+                      <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.shiftLabel}</td>
+                      <td className="px-4 py-4 text-gray-900 font-semibold whitespace-nowrap">
+                        {row.hoursWorked}
+                      </td>
+                    </>
+                  ) : null}
                 </tr>
               ))
             )}
