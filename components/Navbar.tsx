@@ -18,6 +18,7 @@ export default function Navbar() {
   const [eventsOpen, setEventsOpen] = useState(false);
   const [kcmOpen, setKcmOpen] = useState(false);
   const [fusionXpressOpen, setFusionXpressOpen] = useState(false);
+  const [fusionXpressMobileSubmenuOpen, setFusionXpressMobileSubmenuOpen] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
   const [careersNewsIndex, setCareersNewsIndex] = useState(0);
@@ -128,9 +129,17 @@ export default function Navbar() {
     { href: "/kcm/member-portal", label: "KCM Member Portal" },
   ];
 
-  const fusionXpressLinks = [
+  const fusionXpressLinks: {
+    href: string;
+    label: string;
+    children?: { href: string; label: string }[];
+  }[] = [
     { href: "/fusion-xpress", label: "Fusion Xpress" },
-    { href: "/fusion-xpress/smart-visitor-management", label: "Smart Visitor Management" },
+    {
+      href: "/fusion-xpress/smart-visitor-management",
+      label: "Smart Visitor Management",
+      children: [{ href: "/fusion-xpress/external-api", label: "External API" }],
+    },
     { href: "/teams-work/portal", label: "Teams Work portal" },
   ];
 
@@ -808,17 +817,40 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                    className="absolute top-full right-0 mt-2 w-max min-w-[14rem] max-w-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                   >
-                    {fusionXpressLinks.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                    {fusionXpressLinks.map((item) =>
+                      item.children ? (
+                        <div key={item.href} className="relative group/fx-sub">
+                          <Link
+                            href={item.href}
+                            className="flex items-center gap-1.5 px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium whitespace-nowrap"
+                          >
+                            <span>{item.label}</span>
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 text-gray-400 transition-colors group-hover/fx-sub:text-primary-500" />
+                          </Link>
+                          <div className="invisible absolute right-full top-0 z-[60] mr-1 w-52 rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-200 group-hover/fx-sub:visible group-hover/fx-sub:opacity-100">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className="block px-4 py-2 text-sm font-medium text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200"
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium whitespace-nowrap"
+                        >
+                          {item.label}
+                        </Link>
+                      )
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1224,19 +1256,69 @@ export default function Navbar() {
                         exit={{ opacity: 0, height: 0 }}
                         className="pl-4 space-y-2 mt-2"
                       >
-                        {fusionXpressLinks.map((item) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => {
-                              setIsOpen(false);
-                              setFusionXpressOpen(false);
-                            }}
-                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
+                        {fusionXpressLinks.map((item) =>
+                          item.children ? (
+                            <div key={item.href}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFusionXpressMobileSubmenuOpen(
+                                    fusionXpressMobileSubmenuOpen === item.href ? null : item.href
+                                  )
+                                }
+                                className="flex w-full items-center justify-between py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm font-medium"
+                              >
+                                <span>{item.label}</span>
+                                <ChevronDown
+                                  className={`h-3 w-3 transition-transform duration-200 ${
+                                    fusionXpressMobileSubmenuOpen === item.href ? "rotate-180" : ""
+                                  }`}
+                                />
+                              </button>
+                              {fusionXpressMobileSubmenuOpen === item.href && (
+                                <div className="pl-4 space-y-1 mt-1">
+                                  <Link
+                                    href={item.href}
+                                    onClick={() => {
+                                      setIsOpen(false);
+                                      setFusionXpressOpen(false);
+                                      setFusionXpressMobileSubmenuOpen(null);
+                                    }}
+                                    className="block py-1.5 text-gray-500 hover:text-primary-600 transition-colors duration-200 text-xs"
+                                  >
+                                    Overview
+                                  </Link>
+                                  {item.children.map((child) => (
+                                    <Link
+                                      key={child.href}
+                                      href={child.href}
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        setFusionXpressOpen(false);
+                                        setFusionXpressMobileSubmenuOpen(null);
+                                      }}
+                                      className="block py-1.5 text-gray-500 hover:text-primary-600 transition-colors duration-200 text-xs"
+                                    >
+                                      {child.label}
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              onClick={() => {
+                                setIsOpen(false);
+                                setFusionXpressOpen(false);
+                              }}
+                              className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                            >
+                              {item.label}
+                            </Link>
+                          )
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>

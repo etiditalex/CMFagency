@@ -128,3 +128,22 @@ export function signOutStatusClass(status: SignOutReportingStatus): string {
       return "text-gray-500 bg-gray-50 border-gray-200";
   }
 }
+
+/** Minutes late after the latest allowed sign-in (0 if on time or early). */
+export function lateMinutes(signedInAt: string | null | undefined, window: MemberReportingWindow): number {
+  const actual = minutesFromIso(signedInAt);
+  if (actual === null) return 0;
+  const latest = minutesFromTime(window.signInLatest);
+  return Math.max(0, actual - latest);
+}
+
+/** Minutes left before expected sign-out (0 if left on time or late). */
+export function earlyDepartureMinutes(
+  signedOutAt: string | null | undefined,
+  expectedSignOut: string
+): number {
+  const actual = minutesFromIso(signedOutAt);
+  if (actual === null) return 0;
+  const expected = minutesFromTime(expectedSignOut);
+  return Math.max(0, expected - actual);
+}

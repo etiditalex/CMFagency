@@ -252,12 +252,12 @@ export default function SmartVisitorManagementPage() {
                 Fusion Xpress · Smart Visitor Management
               </p>
               <h1 className="!text-left mt-3 text-2xl font-extrabold leading-[1.15] tracking-tight sm:mt-4 sm:text-4xl md:text-[2.65rem] lg:text-5xl">
-                QR Code Visitor Management System.
+                QR Code Employee and Visitor Management System.
                 <span className="block mt-1 text-left text-white/95">Easy to use and secure.</span>
               </h1>
               <p className="!text-left mt-4 text-sm leading-relaxed text-white/90 sm:mt-5 sm:text-base md:text-lg md:max-w-lg">
-                Digitize guest check-ins, visitor passes, and access control for offices, estates,
-                schools, hospitals, and corporate spaces. Replace manual visitor books with a smart
+                Digitize employee check-in / check-out, guest check-ins, visitor passes, and access control for
+                offices, estates, schools, hospitals, and corporate spaces. Replace manual logbooks with a smart
                 QR-based system—get started in minutes, no extra hardware required.
               </p>
               <div className="mt-6 flex flex-row flex-nowrap items-center justify-start gap-3 sm:mt-8">

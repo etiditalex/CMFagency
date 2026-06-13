@@ -26,6 +26,7 @@ import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-managemen
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
 import EmployeeLeavePanel from "@/components/fusion-xpress/visitor-management/employees/EmployeeLeavePanel";
+import IntegrationApiKeysPanel from "@/components/fusion-xpress/visitor-management/employees/IntegrationApiKeysPanel";
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
@@ -665,6 +666,8 @@ export default function VisitorManagementEmployeesPage() {
       />
 
       <EmployeeLeavePanel employees={employees} disabled={setupRequired} buildApiUrl={appendOwnerQuery} />
+
+      <IntegrationApiKeysPanel disabled={setupRequired || needsSelection} buildApiUrl={appendOwnerQuery} />
 
       <NotificationAdminsPanel disabled={setupRequired} />
 
