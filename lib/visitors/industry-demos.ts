@@ -66,7 +66,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "retail-hospitality",
     title: "Fusion Xpress Retail & Hospitality Demo",
-    subtitle: "Guest Check-in Form",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [
@@ -119,7 +119,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "health-aged-care",
     title: "Fusion Xpress Health & Aged Care Demo",
-    subtitle: "New Patient / Visitor Form",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [
@@ -171,7 +171,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "real-estate",
     title: "Fusion Xpress Real Estate Demo",
-    subtitle: "Property Viewing Registration",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [
@@ -225,7 +225,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "office-education",
     title: "Fusion Xpress Office & Education Demo",
-    subtitle: "Visitor Registration Form",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [
@@ -281,7 +281,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "sports",
     title: "Fusion Xpress Sports Demo",
-    subtitle: "Facility Guest Form",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [
@@ -334,7 +334,7 @@ export const INDUSTRY_DEMOS: IndustryDemo[] = [
   {
     slug: "tourism",
     title: "Fusion Xpress Tourism Demo",
-    subtitle: "Guest Registration Form",
+    subtitle: "Guest check-in",
     sections: [
       {
         fields: [

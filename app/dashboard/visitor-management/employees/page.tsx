@@ -18,10 +18,14 @@ import {
 } from "lucide-react";
 
 import AddEmployeeModal from "@/components/fusion-xpress/visitor-management/employees/AddEmployeeModal";
+import BusinessScopeBar, {
+  AdminSelectBusinessPrompt,
+} from "@/components/fusion-xpress/visitor-management/BusinessScopeBar";
 import AttendanceEventLogPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceEventLogPanel";
 import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-management/employees/EditEmployeeTimesModal";
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
+import EmployeeLeavePanel from "@/components/fusion-xpress/visitor-management/employees/EmployeeLeavePanel";
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
@@ -32,6 +36,7 @@ import {
   memberTypeBadgeClass,
   memberTypeLabel,
 } from "@/lib/employees/real-estate";
+import { organizationIndustryFromMetadata } from "@/lib/employees/require-real-estate-org";
 import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
 import { reportingWindowForEvent } from "@/lib/employees/shifts";
 import {
@@ -43,6 +48,8 @@ import {
 import { downloadEmployeeQrPdf } from "@/lib/employees/download-employee-qr-pdf";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
+import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import type {
   EmployeeAttendanceRecord,
   EmployeeFormInput,
@@ -62,6 +69,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import {
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
@@ -78,6 +86,14 @@ export default function VisitorManagementEmployeesPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } =
     usePortal();
+  const {
+    needsSelection,
+    appendOwnerQuery,
+    ownerId: adminOwnerId,
+    isRealEstate: scopedRealEstate,
+    isRetailHospitality: scopedRetailHospitality,
+    businessName: scopedBusinessName,
+  } = useAdminBusinessScope();
 
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [attendance, setAttendance] = useState<EmployeeAttendanceRecord[]>([]);
@@ -107,7 +123,16 @@ export default function VisitorManagementEmployeesPage() {
     return data.session?.access_token ?? null;
   }, []);
 
+  const isRealEstateOrg = isAdmin ? scopedRealEstate : isRealEstate;
+  const isRetailHospitalityOrg = isAdmin ? scopedRetailHospitality : isRetailHospitality;
+
   const loadEmployees = useCallback(async () => {
+    if (isAdmin && needsSelection) {
+      setEmployees([]);
+      setAttendance([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setLoadError(null);
     setSetupRequired(false);
@@ -116,11 +141,11 @@ export default function VisitorManagementEmployeesPage() {
       if (!token) throw new Error("Not signed in");
 
       const [empRes, attRes] = await Promise.all([
-        fetch("/api/visitor-employees", {
+        fetch(appendOwnerQuery("/api/visitor-employees"), {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         }),
-        fetch("/api/visitor-employees/attendance?limit=500", {
+        fetch(appendOwnerQuery("/api/visitor-employees/attendance?limit=500"), {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         }),
@@ -171,15 +196,22 @@ export default function VisitorManagementEmployeesPage() {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   useEffect(() => {
+    if (isAdmin && scopedBusinessName) {
+      setOrganizationName(scopedBusinessName);
+    }
+  }, [isAdmin, scopedBusinessName]);
+
+  useEffect(() => {
+    if (isAdmin) return;
     if (!user?.id) return;
     void supabase.auth.getUser().then(({ data }) => {
       const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
       const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
       if (name) setOrganizationName(name);
-      const industry = String(meta?.organization_industry ?? "").trim();
+      const industry = organizationIndustryFromMetadata(meta);
       setIsRealEstate(isRealEstateIndustry(industry));
       setIsRetailHospitality(isRetailHospitalityIndustry(industry));
     });
@@ -218,7 +250,7 @@ export default function VisitorManagementEmployeesPage() {
     try {
       const token = await getToken();
       if (!token) return;
-      const res = await fetch("/api/visitor-employees/reporting-settings", {
+      const res = await fetch(appendOwnerQuery("/api/visitor-employees/reporting-settings"), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -229,12 +261,12 @@ export default function VisitorManagementEmployeesPage() {
     } catch {
       /* keep defaults */
     }
-  }, [getToken]);
+  }, [getToken, appendOwnerQuery]);
 
   useEffect(() => {
-    if (setupRequired) return;
+    if (setupRequired || needsSelection) return;
     void loadReportingSettings();
-  }, [setupRequired, loadReportingSettings]);
+  }, [setupRequired, needsSelection, loadReportingSettings]);
 
   const handleDownloadPdf = useCallback(
     async (emp: EmployeeRecord) => {
@@ -289,13 +321,13 @@ export default function VisitorManagementEmployeesPage() {
   ]);
 
   const displayedEmployees = useMemo(() => {
-    if (!isRealEstate) return employees;
+    if (!isRealEstateOrg) return employees;
     return employees.filter((e) => e.memberType === memberTab);
-  }, [employees, isRealEstate, memberTab]);
+  }, [employees, isRealEstateOrg, memberTab]);
 
   const stats = useMemo(
-    () => employeeStats(isRealEstate ? displayedEmployees : employees),
-    [employees, displayedEmployees, isRealEstate]
+    () => employeeStats(isRealEstateOrg ? displayedEmployees : employees),
+    [employees, displayedEmployees, isRealEstateOrg]
   );
 
   const employeeNameById = useMemo(() => {
@@ -308,7 +340,7 @@ export default function VisitorManagementEmployeesPage() {
     async (payload: EmployeeFormInput) => {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
-      const res = await fetch("/api/visitor-employees", {
+      const res = await fetch(appendOwnerQuery("/api/visitor-employees"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -325,7 +357,7 @@ export default function VisitorManagementEmployeesPage() {
         setEmployees((prev) =>
           [...prev, json.employee!].sort((a, b) => a.fullName.localeCompare(b.fullName))
         );
-        const teamNote = isRealEstate
+        const teamNote = isRealEstateOrg
           ? ` (${memberTypeLabel(json.employee.memberType)} team)`
           : "";
         const idNote = json.employee.employeeCode
@@ -338,7 +370,7 @@ export default function VisitorManagementEmployeesPage() {
       }
       await loadEmployees();
     },
-    [getToken, loadEmployees, isRealEstate]
+    [getToken, loadEmployees, isRealEstateOrg]
   );
 
   const clearEmployeeDevice = useCallback(
@@ -488,7 +520,7 @@ export default function VisitorManagementEmployeesPage() {
         attendance,
         employeeNameById,
         organizationName,
-        isRealEstate,
+        isRealEstate: isRealEstateOrg,
         reportingSettings,
       });
     } catch (e: unknown) {
@@ -496,11 +528,11 @@ export default function VisitorManagementEmployeesPage() {
     } finally {
       setExportingExcel(false);
     }
-  }, [employees, attendance, employeeNameById, organizationName, isRealEstate, reportingSettings]);
+  }, [employees, attendance, employeeNameById, organizationName, isRealEstateOrg, reportingSettings]);
 
   const statCards = [
     {
-      label: isRealEstate ? `Total ${memberTypeLabel(memberTab)}` : "Total staff",
+      label: isRealEstateOrg ? `Total ${memberTypeLabel(memberTab)}` : "Total staff",
       value: stats.total,
       icon: Users,
       tone: "text-primary-700 bg-primary-50 border-primary-100",
@@ -534,7 +566,7 @@ export default function VisitorManagementEmployeesPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
           <UserCog className="w-7 h-7 text-primary-600" />
-          Employee attendance
+          {isAdmin && scopedBusinessName ? scopedBusinessName : "Employee attendance"}
         </h1>
         {!isVisitorOnly ? (
           <p className="mt-2 text-sm">
@@ -545,28 +577,24 @@ export default function VisitorManagementEmployeesPage() {
         ) : null}
       </div>
 
-      {setupRequired ? <EmployeeSetupBanner /> : null}
-      {!setupRequired ? (
-        <p className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
-          Workplace GPS:{" "}
-          <Link href={VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH} className="font-bold underline">
+      {isAdmin ? (
+        <BusinessScopeBar basePath={VISITOR_MANAGEMENT_EMPLOYEES_PATH} />
+      ) : null}
+
+      {needsSelection ? <AdminSelectBusinessPrompt /> : null}
+
+      {!needsSelection && setupRequired ? <EmployeeSetupBanner /> : null}
+      {!needsSelection && !setupRequired && isRealEstateOrg ? (
+        <p className="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             GPS tracking
           </Link>
-          . Attendance charts and printable summaries:{" "}
-          <Link href={VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH} className="font-bold underline">
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Summary reports
           </Link>
-          .
-          {isRealEstate ? (
-            <>
-              {" "}
-              CRM project site visits:{" "}
-              <Link href={VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH} className="font-bold underline">
-                CRM site GPS
-              </Link>
-              .
-            </>
-          ) : null}
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+            CRM site GPS
+          </Link>
         </p>
       ) : null}
       {loadError && !setupRequired ? (
@@ -597,19 +625,13 @@ export default function VisitorManagementEmployeesPage() {
         })}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-sm text-gray-600">
-          <strong>Reception kiosk:</strong> one tablet scans every employee&apos;s personal QR (staff
-          and CRM). <strong>Reception team QR:</strong> for phones at the desk. Personal passes are for
-          each person&apos;s own device only.
-        </p>
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 sm:ml-auto">
           <Link
-            href={VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH}
+            href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, adminOwnerId)}
             className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-primary-300 bg-white px-4 py-2.5 text-sm font-semibold text-primary-800 hover:bg-primary-50"
           >
             <ScanLine className="w-4 h-4" />
-            Open kiosk scanner
+            Kiosk scanner
           </Link>
           <button
             type="button"
@@ -624,9 +646,8 @@ export default function VisitorManagementEmployeesPage() {
             Add employee
           </button>
         </div>
-      </div>
 
-      {!canDownloadQr && !setupRequired ? (
+      {!needsSelection && !canDownloadQr && !setupRequired ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Downloading employee and reception QR PDFs requires a{" "}
           <strong>Professional</strong> or <strong>Enterprise</strong> subscription.{" "}
@@ -638,18 +659,20 @@ export default function VisitorManagementEmployeesPage() {
 
       <ReceptionQrPanel
         disabled={setupRequired}
-        isRealEstate={isRealEstate}
+        isRealEstate={isRealEstateOrg}
         organizationName={organizationName}
         canDownloadQr={canDownloadQr}
       />
+
+      <EmployeeLeavePanel employees={employees} disabled={setupRequired} buildApiUrl={appendOwnerQuery} />
 
       <NotificationAdminsPanel disabled={setupRequired} />
 
       {!setupRequired ? (
         <ReportingTimesPanel
           disabled={setupRequired}
-          isRealEstate={isRealEstate}
-          isRetailHospitality={isRetailHospitality}
+          isRealEstate={isRealEstateOrg}
+          isRetailHospitality={isRetailHospitalityOrg}
         />
       ) : null}
 
@@ -657,9 +680,9 @@ export default function VisitorManagementEmployeesPage() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSubmit={handleAddEmployee}
-        showMemberType={isRealEstate}
-        defaultMemberType={isRealEstate ? memberTab : "staff"}
-        title={isRealEstate ? "Add employee" : "Add staff member"}
+        showMemberType={isRealEstateOrg}
+        defaultMemberType={isRealEstateOrg ? memberTab : "staff"}
+        title={isRealEstateOrg ? "Add employee" : "Add staff member"}
       />
 
       <EditEmployeeTimesModal
@@ -680,7 +703,7 @@ export default function VisitorManagementEmployeesPage() {
               <X className="h-5 w-5" />
             </button>
             <p className="text-sm font-bold text-gray-900 mb-4">QR pass — {qrEmployee.fullName}</p>
-            {isRealEstate && qrEmployee.memberType === "crm" ? (
+            {isRealEstateOrg && qrEmployee.memberType === "crm" ? (
               <div className="space-y-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-600 mb-2">Workplace (reception)</p>
@@ -704,7 +727,7 @@ export default function VisitorManagementEmployeesPage() {
               <EmployeeQrCode token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} size={200} />
             )}
             <p className="mt-4 text-xs text-gray-500">
-              {isRealEstate && qrEmployee.memberType === "crm"
+              {isRealEstateOrg && qrEmployee.memberType === "crm"
                 ? "CRM: use workplace QR at the office and site GPS QR at each project. "
                 : null}
               {canDownloadQr
@@ -746,9 +769,9 @@ export default function VisitorManagementEmployeesPage() {
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
             <Users className="w-4 h-4 text-gray-500" />
-            {isRealEstate ? `${memberTypeLabel(memberTab)} team` : "Staff members"}
+            {isRealEstateOrg ? `${memberTypeLabel(memberTab)} team` : "Staff members"}
           </span>
-          {isRealEstate ? (
+          {isRealEstateOrg ? (
             <div className="flex rounded-lg border border-gray-200 bg-white p-0.5 text-xs font-semibold">
               {(["staff", "crm"] as const).map((tab) => (
                 <button
@@ -771,7 +794,7 @@ export default function VisitorManagementEmployeesPage() {
           <p className="p-6 text-sm text-gray-500 text-center">Loading…</p>
         ) : displayedEmployees.length === 0 ? (
           <p className="p-6 text-sm text-gray-500 text-center">
-            {isRealEstate
+            {isRealEstateOrg
               ? `No ${memberTypeLabel(memberTab).toLowerCase()} members yet. Add someone to this team to generate QR passes.`
               : "No employees yet. Add your first staff member to generate QR passes."}
           </p>
@@ -782,13 +805,13 @@ export default function VisitorManagementEmployeesPage() {
                 <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
                   <th className="px-4 py-3 font-semibold">Name</th>
                   <th className="px-4 py-3 font-semibold">Member ID</th>
-                  {isRealEstate ? (
+                  {isRealEstateOrg ? (
                     <th className="px-4 py-3 font-semibold">Team</th>
                   ) : null}
                   <th className="px-4 py-3 font-semibold">Department</th>
                   <th className="px-4 py-3 font-semibold">Attendance</th>
                   <th className="px-4 py-3 font-semibold">Last sign-in</th>
-                  {isRealEstate ? (
+                  {isRealEstateOrg ? (
                     <th className="px-4 py-3 font-semibold">Reporting</th>
                   ) : null}
                   <th className="px-4 py-3 font-semibold">Status</th>
@@ -802,7 +825,7 @@ export default function VisitorManagementEmployeesPage() {
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-700">
                       {emp.employeeCode || "—"}
                     </td>
-                    {isRealEstate ? (
+                    {isRealEstateOrg ? (
                       <td className="px-4 py-3">
                         <select
                           value={emp.memberType}
@@ -951,7 +974,7 @@ export default function VisitorManagementEmployeesPage() {
         employees={employees}
         employeeNameById={employeeNameById}
         reportingSettings={reportingSettings}
-        isRealEstate={isRealEstate}
+        isRealEstate={isRealEstateOrg}
         setupRequired={setupRequired}
         exportingExcel={exportingExcel}
         onExportExcel={handleExportExcel}

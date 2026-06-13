@@ -8,7 +8,10 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { findEmployeeDuplicate } from "@/lib/employees/employee-uniqueness";
+import { assertRealEstateOrganization } from "@/lib/employees/require-real-estate-org";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
+import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 import { assertVisitorSubscriptionAllows } from "@/lib/visitors/require-visitor-subscription";
 
 function safeText(v: unknown, max: number) {
@@ -23,6 +26,17 @@ export async function GET(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
 
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
     const memberType = req.nextUrl.searchParams.get("memberType")?.trim().toLowerCase() ?? "";
 
     let q = admin
@@ -30,13 +44,17 @@ export async function GET(req: NextRequest) {
       .select(
         "id,owner_id,full_name,email,department,job_title,employee_code,qr_code_token,status,attendance_status,registered_device_id,last_signed_in_at,last_signed_out_at,member_type,created_at,updated_at"
       )
+      .eq("owner_id", ownerId)
       .order("full_name", { ascending: true })
       .limit(500);
 
-    if (!isAdmin) {
-      q = q.eq("owner_id", userId);
-    }
     if (memberType === "staff" || memberType === "crm") {
+      if (memberType === "crm") {
+        const industryCheck = await assertRealEstateOrganization(admin, ownerId);
+        if (!industryCheck.ok) {
+          return NextResponse.json({ error: industryCheck.error }, { status: 403 });
+        }
+      }
       q = q.eq("member_type", memberType);
     }
 
@@ -71,9 +89,20 @@ export async function POST(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin, email: callerEmail } = auth;
 
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
     const subBlock = await assertVisitorSubscriptionAllows(
       admin,
-      userId,
+      ownerId,
       isAdmin,
       "employee_module",
       callerEmail
@@ -92,7 +121,14 @@ export async function POST(req: NextRequest) {
     const memberTypeRaw = String(body.memberType ?? body.member_type ?? "staff").toLowerCase();
     const member_type = memberTypeRaw === "crm" ? "crm" : "staff";
 
-    const duplicate = await findEmployeeDuplicate(admin, userId, {
+    if (member_type === "crm") {
+      const industryCheck = await assertRealEstateOrganization(admin, ownerId);
+      if (!industryCheck.ok) {
+        return NextResponse.json({ error: industryCheck.error }, { status: 403 });
+      }
+    }
+
+    const duplicate = await findEmployeeDuplicate(admin, ownerId, {
       email,
       fullName: full_name,
     });
@@ -101,7 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     const row = {
-      owner_id: userId,
+      owner_id: ownerId,
       full_name,
       email,
       department: safeText(body.department, 120),

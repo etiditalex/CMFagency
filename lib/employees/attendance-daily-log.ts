@@ -1,9 +1,12 @@
 import { localDayKey } from "@/lib/employees/daily-attendance-rules";
 import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
+import { findLeaveForEmployeeDay, leaveTypeLabel } from "@/lib/employees/leave-rules";
 import { detectShiftForEvent, formatHoursWorked, hoursWorkedBetween, shiftsFromSettings } from "@/lib/employees/shifts";
-import type { EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
+import type { EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
 import { formatEmployeeReportDate, formatEmployeeReportTime } from "@/lib/employees/utils";
-import { eatDayKey } from "@/lib/time/eat";
+import { eachEatDayKeys, eatDayKey } from "@/lib/time/eat";
+
+export type AttendanceDailyLogStatus = "present" | "on_leave";
 
 export type AttendanceDailyLogRow = {
   id: string;
@@ -13,6 +16,8 @@ export type AttendanceDailyLogRow = {
   fullName: string;
   memberId: string;
   department: string;
+  status: AttendanceDailyLogStatus;
+  leaveType: string;
   signInLabel: string;
   signInDate: string;
   signInTime: string;
@@ -23,9 +28,19 @@ export type AttendanceDailyLogRow = {
   sortKey: string;
 };
 
+export type AttendanceDailyLogOptions = {
+  leaveRecords?: EmployeeLeaveRecord[];
+  from?: string;
+  to?: string;
+};
+
 function signStatusLabel(present: boolean, kind: "in" | "out"): string {
   if (!present) return "—";
   return kind === "in" ? "Signed in" : "Signed out";
+}
+
+function dayKeyToDisplayDate(dayKey: string): string {
+  return formatEmployeeReportDate(`${dayKey}T12:00:00+03:00`);
 }
 
 type DayBucket = {
@@ -39,20 +54,24 @@ type DayBucket = {
 
 /**
  * One row per employee per calendar day (EAT), or per shift when shift reporting is enabled.
+ * Merges approved leave days so employees on leave appear in the register even without scans.
  */
 export function buildAttendanceDailyLogRows(
   events: AttendanceSummaryEventRow[],
   employees: EmployeeRecord[],
-  reportingSettings?: EmployeeReportingSettings
+  reportingSettings?: EmployeeReportingSettings,
+  options?: AttendanceDailyLogOptions
 ): AttendanceDailyLogRow[] {
   const employeeById = new Map(employees.map((e) => [e.id, e]));
   const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const shifts = shiftEnabled && reportingSettings ? shiftsFromSettings(reportingSettings) : [];
 
   const buckets = new Map<string, DayBucket>();
+  const attendedEmployeeDays = new Set<string>();
 
   for (const ev of events) {
     const dayKey = localDayKey(ev.createdAt);
+    attendedEmployeeDays.add(`${ev.employeeId}:${dayKey}`);
     const shift = shiftEnabled ? detectShiftForEvent(ev.createdAt, shifts) : null;
     const shiftKey = shift ? String(shift.shiftNumber) : "day";
     const shiftLabel = shift ? `Shift ${shift.shiftNumber}` : "—";
@@ -97,6 +116,8 @@ export function buildAttendanceDailyLogRows(
       fullName: emp?.fullName ?? "Unknown",
       memberId: emp?.employeeCode?.trim() || "—",
       department: emp?.department?.trim() || "—",
+      status: "present",
+      leaveType: "—",
       signInLabel: signStatusLabel(Boolean(bucket.signInAt), "in"),
       signInDate,
       signInTime,
@@ -105,6 +126,42 @@ export function buildAttendanceDailyLogRows(
       hoursWorked: hours,
       sortKey: bucket.signInAt ?? bucket.signOutAt ?? `${bucket.dayKey}T00:00:00`,
     });
+  }
+
+  const leaveRecords = options?.leaveRecords ?? [];
+  const from = options?.from?.trim() ?? "";
+  const to = options?.to?.trim() ?? "";
+  if (leaveRecords.length > 0 && from && to) {
+    const dayKeys = eachEatDayKeys(from, to);
+    const activeEmployees = employees.filter((e) => e.status === "active");
+
+    for (const emp of activeEmployees) {
+      for (const dayKey of dayKeys) {
+        if (attendedEmployeeDays.has(`${emp.id}:${dayKey}`)) continue;
+
+        const leave = findLeaveForEmployeeDay(leaveRecords, emp.id, dayKey);
+        if (!leave) continue;
+
+        rows.push({
+          id: `leave:${emp.id}:${dayKey}`,
+          employeeId: emp.id,
+          dayKey,
+          shiftLabel: "—",
+          fullName: emp.fullName,
+          memberId: emp.employeeCode?.trim() || "—",
+          department: emp.department?.trim() || "—",
+          status: "on_leave",
+          leaveType: leaveTypeLabel(leave.leaveType),
+          signInLabel: "On leave",
+          signInDate: dayKeyToDisplayDate(dayKey),
+          signInTime: "—",
+          signOutLabel: "—",
+          signOutTime: "—",
+          hoursWorked: "—",
+          sortKey: `${dayKey}T00:00:00`,
+        });
+      }
+    }
   }
 
   return rows.sort((a, b) => b.sortKey.localeCompare(a.sortKey));

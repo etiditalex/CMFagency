@@ -11,7 +11,7 @@ import {
   type AttendanceDailyLogRow,
 } from "@/lib/employees/attendance-daily-log";
 import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
-import type { EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
+import type { EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
 import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -20,6 +20,8 @@ type SortKey =
   | "fullName"
   | "memberId"
   | "department"
+  | "status"
+  | "leaveType"
   | "signInLabel"
   | "signInDate"
   | "signInTime"
@@ -40,6 +42,9 @@ type AttendanceReportLogTableProps = {
   events: AttendanceSummaryEventRow[];
   employees: EmployeeRecord[];
   reportingSettings?: EmployeeReportingSettings;
+  leaveRecords?: EmployeeLeaveRecord[];
+  from?: string;
+  to?: string;
   title?: string;
   subtitle?: string;
   exportingExcel?: boolean;
@@ -89,6 +94,9 @@ export default function AttendanceReportLogTable({
   events,
   employees,
   reportingSettings,
+  leaveRecords = [],
+  from,
+  to,
   title = "Attendance log",
   subtitle,
   exportingExcel = false,
@@ -96,8 +104,13 @@ export default function AttendanceReportLogTable({
 }: AttendanceReportLogTableProps) {
   const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const allRows = useMemo(
-    () => buildAttendanceDailyLogRows(events, employees, reportingSettings),
-    [events, employees, reportingSettings]
+    () =>
+      buildAttendanceDailyLogRows(events, employees, reportingSettings, {
+        leaveRecords,
+        from,
+        to,
+      }),
+    [events, employees, reportingSettings, leaveRecords, from, to]
   );
 
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
@@ -229,6 +242,20 @@ export default function AttendanceReportLogTable({
                 onSort={handleSort}
               />
               <SortableHeader
+                label="Status"
+                column="status"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
+                label="Leave type"
+                column="leaveType"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
+              <SortableHeader
                 label="Sign in"
                 column="signInLabel"
                 sortKey={sortKey}
@@ -278,13 +305,18 @@ export default function AttendanceReportLogTable({
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={shiftEnabled ? 11 : 9} className="px-4 py-12 text-center text-gray-500">
-                  No attendance recorded in this period.
+                <td colSpan={shiftEnabled ? 13 : 11} className="px-4 py-12 text-center text-gray-500">
+                  No attendance or leave recorded in this period.
                 </td>
               </tr>
             ) : (
               pageRows.map((row) => (
-                <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                <tr
+                  key={row.id}
+                  className={`border-b border-gray-100 hover:bg-gray-50/80 ${
+                    row.status === "on_leave" ? "bg-amber-50/60" : ""
+                  }`}
+                >
                   <td className="px-4 py-4 print:hidden">
                     <input
                       type="checkbox"
@@ -306,6 +338,18 @@ export default function AttendanceReportLogTable({
                     {row.memberId}
                   </td>
                   <td className="px-4 py-4 text-gray-700">{row.department}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span
+                      className={
+                        row.status === "on_leave"
+                          ? "inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900"
+                          : "inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800"
+                      }
+                    >
+                      {row.status === "on_leave" ? "On leave" : "Present"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.leaveType}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInLabel}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInDate}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signInTime}</td>

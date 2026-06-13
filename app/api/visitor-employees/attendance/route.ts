@@ -6,6 +6,8 @@ import {
   type EmployeeAttendanceRow,
 } from "@/lib/employees/db-mapper";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
+import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 import { eatDayBoundsUtc } from "@/lib/time/eat";
 
 export async function GET(req: NextRequest) {
@@ -13,6 +15,17 @@ export async function GET(req: NextRequest) {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
+
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
 
     const employeeId = req.nextUrl.searchParams.get("employeeId")?.trim() ?? "";
     const fromYmd = req.nextUrl.searchParams.get("from")?.trim() ?? "";
@@ -25,10 +38,10 @@ export async function GET(req: NextRequest) {
     let q = admin
       .from("visitor_employee_attendance")
       .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+      .eq("owner_id", ownerId)
       .order("created_at", { ascending: false })
       .limit(limit);
 
-    if (!isAdmin) q = q.eq("owner_id", userId);
     if (employeeId) q = q.eq("employee_id", employeeId);
     if (fromYmd) {
       const fromBounds = eatDayBoundsUtc(fromYmd);

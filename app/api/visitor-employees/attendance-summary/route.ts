@@ -6,13 +6,19 @@ import {
 } from "@/lib/employees/attendance-summary";
 import {
   isMissingEmployeesTable,
+  isMissingLeaveTable,
   mapAttendanceRow,
   mapEmployeeRow,
+  mapLeaveRow,
   type EmployeeAttendanceRow,
+  type EmployeeLeaveRow,
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
+import { assertRealEstateOrganization } from "@/lib/employees/require-real-estate-org";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
+import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 import {
   formatEmployeeReportDate,
   formatEmployeeReportTime,
@@ -25,6 +31,22 @@ export async function GET(req: NextRequest) {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
+
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
+    const industryCheck = await assertRealEstateOrganization(admin, ownerId);
+    if (!industryCheck.ok) {
+      return NextResponse.json({ error: industryCheck.error }, { status: 403 });
+    }
 
     const parsed = parseAttendanceSummaryDateRange(
       req.nextUrl.searchParams.get("from"),
@@ -43,7 +65,7 @@ export async function GET(req: NextRequest) {
       )
       .order("full_name", { ascending: true });
 
-    if (!isAdmin) empQuery = empQuery.eq("owner_id", userId);
+    empQuery = empQuery.eq("owner_id", ownerId);
     if (employeeId) empQuery = empQuery.eq("id", employeeId);
 
     const { data: empData, error: empErr } = await empQuery;
@@ -69,7 +91,7 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: true })
       .limit(15000);
 
-    if (!isAdmin) attQuery = attQuery.eq("owner_id", userId);
+    attQuery = attQuery.eq("owner_id", ownerId);
     if (employeeIds.length > 0) attQuery = attQuery.in("employee_id", employeeIds);
     else if (employeeId) {
       return NextResponse.json(
@@ -95,7 +117,23 @@ export async function GET(req: NextRequest) {
     }
 
     const attendance = ((attData ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
-    const reportingSettings = await fetchOwnerReportingSettings(admin, userId);
+    const reportingSettings = await fetchOwnerReportingSettings(admin, ownerId);
+
+    let leaveRecords: ReturnType<typeof mapLeaveRow>[] = [];
+    let leaveQuery = admin
+      .from("visitor_employee_leave")
+      .select("id,owner_id,employee_id,start_date,end_date,leave_type,status,notes,approved_at,rejected_at,notification_sent_at,created_at,updated_at")
+      .eq("status", "approved")
+      .lte("start_date", parsed.to)
+      .gte("end_date", parsed.from);
+    leaveQuery = leaveQuery.eq("owner_id", ownerId);
+    if (employeeIds.length > 0) leaveQuery = leaveQuery.in("employee_id", employeeIds);
+    const { data: leaveData, error: leaveErr } = await leaveQuery;
+    if (!leaveErr && leaveData) {
+      leaveRecords = ((leaveData ?? []) as EmployeeLeaveRow[]).map(mapLeaveRow);
+    } else if (leaveErr && !isMissingLeaveTable(leaveErr)) {
+      return NextResponse.json({ error: leaveErr.message }, { status: 500 });
+    }
 
     const summary = buildAttendanceSummary({
       from: parsed.from,
@@ -107,10 +145,12 @@ export async function GET(req: NextRequest) {
       formatDisplayTime: formatEmployeeReportTime,
       formatDisplayDate: formatEmployeeReportDate,
       reportingSettings,
+      leaveRecords,
     });
 
     return NextResponse.json({
       summary,
+      leave: leaveRecords,
       organizationEventCount: summary.totals.events,
     });
   } catch (e: unknown) {

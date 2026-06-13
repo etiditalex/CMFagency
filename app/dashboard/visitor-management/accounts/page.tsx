@@ -11,7 +11,8 @@ import VisitorAccountExtensionControls, {
 } from "@/components/fusion-xpress/visitor-management/accounts/VisitorAccountExtensionControls";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { industryLabel, VISITOR_MANAGEMENT_PATH } from "@/lib/visitors/industry-options";
+import { industryLabel, VISITOR_MANAGEMENT_PATH, VISITOR_MANAGEMENT_EMPLOYEES_PATH, VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH } from "@/lib/visitors/industry-options";
+import { isRealEstateIndustry } from "@/lib/employees/real-estate";
 import { supabase } from "@/lib/supabase";
 
 type VisitorAccount = {
@@ -130,10 +131,7 @@ export default function VisitorManagementAccountsPage() {
             Smart Visitor Management
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Accounts Manager</h1>
-          <p className="mt-2 text-gray-600 text-sm sm:text-base max-w-2xl">
-            Grant complimentary Professional + Enterprise access for a set period, or turn it off
-            from here. Extensions apply per organisation account.
-          </p>
+          <p className="mt-2 text-gray-600 text-sm">Client accounts and subscription extensions.</p>
         </div>
         <button
           type="button"
@@ -170,6 +168,7 @@ export default function VisitorManagementAccountsPage() {
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Extension</th>
                   <th className="px-4 py-3">Industry</th>
+                  <th className="px-4 py-3">Activity</th>
                   <th className="px-4 py-3">Access</th>
                   {isFullAdmin && <th className="px-4 py-3 text-right">Actions</th>}
                 </tr>
@@ -205,6 +204,30 @@ export default function VisitorManagementAccountsPage() {
                       <td className="px-4 py-3 text-gray-700">
                         {industryLabel(account.organization_industry)}
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex flex-col gap-1 text-xs font-semibold">
+                          <Link
+                            href={`${VISITOR_MANAGEMENT_PATH}?owner=${encodeURIComponent(account.user_id)}`}
+                            className="text-primary-700 hover:underline"
+                          >
+                            Visitors
+                          </Link>
+                          <Link
+                            href={`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}?owner=${encodeURIComponent(account.user_id)}`}
+                            className="text-primary-700 hover:underline"
+                          >
+                            Sign in / out
+                          </Link>
+                          {isRealEstateIndustry(account.organization_industry) ? (
+                            <Link
+                              href={`${VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH}?owner=${encodeURIComponent(account.user_id)}`}
+                              className="text-primary-700 hover:underline"
+                            >
+                              Summary reports
+                            </Link>
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           type="button"
@@ -238,7 +261,7 @@ export default function VisitorManagementAccountsPage() {
                     {expandedUserId === account.user_id ? (
                       <tr>
                         <td
-                          colSpan={isFullAdmin ? 7 : 6}
+                          colSpan={isFullAdmin ? 8 : 7}
                           className="px-4 py-3 bg-gray-50/80 border-b border-gray-100"
                         >
                           <VisitorAccountExtensionControls

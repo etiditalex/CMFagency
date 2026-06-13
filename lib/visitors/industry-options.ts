@@ -107,6 +107,7 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD: VisitorManagementLi
   label: "Summary reports",
   href: VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   underEmployees: true,
+  realEstateOnly: true,
 };
 
 export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagementLinkNavChild = {

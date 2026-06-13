@@ -4,6 +4,8 @@ import { mapVisitorRow, isMissingVisitorsTable, type VisitorRow } from "@/lib/vi
 import { getIndustryDemo } from "@/lib/visitors/industry-demos";
 import { mapIndustryFormToVisitor } from "@/lib/visitors/industry-form-mapper";
 import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
+import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
+import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 import { requireVisitorManagementAccess } from "@/lib/visitors/require-visitor-management";
 
 function safeText(v: unknown, max: number) {
@@ -32,18 +34,26 @@ export async function GET(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
 
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
     let q = admin
       .from("visitors")
       .select(
         "id,owner_id,site_id,full_name,phone_number,id_passport_number,vehicle_plate_number,host,purpose_of_visit,visit_date,visit_time,status,qr_code_token,industry_slug,source,form_extra,checked_in_at,checked_out_at,created_at,updated_at"
       )
+      .eq("owner_id", ownerId)
       .order("visit_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(500);
-
-    if (!isAdmin) {
-      q = q.eq("owner_id", userId);
-    }
 
     const industrySlug = req.nextUrl.searchParams.get("industrySlug")?.trim() ?? "";
     if (industrySlug && isVisitorIndustrySlug(industrySlug)) {

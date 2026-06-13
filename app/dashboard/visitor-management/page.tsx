@@ -18,10 +18,15 @@ import {
 } from "lucide-react";
 
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
+import BusinessScopeBar, {
+  AdminSelectBusinessPrompt,
+} from "@/components/fusion-xpress/visitor-management/BusinessScopeBar";
 import RegisterGuestModal from "@/components/fusion-xpress/visitor-management/RegisterGuestModal";
 import type { RegisterGuestPayload } from "@/components/fusion-xpress/visitor-management/RegisterGuestForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
+import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
 import {
   industryCheckInUrl,
@@ -47,6 +52,13 @@ export default function DashboardVisitorManagementPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature, isAdmin, isVisitorOnly } = usePortal();
+  const {
+    needsSelection,
+    appendOwnerQuery,
+    ownerId: adminOwnerId,
+    industry: scopedIndustry,
+    businessName: scopedBusinessName,
+  } = useAdminBusinessScope();
 
   const industryFilter = useMemo(() => {
     const param = searchParams?.get("industry");
@@ -65,8 +77,15 @@ export default function DashboardVisitorManagementPage() {
     });
   }, [user?.id]);
 
-  const registerIndustrySlug =
-    industryFilter === "all" ? organizationIndustry : industryFilter;
+  const registerIndustrySlug = isAdmin
+    ? scopedIndustry && isVisitorIndustrySlug(scopedIndustry)
+      ? scopedIndustry
+      : organizationIndustry
+    : industryFilter === "all"
+      ? organizationIndustry
+      : industryFilter;
+
+  const activityOwnerId = isAdmin ? adminOwnerId : user?.id ?? "";
 
   const [visitors, setVisitors] = useState<VisitorRecord[]>([]);
   const [loadingVisitors, setLoadingVisitors] = useState(true);
@@ -83,13 +102,13 @@ export default function DashboardVisitorManagementPage() {
   const [checkInLinkCopied, setCheckInLinkCopied] = useState(false);
 
   const publicCheckInUrl = useMemo(() => {
-    if (!user?.id) return "";
+    if (!activityOwnerId) return "";
     return industryCheckInUrl(
       registerIndustrySlug,
-      user.id,
+      activityOwnerId,
       typeof window !== "undefined" ? window.location.origin : undefined
     );
-  }, [user?.id, registerIndustrySlug]);
+  }, [activityOwnerId, registerIndustrySlug]);
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -97,6 +116,11 @@ export default function DashboardVisitorManagementPage() {
   }, []);
 
   const loadVisitors = useCallback(async (industrySlug?: string) => {
+    if (isAdmin && needsSelection) {
+      setVisitors([]);
+      setLoadingVisitors(false);
+      return;
+    }
     setLoadingVisitors(true);
     setLoadError(null);
     setSetupRequired(false);
@@ -104,11 +128,12 @@ export default function DashboardVisitorManagementPage() {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
 
-      const qs =
-        industrySlug && industrySlug !== "all"
-          ? `?industrySlug=${encodeURIComponent(industrySlug)}`
-          : "";
-      const res = await fetch(`/api/visitors${qs}`, {
+      const qsParts: string[] = [];
+      if (industrySlug && industrySlug !== "all") {
+        qsParts.push(`industrySlug=${encodeURIComponent(industrySlug)}`);
+      }
+      const base = qsParts.length ? `/api/visitors?${qsParts.join("&")}` : "/api/visitors";
+      const res = await fetch(appendOwnerQuery(base), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -139,7 +164,7 @@ export default function DashboardVisitorManagementPage() {
     } finally {
       setLoadingVisitors(false);
     }
-  }, [getToken]);
+  }, [getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   const loadDemoSubmissions = useCallback(
     async (industrySlug?: string) => {
@@ -190,8 +215,7 @@ export default function DashboardVisitorManagementPage() {
       router.replace("/dashboard");
       return;
     }
-    loadVisitors(industryFilter);
-    if (isAdmin) loadDemoSubmissions(industryFilter);
+    loadVisitors(isAdmin ? undefined : industryFilter);
   }, [
     authLoading,
     portalLoading,
@@ -202,8 +226,8 @@ export default function DashboardVisitorManagementPage() {
     router,
     user,
     loadVisitors,
-    loadDemoSubmissions,
     industryFilter,
+    needsSelection,
   ]);
 
   const stats = useMemo(() => visitorStats(visitors), [visitors]);
@@ -309,30 +333,33 @@ export default function DashboardVisitorManagementPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
           <UserCheck className="w-7 h-7 text-primary-600" />
-          {industryFilter === "all" ? "Visitor Management" : industryLabel(industryFilter)}
+          {isAdmin && scopedBusinessName
+            ? scopedBusinessName
+            : industryFilter === "all"
+              ? "Visitor Management"
+              : industryLabel(industryFilter)}
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          {isVisitorOnly
-            ? "Register guests arriving at your organization, approve visits, and issue QR passes. This is your operations dashboard—not the public marketing demo."
-            : "Pre-register guests, approve visits, and manage QR passes."}
-          {usingMockData ? " Showing sample data until Supabase tables are applied." : ""}
+          Guest check-in, approvals, and QR passes.
+          {usingMockData ? " Sample data until database setup is complete." : ""}
         </p>
-        <p className="mt-2 text-sm">
-          <Link
-            href="/dashboard/visitor-management/employees"
-            className="font-semibold text-primary-700 hover:underline"
-          >
-            Employee attendance →
-          </Link>
-          {" "}
-          — staff sign-in/out with QR passes and director email alerts.
-        </p>
-        {isVisitorOnly ? (
-          <p className="mt-2 text-xs text-primary-700 font-medium">
-            Your organization: {industryLabel(organizationIndustry)}
+        {!isVisitorOnly ? (
+          <p className="mt-2 text-sm">
+            <Link
+              href={pathWithOwner("/dashboard/visitor-management/employees", adminOwnerId)}
+              className="font-semibold text-primary-700 hover:underline"
+            >
+              Employee attendance →
+            </Link>
           </p>
         ) : null}
       </div>
+
+      {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} className="mt-2" /> : null}
+
+      {needsSelection ? <AdminSelectBusinessPrompt /> : null}
+      {!needsSelection && (
+        <>
       {setupRequired && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Run <code className="font-mono text-xs">database/visitor_management_patch_01.sql</code> in the
@@ -365,16 +392,13 @@ export default function DashboardVisitorManagementPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p className="text-sm text-gray-600">
-          Register guests manually when reception adds them, or let visitors check in via your QR welcome screen.
-        </p>
         <button
           type="button"
           onClick={() => {
             setRegisterGuestNotice(null);
             setRegisterGuestOpen(true);
           }}
-          className="inline-flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm"
+          className="inline-flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm sm:ml-auto"
         >
           <Plus className="w-4 h-4" />
           Register guest
@@ -387,18 +411,13 @@ export default function DashboardVisitorManagementPage() {
         </p>
       ) : null}
 
-      {user?.id && !usingMockData ? (
+      {activityOwnerId && !usingMockData ? (
         <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-sm font-bold text-primary-900">
                 <Link2 className="h-4 w-4 shrink-0" />
-                Your public check-in link
-              </p>
-              <p className="mt-1 text-xs text-primary-800/90">
-                Share this URL or QR so visitors complete your{" "}
-                {industryLabel(registerIndustrySlug)} form, see their check-in time, and appear here
-                instantly. Confirmation emails send when they opt in.
+                Public check-in link
               </p>
               <p className="mt-2 break-all font-mono text-xs text-gray-800 bg-white/80 rounded-lg border border-primary-100 px-3 py-2">
                 {publicCheckInUrl || "…"}
@@ -432,24 +451,10 @@ export default function DashboardVisitorManagementPage() {
         onSubmit={handleRegisterGuest}
       />
 
-      {!isVisitorOnly && industryFilter === "all" ? (
-        <p className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Filter by industry in the sidebar to narrow the list. Prospect{" "}
-          <Link href="/fusion-xpress/smart-visitor-management" className="font-semibold text-primary-700 hover:underline">
-            demo forms
-          </Link>{" "}
-          are on the public marketing site only—not part of your client dashboard.
-        </p>
-      ) : null}
-
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-800">
-            {industryFilter === "all"
-              ? "All visitors"
-              : `Visitors — ${industryLabel(industryFilter)}`}
-          </span>
+          <span className="text-sm font-bold text-gray-800">Visitors</span>
         </div>
         <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm">
             <thead>
@@ -532,52 +537,8 @@ export default function DashboardVisitorManagementPage() {
         </div>
       </div>
 
-
-      {isAdmin ? (
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <span className="text-sm font-bold text-gray-800">
-            Marketing demo leads (admin)
-            {industryFilter !== "all" ? ` — ${industryLabel(industryFilter)}` : ""}
-          </span>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Submissions from public industry demo forms on the marketing site—not your client guest records.
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          {loadingDemos ? (
-            <p className="text-sm text-gray-500 py-6 text-center">Loading submissions…</p>
-          ) : demoSubmissions.length === 0 ? (
-            <p className="text-sm text-gray-500 py-6 text-center">No public demo submissions yet.</p>
-          ) : (
-            <table className="w-full min-w-[700px] text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
-                  <th className="px-4 py-3 font-semibold">Industry</th>
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Phone</th>
-                  <th className="px-4 py-3 font-semibold">Email</th>
-                  <th className="px-4 py-3 font-semibold">Submitted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {demoSubmissions.map((d) => (
-                  <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="px-4 py-3 text-gray-600">{industryLabel(d.industrySlug)}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{d.fullName ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.phoneNumber ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{d.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                      {new Date(d.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
-      ) : null}
+        </>
+      )}
 
       {detailVisitor && (
         <DetailModal visitor={detailVisitor} onClose={() => setDetailVisitor(null)} />

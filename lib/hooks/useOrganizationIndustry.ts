@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { organizationIndustryFromMetadata } from "@/lib/employees/require-real-estate-org";
 import { isRealEstateIndustry } from "@/lib/employees/real-estate";
 import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
 import { supabase } from "@/lib/supabase";
@@ -21,8 +22,7 @@ export function useOrganizationIndustry() {
     setLoading(true);
     void supabase.auth.getUser().then(({ data }) => {
       const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
-      const slug = String(meta?.organization_industry ?? meta?.organizationIndustry ?? "").trim();
-      setIndustry(slug || null);
+      setIndustry(organizationIndustryFromMetadata(meta));
       setLoading(false);
     });
   }, [user?.id]);

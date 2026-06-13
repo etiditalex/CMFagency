@@ -6,7 +6,7 @@ import type {
   AttendanceSummaryRankings,
 } from "@/lib/employees/attendance-summary";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
-import type { EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
+import type { EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
 import { formatEmployeeEmailDateTime } from "@/lib/employees/utils";
 
 async function loadXlsx() {
@@ -60,6 +60,7 @@ export async function downloadPerEmployeeSummaryExcel(
     Team: memberTypeLabel(row.memberType as "staff" | "crm"),
     Department: row.department || "",
     Days: row.daysAttended,
+    "Approved leave days": row.leaveDays,
     "Sign ins": row.signInCount,
     "Sign outs": row.signOutCount,
     "First sign-in": row.firstSignIn ? formatEmployeeEmailDateTime(row.firstSignIn) : "",
@@ -126,16 +127,23 @@ export async function downloadAttendanceRegisterExcel(
   events: AttendanceSummaryEventRow[],
   employees: EmployeeRecord[],
   meta: SummaryReportExportMeta,
-  reportingSettings?: EmployeeReportingSettings
+  reportingSettings?: EmployeeReportingSettings,
+  leaveRecords?: EmployeeLeaveRecord[]
 ): Promise<void> {
   const XLSX = await loadXlsx();
-  const logRows = buildAttendanceDailyLogRows(events, employees, reportingSettings);
+  const logRows = buildAttendanceDailyLogRows(events, employees, reportingSettings, {
+    leaveRecords,
+    from: meta.from,
+    to: meta.to,
+  });
   const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const data = logRows.map((row) => {
     const base: Record<string, string> = {
       Name: row.fullName,
       "Member ID": row.memberId,
       Department: row.department,
+      Status: row.status === "on_leave" ? "On leave" : "Present",
+      "Leave type": row.leaveType,
       "Sign in": row.signInLabel,
       Date: row.signInDate,
       "Sign in time": row.signInTime,

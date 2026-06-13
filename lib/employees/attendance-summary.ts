@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from "date-fns";
 
 import { dedupeAttendanceByEmployeeDay, localDayKey } from "@/lib/employees/daily-attendance-rules";
+import { countLeaveDaysForEmployee } from "@/lib/employees/leave-rules";
 import { dedupeAttendanceByShift } from "@/lib/employees/shift-attendance-rules";
 import { shiftsFromSettings } from "@/lib/employees/shifts";
 import { formatReportingTime } from "@/lib/employees/reporting-time";
@@ -16,6 +17,7 @@ import {
 import type {
   EmployeeAttendanceEventType,
   EmployeeAttendanceRecord,
+  EmployeeLeaveRecord,
   EmployeeMemberType,
   EmployeeRecord,
   EmployeeReportingSettings,
@@ -44,6 +46,7 @@ export type AttendanceSummaryEmployeeRow = {
   signInCount: number;
   signOutCount: number;
   daysAttended: number;
+  leaveDays: number;
   firstSignIn: string | null;
   lastSignOut: string | null;
   avgFirstSignInMinutes: number | null;
@@ -200,6 +203,7 @@ export function buildAttendanceSummary(params: {
   formatDisplayTime: (iso: string) => string;
   formatDisplayDate: (iso: string) => string;
   reportingSettings?: EmployeeReportingSettings;
+  leaveRecords?: EmployeeLeaveRecord[];
 }): AttendanceSummaryPayload {
   const employeeById = new Map(params.employees.map((e) => [e.id, e]));
   const rawInRange = params.attendance.filter((a) => {
@@ -318,12 +322,45 @@ export function buildAttendanceSummary(params: {
         signInCount: stats.signInCount,
         signOutCount: stats.signOutCount,
         daysAttended: stats.daysAttended.size,
+        leaveDays: countLeaveDaysForEmployee(
+          params.leaveRecords ?? [],
+          employeeId,
+          params.from,
+          params.to
+        ),
         firstSignIn: stats.firstSignIn,
         lastSignOut: stats.lastSignOut,
         avgFirstSignInMinutes,
       };
     })
     .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  const summaryIds = new Set(employeeSummaries.map((r) => r.employeeId));
+  for (const emp of params.employees.filter((e) => e.status === "active")) {
+    if (summaryIds.has(emp.id)) continue;
+    const leaveDays = countLeaveDaysForEmployee(
+      params.leaveRecords ?? [],
+      emp.id,
+      params.from,
+      params.to
+    );
+    if (leaveDays <= 0) continue;
+    employeeSummaries.push({
+      employeeId: emp.id,
+      fullName: emp.fullName,
+      department: emp.department ?? "",
+      jobTitle: emp.jobTitle ?? "",
+      memberType: emp.memberType ?? "staff",
+      signInCount: 0,
+      signOutCount: 0,
+      daysAttended: 0,
+      leaveDays,
+      firstSignIn: null,
+      lastSignOut: null,
+      avgFirstSignInMinutes: null,
+    });
+  }
+  employeeSummaries.sort((a, b) => a.fullName.localeCompare(b.fullName));
 
   const rankings: AttendanceSummaryRankings = {
     staff: buildTeamRankings(employeeSummaries, "staff"),

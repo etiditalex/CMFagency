@@ -74,3 +74,23 @@ export type EmployeeFormInput = {
   employeeCode?: string;
   memberType?: EmployeeMemberType;
 };
+
+/** HR leave types recorded against an employee. */
+export type EmployeeLeaveType = "annual" | "sick" | "unpaid" | "compassionate" | "other";
+
+export type EmployeeLeaveStatus = "pending" | "approved" | "rejected";
+
+export type EmployeeLeaveRecord = {
+  id: string;
+  employeeId: string;
+  startDate: string;
+  endDate: string;
+  leaveType: EmployeeLeaveType;
+  status: EmployeeLeaveStatus;
+  notes: string;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  notificationSentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

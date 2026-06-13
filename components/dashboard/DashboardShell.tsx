@@ -63,6 +63,7 @@ import {
   industryLabel,
   visitorManagementHref,
 } from "@/lib/visitors/industry-options";
+import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
 import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
@@ -193,8 +194,8 @@ function isVisitorNavChildActive(
   return isVisitorIndustryChildActive(pathname, industryParam, child.industrySlug);
 }
 
-function visitorNavChildHref(child: VisitorManagementNavChild) {
-  if ("href" in child) return child.href;
+function visitorNavChildHref(child: VisitorManagementNavChild, ownerId: string | null) {
+  if ("href" in child) return pathWithOwner(child.href, ownerId);
   return visitorManagementHref(child.industrySlug);
 }
 
@@ -210,6 +211,7 @@ function DashboardNavItem({
   pendingApplicationsCount,
   pendingCmfaCount,
   isAdmin,
+  adminOwnerId,
 }: {
   item: NavItem;
   pathname: string;
@@ -222,6 +224,7 @@ function DashboardNavItem({
   pendingApplicationsCount: number;
   pendingCmfaCount: number;
   isAdmin: boolean;
+  adminOwnerId: string | null;
 }) {
   const Icon = item.icon;
 
@@ -280,7 +283,7 @@ function DashboardNavItem({
                 return (
                   <Link
                     key={childKey}
-                    href={visitorNavChildHref(child)}
+                    href={visitorNavChildHref(child, adminOwnerId)}
                     prefetch={false}
                     onClick={onNavigate}
                     className={`block rounded-md py-2 font-medium transition-colors ${
@@ -345,13 +348,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly } =
     usePortal();
+  const adminOwnerId = isAdmin ? sp?.get("owner")?.trim() || null : null;
   const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
   const navItems = useMemo(() => {
     const filterVmChildren = (children: VisitorManagementNavChild[]) =>
       children.filter((child) => {
         if ("adminOnly" in child && child.adminOnly && !isAdmin) return false;
-        if ("realEstateOnly" in child && child.realEstateOnly && (!isRealEstate || industryLoading)) {
+        if ("realEstateOnly" in child && child.realEstateOnly && !isAdmin && (!isRealEstate || industryLoading)) {
           return false;
         }
         return true;
@@ -372,7 +376,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         };
       }
       const children: VisitorManagementNavChild[] = filterVmChildren([
-        ...VISITOR_MANAGEMENT_NAV_CHILDREN,
+        ...(isAdmin ? [] : VISITOR_MANAGEMENT_NAV_CHILDREN),
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
@@ -678,6 +682,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     pendingApplicationsCount={pendingApplicationsCount}
                     pendingCmfaCount={pendingCmfaCount}
                     isAdmin={isAdmin}
+                    adminOwnerId={adminOwnerId}
                   />
                 ))}
               </div>
@@ -751,8 +756,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         showLabels
                         onNavigate={() => setMobileOpen(false)}
                         pendingApplicationsCount={pendingApplicationsCount}
-                    pendingCmfaCount={pendingCmfaCount}
+                        pendingCmfaCount={pendingCmfaCount}
                         isAdmin={isAdmin}
+                        adminOwnerId={adminOwnerId}
                       />
                     ))}
                   </div>

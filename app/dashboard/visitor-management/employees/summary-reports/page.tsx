@@ -19,9 +19,14 @@ import AttendanceReportLogTable from "@/components/fusion-xpress/visitor-managem
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
 import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
+import BusinessScopeBar, {
+  AdminSelectBusinessPrompt,
+} from "@/components/fusion-xpress/visitor-management/BusinessScopeBar";
 import SummaryReportExcelButton from "@/components/fusion-xpress/visitor-management/employees/SummaryReportExcelButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
+import { useOrganizationIndustry } from "@/lib/hooks/useOrganizationIndustry";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import type { AttendanceSummaryPayload } from "@/lib/employees/attendance-summary";
 import {
@@ -33,9 +38,10 @@ import {
   DEFAULT_REPORTING_SETTINGS,
   isMissingEmployeesTableMessage,
 } from "@/lib/employees/db-mapper";
-import { isRealEstateIndustry, memberTypeLabel } from "@/lib/employees/real-estate";
+import { memberTypeLabel } from "@/lib/employees/real-estate";
 import type {
   EmployeeAttendanceRecord,
+  EmployeeLeaveRecord,
   EmployeeRecord,
   EmployeeReportingSettings,
 } from "@/lib/employees/types";
@@ -82,7 +88,15 @@ export default function EmployeeSummaryReportsPage() {
   const router = useRouter();
   const printRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } = usePortal();
+  const {
+    needsSelection,
+    appendOwnerQuery,
+    isRealEstate: scopedRealEstate,
+    businessName: scopedBusinessName,
+  } = useAdminBusinessScope();
+  const { isRealEstate: clientRealEstate, loading: industryLoading } = useOrganizationIndustry();
+  const isRealEstate = isAdmin ? scopedRealEstate : clientRealEstate;
 
   const [preset, setPreset] = useState<DurationPreset>("7d");
   const initialRange = presetRange("7d");
@@ -100,9 +114,9 @@ export default function EmployeeSummaryReportsPage() {
   const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
     DEFAULT_REPORTING_SETTINGS
   );
-  const [isRealEstate, setIsRealEstate] = useState(false);
   const [exportingSection, setExportingSection] = useState<SummaryExportSection | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [leaveRecords, setLeaveRecords] = useState<EmployeeLeaveRecord[]>([]);
 
   const rangeIncludesToday = to >= todayIso();
 
@@ -117,21 +131,23 @@ export default function EmployeeSummaryReportsPage() {
   }, []);
 
   useEffect(() => {
+    if (isAdmin && scopedBusinessName) {
+      setOrganizationName(scopedBusinessName);
+      return;
+    }
     if (!user?.id) return;
     void supabase.auth.getUser().then(({ data }) => {
       const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
       const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
       if (name) setOrganizationName(name);
-      const industry = String(meta?.industry ?? meta?.business_industry ?? "").trim();
-      setIsRealEstate(isRealEstateIndustry(industry));
     });
-  }, [user?.id]);
+  }, [user?.id, isAdmin, scopedBusinessName]);
 
   const loadReportingSettings = useCallback(async () => {
     try {
       const token = await getToken();
       if (!token) return;
-      const res = await fetch("/api/visitor-employees/reporting-settings", {
+      const res = await fetch(appendOwnerQuery("/api/visitor-employees/reporting-settings"), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -142,15 +158,16 @@ export default function EmployeeSummaryReportsPage() {
     } catch {
       /* keep defaults */
     }
-  }, [getToken]);
+  }, [getToken, appendOwnerQuery]);
 
   const loadAttendance = useCallback(async () => {
+    if (isAdmin && needsSelection) return;
     try {
       const token = await getToken();
       if (!token) return;
       const qs = new URLSearchParams({ from, to, limit: "2000" });
       if (employeeId) qs.set("employeeId", employeeId);
-      const res = await fetch(`/api/visitor-employees/attendance?${qs}`, {
+      const res = await fetch(appendOwnerQuery(`/api/visitor-employees/attendance?${qs}`), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -165,13 +182,14 @@ export default function EmployeeSummaryReportsPage() {
     } catch {
       setAttendance([]);
     }
-  }, [from, to, employeeId, getToken]);
+  }, [from, to, employeeId, getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   const loadEmployees = useCallback(async () => {
+    if (isAdmin && needsSelection) return;
     try {
       const token = await getToken();
       if (!token) return;
-      const res = await fetch("/api/visitor-employees", {
+      const res = await fetch(appendOwnerQuery("/api/visitor-employees"), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
@@ -190,9 +208,10 @@ export default function EmployeeSummaryReportsPage() {
     } catch {
       /* optional */
     }
-  }, [getToken]);
+  }, [getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   const loadSummary = useCallback(async () => {
+    if (isAdmin && needsSelection) return;
     setLoading(true);
     setLoadError(null);
     try {
@@ -200,12 +219,13 @@ export default function EmployeeSummaryReportsPage() {
       if (!token) throw new Error("Not signed in");
       const qs = new URLSearchParams({ from, to });
       if (employeeId) qs.set("employeeId", employeeId);
-      const res = await fetch(`/api/visitor-employees/attendance-summary?${qs}`, {
+      const res = await fetch(appendOwnerQuery(`/api/visitor-employees/attendance-summary?${qs}`), {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
       const json = (await res.json().catch(() => ({}))) as {
         summary?: AttendanceSummaryPayload;
+        leave?: EmployeeLeaveRecord[];
         setupRequired?: boolean;
         error?: string;
       };
@@ -216,6 +236,7 @@ export default function EmployeeSummaryReportsPage() {
       }
       if (!res.ok) throw new Error(json.error ?? "Failed to load summary");
       if (json.summary) setSummary(json.summary);
+      setLeaveRecords(Array.isArray(json.leave) ? json.leave : []);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to load report";
       if (isMissingEmployeesTableMessage(msg)) {
@@ -227,10 +248,11 @@ export default function EmployeeSummaryReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [from, to, employeeId, getToken]);
+  }, [from, to, employeeId, getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
+    if (!isAdmin && industryLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress/smart-visitor-management/sign-in");
       return;
@@ -239,33 +261,42 @@ export default function EmployeeSummaryReportsPage() {
       router.replace("/dashboard");
       return;
     }
+    if (isAdmin && needsSelection) return;
+    if (!isRealEstate) {
+      router.replace(VISITOR_MANAGEMENT_EMPLOYEES_PATH);
+      return;
+    }
     void loadEmployees();
   }, [
     authLoading,
     portalLoading,
+    industryLoading,
     isAuthenticated,
     isPortalMember,
     hasFeature,
+    isRealEstate,
+    isAdmin,
+    needsSelection,
     router,
     user,
     loadEmployees,
   ]);
 
   useEffect(() => {
-    if (setupRequired) return;
+    if (setupRequired || !isRealEstate || needsSelection) return;
     void loadSummary();
     void loadAttendance();
     void loadReportingSettings();
-  }, [setupRequired, loadSummary, loadAttendance, loadReportingSettings]);
+  }, [setupRequired, isRealEstate, needsSelection, loadSummary, loadAttendance, loadReportingSettings]);
 
   useEffect(() => {
-    if (!liveRefresh || !rangeIncludesToday || setupRequired) return;
+    if (!liveRefresh || !rangeIncludesToday || setupRequired || !isRealEstate || needsSelection) return;
     const id = window.setInterval(() => {
       void loadSummary();
       void loadAttendance();
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [liveRefresh, rangeIncludesToday, setupRequired, loadSummary, loadAttendance]);
+  }, [liveRefresh, rangeIncludesToday, setupRequired, isRealEstate, needsSelection, loadSummary, loadAttendance]);
 
   const saveAttendanceTime = useCallback(
     async (attendanceId: string, createdAt: string) => {
@@ -324,9 +355,15 @@ export default function EmployeeSummaryReportsPage() {
   const handleExportRegister = useCallback(async () => {
     if (!summary) return;
     await runExport("register", () =>
-      downloadAttendanceRegisterExcel(summary.events, employees, exportMeta, reportingSettings)
+      downloadAttendanceRegisterExcel(
+        summary.events,
+        employees,
+        exportMeta,
+        reportingSettings,
+        leaveRecords
+      )
     );
-  }, [summary, employees, exportMeta, reportingSettings, runExport]);
+  }, [summary, employees, exportMeta, reportingSettings, leaveRecords, runExport]);
 
   const handleExportLog = useCallback(async () => {
     await runExport("log", () =>
@@ -373,7 +410,11 @@ export default function EmployeeSummaryReportsPage() {
     window.print();
   };
 
-  if (authLoading || portalLoading) {
+  if (authLoading || portalLoading || (!isAdmin && industryLoading)) {
+    return <p className="py-12 text-center text-sm text-gray-500">Loading summary reports…</p>;
+  }
+
+  if (!isAdmin && !isRealEstate) {
     return <p className="py-12 text-center text-sm text-gray-500">Loading summary reports…</p>;
   }
 
@@ -404,13 +445,9 @@ export default function EmployeeSummaryReportsPage() {
       <div className="no-print">
         <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
           <BarChart3 className="w-7 h-7 text-primary-600" />
-          Summary reports
+          {isAdmin && scopedBusinessName ? `${scopedBusinessName} — Summary` : "Summary reports"}
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Sign-in and sign-out attendance for your organisation. Choose a date range, view charts,
-          and print a summary for records. All dates and times use{" "}
-          <strong>East Africa Time (EAT)</strong>.
-        </p>
+        <p className="mt-1 text-sm text-gray-600">Attendance and leave by date range. Times in EAT.</p>
         <p className="mt-2 text-sm">
           <Link
             href={VISITOR_MANAGEMENT_EMPLOYEES_PATH}
@@ -421,9 +458,18 @@ export default function EmployeeSummaryReportsPage() {
         </p>
       </div>
 
-      {setupRequired ? <EmployeeSetupBanner /> : null}
+      {isAdmin ? <BusinessScopeBar basePath={`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`} /> : null}
+      {needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
-      {!setupRequired ? (
+      {!needsSelection && isAdmin && !isRealEstate ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Summary reports are only available for Real Estate businesses.
+        </p>
+      ) : null}
+
+      {!needsSelection && (!isAdmin || isRealEstate) && setupRequired ? <EmployeeSetupBanner /> : null}
+
+      {!needsSelection && (!isAdmin || isRealEstate) && !setupRequired ? (
         <>
           <section className="no-print rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
             <div className="flex flex-wrap gap-2">
@@ -638,6 +684,7 @@ export default function EmployeeSummaryReportsPage() {
                           <th className="px-4 py-2 font-semibold">Team</th>
                           <th className="px-4 py-2 font-semibold">Department</th>
                           <th className="px-4 py-2 font-semibold text-center">Days</th>
+                          <th className="px-4 py-2 font-semibold text-center">Leave (approved)</th>
                           <th className="px-4 py-2 font-semibold text-center">Sign ins</th>
                           <th className="px-4 py-2 font-semibold text-center">Sign outs</th>
                           <th className="px-4 py-2 font-semibold">First sign-in</th>
@@ -647,8 +694,8 @@ export default function EmployeeSummaryReportsPage() {
                       <tbody>
                         {summary.employeeSummaries.length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                              No attendance recorded in this period.
+                            <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                              No attendance or leave recorded in this period.
                             </td>
                           </tr>
                         ) : (
@@ -661,6 +708,9 @@ export default function EmployeeSummaryReportsPage() {
                               <td className="px-4 py-2 text-gray-600">{row.department || "—"}</td>
                               <td className="px-4 py-2 text-center font-semibold text-gray-900">
                                 {row.daysAttended}
+                              </td>
+                              <td className="px-4 py-2 text-center font-semibold text-amber-800">
+                                {row.leaveDays > 0 ? row.leaveDays : "—"}
                               </td>
                               <td className="px-4 py-2 text-center font-semibold text-emerald-800">
                                 {row.signInCount}
@@ -691,8 +741,11 @@ export default function EmployeeSummaryReportsPage() {
                     events={summary.events}
                     employees={employees}
                     reportingSettings={reportingSettings}
+                    leaveRecords={leaveRecords}
+                    from={from}
+                    to={to}
                     title="Attendance register"
-                    subtitle={`Daily sign-in / sign-out · ${summary.events.length} scan${summary.events.length === 1 ? "" : "s"} · times in EAT`}
+                    subtitle={`Approved leave and daily sign-in / sign-out · times in EAT`}
                     exportingExcel={exportingSection === "register"}
                     onExportExcel={() => void handleExportRegister()}
                   />

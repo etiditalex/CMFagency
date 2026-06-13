@@ -13,6 +13,8 @@ import {
 } from "@/lib/employees/fetch-reporting-settings";
 import { isRetailHospitalityIndustry } from "@/lib/employees/retail-hospitality";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
+import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 
 function parseTime(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -55,7 +57,17 @@ export async function GET(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin, userId, isAdmin } = auth;
 
-    const ownerId = isAdmin ? req.nextUrl.searchParams.get("ownerId")?.trim() || userId : userId;
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner") ?? req.nextUrl.searchParams.get("ownerId")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
     const industrySlug = await getOrganizationIndustrySlug(admin, ownerId);
 
     const { data, error } = await admin
@@ -102,9 +114,20 @@ export async function PUT(req: NextRequest) {
   try {
     const auth = await requireEmployeeAccess(req);
     if ("error" in auth) return auth.error;
-    const { admin, userId } = auth;
+    const { admin, userId, isAdmin } = auth;
 
-    const industrySlug = await getOrganizationIndustrySlug(admin, userId);
+    const scope = await resolveAdminOwnerScope(
+      admin,
+      isAdmin,
+      userId,
+      req.nextUrl.searchParams.get("owner") ?? req.nextUrl.searchParams.get("ownerId")
+    );
+    if (!scope.ok) {
+      return adminOwnerScopeErrorResponse(scope)!;
+    }
+    const ownerId = scope.ownerId;
+
+    const industrySlug = await getOrganizationIndustrySlug(admin, ownerId);
     const isRetailHospitality = isRetailHospitalityIndustry(industrySlug);
 
     const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -137,7 +160,7 @@ export async function PUT(req: NextRequest) {
       (isRetailHospitality && body.shiftEnabled !== false && body.shift_enabled !== false);
 
     const row: Record<string, unknown> = {
-      owner_id: userId,
+      owner_id: ownerId,
       staff_reporting_sign_in_start: staffInStart,
       staff_reporting_sign_in: staffIn,
       staff_reporting_sign_out: staffOut,

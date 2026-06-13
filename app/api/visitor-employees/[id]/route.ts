@@ -6,6 +6,7 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { findEmployeeDuplicate } from "@/lib/employees/employee-uniqueness";
+import { assertRealEstateOrganization } from "@/lib/employees/require-real-estate-org";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 
 function safeText(v: unknown, max: number) {
@@ -79,6 +80,12 @@ export async function PATCH(
       const raw = String(body.memberType ?? body.member_type).toLowerCase();
       if (raw !== "staff" && raw !== "crm") {
         return NextResponse.json({ error: "Team must be staff or crm." }, { status: 400 });
+      }
+      if (raw === "crm") {
+        const industryCheck = await assertRealEstateOrganization(admin, userId);
+        if (!industryCheck.ok) {
+          return NextResponse.json({ error: industryCheck.error }, { status: 403 });
+        }
       }
       patch.member_type = raw;
     }
