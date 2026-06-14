@@ -585,7 +585,7 @@ export default function VisitorManagementEmployeesPage() {
       {needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
       {!needsSelection && setupRequired ? <EmployeeSetupBanner /> : null}
-      {!needsSelection && !setupRequired && isRealEstateOrg ? (
+      {!needsSelection && !setupRequired ? (
         <p className="text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             GPS tracking
@@ -593,9 +593,11 @@ export default function VisitorManagementEmployeesPage() {
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Summary reports
           </Link>
-          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
-            CRM site GPS
-          </Link>
+          {isRealEstateOrg ? (
+            <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+              CRM site GPS
+            </Link>
+          ) : null}
         </p>
       ) : null}
       {loadError && !setupRequired ? (

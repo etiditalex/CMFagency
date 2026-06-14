@@ -262,10 +262,6 @@ export default function EmployeeSummaryReportsPage() {
       return;
     }
     if (isAdmin && needsSelection) return;
-    if (!isRealEstate) {
-      router.replace(VISITOR_MANAGEMENT_EMPLOYEES_PATH);
-      return;
-    }
     void loadEmployees();
   }, [
     authLoading,
@@ -283,20 +279,20 @@ export default function EmployeeSummaryReportsPage() {
   ]);
 
   useEffect(() => {
-    if (setupRequired || !isRealEstate || needsSelection) return;
+    if (setupRequired || needsSelection) return;
     void loadSummary();
     void loadAttendance();
     void loadReportingSettings();
-  }, [setupRequired, isRealEstate, needsSelection, loadSummary, loadAttendance, loadReportingSettings]);
+  }, [setupRequired, needsSelection, loadSummary, loadAttendance, loadReportingSettings]);
 
   useEffect(() => {
-    if (!liveRefresh || !rangeIncludesToday || setupRequired || !isRealEstate || needsSelection) return;
+    if (!liveRefresh || !rangeIncludesToday || setupRequired || needsSelection) return;
     const id = window.setInterval(() => {
       void loadSummary();
       void loadAttendance();
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [liveRefresh, rangeIncludesToday, setupRequired, isRealEstate, needsSelection, loadSummary, loadAttendance]);
+  }, [liveRefresh, rangeIncludesToday, setupRequired, needsSelection, loadSummary, loadAttendance]);
 
   const saveAttendanceTime = useCallback(
     async (attendanceId: string, createdAt: string) => {
@@ -414,10 +410,6 @@ export default function EmployeeSummaryReportsPage() {
     return <p className="py-12 text-center text-sm text-gray-500">Loading summary reports…</p>;
   }
 
-  if (!isAdmin && !isRealEstate) {
-    return <p className="py-12 text-center text-sm text-gray-500">Loading summary reports…</p>;
-  }
-
   return (
     <div className="space-y-6 -mx-2 sm:mx-0">
       <style jsx global>{`
@@ -461,15 +453,9 @@ export default function EmployeeSummaryReportsPage() {
       {isAdmin ? <BusinessScopeBar basePath={`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`} /> : null}
       {needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
-      {!needsSelection && isAdmin && !isRealEstate ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Summary reports are only available for Real Estate businesses.
-        </p>
-      ) : null}
+      {!needsSelection && setupRequired ? <EmployeeSetupBanner /> : null}
 
-      {!needsSelection && (!isAdmin || isRealEstate) && setupRequired ? <EmployeeSetupBanner /> : null}
-
-      {!needsSelection && (!isAdmin || isRealEstate) && !setupRequired ? (
+      {!needsSelection && !setupRequired ? (
         <>
           <section className="no-print rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
             <div className="flex flex-wrap gap-2">
