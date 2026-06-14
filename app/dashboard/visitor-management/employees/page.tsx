@@ -30,6 +30,7 @@ import IntegrationApiKeysPanel from "@/components/fusion-xpress/visitor-manageme
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
+import TotpSecurityPanel from "@/components/fusion-xpress/visitor-management/employees/TotpSecurityPanel";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -670,6 +671,8 @@ export default function VisitorManagementEmployeesPage() {
       <IntegrationApiKeysPanel disabled={setupRequired || needsSelection} buildApiUrl={appendOwnerQuery} />
 
       <NotificationAdminsPanel disabled={setupRequired} />
+
+      <TotpSecurityPanel />
 
       {!setupRequired ? (
         <ReportingTimesPanel
