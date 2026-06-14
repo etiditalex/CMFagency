@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, House, UserPlus, Award, Crown, Shield } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, House, Award, Crown, Shield } from "lucide-react";
 import Image from "next/image";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
@@ -8,7 +8,6 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   const footerActionLinks = [
     { href: "/", label: "Home", icon: House },
-    { href: "/events/register-as-model", label: "Register as Model", icon: UserPlus },
     { href: "/events/register-as-model", label: "Certification", icon: Award },
     { href: "/kcm/member-portal", label: "KCM Member", icon: Crown },
     { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
@@ -192,19 +191,17 @@ export default function Footer() {
       {/* Short dock (~52px + safe area). Keep in sync with CookieBanner mobile bottom offset. */}
       <div className="fixed inset-x-0 bottom-0 z-[60] pb-[env(safe-area-inset-bottom,0px)] md:hidden">
         <div className="mx-0 rounded-none border-t border-gray-200 bg-white px-1.5 py-1 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-          <div className="grid grid-cols-5 gap-0.5">
+          <div className="grid grid-cols-4 gap-0.5">
             {footerActionLinks.map((item) => {
               const Icon = item.icon;
               const mobileLabel =
-                item.label === "Register as Model"
-                  ? "Register"
-                  : item.label === "Certification"
-                    ? "Cert"
-                    : item.label === "KCM Member"
-                      ? "KCM"
-                      : item.label === "Fusion Xpress"
-                        ? "FX"
-                        : item.label;
+                item.label === "Certification"
+                  ? "Cert"
+                  : item.label === "KCM Member"
+                    ? "KCM"
+                    : item.label === "Fusion Xpress"
+                      ? "FX"
+                      : item.label;
               return (
                 <Link
                   key={`mobile-${item.href}-${item.label}`}

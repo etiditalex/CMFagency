@@ -78,16 +78,16 @@ export default function HeroSupportSection() {
     <section className="bg-white py-12 md:py-16" aria-labelledby="home-highlights-heading">
       <div className="container-custom">
         <h2 id="home-highlights-heading" className="sr-only">
-          Membership, academy, and upcoming events
+          Smart management, Fusion Xpress, and upcoming events
         </h2>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <InfoCard
-            title="KCM Membership"
+            title="Smart Management System"
             titleClassName="text-primary-700"
             lineClassName="bg-primary-500"
-            content="Kenya Coast Models is a dynamic platform designed to unify and manage models across the coastal region by providing a centralized space for registration and membership. Through this platform, aspiring and professional models can easily join a growing network that connects them to exclusive, untapped opportunities within the fashion and creative industry. By becoming a member, models gain visibility, credibility, and access to curated gigs, events, and collaborations, empowering them to grow their careers and unlock their full potential in a competitive market."
-            buttonText="Become a Member"
-            buttonHref="/kcm"
+            content="Our Smart Management System streamlines how organizations handle visitors, guests, and employees from a single dashboard. It works by capturing pre-registrations and on-arrival check-ins, instantly verifying people, and issuing digital passes - while staff and employees clock in and out with time-stamped check-ins and check-outs at the gate. The gate team monitors entries and exits in real time, and admins get live occupancy, attendance records, automated notifications, and exportable reports - turning everyday visitor and employee management into a fast, secure, and fully trackable workflow."
+            buttonText="Explore the System"
+            buttonHref="/fusion-xpress/smart-visitor-management"
             buttonClassName="bg-secondary-700 hover:bg-secondary-800"
           />
 
