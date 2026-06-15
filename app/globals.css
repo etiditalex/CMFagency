@@ -130,26 +130,11 @@
   background: #000;
 }
 
-.gate-scanner-fullscreen > div {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 100% !important;
-  border: none !important;
-}
-
+/* Only style the video feed; do not resize the scan canvas — html5-qrcode positions it. */
 .gate-scanner-fullscreen video {
-  position: absolute !important;
-  inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
-}
-
-.gate-scanner-fullscreen canvas {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
 }
 
 .gate-scanner-fullscreen #qr-shaded-region {

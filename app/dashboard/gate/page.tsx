@@ -162,28 +162,6 @@ export default function DashboardGatePage() {
       return;
     }
 
-    // Request camera immediately (no await before this). Browsers only show the Allow/Block
-    // prompt when getUserMedia is called; they cannot be forced. Calling it right after the
-    // button click (without awaiting permissions.query) gives the best chance for the prompt to appear.
-    let testStream: MediaStream | null = null;
-    try {
-      testStream = await nav.mediaDevices.getUserMedia({ video: true });
-    } catch (permErr: unknown) {
-      setRequestingCamera(false);
-      const e = permErr instanceof Error ? permErr : new Error(String(permErr));
-      const name = (e as Error & { name?: string }).name || "";
-      let msg = e.message || "Camera access denied.";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError" || msg.toLowerCase().includes("permission"))
-        msg =
-          "Camera permission denied or the Allow/Block prompt did not appear. The browser controls the prompt and it cannot be forced. If you never saw a prompt, the site is likely already set to Block on this device.";
-      else if (name === "NotFoundError") msg = "No camera found.";
-      setCameraError(msg);
-      return;
-    } finally {
-      if (testStream) testStream.getTracks().forEach((t) => t.stop());
-    }
-    setRequestingCamera(false);
-
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
@@ -196,37 +174,51 @@ export default function DashboardGatePage() {
     setCameraActive(true);
 
     // Allow React to paint the visible div before starting the camera
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     const element = document.getElementById(SCANNER_DIV_ID);
     if (!element) {
       setCameraError("Scanner element not found.");
       setCameraActive(false);
+      setRequestingCamera(false);
       return;
     }
 
     try {
-      const { Html5Qrcode } = await import("html5-qrcode");
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const scanBox = Math.floor(Math.min(vw, vh) * 0.72);
+      const viewH = element.clientHeight || Math.floor(vh * 0.75);
+      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
+      const qrbox = Math.max(240, Math.min(scanSize, 400));
       const config = {
-        fps: 12,
-        qrbox: Math.max(200, Math.min(scanBox, 360)),
-        aspectRatio: vw / Math.max(vh, 1),
+        fps: 20,
+        qrbox: { width: qrbox, height: qrbox },
+        aspectRatio: 1,
+        disableFlip: false,
+        videoConstraints: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        } as MediaTrackConstraints,
       };
 
       const constraintsToTry: MediaTrackConstraints[] = [
-        { facingMode: "environment" }, // back camera on phone
-        { facingMode: "user" },       // front camera
-        {},                           // default
+        { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        { facingMode: "environment" },
+        { facingMode: "user" },
+        {},
       ];
 
       let started = false;
       let scanner: QrScanner | null = null;
 
       for (const constraints of constraintsToTry) {
-        scanner = new Html5Qrcode(SCANNER_DIV_ID, { verbose: false }) as unknown as QrScanner;
+        scanner = new Html5Qrcode(SCANNER_DIV_ID, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          useBarCodeDetectorIfSupported: true,
+        }) as unknown as QrScanner;
         scannerRef.current = scanner;
 
         const onSuccess = (decodedText: string) => {
@@ -263,7 +255,9 @@ export default function DashboardGatePage() {
       if (!started) {
         throw new Error("Camera access failed. Allow camera permission and use HTTPS (or localhost).");
       }
+      setRequestingCamera(false);
     } catch (e: unknown) {
+      setRequestingCamera(false);
       const err = e instanceof Error ? e : new Error(String(e));
       const name = err.name || "";
       let msg = err.message || "Could not start camera";
