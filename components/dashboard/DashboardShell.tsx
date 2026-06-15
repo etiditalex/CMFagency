@@ -54,6 +54,7 @@ import {
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+  VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
   isEmployeesNestedNavPath,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
@@ -372,6 +373,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
+            VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
           ]),
         };
       }
@@ -382,6 +384,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
+        VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
       ]);
       return { ...item, children };
     });

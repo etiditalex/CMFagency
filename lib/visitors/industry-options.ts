@@ -26,6 +26,7 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLO
 export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/crm-site-gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
+export const VISITOR_MANAGEMENT_DOCS_PATH = `${VISITOR_MANAGEMENT_PATH}/docs`;
 export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-site-check";
 
 /** Sidebar sub-pages under Employees (not the main employees list). */
@@ -119,4 +120,9 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagem
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "Subscription",
   href: VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
+};
+
+export const VISITOR_MANAGEMENT_DOCS_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Doc",
+  href: VISITOR_MANAGEMENT_DOCS_PATH,
 };
