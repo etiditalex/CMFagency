@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, ScanLine, XCircle, X } from "lucide-react";
+import { CheckCircle2, Loader2, ScanLine, SwitchCamera, XCircle, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -53,6 +53,8 @@ type ScanFeedback = {
   detail: string;
 };
 
+type CameraFacing = "environment" | "user";
+
 export default function EmployeeKioskPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
@@ -63,6 +65,7 @@ export default function EmployeeKioskPage() {
   const [scanning, setScanning] = useState(false);
   const [feedback, setFeedback] = useState<ScanFeedback | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>("environment");
   const [locationReady, setLocationReady] = useState(false);
   const scannerRef = useRef<QrScanner | null>(null);
   const lastScannedRef = useRef<string | null>(null);
@@ -187,6 +190,84 @@ export default function EmployeeKioskPage() {
     [ensureKioskLocation]
   );
 
+  const stopScannerStream = useCallback(async () => {
+    const scanner = scannerRef.current;
+    scannerRef.current = null;
+    if (scanner) {
+      try {
+        await scanner.stop();
+        scanner.clear();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const launchScanner = useCallback(
+    async (facing: CameraFacing) => {
+      const element = document.getElementById(SCANNER_DIV_ID);
+      if (!element) throw new Error("Scanner element not found.");
+
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const viewH = element.clientHeight || Math.floor(vh * 0.75);
+      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
+      const qrbox = Math.max(240, Math.min(scanSize, 400));
+      const config = {
+        fps: 20,
+        qrbox: { width: qrbox, height: qrbox },
+        aspectRatio: 1,
+        disableFlip: false,
+        videoConstraints: {
+          facingMode: { ideal: facing },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        } as MediaTrackConstraints,
+      };
+
+      const constraintsToTry: MediaTrackConstraints[] =
+        facing === "environment"
+          ? [
+              { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+              { facingMode: "environment" },
+            ]
+          : [
+              { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+              { facingMode: "user" },
+            ];
+
+      let started = false;
+      for (const constraints of constraintsToTry) {
+        const scanner = new Html5Qrcode(SCANNER_DIV_ID, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          useBarCodeDetectorIfSupported: true,
+        }) as unknown as QrScanner;
+        scannerRef.current = scanner;
+
+        try {
+          await scanner.start(constraints, config, (text) => void submitToken(text), () => {});
+          started = true;
+          setCameraFacing(facing);
+          break;
+        } catch {
+          scanner.clear();
+          scannerRef.current = null;
+        }
+      }
+
+      if (!started) {
+        throw new Error(
+          facing === "environment"
+            ? "Could not open back camera. Try switching to front camera."
+            : "Could not open front camera. Try switching to back camera."
+        );
+      }
+    },
+    [submitToken]
+  );
+
   const startCamera = useCallback(async () => {
     if (typeof window === "undefined") return;
     setCameraError(null);
@@ -220,74 +301,15 @@ export default function EmployeeKioskPage() {
     }
 
     if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-      } catch {
-        /* ignore */
-      }
-      scannerRef.current.clear();
-      scannerRef.current = null;
+      await stopScannerStream();
     }
 
     setCameraActive(true);
+    setCameraFacing("environment");
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    const element = document.getElementById(SCANNER_DIV_ID);
-    if (!element) {
-      setCameraError("Scanner element not found.");
-      setCameraActive(false);
-      setRequestingCamera(false);
-      return;
-    }
-
     try {
-      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const viewH = element.clientHeight || Math.floor(vh * 0.75);
-      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
-      const qrbox = Math.max(240, Math.min(scanSize, 400));
-      const config = {
-        fps: 20,
-        qrbox: { width: qrbox, height: qrbox },
-        aspectRatio: 1,
-        disableFlip: false,
-        videoConstraints: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        } as MediaTrackConstraints,
-      };
-
-      const constraintsToTry: MediaTrackConstraints[] = [
-        { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-        { facingMode: "environment" },
-        { facingMode: "user" },
-        {},
-      ];
-
-      let started = false;
-      for (const constraints of constraintsToTry) {
-        const scanner = new Html5Qrcode(SCANNER_DIV_ID, {
-          verbose: false,
-          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-          useBarCodeDetectorIfSupported: true,
-        }) as unknown as QrScanner;
-        scannerRef.current = scanner;
-
-        try {
-          await scanner.start(constraints, config, (text) => void submitToken(text), () => {});
-          started = true;
-          break;
-        } catch {
-          scanner.clear();
-          scannerRef.current = null;
-        }
-      }
-
-      if (!started) {
-        throw new Error("Camera access failed. Allow camera permission and use HTTPS.");
-      }
+      await launchScanner("environment");
       setRequestingCamera(false);
     } catch (e: unknown) {
       setRequestingCamera(false);
@@ -297,32 +319,35 @@ export default function EmployeeKioskPage() {
           : "Could not start camera. Allow camera and location for this site."
       );
       setCameraActive(false);
-      const scanner = scannerRef.current;
-      scannerRef.current = null;
-      if (scanner) {
-        try {
-          await scanner.stop();
-          scanner.clear();
-        } catch {
-          /* ignore */
-        }
-      }
+      await stopScannerStream();
     }
-  }, [submitToken, ensureKioskLocation]);
+  }, [ensureKioskLocation, launchScanner, stopScannerStream]);
+
+  const flipCamera = useCallback(async () => {
+    if (!cameraActive || requestingCamera) return;
+    const nextFacing: CameraFacing = cameraFacing === "environment" ? "user" : "environment";
+    setRequestingCamera(true);
+    setCameraError(null);
+    try {
+      await stopScannerStream();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await launchScanner(nextFacing);
+    } catch (e: unknown) {
+      setCameraError(e instanceof Error ? e.message : "Could not switch camera.");
+      try {
+        await launchScanner(cameraFacing);
+      } catch {
+        setCameraActive(false);
+      }
+    } finally {
+      setRequestingCamera(false);
+    }
+  }, [cameraActive, cameraFacing, launchScanner, requestingCamera, stopScannerStream]);
 
   const stopCamera = useCallback(async () => {
-    const scanner = scannerRef.current;
-    scannerRef.current = null;
-    if (scanner) {
-      try {
-        await scanner.stop();
-        scanner.clear();
-      } catch {
-        /* ignore */
-      }
-    }
+    await stopScannerStream();
     setCameraActive(false);
-  }, []);
+  }, [stopScannerStream]);
 
   useEffect(() => {
     if (!cameraActive) return;
@@ -357,15 +382,33 @@ export default function EmployeeKioskPage() {
         aria-label="Employee QR scanner"
       >
         <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 bg-black/60 backdrop-blur-sm pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <p className="text-sm font-medium text-white">Scan employee QR pass</p>
-          <button
-            type="button"
-            onClick={() => void stopCamera()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25"
-          >
-            <X className="w-4 h-4" />
-            Close
-          </button>
+          <p className="text-sm font-medium text-white min-w-0 truncate">
+            {cameraFacing === "environment" ? "Back camera" : "Front camera"}
+          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => void flipCamera()}
+              disabled={requestingCamera}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-50"
+              aria-label={cameraFacing === "environment" ? "Switch to front camera" : "Switch to back camera"}
+            >
+              {requestingCamera ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <SwitchCamera className="w-4 h-4" />
+              )}
+              Flip
+            </button>
+            <button
+              type="button"
+              onClick={() => void stopCamera()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25"
+            >
+              <X className="w-4 h-4" />
+              Close
+            </button>
+          </div>
         </div>
 
         <div
