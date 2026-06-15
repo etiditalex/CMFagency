@@ -24,6 +24,47 @@ import { eatDatetimeLocalValue } from "@/lib/time/eat";
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
+function attendanceDeviceDisplay(row: EmployeeAttendanceRecord): string {
+  const label = row.deviceLabel?.trim();
+  if (label) return label;
+
+  const userAgent = String(row.deviceInfo?.userAgent ?? "").trim();
+  if (userAgent) {
+    if (/Edg\//i.test(userAgent)) return "Microsoft Edge";
+    if (/Chrome\//i.test(userAgent)) return "Chrome browser";
+    if (/Firefox\//i.test(userAgent)) return "Firefox browser";
+    if (/Safari\//i.test(userAgent)) return "Safari browser";
+    return "Web browser";
+  }
+
+  const platform = String(row.deviceInfo?.platform ?? "").trim();
+  if (platform) return platform;
+
+  return "Unknown device";
+}
+
+function eventStatusForRow(
+  row: EmployeeAttendanceRecord,
+  reportingSettings: EmployeeReportingSettings,
+  emp: EmployeeRecord | undefined
+): { label: string; className: string } | null {
+  if (!emp) return null;
+
+  const memberWindow = reportingSettings.shiftEnabled
+    ? reportingWindowForEvent(row.createdAt, reportingSettings, emp.memberType)
+    : reportingWindowForMember(reportingSettings, emp.memberType);
+
+  if (row.eventType === "sign_in") {
+    const status = signInReportingStatus(row.createdAt, memberWindow);
+    if (status === "unknown") return null;
+    return { label: signInStatusLabel(status), className: signInStatusClass(status) };
+  }
+
+  const status = signOutReportingStatus(row.createdAt, memberWindow.signOut);
+  if (status === "unknown") return null;
+  return { label: signOutStatusLabel(status), className: signOutStatusClass(status) };
+}
+
 export type AttendanceEventLogPanelProps = {
   attendance: EmployeeAttendanceRecord[];
   employees: EmployeeRecord[];
@@ -132,80 +173,105 @@ export default function AttendanceEventLogPanel({
       {attendance.length === 0 ? (
         <p className="p-6 text-sm text-gray-500 text-center">{emptyMessage}</p>
       ) : (
-        <ul className="divide-y divide-gray-100">
-          {pageRows.map((row) => {
-            const emp = employeeById.get(row.employeeId);
-            const memberWindow = emp
-              ? reportingSettings.shiftEnabled
-                ? reportingWindowForEvent(row.createdAt, reportingSettings, emp.memberType)
-                : reportingWindowForMember(reportingSettings, emp.memberType)
-              : null;
-            const signInStatus =
-              row.eventType === "sign_in" && memberWindow
-                ? signInReportingStatus(row.createdAt, memberWindow)
-                : null;
-            const signOutStatus =
-              row.eventType === "sign_out" && memberWindow
-                ? signOutReportingStatus(row.createdAt, memberWindow.signOut)
-                : null;
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-[#f6f7f9] border-b border-gray-200">
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  Name
+                </th>
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  Status
+                </th>
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  Sign in / out
+                </th>
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  Time
+                </th>
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  Device / browser
+                </th>
+                {onSaveAttendanceTime ? (
+                  <th className="px-4 py-3.5 text-right text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                    Actions
+                  </th>
+                ) : null}
+              </tr>
+            </thead>
+            <tbody>
+              {pageRows.map((row) => {
+                const emp = employeeById.get(row.employeeId);
+                const status = eventStatusForRow(row, reportingSettings, emp);
+                const isSignIn = row.eventType === "sign_in";
 
-            return (
-              <li
-                key={row.id}
-                className="px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-sm"
-              >
-                <span className="font-medium text-gray-900 flex flex-wrap items-center gap-2 min-w-[140px]">
-                  {employeeNameById.get(row.employeeId) ?? "Staff"}
-                  {isRealEstate && emp ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${memberTypeBadgeClass(emp.memberType)}`}
-                    >
-                      {memberTypeLabel(emp.memberType)}
-                    </span>
-                  ) : null}
-                  {signInStatus && signInStatus !== "unknown" ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signInStatusClass(signInStatus)}`}
-                    >
-                      {signInStatusLabel(signInStatus)}
-                    </span>
-                  ) : null}
-                  {signOutStatus && signOutStatus !== "unknown" ? (
-                    <span
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${signOutStatusClass(signOutStatus)}`}
-                    >
-                      {signOutStatusLabel(signOutStatus)}
-                    </span>
-                  ) : null}
-                </span>
-                <span
-                  className={
-                    row.eventType === "sign_in"
-                      ? signInStatus === "late"
-                        ? "text-red-700 font-semibold"
-                        : "text-emerald-700 font-semibold"
-                      : "text-slate-600 font-semibold"
-                  }
-                >
-                  {row.eventType === "sign_in" ? "Signed in" : "Signed out"}
-                </span>
-                <span className="text-gray-500 text-xs flex flex-wrap items-center gap-2 justify-end flex-1 min-w-[200px]">
-                  {formatEmployeeReportTime(row.createdAt)}
-                  {row.deviceLabel ? ` · ${row.deviceLabel}` : ""}
-                  {onSaveAttendanceTime && !setupRequired ? (
-                    <button
-                      type="button"
-                      className="font-semibold text-primary-700 hover:underline"
-                      onClick={() => void handleEditTime(row)}
-                    >
-                      Edit time
-                    </button>
-                  ) : null}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+                return (
+                  <tr key={row.id} className="border-b border-gray-100 hover:bg-gray-50/80">
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-gray-900">
+                          {employeeNameById.get(row.employeeId) ?? "Staff"}
+                        </span>
+                        {isRealEstate && emp ? (
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${memberTypeBadgeClass(emp.memberType)}`}
+                          >
+                            {memberTypeLabel(emp.memberType)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                      {status ? (
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${status.className}`}
+                        >
+                          {status.label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                      <span
+                        className={
+                          isSignIn
+                            ? status?.label === "Late"
+                              ? "font-semibold text-red-700"
+                              : "font-semibold text-emerald-700"
+                            : "font-semibold text-slate-600"
+                        }
+                      >
+                        {isSignIn ? "Signed in" : "Signed out"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 align-middle whitespace-nowrap text-gray-700">
+                      {formatEmployeeReportTime(row.createdAt)}
+                    </td>
+                    <td className="px-4 py-3.5 align-middle text-gray-600">
+                      {attendanceDeviceDisplay(row)}
+                    </td>
+                    {onSaveAttendanceTime ? (
+                      <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap">
+                        {!setupRequired ? (
+                          <button
+                            type="button"
+                            className="text-xs font-semibold text-primary-700 hover:underline"
+                            onClick={() => void handleEditTime(row)}
+                          >
+                            Edit time
+                          </button>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    ) : null}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {attendance.length > pageSize ? (
