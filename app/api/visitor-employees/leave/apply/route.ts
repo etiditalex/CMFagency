@@ -8,6 +8,7 @@ import {
 } from "@/lib/employees/db-mapper";
 import {
   buildLeaveApplicationNotes,
+  leaveTypeRequiresAttachment,
   parsePublicLeaveFormType,
   validateAdvanceLeaveStart,
 } from "@/lib/employees/leave-application";
@@ -43,6 +44,15 @@ export async function POST(req: NextRequest) {
     if (!token) {
       return NextResponse.json({ error: "Missing employee link token." }, { status: 400 });
     }
+    if (!leaveType) {
+      return NextResponse.json(
+        {
+          error:
+            "Select a valid leave type: annual, casual, sick, compassionate, or unpaid.",
+        },
+        { status: 400 }
+      );
+    }
     if (!confirmed) {
       return NextResponse.json(
         { error: "Confirm that the information provided is accurate before submitting." },
@@ -64,7 +74,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: advanceCheck.error }, { status: 400 });
     }
 
-    if (leaveType === "sick" && !attachmentName) {
+    if (leaveTypeRequiresAttachment(leaveType) && !attachmentName) {
       return NextResponse.json(
         { error: "Attach a supportive document for sick leave." },
         { status: 400 }

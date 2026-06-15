@@ -10,6 +10,7 @@ import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import {
   earliestAdvanceLeaveStartYmd,
   leaveTypeRequiresAdvanceNotice,
+  leaveTypeRequiresAttachment,
   publicLeaveDayCount,
   PUBLIC_LEAVE_FORM_TYPES,
   type PublicLeaveFormType,
@@ -227,9 +228,9 @@ export default function EmployeeLeaveApplicationPage() {
 
                   <fieldset className="space-y-3">
                     <legend className="text-sm font-semibold text-gray-800">
-                      Nature of Leave to be availed (Earned / Casual / Sick)
+                      Nature of Leave to be availed (Annual / Casual / Sick / Compassionate / Unpaid)
                     </legend>
-                    <div className="grid gap-2 sm:grid-cols-3">
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {PUBLIC_LEAVE_FORM_TYPES.map((option) => (
                         <label
                           key={option.value}
@@ -300,7 +301,7 @@ export default function EmployeeLeaveApplicationPage() {
                     />
                   </label>
 
-                  {leaveType === "sick" ? (
+                  {leaveTypeRequiresAttachment(leaveType) ? (
                     <label className="block">
                       <span className="text-sm font-semibold text-gray-800">
                         Supportive document (required for sick leave)
@@ -316,8 +317,9 @@ export default function EmployeeLeaveApplicationPage() {
                   ) : null}
 
                   <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 leading-relaxed">
-                    You must submit requests for absences, other than sick leave, two days prior to the
-                    first day you will be absent. Please attach a supportive document for sick leave.
+                    Submit annual, casual, or unpaid leave at least two days before your first absent day.
+                    Sick and compassionate leave may be submitted for urgent circumstances — attach a
+                    supportive document for sick leave.
                   </div>
 
                   <div className="grid gap-5 sm:grid-cols-2 items-end border-t border-gray-200 pt-6">
