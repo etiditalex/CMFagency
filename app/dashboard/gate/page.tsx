@@ -24,7 +24,13 @@ const SCANNER_DIV_ID = "gate-qr-scanner";
 interface QrScanner {
   start(
     cameraIdOrConfig: string | MediaTrackConstraints,
-    config: { fps: number; qrbox: number; aspectRatio: number },
+    config: {
+      fps: number;
+      qrbox?: number | { width: number; height: number };
+      aspectRatio?: number;
+      disableFlip?: boolean;
+      videoConstraints?: MediaTrackConstraints;
+    },
     onSuccess: (decodedText: string) => void,
     onError: () => void
   ): Promise<null>;
