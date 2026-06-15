@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isRealEstateIndustry } from "@/lib/employees/real-estate";
 
 export const REAL_ESTATE_ONLY_FEATURE_MESSAGE =
-  "Summary reports and CRM features are only available for Real Estate organisations.";
+  "CRM features are only available for Real Estate organisations.";
 
 /** Industry slug stored on the portal account (registration / account settings). */
 export function organizationIndustryFromMetadata(

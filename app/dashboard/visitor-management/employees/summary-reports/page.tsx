@@ -95,7 +95,7 @@ export default function EmployeeSummaryReportsPage() {
     isRealEstate: scopedRealEstate,
     businessName: scopedBusinessName,
   } = useAdminBusinessScope();
-  const { isRealEstate: clientRealEstate, loading: industryLoading } = useOrganizationIndustry();
+  const { isRealEstate: clientRealEstate } = useOrganizationIndustry();
   const isRealEstate = isAdmin ? scopedRealEstate : clientRealEstate;
 
   const [preset, setPreset] = useState<DurationPreset>("7d");
@@ -252,7 +252,6 @@ export default function EmployeeSummaryReportsPage() {
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
-    if (!isAdmin && industryLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
       router.replace("/fusion-xpress/smart-visitor-management/sign-in");
       return;
@@ -266,11 +265,9 @@ export default function EmployeeSummaryReportsPage() {
   }, [
     authLoading,
     portalLoading,
-    industryLoading,
     isAuthenticated,
     isPortalMember,
     hasFeature,
-    isRealEstate,
     isAdmin,
     needsSelection,
     router,
@@ -406,7 +403,7 @@ export default function EmployeeSummaryReportsPage() {
     window.print();
   };
 
-  if (authLoading || portalLoading || (!isAdmin && industryLoading)) {
+  if (authLoading || portalLoading) {
     return <p className="py-12 text-center text-sm text-gray-500">Loading summary reports…</p>;
   }
 

@@ -12,7 +12,6 @@ import VisitorAccountExtensionControls, {
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { industryLabel, VISITOR_MANAGEMENT_PATH, VISITOR_MANAGEMENT_EMPLOYEES_PATH, VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH } from "@/lib/visitors/industry-options";
-import { isRealEstateIndustry } from "@/lib/employees/real-estate";
 import { supabase } from "@/lib/supabase";
 
 type VisitorAccount = {
@@ -218,14 +217,12 @@ export default function VisitorManagementAccountsPage() {
                           >
                             Sign in / out
                           </Link>
-                          {isRealEstateIndustry(account.organization_industry) ? (
-                            <Link
-                              href={`${VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH}?owner=${encodeURIComponent(account.user_id)}`}
-                              className="text-primary-700 hover:underline"
-                            >
-                              Summary reports
-                            </Link>
-                          ) : null}
+                          <Link
+                            href={`${VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH}?owner=${encodeURIComponent(account.user_id)}`}
+                            className="text-primary-700 hover:underline"
+                          >
+                            Summary reports
+                          </Link>
                         </div>
                       </td>
                       <td className="px-4 py-3">

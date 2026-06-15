@@ -15,7 +15,6 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
-import { assertRealEstateOrganization } from "@/lib/employees/require-real-estate-org";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
 import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
@@ -42,11 +41,6 @@ export async function GET(req: NextRequest) {
       return adminOwnerScopeErrorResponse(scope)!;
     }
     const ownerId = scope.ownerId;
-
-    const industryCheck = await assertRealEstateOrganization(admin, ownerId);
-    if (!industryCheck.ok) {
-      return NextResponse.json({ error: industryCheck.error }, { status: 403 });
-    }
 
     const parsed = parseAttendanceSummaryDateRange(
       req.nextUrl.searchParams.get("from"),
