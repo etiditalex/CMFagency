@@ -109,19 +109,9 @@
   animation-play-state: paused;
 }
 
-/* Staff QR kiosk — full-height camera on mobile */
-#employee-kiosk-qr-scanner {
-  min-height: inherit;
-}
-#employee-kiosk-qr-scanner video {
-  object-fit: cover !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: inherit;
-}
-
-/* Gate scan — fullscreen camera on mobile */
-.gate-scanner-fullscreen {
+/* Staff QR kiosk + gate — fullscreen camera */
+.gate-scanner-fullscreen,
+.employee-kiosk-scanner-fullscreen {
   position: relative;
   flex: 1;
   min-height: 0;
@@ -130,14 +120,15 @@
   background: #000;
 }
 
-/* Only style the video feed; do not resize the scan canvas — html5-qrcode positions it. */
-.gate-scanner-fullscreen video {
+.gate-scanner-fullscreen video,
+.employee-kiosk-scanner-fullscreen video {
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
 }
 
-.gate-scanner-fullscreen #qr-shaded-region {
+.gate-scanner-fullscreen #qr-shaded-region,
+.employee-kiosk-scanner-fullscreen #qr-shaded-region {
   border-width: 2px !important;
   border-color: rgba(255, 255, 255, 0.85) !important;
   border-radius: 1rem !important;

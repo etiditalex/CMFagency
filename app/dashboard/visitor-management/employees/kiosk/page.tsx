@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, ScanLine, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, ScanLine, XCircle, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -21,7 +21,13 @@ const SCANNER_DIV_ID = "employee-kiosk-qr-scanner";
 interface QrScanner {
   start(
     cameraIdOrConfig: string | MediaTrackConstraints,
-    config: { fps: number; qrbox: number; aspectRatio: number },
+    config: {
+      fps: number;
+      qrbox?: number | { width: number; height: number };
+      aspectRatio?: number;
+      disableFlip?: boolean;
+      videoConstraints?: MediaTrackConstraints;
+    },
     onSuccess: (decodedText: string) => void,
     onError: () => void
   ): Promise<null>;
@@ -53,6 +59,7 @@ export default function EmployeeKioskPage() {
   const { isPortalMember, loading: portalLoading, hasFeature } = usePortal();
 
   const [cameraActive, setCameraActive] = useState(false);
+  const [requestingCamera, setRequestingCamera] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [feedback, setFeedback] = useState<ScanFeedback | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -181,32 +188,125 @@ export default function EmployeeKioskPage() {
   );
 
   const startCamera = useCallback(async () => {
+    if (typeof window === "undefined") return;
     setCameraError(null);
+    setRequestingCamera(true);
     setLocationReady(false);
+
+    const nav = navigator as Navigator & { mediaDevices?: MediaDevices };
+    if (!nav.mediaDevices?.getUserMedia) {
+      setCameraError("Camera not supported in this browser. Use Chrome or Safari.");
+      setRequestingCamera(false);
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      setCameraError("Camera only works on HTTPS.");
+      setRequestingCamera(false);
+      return;
+    }
+
     try {
       kioskDeviceIdRef.current = getOrCreateKioskDeviceId();
       await ensureKioskLocation();
-      const { Html5Qrcode } = await import("html5-qrcode");
-      const scanner = new Html5Qrcode(SCANNER_DIV_ID) as unknown as QrScanner;
-      scannerRef.current = scanner;
-      const qrbox =
-        typeof window !== "undefined"
-          ? Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.82)
-          : 320;
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: Math.max(240, qrbox), aspectRatio: 1 },
-        (text) => void submitToken(text),
-        () => {}
-      );
-      setCameraActive(true);
     } catch (e: unknown) {
+      setCameraError(
+        e instanceof Error
+          ? e.message
+          : "Allow location for this site on the kiosk device, then try again."
+      );
+      setRequestingCamera(false);
+      return;
+    }
+
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+      } catch {
+        /* ignore */
+      }
+      scannerRef.current.clear();
+      scannerRef.current = null;
+    }
+
+    setCameraActive(true);
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const element = document.getElementById(SCANNER_DIV_ID);
+    if (!element) {
+      setCameraError("Scanner element not found.");
+      setCameraActive(false);
+      setRequestingCamera(false);
+      return;
+    }
+
+    try {
+      const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const viewH = element.clientHeight || Math.floor(vh * 0.75);
+      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
+      const qrbox = Math.max(240, Math.min(scanSize, 400));
+      const config = {
+        fps: 20,
+        qrbox: { width: qrbox, height: qrbox },
+        aspectRatio: 1,
+        disableFlip: false,
+        videoConstraints: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        } as MediaTrackConstraints,
+      };
+
+      const constraintsToTry: MediaTrackConstraints[] = [
+        { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+        { facingMode: "environment" },
+        { facingMode: "user" },
+        {},
+      ];
+
+      let started = false;
+      for (const constraints of constraintsToTry) {
+        const scanner = new Html5Qrcode(SCANNER_DIV_ID, {
+          verbose: false,
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          useBarCodeDetectorIfSupported: true,
+        }) as unknown as QrScanner;
+        scannerRef.current = scanner;
+
+        try {
+          await scanner.start(constraints, config, (text) => void submitToken(text), () => {});
+          started = true;
+          break;
+        } catch {
+          scanner.clear();
+          scannerRef.current = null;
+        }
+      }
+
+      if (!started) {
+        throw new Error("Camera access failed. Allow camera permission and use HTTPS.");
+      }
+      setRequestingCamera(false);
+    } catch (e: unknown) {
+      setRequestingCamera(false);
       setCameraError(
         e instanceof Error
           ? e.message
           : "Could not start camera. Allow camera and location for this site."
       );
       setCameraActive(false);
+      const scanner = scannerRef.current;
+      scannerRef.current = null;
+      if (scanner) {
+        try {
+          await scanner.stop();
+          scanner.clear();
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }, [submitToken, ensureKioskLocation]);
 
@@ -225,6 +325,15 @@ export default function EmployeeKioskPage() {
   }, []);
 
   useEffect(() => {
+    if (!cameraActive) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [cameraActive]);
+
+  useEffect(() => {
     return () => {
       void stopCamera();
     };
@@ -235,7 +344,71 @@ export default function EmployeeKioskPage() {
   }
 
   return (
-    <div className="-mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8 flex flex-col min-h-[calc(100dvh-5.5rem)] sm:min-h-[calc(100dvh-8rem)] max-w-none sm:max-w-2xl sm:mx-auto w-[calc(100%+2rem)] sm:w-full">
+    <>
+      <div
+        className={
+          cameraActive
+            ? "fixed inset-0 z-[100] flex flex-col bg-black h-[100dvh] max-h-[100dvh] w-full"
+            : "hidden"
+        }
+        aria-hidden={!cameraActive}
+        role="dialog"
+        aria-modal={cameraActive}
+        aria-label="Employee QR scanner"
+      >
+        <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 bg-black/60 backdrop-blur-sm pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <p className="text-sm font-medium text-white">Scan employee QR pass</p>
+          <button
+            type="button"
+            onClick={() => void stopCamera()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25"
+          >
+            <X className="w-4 h-4" />
+            Close
+          </button>
+        </div>
+
+        <div
+          id={SCANNER_DIV_ID}
+          className="employee-kiosk-scanner-fullscreen relative flex-1 min-h-0 w-full"
+        />
+
+        <div className="relative z-10 shrink-0 space-y-2 px-4 py-4 bg-black/60 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <p className="text-center text-xs text-white/75">Align the QR pass within the frame</p>
+          {locationReady ? (
+            <p className="text-center text-xs text-emerald-300">GPS ready</p>
+          ) : null}
+          {scanning ? (
+            <p className="flex items-center justify-center gap-2 text-sm text-white/90">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Recording attendance…
+            </p>
+          ) : null}
+          {feedback ? (
+            <div
+              className={`rounded-lg border p-3 flex gap-2 ${
+                feedback.ok
+                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+                  : "border-red-400/40 bg-red-950/80 text-red-100"
+              }`}
+            >
+              {feedback.ok ? (
+                <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400" />
+              ) : (
+                <XCircle className="w-6 h-6 shrink-0 text-red-400" />
+              )}
+              <div className="min-w-0">
+                <p className="font-bold text-sm">{feedback.title}</p>
+                <p className="text-xs mt-0.5">{feedback.detail}</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        className={`-mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8 flex flex-col min-h-[calc(100dvh-5.5rem)] sm:min-h-[calc(100dvh-8rem)] max-w-none sm:max-w-2xl sm:mx-auto w-[calc(100%+2rem)] sm:w-full ${cameraActive ? "invisible h-0 overflow-hidden" : ""}`}
+      >
       <div className="shrink-0 px-4 sm:px-0 pb-2 sm:pb-4">
         <Link
           href={VISITOR_MANAGEMENT_EMPLOYEES_PATH}
@@ -252,37 +425,25 @@ export default function EmployeeKioskPage() {
         </p>
       </div>
 
-      <div className="relative flex-1 flex flex-col min-h-0 rounded-none sm:rounded-xl border-y sm:border border-gray-200 bg-gray-900 overflow-hidden">
-        <div
-          id={SCANNER_DIV_ID}
-          className="flex-1 w-full min-h-[calc(100dvh-10rem)] sm:min-h-[65vh] md:min-h-[70vh]"
-        />
-        {!cameraActive ? (
+      <div className="relative flex-1 flex flex-col min-h-0 rounded-none sm:rounded-xl border-y sm:border border-gray-200 bg-gray-900 overflow-hidden min-h-[280px] sm:min-h-[360px]">
+        {!cameraActive && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gray-900">
             <button
               type="button"
               onClick={() => void startCamera()}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg"
+              disabled={requestingCamera}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg disabled:opacity-60 w-full max-w-xs justify-center"
             >
-              <ScanLine className="w-5 h-5" />
-              Start camera
+              {requestingCamera ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <ScanLine className="w-5 h-5" />
+              )}
+              {requestingCamera ? "Starting camera…" : "Start camera"}
             </button>
             <p className="mt-3 text-xs text-white/70 max-w-xs">
               Allow camera and location. Then scan any staff or CRM pass.
             </p>
-          </div>
-        ) : (
-          <div className="shrink-0 p-2 sm:p-3 text-center space-y-1 bg-gray-950/80 border-t border-white/10">
-            {locationReady ? (
-              <p className="text-xs text-emerald-300">GPS ready — scan any employee pass</p>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => void stopCamera()}
-              className="text-sm font-semibold text-white/80 hover:text-white py-1"
-            >
-              Stop camera
-            </button>
           </div>
         )}
       </div>
@@ -294,14 +455,7 @@ export default function EmployeeKioskPage() {
           </p>
         ) : null}
 
-        {scanning ? (
-          <p className="flex items-center justify-center gap-2 text-sm text-gray-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Recording attendance…
-          </p>
-        ) : null}
-
-        {feedback ? (
+        {!cameraActive && feedback ? (
           <div
             className={`rounded-xl border p-4 sm:p-5 flex gap-3 ${
               feedback.ok
@@ -321,6 +475,7 @@ export default function EmployeeKioskPage() {
           </div>
         ) : null}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
