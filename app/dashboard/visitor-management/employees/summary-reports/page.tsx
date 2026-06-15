@@ -14,7 +14,6 @@ import {
   Users,
 } from "lucide-react";
 
-import AttendanceEventLogPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceEventLogPanel";
 import AttendanceReportLogTable from "@/components/fusion-xpress/visitor-management/employees/AttendanceReportLogTable";
 import AttendanceSummaryCharts from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryCharts";
 import AttendanceSummaryRankingsPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceSummaryRankings";
@@ -26,8 +25,6 @@ import SummaryReportExcelButton from "@/components/fusion-xpress/visitor-managem
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
-import { useOrganizationIndustry } from "@/lib/hooks/useOrganizationIndustry";
-import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import type { AttendanceSummaryPayload } from "@/lib/employees/attendance-summary";
 import {
   downloadAttendanceRegisterExcel,
@@ -40,7 +37,6 @@ import {
 } from "@/lib/employees/db-mapper";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
 import type {
-  EmployeeAttendanceRecord,
   EmployeeLeaveRecord,
   EmployeeRecord,
   EmployeeReportingSettings,
@@ -82,7 +78,7 @@ const PRESET_BUTTONS: { id: DurationPreset; label: string }[] = [
   { id: "custom", label: "Custom" },
 ];
 
-type SummaryExportSection = "perEmployee" | "rankings" | "register" | "log";
+type SummaryExportSection = "perEmployee" | "rankings" | "register";
 
 export default function EmployeeSummaryReportsPage() {
   const router = useRouter();
@@ -92,11 +88,8 @@ export default function EmployeeSummaryReportsPage() {
   const {
     needsSelection,
     appendOwnerQuery,
-    isRealEstate: scopedRealEstate,
     businessName: scopedBusinessName,
   } = useAdminBusinessScope();
-  const { isRealEstate: clientRealEstate } = useOrganizationIndustry();
-  const isRealEstate = isAdmin ? scopedRealEstate : clientRealEstate;
 
   const [preset, setPreset] = useState<DurationPreset>("7d");
   const initialRange = presetRange("7d");
@@ -110,7 +103,6 @@ export default function EmployeeSummaryReportsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
   const [liveRefresh, setLiveRefresh] = useState(true);
-  const [attendance, setAttendance] = useState<EmployeeAttendanceRecord[]>([]);
   const [reportingSettings, setReportingSettings] = useState<EmployeeReportingSettings>(
     DEFAULT_REPORTING_SETTINGS
   );
@@ -119,11 +111,6 @@ export default function EmployeeSummaryReportsPage() {
   const [leaveRecords, setLeaveRecords] = useState<EmployeeLeaveRecord[]>([]);
 
   const rangeIncludesToday = to >= todayIso();
-
-  const employeeNameById = useMemo(
-    () => new Map(employees.map((e) => [e.id, e.fullName])),
-    [employees]
-  );
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -159,30 +146,6 @@ export default function EmployeeSummaryReportsPage() {
       /* keep defaults */
     }
   }, [getToken, appendOwnerQuery]);
-
-  const loadAttendance = useCallback(async () => {
-    if (isAdmin && needsSelection) return;
-    try {
-      const token = await getToken();
-      if (!token) return;
-      const qs = new URLSearchParams({ from, to, limit: "2000" });
-      if (employeeId) qs.set("employeeId", employeeId);
-      const res = await fetch(appendOwnerQuery(`/api/visitor-employees/attendance?${qs}`), {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        attendance?: EmployeeAttendanceRecord[];
-      };
-      if (res.ok && Array.isArray(json.attendance)) {
-        setAttendance(json.attendance);
-      } else {
-        setAttendance([]);
-      }
-    } catch {
-      setAttendance([]);
-    }
-  }, [from, to, employeeId, getToken, isAdmin, needsSelection, appendOwnerQuery]);
 
   const loadEmployees = useCallback(async () => {
     if (isAdmin && needsSelection) return;
@@ -278,37 +241,16 @@ export default function EmployeeSummaryReportsPage() {
   useEffect(() => {
     if (setupRequired || needsSelection) return;
     void loadSummary();
-    void loadAttendance();
     void loadReportingSettings();
-  }, [setupRequired, needsSelection, loadSummary, loadAttendance, loadReportingSettings]);
+  }, [setupRequired, needsSelection, loadSummary, loadReportingSettings]);
 
   useEffect(() => {
     if (!liveRefresh || !rangeIncludesToday || setupRequired || needsSelection) return;
     const id = window.setInterval(() => {
       void loadSummary();
-      void loadAttendance();
     }, 60_000);
     return () => window.clearInterval(id);
-  }, [liveRefresh, rangeIncludesToday, setupRequired, needsSelection, loadSummary, loadAttendance]);
-
-  const saveAttendanceTime = useCallback(
-    async (attendanceId: string, createdAt: string) => {
-      const token = await getToken();
-      if (!token) throw new Error("Not signed in");
-      const res = await fetch(`/api/visitor-employees/attendance/${encodeURIComponent(attendanceId)}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ createdAt }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Failed to update event time");
-      await Promise.all([loadSummary(), loadAttendance()]);
-    },
-    [getToken, loadSummary, loadAttendance]
-  );
+  }, [liveRefresh, rangeIncludesToday, setupRequired, needsSelection, loadSummary]);
 
   const exportMeta = useMemo(
     () => ({
@@ -357,27 +299,6 @@ export default function EmployeeSummaryReportsPage() {
       )
     );
   }, [summary, employees, exportMeta, reportingSettings, leaveRecords, runExport]);
-
-  const handleExportLog = useCallback(async () => {
-    await runExport("log", () =>
-      downloadEmployeeAttendanceExcel({
-        employees,
-        attendance,
-        employeeNameById,
-        organizationName,
-        isRealEstate,
-        reportingSettings,
-      })
-    );
-  }, [
-    runExport,
-    employees,
-    attendance,
-    employeeNameById,
-    organizationName,
-    isRealEstate,
-    reportingSettings,
-  ]);
 
   const applyPreset = (id: DurationPreset) => {
     setPreset(id);
@@ -517,7 +438,6 @@ export default function EmployeeSummaryReportsPage() {
                   disabled={loading}
                   onClick={() => {
                     void loadSummary();
-                    void loadAttendance();
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-primary-800 disabled:opacity-50"
                 >
@@ -731,20 +651,6 @@ export default function EmployeeSummaryReportsPage() {
                     subtitle={`Approved leave and daily sign-in / sign-out · times in EAT`}
                     exportingExcel={exportingSection === "register"}
                     onExportExcel={() => void handleExportRegister()}
-                  />
-                  <AttendanceEventLogPanel
-                    className="print:break-inside-avoid"
-                    attendance={attendance}
-                    employees={employees}
-                    employeeNameById={employeeNameById}
-                    reportingSettings={reportingSettings}
-                    isRealEstate={isRealEstate}
-                    setupRequired={setupRequired}
-                    exportingExcel={exportingSection === "log"}
-                    onExportExcel={() => void handleExportLog()}
-                    onSaveAttendanceTime={saveAttendanceTime}
-                    onError={setNotice}
-                    emptyMessage="No attendance events in this date range."
                   />
                 </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Download } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { memberTypeBadgeClass, memberTypeLabel } from "@/lib/employees/real-estate";
 import {
@@ -20,6 +21,8 @@ import type {
 } from "@/lib/employees/types";
 import { formatEmployeeReportTime } from "@/lib/employees/utils";
 import { eatDatetimeLocalValue } from "@/lib/time/eat";
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 export type AttendanceEventLogPanelProps = {
   attendance: EmployeeAttendanceRecord[];
@@ -53,6 +56,15 @@ export default function AttendanceEventLogPanel({
   className = "",
 }: AttendanceEventLogPanelProps) {
   const employeeById = new Map(employees.map((e) => [e.id, e]));
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
+  const [page, setPage] = useState(0);
+
+  const pageCount = Math.max(1, Math.ceil(attendance.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = useMemo(
+    () => attendance.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [attendance, safePage, pageSize]
+  );
 
   const handleEditTime = async (row: EmployeeAttendanceRecord) => {
     if (!onSaveAttendanceTime) return;
@@ -91,11 +103,37 @@ export default function AttendanceEventLogPanel({
         ) : null}
       </div>
 
+      {attendance.length > 0 ? (
+        <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
+                setPage(0);
+              }}
+              className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              aria-label="Rows per page"
+            >
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <span className="text-gray-500">rows per page</span>
+          </label>
+          <p className="text-xs text-gray-500">
+            {attendance.length} event{attendance.length === 1 ? "" : "s"}
+          </p>
+        </div>
+      ) : null}
+
       {attendance.length === 0 ? (
         <p className="p-6 text-sm text-gray-500 text-center">{emptyMessage}</p>
       ) : (
         <ul className="divide-y divide-gray-100">
-          {attendance.map((row) => {
+          {pageRows.map((row) => {
             const emp = employeeById.get(row.employeeId);
             const memberWindow = emp
               ? reportingSettings.shiftEnabled
@@ -169,6 +207,30 @@ export default function AttendanceEventLogPanel({
           })}
         </ul>
       )}
+
+      {attendance.length > pageSize ? (
+        <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 text-sm text-gray-600">
+          <button
+            type="button"
+            disabled={safePage <= 0}
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+          >
+            Previous
+          </button>
+          <span>
+            Page {safePage + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            disabled={safePage >= pageCount - 1}
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
