@@ -111,6 +111,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     updatePayload.rejection_reason = rejectionReason;
     updatePayload.approved_at = null;
     updatePayload.approved_by = null;
+    updatePayload.checked_in_at = null;
   } else if (nextStatus === "pending") {
     updatePayload.approved_at = null;
     updatePayload.approved_by = null;
@@ -166,4 +167,33 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   }
 
   return NextResponse.json({ registration: data, email_sent: false });
+}
+
+export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const auth = await requireGateAccess(_req);
+  if ("error" in auth) return auth.error;
+  const { admin } = auth;
+
+  const { id } = await ctx.params;
+  if (!id) return NextResponse.json({ error: "Missing registration id." }, { status: 400 });
+
+  const { data: row, error: fetchErr } = await admin
+    .from("cmfa_registrations")
+    .select("id, name, email, is_guest, parent_registration_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  if (!row) return NextResponse.json({ error: "Registration not found." }, { status: 404 });
+
+  const { error: deleteErr } = await admin.from("cmfa_registrations").delete().eq("id", id);
+
+  if (deleteErr) return NextResponse.json({ error: deleteErr.message }, { status: 500 });
+
+  return NextResponse.json({
+    ok: true,
+    deleted_id: id,
+    name: (row as { name?: string }).name,
+    email: (row as { email?: string }).email,
+  });
 }

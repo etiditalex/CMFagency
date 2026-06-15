@@ -1,6 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+type CmfaScanRow = {
+  id: string;
+  reference?: string;
+  name?: string | null;
+  email?: string | null;
+  status?: string;
+  checked_in_at?: string | null;
+};
+
+function cmfaDisplayName(row: CmfaScanRow): string {
+  return row.name?.trim?.() || row.email?.trim?.() || "—";
+}
+
+function cmfaTicketIdFromRef(reference: string, fallbackRef: string): string {
+  const cmfaRefStr = String(reference || fallbackRef);
+  return `CMFA-${cmfaRefStr.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
+}
+
+function cmfaStatusDenial(row: CmfaScanRow, fallbackRef: string) {
+  const status = String(row.status ?? "");
+  const name = cmfaDisplayName(row);
+  const ticketId = cmfaTicketIdFromRef(String(row.reference ?? ""), fallbackRef);
+  const message =
+    status === "rejected"
+      ? "Registration rejected. Ticket is no longer valid — do not allow entry."
+      : status === "pending"
+        ? "Registration pending approval. Do not allow entry."
+        : "Registration not approved. Do not allow entry.";
+
+  return NextResponse.json(
+    {
+      valid: false,
+      duplicate: false,
+      rejected: status === "rejected",
+      pending: status === "pending",
+      name,
+      ticketId,
+      message,
+    },
+    { status: 200, headers: { "Cache-Control": "no-store" } }
+  );
+}
+
 /**
  * Gate scan: validate receipt/QR by reference.
  * - First scan: set checked_in_at, return valid + name + ticket/vote ID.
@@ -136,15 +179,8 @@ export async function POST(req: NextRequest) {
 
     if (attendeeErr) return NextResponse.json({ error: attendeeErr.message }, { status: 500 });
     if (!attendee) {
-      // CMFA complimentary registration (approval required before gate entry)
-      let cmfaReg: {
-        id: string;
-        reference?: string;
-        name?: string | null;
-        email?: string | null;
-        status?: string;
-        checked_in_at?: string | null;
-      } | null = null;
+      // CMFA complimentary registration — status must be approved before check-in
+      let cmfaReg: CmfaScanRow | null = null;
       let cmfaErr: { message: string } | null = null;
 
       const byCmfaRef = await supabaseAdmin
@@ -152,7 +188,7 @@ export async function POST(req: NextRequest) {
         .select("id, reference, name, email, status, checked_in_at")
         .eq("reference", ref)
         .maybeSingle();
-      cmfaReg = byCmfaRef.data;
+      cmfaReg = byCmfaRef.data as CmfaScanRow | null;
       cmfaErr = byCmfaRef.error;
 
       if (!cmfaErr && !cmfaReg && /^CMFA-[A-Z0-9]{8,12}$/i.test(ref)) {
@@ -162,28 +198,21 @@ export async function POST(req: NextRequest) {
           .select("id, reference, name, email, status, checked_in_at")
           .filter("reference", "ilike", "%\\_" + hex)
           .maybeSingle();
-        cmfaReg = byCmfaSuffix.data;
+        cmfaReg = byCmfaSuffix.data as CmfaScanRow | null;
         cmfaErr = byCmfaSuffix.error;
       }
 
       if (cmfaErr) return NextResponse.json({ error: cmfaErr.message }, { status: 500 });
       if (!cmfaReg) return NextResponse.json({ error: "Ticket or registration not found" }, { status: 404 });
 
-      if ((cmfaReg as { status?: string }).status !== "approved") {
-        return NextResponse.json(
-          { error: "This registration is not approved yet. Do not allow entry." },
-          { status: 400 }
-        );
+      if (cmfaReg.status !== "approved") {
+        return cmfaStatusDenial(cmfaReg, ref);
       }
 
-      const cmfaName =
-        (cmfaReg as { name?: string | null }).name?.trim?.() ||
-        (cmfaReg as { email?: string | null }).email?.trim?.() ||
-        "—";
-      const cmfaCheckedInAt = (cmfaReg as { checked_in_at?: string | null }).checked_in_at;
-      const cmfaRefStr = String((cmfaReg as { reference?: string }).reference ?? ref);
-      const cmfaId = `CMFA-${cmfaRefStr.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
-      const cmfaRegId = (cmfaReg as { id: string }).id;
+      const cmfaName = cmfaDisplayName(cmfaReg);
+      const cmfaCheckedInAt = cmfaReg.checked_in_at;
+      const cmfaId = cmfaTicketIdFromRef(String(cmfaReg.reference ?? ""), ref);
+      const cmfaRegId = cmfaReg.id;
 
       if (cmfaCheckedInAt) {
         return NextResponse.json(
@@ -204,6 +233,7 @@ export async function POST(req: NextRequest) {
         .from("cmfa_registrations")
         .update({ checked_in_at: checkInNow })
         .eq("id", cmfaRegId)
+        .eq("status", "approved")
         .is("checked_in_at", null)
         .select("checked_in_at")
         .maybeSingle();
@@ -213,17 +243,36 @@ export async function POST(req: NextRequest) {
       if (!checkedInRow) {
         const { data: existing } = await supabaseAdmin
           .from("cmfa_registrations")
-          .select("checked_in_at")
+          .select("id, reference, name, email, status, checked_in_at")
           .eq("id", cmfaRegId)
           .maybeSingle();
+
+        const fresh = existing as CmfaScanRow | null;
+        if (!fresh || fresh.status !== "approved") {
+          return cmfaStatusDenial(fresh ?? cmfaReg, ref);
+        }
+
+        if (fresh.checked_in_at) {
+          return NextResponse.json(
+            {
+              valid: false,
+              duplicate: true,
+              name: cmfaDisplayName(fresh),
+              ticketId: cmfaTicketIdFromRef(String(fresh.reference ?? ""), ref),
+              checked_in_at: fresh.checked_in_at,
+              message: "This registration was already used. Do not allow entry.",
+            },
+            { headers: { "Cache-Control": "no-store" } }
+          );
+        }
+
         return NextResponse.json(
           {
             valid: false,
-            duplicate: true,
+            duplicate: false,
             name: cmfaName,
             ticketId: cmfaId,
-            checked_in_at: (existing as { checked_in_at?: string | null })?.checked_in_at ?? checkInNow,
-            message: "This registration was already used. Do not allow entry.",
+            message: "Could not confirm entry. Scan again or check registration status.",
           },
           { headers: { "Cache-Control": "no-store" } }
         );

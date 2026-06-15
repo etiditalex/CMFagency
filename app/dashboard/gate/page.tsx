@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, ListChecks, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, ListChecks, ClipboardCheck, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -207,10 +207,13 @@ export default function DashboardGatePage() {
 
     try {
       const { Html5Qrcode } = await import("html5-qrcode");
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const scanBox = Math.floor(Math.min(vw, vh) * 0.72);
       const config = {
-        fps: 10,
-        qrbox: 280,
-        aspectRatio: 1,
+        fps: 12,
+        qrbox: Math.max(200, Math.min(scanBox, 360)),
+        aspectRatio: vw / Math.max(vh, 1),
       };
 
       const constraintsToTry: MediaTrackConstraints[] = [
@@ -324,6 +327,15 @@ export default function DashboardGatePage() {
   }, []);
 
   useEffect(() => {
+    if (!cameraActive) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [cameraActive]);
+
+  useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
@@ -337,7 +349,38 @@ export default function DashboardGatePage() {
   if (!isAuthenticated || !user || !isPortalMember || !hasFeature("reports")) return null;
 
   return (
-    <div className="text-left max-w-2xl">
+    <>
+      <div
+        className={
+          cameraActive
+            ? "fixed inset-0 z-[100] flex flex-col bg-black h-[100dvh] max-h-[100dvh] w-full"
+            : "hidden"
+        }
+        aria-hidden={!cameraActive}
+        role="dialog"
+        aria-modal={cameraActive}
+        aria-label="QR code scanner"
+      >
+        <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 bg-black/60 backdrop-blur-sm pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <p className="text-sm font-medium text-white">Point at receipt QR code</p>
+          <button
+            type="button"
+            onClick={() => void stopCamera()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25"
+          >
+            <X className="w-4 h-4" />
+            Close
+          </button>
+        </div>
+
+        <div id={SCANNER_DIV_ID} className="gate-scanner-fullscreen relative flex-1 min-h-0 w-full" />
+
+        <div className="relative z-10 shrink-0 px-4 py-4 text-center text-xs text-white/75 bg-black/60 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
+          Align the QR code within the frame
+        </div>
+      </div>
+
+      <div className={`text-left max-w-2xl ${cameraActive ? "invisible h-0 overflow-hidden" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
@@ -369,15 +412,9 @@ export default function DashboardGatePage() {
         </div>
       </div>
 
-      {/* Scanner mount point: always in DOM so we can re-start camera after "Scan next" */}
-      <div
-        id={SCANNER_DIV_ID}
-        className={cameraActive ? "mt-6 rounded-t-xl overflow-hidden bg-black min-h-[280px]" : "hidden"}
-      />
-
       {/* Camera scanner UI */}
       <div className="mt-6">
-        {!cameraActive ? (
+        {!cameraActive && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center mb-4">
@@ -388,7 +425,7 @@ export default function DashboardGatePage() {
                 type="button"
                 onClick={startCamera}
                 disabled={scanning || requestingCamera}
-                className="mt-6 inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 text-lg"
+                className="mt-6 inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 text-lg w-full sm:w-auto justify-center"
               >
                 {requestingCamera ? (
                   <Loader2 className="w-6 h-6 animate-spin" />
@@ -400,7 +437,7 @@ export default function DashboardGatePage() {
                 {requestingCamera ? "Requesting camera…" : scanning ? "Checking…" : "Start camera & scan"}
               </button>
               {cameraError && (
-                <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-left">
+                <div className="mt-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-left w-full">
                   <p className="text-sm font-medium text-amber-800">{cameraError}</p>
                   {(cameraError.toLowerCase().includes("permission") || cameraError.toLowerCase().includes("prompt")) && (
                     <div className="mt-3 text-xs text-amber-800 space-y-2">
@@ -434,17 +471,6 @@ export default function DashboardGatePage() {
                 Or enter reference manually
               </button>
             </div>
-          </div>
-        ) : (
-          <div className="p-4 bg-gray-900 rounded-b-xl flex justify-between items-center">
-            <span className="text-white text-sm">Point at receipt QR code</span>
-            <button
-              type="button"
-              onClick={stopCamera}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-white text-sm font-medium hover:bg-gray-600"
-            >
-              Stop camera
-            </button>
           </div>
         )}
       </div>
@@ -508,7 +534,7 @@ export default function DashboardGatePage() {
             )}
             <div className="min-w-0">
               <p className={`text-lg font-bold ${result.valid ? "text-green-800" : "text-red-800"}`}>
-                {result.valid ? "Valid – Allow entry" : "Duplicate – Do not allow entry"}
+                {result.valid ? "Valid – Allow entry" : result.message || "Do not allow entry"}
               </p>
               <p className="mt-1 text-sm text-gray-700">
                 <span className="font-medium">Name:</span> {result.name}
@@ -540,6 +566,7 @@ export default function DashboardGatePage() {
           ← Back to dashboard
         </Link>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

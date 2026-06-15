@@ -10,6 +10,7 @@ import {
   Download,
   Loader2,
   RefreshCw,
+  Trash2,
   XCircle,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ export default function GateCmfaApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patchingId, setPatchingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -99,7 +101,14 @@ export default function GateCmfaApprovalsPage() {
     loadRows();
   }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature, loadRows]);
 
-  const patchStatus = async (id: string, status: "approved" | "rejected") => {
+  const patchStatus = async (id: string, status: "approved" | "rejected", row?: RegistrationRow) => {
+    if (status === "rejected" && row?.status === "approved") {
+      const ok = window.confirm(
+        `Reject ${row.name}? Their complimentary ticket will no longer be valid at the gate.`
+      );
+      if (!ok) return;
+    }
+
     setPatchingId(id);
     setNotice(null);
     setError(null);
@@ -146,7 +155,11 @@ export default function GateCmfaApprovalsPage() {
           setNotice(`Approved — complimentary ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
         }
       } else {
-        setNotice("Registration rejected.");
+        setNotice(
+          row?.status === "approved"
+            ? "Registration rejected — ticket is no longer valid at the gate."
+            : "Registration rejected."
+        );
       }
 
       if (!updatedRow) {
@@ -156,6 +169,39 @@ export default function GateCmfaApprovalsPage() {
       setError(e instanceof Error ? e.message : "Update failed");
     } finally {
       setPatchingId(null);
+    }
+  };
+
+  const deleteRegistration = async (row: RegistrationRow) => {
+    const guestNote = row.is_guest ? "" : " Any linked executive guest ticket will also be removed.";
+    const ok = window.confirm(
+      `Remove ${row.name} from CMFA registrations?${guestNote} This cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingId(row.id);
+    setNotice(null);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch(`/api/cmfa/registrations/${row.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; name?: string };
+      if (!res.ok) throw new Error(json.error ?? "Delete failed");
+
+      setRows((prev) =>
+        prev.filter((r) => r.id !== row.id && r.parent_registration_id !== row.id)
+      );
+      setNotice(`${json.name ?? row.name} removed from registrations.`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -207,7 +253,8 @@ export default function GateCmfaApprovalsPage() {
           </Link>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">CMFA Registration Approvals</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Review in-house CMFA registrations. Approving sends a complimentary QR ticket by email.
+            Review in-house CMFA registrations. Approve to email a complimentary QR ticket. You can reject
+            after approval or remove a registration entirely.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -311,15 +358,18 @@ export default function GateCmfaApprovalsPage() {
                           Checked in {new Date(row.checked_in_at).toLocaleString()}
                         </div>
                       )}
+                      {row.status === "rejected" && row.rejection_reason && (
+                        <div className="text-xs text-red-600 mt-1 max-w-[12rem]">{row.rejection_reason}</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{cmfaTicketId(row.reference)}</td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {row.status === "pending" ? (
-                        <div className="inline-flex gap-2">
+                      <div className="inline-flex flex-wrap justify-end gap-2">
+                        {(row.status === "pending" || row.status === "rejected") && (
                           <button
                             type="button"
-                            disabled={patchingId === row.id}
-                            onClick={() => patchStatus(row.id, "approved")}
+                            disabled={patchingId === row.id || deletingId === row.id}
+                            onClick={() => patchStatus(row.id, "approved", row)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold disabled:opacity-60"
                           >
                             {patchingId === row.id ? (
@@ -329,19 +379,36 @@ export default function GateCmfaApprovalsPage() {
                             )}
                             Approve
                           </button>
+                        )}
+                        {(row.status === "pending" || row.status === "approved") && (
                           <button
                             type="button"
-                            disabled={patchingId === row.id}
-                            onClick={() => patchStatus(row.id, "rejected")}
+                            disabled={patchingId === row.id || deletingId === row.id}
+                            onClick={() => patchStatus(row.id, "rejected", row)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold disabled:opacity-60"
                           >
-                            <XCircle className="w-3.5 h-3.5" />
+                            {patchingId === row.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
                             Reject
                           </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">—</span>
-                      )}
+                        )}
+                        <button
+                          type="button"
+                          disabled={patchingId === row.id || deletingId === row.id}
+                          onClick={() => deleteRegistration(row)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold disabled:opacity-60"
+                        >
+                          {deletingId === row.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          Remove
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

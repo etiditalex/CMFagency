@@ -120,3 +120,42 @@
   min-height: inherit;
 }
 
+/* Gate scan — fullscreen camera on mobile */
+.gate-scanner-fullscreen {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.gate-scanner-fullscreen > div {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  border: none !important;
+}
+
+.gate-scanner-fullscreen video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.gate-scanner-fullscreen canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.gate-scanner-fullscreen #qr-shaded-region {
+  border-width: 2px !important;
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important;
+}
+
