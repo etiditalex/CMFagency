@@ -12,8 +12,10 @@ import {
   parsePublicLeaveFormType,
   validateAdvanceLeaveStart,
 } from "@/lib/employees/leave-application";
+import { validateLeaveSignatureDataUrl } from "@/lib/employees/leave-signature";
 import { isValidLeaveDate } from "@/lib/employees/leave-rules";
 import { lookupEmployeeByToken } from "@/lib/employees/process-employee-scan";
+import { eatTodayDayKey } from "@/lib/time/eat";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
 
 const LEAVE_SELECT =
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
     const leaveType = parsePublicLeaveFormType(body.leaveType ?? body.leave_type);
     const reason = safeText(body.reason, 2000);
     const attachmentName = safeText(body.attachmentName ?? body.attachment_name, 200);
-    const confirmed = body.confirmed === true || body.confirmed === "true";
+    const signatureDataUrl = String(body.signatureDataUrl ?? body.signature_data_url ?? "").trim();
 
     if (!token) {
       return NextResponse.json({ error: "Missing employee link token." }, { status: 400 });
@@ -53,9 +55,9 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (!confirmed) {
+    if (!validateLeaveSignatureDataUrl(signatureDataUrl)) {
       return NextResponse.json(
-        { error: "Confirm that the information provided is accurate before submitting." },
+        { error: "Draw your signature in the applicant signature box before submitting." },
         { status: 400 }
       );
     }
@@ -121,7 +123,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const notes = buildLeaveApplicationNotes({ reason, attachmentName });
+    const notes = buildLeaveApplicationNotes({
+      reason,
+      attachmentName,
+      signerName: employee.fullName,
+      signedAtYmd: eatTodayDayKey(),
+      signatureDataUrl,
+    });
 
     const { data, error } = await admin
       .from("visitor_employee_leave")

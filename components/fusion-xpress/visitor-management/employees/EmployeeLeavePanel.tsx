@@ -10,6 +10,7 @@ import {
   leaveTypeLabel,
 } from "@/lib/employees/leave-rules";
 import CopyLeaveApplicationLink from "@/components/fusion-xpress/visitor-management/employees/CopyLeaveApplicationLink";
+import LeaveApplicationNotesView from "@/components/fusion-xpress/visitor-management/employees/LeaveApplicationNotesView";
 import type {
   EmployeeLeaveRecord,
   EmployeeLeaveStatus,
@@ -410,7 +411,7 @@ export default function EmployeeLeavePanel({
                       {dayCount} day{dayCount === 1 ? "" : "s"}
                     </p>
                     {record.notes.trim() ? (
-                      <p className="text-xs text-gray-500 mt-0.5">{record.notes.trim()}</p>
+                      <LeaveApplicationNotesView notes={record.notes} />
                     ) : null}
                     {record.status === "approved" && record.notificationSentAt ? (
                       <p className="text-xs text-emerald-700 mt-1">Employee notified by email.</p>

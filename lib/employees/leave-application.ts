@@ -1,3 +1,4 @@
+import { appendLeaveSignatureToNotes } from "@/lib/employees/leave-signature";
 import { countDaysInLeaveRange, isValidLeaveDate } from "@/lib/employees/leave-rules";
 import type { EmployeeLeaveType } from "@/lib/employees/types";
 import { eatDayKey, eatDaySpanInclusive, eatTodayDayKey } from "@/lib/time/eat";
@@ -70,6 +71,9 @@ export function validateAdvanceLeaveStart(
 export function buildLeaveApplicationNotes(params: {
   reason: string;
   attachmentName?: string | null;
+  signerName?: string;
+  signedAtYmd?: string;
+  signatureDataUrl?: string | null;
 }): string {
   const parts: string[] = [];
   const reason = params.reason.trim();
@@ -77,8 +81,15 @@ export function buildLeaveApplicationNotes(params: {
   if (params.attachmentName?.trim()) {
     parts.push(`Supporting document: ${params.attachmentName.trim()}`);
   }
+  if (params.signerName?.trim() && params.signedAtYmd) {
+    parts.push(`Digitally signed by ${params.signerName.trim()} on ${params.signedAtYmd}.`);
+  }
   parts.push("Submitted via employee leave application form.");
-  return parts.join("\n\n");
+  const body = parts.join("\n\n");
+  if (params.signatureDataUrl?.trim()) {
+    return appendLeaveSignatureToNotes(body, params.signatureDataUrl.trim());
+  }
+  return body;
 }
 
 export function parsePublicLeaveFormType(raw: unknown): EmployeeLeaveType | null {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
+import DigitalSignaturePad from "@/components/fusion-xpress/visitor-management/employees/DigitalSignaturePad";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import {
   earliestAdvanceLeaveStartYmd,
@@ -62,7 +63,7 @@ export default function EmployeeLeaveApplicationPage() {
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
 
   const today = eatTodayDayKey();
   const minAdvanceStart = earliestAdvanceLeaveStartYmd();
@@ -128,6 +129,10 @@ export default function EmployeeLeaveApplicationPage() {
       setSubmitError(attachmentCheck.error);
       return;
     }
+    if (!signatureDataUrl) {
+      setSubmitError("Draw your signature in the applicant signature box before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -141,7 +146,7 @@ export default function EmployeeLeaveApplicationPage() {
           endDate,
           reason,
           attachmentName: attachmentCheck.file?.name ?? null,
-          confirmed,
+          signatureDataUrl,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
@@ -322,22 +327,18 @@ export default function EmployeeLeaveApplicationPage() {
                     supportive document for sick leave.
                   </div>
 
-                  <div className="grid gap-5 sm:grid-cols-2 items-end border-t border-gray-200 pt-6">
+                  <div className="grid gap-5 sm:grid-cols-2 items-start border-t border-gray-300 pt-6">
                     <ReadonlyField label="Date" value={today} />
-                    <label className="flex items-start gap-2 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={confirmed}
-                        onChange={(e) => setConfirmed(e.target.checked)}
-                        required
-                        className="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <span>
-                        I confirm that the information above is accurate and I am applying for leave as
-                        the named employee (digital signature).
-                      </span>
-                    </label>
+                    <DigitalSignaturePad
+                      value={signatureDataUrl}
+                      onChange={setSignatureDataUrl}
+                      disabled={submitting}
+                    />
                   </div>
+                  <p className="text-xs text-gray-500">
+                    By signing above, you confirm that the information provided is accurate and you are
+                    applying for leave as the named employee.
+                  </p>
 
                   {submitError ? (
                     <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -347,7 +348,7 @@ export default function EmployeeLeaveApplicationPage() {
 
                   <button
                     type="submit"
-                    disabled={submitting || totalDays < 1}
+                    disabled={submitting || totalDays < 1 || !signatureDataUrl}
                     className="w-full rounded-lg bg-primary-700 py-3.5 text-sm font-bold text-white hover:bg-primary-800 disabled:opacity-50"
                   >
                     {submitting ? "Submitting…" : "Submit leave application"}
