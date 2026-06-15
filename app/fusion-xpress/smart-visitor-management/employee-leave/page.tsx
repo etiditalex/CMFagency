@@ -1,13 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 
 import DigitalSignaturePad from "@/components/fusion-xpress/visitor-management/employees/DigitalSignaturePad";
-import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import {
   earliestAdvanceLeaveStartYmd,
   leaveTypeRequiresAdvanceNotice,
@@ -170,20 +167,7 @@ export default function EmployeeLeaveApplicationPage() {
   const ready = phase.kind === "ready" ? phase.data : null;
 
   return (
-    <main className="min-h-[100dvh] bg-[#f4f5f7] flex flex-col">
-      <header className="border-b border-gray-200 bg-white px-4 py-4">
-        <div className="mx-auto max-w-3xl flex items-center justify-between gap-3">
-          <Image src={BRAND_LOGO_URL} alt="Fusion Xpress" width={120} height={36} className="h-8 w-auto" />
-          <Link
-            href="/fusion-xpress/smart-visitor-management/sign-in"
-            className="text-xs font-semibold text-primary-700 hover:underline"
-          >
-            Account sign in
-          </Link>
-        </div>
-      </header>
-
-      <div className="flex-1 py-8 px-4">
+    <div className="min-h-[100dvh] bg-[#f4f5f7] py-6 px-4 sm:py-8">
         <div className="mx-auto max-w-3xl">
           <article className="rounded-xl border border-gray-300 bg-white shadow-sm overflow-hidden">
             <div className="px-6 sm:px-10 pt-8 pb-6 border-b border-gray-200 text-center">
@@ -358,7 +342,6 @@ export default function EmployeeLeaveApplicationPage() {
             </div>
           </article>
         </div>
-      </div>
-    </main>
+    </div>
   );
 }
