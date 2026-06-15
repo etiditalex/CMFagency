@@ -19,7 +19,7 @@ import { eatTodayDayKey } from "@/lib/time/eat";
 type EmployeePreview = {
   fullName: string;
   designation: string;
-  jobLocation: string;
+  department: string;
   email: string | null;
   employeeCode: string | null;
 };
@@ -212,7 +212,7 @@ export default function EmployeeLeaveApplicationPage() {
                   <div className="grid gap-5 sm:grid-cols-1">
                     <ReadonlyField label="Name of the Employee" value={ready.employee.fullName} />
                     <ReadonlyField label="Designation" value={ready.employee.designation} />
-                    <ReadonlyField label="Job Location" value={ready.employee.jobLocation} />
+                    <ReadonlyField label="Department" value={ready.employee.department} />
                   </div>
 
                   <fieldset className="space-y-3">

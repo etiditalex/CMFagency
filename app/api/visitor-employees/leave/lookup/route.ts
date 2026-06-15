@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         id: employee.id,
         fullName: employee.fullName,
         designation: employee.jobTitle || "—",
-        jobLocation: employee.department || "—",
+        department: employee.department || "—",
         email: employee.email,
         employeeCode: employee.employeeCode,
       },
