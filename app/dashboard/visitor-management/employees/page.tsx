@@ -24,6 +24,7 @@ import BusinessScopeBar, {
 import AttendanceEventLogPanel from "@/components/fusion-xpress/visitor-management/employees/AttendanceEventLogPanel";
 import EditEmployeeTimesModal from "@/components/fusion-xpress/visitor-management/employees/EditEmployeeTimesModal";
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
+import CopyLeaveApplicationLink from "@/components/fusion-xpress/visitor-management/employees/CopyLeaveApplicationLink";
 import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/employees/EmployeeSetupBanner";
 import EmployeeLeavePanel from "@/components/fusion-xpress/visitor-management/employees/EmployeeLeavePanel";
 import IntegrationApiKeysPanel from "@/components/fusion-xpress/visitor-management/employees/IntegrationApiKeysPanel";
@@ -740,6 +741,7 @@ export default function VisitorManagementEmployeesPage() {
                 : "View on screen during trial. Upgrade to Professional to download QR PDFs for printing."}
             </p>
             <div className="mt-4 flex flex-col gap-2">
+              <CopyLeaveApplicationLink token={qrEmployee.qrCodeToken} employeeName={qrEmployee.fullName} />
               {canDownloadQr ? (
                 <button
                   type="button"
@@ -905,6 +907,13 @@ export default function VisitorManagementEmployeesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
+                        {emp.qrCodeToken ? (
+                          <CopyLeaveApplicationLink
+                            token={emp.qrCodeToken}
+                            employeeName={emp.fullName}
+                            compact
+                          />
+                        ) : null}
                         {emp.qrCodeToken ? (
                           <button
                             type="button"

@@ -9,6 +9,7 @@ import {
   leaveStatusLabel,
   leaveTypeLabel,
 } from "@/lib/employees/leave-rules";
+import CopyLeaveApplicationLink from "@/components/fusion-xpress/visitor-management/employees/CopyLeaveApplicationLink";
 import type {
   EmployeeLeaveRecord,
   EmployeeLeaveStatus,
@@ -77,6 +78,11 @@ export default function EmployeeLeavePanel({
   const pendingCount = useMemo(
     () => leaveRecords.filter((r) => r.status === "pending").length,
     [leaveRecords]
+  );
+
+  const selectedEmployee = useMemo(
+    () => activeEmployees.find((e) => e.id === employeeId) ?? null,
+    [activeEmployees, employeeId]
   );
 
   const getToken = useCallback(async () => {
@@ -263,6 +269,13 @@ export default function EmployeeLeavePanel({
           <p className="text-sm text-emerald-900 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
             {notice}
           </p>
+        ) : null}
+
+        {selectedEmployee?.qrCodeToken ? (
+          <CopyLeaveApplicationLink
+            token={selectedEmployee.qrCodeToken}
+            employeeName={selectedEmployee.fullName}
+          />
         ) : null}
 
         <form onSubmit={handleAdd} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
