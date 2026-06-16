@@ -39,6 +39,7 @@ export default function ConditionalLayout({
     "/fusion-xpress/smart-visitor-management/demo/"
   );
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
+  const isFxQrGeneratorPage = pathname === "/fusion-xpress/fx-qr-code-generator";
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -89,7 +90,8 @@ export default function ConditionalLayout({
     isFusionAdminLogin ||
     isVisitorManagementAuth ||
     isEmployeeAttendanceCheck ||
-    isIndustryCheckInForm
+    isIndustryCheckInForm ||
+    isFxQrGeneratorPage
   ) {
     return (
       <>
