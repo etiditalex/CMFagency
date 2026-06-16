@@ -2,10 +2,10 @@
 const PAYSTACK_PENDING_MIN_AGE_MS = 25_000;
 
 /**
- * M-Pesa STK usually resolves in seconds; reconciling after a short delay lets
- * verify-ref mark cancelled/timeout as failed without waiting almost a minute.
+ * M-Pesa STK usually resolves in seconds; wait before verify-ref so Safaricom
+ * can return "still processing" (e.g. 4999) instead of a false failure.
  */
-const DARAJA_PENDING_MIN_AGE_MS = 4_000;
+const DARAJA_PENDING_MIN_AGE_MS = 20_000;
 
 export type ReconcileTxRow = {
   reference: string;

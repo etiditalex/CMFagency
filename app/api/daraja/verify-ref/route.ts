@@ -4,13 +4,14 @@ import {
   finalizeDarajaStkFromMetadataItems,
   type CallbackMetadataItem,
 } from "@/lib/daraja-finalize-stk-from-items";
+import {
+  isStkQueryStillPending,
+  wasPrematureDarajaVerifyRefFailure,
+} from "@/lib/daraja-stk-result";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
 export const dynamic = "force-dynamic";
-
-/** STK Query `ResultCode` while Safaricom still processing — do not mark the row failed. */
-const STK_QUERY_STILL_PENDING_CODES = new Set([500001]);
 
 type ParsedStkQuery = {
   parseOk: boolean;
@@ -99,14 +100,15 @@ export async function POST(req: Request) {
   }
 
   const status = String((tx as { status?: string }).status ?? "pending");
-  if (status !== "pending") {
-    return NextResponse.json({ ok: true, status, completed: status === "success" });
-  }
-
   const meta =
     (typeof (tx as { metadata?: unknown }).metadata === "object" &&
       (tx as { metadata?: Record<string, unknown> }).metadata) ||
     {};
+  const canReconcile =
+    status === "pending" || (status === "failed" && wasPrematureDarajaVerifyRefFailure(meta));
+  if (!canReconcile) {
+    return NextResponse.json({ ok: true, status, completed: status === "success" });
+  }
   const checkoutRequestId = String(meta.checkout_request_id ?? "").trim();
   if (!checkoutRequestId) {
     return NextResponse.json({ ok: false, error: "Missing checkout_request_id" }, { status: 400 });
@@ -168,7 +170,7 @@ export async function POST(req: Request) {
   const { resultCode, resultDesc, items } = parsed;
 
   if (resultCode !== 0) {
-    if (STK_QUERY_STILL_PENDING_CODES.has(resultCode)) {
+    if (isStkQueryStillPending(resultCode, resultDesc, items)) {
       return NextResponse.json({
         ok: true,
         status: "pending",
@@ -240,7 +242,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Transaction disappeared" }, { status: 500 });
   }
   const st2 = String((tx2 as { status?: string }).status ?? "pending");
-  if (st2 !== "pending") {
+  const meta2 =
+    typeof (tx2 as { metadata?: unknown }).metadata === "object" &&
+    (tx2 as { metadata?: unknown }).metadata !== null &&
+    !Array.isArray((tx2 as { metadata?: unknown }).metadata)
+      ? ((tx2 as { metadata: Record<string, unknown> }).metadata as Record<string, unknown>)
+      : {};
+  const canFinalize =
+    st2 === "pending" || (st2 === "failed" && wasPrematureDarajaVerifyRefFailure(meta2));
+  if (!canFinalize) {
     return NextResponse.json({ ok: true, status: st2, completed: st2 === "success" });
   }
 

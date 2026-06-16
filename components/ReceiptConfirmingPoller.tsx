@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 
 /**
  * Polls transaction status while the server page shows "Confirming your payment",
@@ -9,6 +10,7 @@ import { useRouter } from "next/navigation";
  */
 export default function ReceiptConfirmingPoller({ paymentRef }: { paymentRef: string }) {
   const router = useRouter();
+  const startedAtRef = useRef(Date.now());
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -35,7 +37,8 @@ export default function ReceiptConfirmingPoller({ paymentRef }: { paymentRef: st
 
         if (
           String(json.status ?? "pending") === "pending" &&
-          String(json.provider ?? "").toLowerCase() === "daraja"
+          String(json.provider ?? "").toLowerCase() === "daraja" &&
+          Date.now() - startedAtRef.current >= DARAJA_CLIENT_VERIFY_MIN_AGE_MS
         ) {
           await fetch("/api/daraja/verify-ref", {
             method: "POST",

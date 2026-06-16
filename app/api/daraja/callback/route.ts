@@ -3,12 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { finalizeDarajaStkFromMetadataItems } from "@/lib/daraja-finalize-stk-from-items";
+import { isStkCallbackSuccess } from "@/lib/daraja-stk-result";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
   MerchantRequestID?: string;
   CheckoutRequestID?: string;
-  ResultCode?: number;
+  ResultCode?: number | string;
   ResultDesc?: string;
   CallbackMetadata?: { Item?: CallbackMetadataItem[] };
 };
@@ -17,16 +18,8 @@ type DarajaCallbackBody = { Body?: { stkCallback?: StkCallback } };
 /**
  * Daraja STK Push callback - called by Safaricom when user completes/cancels M-Pesa prompt.
  *
- * ResultCode 0 = success. Other codes = user cancelled or failed.
+ * ResultCode 0 (or MpesaReceiptNumber in metadata) = success.
  * On success: update transaction, fulfill tickets/votes, send receipt.
- *
- * Env required:
- * - SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL
- * - SUPABASE_SERVICE_ROLE_KEY
- *
- * Optional (receipt email):
- * - RESEND_API_KEY
- * - RESEND_FROM_EMAIL
  */
 export async function POST(req: Request) {
   try {
@@ -43,9 +36,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 1, ResultDesc: "Missing stkCallback" }, { status: 200 });
     }
 
-    const checkoutRequestId = stk.CheckoutRequestID;
-    const resultCode = Number(stk.ResultCode ?? -1);
+    const checkoutRequestId = String(stk.CheckoutRequestID ?? "").trim();
+    if (!checkoutRequestId) {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    }
+
+    const resultCode = stk.ResultCode;
     const resultDesc = String(stk.ResultDesc ?? "");
+    const items = stk.CallbackMetadata?.Item ?? [];
+    const success = isStkCallbackSuccess(resultCode, items);
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -57,24 +56,30 @@ export async function POST(req: Request) {
       auth: { persistSession: false },
     });
 
-    // Find transaction by checkout_request_id in metadata
-    const { data: rows } = await supabase
+    const { data: tx } = await supabase
       .from("transactions")
-      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id")
+      .select(
+        "id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id"
+      )
       .eq("provider", "daraja")
-      .eq("status", "pending");
-
-    const tx = rows?.find(
-      (r) => (r.metadata as Record<string, unknown>)?.checkout_request_id === checkoutRequestId
-    );
+      .in("status", ["pending", "failed"])
+      .filter("metadata->>checkout_request_id", "eq", checkoutRequestId)
+      .maybeSingle();
 
     if (!tx) {
-      // Acknowledge to avoid Safaricom retries - unknown request
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    if (resultCode !== 0) {
-      // User cancelled or failed
+    if (String((tx as { status?: string }).status ?? "") === "success") {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    }
+
+    if (!success) {
+      if (String((tx as { status?: string }).status ?? "") !== "pending") {
+        return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+      }
+
+      const resultCodeNum = Number(resultCode ?? -1);
       await supabase
         .from("transactions")
         .update({
@@ -82,10 +87,10 @@ export async function POST(req: Request) {
           verified_at: new Date().toISOString(),
           metadata: {
             ...(typeof tx.metadata === "object" && tx.metadata ? tx.metadata : {}),
-            daraja_result_code: resultCode,
+            daraja_result_code: resultCodeNum,
             daraja_result_desc: resultDesc,
           },
-        } as any)
+        } as Record<string, unknown>)
         .eq("id", tx.id);
       void notifyCampaignOwnerPaymentIncomplete(supabase, {
         campaignId: String(tx.campaign_id),
@@ -95,7 +100,7 @@ export async function POST(req: Request) {
         provider: "M-Pesa (Daraja)",
         payerEmail: (tx as { email?: string | null }).email,
         payerName: (tx as { payer_name?: string | null }).payer_name,
-        reason: resultDesc ? `M-Pesa: ${resultDesc}` : `M-Pesa result code ${resultCode}`,
+        reason: resultDesc ? `M-Pesa: ${resultDesc}` : `M-Pesa result code ${resultCodeNum}`,
       });
       const toEmail = (tx as { email?: string | null }).email?.trim?.();
       if (toEmail) {
@@ -106,7 +111,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    const items = stk.CallbackMetadata?.Item ?? [];
     await finalizeDarajaStkFromMetadataItems(supabase, tx, items);
 
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });

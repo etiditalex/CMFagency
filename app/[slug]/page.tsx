@@ -13,6 +13,7 @@ import {
   PaymentClientError,
 } from "@/lib/payment-user-message";
 import { isKenyaShillingsForLipa, LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
+import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 
 /** Match `/api/cfm-tickets/installment/plan` so plan phone equals STK phone. */
 function normalizeKenyaPhoneForPlan(raw: string): string {
@@ -373,6 +374,7 @@ export default function CampaignPage() {
     let cancelled = false;
     /** Browser timers are numeric IDs; `clearInterval` accepts them in the client bundle. */
     const pollRef: { id: number | undefined } = { id: undefined };
+    const darajaVerifyEligibleAt = Date.now() + DARAJA_CLIENT_VERIFY_MIN_AGE_MS;
 
     const fetchStatus = async () => {
       try {
@@ -411,7 +413,8 @@ export default function CampaignPage() {
 
         if (
           String(json.status ?? "pending") === "pending" &&
-          String(json.provider ?? "").toLowerCase() === "daraja"
+          String(json.provider ?? "").toLowerCase() === "daraja" &&
+          Date.now() >= darajaVerifyEligibleAt
         ) {
           await fetch("/api/daraja/verify-ref", {
             method: "POST",

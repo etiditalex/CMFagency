@@ -8,6 +8,7 @@ import {
   messageForPaymentFailure,
 } from "@/lib/payment-user-message";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
+import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import { cfmTicketsJsonLd } from "./structured-data";
@@ -446,6 +447,7 @@ export default function CfmTicketsPage() {
 
     let cancelled = false;
     let interval: number | undefined;
+    const darajaVerifyEligibleAt = Date.now() + DARAJA_CLIENT_VERIFY_MIN_AGE_MS;
 
     const pollStatus = async () => {
       try {
@@ -463,7 +465,8 @@ export default function CfmTicketsPage() {
 
         if (
           String(json.status ?? "pending") === "pending" &&
-          String(json.provider ?? "").toLowerCase() === "daraja"
+          String(json.provider ?? "").toLowerCase() === "daraja" &&
+          Date.now() >= darajaVerifyEligibleAt
         ) {
           await fetch("/api/daraja/verify-ref", {
             method: "POST",
