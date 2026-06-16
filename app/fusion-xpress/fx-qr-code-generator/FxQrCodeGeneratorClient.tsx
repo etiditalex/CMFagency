@@ -114,7 +114,7 @@ export default function FxQrCodeGeneratorClient() {
     const svgMarkup = serializer.serializeToString(svg);
     const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
+    const img = new window.Image();
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
