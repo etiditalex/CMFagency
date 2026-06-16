@@ -140,6 +140,7 @@ export default function Navbar() {
       label: "Smart Visitor Management",
       children: [{ href: "/fusion-xpress/external-api", label: "External API" }],
     },
+    { href: "/fusion-xpress/fx-qr-code-generator", label: "FX QR Code Generator" },
     { href: "/teams-work/portal", label: "Teams Work portal" },
   ];
 
