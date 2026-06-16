@@ -273,7 +273,7 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
       "Multi-feature client: Visitor Management appears alongside other Fusion Xpress modules (ticketing, events, etc.).",
       "Platform admin: can open any business using Accounts Manager and the business scope bar (?owner=).",
       "Employer role: does not access Visitor Management — intended for campaign employers, not VM clients.",
-      "Two-factor authentication (email code and optional TOTP) is required before dashboard access.",
+      "Two-factor authentication: email code by default, with Google Authenticator required for business accounts as an additional option.",
     ],
   },
 ];

@@ -52,8 +52,11 @@ export default function VisitorSignInForm() {
   const [step, setStep] = useState<Step>("login");
   const [code, setCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
+  const [resendCodeLoading, setResendCodeLoading] = useState(false);
   const [hasTotp, setHasTotp] = useState(false);
   const [totpRequired, setTotpRequired] = useState(true);
+  type TwoFactorMethod = "email" | "totp";
+  const [twoFactorMethod, setTwoFactorMethod] = useState<TwoFactorMethod>("email");
 
   const canSubmit = useMemo(() => email.trim() && password.length > 0, [email, password]);
 
@@ -91,19 +94,43 @@ export default function VisitorSignInForm() {
       return;
     }
 
-    if (!useTotp) {
-      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+    const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!sendRes.ok) {
+      const err = await sendRes.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
+    }
+
+    setTwoFactorMethod("email");
+    setStep("code");
+    setCode("");
+  };
+
+  const onResendCode = async () => {
+    setError(null);
+    setResendCodeLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Session expired. Sign in again.");
+
+      const res = await fetch("/api/fusion-xpress/send-login-code", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!sendRes.ok) {
-        const err = await sendRes.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to resend code.");
       }
+      setTwoFactorMethod("email");
+      setCode("");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to resend code.");
+    } finally {
+      setResendCodeLoading(false);
     }
-
-    setStep("code");
-    setCode("");
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -155,7 +182,7 @@ export default function VisitorSignInForm() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ code: codeDigits, method: hasTotp ? "totp" : "email" }),
+        body: JSON.stringify({ code: codeDigits, method: twoFactorMethod }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Invalid code");
@@ -197,14 +224,14 @@ export default function VisitorSignInForm() {
   return (
     <div className="mt-5 sm:mt-6">
       <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">
-        {step === "login" ? "Sign in to your account" : "Verify with Google Authenticator"}
+        {step === "login" ? "Sign in to your account" : "Enter verification code"}
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         {step === "login"
           ? "Sign in as your organization to manage guest check-ins, approvals, and QR passes."
-          : hasTotp
+          : twoFactorMethod === "totp"
             ? "Enter the 6-digit code from Google Authenticator."
-            : "Enter the 6-digit code sent to your email."}
+            : `We sent a 6-digit code to ${email.trim() || "your email"}. Enter it below to continue.`}
       </p>
 
       {error ? (
@@ -244,6 +271,40 @@ export default function VisitorSignInForm() {
           <button type="submit" disabled={codeLoading || code.length !== 6} className={btnPrimary}>
             {codeLoading ? "Verifying…" : "Verify and continue"}
           </button>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {twoFactorMethod === "email" ? (
+              <button
+                type="button"
+                onClick={() => void onResendCode()}
+                disabled={resendCodeLoading}
+                className="font-semibold text-primary-700 hover:underline disabled:opacity-60"
+              >
+                {resendCodeLoading ? "Sending…" : "Resend code"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void onResendCode()}
+                disabled={resendCodeLoading}
+                className="font-semibold text-primary-700 hover:underline disabled:opacity-60"
+              >
+                Send code to email instead
+              </button>
+            )}
+            {hasTotp && twoFactorMethod === "email" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setTwoFactorMethod("totp");
+                  setCode("");
+                  setError(null);
+                }}
+                className="font-semibold text-primary-700 hover:underline"
+              >
+                Use authenticator app instead
+              </button>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={async () => {

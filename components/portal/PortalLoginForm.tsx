@@ -66,7 +66,6 @@ export function PortalLoginForm({
   const [codeLoading, setCodeLoading] = useState(false);
   const [resendCodeLoading, setResendCodeLoading] = useState(false);
   const [hasTotp, setHasTotp] = useState(false);
-  const [totpRequired, setTotpRequired] = useState(false);
   type TwoFactorMethod = "email" | "totp";
   const [twoFactorMethod, setTwoFactorMethod] = useState<TwoFactorMethod>("email");
 
@@ -138,8 +137,7 @@ export function PortalLoginForm({
               return;
             }
             setHasTotp(!!methodData.hasTotp);
-            setTotpRequired(!!methodData.totpRequired);
-            setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
+            setTwoFactorMethod("email");
             setStep("code");
             setLoginEmail(userEmail);
           }
@@ -164,8 +162,7 @@ export function PortalLoginForm({
             return;
           }
           setHasTotp(!!methodData.hasTotp);
-          setTotpRequired(!!methodData.totpRequired);
-          setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
+          setTwoFactorMethod("email");
           setStep("code");
           setLoginEmail(userEmail);
         }
@@ -264,21 +261,18 @@ export function PortalLoginForm({
         return;
       }
 
-      if (!useTotp) {
-        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!sendRes.ok) {
-          const err = await sendRes.json().catch(() => ({}));
-          throw new Error((err as { error?: string }).error ?? "Failed to send verification code to your email.");
-        }
+      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sendRes.ok) {
+        const err = await sendRes.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to send verification code to your email.");
       }
 
       setLoginEmail(email.trim());
       setHasTotp(useTotp);
-      setTotpRequired(!!methodData.totpRequired);
-      setTwoFactorMethod(useTotp ? "totp" : "email");
+      setTwoFactorMethod("email");
       setStep("code");
       setCode("");
     } catch (e: unknown) {
@@ -322,10 +316,6 @@ export function PortalLoginForm({
   };
 
   const onResendCode = async () => {
-    if (totpRequired) {
-      setError("Business accounts must sign in with Google Authenticator.");
-      return;
-    }
     setError(null);
     setResendCodeLoading(true);
     try {
@@ -387,7 +377,7 @@ export function PortalLoginForm({
           role="status"
         >
           <strong className="font-semibold">Hiring account:</strong> Use the email and password from your registration below.
-          On first sign-in you will set up Google Authenticator, then enter a code from the app to access the dashboard—open{" "}
+          On first sign-in you will set up Google Authenticator, then verify with the email code we send (or use your authenticator app)—open{" "}
           <strong>Job listings</strong> in the sidebar to create and publish roles.
         </div>
       )}
@@ -455,7 +445,7 @@ export function PortalLoginForm({
                 >
                   {codeLoading ? "Verifying…" : "Verify and continue"}
                 </button>
-                {twoFactorMethod === "email" && !totpRequired ? (
+                {twoFactorMethod === "email" ? (
                   <button
                     type="button"
                     onClick={onResendCode}
@@ -467,7 +457,7 @@ export function PortalLoginForm({
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                {twoFactorMethod === "totp" && !totpRequired ? (
+                {twoFactorMethod === "totp" ? (
                   <button
                     type="button"
                     onClick={onResendCode}

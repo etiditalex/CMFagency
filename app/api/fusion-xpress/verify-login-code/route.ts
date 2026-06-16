@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verify } from "otplib";
 
-import { requiresMandatoryBusinessTotp } from "@/lib/auth/business-totp";
-
 const COOKIE_NAME = "portal_2fa_verified";
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
 
@@ -31,30 +29,6 @@ export async function POST(req: NextRequest) {
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     const userId = userData.user.id;
-
-    const { data: memberRow } = await admin
-      .from("portal_members")
-      .select("role")
-      .eq("user_id", userId)
-      .maybeSingle();
-    const meta = userData.user.user_metadata as Record<string, unknown> | undefined;
-    const accountType = String(meta?.account_type ?? meta?.accountType ?? "").trim();
-    const totpRequired = requiresMandatoryBusinessTotp(memberRow?.role, accountType);
-
-    if (method === "email" && totpRequired) {
-      const { data: totpRow } = await admin
-        .from("portal_user_totp")
-        .select("user_id")
-        .eq("user_id", userId)
-        .not("verified_at", "is", null)
-        .maybeSingle();
-      if (totpRow) {
-        return NextResponse.json(
-          { error: "Business accounts must sign in with Google Authenticator." },
-          { status: 400 }
-        );
-      }
-    }
 
     if (method === "totp") {
       const { data: totpRow, error: totpErr } = await admin

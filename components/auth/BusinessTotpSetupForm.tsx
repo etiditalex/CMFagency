@@ -16,7 +16,7 @@ type Props = {
 export default function BusinessTotpSetupForm({
   redirectTo,
   title = "Set up Google Authenticator",
-  description = "Business accounts must link Google Authenticator (or any TOTP app) before using the dashboard. Scan the QR code, then enter the 6-digit code to finish.",
+  description = "Business accounts must link Google Authenticator (or any TOTP app) before using the dashboard. After setup, you can sign in with the email code we send by default or use your authenticator app.",
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);

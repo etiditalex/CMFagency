@@ -253,7 +253,7 @@ export default function DashboardAccountPage() {
         </div>
         <p className="mt-2 text-sm text-gray-600">
           {totpRequired
-            ? "Business accounts must use Google Authenticator when signing in. Set it up here if you have not already."
+            ? "Business accounts must set up Google Authenticator. Email codes are sent by default at sign-in; you can also use your authenticator app."
             : "Use an email code or Google Authenticator (or any TOTP app) when signing in to the portal."}
         </p>
 

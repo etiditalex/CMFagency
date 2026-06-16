@@ -2,7 +2,8 @@
 export const BUSINESS_TOTP_SETUP_PATH = "/fusion-xpress/setup-authenticator";
 
 /**
- * Business portal accounts (not internal admin/manager staff) must use TOTP at login.
+ * Business portal accounts (not internal admin/manager staff) must complete TOTP setup.
+ * Email codes remain the default sign-in method; authenticator is an additional option.
  */
 export function requiresMandatoryBusinessTotp(
   role: string | null | undefined,

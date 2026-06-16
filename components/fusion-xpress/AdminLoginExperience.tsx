@@ -143,7 +143,7 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
       const methodRes = token ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } }) : null;
       const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean }) : {};
       setHasTotp(!!methodData.hasTotp);
-      setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
+      setTwoFactorMethod("email");
       setStep("code");
       setLoginEmail(userEmail);
     };
@@ -177,20 +177,18 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
       const methodData = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean };
       const useTotp = !!methodData.hasTotp;
 
-      if (!useTotp) {
-        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!sendRes.ok) {
-          const err = await sendRes.json().catch(() => ({}));
-          throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
-        }
+      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sendRes.ok) {
+        const err = await sendRes.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
       }
 
       setLoginEmail(email.trim());
       setHasTotp(useTotp);
-      setTwoFactorMethod(useTotp ? "totp" : "email");
+      setTwoFactorMethod("email");
       setStep("code");
       setCode("");
     } catch (err: unknown) {
