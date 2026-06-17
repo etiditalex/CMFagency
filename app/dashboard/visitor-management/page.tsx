@@ -29,7 +29,6 @@ import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
 import {
-  VISITOR_INDUSTRIES,
   industryCheckInUrl,
   industryLabel,
   isVisitorIndustrySlug,
@@ -458,7 +457,7 @@ export default function DashboardVisitorManagementPage() {
                   : "pointer-events-none border-gray-200 bg-gray-100 text-gray-500"
               }`}
             >
-              Open pre-registration form
+              {industryLabel(registerIndustrySlug)} pre-registration
             </Link>
           </div>
         </div>
@@ -476,7 +475,10 @@ export default function DashboardVisitorManagementPage() {
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-sm font-bold text-primary-900">
                 <Link2 className="h-4 w-4 shrink-0" />
-                Public check-in link
+                {industryLabel(registerIndustrySlug)} pre-registration link
+              </p>
+              <p className="mt-1 text-xs text-primary-800/80">
+                Uses your account industry automatically — no manual industry selection needed.
               </p>
               <p className="mt-2 break-all font-mono text-xs text-gray-800 bg-white/80 rounded-lg border border-primary-100 px-3 py-2">
                 {publicCheckInUrl || "…"}
@@ -499,28 +501,6 @@ export default function DashboardVisitorManagementPage() {
               <Copy className="h-4 w-4" />
               {checkInLinkCopied ? "Copied" : "Copy link"}
             </button>
-          </div>
-          <div className="mt-4 rounded-lg border border-primary-100 bg-white/80 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary-900">
-              Industry pre-registration demo links
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {VISITOR_INDUSTRIES.map((industry) => (
-                <Link
-                  key={industry.slug}
-                  href={industryCheckInUrl(
-                    industry.slug,
-                    activityOwnerId,
-                    typeof window !== "undefined" ? window.location.origin : undefined
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex rounded-full border border-primary-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-primary-50"
-                >
-                  {industry.label}
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
       ) : null}

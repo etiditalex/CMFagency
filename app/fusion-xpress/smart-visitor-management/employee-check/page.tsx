@@ -4,16 +4,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, LogIn, LogOut, XCircle } from "lucide-react";
+import { Loader2, LogIn, XCircle } from "lucide-react";
 
+import VisitorCheckInConfirmation from "@/components/fusion-xpress/visitor-management/VisitorCheckInConfirmation";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { buildEmployeeCheckInSession } from "@/lib/employees/build-check-in-session";
 import {
   browserDeviceLabel,
   getOrCreateBrowserDeviceId,
 } from "@/lib/employees/device-fingerprint";
 import { receptionGateTitle } from "@/lib/employees/reception-gate";
 import type { EmployeeMemberType } from "@/lib/employees/types";
-import { formatEmployeeTimestamp } from "@/lib/employees/utils";
+import {
+  formatCheckInClock,
+  formatCheckInDateLabel,
+} from "@/lib/visitors/format-check-in-display";
 
 type EmployeePreview = {
   id: string;
@@ -32,6 +37,7 @@ type PagePhase =
       kind: "gate-bound";
       gateToken: string;
       memberType: EmployeeMemberType;
+      teamLabel: string;
       employee: EmployeePreview;
     }
   | {
@@ -45,11 +51,18 @@ type PagePhase =
       kind: "done";
       ok: boolean;
       eventType?: "sign_in" | "sign_out";
-      employeeName?: string;
+      employee?: EmployeePreview;
       occurredAt?: string;
       message: string;
       gateToken?: string;
+      memberType?: EmployeeMemberType;
+      teamLabel?: string;
     };
+
+function venueNameForGate(memberType: EmployeeMemberType, teamLabel?: string) {
+  const title = receptionGateTitle(memberType).replace(/\s*—\s*sign in$/i, "").trim();
+  return teamLabel?.trim() || title || "Workplace";
+}
 
 export default function EmployeeCheckPage() {
   const searchParams = useSearchParams();
@@ -123,11 +136,13 @@ export default function EmployeeCheckPage() {
         return;
       }
       const memberType = json.gate?.memberType ?? "staff";
+      const teamLabel = json.gate?.teamLabel ?? memberType;
       if (json.boundEmployee && !json.needsSetup) {
         setPhase({
           kind: "gate-bound",
           gateToken: gate,
           memberType,
+          teamLabel,
           employee: json.boundEmployee,
         });
         return;
@@ -136,7 +151,7 @@ export default function EmployeeCheckPage() {
         kind: "gate-setup",
         gateToken: gate,
         memberType,
-        teamLabel: json.gate?.teamLabel ?? memberType,
+        teamLabel,
       });
     } catch (e: unknown) {
       setPhase({
@@ -154,7 +169,14 @@ export default function EmployeeCheckPage() {
   const runScan = useCallback(
     async (
       action: "sign_in" | "sign_out",
-      opts: { token?: string; gate?: string; employeeId?: string; memberCode?: string }
+      opts: {
+        token?: string;
+        gate?: string;
+        employeeId?: string;
+        memberCode?: string;
+        memberType?: EmployeeMemberType;
+        teamLabel?: string;
+      }
     ) => {
       setSubmitting(true);
       try {
@@ -208,7 +230,7 @@ export default function EmployeeCheckPage() {
           success?: boolean;
           eventType?: "sign_in" | "sign_out";
           occurredAt?: string;
-          employee?: { fullName?: string };
+          employee?: EmployeePreview;
           error?: string;
         };
 
@@ -222,17 +244,19 @@ export default function EmployeeCheckPage() {
           return;
         }
 
-        const signedIn = json.eventType === "sign_in";
         setPhase({
           kind: "done",
           ok: true,
           eventType: json.eventType,
-          employeeName: json.employee?.fullName,
+          employee: json.employee,
           occurredAt: json.occurredAt,
           gateToken: opts.gate,
-          message: signedIn
-            ? "You are signed in. Scan the reception QR again when you leave to sign out."
-            : "You are signed out. See you next time.",
+          memberType: opts.memberType,
+          teamLabel: opts.teamLabel,
+          message:
+            json.eventType === "sign_in"
+              ? "You are signed in. Scan the reception QR again when you leave to sign out."
+              : "You are signed out. See you next time.",
         });
       } catch (e: unknown) {
         setPhase({
@@ -260,7 +284,6 @@ export default function EmployeeCheckPage() {
   const gateSetup = phase.kind === "gate-setup" ? phase : null;
   const ready = phase.kind === "ready" ? phase.employee : null;
   const done = phase.kind === "done" ? phase : null;
-  const signedInDone = done?.eventType === "sign_in";
 
   const reload = () => {
     if (gateToken) void loadGateSession(gateToken);
@@ -271,11 +294,94 @@ export default function EmployeeCheckPage() {
     e.preventDefault();
     const code = memberCodeInput.trim();
     if (!code || !gateToken) return;
-    void runScan("sign_in", { gate: gateToken, memberCode: code });
+    void runScan("sign_in", { gate: gateToken, memberCode: code, memberType: gateSetup?.memberType, teamLabel: gateSetup?.teamLabel });
   };
 
+  const activeEmployee = useMemo(() => {
+    if (done?.ok && done.employee) return done.employee;
+    if (gateBound) return gateBound.employee;
+    if (ready) return ready;
+    return null;
+  }, [done, gateBound, ready]);
+
+  const confirmationView = useMemo(() => {
+    if (!activeEmployee) return null;
+
+    const gateContext = gateBound ?? (done?.gateToken ? { gateToken: done.gateToken, memberType: done.memberType ?? "staff", teamLabel: done.teamLabel ?? "" } : null);
+    const venueName = gateContext
+      ? venueNameForGate(gateContext.memberType, gateContext.teamLabel)
+      : "Employee attendance";
+
+    if (done?.ok && done.eventType === "sign_out" && done.occurredAt) {
+      return {
+        session: buildEmployeeCheckInSession({
+          venueName,
+          fullName: activeEmployee.fullName,
+          occurredAt: done.occurredAt,
+          employeeId: activeEmployee.id,
+          department: activeEmployee.department,
+          employeeCode: activeEmployee.employeeCode,
+        }),
+        initialCheckedOut: true,
+        checkoutTimeLabel: formatCheckInClock(done.occurredAt),
+        checkoutDateLabel: formatCheckInDateLabel(done.occurredAt),
+        onCheckOut: undefined,
+        onRegisterAnother: gateContext ? reload : undefined,
+      };
+    }
+
+    const signedInAt =
+      done?.ok && done.eventType === "sign_in" && done.occurredAt
+        ? done.occurredAt
+        : activeEmployee.lastSignedInAt;
+
+    if (!signedInAt) return null;
+
+    const isSignedIn =
+      (done?.ok && done.eventType === "sign_in") || activeEmployee.attendanceStatus === "in";
+
+    if (!isSignedIn) return null;
+
+    return {
+      session: buildEmployeeCheckInSession({
+        venueName,
+        fullName: activeEmployee.fullName,
+        occurredAt: signedInAt,
+        employeeId: activeEmployee.id,
+        department: activeEmployee.department,
+        employeeCode: activeEmployee.employeeCode,
+      }),
+      initialCheckedOut: false,
+      onCheckOut: async () => {
+        if (gateBound) {
+          await runScan("sign_out", {
+            gate: gateBound.gateToken,
+            employeeId: gateBound.employee.id,
+            memberType: gateBound.memberType,
+            teamLabel: gateBound.teamLabel,
+          });
+          return;
+        }
+        if (done?.gateToken && activeEmployee.id) {
+          await runScan("sign_out", {
+            gate: done.gateToken,
+            employeeId: activeEmployee.id,
+            memberType: done.memberType,
+            teamLabel: done.teamLabel,
+          });
+          return;
+        }
+        await runPersonalAction("sign_out");
+      },
+      onRegisterAnother: gateContext ? reload : undefined,
+    };
+  }, [activeEmployee, done, gateBound, reload, runPersonalAction, runScan]);
+
+  const showConfirmation = Boolean(confirmationView);
+  const showFormShell = !showConfirmation && phase.kind !== "loading" && !submitting;
+
   return (
-    <main className="min-h-[100dvh] bg-gray-50 flex flex-col">
+    <main className={`min-h-[100dvh] flex flex-col ${showConfirmation ? "bg-gray-50" : "bg-gray-50"}`}>
       <header className="border-b border-gray-100 bg-white px-4 py-4">
         <div className="mx-auto max-w-md flex items-center justify-between gap-3">
           <Image src={BRAND_LOGO_URL} alt="Fusion Xpress" width={120} height={36} className="h-8 w-auto" />
@@ -287,217 +393,157 @@ export default function EmployeeCheckPage() {
           </Link>
         </div>
       </header>
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 mb-1 text-center">
-            Employee attendance
-          </p>
-          {isGateMode ? (
-            <h1 className="text-lg font-extrabold text-gray-900 text-center mb-4">
-              {receptionGateTitle(
-                gateBound?.memberType ?? gateSetup?.memberType ?? "staff"
-              )}
-            </h1>
-          ) : (
-            <p className="text-center text-sm text-gray-500 mb-4">Sign in or sign out</p>
-          )}
 
+      <div className={`flex-1 flex items-center justify-center p-4 ${showConfirmation ? "pt-6 sm:pt-8" : ""}`}>
+        <div className={`w-full ${showConfirmation ? "max-w-md" : "max-w-md"}`}>
           {phase.kind === "loading" || submitting ? (
-            <div className="py-8 flex flex-col items-center gap-3 text-gray-600">
-              <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
-              <p className="text-sm font-medium">
-                {submitting
-                  ? "Checking your location…"
-                  : isGateMode
-                    ? "Opening sign-in…"
-                    : "Loading your pass…"}
-              </p>
+            <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+              <div className="py-4 flex flex-col items-center gap-3 text-gray-600">
+                <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+                <p className="text-sm font-medium">
+                  {submitting
+                    ? "Checking your location…"
+                    : isGateMode
+                      ? "Opening sign-in…"
+                      : "Loading your pass…"}
+                </p>
+              </div>
             </div>
           ) : null}
 
-          {phase.kind === "error" ? (
-            <div className="py-4 space-y-3 text-center">
+          {showConfirmation && confirmationView ? (
+            <VisitorCheckInConfirmation
+              variant="employee"
+              session={confirmationView.session}
+              initialCheckedOut={confirmationView.initialCheckedOut}
+              checkoutTimeLabel={confirmationView.checkoutTimeLabel}
+              checkoutDateLabel={confirmationView.checkoutDateLabel}
+              onCheckOut={confirmationView.onCheckOut}
+              onRegisterAnother={confirmationView.onRegisterAnother}
+            />
+          ) : null}
+
+          {showFormShell && phase.kind === "error" ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center space-y-3">
               <XCircle className="w-12 h-12 mx-auto text-red-500" />
               <p className="text-sm text-red-700">{phase.message}</p>
             </div>
           ) : null}
 
-          {gateSetup ? (
-            <form onSubmit={handleMemberCodeSubmit} className="space-y-4">
-              <p className="text-sm text-gray-600 text-center">
-                <strong>First time on this phone:</strong> enter your unique member ID from your manager.
-                Your phone will be linked so next time you only sign in or out — no name list.
-              </p>
-              <label className="block">
-                <span className="text-xs font-semibold uppercase text-gray-600 tracking-wide">
-                  Member ID
-                </span>
-                <input
-                  type="text"
-                  value={memberCodeInput}
-                  onChange={(e) => setMemberCodeInput(e.target.value.toUpperCase())}
-                  placeholder="e.g. STF-A1B2C3"
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-3 text-center text-lg font-mono font-bold tracking-wider"
-                  required
-                />
-              </label>
+          {showFormShell && done && !done.ok ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center space-y-3">
+              <XCircle className="w-12 h-12 mx-auto text-red-500" />
+              <p className="text-sm text-red-700">{done.message}</p>
               <button
-                type="submit"
-                disabled={submitting || !memberCodeInput.trim()}
-                className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
+                type="button"
+                onClick={reload}
+                className="text-sm font-semibold text-primary-700 hover:underline"
               >
-                Link phone & sign in
+                Try again
               </button>
-              <p className="text-[10px] text-gray-500 text-center">
-                {gateSetup.teamLabel} team · do not use someone else&apos;s ID
+            </div>
+          ) : null}
+
+          {showFormShell && gateSetup ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-700 mb-1 text-center">
+                {receptionGateTitle(gateSetup.memberType)}
               </p>
-            </form>
-          ) : null}
-
-          {gateBound ? (
-            <div className="py-2 space-y-4 text-center">
-              <p className="text-lg font-bold text-gray-900">{gateBound.employee.fullName}</p>
-              {gateBound.employee.employeeCode ? (
-                <p className="text-xs font-mono text-gray-500">ID: {gateBound.employee.employeeCode}</p>
-              ) : null}
-              {gateBound.employee.department ? (
-                <p className="text-sm text-gray-600">{gateBound.employee.department}</p>
-              ) : null}
-              {gateBound.employee.attendanceStatus === "in" ? (
-                <>
-                  <LogIn className="w-10 h-10 mx-auto text-emerald-600" />
-                  <p className="text-sm font-semibold text-emerald-800">You are signed in</p>
-                  {gateBound.employee.lastSignedInAt ? (
-                    <p className="text-xs text-gray-500">
-                      Since {formatEmployeeTimestamp(gateBound.employee.lastSignedInAt)}
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void runScan("sign_out", {
-                        gate: gateBound.gateToken,
-                        employeeId: gateBound.employee.id,
-                      })
-                    }
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-bold text-slate-800 hover:bg-slate-100"
-                  >
-                    Sign out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <LogOut className="w-10 h-10 mx-auto text-slate-400" />
-                  <p className="text-sm text-gray-600">Tap to sign in</p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void runScan("sign_in", {
-                        gate: gateBound.gateToken,
-                        employeeId: gateBound.employee.id,
-                      })
-                    }
-                    className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-700"
-                  >
-                    Sign in
-                  </button>
-                </>
-              )}
+              <form onSubmit={handleMemberCodeSubmit} className="mt-4 space-y-4">
+                <p className="text-sm text-gray-600 text-center">
+                  <strong>First time on this phone:</strong> enter your unique member ID from your manager.
+                  Your phone will be linked so next time you only sign in or out.
+                </p>
+                <label className="block">
+                  <span className="text-xs font-semibold uppercase text-gray-600 tracking-wide">
+                    Member ID
+                  </span>
+                  <input
+                    type="text"
+                    value={memberCodeInput}
+                    onChange={(e) => setMemberCodeInput(e.target.value.toUpperCase())}
+                    placeholder="e.g. STF-A1B2C3"
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-3 text-center text-lg font-mono font-bold tracking-wider"
+                    required
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={submitting || !memberCodeInput.trim()}
+                  className="w-full rounded-xl bg-primary-600 py-3.5 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
+                >
+                  Link phone & sign in
+                </button>
+                <p className="text-[10px] text-gray-500 text-center">
+                  {gateSetup.teamLabel} team · do not use someone else&apos;s ID
+                </p>
+              </form>
             </div>
           ) : null}
 
-          {ready && phase.kind === "ready" ? (
-            <div className="py-4 space-y-4 text-center">
-              <p className="text-lg font-bold text-gray-900">{ready.fullName}</p>
-              {ready.department ? (
-                <p className="text-sm text-gray-600">{ready.department}</p>
-              ) : null}
-              {ready.attendanceStatus === "in" ? (
-                <>
-                  <LogIn className="w-10 h-10 mx-auto text-emerald-600" />
-                  <p className="text-sm font-semibold text-emerald-800">You are signed in</p>
-                  {ready.lastSignedInAt ? (
-                    <p className="text-xs text-gray-500">
-                      Since {formatEmployeeTimestamp(ready.lastSignedInAt)}
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => void runPersonalAction("sign_out")}
-                    className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-bold text-slate-800 hover:bg-slate-100"
-                  >
-                    Sign out now
-                  </button>
-                </>
-              ) : (
-                <>
-                  <LogOut className="w-10 h-10 mx-auto text-slate-400" />
-                  <p className="text-sm text-gray-600">Tap to sign in for today</p>
-                  <button
-                    type="button"
-                    onClick={() => void runPersonalAction("sign_in")}
-                    className="w-full rounded-lg bg-primary-600 py-3 text-sm font-bold text-white hover:bg-primary-700"
-                  >
-                    Sign in
-                  </button>
-                </>
-              )}
+          {showFormShell && gateBound && gateBound.employee.attendanceStatus === "out" ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">
+                {receptionGateTitle(gateBound.memberType)}
+              </p>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{gateBound.employee.fullName}</p>
+                {gateBound.employee.employeeCode ? (
+                  <p className="text-xs font-mono text-gray-500 mt-1">ID: {gateBound.employee.employeeCode}</p>
+                ) : null}
+                {gateBound.employee.department ? (
+                  <p className="text-sm text-gray-600 mt-1">{gateBound.employee.department}</p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  void runScan("sign_in", {
+                    gate: gateBound.gateToken,
+                    employeeId: gateBound.employee.id,
+                    memberType: gateBound.memberType,
+                    teamLabel: gateBound.teamLabel,
+                  })
+                }
+                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-bold text-white hover:bg-primary-700"
+              >
+                <LogIn className="h-5 w-5" />
+                Sign in
+              </button>
             </div>
           ) : null}
 
-          {done ? (
-            <div className="py-4 space-y-4 text-center">
-              {done.ok ? (
-                <>
-                  {signedInDone ? (
-                    <LogIn className="w-12 h-12 mx-auto text-emerald-600" />
-                  ) : (
-                    <LogOut className="w-12 h-12 mx-auto text-slate-600" />
-                  )}
-                  <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-500 -mt-2" />
-                  <h2 className="text-xl font-extrabold text-gray-900">
-                    {signedInDone ? "Signed in" : "Signed out"}
-                  </h2>
-                  {done.employeeName ? (
-                    <p className="text-sm font-semibold text-gray-800">{done.employeeName}</p>
-                  ) : null}
-                  <p className="text-sm text-gray-600">{done.message}</p>
-                  {done.occurredAt ? (
-                    <p className="text-xs text-gray-500">{formatEmployeeTimestamp(done.occurredAt)}</p>
-                  ) : null}
-                  {done.gateToken ? (
-                    <button
-                      type="button"
-                      onClick={reload}
-                      className="text-sm font-semibold text-primary-700 hover:underline"
-                    >
-                      Continue
-                    </button>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-12 h-12 mx-auto text-red-500" />
-                  <p className="text-sm text-red-700">{done.message}</p>
-                  <button
-                    type="button"
-                    onClick={reload}
-                    className="text-sm font-semibold text-primary-700 hover:underline"
-                  >
-                    Try again
-                  </button>
-                </>
-              )}
+          {showFormShell && ready && ready.attendanceStatus === "out" ? (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm text-center space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">
+                Employee attendance
+              </p>
+              <div>
+                <p className="text-lg font-bold text-gray-900">{ready.fullName}</p>
+                {ready.department ? (
+                  <p className="text-sm text-gray-600 mt-1">{ready.department}</p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => void runPersonalAction("sign_in")}
+                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-bold text-white hover:bg-primary-700"
+              >
+                <LogIn className="h-5 w-5" />
+                Sign in
+              </button>
             </div>
           ) : null}
 
-          <p className="mt-6 text-xs text-gray-500 text-center">
-            {isGateMode
-              ? "Your phone is linked to your member ID. Location must be on — sign-in/out only works at your registered workplace."
-              : "Turn on location to sign in or out at your workplace. Directors receive email when you sign in."}
-          </p>
+          {!showConfirmation && showFormShell ? (
+            <p className="mt-6 text-xs text-gray-500 text-center">
+              {isGateMode
+                ? "Your phone is linked to your member ID. Location must be on — sign-in/out only works at your registered workplace."
+                : "Turn on location to sign in or out at your workplace. Directors receive email when you sign in."}
+            </p>
+          ) : null}
         </div>
       </div>
     </main>

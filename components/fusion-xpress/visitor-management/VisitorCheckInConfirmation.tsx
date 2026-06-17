@@ -11,22 +11,46 @@ export type CheckInSession = {
   timeLabel: string;
   dateLabel: string;
   emailSent?: boolean;
+  department?: string;
+  employeeCode?: string;
 };
 
 type VisitorCheckInConfirmationProps = {
   session: CheckInSession;
+  variant?: "visitor" | "employee";
+  initialCheckedOut?: boolean;
+  checkoutTimeLabel?: string;
+  checkoutDateLabel?: string;
+  checkoutCaption?: string;
+  checkInCaption?: string;
   onCheckOut?: () => Promise<void>;
   onRegisterAnother?: () => void;
+  showDownload?: boolean;
 };
 
 export default function VisitorCheckInConfirmation({
   session,
+  variant = "visitor",
+  initialCheckedOut = false,
+  checkoutTimeLabel,
+  checkoutDateLabel,
+  checkoutCaption,
+  checkInCaption,
   onCheckOut,
   onRegisterAnother,
+  showDownload,
 }: VisitorCheckInConfirmationProps) {
+  const isEmployee = variant === "employee";
+  const downloadVisible = showDownload ?? !isEmployee;
+  const signedInCaption = checkInCaption ?? (isEmployee ? "Since" : "Checked in on");
+  const signedOutCaption = checkoutCaption ?? (isEmployee ? "Signed out" : "Checked out");
+  const checkOutLabel = isEmployee ? "Sign out" : "Check Out";
+  const checkingOutLabel = isEmployee ? "Signing out…" : "Checking out…";
+  const registerAnotherLabel = isEmployee ? "Continue" : "Check in new visitors";
+
   const [checkingOut, setCheckingOut] = useState(false);
-  const [checkedOut, setCheckedOut] = useState(false);
-  const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
+  const [checkedOut, setCheckedOut] = useState(initialCheckedOut);
+  const [checkOutTime, setCheckOutTime] = useState<string | null>(checkoutTimeLabel ?? null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCheckOut = async () => {
@@ -62,7 +86,10 @@ export default function VisitorCheckInConfirmation({
             <p className="mt-2 text-4xl font-bold tracking-tight text-primary-600">
               {checkOutTime ?? "—"}
             </p>
-            <p className="mt-1 text-sm text-gray-500">Checked out</p>
+            <p className="mt-1 text-sm text-gray-500">{signedOutCaption}</p>
+            {checkoutDateLabel ? (
+              <p className="mt-1 text-xs text-gray-400">{checkoutDateLabel}</p>
+            ) : null}
           </>
         ) : (
           <>
@@ -70,7 +97,22 @@ export default function VisitorCheckInConfirmation({
               {session.timeLabel}
             </p>
             {session.dateLabel ? (
-              <p className="mt-1 text-sm text-gray-500">Checked in on {session.dateLabel}</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {isEmployee ? (
+                  <>
+                    <span className="font-semibold text-emerald-800">You are signed in</span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      {signedInCaption} {session.dateLabel}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {signedInCaption} {session.dateLabel}
+                  </>
+                )}
+              </p>
+            ) : isEmployee ? (
+              <p className="mt-1 text-sm font-semibold text-emerald-800">You are signed in</p>
             ) : null}
           </>
         )}
@@ -85,19 +127,35 @@ export default function VisitorCheckInConfirmation({
             <User className="h-4 w-4" />
           </span>
           <div className="min-w-0 text-left">
-            <p className="text-sm font-semibold text-gray-900">1 People</p>
-            <p className="truncate text-sm text-gray-500">{session.visitorName}</p>
+            {isEmployee ? (
+              <>
+                <p className="text-base font-bold text-gray-900">{session.visitorName}</p>
+                {session.employeeCode ? (
+                  <p className="text-xs font-mono text-gray-500">ID: {session.employeeCode}</p>
+                ) : null}
+                {session.department ? (
+                  <p className="text-sm text-gray-600">{session.department}</p>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-gray-900">1 People</p>
+                <p className="truncate text-sm text-gray-500">{session.visitorName}</p>
+              </>
+            )}
           </div>
         </div>
-        <button
-          type="button"
-          className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm text-gray-800 hover:bg-gray-50"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-white">
-            <Download className="h-4 w-4" />
-          </span>
-          Download Confirmation
-        </button>
+        {downloadVisible ? (
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left text-sm text-gray-800 hover:bg-gray-50"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-white">
+              <Download className="h-4 w-4" />
+            </span>
+            Download Confirmation
+          </button>
+        ) : null}
         {onRegisterAnother ? (
           <button
             type="button"
@@ -108,7 +166,7 @@ export default function VisitorCheckInConfirmation({
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-white text-lg leading-none">
                 +
               </span>
-              Check in new visitors
+              {registerAnotherLabel}
             </span>
             <ChevronRight className="h-4 w-4 text-gray-400" />
           </button>
@@ -121,7 +179,7 @@ export default function VisitorCheckInConfirmation({
         </p>
       ) : null}
 
-      {!checkedOut && onCheckOut && session.visitorId ? (
+      {!checkedOut && onCheckOut ? (
         <button
           type="button"
           onClick={handleCheckOut}
@@ -129,7 +187,7 @@ export default function VisitorCheckInConfirmation({
           className="flex w-full min-h-[52px] items-center justify-center rounded-xl bg-primary-600 px-4 py-3.5 text-base font-bold text-white shadow-md transition-colors hover:bg-primary-700 disabled:opacity-60"
         >
           <LogOut className="mr-2 h-5 w-5" />
-          {checkingOut ? "Checking out…" : "Check Out"}
+          {checkingOut ? checkingOutLabel : checkOutLabel}
         </button>
       ) : null}
     </div>
