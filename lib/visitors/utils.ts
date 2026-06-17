@@ -53,6 +53,7 @@ export function formatVisitDateTime(visitDate: string, visitTime: string) {
 export function visitorStats(visitors: VisitorRecord[]) {
   const today = visitors.filter((v) => v.visitDate === TODAY_YMD);
   return {
+    total: visitors.length,
     todaysVisitors: today.length,
     pendingApprovals: visitors.filter((v) => v.status === "pending").length,
     checkedIn: visitors.filter((v) => v.status === "checked_in").length,

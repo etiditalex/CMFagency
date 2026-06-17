@@ -4,14 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Calendar,
   Clock,
   Copy,
   Eye,
   Flame,
   Link2,
   LogIn,
-  LogOut,
   Plus,
   Search,
   UserCheck,
@@ -584,14 +582,14 @@ export default function DashboardVisitorManagementPage() {
                     {v.purposeOfVisit || "Visitor"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {v.actualCheckInAt
-                      ? new Date(v.actualCheckInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    {v.checkedInAt
+                      ? new Date(v.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                     <span className="font-medium text-gray-900">
-                      {v.actualCheckOutAt
-                        ? new Date(v.actualCheckOutAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      {v.checkedOutAt
+                        ? new Date(v.checkedOutAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                         : "—"}
                     </span>
                     {v.source === "demo_form" ? (
