@@ -1,5 +1,6 @@
 import { fromEmail } from "@/lib/resend";
 import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
+import { formatLeaveNotesForEmail } from "@/lib/employees/leave-signature";
 import { countDaysInLeaveRange, leaveTypeLabel } from "@/lib/employees/leave-rules";
 import type { EmployeeLeaveType } from "@/lib/employees/types";
 
@@ -35,7 +36,8 @@ export async function sendEmployeeLeaveApprovedEmail(params: {
   const org = escapeHtml(params.businessName.trim() || "Your organisation");
   const typeLabel = escapeHtml(leaveTypeLabel(params.leaveType));
   const range = escapeHtml(formatLeaveDateRange(params.startDate, params.endDate));
-  const notes = params.notes?.trim() ? escapeHtml(params.notes.trim()) : "";
+  const reason = formatLeaveNotesForEmail(params.notes);
+  const reasonHtml = reason ? escapeHtml(reason) : "";
 
   const html = `<!DOCTYPE html>
 <html>
@@ -43,8 +45,7 @@ export async function sendEmployeeLeaveApprovedEmail(params: {
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
 ${buildResendEmailHeaderHtml({ subtitle: "Fusion Xpress · Leave approved" })}
 <div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px; text-align: left;">
-<p style="margin: 0 0 16px; font-size: 16px;"><strong>Leave granted</strong></p>
-<p style="margin: 0 0 16px;">
+<p style="margin: 0 0 16px; font-size: 16px;">
 Hi <strong>${name}</strong>, your leave at <strong>${org}</strong> has been approved.
 </p>
 <p style="margin: 0 0 16px;">
@@ -54,7 +55,7 @@ Hi <strong>${name}</strong>, your leave at <strong>${org}</strong> has been appr
 <li><strong>Leave type:</strong> ${typeLabel}</li>
 <li><strong>Dates:</strong> ${range}</li>
 <li><strong>Days:</strong> ${dayCount}</li>
-${notes ? `<li><strong>Note:</strong> ${notes}</li>` : ""}
+${reasonHtml ? `<li><strong>Reason:</strong> ${reasonHtml}</li>` : ""}
 </ul>
 <p style="margin: 0; font-size: 14px; color: #374151;">
 You do not need to sign in on these days — they will appear as approved leave on the organisation attendance register.

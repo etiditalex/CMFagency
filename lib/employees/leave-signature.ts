@@ -31,3 +31,28 @@ export function parseLeaveApplicationNotes(notes: string): {
 export function appendLeaveSignatureToNotes(notesBody: string, signatureDataUrl: string): string {
   return `${notesBody.trim()}${LEAVE_SIGNATURE_MARKER}${signatureDataUrl}`;
 }
+
+/** Human-readable note for emails and exports — strips signature data and form boilerplate. */
+export function formatLeaveNotesForEmail(notes: string | null | undefined): string {
+  const { text } = parseLeaveApplicationNotes(String(notes ?? ""));
+  if (!text) return "";
+
+  const lines = text
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const reasonLine = lines.find((line) => /^reason:/i.test(line));
+  if (reasonLine) {
+    return reasonLine.replace(/^reason:\s*/i, "").trim();
+  }
+
+  return lines
+    .filter(
+      (line) =>
+        !/^digitally signed by/i.test(line) &&
+        !/^submitted via employee leave application/i.test(line)
+    )
+    .join(" ")
+    .trim();
+}

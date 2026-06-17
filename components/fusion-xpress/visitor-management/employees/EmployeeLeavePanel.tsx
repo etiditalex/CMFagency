@@ -32,7 +32,7 @@ function formatLeaveRange(start: string, end: string): string {
 }
 
 function statusCellClass(status: EmployeeLeaveStatus): string {
-  if (status === "approved") return "text-secondary-800 font-semibold";
+  if (status === "approved") return "text-primary-800 font-semibold";
   if (status === "rejected") return "text-red-700 font-semibold";
   return "text-amber-800 font-semibold";
 }
@@ -313,6 +313,7 @@ export default function EmployeeLeavePanel({
       if (!res.ok) throw new Error(json.error ?? "Update failed");
       if (json.leave) {
         setLeaveRecords((prev) => prev.map((r) => (r.id === id ? json.leave! : r)));
+        populateFromLeaveRecord(json.leave);
       }
       if (status === "approved") {
         const days = json.leave
@@ -353,15 +354,15 @@ export default function EmployeeLeavePanel({
         </p>
       ) : null}
       {notice ? (
-        <p className="rounded border border-secondary-300 bg-secondary-50 px-4 py-3 text-sm font-medium text-secondary-900">
+        <p className="rounded border border-primary-300 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-900">
           {notice}
         </p>
       ) : null}
 
-      <fieldset className="relative rounded border-2 border-white/90 px-4 pb-5 pt-6 sm:px-6">
-        <legend className="absolute -top-3 left-4 bg-transparent px-2 text-base font-bold text-white">
+      <div className="relative rounded border-2 border-white/90 px-4 pb-5 pt-8 sm:px-6">
+        <p className="absolute -top-3 left-4 bg-primary-600 px-2 text-base font-bold text-white">
           Mark Leave:
-        </legend>
+        </p>
 
         <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-3">
@@ -485,7 +486,7 @@ export default function EmployeeLeavePanel({
             </div>
           </div>
         </form>
-      </fieldset>
+      </div>
 
       <div>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -548,8 +549,8 @@ export default function EmployeeLeavePanel({
                     return (
                       <tr
                         key={record.id}
-                        className={`cursor-pointer transition hover:bg-primary-100/50 ${
-                          isPending ? "bg-amber-50/80" : "bg-white/70"
+                        className={`cursor-pointer transition hover:bg-primary-100/60 ${
+                          isPending ? "bg-amber-50/90" : "bg-white/80"
                         }`}
                         onClick={() => populateFromLeaveRecord(record)}
                       >
@@ -574,7 +575,7 @@ export default function EmployeeLeavePanel({
                                   type="button"
                                   onClick={() => void updateStatus(record.id, "approved")}
                                   disabled={disabled || actingId === record.id}
-                                  className="inline-flex items-center gap-1 rounded border border-secondary-400 bg-secondary-100 px-2.5 py-1 text-xs font-bold text-secondary-900 hover:bg-secondary-200 disabled:opacity-60"
+                                  className="inline-flex items-center gap-1 rounded border border-primary-400 bg-primary-100 px-2.5 py-1 text-xs font-bold text-primary-900 hover:bg-primary-200 disabled:opacity-60"
                                 >
                                   <Check className="h-3.5 w-3.5" />
                                   Approve

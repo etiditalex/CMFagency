@@ -23,6 +23,9 @@ export function leaveTypeLabel(type: EmployeeLeaveType | string): string {
       return "Unpaid leave";
     case "compassionate":
       return "Compassionate leave";
+    case "other":
+    case "casual":
+      return "Casual leave";
     default:
       return "Other leave";
   }

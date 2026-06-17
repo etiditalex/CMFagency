@@ -38,13 +38,13 @@ export default function VisitorManagementLeavePage() {
     return data.session?.access_token ?? null;
   }, []);
 
-  const loadEmployees = useCallback(async () => {
+  const loadEmployees = useCallback(async (options?: { silent?: boolean }) => {
     if (isAdmin && needsSelection) {
       setEmployees([]);
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
     setLoadError(null);
     setSetupRequired(false);
     try {
@@ -90,7 +90,7 @@ export default function VisitorManagementLeavePage() {
       }
       setEmployees([]);
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [appendOwnerQuery, getToken, isAdmin, needsSelection]);
 
@@ -124,14 +124,14 @@ export default function VisitorManagementLeavePage() {
 
   if (authLoading || portalLoading || loading) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-secondary-600">
+      <div className="flex min-h-[320px] items-center justify-center rounded-xl bg-primary-600">
         <p className="text-sm font-semibold text-white">Loading leave management…</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 -mx-2 sm:mx-0">
+    <div className="w-full space-y-4">
       {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} /> : null}
       {isAdmin && needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
@@ -144,7 +144,7 @@ export default function VisitorManagementLeavePage() {
       ) : null}
 
       {!needsSelection ? (
-        <div className="overflow-hidden rounded-lg border border-primary-800/30 shadow-[0_8px_32px_rgba(15,23,42,0.18)]">
+        <div className="w-full overflow-hidden rounded-lg border border-primary-800/30 shadow-[0_8px_32px_rgba(15,23,42,0.18)]">
           <header className="relative flex items-center bg-primary-900 px-4 py-3 sm:px-6">
             <div className="relative z-10 flex shrink-0 items-center">
               <Image
@@ -161,12 +161,12 @@ export default function VisitorManagementLeavePage() {
             </h1>
           </header>
 
-          <div className="bg-gradient-to-br from-primary-600 via-primary-500 to-secondary-600 px-4 py-6 sm:px-6 sm:py-8">
+          <div className="bg-primary-600 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
             <EmployeeLeavePanel
               employees={employees}
               disabled={setupRequired}
               buildApiUrl={appendOwnerQuery}
-              onLeaveChanged={loadEmployees}
+              onLeaveChanged={() => void loadEmployees({ silent: true })}
             />
           </div>
         </div>
