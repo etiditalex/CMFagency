@@ -88,6 +88,7 @@ export default function EmployeeSummaryReportsPage() {
   const {
     needsSelection,
     appendOwnerQuery,
+    ownerId,
     businessName: scopedBusinessName,
   } = useAdminBusinessScope();
 
@@ -252,6 +253,87 @@ export default function EmployeeSummaryReportsPage() {
     return () => window.clearInterval(id);
   }, [liveRefresh, rangeIncludesToday, setupRequired, needsSelection, loadSummary]);
 
+  useEffect(() => {
+    if (authLoading || portalLoading || !isAuthenticated || !isPortalMember || !hasFeature("visitor_management")) {
+      return;
+    }
+    if (needsSelection) return;
+    const effectiveOwnerId = (isAdmin ? ownerId : user?.id ?? "").trim();
+    if (!effectiveOwnerId) return;
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const queueRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void loadEmployees();
+        void loadSummary();
+        void loadReportingSettings();
+      }, 350);
+    };
+
+    const channel = supabase
+      .channel(`summary-realtime-${effectiveOwnerId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employee_attendance",
+          filter: `owner_id=eq.${effectiveOwnerId}`,
+        },
+        queueRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employee_leave",
+          filter: `owner_id=eq.${effectiveOwnerId}`,
+        },
+        queueRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employees",
+          filter: `owner_id=eq.${effectiveOwnerId}`,
+        },
+        queueRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employee_reporting_settings",
+          filter: `owner_id=eq.${effectiveOwnerId}`,
+        },
+        queueRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [
+    authLoading,
+    portalLoading,
+    isAuthenticated,
+    isPortalMember,
+    hasFeature,
+    needsSelection,
+    isAdmin,
+    ownerId,
+    user?.id,
+    loadEmployees,
+    loadSummary,
+    loadReportingSettings,
+  ]);
+
   const exportMeta = useMemo(
     () => ({
       organizationName,
@@ -329,7 +411,7 @@ export default function EmployeeSummaryReportsPage() {
   }
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
+    <div className="w-full space-y-6">
       <style jsx global>{`
         @media print {
           body * {

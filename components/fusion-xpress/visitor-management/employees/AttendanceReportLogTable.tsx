@@ -72,16 +72,16 @@ function SortableHeader({
       <button
         type="button"
         onClick={() => onSort(column)}
-        className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-gray-500 hover:text-gray-800"
+        className="inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-white/90 hover:text-white"
       >
         {label}
-        <span className="inline-flex flex-col text-gray-300">
+        <span className="inline-flex flex-col text-white/40">
           <ChevronUp
-            className={`w-3 h-3 -mb-1 ${active && sortDir === "asc" ? "text-gray-600" : ""}`}
+            className={`w-3 h-3 -mb-1 ${active && sortDir === "asc" ? "text-white" : ""}`}
             aria-hidden
           />
           <ChevronDown
-            className={`w-3 h-3 ${active && sortDir === "desc" ? "text-gray-600" : ""}`}
+            className={`w-3 h-3 ${active && sortDir === "desc" ? "text-white" : ""}`}
             aria-hidden
           />
         </span>
@@ -118,15 +118,27 @@ export default function AttendanceReportLogTable({
   const [sortKey, setSortKey] = useState<SortKey>("sortKey");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allRows;
+    return allRows.filter(
+      (row) =>
+        row.fullName.toLowerCase().includes(q) ||
+        row.memberId.toLowerCase().includes(q) ||
+        row.department.toLowerCase().includes(q)
+    );
+  }, [allRows, search]);
 
   const sortedRows = useMemo(() => {
-    const copy = [...allRows];
+    const copy = [...filteredRows];
     copy.sort((a, b) => {
       const c = compareRows(a, b, sortKey);
       return sortDir === "asc" ? c : -c;
     });
     return copy;
-  }, [allRows, sortKey, sortDir]);
+  }, [filteredRows, sortKey, sortDir]);
 
   const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
   const safePage = Math.min(page, pageCount - 1);
@@ -168,26 +180,39 @@ export default function AttendanceReportLogTable({
   };
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white overflow-hidden print:border-gray-300">
-      <div className="px-4 py-3 border-b border-gray-100 print:hidden flex flex-wrap items-start justify-between gap-2">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:border-gray-300">
+      <div className="border-b border-slate-200 px-4 py-3 print:hidden sm:px-5">
         <div>
-          <h2 className="text-sm font-bold text-gray-900">{title}</h2>
-          {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
+          <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{title.toUpperCase()}</h2>
+          {from && to ? (
+            <p className="mt-1 text-xs font-semibold text-secondary-700">
+              Detailed Attendance Report of {from} to {to}
+            </p>
+          ) : subtitle ? (
+            <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+          ) : null}
         </div>
-        {onExportExcel ? (
-          <SummaryReportExcelButton loading={exportingExcel} onClick={onExportExcel} />
-        ) : null}
       </div>
 
-      <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 print:hidden">
-        <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 print:hidden sm:px-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
+            placeholder="Search employee by name/ID"
+            className="min-w-[220px] rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+          />
+          <label className="inline-flex items-center gap-2 text-sm text-slate-600">
           <select
             value={pageSize}
             onChange={(e) => {
               setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
               setPage(0);
             }}
-            className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-800 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             aria-label="Rows per page"
           >
             {PAGE_SIZES.map((n) => (
@@ -196,9 +221,22 @@ export default function AttendanceReportLogTable({
               </option>
             ))}
           </select>
-          <span className="text-gray-500">rows per page</span>
-        </label>
-        <p className="text-xs text-gray-500">
+            <span className="text-slate-500">Rows Per Page</span>
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
+          >
+            Print
+          </button>
+          {onExportExcel ? (
+            <SummaryReportExcelButton loading={exportingExcel} onClick={onExportExcel} />
+          ) : null}
+        </div>
+        <p className="w-full text-xs text-slate-500">
           {sortedRows.length} record{sortedRows.length === 1 ? "" : "s"}
           {selected.size > 0 ? ` · ${selected.size} selected` : ""}
         </p>
@@ -207,7 +245,7 @@ export default function AttendanceReportLogTable({
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-[#f6f7f9] border-b border-gray-200">
+            <tr className="border-b border-secondary-800 bg-secondary-700">
               <th className="w-12 px-4 py-3.5 print:hidden">
                 <input
                   type="checkbox"
@@ -216,7 +254,7 @@ export default function AttendanceReportLogTable({
                     if (el) el.indeterminate = someOnPageSelected && !allOnPageSelected;
                   }}
                   onChange={toggleAllOnPage}
-                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="h-4 w-4 rounded border-white/40 bg-white/10 text-white focus:ring-white"
                   aria-label="Select all on this page"
                 />
               </th>
@@ -292,10 +330,10 @@ export default function AttendanceReportLogTable({
               />
               {shiftEnabled ? (
                 <>
-                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-white/90">
                     Shift
                   </th>
-                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
+                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-white/90">
                     Hours worked
                   </th>
                 </>
@@ -313,8 +351,8 @@ export default function AttendanceReportLogTable({
               pageRows.map((row) => (
                 <tr
                   key={row.id}
-                  className={`border-b border-gray-100 hover:bg-gray-50/80 ${
-                    row.status === "on_leave" ? "bg-amber-50/60" : ""
+                  className={`border-b border-slate-100 hover:bg-primary-50/40 ${
+                    row.status === "on_leave" ? "bg-amber-50/70" : "bg-white"
                   }`}
                 >
                   <td className="px-4 py-4 print:hidden">
@@ -329,7 +367,7 @@ export default function AttendanceReportLogTable({
                   <td className="px-4 py-4 whitespace-nowrap">
                     <Link
                       href={`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}`}
-                      className="font-medium text-[#5b6abf] hover:text-[#4a59a8] hover:underline"
+                      className="font-semibold text-primary-700 hover:text-primary-800 hover:underline"
                     >
                       {row.fullName}
                     </Link>

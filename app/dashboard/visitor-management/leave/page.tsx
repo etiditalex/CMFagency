@@ -26,7 +26,7 @@ export default function VisitorManagementLeavePage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } =
     usePortal();
-  const { needsSelection, appendOwnerQuery } = useAdminBusinessScope();
+  const { needsSelection, appendOwnerQuery, ownerId } = useAdminBusinessScope();
 
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,6 +167,7 @@ export default function VisitorManagementLeavePage() {
               disabled={setupRequired}
               buildApiUrl={appendOwnerQuery}
               onLeaveChanged={() => void loadEmployees({ silent: true })}
+              realtimeOwnerId={(isAdmin ? ownerId : user?.id ?? "").trim()}
             />
           </div>
         </div>

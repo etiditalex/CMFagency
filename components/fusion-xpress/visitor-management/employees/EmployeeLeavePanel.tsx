@@ -24,6 +24,7 @@ type EmployeeLeavePanelProps = {
   disabled?: boolean;
   onLeaveChanged?: () => void;
   buildApiUrl?: (path: string) => string;
+  realtimeOwnerId?: string;
 };
 
 function formatLeaveRange(start: string, end: string): string {
@@ -87,6 +88,7 @@ export default function EmployeeLeavePanel({
   disabled,
   onLeaveChanged,
   buildApiUrl = (path) => path,
+  realtimeOwnerId,
 }: EmployeeLeavePanelProps) {
   const [leaveRecords, setLeaveRecords] = useState<EmployeeLeaveRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,6 +205,48 @@ export default function EmployeeLeavePanel({
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [load]);
+
+  useEffect(() => {
+    const owner = (realtimeOwnerId ?? "").trim();
+    if (!owner) return;
+
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const queueRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        void load();
+      }, 350);
+    };
+
+    const channel = supabase
+      .channel(`leave-realtime-${owner}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employee_leave",
+          filter: `owner_id=eq.${owner}`,
+        },
+        queueRefresh
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "visitor_employees",
+          filter: `owner_id=eq.${owner}`,
+        },
+        queueRefresh
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [load, realtimeOwnerId]);
 
   useEffect(() => {
     if (employeeId || pendingApplications.length === 0) return;
