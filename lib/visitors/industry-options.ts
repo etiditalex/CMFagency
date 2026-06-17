@@ -26,6 +26,8 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLO
 export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/crm-site-gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
+export const VISITOR_MANAGEMENT_LEAVE_PATH = `${VISITOR_MANAGEMENT_PATH}/leave`;
+export const VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH = `${VISITOR_MANAGEMENT_PATH}/hr-payroll-api`;
 export const VISITOR_MANAGEMENT_DOCS_PATH = `${VISITOR_MANAGEMENT_PATH}/docs`;
 export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-site-check";
 
@@ -76,6 +78,8 @@ export type VisitorManagementLinkNavChild = {
   underEmployees?: boolean;
   /** Only shown when organisation industry is real-estate. */
   realEstateOnly?: boolean;
+  /** Smart Visitor Management business accounts (and admins managing them). */
+  businessAccountOnly?: boolean;
 };
 
 export type VisitorManagementNavChild =
@@ -115,6 +119,18 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagem
   href: VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   underEmployees: true,
   realEstateOnly: true,
+};
+
+export const VISITOR_MANAGEMENT_LEAVE_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Leave",
+  href: VISITOR_MANAGEMENT_LEAVE_PATH,
+  businessAccountOnly: true,
+};
+
+export const VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "HR & Payroll API",
+  href: VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH,
+  businessAccountOnly: true,
 };
 
 export const VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD: VisitorManagementLinkNavChild = {

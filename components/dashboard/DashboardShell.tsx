@@ -55,6 +55,8 @@ import {
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
   VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
+  VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
+  VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
   isEmployeesNestedNavPath,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
@@ -353,9 +355,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
   const navItems = useMemo(() => {
+    const showBusinessAccountNav = isVisitorOnly || isAdmin;
+
     const filterVmChildren = (children: VisitorManagementNavChild[]) =>
       children.filter((child) => {
         if ("adminOnly" in child && child.adminOnly && !isAdmin) return false;
+        if ("businessAccountOnly" in child && child.businessAccountOnly && !showBusinessAccountNav) {
+          return false;
+        }
         if ("realEstateOnly" in child && child.realEstateOnly && !isAdmin && (!isRealEstate || industryLoading)) {
           return false;
         }
@@ -369,9 +376,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           ...item,
           children: filterVmChildren([
             VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+            VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
+            VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
             VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
           ]),
@@ -380,9 +389,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       const children: VisitorManagementNavChild[] = filterVmChildren([
         ...(isAdmin ? [] : VISITOR_MANAGEMENT_NAV_CHILDREN),
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
+        VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
+        VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
         VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
       ]);

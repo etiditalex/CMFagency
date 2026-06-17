@@ -5,6 +5,8 @@ import {
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
+  VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH,
+  VISITOR_MANAGEMENT_LEAVE_PATH,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
 } from "@/lib/visitors/industry-options";
@@ -148,7 +150,7 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     id: "leave",
     title: "Leave management",
     summary:
-      "Employees apply for leave through a personal link with a digital signature. Managers review pending requests on the Employees page and approve or reject them.",
+      "Employees apply for leave through a personal link with a digital signature. Managers review pending requests on the Leave page and approve or reject them.",
     bullets: [
       "Leave types: Annual, Casual, Sick, Compassionate, and Unpaid.",
       "Annual, casual, and unpaid leave require at least 2 days advance notice before the first absent day.",
@@ -167,11 +169,11 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
       },
       {
         title: "Manager reviews",
-        body: "Pending requests appear in the Leave panel on the Employees page. Approve or reject; optional email notification is sent on approval.",
+        body: "Pending requests appear on the Leave page in the sidebar. Approve or reject; optional email notification is sent on approval.",
       },
     ],
     links: [
-      { label: "Employees (leave panel)", href: VISITOR_MANAGEMENT_EMPLOYEES_PATH },
+      { label: "Leave", href: VISITOR_MANAGEMENT_LEAVE_PATH },
       {
         label: "Leave application form",
         href: "/fusion-xpress/smart-visitor-management/employee-leave",
@@ -252,14 +254,14 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     id: "integrations",
     title: "Integrations & API",
     summary:
-      "Connect payroll or HR systems using integration API keys generated on the Employees page. The external API documentation describes attendance sync endpoints for approved partners.",
+      "Connect payroll or HR systems using integration API keys from the HR & Payroll API page. The external API documentation describes attendance sync endpoints for approved partners.",
     bullets: [
-      "Generate API keys from the Integration API keys panel on the Employees page.",
+      "Generate API keys from the HR & Payroll API page in the sidebar.",
       "Keys authenticate server-to-server requests for attendance and employee data.",
       "Notification admins receive email alerts for attendance events without an API integration.",
     ],
     links: [
-      { label: "Employees (API keys)", href: VISITOR_MANAGEMENT_EMPLOYEES_PATH },
+      { label: "HR & Payroll API", href: VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH },
       { label: "External API docs", href: "/fusion-xpress/external-api", external: true },
     ],
   },

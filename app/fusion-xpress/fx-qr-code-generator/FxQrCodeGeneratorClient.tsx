@@ -154,54 +154,69 @@ export default function FxQrCodeGeneratorClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f6f8]">
-      <header className="border-b border-gray-200 bg-[#f7f7f8]">
-        <div className="flex w-full items-center gap-3 px-3 py-2 sm:px-5 lg:px-8">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-100/95 via-gray-50 to-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_0%_0%,rgba(59,121,218,0.14),transparent_55%),radial-gradient(ellipse_70%_45%_at_100%_0%,rgba(44,165,124,0.12),transparent_50%),radial-gradient(ellipse_60%_40%_at_0%_100%,rgba(59,121,218,0.08),transparent_55%),radial-gradient(ellipse_55%_35%_at_100%_100%,rgba(44,165,124,0.1),transparent_50%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.55)_0%,rgba(248,250,252,0.2)_45%,rgba(255,255,255,0.65)_100%)]"
+      />
+
+      <header className="sticky top-0 z-50 border-b border-white/70 bg-white/55 shadow-[0_1px_0_rgba(255,255,255,0.85)_inset,0_8px_32px_rgba(15,23,42,0.05)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="flex w-full items-center gap-3 px-3 py-2.5 sm:px-5 lg:px-8">
           <div className="flex shrink-0 items-center gap-4 sm:gap-6 lg:gap-[55px]">
             <Image
               src={BRAND_LOGO_URL}
               alt="CMF Agency logo"
               width={385}
               height={105}
-              className="h-14 w-auto object-contain sm:h-20 lg:h-[105px]"
+              className="h-14 w-auto object-contain drop-shadow-sm sm:h-20 lg:h-[105px]"
               priority
             />
-            <div className="hidden leading-tight text-gray-900 sm:block">
+            <div className="hidden leading-tight text-slate-900 sm:block">
               <div className="text-sm font-extrabold tracking-wide sm:text-lg lg:text-xl">FX QR CODE</div>
               <div className="text-sm font-extrabold tracking-wide sm:text-lg lg:text-xl">GENERATOR</div>
             </div>
           </div>
-          <div className="hidden min-w-0 flex-1 items-center justify-start gap-[30px] pl-4 text-sm font-semibold text-gray-600 lg:flex">
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
+          <div className="hidden min-w-0 flex-1 items-center justify-start gap-[30px] pl-4 text-sm font-semibold text-slate-600 lg:flex">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-secondary-200/50 bg-secondary-50/60 px-3 py-1.5 text-secondary-700 shadow-[0_2px_8px_rgba(44,165,124,0.08)] backdrop-blur-sm">
+              <CheckCircle2 className="h-4 w-4 text-secondary-600" />
               <span>Select QR type</span>
             </span>
-            <ArrowRight className="h-4 w-4 text-gray-400" />
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">2</span>
+            <ArrowRight className="h-4 w-4 text-slate-300" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-white/70 bg-white/50 px-3 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-b from-secondary-500 to-secondary-600 text-xs font-bold text-white shadow-[0_2px_6px_rgba(44,165,124,0.35)]">
+                2
+              </span>
               <span>Add content</span>
             </span>
-            <ArrowRight className="h-4 w-4 text-gray-400" />
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-xs font-bold text-white">3</span>
+            <ArrowRight className="h-4 w-4 text-slate-300" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-white/70 bg-white/50 px-3 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-b from-slate-400 to-slate-500 text-xs font-bold text-white shadow-sm">
+                3
+              </span>
               <span>Design QR code</span>
             </span>
-            <ArrowRight className="h-4 w-4 text-gray-400" />
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-xs font-bold text-white">4</span>
+            <ArrowRight className="h-4 w-4 text-slate-300" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-white/70 bg-white/50 px-3 py-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.04)] backdrop-blur-sm">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-b from-slate-400 to-slate-500 text-xs font-bold text-white shadow-sm">
+                4
+              </span>
               <span>Download QR code</span>
             </span>
           </div>
         </div>
       </header>
 
-      <main className="w-full px-0 py-0">
+      <main className="relative z-10 w-full px-0 py-0">
         <h1 className="sr-only">FX QR Code Generator - WhatsApp, Website, LinkedIn and TikTok QR Codes</h1>
-        <div className="w-full bg-[#f4f6f8] px-3 py-4 sm:px-6 lg:px-10">
-          <div className="grid w-full grid-cols-1 gap-4 lg:gap-6 xl:grid-cols-[1.55fr_0.45fr]">
-            <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6">
+        <div className="w-full px-3 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
+          <div className="grid w-full grid-cols-1 gap-5 lg:gap-7 xl:grid-cols-[1.55fr_0.45fr]">
+            <div className="space-y-6 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:space-y-7 sm:p-7">
               <section>
-                <div className="mb-3 inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-green-700">
+                <div className="mb-4 inline-flex rounded-full border border-secondary-200/60 bg-gradient-to-r from-secondary-50/90 via-emerald-50/70 to-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-secondary-700 shadow-[0_2px_10px_rgba(44,165,124,0.08)] backdrop-blur-sm">
                   Choose a QR Type
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -214,95 +229,101 @@ export default function FxQrCodeGeneratorClient() {
                         key={option.value}
                         type="button"
                         onClick={() => setChannel(option.value)}
-                        className={`rounded-2xl border p-4 text-left transition ${
+                        className={`rounded-[22px] border p-4 text-left transition-all duration-300 ease-out ${
                           active
-                            ? "border-primary-500 bg-primary-50 shadow-sm"
-                            : "border-gray-200 bg-white hover:border-primary-200 hover:bg-gray-50"
+                            ? "border-primary-300/60 bg-gradient-to-br from-primary-50/95 via-white/90 to-white/70 shadow-[0_8px_28px_rgba(30,88,202,0.14),inset_0_1px_0_rgba(255,255,255,0.95)] ring-1 ring-primary-200/50"
+                            : "border-white/90 bg-white/70 shadow-[0_2px_10px_rgba(15,23,42,0.04)] backdrop-blur-sm hover:-translate-y-1 hover:border-primary-200/70 hover:bg-white/90 hover:shadow-[0_16px_40px_rgba(30,88,202,0.1)]"
                         }`}
                       >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-100 text-green-700">
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] ${
+                            active
+                              ? "bg-gradient-to-br from-secondary-100 to-secondary-50 text-secondary-700"
+                              : "bg-gradient-to-br from-secondary-50 to-white text-secondary-600"
+                          }`}
+                        >
                           <Icon className="h-5 w-5" />
                         </div>
-                        <p className="mt-3 text-base font-extrabold text-gray-900">{meta.title}</p>
-                        <p className="mt-1 text-sm text-gray-500">{meta.subtitle}</p>
+                        <p className="mt-3 text-base font-extrabold text-slate-900">{meta.title}</p>
+                        <p className="mt-1 text-sm text-slate-500">{meta.subtitle}</p>
                       </button>
                     );
                   })}
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 sm:p-5">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-gray-500">Add Content</h2>
+              <section className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
+                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">Add Content</h2>
                 <div className="mt-4 space-y-4">
                   <label className="block">
-                    <span className="text-sm font-semibold text-gray-700">Label (optional)</span>
+                    <span className="text-sm font-semibold text-slate-700">Label (optional)</span>
                     <input
                       value={label}
                       onChange={(e) => setLabel(e.target.value)}
                       placeholder="Campaign, profile name, or department"
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                      className="mt-2 w-full rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2.5 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none backdrop-blur-sm transition focus:border-primary-400/60 focus:bg-white focus:ring-2 focus:ring-primary-200/50"
                     />
                   </label>
 
                   {channel === "whatsapp" ? (
                     <>
                       <label className="block">
-                        <span className="text-sm font-semibold text-gray-700">WhatsApp number</span>
+                        <span className="text-sm font-semibold text-slate-700">WhatsApp number</span>
                         <input
                           value={phoneNumber}
                           onChange={(e) => setPhoneNumber(e.target.value)}
                           placeholder="e.g. 254712345678"
-                          className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                          className="mt-2 w-full rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2.5 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none backdrop-blur-sm transition focus:border-primary-400/60 focus:bg-white focus:ring-2 focus:ring-primary-200/50"
                         />
                       </label>
                       <label className="block">
-                        <span className="text-sm font-semibold text-gray-700">Prefilled message (optional)</span>
+                        <span className="text-sm font-semibold text-slate-700">Prefilled message (optional)</span>
                         <textarea
                           value={whatsappMessage}
                           onChange={(e) => setWhatsappMessage(e.target.value)}
                           rows={3}
                           placeholder="Hi, I would like to know more about your services."
-                          className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                          className="mt-2 w-full rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2.5 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none backdrop-blur-sm transition focus:border-primary-400/60 focus:bg-white focus:ring-2 focus:ring-primary-200/50"
                         />
                       </label>
                     </>
                   ) : (
                     <label className="block">
-                      <span className="text-sm font-semibold text-gray-700">Destination URL</span>
+                      <span className="text-sm font-semibold text-slate-700">Destination URL</span>
                       <input
                         value={destinationUrl}
                         onChange={(e) => setDestinationUrl(e.target.value)}
                         placeholder="https://example.com/your-profile"
-                        className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-200"
+                        className="mt-2 w-full rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2.5 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none backdrop-blur-sm transition focus:border-primary-400/60 focus:bg-white focus:ring-2 focus:ring-primary-200/50"
                       />
                     </label>
                   )}
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 sm:p-5">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-gray-500">Design QR Code</h2>
+              <section className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
+                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">Design QR Code</h2>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <label className="block">
-                    <span className="text-sm font-semibold text-gray-700">Foreground</span>
+                    <span className="text-sm font-semibold text-slate-700">Foreground</span>
                     <input
                       type="color"
                       value={fgColor}
                       onChange={(e) => setFgColor(e.target.value)}
-                      className="mt-2 h-11 w-full cursor-pointer rounded-xl border border-gray-300 bg-white p-1"
+                      className="mt-2 h-11 w-full cursor-pointer rounded-xl border border-slate-200/70 bg-white/90 p-1 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] backdrop-blur-sm"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-sm font-semibold text-gray-700">Background</span>
+                    <span className="text-sm font-semibold text-slate-700">Background</span>
                     <input
                       type="color"
                       value={bgColor}
                       onChange={(e) => setBgColor(e.target.value)}
-                      className="mt-2 h-11 w-full cursor-pointer rounded-xl border border-gray-300 bg-white p-1"
+                      className="mt-2 h-11 w-full cursor-pointer rounded-xl border border-slate-200/70 bg-white/90 p-1 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] backdrop-blur-sm"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-sm font-semibold text-gray-700">Size ({qrSize}px)</span>
+                    <span className="text-sm font-semibold text-slate-700">Size ({qrSize}px)</span>
                     <input
                       type="range"
                       min={180}
@@ -321,7 +342,7 @@ export default function FxQrCodeGeneratorClient() {
                   type="button"
                   onClick={handleGenerate}
                   disabled={isSaving}
-                  className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-gradient-to-b from-primary-500 to-primary-700 px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(30,88,202,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 hover:from-primary-600 hover:to-primary-800 hover:shadow-[0_8px_24px_rgba(30,88,202,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSaving ? "Generating..." : "Generate QR Code"}
                 </button>
@@ -329,7 +350,7 @@ export default function FxQrCodeGeneratorClient() {
                   type="button"
                   onClick={handleDownloadPng}
                   disabled={!downloadablePayload}
-                  className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-secondary-500 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-secondary-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-gradient-to-b from-secondary-500 to-secondary-700 px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(44,165,124,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 hover:from-secondary-600 hover:to-secondary-800 hover:shadow-[0_8px_24px_rgba(44,165,124,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Download QR (PNG)
                 </button>
@@ -337,10 +358,10 @@ export default function FxQrCodeGeneratorClient() {
 
               {feedback ? (
                 <p
-                  className={`rounded-xl px-3 py-2 text-sm font-medium ${
+                  className={`rounded-xl px-3 py-2.5 text-sm font-medium backdrop-blur-sm ${
                     feedback.type === "success"
-                      ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                      : "bg-red-50 text-red-700 ring-1 ring-red-200"
+                      ? "border border-secondary-200/60 bg-secondary-50/80 text-secondary-800 shadow-[0_2px_12px_rgba(44,165,124,0.08)]"
+                      : "border border-red-200/60 bg-red-50/80 text-red-700 shadow-[0_2px_12px_rgba(220,38,38,0.08)]"
                   }`}
                 >
                   {feedback.message}
@@ -348,47 +369,62 @@ export default function FxQrCodeGeneratorClient() {
               ) : null}
             </div>
 
-            <aside className="rounded-3xl border border-gray-200 bg-white p-4 sm:p-6">
-              <div className="mx-auto w-full max-w-[300px] rounded-[40px] border-4 border-gray-900 bg-[#eceff3] p-3 shadow-sm">
-                <div className="mx-auto mb-3 h-1.5 w-20 rounded-full bg-gray-900/85" />
-                <div className="overflow-hidden rounded-[26px] border border-gray-300 bg-white">
-                  <div className="bg-gradient-to-b from-secondary-500 to-secondary-600 px-4 pb-14 pt-5">
-                    <div className="flex items-center gap-2 rounded-full border border-white/40 bg-white/15 px-3 py-2 text-[11px] font-semibold text-white">
-                      <Globe className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{previewPayload || "https://cmfagency.co.ke/fusion-xpress"}</span>
-                    </div>
-                  </div>
+            <aside className="rounded-[24px] border border-white/80 bg-white/50 p-4 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
+              <div className="relative flex justify-center py-4 sm:py-6">
+                <div
+                  aria-hidden
+                  className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(59,121,218,0.22)_0%,transparent_68%)] blur-3xl"
+                />
+                <div
+                  aria-hidden
+                  className="absolute left-1/2 top-[58%] h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(44,165,124,0.18)_0%,transparent_70%)] blur-2xl"
+                />
+                <div
+                  aria-hidden
+                  className="absolute left-1/2 top-1/2 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,transparent_75%)] blur-xl"
+                />
 
-                  <div className="-mt-10 rounded-t-3xl bg-[#f3f4f6] px-4 pb-5 pt-4">
-                    <div className="rounded-lg bg-white p-3 shadow-sm">
-                      <div
-                        ref={qrWrapRef}
-                        className="mx-auto flex min-h-[215px] items-center justify-center rounded-md bg-gray-100"
-                        style={{ backgroundColor: previewPayload ? bgColor : "#d1d5db" }}
-                      >
-                        {previewPayload ? (
-                          <QRCodeSVG
-                            value={previewPayload}
-                            size={Math.min(qrSize, 185)}
-                            level="M"
-                            includeMargin
-                            fgColor={fgColor}
-                            bgColor={bgColor}
-                          />
-                        ) : (
-                          <div className="h-[170px] w-[165px] rounded-md bg-gray-300" />
-                        )}
+                <div className="relative mx-auto w-full max-w-[300px] rounded-[44px] border-[3px] border-slate-800/90 bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 p-[11px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.12)_inset,0_48px_96px_-24px_rgba(30,88,202,0.2)]">
+                  <div className="mx-auto mb-3 h-1.5 w-20 rounded-full bg-slate-950/80 shadow-[inset_0_1px_2px_rgba(255,255,255,0.15)]" />
+                  <div className="overflow-hidden rounded-[28px] border border-slate-600/40 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                    <div className="bg-gradient-to-b from-secondary-500 via-secondary-600 to-secondary-700 px-4 pb-14 pt-5 shadow-[inset_0_-1px_0_rgba(0,0,0,0.1)]">
+                      <div className="flex items-center gap-2 rounded-full border border-white/35 bg-white/15 px-3 py-2 text-[11px] font-semibold text-white shadow-[0_2px_8px_rgba(0,0,0,0.12)] backdrop-blur-md">
+                        <Globe className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{previewPayload || "https://cmfagency.co.ke/fusion-xpress"}</span>
                       </div>
-                      <div className="mx-auto mt-5 h-4 w-4/5 rounded-full bg-gray-200" />
                     </div>
-                    <div className="mx-auto mt-5 h-2.5 w-4/5 rounded-full bg-gray-300" />
+
+                    <div className="-mt-10 rounded-t-3xl bg-gradient-to-b from-slate-100/95 to-slate-200/80 px-4 pb-5 pt-4">
+                      <div className="rounded-2xl border border-white/80 bg-white/95 p-3 shadow-[0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-sm">
+                        <div
+                          ref={qrWrapRef}
+                          className="mx-auto flex min-h-[215px] items-center justify-center rounded-xl bg-gray-100 shadow-[inset_0_2px_8px_rgba(15,23,42,0.06)]"
+                          style={{ backgroundColor: previewPayload ? bgColor : "#d1d5db" }}
+                        >
+                          {previewPayload ? (
+                            <QRCodeSVG
+                              value={previewPayload}
+                              size={Math.min(qrSize, 185)}
+                              level="M"
+                              includeMargin
+                              fgColor={fgColor}
+                              bgColor={bgColor}
+                            />
+                          ) : (
+                            <div className="h-[170px] w-[165px] rounded-lg bg-gradient-to-br from-slate-300 to-slate-200" />
+                          )}
+                        </div>
+                        <div className="mx-auto mt-5 h-4 w-4/5 rounded-full bg-gradient-to-r from-slate-200 to-slate-100" />
+                      </div>
+                      <div className="mx-auto mt-5 h-2.5 w-4/5 rounded-full bg-gradient-to-r from-slate-300 to-slate-200" />
+                    </div>
                   </div>
+                  <div className="mx-auto mt-3 h-2 w-[72%] rounded-full bg-gradient-to-b from-slate-700 to-slate-950 shadow-[0_2px_6px_rgba(0,0,0,0.3)]" />
                 </div>
-                <div className="mx-auto mt-3 h-2 w-[72%] rounded-full bg-black" />
               </div>
 
-              <div className="mt-4 rounded-xl bg-white p-3 text-xs text-gray-700 ring-1 ring-gray-200">
-                <p className="font-semibold text-gray-800">Payload</p>
+              <div className="mt-2 rounded-[20px] border border-white/70 bg-white/75 p-3 text-xs text-slate-700 shadow-[0_2px_16px_rgba(15,23,42,0.05),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-md">
+                <p className="font-semibold text-slate-800">Payload</p>
                 <p className="mt-1 break-all">{downloadablePayload || "No payload yet."}</p>
               </div>
             </aside>
