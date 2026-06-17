@@ -8,10 +8,12 @@ import {
   Clock,
   Copy,
   Eye,
+  Flame,
   Link2,
   LogIn,
   LogOut,
   Plus,
+  Search,
   UserCheck,
   Users,
   X,
@@ -29,6 +31,7 @@ import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
 import {
+  VISITOR_INDUSTRIES,
   industryCheckInUrl,
   industryLabel,
   isVisitorIndustrySlug,
@@ -100,6 +103,7 @@ export default function DashboardVisitorManagementPage() {
   const [registerGuestOpen, setRegisterGuestOpen] = useState(false);
   const [registerGuestNotice, setRegisterGuestNotice] = useState<string | null>(null);
   const [checkInLinkCopied, setCheckInLinkCopied] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const publicCheckInUrl = useMemo(() => {
     if (!activityOwnerId) return "";
@@ -231,6 +235,36 @@ export default function DashboardVisitorManagementPage() {
   ]);
 
   const stats = useMemo(() => visitorStats(visitors), [visitors]);
+  const filteredVisitors = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return visitors;
+    return visitors.filter((v) => {
+      const haystack = [
+        v.fullName,
+        v.phoneNumber,
+        v.host,
+        v.purposeOfVisit,
+        v.idPassportNumber ?? "",
+        industryLabel(v.industrySlug),
+        statusLabel(v.status),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [visitors, searchTerm]);
+
+  const incomingVisitors = useMemo(
+    () => visitors.filter((v) => v.status === "pending").slice(0, 5),
+    [visitors]
+  );
+  const formatVisitorPassId = useCallback((v: VisitorRecord, index: number) => {
+    const compactDate = String(v.visitDate ?? "")
+      .replaceAll("-", "")
+      .slice(-6);
+    const serial = String(index + 1).padStart(3, "0");
+    return `${compactDate || "VIS"}-${serial}`;
+  }, []);
 
   const updateVisitor = useCallback((id: string, patch: Partial<VisitorRecord>) => {
     setVisitors((prev) =>
@@ -316,10 +350,10 @@ export default function DashboardVisitorManagementPage() {
   );
 
   const statCards = [
-    { label: "Today's Visitors", value: stats.todaysVisitors, icon: Calendar, tone: "text-primary-700 bg-primary-50 border-primary-100" },
-    { label: "Pending Approvals", value: stats.pendingApprovals, icon: Clock, tone: "text-amber-700 bg-amber-50 border-amber-100" },
-    { label: "Checked-in Visitors", value: stats.checkedIn, icon: LogIn, tone: "text-emerald-700 bg-emerald-50 border-emerald-100" },
-    { label: "Checked-out Visitors", value: stats.checkedOut, icon: LogOut, tone: "text-slate-700 bg-slate-50 border-slate-200" },
+    { label: "Total Visitors", value: stats.total, icon: Users, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
+    { label: "Checked-in", value: stats.checkedIn, icon: LogIn, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
+    { label: "Checked-out", value: stats.checkedOut, icon: Flame, tone: "text-amber-700 bg-amber-50 border-amber-100" },
+    { label: "Average Visitor Wait Time", value: "0", icon: Clock, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
   ];
 
   if (authLoading || portalLoading) {
@@ -329,31 +363,33 @@ export default function DashboardVisitorManagementPage() {
   }
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
-      <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-          <UserCheck className="w-7 h-7 text-primary-600" />
-          {isAdmin && scopedBusinessName
-            ? scopedBusinessName
-            : industryFilter === "all"
-              ? "Visitor Management"
-              : industryLabel(industryFilter)}
-        </h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Guest check-in, approvals, and QR passes.
-          {usingMockData ? " Sample data until database setup is complete." : ""}
-        </p>
-        {!isVisitorOnly ? (
-          <p className="mt-2 text-sm">
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-primary-100 bg-gradient-to-r from-white via-primary-50/50 to-white px-5 py-5 shadow-sm sm:px-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+              <UserCheck className="w-7 h-7 text-primary-600" />
+              {isAdmin && scopedBusinessName
+                ? scopedBusinessName
+                : industryFilter === "all"
+                  ? "Visitor Management"
+                  : industryLabel(industryFilter)}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Corporate-grade reception dashboard for check-ins, approvals, and live visitor flow.
+              {usingMockData ? " Sample data until database setup is complete." : ""}
+            </p>
+          </div>
+          {!isVisitorOnly ? (
             <Link
               href={pathWithOwner("/dashboard/visitor-management/employees", adminOwnerId)}
-              className="font-semibold text-primary-700 hover:underline"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
             >
-              Employee attendance →
+              Employee attendance
             </Link>
-          </p>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      </section>
 
       {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} className="mt-2" /> : null}
 
@@ -376,33 +412,58 @@ export default function DashboardVisitorManagementPage() {
         <p className="text-sm text-gray-500 py-8 text-center">Loading visitors…</p>
       ) : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((c) => {
           const Icon = c.icon;
           return (
-            <div key={c.label} className={`rounded-xl border p-4 ${c.tone}`}>
+            <div key={c.label} className={`rounded-xl border p-5 shadow-sm transition hover:shadow-md ${c.tone}`}>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{c.label}</span>
                 <Icon className="w-4 h-4 opacity-70" />
               </div>
-              <div className="mt-2 text-2xl font-extrabold">{c.value}</div>
+              <div className="mt-2 text-3xl font-extrabold">{c.value}</div>
             </div>
           );
         })}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => {
-            setRegisterGuestNotice(null);
-            setRegisterGuestOpen(true);
-          }}
-          className="inline-flex min-h-[44px] flex-shrink-0 items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm sm:ml-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Register guest
-        </button>
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+            <Search className="h-4 w-4 text-gray-500" />
+            <input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search visitor name, host, phone or status..."
+              className="w-full bg-transparent text-sm text-gray-900 placeholder:text-gray-500 outline-none"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setRegisterGuestNotice(null);
+                setRegisterGuestOpen(true);
+              }}
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Register guest
+            </button>
+            <Link
+              href={publicCheckInUrl || "#"}
+              target="_blank"
+              rel="noreferrer"
+              className={`inline-flex min-h-[44px] items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold ${
+                publicCheckInUrl
+                  ? "border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100"
+                  : "pointer-events-none border-gray-200 bg-gray-100 text-gray-500"
+              }`}
+            >
+              Open pre-registration form
+            </Link>
+          </div>
+        </div>
       </div>
 
       {registerGuestNotice ? (
@@ -441,6 +502,28 @@ export default function DashboardVisitorManagementPage() {
               {checkInLinkCopied ? "Copied" : "Copy link"}
             </button>
           </div>
+          <div className="mt-4 rounded-lg border border-primary-100 bg-white/80 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary-900">
+              Industry pre-registration demo links
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {VISITOR_INDUSTRIES.map((industry) => (
+                <Link
+                  key={industry.slug}
+                  href={industryCheckInUrl(
+                    industry.slug,
+                    activityOwnerId,
+                    typeof window !== "undefined" ? window.location.origin : undefined
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex rounded-full border border-primary-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-primary-50"
+                >
+                  {industry.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -451,43 +534,66 @@ export default function DashboardVisitorManagementPage() {
         onSubmit={handleRegisterGuest}
       />
 
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+      <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-bold text-gray-800">Visitors</span>
+          </div>
+          <span className="text-xs font-semibold text-gray-500">{filteredVisitors.length} item(s)</span>
         </div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm">
+        <div className="overflow-x-auto"><table className="w-full min-w-[1060px] text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
-                <th className="px-4 py-3 font-semibold">Industry</th>
+              <tr className="border-b border-gray-100 text-left text-[11px] uppercase tracking-wide text-gray-500">
+                <th className="px-4 py-3 font-semibold">Visit Date</th>
                 <th className="px-4 py-3 font-semibold">Visitor Name</th>
+                <th className="px-4 py-3 font-semibold">Visitor Pass ID</th>
+                <th className="px-4 py-3 font-semibold">Host Name</th>
                 <th className="px-4 py-3 font-semibold">Phone</th>
-                <th className="px-4 py-3 font-semibold">Host</th>
-                <th className="px-4 py-3 font-semibold">Purpose</th>
-                <th className="px-4 py-3 font-semibold">Scheduled</th>
-                <th className="px-4 py-3 font-semibold">Check-in / out</th>
+                <th className="px-4 py-3 font-semibold">Organization</th>
+                <th className="px-4 py-3 font-semibold">Category</th>
+                <th className="px-4 py-3 font-semibold">Check-in Time</th>
+                <th className="px-4 py-3 font-semibold">Checkout Time</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">QR Code</th>
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {visitors.map((v) => (
-                <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{industryLabel(v.industrySlug)}</td>
+              {filteredVisitors.map((v, index) => (
+                <tr key={v.id} className="border-b border-gray-50 hover:bg-primary-50/20">
+                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                    {new Date(v.visitDate).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </td>
                   <td className="px-4 py-3 font-medium text-gray-900">{v.fullName}</td>
-                  <td className="px-4 py-3 text-gray-600">{v.phoneNumber}</td>
+                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                    {formatVisitorPassId(v, index)}
+                  </td>
                   <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={v.host}>
                     {v.host}
                   </td>
+                  <td className="px-4 py-3 text-gray-600">{v.phoneNumber}</td>
+                  <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={industryLabel(v.industrySlug)}>
+                    {industryLabel(v.industrySlug)}
+                  </td>
                   <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate" title={v.purposeOfVisit}>
-                    {v.purposeOfVisit}
+                    {v.purposeOfVisit || "Visitor"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    {formatVisitDateTime(v.visitDate, v.visitTime)}
+                    {v.actualCheckInAt
+                      ? new Date(v.actualCheckInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    <span className="font-medium text-gray-900">{formatActualCheckTimes(v)}</span>
+                    <span className="font-medium text-gray-900">
+                      {v.actualCheckOutAt
+                        ? new Date(v.actualCheckOutAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : "—"}
+                    </span>
                     {v.source === "demo_form" ? (
                       <span className="mt-0.5 block text-xs text-primary-700">Industry form</span>
                     ) : null}
@@ -532,8 +638,57 @@ export default function DashboardVisitorManagementPage() {
                   </td>
                 </tr>
               ))}
+              {filteredVisitors.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="px-4 py-10 text-center text-sm text-gray-500">
+                    No visitors match this filter.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-bold text-gray-900">Incoming Visitors</p>
+          <Link href={VISITOR_MANAGEMENT_PATH} className="text-xs font-semibold text-primary-700 hover:underline">
+            See all
+          </Link>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {incomingVisitors.length ? (
+            incomingVisitors.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => setDetailVisitor(v)}
+                className="inline-flex h-12 min-w-12 items-center justify-center rounded-full border border-primary-100 bg-primary-50 px-3 text-xs font-semibold text-primary-800 hover:bg-primary-100"
+                title={v.fullName}
+              >
+                {v.fullName
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500">No pending visitors right now.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setRegisterGuestNotice(null);
+              setRegisterGuestOpen(true);
+            }}
+            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-primary-300 bg-white text-primary-700 hover:bg-primary-50"
+            title="Add visitor"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
         </div>
       </div>
 

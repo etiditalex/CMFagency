@@ -363,6 +363,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const isEmployeesPage =
     pathname === VISITOR_MANAGEMENT_EMPLOYEES_PATH ||
     pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/`);
+  const isVisitorManagementPage =
+    pathname === VISITOR_MANAGEMENT_PATH ||
+    pathname.startsWith(`${VISITOR_MANAGEMENT_PATH}/`);
   const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
   const navItems = useMemo(() => {
@@ -851,15 +854,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
           <div
             className={
-              isLeaveManagementPage || isSummaryReportsPage
-                || isEmployeesPage
+              isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage || isVisitorManagementPage
                 ? "max-w-none"
                 : "mx-auto max-w-4xl lg:max-w-5xl"
             }
           >
             <div
               className={
-                isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage
+                isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage || isVisitorManagementPage
                   ? "p-0"
                   : "rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8"
               }
