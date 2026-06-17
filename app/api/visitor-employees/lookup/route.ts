@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isMissingEmployeesTable } from "@/lib/employees/db-mapper";
+import { resolveOwnerBusinessName } from "@/lib/employees/owner-business-name";
 import {
   fetchTodayAttendanceStatus,
   lookupEmployeeByToken,
@@ -24,11 +25,22 @@ export async function GET(req: NextRequest) {
     const e = result.employee;
     const attendanceStatusToday = await fetchTodayAttendanceStatus(admin, e.id);
 
+    const { data: ownerRow } = await admin
+      .from("visitor_employees")
+      .select("owner_id")
+      .eq("id", e.id)
+      .maybeSingle();
+    const businessName = ownerRow?.owner_id
+      ? await resolveOwnerBusinessName(admin, String(ownerRow.owner_id))
+      : "Your organisation";
+
     return NextResponse.json({
+      businessName,
       employee: {
         id: e.id,
         fullName: e.fullName,
         department: e.department,
+        employeeCode: e.employeeCode,
         attendanceStatus: attendanceStatusToday,
         lastSignedInAt: e.lastSignedInAt,
         lastSignedOutAt: e.lastSignedOutAt,

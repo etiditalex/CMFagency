@@ -13,6 +13,7 @@ export type CheckInSession = {
   emailSent?: boolean;
   department?: string;
   employeeCode?: string;
+  organisationNotified?: boolean;
 };
 
 type VisitorCheckInConfirmationProps = {
@@ -93,7 +94,10 @@ export default function VisitorCheckInConfirmation({
           </>
         ) : (
           <>
-            <p className="mt-2 text-4xl font-bold tracking-tight text-primary-600">
+            {isEmployee ? (
+              <p className="mt-3 text-xl font-extrabold text-emerald-800">Welcome</p>
+            ) : null}
+            <p className={`${isEmployee ? "mt-2" : "mt-2"} text-4xl font-bold tracking-tight text-primary-600`}>
               {session.timeLabel}
             </p>
             {session.dateLabel ? (
@@ -118,6 +122,11 @@ export default function VisitorCheckInConfirmation({
         )}
         {session.emailSent ? (
           <p className="mt-3 text-xs font-medium text-secondary-700">Confirmation email sent</p>
+        ) : null}
+        {isEmployee && session.organisationNotified ? (
+          <p className="mt-2 text-xs font-medium text-primary-700">
+            Your organisation has been notified
+          </p>
         ) : null}
       </div>
 

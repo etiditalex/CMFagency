@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { resolveOwnerBusinessName } from "@/lib/employees/owner-business-name";
 import { sendEmployeeAttendanceNotificationEmail } from "@/lib/employees/send-employee-attendance-email";
+import { sendEmployeeSignInWelcomeEmail } from "@/lib/employees/send-employee-sign-in-welcome-email";
 import type { EmployeeAttendanceEventType } from "@/lib/employees/types";
+import { parseFusionXpressAdminEmails } from "@/lib/fusion-xpress-admin-emails";
 
 function parseNotificationEmails(raw: unknown): string[] {
   if (Array.isArray(raw)) {
@@ -24,23 +27,33 @@ type NotificationAdminRow = {
   notify_sign_out: boolean;
 };
 
+export type EmployeeAttendanceNotifyResult = {
+  businessName: string;
+  emailSent: boolean;
+  employeeEmailSent: boolean;
+};
+
 /**
- * Notifies account owner (sign-in and sign-out) plus configured notification admins.
+ * Notifies account owner, configured notification admins, Fusion Xpress platform admins,
+ * and the employee (when an email is on file).
  */
 export async function notifyEmployeeAttendance(
   admin: SupabaseClient,
   params: {
     ownerId: string;
     employeeName: string;
+    employeeEmail?: string | null;
+    employeeCode?: string | null;
     department: string;
     eventType: EmployeeAttendanceEventType;
     occurredAt: string;
     deviceLabel: string;
     businessName?: string;
   }
-): Promise<void> {
+): Promise<EmployeeAttendanceNotifyResult> {
   const ownerRecipients = new Set<string>();
   const adminRecipients = new Set<string>();
+  const platformRecipients = new Set<string>(parseFusionXpressAdminEmails());
 
   const { data: ownerRes } = await admin.auth.admin.getUserById(params.ownerId);
   const ownerEmail = String(ownerRes?.user?.email ?? "")
@@ -51,8 +64,7 @@ export async function notifyEmployeeAttendance(
   const meta = (ownerRes?.user?.user_metadata ?? {}) as Record<string, unknown>;
   const businessName =
     params.businessName?.trim() ||
-    String(meta.business_name ?? meta.businessName ?? "").trim() ||
-    "Your organisation";
+    (await resolveOwnerBusinessName(admin, params.ownerId));
 
   for (const key of ["director_emails", "director_notification_emails", "notification_emails"]) {
     for (const email of parseNotificationEmails(meta[key])) {
@@ -86,23 +98,19 @@ export async function notifyEmployeeAttendance(
 
   if (!process.env.RESEND_API_KEY?.trim()) {
     console.warn("[notifyEmployeeAttendance] RESEND_API_KEY not set; skipping emails");
-    return;
+    return { businessName, emailSent: false, employeeEmailSent: false };
   }
 
-  if (ownerRecipients.size === 0 && adminRecipients.size === 0) {
-    console.warn(
-      "[notifyEmployeeAttendance] no recipients for owner",
-      params.ownerId,
-      params.eventType
-    );
-    return;
-  }
+  let ownerNotified = false;
+  let adminNotified = false;
+  let platformNotified = false;
 
   if (ownerRecipients.size > 0) {
     await sendEmployeeAttendanceNotificationEmail({
       to: [...ownerRecipients],
       ...payload,
     });
+    ownerNotified = true;
   }
 
   if (adminRecipients.size > 0) {
@@ -110,5 +118,43 @@ export async function notifyEmployeeAttendance(
       to: [...adminRecipients],
       ...payload,
     });
+    adminNotified = true;
   }
+
+  if (platformRecipients.size > 0) {
+    await sendEmployeeAttendanceNotificationEmail({
+      to: [...platformRecipients],
+      ...payload,
+    });
+    platformNotified = true;
+  }
+
+  if (!ownerNotified && !adminNotified && !platformNotified) {
+    console.warn(
+      "[notifyEmployeeAttendance] no recipients for owner",
+      params.ownerId,
+      params.eventType
+    );
+  }
+
+  const employeeEmail = String(params.employeeEmail ?? "")
+    .trim()
+    .toLowerCase();
+  let employeeEmailSent = false;
+  if (employeeEmail.includes("@")) {
+    employeeEmailSent = await sendEmployeeSignInWelcomeEmail({
+      to: employeeEmail,
+      employeeName: params.employeeName,
+      businessName,
+      occurredAt: params.occurredAt,
+      employeeCode: params.employeeCode,
+      eventType: params.eventType,
+    });
+  }
+
+  return {
+    businessName,
+    emailSent: ownerNotified || adminNotified || platformNotified || employeeEmailSent,
+    employeeEmailSent,
+  };
 }

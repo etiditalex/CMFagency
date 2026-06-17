@@ -57,12 +57,18 @@ export async function POST(req: NextRequest) {
       eventType: result.eventType,
       occurredAt: result.occurredAt,
       deviceLabel: result.deviceLabel,
+      businessName: result.businessName,
+      emailSent: result.emailSent,
+      employeeEmailSent: result.employeeEmailSent,
       employee: {
         id: result.employee.id,
         fullName: result.employee.fullName,
         department: result.employee.department,
+        employeeCode: result.employee.employeeCode,
         memberType: result.employee.memberType,
         attendanceStatus: result.employee.attendanceStatus,
+        lastSignedInAt: result.employee.lastSignedInAt,
+        lastSignedOutAt: result.employee.lastSignedOutAt,
       },
     });
   } catch (e: unknown) {

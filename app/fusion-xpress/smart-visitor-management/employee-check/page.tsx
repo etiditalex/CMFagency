@@ -57,12 +57,10 @@ type PagePhase =
       gateToken?: string;
       memberType?: EmployeeMemberType;
       teamLabel?: string;
+      businessName?: string;
+      emailSent?: boolean;
+      employeeEmailSent?: boolean;
     };
-
-function venueNameForGate(memberType: EmployeeMemberType, teamLabel?: string) {
-  const title = receptionGateTitle(memberType).replace(/\s*—\s*sign in$/i, "").trim();
-  return teamLabel?.trim() || title || "Workplace";
-}
 
 export default function EmployeeCheckPage() {
   const searchParams = useSearchParams();
@@ -73,6 +71,7 @@ export default function EmployeeCheckPage() {
   const [phase, setPhase] = useState<PagePhase>({ kind: "loading" });
   const [submitting, setSubmitting] = useState(false);
   const [memberCodeInput, setMemberCodeInput] = useState("");
+  const [orgBusinessName, setOrgBusinessName] = useState("");
 
   const loadPersonalPass = useCallback(async (qrToken: string) => {
     if (!qrToken) {
@@ -90,6 +89,7 @@ export default function EmployeeCheckPage() {
         { cache: "no-store" }
       );
       const json = (await res.json().catch(() => ({}))) as {
+        businessName?: string;
         employee?: EmployeePreview;
         error?: string;
       };
@@ -101,6 +101,7 @@ export default function EmployeeCheckPage() {
         setPhase({ kind: "error", message: "Employee not found." });
         return;
       }
+      setOrgBusinessName(json.businessName?.trim() ?? "");
       setPhase({ kind: "ready", employee: json.employee });
     } catch (e: unknown) {
       setPhase({
@@ -126,6 +127,7 @@ export default function EmployeeCheckPage() {
         cache: "no-store",
       });
       const json = (await res.json().catch(() => ({}))) as {
+        businessName?: string;
         gate?: { memberType: EmployeeMemberType; teamLabel: string };
         boundEmployee?: EmployeePreview & { employeeCode: string };
         needsSetup?: boolean;
@@ -137,6 +139,7 @@ export default function EmployeeCheckPage() {
       }
       const memberType = json.gate?.memberType ?? "staff";
       const teamLabel = json.gate?.teamLabel ?? memberType;
+      setOrgBusinessName(json.businessName?.trim() ?? "");
       if (json.boundEmployee && !json.needsSetup) {
         setPhase({
           kind: "gate-bound",
@@ -230,6 +233,9 @@ export default function EmployeeCheckPage() {
           success?: boolean;
           eventType?: "sign_in" | "sign_out";
           occurredAt?: string;
+          businessName?: string;
+          emailSent?: boolean;
+          employeeEmailSent?: boolean;
           employee?: EmployeePreview;
           error?: string;
         };
@@ -244,6 +250,10 @@ export default function EmployeeCheckPage() {
           return;
         }
 
+        if (json.businessName?.trim()) {
+          setOrgBusinessName(json.businessName.trim());
+        }
+
         setPhase({
           kind: "done",
           ok: true,
@@ -253,6 +263,9 @@ export default function EmployeeCheckPage() {
           gateToken: opts.gate,
           memberType: opts.memberType,
           teamLabel: opts.teamLabel,
+          businessName: json.businessName,
+          emailSent: json.emailSent,
+          employeeEmailSent: json.employeeEmailSent,
           message:
             json.eventType === "sign_in"
               ? "You are signed in. Scan the reception QR again when you leave to sign out."
@@ -308,9 +321,11 @@ export default function EmployeeCheckPage() {
     if (!activeEmployee) return null;
 
     const gateContext = gateBound ?? (done?.gateToken ? { gateToken: done.gateToken, memberType: done.memberType ?? "staff", teamLabel: done.teamLabel ?? "" } : null);
-    const venueName = gateContext
-      ? venueNameForGate(gateContext.memberType, gateContext.teamLabel)
-      : "Employee attendance";
+    const venueName =
+      done?.businessName?.trim() ||
+      orgBusinessName.trim() ||
+      (gateContext ? gateContext.teamLabel : "") ||
+      "Your organisation";
 
     if (done?.ok && done.eventType === "sign_out" && done.occurredAt) {
       return {
@@ -321,6 +336,8 @@ export default function EmployeeCheckPage() {
           employeeId: activeEmployee.id,
           department: activeEmployee.department,
           employeeCode: activeEmployee.employeeCode,
+          emailSent: done.emailSent,
+          employeeEmailSent: done.employeeEmailSent,
         }),
         initialCheckedOut: true,
         checkoutTimeLabel: formatCheckInClock(done.occurredAt),
@@ -350,6 +367,8 @@ export default function EmployeeCheckPage() {
         employeeId: activeEmployee.id,
         department: activeEmployee.department,
         employeeCode: activeEmployee.employeeCode,
+        emailSent: done?.emailSent,
+        employeeEmailSent: done?.employeeEmailSent,
       }),
       initialCheckedOut: false,
       onCheckOut: async () => {
@@ -375,7 +394,7 @@ export default function EmployeeCheckPage() {
       },
       onRegisterAnother: gateContext ? reload : undefined,
     };
-  }, [activeEmployee, done, gateBound, reload, runPersonalAction, runScan]);
+  }, [activeEmployee, done, gateBound, orgBusinessName, reload, runPersonalAction, runScan]);
 
   const showConfirmation = Boolean(confirmationView);
   const showFormShell = !showConfirmation && phase.kind !== "loading" && !submitting;

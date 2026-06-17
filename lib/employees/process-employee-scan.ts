@@ -69,6 +69,9 @@ export type EmployeeScanResult =
       eventType: EmployeeAttendanceEventType;
       occurredAt: string;
       deviceLabel: string;
+      businessName: string;
+      emailSent: boolean;
+      employeeEmailSent: boolean;
     }
   | { ok: false; error: string; status: number };
 
@@ -307,15 +310,24 @@ export async function processEmployeeQrScan(
 
   mapAttendanceRow(attendanceRow as EmployeeAttendanceRow);
 
+  let businessName = "Your organisation";
+  let emailSent = false;
+  let employeeEmailSent = false;
+
   try {
-    await notifyEmployeeAttendance(admin, {
+    const notifyResult = await notifyEmployeeAttendance(admin, {
       ownerId,
       employeeName: employee.fullName,
+      employeeEmail: employee.email,
+      employeeCode: employee.employeeCode,
       department: employee.department,
       eventType,
       occurredAt,
       deviceLabel: device.deviceLabel,
     });
+    emailSent = notifyResult.emailSent;
+    employeeEmailSent = notifyResult.employeeEmailSent;
+    businessName = notifyResult.businessName;
   } catch (e) {
     console.warn(
       "[processEmployeeQrScan] attendance email failed:",
@@ -341,5 +353,8 @@ export async function processEmployeeQrScan(
     eventType,
     occurredAt,
     deviceLabel: device.deviceLabel,
+    businessName,
+    emailSent,
+    employeeEmailSent,
   };
 }

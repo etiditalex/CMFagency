@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isMissingEmployeesTable } from "@/lib/employees/db-mapper";
+import { resolveOwnerBusinessName } from "@/lib/employees/owner-business-name";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
 import { listRosterForGate } from "@/lib/employees/process-reception-gate";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
@@ -20,7 +21,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
+    const businessName = await resolveOwnerBusinessName(admin, result.gate.ownerId);
+
     return NextResponse.json({
+      businessName,
       gate: {
         memberType: result.gate.memberType,
         teamLabel: memberTypeLabel(result.gate.memberType),

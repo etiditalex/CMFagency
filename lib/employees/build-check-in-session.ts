@@ -11,6 +11,8 @@ export function buildEmployeeCheckInSession(params: {
   employeeId?: string;
   department?: string | null;
   employeeCode?: string | null;
+  emailSent?: boolean;
+  employeeEmailSent?: boolean;
 }): CheckInSession {
   return {
     visitorId: params.employeeId ?? "",
@@ -21,5 +23,7 @@ export function buildEmployeeCheckInSession(params: {
     dateLabel: formatCheckInDateLabel(params.occurredAt),
     department: params.department?.trim() || undefined,
     employeeCode: params.employeeCode?.trim() || undefined,
+    emailSent: params.employeeEmailSent ?? params.emailSent,
+    organisationNotified: params.emailSent,
   };
 }
