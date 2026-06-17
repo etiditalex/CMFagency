@@ -7,7 +7,7 @@ import type {
 } from "@/lib/employees/attendance-summary";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
 
-function RankTable({
+function RankingsTable({
   title,
   subtitle,
   rows,
@@ -19,34 +19,51 @@ function RankTable({
   emptyMessage: string;
 }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-inside-avoid">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white print:break-inside-avoid">
+      <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
         <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+        <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
       </div>
-      {rows.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-gray-500 text-center">{emptyMessage}</p>
-      ) : (
-        <ol className="divide-y divide-gray-100">
-          {rows.map((r) => (
-            <li key={`${title}-${r.employeeId}`} className="flex items-start gap-3 px-4 py-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-extrabold text-primary-800">
-                {r.rank}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900 truncate">{r.fullName}</p>
-                <p className="text-xs text-gray-500 truncate">
-                  {r.department || memberTypeLabel(r.memberType)}
-                </p>
-                <p className="text-xs text-gray-600 mt-0.5">{r.detail}</p>
-              </div>
-              <span className="text-sm font-extrabold text-primary-800 whitespace-nowrap">
-                {r.metric}
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wide text-gray-500">
+              <th className="px-4 py-2.5 font-semibold">Rank</th>
+              <th className="px-4 py-2.5 font-semibold">Name</th>
+              <th className="px-4 py-2.5 font-semibold">Team</th>
+              <th className="px-4 py-2.5 font-semibold">Department</th>
+              <th className="px-4 py-2.5 font-semibold">Detail</th>
+              <th className="px-4 py-2.5 font-semibold text-right">Metric</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => (
+                <tr key={`${title}-${r.employeeId}`} className="border-b border-gray-100">
+                  <td className="px-4 py-2.5">
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary-100 text-xs font-extrabold text-primary-800">
+                      {r.rank}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 font-semibold text-gray-900">{r.fullName}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{memberTypeLabel(r.memberType)}</td>
+                  <td className="px-4 py-2.5 text-gray-700">{r.department || "—"}</td>
+                  <td className="px-4 py-2.5 text-gray-600">{r.detail || "—"}</td>
+                  <td className="px-4 py-2.5 text-right font-extrabold text-primary-800">
+                    {r.metric}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -79,14 +96,14 @@ export default function AttendanceSummaryRankingsPanel({
             />
           ) : null}
         </div>
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <RankTable
+        <div className="mt-3 grid grid-cols-1 gap-4">
+          <RankingsTable
             title="Most days attended"
             subtitle="Staff with the most days signed in"
             rows={rankings.staff.mostAttendant}
             emptyMessage="No staff attendance in this period."
           />
-          <RankTable
+          <RankingsTable
             title="Earliest arrivals"
             subtitle="Average first sign-in time (staff)"
             rows={rankings.staff.earliestArrival}
@@ -100,14 +117,14 @@ export default function AttendanceSummaryRankingsPanel({
         <p className="text-xs text-gray-500 mt-1">
           CRM may visit flexibly; each day allows one sign-in and one sign-out only.
         </p>
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <RankTable
+        <div className="mt-3 grid grid-cols-1 gap-4">
+          <RankingsTable
             title="Most days attended"
             subtitle="CRM with the most days signed in"
             rows={rankings.crm.mostAttendant}
             emptyMessage="No CRM attendance in this period."
           />
-          <RankTable
+          <RankingsTable
             title="Earliest arrivals"
             subtitle="Average first sign-in time (CRM)"
             rows={rankings.crm.earliestArrival}

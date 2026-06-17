@@ -59,8 +59,8 @@ import {
   VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
   VISITOR_MANAGEMENT_LEAVE_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
-  isEmployeesNestedNavPath,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
+  isEmployeesNestedNavPath,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
@@ -360,6 +360,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const isSummaryReportsPage =
     pathname === VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH ||
     pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH}/`);
+  const isEmployeesPage =
+    pathname === VISITOR_MANAGEMENT_EMPLOYEES_PATH ||
+    pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/`);
   const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
   const navItems = useMemo(() => {
@@ -849,13 +852,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           <div
             className={
               isLeaveManagementPage || isSummaryReportsPage
+                || isEmployeesPage
                 ? "max-w-none"
                 : "mx-auto max-w-4xl lg:max-w-5xl"
             }
           >
             <div
               className={
-                isLeaveManagementPage || isSummaryReportsPage
+                isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage
                   ? "p-0"
                   : "rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8"
               }

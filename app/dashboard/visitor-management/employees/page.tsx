@@ -562,7 +562,7 @@ export default function VisitorManagementEmployeesPage() {
   }
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
+    <div className="w-full space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
           <UserCog className="w-7 h-7 text-primary-600" />
