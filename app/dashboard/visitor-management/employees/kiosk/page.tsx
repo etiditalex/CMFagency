@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, ScanLine, SwitchCamera, XCircle, X } from "lucide-react";
+import { CheckCircle2, Loader2, ScanLine, Square, SwitchCamera, XCircle } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -15,6 +15,12 @@ import type { BrowserPosition } from "@/lib/employees/browser-geolocation";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
 import type { EmployeeMemberType } from "@/lib/employees/types";
 import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
+import {
+  buildKioskScannerConfig,
+  defaultKioskCameraFacing,
+  isDesktopScannerDevice,
+  type KioskCameraFacing,
+} from "@/lib/qr-scanner/kiosk-scanner-config";
 
 const SCANNER_DIV_ID = "employee-kiosk-qr-scanner";
 
@@ -53,7 +59,35 @@ type ScanFeedback = {
   detail: string;
 };
 
-type CameraFacing = "environment" | "user";
+type CameraFacing = KioskCameraFacing;
+
+function StopCameraButton({
+  onClick,
+  disabled,
+  className = "",
+  size = "md",
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+  size?: "md" | "lg";
+}) {
+  const sizeClass =
+    size === "lg"
+      ? "min-h-[52px] px-6 py-3.5 text-base"
+      : "px-3 py-2 text-sm";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 font-bold text-white hover:bg-red-700 disabled:opacity-50 ${sizeClass} ${className}`}
+    >
+      <Square className={size === "lg" ? "h-5 w-5 fill-current" : "h-4 w-4 fill-current"} />
+      Stop camera
+    </button>
+  );
+}
 
 export default function EmployeeKioskPage() {
   const router = useRouter();
@@ -65,13 +99,20 @@ export default function EmployeeKioskPage() {
   const [scanning, setScanning] = useState(false);
   const [feedback, setFeedback] = useState<ScanFeedback | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [cameraFacing, setCameraFacing] = useState<CameraFacing>("environment");
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>(() =>
+    typeof window !== "undefined" ? defaultKioskCameraFacing() : "environment"
+  );
+  const [inlineScanner, setInlineScanner] = useState(false);
   const [locationReady, setLocationReady] = useState(false);
   const scannerRef = useRef<QrScanner | null>(null);
   const lastScannedRef = useRef<string | null>(null);
   const lastScannedAt = useRef<number>(0);
   const kioskPositionRef = useRef<BrowserPosition | null>(null);
   const kioskDeviceIdRef = useRef<string>("");
+
+  useEffect(() => {
+    void import("html5-qrcode");
+  }, []);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -209,33 +250,7 @@ export default function EmployeeKioskPage() {
       if (!element) throw new Error("Scanner element not found.");
 
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const viewH = element.clientHeight || Math.floor(vh * 0.75);
-      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
-      const qrbox = Math.max(240, Math.min(scanSize, 400));
-      const config = {
-        fps: 20,
-        qrbox: { width: qrbox, height: qrbox },
-        aspectRatio: 1,
-        disableFlip: false,
-        videoConstraints: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        } as MediaTrackConstraints,
-      };
-
-      const constraintsToTry: MediaTrackConstraints[] =
-        facing === "environment"
-          ? [
-              { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-              { facingMode: "environment" },
-            ]
-          : [
-              { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-              { facingMode: "user" },
-            ];
+      const { config, constraintsToTry } = buildKioskScannerConfig(element, { facing });
 
       let started = false;
       for (const constraints of constraintsToTry) {
@@ -258,10 +273,13 @@ export default function EmployeeKioskPage() {
       }
 
       if (!started) {
+        const isDesktop = isDesktopScannerDevice();
         throw new Error(
-          facing === "environment"
-            ? "Could not open back camera. Try switching to front camera."
-            : "Could not open front camera. Try switching to back camera."
+          isDesktop
+            ? "Could not open webcam. Allow camera access and try again."
+            : facing === "environment"
+              ? "Could not open back camera. Try switching to front camera."
+              : "Could not open front camera. Try switching to back camera."
         );
       }
     },
@@ -304,12 +322,15 @@ export default function EmployeeKioskPage() {
       await stopScannerStream();
     }
 
+    const desktop = isDesktopScannerDevice();
+    const initialFacing = defaultKioskCameraFacing();
+    setInlineScanner(desktop);
     setCameraActive(true);
-    setCameraFacing("environment");
+    setCameraFacing(initialFacing);
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     try {
-      await launchScanner("environment");
+      await launchScanner(initialFacing);
       setRequestingCamera(false);
     } catch (e: unknown) {
       setRequestingCamera(false);
@@ -347,16 +368,17 @@ export default function EmployeeKioskPage() {
   const stopCamera = useCallback(async () => {
     await stopScannerStream();
     setCameraActive(false);
+    setInlineScanner(false);
   }, [stopScannerStream]);
 
   useEffect(() => {
-    if (!cameraActive) return;
+    if (!cameraActive || inlineScanner) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prevOverflow;
     };
-  }, [cameraActive]);
+  }, [cameraActive, inlineScanner]);
 
   useEffect(() => {
     return () => {
@@ -368,156 +390,205 @@ export default function EmployeeKioskPage() {
     return <p className="py-12 text-center text-sm text-gray-500">Loading kiosk…</p>;
   }
 
-  return (
+  const scannerFeedback = (
     <>
-      <div
-        className={
-          cameraActive
-            ? "fixed inset-0 z-[100] flex flex-col bg-black h-[100dvh] max-h-[100dvh] w-full"
-            : "hidden"
-        }
-        aria-hidden={!cameraActive}
-        role="dialog"
-        aria-modal={cameraActive}
-        aria-label="Employee QR scanner"
-      >
-        <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 bg-black/60 backdrop-blur-sm pt-[max(0.75rem,env(safe-area-inset-top))]">
-          <p className="text-sm font-medium text-white min-w-0 truncate">
-            {cameraFacing === "environment" ? "Back camera" : "Front camera"}
-          </p>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => void flipCamera()}
-              disabled={requestingCamera}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-50"
-              aria-label={cameraFacing === "environment" ? "Switch to front camera" : "Switch to back camera"}
-            >
-              {requestingCamera ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <SwitchCamera className="w-4 h-4" />
-              )}
-              Flip
-            </button>
-            <button
-              type="button"
-              onClick={() => void stopCamera()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25"
-            >
-              <X className="w-4 h-4" />
-              Close
-            </button>
+      {locationReady ? (
+        <p className={`text-center text-xs ${inlineScanner ? "text-emerald-600" : "text-emerald-300"}`}>
+          GPS ready
+        </p>
+      ) : null}
+      {scanning ? (
+        <p className="flex items-center justify-center gap-2 text-sm text-white/90">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Recording attendance…
+        </p>
+      ) : null}
+      {feedback ? (
+        <div
+          className={`rounded-lg border p-3 flex gap-2 ${
+            feedback.ok
+              ? inlineScanner
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
+              : inlineScanner
+                ? "border-red-200 bg-red-50 text-red-900"
+                : "border-red-400/40 bg-red-950/80 text-red-100"
+          }`}
+        >
+          {feedback.ok ? (
+            <CheckCircle2
+              className={`w-6 h-6 shrink-0 ${inlineScanner ? "text-emerald-600" : "text-emerald-400"}`}
+            />
+          ) : (
+            <XCircle className={`w-6 h-6 shrink-0 ${inlineScanner ? "text-red-600" : "text-red-400"}`} />
+          )}
+          <div className="min-w-0">
+            <p className="font-bold text-sm">{feedback.title}</p>
+            <p className="text-xs mt-0.5">{feedback.detail}</p>
           </div>
         </div>
+      ) : null}
+    </>
+  );
 
-        <div
-          id={SCANNER_DIV_ID}
-          className="employee-kiosk-scanner-fullscreen relative flex-1 min-h-0 w-full"
+  const renderScannerToolbar = (mode: "inline" | "fullscreen") => (
+    <div
+      className={`relative z-10 flex shrink-0 items-center justify-between gap-3 px-4 py-3 ${
+        mode === "inline"
+          ? "bg-gray-900 border-b border-white/10"
+          : "bg-black/60 backdrop-blur-sm pt-[max(0.75rem,env(safe-area-inset-top))]"
+      }`}
+    >
+      <p className="text-sm font-medium text-white min-w-0 truncate">
+        {mode === "inline"
+          ? "Webcam scanner"
+          : cameraFacing === "environment"
+            ? "Back camera"
+            : "Front camera"}
+      </p>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={() => void flipCamera()}
+          disabled={requestingCamera}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-50"
+          aria-label={
+            cameraFacing === "environment" ? "Switch to front camera" : "Switch to back camera"
+          }
+        >
+          {requestingCamera ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <SwitchCamera className="w-4 h-4" />
+          )}
+          Flip
+        </button>
+        <StopCameraButton
+          onClick={() => void stopCamera()}
+          disabled={requestingCamera}
+          size="md"
         />
+      </div>
+    </div>
+  );
 
-        <div className="relative z-10 shrink-0 space-y-2 px-4 py-4 bg-black/60 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <p className="text-center text-xs text-white/75">Align the QR pass within the frame</p>
-          {locationReady ? (
-            <p className="text-center text-xs text-emerald-300">GPS ready</p>
+  const renderScannerFooter = (mode: "inline" | "fullscreen") => (
+    <div
+      className={`relative z-10 shrink-0 space-y-3 px-4 py-4 ${
+        mode === "inline"
+          ? "bg-gray-900 border-t border-white/10"
+          : "bg-black/60 backdrop-blur-sm pb-[max(1rem,env(safe-area-inset-bottom))]"
+      }`}
+    >
+      <p className="text-center text-xs text-white/75">Align the QR pass within the frame</p>
+      {scannerFeedback}
+      <StopCameraButton
+        onClick={() => void stopCamera()}
+        disabled={requestingCamera}
+        size="lg"
+        className="w-full"
+      />
+    </div>
+  );
+
+  return (
+    <>
+      {cameraActive && !inlineScanner ? (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col bg-black h-[100dvh] max-h-[100dvh] w-full"
+          role="dialog"
+          aria-modal
+          aria-label="Employee QR scanner"
+        >
+          {renderScannerToolbar("fullscreen")}
+          <div
+            id={SCANNER_DIV_ID}
+            className="employee-kiosk-scanner-fullscreen relative flex-1 min-h-0 w-full"
+          />
+          {renderScannerFooter("fullscreen")}
+        </div>
+      ) : null}
+
+      <div
+        className={`-mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8 flex flex-col min-h-[calc(100dvh-5.5rem)] sm:min-h-[calc(100dvh-8rem)] max-w-none sm:max-w-2xl sm:mx-auto w-[calc(100%+2rem)] sm:w-full ${
+          cameraActive && !inlineScanner ? "invisible h-0 overflow-hidden" : ""
+        }`}
+      >
+        <div className="shrink-0 px-4 sm:px-0 pb-2 sm:pb-4">
+          <Link
+            href={VISITOR_MANAGEMENT_EMPLOYEES_PATH}
+            className="text-sm font-semibold text-primary-700 hover:underline"
+          >
+            ← Employees
+          </Link>
+          <h1 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            <ScanLine className="w-6 h-6 sm:w-7 sm:h-7 text-primary-600 shrink-0" />
+            Staff QR kiosk
+          </h1>
+          <p className="hidden sm:block mt-2 text-sm text-gray-600">
+            One tablet at reception scans every employee&apos;s personal QR pass (staff and CRM).
+          </p>
+        </div>
+
+        <div className="relative flex-1 flex flex-col min-h-0 rounded-none sm:rounded-xl border-y sm:border border-gray-200 bg-gray-900 overflow-hidden min-h-[280px] sm:min-h-[360px]">
+          {cameraActive && inlineScanner ? (
+            <div className="flex flex-col min-h-[360px] h-full">
+              {renderScannerToolbar("inline")}
+              <div
+                id={SCANNER_DIV_ID}
+                className="employee-kiosk-scanner-fullscreen relative min-h-[280px] sm:min-h-[320px] w-full flex-1"
+              />
+              {renderScannerFooter("inline")}
+            </div>
+          ) : !cameraActive ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gray-900">
+              <button
+                type="button"
+                onClick={() => void startCamera()}
+                disabled={requestingCamera}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg disabled:opacity-60 w-full max-w-xs justify-center"
+              >
+                {requestingCamera ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ScanLine className="w-5 h-5" />
+                )}
+                {requestingCamera ? "Starting camera…" : "Start camera"}
+              </button>
+              <p className="mt-3 text-xs text-white/70 max-w-xs">
+                Allow camera and location. Then scan any staff or CRM pass.
+              </p>
+            </div>
           ) : null}
-          {scanning ? (
-            <p className="flex items-center justify-center gap-2 text-sm text-white/90">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Recording attendance…
+        </div>
+
+        <div className="shrink-0 px-4 sm:px-0 pt-3 sm:pt-4 space-y-3">
+          {cameraError ? (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {cameraError}
             </p>
           ) : null}
-          {feedback ? (
+
+          {!cameraActive && feedback ? (
             <div
-              className={`rounded-lg border p-3 flex gap-2 ${
+              className={`rounded-xl border p-4 sm:p-5 flex gap-3 ${
                 feedback.ok
-                  ? "border-emerald-400/40 bg-emerald-950/80 text-emerald-100"
-                  : "border-red-400/40 bg-red-950/80 text-red-100"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-red-200 bg-red-50 text-red-900"
               }`}
             >
               {feedback.ok ? (
-                <CheckCircle2 className="w-6 h-6 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-600" />
               ) : (
-                <XCircle className="w-6 h-6 shrink-0 text-red-400" />
+                <XCircle className="w-8 h-8 shrink-0 text-red-600" />
               )}
-              <div className="min-w-0">
-                <p className="font-bold text-sm">{feedback.title}</p>
-                <p className="text-xs mt-0.5">{feedback.detail}</p>
+              <div>
+                <p className="font-bold text-lg">{feedback.title}</p>
+                <p className="text-sm mt-1">{feedback.detail}</p>
               </div>
             </div>
           ) : null}
         </div>
-      </div>
-
-      <div
-        className={`-mx-4 -mb-4 sm:-mx-6 sm:-mb-6 md:-mx-8 md:-mb-8 flex flex-col min-h-[calc(100dvh-5.5rem)] sm:min-h-[calc(100dvh-8rem)] max-w-none sm:max-w-2xl sm:mx-auto w-[calc(100%+2rem)] sm:w-full ${cameraActive ? "invisible h-0 overflow-hidden" : ""}`}
-      >
-      <div className="shrink-0 px-4 sm:px-0 pb-2 sm:pb-4">
-        <Link
-          href={VISITOR_MANAGEMENT_EMPLOYEES_PATH}
-          className="text-sm font-semibold text-primary-700 hover:underline"
-        >
-          ← Employees
-        </Link>
-        <h1 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-          <ScanLine className="w-6 h-6 sm:w-7 sm:h-7 text-primary-600 shrink-0" />
-          Staff QR kiosk
-        </h1>
-        <p className="hidden sm:block mt-2 text-sm text-gray-600">
-          One tablet at reception scans every employee&apos;s personal QR pass (staff and CRM).
-        </p>
-      </div>
-
-      <div className="relative flex-1 flex flex-col min-h-0 rounded-none sm:rounded-xl border-y sm:border border-gray-200 bg-gray-900 overflow-hidden min-h-[280px] sm:min-h-[360px]">
-        {!cameraActive && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-gray-900">
-            <button
-              type="button"
-              onClick={() => void startCamera()}
-              disabled={requestingCamera}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-6 py-3.5 text-base font-bold text-white shadow-lg disabled:opacity-60 w-full max-w-xs justify-center"
-            >
-              {requestingCamera ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <ScanLine className="w-5 h-5" />
-              )}
-              {requestingCamera ? "Starting camera…" : "Start camera"}
-            </button>
-            <p className="mt-3 text-xs text-white/70 max-w-xs">
-              Allow camera and location. Then scan any staff or CRM pass.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="shrink-0 px-4 sm:px-0 pt-3 sm:pt-4 space-y-3">
-        {cameraError ? (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            {cameraError}
-          </p>
-        ) : null}
-
-        {!cameraActive && feedback ? (
-          <div
-            className={`rounded-xl border p-4 sm:p-5 flex gap-3 ${
-              feedback.ok
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                : "border-red-200 bg-red-50 text-red-900"
-            }`}
-          >
-            {feedback.ok ? (
-              <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-600" />
-            ) : (
-              <XCircle className="w-8 h-8 shrink-0 text-red-600" />
-            )}
-            <div>
-              <p className="font-bold text-lg">{feedback.title}</p>
-              <p className="text-sm mt-1">{feedback.detail}</p>
-            </div>
-          </div>
-        ) : null}
-      </div>
       </div>
     </>
   );
