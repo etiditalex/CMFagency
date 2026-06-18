@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, ScanLine, Square, SwitchCamera, XCircle } from "lucide-react";
 
@@ -16,9 +17,12 @@ import { memberTypeLabel } from "@/lib/employees/real-estate";
 import type { EmployeeMemberType } from "@/lib/employees/types";
 import { VISITOR_MANAGEMENT_EMPLOYEES_PATH } from "@/lib/visitors/industry-options";
 import {
-  buildKioskScannerConfig,
+  buildKioskCameraStartAttempts,
+  buildKioskScannerRuntimeConfig,
   defaultKioskCameraFacing,
+  formatKioskCameraStartError,
   isDesktopScannerDevice,
+  warmupCameraPermission,
   type KioskCameraFacing,
 } from "@/lib/qr-scanner/kiosk-scanner-config";
 
@@ -247,13 +251,18 @@ export default function EmployeeKioskPage() {
   const launchScanner = useCallback(
     async (facing: CameraFacing) => {
       const element = document.getElementById(SCANNER_DIV_ID);
-      if (!element) throw new Error("Scanner element not found.");
+      if (!element) {
+        throw new Error("Scanner is still loading. Wait a moment and tap Start camera again.");
+      }
 
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-      const { config, constraintsToTry } = buildKioskScannerConfig(element, { facing });
+      const { config } = buildKioskScannerRuntimeConfig(element, { facing });
+      const attempts = await buildKioskCameraStartAttempts(facing);
 
       let started = false;
-      for (const constraints of constraintsToTry) {
+      let lastError: unknown = null;
+
+      for (const cameraIdOrConstraints of attempts) {
         const scanner = new Html5Qrcode(SCANNER_DIV_ID, {
           verbose: false,
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -262,25 +271,28 @@ export default function EmployeeKioskPage() {
         scannerRef.current = scanner;
 
         try {
-          await scanner.start(constraints, config, (text) => void submitToken(text), () => {});
+          await scanner.start(
+            cameraIdOrConstraints,
+            config,
+            (text) => void submitToken(text),
+            () => {}
+          );
           started = true;
           setCameraFacing(facing);
           break;
-        } catch {
-          scanner.clear();
+        } catch (e: unknown) {
+          lastError = e;
+          try {
+            scanner.clear();
+          } catch {
+            /* ignore */
+          }
           scannerRef.current = null;
         }
       }
 
       if (!started) {
-        const isDesktop = isDesktopScannerDevice();
-        throw new Error(
-          isDesktop
-            ? "Could not open webcam. Allow camera access and try again."
-            : facing === "environment"
-              ? "Could not open back camera. Try switching to front camera."
-              : "Could not open front camera. Try switching to back camera."
-        );
+        throw new Error(formatKioskCameraStartError(lastError, facing));
       }
     },
     [submitToken]
@@ -324,10 +336,18 @@ export default function EmployeeKioskPage() {
 
     const desktop = isDesktopScannerDevice();
     const initialFacing = defaultKioskCameraFacing();
-    setInlineScanner(desktop);
-    setCameraActive(true);
-    setCameraFacing(initialFacing);
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    if (desktop) {
+      await warmupCameraPermission();
+    }
+
+    flushSync(() => {
+      setInlineScanner(desktop);
+      setCameraActive(true);
+      setCameraFacing(initialFacing);
+    });
+
+    await new Promise((r) => requestAnimationFrame(r));
 
     try {
       await launchScanner(initialFacing);
@@ -351,7 +371,10 @@ export default function EmployeeKioskPage() {
     setCameraError(null);
     try {
       await stopScannerStream();
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      flushSync(() => {
+        setCameraFacing(nextFacing);
+      });
+      await new Promise((r) => requestAnimationFrame(r));
       await launchScanner(nextFacing);
     } catch (e: unknown) {
       setCameraError(e instanceof Error ? e.message : "Could not switch camera.");
