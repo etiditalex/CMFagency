@@ -8,7 +8,7 @@ const title =
   "Buy CFM Tickets Kenya | Coast Fashion & Modelling Awards (CFMA) 2026";
 
 const description =
-  "Official CFM / CFMA tickets for the Coast Fashion & Modelling Awards in Kenya. Choose Regular (KES 500), VIP (KES 1,500) or VVIP (KES 3,500). Pay online with M-Pesa STK or card (Paystack), or use Lipa Pole Pole installments. Secure checkout from Changer Fusions (Mombasa).";
+  "Official CFM / CFMA tickets for the Coast Fashion & Modelling Awards in Kenya. Choose Regular (KES 500), VIP (KES 1,500) or VVIP (KES 3,500). Pay online with M-Pesa STK or card (Paystack), or use Lipa Pole Pole installments. Secure checkout from Changer Fusions — serving Mombasa, Kilifi, Kwale, Voi and Nairobi.";
 
 const posterImage = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg";
 
@@ -20,10 +20,16 @@ export const metadata: Metadata = {
   keywords: [
     "CFM tickets",
     "CFMA tickets",
+    "CFM Awards tickets",
     "Coast Fashion and Modelling Awards tickets",
+    "Coast fashion tickets",
     "Coast Fashion & Modelling Awards 2026",
     "buy fashion show tickets Kenya",
     "Mombasa event tickets",
+    "CFM tickets Kilifi",
+    "CFM tickets Kwale",
+    "CFM tickets Voi",
+    "CFM Awards tickets Nairobi",
     "CFM tickets online",
     "Lipa Pole Pole tickets",
     "M-Pesa event tickets Kenya",

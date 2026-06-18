@@ -1,4 +1,5 @@
 import { SITE_URL } from "@/lib/site-url";
+import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 
 const canonical = `${SITE_URL}/kcm/cfm-tickets`;
 
@@ -15,7 +16,7 @@ export const cfmTicketsJsonLd = {
       url: canonical,
       name: "Buy CFM Tickets Kenya | Coast Fashion & Modelling Awards (CFMA) 2026",
       description:
-        "Official CFM / CFMA tickets for the Coast Fashion & Modelling Awards in Kenya: Regular, VIP and VVIP tiers. Pay with M-Pesa STK, Paystack (card), or Lipa Pole Pole installments.",
+        "Official CFM / CFMA tickets for the Coast Fashion & Modelling Awards in Kenya: Regular, VIP and VVIP tiers. Pay with M-Pesa STK, Paystack (card), or Lipa Pole Pole installments. Serving fans in Mombasa, Kilifi, Kwale, Voi and Nairobi.",
       inLanguage: "en-KE",
       isPartOf: {
         "@type": "WebSite",
@@ -36,7 +37,7 @@ export const cfmTicketsJsonLd = {
         {
           "@type": "ListItem",
           position: 2,
-          name: "Kings Conference Movement",
+          name: "Kenya Coast Models",
           item: `${SITE_URL}/kcm`,
         },
         {
@@ -50,6 +51,14 @@ export const cfmTicketsJsonLd = {
     {
       "@type": "FAQPage",
       mainEntity: [
+        {
+          "@type": "Question",
+          name: "Can I buy CFM tickets from Kilifi, Kwale, Voi or Nairobi?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Changer Fusions sells official CFM Awards and coast fashion tickets online for fans across Kenya — including Mombasa, Kilifi, Kwale, Voi and Nairobi. Checkout at https://cmfagency.co.ke/kcm/cfm-tickets with M-Pesa, Paystack or Lipa Pole Pole.",
+          },
+        },
         {
           "@type": "Question",
           name: "What are the CFM ticket prices for Coast Fashion & Modelling Awards?",
@@ -99,6 +108,19 @@ export const cfmTicketsJsonLd = {
           },
         },
       ],
+    },
+    {
+      "@type": "ItemList",
+      name: "CFM ticket pages by location",
+      itemListElement: CFMA_TICKET_LOCATIONS.map((loc, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "WebPage",
+          name: `CFM tickets ${loc.name}`,
+          url: `${SITE_URL}/events/tickets/${loc.slug}`,
+        },
+      })),
     },
     {
       "@type": "ItemList",

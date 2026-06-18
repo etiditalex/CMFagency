@@ -12,6 +12,7 @@ import { normalizeKenyaPhone, parseRequiredKenyaPhone } from "@/lib/kenya-phone"
 import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
 import { cloudinaryLoader } from "@/lib/cloudinary";
+import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 import { cfmTicketsJsonLd } from "./structured-data";
 
 /** Payload fields for referral contact on checkout APIs. */
@@ -967,6 +968,37 @@ export default function CfmTicketsPage() {
             </form>
               </article>
             </div>
+
+          <section
+            aria-labelledby="cfm-tickets-locations"
+            className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8"
+          >
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+              <h2 id="cfm-tickets-locations" className="text-lg font-bold text-gray-900 sm:text-xl">
+                CFM Awards tickets across Kenya — Mombasa, Kilifi, Kwale, Voi &amp; Nairobi
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                Looking for <strong>CFM Awards tickets</strong>, <strong>coast fashion tickets</strong>, or{" "}
+                <strong>Changer Fusions tickets</strong>? You are on the official Coast Fashion &amp; Modelling Awards
+                (CFMA) 2026 checkout. Whether you are in Mombasa, travelling from Kilifi or Malindi, Diani in Kwale,
+                Voi in Taita-Taveta, or flying in from Nairobi — secure your seat online with M-Pesa, Paystack, or Lipa
+                Pole Pole.
+              </p>
+              <ul className="mt-5 flex flex-wrap gap-2">
+                {CFMA_TICKET_LOCATIONS.map((loc) => (
+                  <li key={loc.slug}>
+                    <a
+                      href={`/events/tickets/${loc.slug}`}
+                      className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800 transition hover:bg-primary-100 sm:text-sm"
+                    >
+                      CFM tickets {loc.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
           <CfmTicketsPosterCarousel />
           </div>
         </section>

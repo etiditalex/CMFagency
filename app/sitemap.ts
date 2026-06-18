@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-server";
+import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 import { getPublishedJobListings } from "@/lib/job-board-listings";
 import { SITE_URL } from "@/lib/site-url";
 
@@ -24,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/services/market-research", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/services/events-marketing", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/services/content-creation", priority: 0.9, changeFrequency: "weekly" as const },
+    { path: "/services/seo", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events/upcoming", priority: 0.95, changeFrequency: "weekly" as const },
     { path: "/events/upcoming/coast-fashion-modelling-awards-2026", priority: 0.95, changeFrequency: "weekly" as const },
@@ -56,6 +58,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: now,
     changeFrequency: route.changeFrequency,
     priority: route.priority,
+  }));
+
+  const ticketLocationEntries: MetadataRoute.Sitemap = CFMA_TICKET_LOCATIONS.map((loc) => ({
+    url: `${baseUrl}/events/tickets/${loc.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.92,
   }));
 
   const jobEntries: MetadataRoute.Sitemap = [];
@@ -114,6 +123,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase unavailable during build
   }
 
-  return [...staticEntries, ...jobEntries, ...blogEntries];
+  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries];
 }
 

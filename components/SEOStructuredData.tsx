@@ -342,11 +342,22 @@ export default function SEOStructuredData() {
     },
     offers: {
       "@type": "Offer",
-      url: "https://cmfagency.co.ke/events/upcoming",
+      url: "https://cmfagency.co.ke/kcm/cfm-tickets",
       priceCurrency: "KES",
       lowPrice: "500",
       highPrice: "3500",
       availability: "https://schema.org/InStock",
+    },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Fashion awards guests in Kenya",
+      geographicArea: [
+        { "@type": "AdministrativeArea", name: "Mombasa County" },
+        { "@type": "AdministrativeArea", name: "Kilifi County" },
+        { "@type": "AdministrativeArea", name: "Kwale County" },
+        { "@type": "AdministrativeArea", name: "Taita-Taveta County" },
+        { "@type": "AdministrativeArea", name: "Nairobi County" },
+      ],
     },
   };
 
@@ -399,10 +410,14 @@ export default function SEOStructuredData() {
       opens: "09:00",
       closes: "17:00",
     },
-    areaServed: {
-      "@type": "Country",
-      name: "Kenya",
-    },
+    areaServed: [
+      { "@type": "AdministrativeArea", name: "Mombasa County" },
+      { "@type": "AdministrativeArea", name: "Kilifi County" },
+      { "@type": "AdministrativeArea", name: "Kwale County" },
+      { "@type": "AdministrativeArea", name: "Taita-Taveta County" },
+      { "@type": "AdministrativeArea", name: "Nairobi County" },
+      { "@type": "Country", name: "Kenya" },
+    ],
   };
 
   return (

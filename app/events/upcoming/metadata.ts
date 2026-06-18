@@ -3,13 +3,20 @@ import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 export const metadata: Metadata = {
   title: "Upcoming Events | Coast Fashion & Modelling Awards | CMF Agency",
-  description: "Coast Fashion and Modelling Awards 2026 (CMFA) - our premier upcoming event in Mombasa. View details, get tickets, and be part of the excitement.",
+  description: "Coast Fashion and Modelling Awards 2026 (CMFA) - our premier upcoming event in Mombasa. Buy CFM Awards tickets, coast fashion tickets and Changer Fusions tickets online — fans welcome from Mombasa, Kilifi, Kwale, Voi and Nairobi.",
   keywords: [
     "Buy tickets online",
     "CMF awards 2026",
+    "CFM Awards tickets",
     "CFMA 2026",
+    "coast fashion tickets",
+    "Changer Fusions tickets",
     "events Mombasa 2026",
     "Mombasa events 2026",
+    "CFM tickets Kilifi",
+    "CFM tickets Kwale",
+    "CFM tickets Voi",
+    "CFM Awards tickets Nairobi",
     "fashion event Mombasa",
     "Coast Fashion and Modelling Awards 2026",
     "buy event tickets Kenya",

@@ -557,25 +557,28 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       return;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token || cancelled) return;
-        const res = await fetch("/api/cmfa/registrations/pending-count", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const j = await res.json().catch(() => ({}));
-        if (!cancelled && res.ok && typeof j.total === "number") setPendingCmfaCount(j.total);
-        else if (!cancelled) setPendingCmfaCount(0);
-      } catch {
-        if (!cancelled) setPendingCmfaCount(0);
-      }
-    })();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          if (!token || cancelled) return;
+          const res = await fetch("/api/cmfa/registrations/pending-count", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const j = await res.json().catch(() => ({}));
+          if (!cancelled && res.ok && typeof j.total === "number") setPendingCmfaCount(j.total);
+          else if (!cancelled) setPendingCmfaCount(0);
+        } catch {
+          if (!cancelled) setPendingCmfaCount(0);
+        }
+      })();
+    }, 2500);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [isAuthenticated, isPortalMember, hasFeature]);
 
@@ -584,25 +587,28 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       return;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token || cancelled) return;
-        const res = await fetch("/api/fusion-xpress/applications?status=pending&limit=1", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const j = await res.json().catch(() => ({}));
-        if (!cancelled && res.ok && typeof j.total === "number") setPendingApplicationsCount(j.total);
-        else if (!cancelled) setPendingApplicationsCount(0);
-      } catch {
-        if (!cancelled) setPendingApplicationsCount(0);
-      }
-    })();
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          if (!token || cancelled) return;
+          const res = await fetch("/api/fusion-xpress/applications?status=pending&limit=1", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const j = await res.json().catch(() => ({}));
+          if (!cancelled && res.ok && typeof j.total === "number") setPendingApplicationsCount(j.total);
+          else if (!cancelled) setPendingApplicationsCount(0);
+        } catch {
+          if (!cancelled) setPendingApplicationsCount(0);
+        }
+      })();
+    }, 3000);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [isAuthenticated, isPortalMember, isAdmin]);
 
