@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
+import { ensureCfmaCampaign, isCfmaTicketSlug } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 import { normalizeKenyaCurrencyForPayments, resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
+import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 
 type InitBody = {
   slug?: string;
@@ -16,8 +17,10 @@ type InitBody = {
   payer_name?: string | null;
   /** Kenya MSISDN (254…). Stored on the transaction for ticket purchases when provided. */
   payer_phone?: string | null;
-  /** Optional: referrer name or phone for commission tracking */
+  /** Optional: referrer display name */
   referred_by?: string | null;
+  /** Optional: referrer Kenya phone (254…) */
+  referrer_phone?: string | null;
   lipa_pole_pole_plan_id?: string | null;
   lipa_pole_pole_deposit_kes?: number | null;
   /** When true, return ref/amount/email for Paystack Inline popup (card entry on-page) instead of redirect URL */
@@ -57,15 +60,16 @@ export async function POST(req: Request) {
     const referredByRaw = (body.referred_by ?? "").trim().slice(0, 240);
     const referredByErr = validateReferredByNameOnly(referredByRaw);
     if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
-    const referredBy = referredByRaw || null;
+    let referredBy = referredByRaw || null;
+
+    const referrerPhoneParsed = parseOptionalKenyaPhone(body.referrer_phone ?? "");
+    if (referrerPhoneParsed.error) {
+      return NextResponse.json({ error: referrerPhoneParsed.error }, { status: 400 });
+    }
+    let referrerPhone = referrerPhoneParsed.phone;
 
     const payerPhoneRaw = (body.payer_phone ?? "").trim().replace(/\s/g, "");
-    const payerPhoneNorm =
-      payerPhoneRaw.startsWith("+254") ? `254${payerPhoneRaw.slice(4)}` :
-      payerPhoneRaw.startsWith("254") ? payerPhoneRaw :
-      payerPhoneRaw.startsWith("0") ? `254${payerPhoneRaw.slice(1)}` :
-      payerPhoneRaw.length === 9 && /^[17]/.test(payerPhoneRaw) ? `254${payerPhoneRaw}` :
-      payerPhoneRaw;
+    const payerPhoneNorm = normalizeKenyaPhone(payerPhoneRaw);
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -208,6 +212,15 @@ export async function POST(req: Request) {
       useInstallment = true;
       installmentPayKes = resInst.payKes;
       installmentTicketQty = resInst.plan.ticket_quantity;
+      if (!referredBy && resInst.plan.referred_by) referredBy = resInst.plan.referred_by;
+      if (!referrerPhone && resInst.plan.referrer_phone) referrerPhone = resInst.plan.referrer_phone;
+    }
+
+    if (isCfmaTicketSlug(slug) && campaign.type === "ticket" && !referrerPhone) {
+      return NextResponse.json(
+        { error: "Referrer phone is required for CFM ticket purchases." },
+        { status: 400 }
+      );
     }
 
     // Reference used to reconcile webhook and DB. Must be unique.
@@ -271,6 +284,7 @@ export async function POST(req: Request) {
     };
     if (payerPhoneStored) txMetadata.payer_phone = payerPhoneStored;
     if (referredBy) txMetadata.referred_by = referredBy;
+    if (referrerPhone) txMetadata.referrer_phone = referrerPhone;
 
     const insertPayload = {
       campaign_id: campaign.id,
@@ -368,6 +382,7 @@ export async function POST(req: Request) {
           custom_fields: customFields,
           ...(payerPhoneStored ? { payer_phone: payerPhoneStored } : {}),
           ...(referredBy ? { referred_by: referredBy } : {}),
+          ...(referrerPhone ? { referrer_phone: referrerPhone } : {}),
           ...(useInstallment
             ? {
                 lipa_pole_pole: true,

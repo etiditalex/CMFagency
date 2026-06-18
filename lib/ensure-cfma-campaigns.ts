@@ -27,6 +27,10 @@ const CFMA_TIERS: Record<
 
 const CFMA_SLUGS = new Set(Object.keys(CFMA_TIERS));
 
+export function isCfmaTicketSlug(slug: string): boolean {
+  return CFMA_SLUGS.has(slug.trim().toLowerCase());
+}
+
 export type CampaignRow = {
   id: string;
   created_by: string;

@@ -5,15 +5,7 @@ import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { normalizeInstallmentEmail } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
-
-function normalizeKenyaPhone(raw: string): string {
-  const phoneRaw = raw.trim().replace(/\s/g, "");
-  if (phoneRaw.startsWith("+254")) return `254${phoneRaw.slice(4)}`;
-  if (phoneRaw.startsWith("254")) return phoneRaw;
-  if (phoneRaw.startsWith("0") && phoneRaw.length >= 10) return `254${phoneRaw.slice(1)}`;
-  if (phoneRaw.length === 9 && /^[17]/.test(phoneRaw)) return `254${phoneRaw}`;
-  return phoneRaw;
-}
+import { normalizeKenyaPhone, parseRequiredKenyaPhone } from "@/lib/kenya-phone";
 
 type CampaignRow = {
   id: string;
@@ -66,6 +58,7 @@ export async function POST(req: Request) {
       phone?: string;
       payer_name?: string | null;
       referred_by?: string | null;
+      referrer_phone?: string | null;
       ticket_quantity?: number;
     };
 
@@ -77,6 +70,9 @@ export async function POST(req: Request) {
     const referredByErr = validateReferredByNameOnly(referredByRaw);
     if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
     const referredBy = referredByRaw || null;
+    const referrerPhoneParsed = parseRequiredKenyaPhone(body.referrer_phone ?? "");
+    if (referrerPhoneParsed.error) return NextResponse.json({ error: referrerPhoneParsed.error }, { status: 400 });
+    const referrerPhone = referrerPhoneParsed.phone;
     const ticketQty = Math.trunc(Number(body.ticket_quantity ?? 0));
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
@@ -162,6 +158,7 @@ export async function POST(req: Request) {
         phone: phoneNorm,
         payer_name: payerName,
         referred_by: referredBy,
+        referrer_phone: referrerPhone,
         ticket_quantity: ticketQty,
         unit_amount: unitAmount,
         total_due: totalDue,

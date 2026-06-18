@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { contactFromTransactionMetadata } from "@/lib/transaction-contact";
 
 type CmfaScanRow = {
   id: string;
@@ -114,7 +115,14 @@ export async function POST(req: NextRequest) {
       const typeCode = (tx as { campaign_type?: string }).campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
       const ticketOrVoteId = `${prefix}-${typeCode}-${suffix}`;
       const name = (tx as { payer_name?: string | null }).payer_name?.trim?.() || (tx as { email?: string | null }).email?.trim?.() || "—";
+      const contact = contactFromTransactionMetadata(meta);
       const checkedInAt = (tx as { checked_in_at?: string | null }).checked_in_at;
+
+      const contactPayload = {
+        payer_phone: contact.payer_phone,
+        referred_by: contact.referred_by,
+        referrer_phone: contact.referrer_phone,
+      };
 
       if (checkedInAt) {
         return NextResponse.json(
@@ -126,6 +134,7 @@ export async function POST(req: NextRequest) {
             voteId: (tx as { campaign_type?: string }).campaign_type === "vote" ? ticketOrVoteId : undefined,
             checked_in_at: checkedInAt,
             message: "This receipt was already used. Do not allow entry.",
+            ...contactPayload,
           },
           { headers: { "Cache-Control": "no-store" } }
         );
@@ -146,6 +155,7 @@ export async function POST(req: NextRequest) {
           ticketId: ticketOrVoteId,
           voteId: (tx as { campaign_type?: string }).campaign_type === "vote" ? ticketOrVoteId : undefined,
           message: "Valid. Allow entry.",
+          ...contactPayload,
         },
         { headers: { "Cache-Control": "no-store" } }
       );

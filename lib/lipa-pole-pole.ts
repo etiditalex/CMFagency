@@ -30,6 +30,7 @@ export type CfmInstallmentPlanRow = {
   phone: string;
   payer_name: string | null;
   referred_by: string | null;
+  referrer_phone: string | null;
   ticket_quantity: number;
   unit_amount: number;
   total_due: number;

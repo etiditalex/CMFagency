@@ -8,19 +8,23 @@ import {
   messageForPaymentFailure,
 } from "@/lib/payment-user-message";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
+import { normalizeKenyaPhone, parseRequiredKenyaPhone } from "@/lib/kenya-phone";
 import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import { cfmTicketsJsonLd } from "./structured-data";
 
-/** Normalize to Kenya 254XXXXXXXXX for M-Pesa / stored payer phone. */
-function normalizeKenyaPhone(raw: string): string {
-  const phoneRaw = raw.trim().replace(/\s/g, "");
-  if (phoneRaw.startsWith("+254")) return `254${phoneRaw.slice(4)}`;
-  if (phoneRaw.startsWith("254")) return phoneRaw;
-  if (phoneRaw.startsWith("0") && phoneRaw.length >= 10) return `254${phoneRaw.slice(1)}`;
-  if (phoneRaw.length === 9 && /^[17]/.test(phoneRaw)) return `254${phoneRaw}`;
-  return phoneRaw;
+/** Payload fields for referral contact on checkout APIs. */
+function referralPayload(referredBy: string, referrerPhone: string) {
+  const name = referredBy.trim().slice(0, 240);
+  const phoneParsed = parseRequiredKenyaPhone(referrerPhone);
+  if (phoneParsed.error || !phoneParsed.phone) {
+    throw new PaymentClientError(phoneParsed.error ?? "Referrer phone number is required.");
+  }
+  return {
+    ...(name ? { referred_by: name } : {}),
+    referrer_phone: phoneParsed.phone,
+  };
 }
 
 type TicketPackage = {
@@ -58,6 +62,7 @@ export default function CfmTicketsPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [referredBy, setReferredBy] = useState("");
+  const [referrerPhone, setReferrerPhone] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submittingMethod, setSubmittingMethod] = useState<"daraja" | "paystack" | null>(null);
@@ -117,6 +122,8 @@ export default function CfmTicketsPage() {
     }
     const refErr = validateReferredByNameOnly(referredBy);
     if (refErr) throw new PaymentClientError(refErr);
+    const refPhoneErr = parseRequiredKenyaPhone(referrerPhone).error;
+    if (refPhoneErr) throw new PaymentClientError(refPhoneErr);
   };
 
   const handlePaystack = async () => {
@@ -129,7 +136,7 @@ export default function CfmTicketsPage() {
         payer_name: payerName,
         payer_phone: normalizeKenyaPhone(phone),
         quantity: normalizedQuantity,
-        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+        ...referralPayload(referredBy, referrerPhone),
       }),
     });
 
@@ -159,7 +166,7 @@ export default function CfmTicketsPage() {
         email: email.trim(),
         payer_name: payerName,
         quantity: normalizedQuantity,
-        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+        ...referralPayload(referredBy, referrerPhone),
       }),
     });
 
@@ -265,7 +272,7 @@ export default function CfmTicketsPage() {
         phone: normalizeKenyaPhone(phone),
         payer_name: payerName,
         ticket_quantity: normalizedQuantity,
-        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const j = (await res.json().catch(() => ({}))) as {
@@ -325,7 +332,7 @@ export default function CfmTicketsPage() {
         quantity: normalizedQuantity,
         lipa_pole_pole_plan_id: planId,
         ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
-        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const json = (await res.json().catch(() => ({}))) as {
@@ -385,7 +392,7 @@ export default function CfmTicketsPage() {
         quantity: normalizedQuantity,
         lipa_pole_pole_plan_id: planId,
         ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
-        ...(referredBy.trim() ? { referred_by: referredBy.trim().slice(0, 240) } : {}),
+        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const json = (await res.json().catch(() => ({}))) as {
@@ -737,6 +744,23 @@ export default function CfmTicketsPage() {
                   maxLength={240}
                   className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                 />
+                <input
+                  type="tel"
+                  value={referrerPhone}
+                  onChange={(e) => setReferrerPhone(e.target.value)}
+                  placeholder="Referrer's phone (e.g. 0712… or 254712…)"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
+                  required
+                  aria-describedby="cfm-tickets-referrer-phone-hint"
+                />
+                <p
+                  id="cfm-tickets-referrer-phone-hint"
+                  className="col-span-2 text-xs text-gray-500 max-md:text-[11px] max-md:leading-snug"
+                >
+                  Required — phone number of the person who referred you to buy tickets.
+                </p>
                 <input
                   type="tel"
                   value={phone}

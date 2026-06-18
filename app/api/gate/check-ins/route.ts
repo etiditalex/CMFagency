@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { contactFromTransactionMetadata } from "@/lib/transaction-contact";
 
 /**
  * Returns gate attendance data as JSON: paid tickets/votes only after scan (checked_in_at set).
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
 
   const { data: rows, error } = await supabase
     .from("transactions")
-    .select("reference,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status")
+    .select("reference,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status,metadata")
     .not("checked_in_at", "is", null)
     .eq("status", "success")
     .order("checked_in_at", { ascending: false })
@@ -58,6 +59,7 @@ export async function GET(req: Request) {
     quantity?: number | null;
     campaign_type?: string | null;
     campaign_id: string;
+    metadata?: unknown;
   }>;
 
   const campaignIdsSeen = [...new Set(txRows.map((r) => r.campaign_id))];
@@ -70,19 +72,25 @@ export async function GET(req: Request) {
     campaignTitleById[c.id] = String(c.title || c.slug || c.id);
   }
 
-  const txCheckIns = txRows.map((t) => ({
-    registered_at: null as string | null,
-    checked_in_at: t.checked_in_at,
-    reference: t.reference,
-    campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
-    event_slug: null as string | null,
-    type: t.campaign_type === "vote" ? "Vote" : "Ticket",
-    payer_name: (t.payer_name ?? "").trim() || "—",
-    email: (t.email ?? "").trim() || "—",
-    amount: t.amount,
-    currency: String(t.currency ?? "").toUpperCase(),
-    quantity: t.quantity ?? 0,
-  }));
+  const txCheckIns = txRows.map((t) => {
+    const contact = contactFromTransactionMetadata(t.metadata);
+    return {
+      registered_at: null as string | null,
+      checked_in_at: t.checked_in_at,
+      reference: t.reference,
+      campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
+      event_slug: null as string | null,
+      type: t.campaign_type === "vote" ? "Vote" : "Ticket",
+      payer_name: (t.payer_name ?? "").trim() || "—",
+      email: (t.email ?? "").trim() || "—",
+      payer_phone: contact.payer_phone ?? "—",
+      referred_by: contact.referred_by ?? "—",
+      referrer_phone: contact.referrer_phone ?? "—",
+      amount: t.amount,
+      currency: String(t.currency ?? "").toUpperCase(),
+      quantity: t.quantity ?? 0,
+    };
+  });
 
   let attendeeQuery = supabaseAdmin
     .from("event_attendees")
@@ -124,6 +132,9 @@ export async function GET(req: Request) {
       type: "Registration",
       payer_name: (a.name ?? "").trim() || "—",
       email: (a.email ?? "").trim() || "—",
+      payer_phone: "—",
+      referred_by: "—",
+      referrer_phone: "—",
       amount: 0,
       currency: "",
       quantity: 1 + g,
@@ -139,6 +150,9 @@ export async function GET(req: Request) {
     type: string;
     payer_name: string;
     email: string;
+    payer_phone: string;
+    referred_by: string;
+    referrer_phone: string;
     amount: number;
     currency: string;
     quantity: number;
@@ -150,19 +164,25 @@ export async function GET(req: Request) {
     const campRow = (campaigns ?? []).find((c: { slug?: string }) => c.slug === campaignSlug) as { id: string } | undefined;
     const campId = campRow?.id ?? null;
     const txForEvent = campId ? txRows.filter((t) => t.campaign_id === campId) : [];
-    const txCheckInsForEvent = txForEvent.map((t) => ({
-      registered_at: null as string | null,
-      checked_in_at: t.checked_in_at,
-      reference: t.reference,
-      campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
-      event_slug: null as string | null,
-      type: t.campaign_type === "vote" ? "Vote" : "Ticket",
-      payer_name: (t.payer_name ?? "").trim() || "—",
-      email: (t.email ?? "").trim() || "—",
-      amount: t.amount,
-      currency: String(t.currency ?? "").toUpperCase(),
-      quantity: t.quantity ?? 0,
-    }));
+    const txCheckInsForEvent = txForEvent.map((t) => {
+      const contact = contactFromTransactionMetadata(t.metadata);
+      return {
+        registered_at: null as string | null,
+        checked_in_at: t.checked_in_at,
+        reference: t.reference,
+        campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
+        event_slug: null as string | null,
+        type: t.campaign_type === "vote" ? "Vote" : "Ticket",
+        payer_name: (t.payer_name ?? "").trim() || "—",
+        email: (t.email ?? "").trim() || "—",
+        payer_phone: contact.payer_phone ?? "—",
+        referred_by: contact.referred_by ?? "—",
+        referrer_phone: contact.referrer_phone ?? "—",
+        amount: t.amount,
+        currency: String(t.currency ?? "").toUpperCase(),
+        quantity: t.quantity ?? 0,
+      };
+    });
     combined = [...txCheckInsForEvent, ...regCheckIns];
   } else {
     combined = [...txCheckIns, ...regCheckIns];

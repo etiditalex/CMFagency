@@ -17,6 +17,9 @@ type ScanResult = {
   voteId?: string;
   checked_in_at?: string;
   message: string;
+  payer_phone?: string | null;
+  referred_by?: string | null;
+  referrer_phone?: string | null;
 };
 
 const SCANNER_DIV_ID = "gate-qr-scanner";
@@ -394,6 +397,13 @@ export default function DashboardGatePage() {
             CMFA approvals
           </Link>
           <Link
+            href="/dashboard/gate/purchases"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900"
+          >
+            <ListChecks className="w-4 h-4" />
+            Ticket purchases
+          </Link>
+          <Link
             href="/dashboard/gate/check-ins"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900"
           >
@@ -543,6 +553,21 @@ export default function DashboardGatePage() {
                 <span className="font-medium">{result.voteId ? "Vote ID:" : "Ticket ID:"}</span>{" "}
                 {result.voteId ?? result.ticketId}
               </p>
+              {result.payer_phone ? (
+                <p className="mt-1 text-sm text-gray-700">
+                  <span className="font-medium">Payer phone:</span> {result.payer_phone}
+                </p>
+              ) : null}
+              {result.referred_by ? (
+                <p className="mt-1 text-sm text-gray-700">
+                  <span className="font-medium">Referred by:</span> {result.referred_by}
+                </p>
+              ) : null}
+              {result.referrer_phone ? (
+                <p className="mt-1 text-sm text-gray-700">
+                  <span className="font-medium">Referrer phone:</span> {result.referrer_phone}
+                </p>
+              ) : null}
               {result.duplicate && result.checked_in_at && (
                 <p className="mt-2 text-sm text-red-700">
                   First used: {new Date(result.checked_in_at).toLocaleString()}

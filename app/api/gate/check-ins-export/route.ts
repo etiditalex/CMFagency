@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { contactFromTransactionMetadata } from "@/lib/transaction-contact";
 
 /**
  * Export gate attendance CSV: paid entries after scan; free registrations from signup with optional gate time.
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
 
   const { data: rows, error } = await supabase
     .from("transactions")
-    .select("reference,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status")
+    .select("reference,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status,metadata")
     .not("checked_in_at", "is", null)
     .eq("status", "success")
     .order("checked_in_at", { ascending: false })
@@ -58,6 +59,7 @@ export async function GET(req: Request) {
     campaign_type?: string | null;
     campaign_id: string;
     status?: string | null;
+    metadata?: unknown;
   }>;
 
   const campaignIdsSeen = [...new Set(txRows.map((r) => r.campaign_id))];
@@ -125,24 +127,33 @@ export async function GET(req: Request) {
     type: string;
     name: string;
     email: string;
+    payer_phone: string;
+    referred_by: string;
+    referrer_phone: string;
     amount: number;
     currency: string;
     quantity: number;
   };
   const fmt = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "medium" }) : "";
-  const txCsvRows: CsvRow[] = txRows.map((t) => ({
-    registered_at: null,
-    gate_confirmed_at: t.checked_in_at,
-    reference: t.reference,
-    campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
-    type: t.campaign_type === "vote" ? "Vote" : "Ticket",
-    name: (t.payer_name ?? "").trim() || "—",
-    email: (t.email ?? "").trim() || "—",
-    amount: t.amount,
-    currency: String(t.currency ?? "").toUpperCase(),
-    quantity: t.quantity ?? 0,
-  }));
+  const txCsvRows: CsvRow[] = txRows.map((t) => {
+    const contact = contactFromTransactionMetadata(t.metadata);
+    return {
+      registered_at: null,
+      gate_confirmed_at: t.checked_in_at,
+      reference: t.reference,
+      campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
+      type: t.campaign_type === "vote" ? "Vote" : "Ticket",
+      name: (t.payer_name ?? "").trim() || "—",
+      email: (t.email ?? "").trim() || "—",
+      payer_phone: contact.payer_phone ?? "—",
+      referred_by: contact.referred_by ?? "—",
+      referrer_phone: contact.referrer_phone ?? "—",
+      amount: t.amount,
+      currency: String(t.currency ?? "").toUpperCase(),
+      quantity: t.quantity ?? 0,
+    };
+  });
   const regCsvRows: CsvRow[] = regRows.map((a) => {
     const g = Math.max(0, Number(a.additional_guests) || 0);
     return {
@@ -153,6 +164,9 @@ export async function GET(req: Request) {
       type: "Registration",
       name: (a.name ?? "").trim() || "—",
       email: (a.email ?? "").trim() || "—",
+      payer_phone: "—",
+      referred_by: "—",
+      referrer_phone: "—",
       amount: 0,
       currency: "",
       quantity: 1 + g,
@@ -174,6 +188,9 @@ export async function GET(req: Request) {
     "Type",
     "Name",
     "Email",
+    "Payer phone",
+    "Referred by",
+    "Referrer phone",
     "Amount",
     "Currency",
     "Quantity",
@@ -188,6 +205,9 @@ export async function GET(req: Request) {
       escapeCsv(r.type),
       escapeCsv(r.name),
       escapeCsv(r.email),
+      escapeCsv(r.payer_phone),
+      escapeCsv(r.referred_by),
+      escapeCsv(r.referrer_phone),
       escapeCsv(r.amount),
       escapeCsv(r.currency),
       escapeCsv(r.quantity),

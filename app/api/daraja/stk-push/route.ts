@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
+import { ensureCfmaCampaign, isCfmaTicketSlug } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 import { resolveInstallmentPaymentKes, isKenyaShillingsForLipa, normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
+import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 
 type StkPushBody = {
   slug?: string;
@@ -17,6 +18,8 @@ type StkPushBody = {
   coupon_code?: string | null;
   /** Optional: referrer display name (not a phone number) */
   referred_by?: string | null;
+  /** Optional: referrer Kenya phone (254…) */
+  referrer_phone?: string | null;
   /** Lipa Pole Pole: pay toward an existing installment plan */
   lipa_pole_pole_plan_id?: string | null;
   lipa_pole_pole_deposit_kes?: number | null;
@@ -55,15 +58,15 @@ export async function POST(req: Request) {
     const referredByRaw = (body.referred_by ?? "").trim().slice(0, 240);
     const referredByErr = validateReferredByNameOnly(referredByRaw);
     if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
-    const referredBy = referredByRaw || null;
+    let referredBy = referredByRaw || null;
 
-    // Normalize phone: 254XXXXXXXXX (Kenya)
-    const phone =
-      phoneRaw.startsWith("+254") ? `254${phoneRaw.slice(4)}` :
-      phoneRaw.startsWith("254") ? phoneRaw :
-      phoneRaw.startsWith("0") ? `254${phoneRaw.slice(1)}` :
-      phoneRaw.length === 9 ? `254${phoneRaw}` :
-      phoneRaw;
+    const referrerPhoneParsed = parseOptionalKenyaPhone(body.referrer_phone ?? "");
+    if (referrerPhoneParsed.error) {
+      return NextResponse.json({ error: referrerPhoneParsed.error }, { status: 400 });
+    }
+    let referrerPhone = referrerPhoneParsed.phone;
+
+    const phone = normalizeKenyaPhone(phoneRaw);
 
     if (!slug) return NextResponse.json({ error: "Missing slug" }, { status: 400 });
     if (!/^254[17]\d{8}$/.test(phone)) {
@@ -215,6 +218,15 @@ export async function POST(req: Request) {
       useInstallment = true;
       installmentPayKes = resInst.payKes;
       installmentTicketQty = resInst.plan.ticket_quantity;
+      if (!referredBy && resInst.plan.referred_by) referredBy = resInst.plan.referred_by;
+      if (!referrerPhone && resInst.plan.referrer_phone) referrerPhone = resInst.plan.referrer_phone;
+    }
+
+    if (isCfmaTicketSlug(slug) && campaign.type === "ticket" && !referrerPhone) {
+      return NextResponse.json(
+        { error: "Referrer phone is required for CFM ticket purchases." },
+        { status: 400 }
+      );
     }
 
     const reference = `cmf_${crypto.randomUUID().replace(/-/g, "")}`;
@@ -281,7 +293,9 @@ export async function POST(req: Request) {
         slug: campaign.slug,
         campaign_title: campaign.title,
         phone,
+        payer_phone: phone,
         ...(referredBy ? { referred_by: referredBy } : {}),
+        ...(referrerPhone ? { referrer_phone: referrerPhone } : {}),
         ...lipaMeta,
       },
     };
