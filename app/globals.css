@@ -127,6 +127,10 @@
   object-fit: cover !important;
 }
 
+.employee-kiosk-scanner-inline video {
+  object-fit: contain !important;
+}
+
 .gate-scanner-fullscreen #qr-shaded-region,
 .employee-kiosk-scanner-fullscreen #qr-shaded-region {
   border-width: 2px !important;

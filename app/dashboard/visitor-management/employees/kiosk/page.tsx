@@ -22,6 +22,7 @@ import {
   defaultKioskCameraFacing,
   formatKioskCameraStartError,
   isDesktopScannerDevice,
+  useNativeBarcodeDetectorOnDevice,
   warmupCameraPermission,
   type KioskCameraFacing,
 } from "@/lib/qr-scanner/kiosk-scanner-config";
@@ -33,7 +34,13 @@ interface QrScanner {
     cameraIdOrConfig: string | MediaTrackConstraints,
     config: {
       fps: number;
-      qrbox?: number | { width: number; height: number };
+      qrbox?:
+        | number
+        | { width: number; height: number }
+        | ((viewfinderWidth: number, viewfinderHeight: number) => {
+            width: number;
+            height: number;
+          });
       aspectRatio?: number;
       disableFlip?: boolean;
       videoConstraints?: MediaTrackConstraints;
@@ -50,11 +57,28 @@ const EMP_TOKEN_PATTERN = /FX-EMP-[A-Za-z0-9-]+/;
 function parseEmployeeToken(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) return "";
-  const urlMatch = trimmed.match(/[?&]token=([^&]+)/i);
+
+  try {
+    if (/^https?:\/\//i.test(trimmed)) {
+      const url = new URL(trimmed);
+      const fromQuery = url.searchParams.get("token")?.trim();
+      if (fromQuery) return fromQuery;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  const urlMatch = trimmed.match(/[?&]token=([^&#]+)/i);
   if (urlMatch) return decodeURIComponent(urlMatch[1]).trim();
+
   const tokenMatch = trimmed.match(EMP_TOKEN_PATTERN);
   if (tokenMatch) return tokenMatch[0];
-  return trimmed.slice(0, 128);
+
+  if (trimmed.startsWith("FX-EMP-")) {
+    return trimmed.split(/\s/)[0] ?? trimmed;
+  }
+
+  return "";
 }
 
 type ScanFeedback = {
@@ -144,7 +168,19 @@ export default function EmployeeKioskPage() {
   const submitToken = useCallback(
     async (raw: string) => {
       const token = parseEmployeeToken(raw);
-      if (!token) return;
+      if (!token) {
+        const now = Date.now();
+        if (lastScannedRef.current !== raw || now - lastScannedAt.current >= 4000) {
+          lastScannedRef.current = raw;
+          lastScannedAt.current = now;
+          setFeedback({
+            ok: false,
+            title: "Unrecognized QR",
+            detail: "That code is not a staff pass. Show the employee QR from the Employees screen.",
+          });
+        }
+        return;
+      }
 
       const now = Date.now();
       if (lastScannedRef.current === token && now - lastScannedAt.current < 4000) return;
@@ -258,6 +294,7 @@ export default function EmployeeKioskPage() {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
       const { config } = buildKioskScannerRuntimeConfig(element, { facing });
       const attempts = await buildKioskCameraStartAttempts(facing);
+      const useNativeBarcodeDetector = useNativeBarcodeDetectorOnDevice();
 
       let started = false;
       let lastError: unknown = null;
@@ -266,7 +303,7 @@ export default function EmployeeKioskPage() {
         const scanner = new Html5Qrcode(SCANNER_DIV_ID, {
           verbose: false,
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: useNativeBarcodeDetector,
         }) as unknown as QrScanner;
         scannerRef.current = scanner;
 
@@ -556,7 +593,7 @@ export default function EmployeeKioskPage() {
               {renderScannerToolbar("inline")}
               <div
                 id={SCANNER_DIV_ID}
-                className="employee-kiosk-scanner-fullscreen relative min-h-[280px] sm:min-h-[320px] w-full flex-1"
+                className="employee-kiosk-scanner-fullscreen employee-kiosk-scanner-inline relative min-h-[280px] sm:min-h-[320px] w-full flex-1"
               />
               {renderScannerFooter("inline")}
             </div>

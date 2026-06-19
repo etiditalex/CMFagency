@@ -27,32 +27,44 @@ export function defaultKioskCameraFacing(): KioskCameraFacing {
 
 export type KioskScannerRuntimeConfig = {
   fps: number;
-  qrbox: { width: number; height: number };
+  qrbox:
+    | number
+    | { width: number; height: number }
+    | ((viewfinderWidth: number, viewfinderHeight: number) => { width: number; height: number });
   aspectRatio?: number;
   disableFlip?: boolean;
   videoConstraints?: MediaTrackConstraints;
 };
+
+function kioskQrboxSize(
+  viewfinderWidth: number,
+  viewfinderHeight: number,
+  isDesktop: boolean
+): { width: number; height: number } {
+  const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+  const ratio = isDesktop ? 0.82 : 0.78;
+  const size = Math.max(isDesktop ? 200 : 240, Math.floor(minEdge * ratio));
+  return { width: size, height: size };
+}
+
+export function useNativeBarcodeDetectorOnDevice(): boolean {
+  return !isDesktopScannerDevice();
+}
 
 export function buildKioskScannerRuntimeConfig(
   element: HTMLElement,
   options?: { facing?: KioskCameraFacing }
 ): { config: KioskScannerRuntimeConfig; isDesktop: boolean } {
   const isDesktop = isDesktopScannerDevice();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const viewH = element.clientHeight || Math.floor(vh * (isDesktop ? 0.5 : 0.75));
-  const scanSize = Math.floor(Math.min(vw, Math.max(viewH, 280)) * (isDesktop ? 0.62 : 0.78));
-  const qrbox = isDesktop
-    ? Math.max(180, Math.min(scanSize, 280))
-    : Math.max(240, Math.min(scanSize, 400));
 
   if (isDesktop) {
     return {
       isDesktop,
       config: {
-        fps: 20,
-        qrbox: { width: qrbox, height: qrbox },
-        disableFlip: true,
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) =>
+          kioskQrboxSize(viewfinderWidth, viewfinderHeight, true),
+        disableFlip: false,
         videoConstraints: {
           facingMode: { ideal: "user" },
           width: { ideal: 1280 },
@@ -63,11 +75,21 @@ export function buildKioskScannerRuntimeConfig(
   }
 
   const facing = options?.facing ?? defaultKioskCameraFacing();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const viewH = element.clientHeight || Math.floor(vh * 0.75);
+  const scanSize = Math.floor(Math.min(vw, Math.max(viewH, 280)) * 0.78);
+  const qrbox = Math.max(240, Math.min(scanSize, 400));
+
   return {
     isDesktop,
     config: {
       fps: 20,
-      qrbox: { width: qrbox, height: qrbox },
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const dynamic = kioskQrboxSize(viewfinderWidth, viewfinderHeight, false);
+        const fallback = { width: qrbox, height: qrbox };
+        return dynamic.width >= 200 ? dynamic : fallback;
+      },
       aspectRatio: 1,
       disableFlip: false,
       videoConstraints: {
