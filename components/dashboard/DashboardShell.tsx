@@ -104,7 +104,7 @@ type NavItem = {
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
 
 /** Inactivity timeout in ms. User is logged out after this period without activity. */
-const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
