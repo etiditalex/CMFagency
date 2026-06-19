@@ -1,6 +1,6 @@
 import { eatDayKey } from "@/lib/time/eat";
 import type { EmployeeAttendanceRecord, ShiftDefinition } from "@/lib/employees/types";
-import { detectShiftForEvent } from "@/lib/employees/shifts";
+import { resolveShiftForAttendanceEvent, detectShiftForEvent } from "@/lib/employees/shifts";
 
 /**
  * Multi-shift support for retail/hospitality accounts.
@@ -22,13 +22,23 @@ export function dedupeAttendanceByShift(
   }
 
   const byShift = new Map<string, EmployeeAttendanceRecord[]>();
+  const byDay = new Map<string, EmployeeAttendanceRecord[]>();
   for (const e of events) {
-    const shift = detectShiftForEvent(e.createdAt, shifts);
-    const shiftNum = shift?.shiftNumber ?? "unknown";
-    const key = `${e.employeeId}:${eatDayKey(e.createdAt)}:${shiftNum}`;
-    const list = byShift.get(key) ?? [];
-    list.push(e);
-    byShift.set(key, list);
+    const dayKey = `${e.employeeId}:${eatDayKey(e.createdAt)}`;
+    const dayList = byDay.get(dayKey) ?? [];
+    dayList.push(e);
+    byDay.set(dayKey, dayList);
+  }
+
+  for (const dayList of byDay.values()) {
+    for (const e of dayList) {
+      const shift = resolveShiftForAttendanceEvent(e, shifts, dayList);
+      const shiftNum = shift?.shiftNumber ?? "unknown";
+      const key = `${e.employeeId}:${eatDayKey(e.createdAt)}:${shiftNum}`;
+      const list = byShift.get(key) ?? [];
+      list.push(e);
+      byShift.set(key, list);
+    }
   }
 
   const out: EmployeeAttendanceRecord[] = [];
@@ -82,7 +92,9 @@ function eventsForShift(
   shift: ShiftDefinition,
   shifts: ShiftDefinition[]
 ): EmployeeAttendanceRecord[] {
-  return todayEvents.filter((e) => detectShiftForEvent(e.createdAt, shifts)?.shiftNumber === shift.shiftNumber);
+  return todayEvents.filter(
+    (e) => resolveShiftForAttendanceEvent(e, shifts, todayEvents)?.shiftNumber === shift.shiftNumber
+  );
 }
 
 /**
@@ -109,7 +121,9 @@ export function validateShiftAttendanceTransition(params: {
       return { ok: false, error: "Not signed in. Please sign in first." };
     }
     const lastSignIn = [...todayEvents].reverse().find((e) => e.eventType === "sign_in");
-    const activeShift = lastSignIn ? detectShiftForEvent(lastSignIn.createdAt, shifts) : null;
+    const activeShift = lastSignIn
+      ? resolveShiftForAttendanceEvent(lastSignIn, shifts, todayEvents)
+      : null;
     if (!activeShift) {
       return { ok: false, error: "Could not determine your active shift. Contact your manager." };
     }

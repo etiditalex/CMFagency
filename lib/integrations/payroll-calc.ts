@@ -4,7 +4,7 @@ import type { EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } f
 import { buildAttendanceDailyLogRows } from "@/lib/employees/attendance-daily-log";
 import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
 import { dedupeAttendanceByEmployeeDay } from "@/lib/employees/daily-attendance-rules";
-import { mapAttendanceRow, mapEmployeeRow, mapLeaveRow, type EmployeeAttendanceRow, type EmployeeLeaveRow, type EmployeeRow } from "@/lib/employees/db-mapper";
+import { EMPLOYEE_ATTENDANCE_SELECT, mapAttendanceRow, mapEmployeeRow, mapLeaveRow, type EmployeeAttendanceRow, type EmployeeLeaveRow, type EmployeeRow } from "@/lib/employees/db-mapper";
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
 import { countLeaveDaysForEmployee } from "@/lib/employees/leave-rules";
 import {
@@ -371,7 +371,7 @@ export async function loadPayrollPayload(
 
   let attQuery = admin
     .from("visitor_employee_attendance")
-    .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+    .select(EMPLOYEE_ATTENDANCE_SELECT)
     .eq("owner_id", ownerId)
     .gte("created_at", fromIso)
     .lte("created_at", toIso)

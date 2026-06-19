@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  EMPLOYEE_ATTENDANCE_SELECT,
   isMissingEmployeesTable,
   mapAttendanceRow,
   type EmployeeAttendanceRow,
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     let q = admin
       .from("visitor_employee_attendance")
-      .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+      .select(EMPLOYEE_ATTENDANCE_SELECT)
       .eq("owner_id", ownerId)
       .order("created_at", { ascending: false })
       .limit(limit);

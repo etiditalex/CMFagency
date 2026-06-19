@@ -64,6 +64,8 @@ export type EmployeeAttendanceRecord = {
   deviceLabel: string | null;
   deviceInfo: Record<string, unknown>;
   createdAt: string;
+  /** Shift 1 or 2 for retail/hospitality; null for single-window orgs. */
+  shiftNumber?: number | null;
 };
 
 export type EmployeeFormInput = {

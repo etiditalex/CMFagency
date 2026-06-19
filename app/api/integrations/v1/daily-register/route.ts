@@ -6,6 +6,7 @@ import {
   parseAttendanceSummaryDateRange,
 } from "@/lib/employees/attendance-summary";
 import {
+  EMPLOYEE_ATTENDANCE_SELECT,
   isMissingEmployeesTable,
   isMissingLeaveTable,
   mapAttendanceRow,
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     let attQuery = auth.admin
       .from("visitor_employee_attendance")
-      .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+      .select(EMPLOYEE_ATTENDANCE_SELECT)
       .eq("owner_id", auth.ownerId)
       .gte("created_at", parsed.fromDate.toISOString())
       .lte("created_at", parsed.toDate.toISOString())

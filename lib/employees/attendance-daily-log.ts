@@ -1,8 +1,18 @@
 import { localDayKey } from "@/lib/employees/daily-attendance-rules";
 import type { AttendanceSummaryEventRow } from "@/lib/employees/attendance-summary";
 import { findLeaveForEmployeeDay, leaveTypeLabel } from "@/lib/employees/leave-rules";
-import { detectShiftForEvent, formatHoursWorked, hoursWorkedBetween, shiftsFromSettings } from "@/lib/employees/shifts";
-import type { EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
+import {
+  formatHoursWorked,
+  hoursWorkedBetween,
+  resolveShiftForAttendanceEvent,
+  shiftsFromSettings,
+} from "@/lib/employees/shifts";
+import {
+  signOutReportingStatus,
+  signOutStatusLabel,
+  reportingWindowForMember,
+} from "@/lib/employees/reporting-time";
+import type { EmployeeAttendanceRecord, EmployeeLeaveRecord, EmployeeRecord, EmployeeReportingSettings } from "@/lib/employees/types";
 import { formatEmployeeReportDate, formatEmployeeReportTime } from "@/lib/employees/utils";
 import { eachEatDayKeys, eatDayKey } from "@/lib/time/eat";
 
@@ -32,6 +42,8 @@ export type AttendanceDailyLogOptions = {
   leaveRecords?: EmployeeLeaveRecord[];
   from?: string;
   to?: string;
+  /** Retail/hospitality: sign-out after required time is labelled Overtime. */
+  labelSignOutOvertime?: boolean;
 };
 
 function signStatusLabel(present: boolean, kind: "in" | "out"): string {
@@ -65,14 +77,48 @@ export function buildAttendanceDailyLogRows(
   const employeeById = new Map(employees.map((e) => [e.id, e]));
   const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const shifts = shiftEnabled && reportingSettings ? shiftsFromSettings(reportingSettings) : [];
+  const labelSignOutOvertime =
+    options?.labelSignOutOvertime === true || reportingSettings?.shiftEnabled === true;
 
   const buckets = new Map<string, DayBucket>();
   const attendedEmployeeDays = new Set<string>();
+  const eventsByEmployeeDay = new Map<string, AttendanceSummaryEventRow[]>();
+
+  for (const ev of events) {
+    const dayKey = localDayKey(ev.createdAt);
+    const dayEventsKey = `${ev.employeeId}:${dayKey}`;
+    const dayList = eventsByEmployeeDay.get(dayEventsKey) ?? [];
+    dayList.push(ev);
+    eventsByEmployeeDay.set(dayEventsKey, dayList);
+  }
 
   for (const ev of events) {
     const dayKey = localDayKey(ev.createdAt);
     attendedEmployeeDays.add(`${ev.employeeId}:${dayKey}`);
-    const shift = shiftEnabled ? detectShiftForEvent(ev.createdAt, shifts) : null;
+    const dayEvents = (eventsByEmployeeDay.get(`${ev.employeeId}:${dayKey}`) ?? []).map(
+      (e): EmployeeAttendanceRecord => ({
+        id: e.id,
+        employeeId: e.employeeId,
+        eventType: e.eventType,
+        deviceId: null,
+        deviceLabel: null,
+        deviceInfo: {},
+        createdAt: e.createdAt,
+        shiftNumber: e.shiftNumber ?? null,
+      })
+    );
+    const shift = shiftEnabled
+      ? resolveShiftForAttendanceEvent(
+          {
+            createdAt: ev.createdAt,
+            eventType: ev.eventType,
+            employeeId: ev.employeeId,
+            shiftNumber: ev.shiftNumber ?? null,
+          },
+          shifts,
+          dayEvents
+        )
+      : null;
     const shiftKey = shift ? String(shift.shiftNumber) : "day";
     const shiftLabel = shift ? `Shift ${shift.shiftNumber}` : "—";
     const key = `${ev.employeeId}:${dayKey}:${shiftKey}`;
@@ -108,6 +154,21 @@ export function buildAttendanceDailyLogRows(
         ? formatHoursWorked(hoursWorkedBetween(bucket.signInAt, bucket.signOutAt))
         : "—";
 
+    const signOutLabel = (() => {
+      if (!bucket.signOutAt) return "—";
+      if (!labelSignOutOvertime || !reportingSettings) return signStatusLabel(true, "out");
+      const shiftDef = shifts.find((s) => s.shiftNumber === Number(bucket.shiftKey));
+      const expectedSignOut =
+        shiftDef?.signOutTime ??
+        (emp ? reportingWindowForMember(reportingSettings, emp.memberType).signOut : null);
+      if (!expectedSignOut) return signStatusLabel(true, "out");
+      const status = signOutReportingStatus(bucket.signOutAt, expectedSignOut, {
+        labelOvertime: true,
+      });
+      if (status === "overtime") return signOutStatusLabel(status);
+      return signStatusLabel(true, "out");
+    })();
+
     rows.push({
       id: `${bucket.employeeId}:${bucket.dayKey}:${bucket.shiftKey}`,
       employeeId: bucket.employeeId,
@@ -121,7 +182,7 @@ export function buildAttendanceDailyLogRows(
       signInLabel: signStatusLabel(Boolean(bucket.signInAt), "in"),
       signInDate,
       signInTime,
-      signOutLabel: signStatusLabel(Boolean(bucket.signOutAt), "out"),
+      signOutLabel,
       signOutTime,
       hoursWorked: hours,
       sortKey: bucket.signInAt ?? bucket.signOutAt ?? `${bucket.dayKey}T00:00:00`,

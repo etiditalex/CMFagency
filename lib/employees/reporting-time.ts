@@ -93,17 +93,24 @@ export function signInStatusClass(status: SignInReportingStatus): string {
   }
 }
 
-export type SignOutReportingStatus = "on_time" | "early" | "unknown";
+export type SignOutReportingStatus = "on_time" | "early" | "overtime" | "unknown";
 
-/** On time when sign-out is at or after expected sign-out time (e.g. 5:00 PM). */
+export type SignOutReportingOptions = {
+  /** When true, sign-out after the required time is labelled overtime (retail/hospitality). */
+  labelOvertime?: boolean;
+};
+
+/** On time at expected sign-out; early before; overtime after (hospitality/shifts). */
 export function signOutReportingStatus(
   signedOutAt: string | null | undefined,
-  expectedSignOut: string
+  expectedSignOut: string,
+  options?: SignOutReportingOptions
 ): SignOutReportingStatus {
   const actual = minutesFromIso(signedOutAt);
   if (actual === null) return "unknown";
   const expected = minutesFromTime(expectedSignOut);
   if (actual < expected) return "early";
+  if (actual > expected && options?.labelOvertime) return "overtime";
   return "on_time";
 }
 
@@ -113,6 +120,8 @@ export function signOutStatusLabel(status: SignOutReportingStatus): string {
       return "Left on time";
     case "early":
       return "Left early";
+    case "overtime":
+      return "Overtime";
     default:
       return "—";
   }
@@ -124,6 +133,8 @@ export function signOutStatusClass(status: SignOutReportingStatus): string {
       return "text-emerald-700 bg-emerald-50 border-emerald-200";
     case "early":
       return "text-amber-800 bg-amber-50 border-amber-200";
+    case "overtime":
+      return "text-violet-900 bg-violet-50 border-violet-200";
     default:
       return "text-gray-500 bg-gray-50 border-gray-200";
   }
@@ -135,6 +146,17 @@ export function lateMinutes(signedInAt: string | null | undefined, window: Membe
   if (actual === null) return 0;
   const latest = minutesFromTime(window.signInLatest);
   return Math.max(0, actual - latest);
+}
+
+/** Minutes worked past expected sign-out (0 if on time or early). */
+export function overtimeMinutes(
+  signedOutAt: string | null | undefined,
+  expectedSignOut: string
+): number {
+  const actual = minutesFromIso(signedOutAt);
+  if (actual === null) return 0;
+  const expected = minutesFromTime(expectedSignOut);
+  return Math.max(0, actual - expected);
 }
 
 /** Minutes left before expected sign-out (0 if left on time or late). */

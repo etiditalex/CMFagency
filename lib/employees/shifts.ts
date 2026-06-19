@@ -1,4 +1,9 @@
-import type { EmployeeMemberType, EmployeeReportingSettings, ShiftDefinition } from "@/lib/employees/types";
+import type {
+  EmployeeAttendanceRecord,
+  EmployeeMemberType,
+  EmployeeReportingSettings,
+  ShiftDefinition,
+} from "@/lib/employees/types";
 import type { MemberReportingWindow } from "@/lib/employees/reporting-time";
 import { reportingWindowForMember } from "@/lib/employees/reporting-time";
 import { eatMinutesFromIso } from "@/lib/time/eat";
@@ -81,13 +86,58 @@ export function detectShiftForEvent(
   return null;
 }
 
+export function shiftByNumber(
+  shifts: ShiftDefinition[],
+  shiftNumber: number
+): ShiftDefinition | null {
+  return shifts.find((s) => s.shiftNumber === shiftNumber) ?? null;
+}
+
+/** Prefer stored shift_number; for sign-out after shift end, pair with the matching sign-in. */
+export function resolveShiftForAttendanceEvent(
+  event: Pick<EmployeeAttendanceRecord, "createdAt" | "eventType" | "shiftNumber" | "employeeId">,
+  shifts: ShiftDefinition[],
+  dayEvents?: EmployeeAttendanceRecord[]
+): ShiftDefinition | null {
+  if (shifts.length === 0) return null;
+
+  if (event.shiftNumber === 1 || event.shiftNumber === 2) {
+    return shiftByNumber(shifts, event.shiftNumber);
+  }
+
+  if (event.eventType === "sign_out" && dayEvents?.length) {
+    const pairedSignIn = [...dayEvents]
+      .filter(
+        (e) =>
+          e.employeeId === event.employeeId &&
+          e.eventType === "sign_in" &&
+          e.createdAt <= event.createdAt
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .pop();
+    if (pairedSignIn) {
+      if (pairedSignIn.shiftNumber === 1 || pairedSignIn.shiftNumber === 2) {
+        return shiftByNumber(shifts, pairedSignIn.shiftNumber);
+      }
+      return detectShiftForEvent(pairedSignIn.createdAt, shifts);
+    }
+  }
+
+  return detectShiftForEvent(event.createdAt, shifts);
+}
+
 export function reportingWindowForEvent(
-  signedAt: string,
+  event: Pick<EmployeeAttendanceRecord, "createdAt" | "eventType" | "shiftNumber" | "employeeId">,
   settings: EmployeeReportingSettings,
-  memberType: EmployeeMemberType
+  memberType: EmployeeMemberType,
+  dayEvents?: EmployeeAttendanceRecord[]
 ): MemberReportingWindow {
   if (settings.shiftEnabled) {
-    const shift = detectShiftForEvent(signedAt, shiftsFromSettings(settings));
+    const shift = resolveShiftForAttendanceEvent(
+      event,
+      shiftsFromSettings(settings),
+      dayEvents
+    );
     if (shift) {
       return {
         signInStart: shift.signInStartTime,

@@ -46,12 +46,14 @@ function attendanceDeviceDisplay(row: EmployeeAttendanceRecord): string {
 function eventStatusForRow(
   row: EmployeeAttendanceRecord,
   reportingSettings: EmployeeReportingSettings,
-  emp: EmployeeRecord | undefined
+  emp: EmployeeRecord | undefined,
+  dayEvents: EmployeeAttendanceRecord[],
+  labelSignOutOvertime: boolean
 ): { label: string; className: string } | null {
   if (!emp) return null;
 
   const memberWindow = reportingSettings.shiftEnabled
-    ? reportingWindowForEvent(row.createdAt, reportingSettings, emp.memberType)
+    ? reportingWindowForEvent(row, reportingSettings, emp.memberType, dayEvents)
     : reportingWindowForMember(reportingSettings, emp.memberType);
 
   if (row.eventType === "sign_in") {
@@ -60,7 +62,9 @@ function eventStatusForRow(
     return { label: signInStatusLabel(status), className: signInStatusClass(status) };
   }
 
-  const status = signOutReportingStatus(row.createdAt, memberWindow.signOut);
+  const status = signOutReportingStatus(row.createdAt, memberWindow.signOut, {
+    labelOvertime: labelSignOutOvertime || reportingSettings.shiftEnabled,
+  });
   if (status === "unknown") return null;
   return { label: signOutStatusLabel(status), className: signOutStatusClass(status) };
 }
@@ -76,6 +80,8 @@ export type AttendanceEventLogPanelProps = {
   onExportExcel?: () => void;
   onSaveAttendanceTime?: (attendanceId: string, createdAt: string) => Promise<void>;
   onError?: (message: string) => void;
+  /** Retail/hospitality: sign-out after required time shows as Overtime. */
+  labelSignOutOvertime?: boolean;
   title?: string;
   emptyMessage?: string;
   className?: string;
@@ -92,11 +98,23 @@ export default function AttendanceEventLogPanel({
   onExportExcel,
   onSaveAttendanceTime,
   onError,
+  labelSignOutOvertime = false,
   title = "Attendance log",
   emptyMessage = "No attendance events yet.",
   className = "",
 }: AttendanceEventLogPanelProps) {
   const employeeById = new Map(employees.map((e) => [e.id, e]));
+  const eventsByEmployeeDay = useMemo(() => {
+    const map = new Map<string, EmployeeAttendanceRecord[]>();
+    for (const row of attendance) {
+      const dayKey = row.createdAt.slice(0, 10);
+      const key = `${row.employeeId}:${dayKey}`;
+      const list = map.get(key) ?? [];
+      list.push(row);
+      map.set(key, list);
+    }
+    return map;
+  }, [attendance]);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
   const [page, setPage] = useState(0);
 
@@ -202,7 +220,15 @@ export default function AttendanceEventLogPanel({
             <tbody>
               {pageRows.map((row) => {
                 const emp = employeeById.get(row.employeeId);
-                const status = eventStatusForRow(row, reportingSettings, emp);
+                const dayKey = row.createdAt.slice(0, 10);
+                const dayEvents = eventsByEmployeeDay.get(`${row.employeeId}:${dayKey}`) ?? [row];
+                const status = eventStatusForRow(
+                  row,
+                  reportingSettings,
+                  emp,
+                  dayEvents,
+                  labelSignOutOvertime
+                );
                 const isSignIn = row.eventType === "sign_in";
 
                 return (

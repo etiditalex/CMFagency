@@ -27,10 +27,16 @@ export function reportingSettingsForIndustry(
   industrySlug: string | null | undefined
 ): EmployeeReportingSettings {
   const mapped = row ? mapReportingSettingsRow(row) : { ...DEFAULT_REPORTING_SETTINGS };
-  if (isRetailHospitalityIndustry(industrySlug) && !row) {
-    return { ...mapped, ...RETAIL_HOSPITALITY_SHIFT_DEFAULTS };
+  if (!isRetailHospitalityIndustry(industrySlug)) {
+    return mapped;
   }
-  return mapped;
+  const hospitalityShiftEnabled = row?.shift_enabled === false ? false : true;
+  return {
+    ...mapped,
+    ...RETAIL_HOSPITALITY_SHIFT_DEFAULTS,
+    ...mapped,
+    shiftEnabled: hospitalityShiftEnabled,
+  };
 }
 
 export async function fetchOwnerReportingSettings(

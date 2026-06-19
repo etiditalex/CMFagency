@@ -49,6 +49,7 @@ type AttendanceReportLogTableProps = {
   subtitle?: string;
   exportingExcel?: boolean;
   onExportExcel?: () => void;
+  labelSignOutOvertime?: boolean;
 };
 
 function SortableHeader({
@@ -101,6 +102,7 @@ export default function AttendanceReportLogTable({
   subtitle,
   exportingExcel = false,
   onExportExcel,
+  labelSignOutOvertime = false,
 }: AttendanceReportLogTableProps) {
   const shiftEnabled = reportingSettings?.shiftEnabled === true;
   const allRows = useMemo(
@@ -109,8 +111,9 @@ export default function AttendanceReportLogTable({
         leaveRecords,
         from,
         to,
+        labelSignOutOvertime,
       }),
-    [events, employees, reportingSettings, leaveRecords, from, to]
+    [events, employees, reportingSettings, leaveRecords, from, to, labelSignOutOvertime]
   );
 
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);

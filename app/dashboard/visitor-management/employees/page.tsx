@@ -870,7 +870,11 @@ export default function VisitorManagementEmployeesPage() {
                             emp.lastSignedInAt,
                             reportingSettings.shiftEnabled && emp.lastSignedInAt
                               ? reportingWindowForEvent(
-                                  emp.lastSignedInAt,
+                                  {
+                                    createdAt: emp.lastSignedInAt,
+                                    eventType: "sign_in",
+                                    employeeId: emp.id,
+                                  },
                                   reportingSettings,
                                   emp.memberType
                                 )
@@ -883,7 +887,11 @@ export default function VisitorManagementEmployeesPage() {
                             emp.lastSignedInAt,
                             reportingSettings.shiftEnabled && emp.lastSignedInAt
                               ? reportingWindowForEvent(
-                                  emp.lastSignedInAt,
+                                  {
+                                    createdAt: emp.lastSignedInAt,
+                                    eventType: "sign_in",
+                                    employeeId: emp.id,
+                                  },
                                   reportingSettings,
                                   emp.memberType
                                 )
@@ -988,6 +996,7 @@ export default function VisitorManagementEmployeesPage() {
         onExportExcel={handleExportExcel}
         onSaveAttendanceTime={saveAttendanceTime}
         onError={setNotice}
+        labelSignOutOvertime={isRetailHospitalityOrg}
       />
 
     </div>

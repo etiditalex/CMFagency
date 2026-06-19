@@ -81,6 +81,7 @@ export type AttendanceSummaryEventRow = {
   createdAt: string;
   displayTime: string;
   displayDate: string;
+  shiftNumber?: number | null;
 };
 
 export type AttendanceSummaryPayload = {
@@ -379,6 +380,7 @@ export function buildAttendanceSummary(params: {
         createdAt: a.createdAt,
         displayTime: params.formatDisplayTime(a.createdAt),
         displayDate: params.formatDisplayDate(a.createdAt),
+        shiftNumber: a.shiftNumber ?? null,
       };
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

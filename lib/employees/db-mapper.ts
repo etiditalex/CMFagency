@@ -104,8 +104,12 @@ export type EmployeeAttendanceRow = {
   device_id: string | null;
   device_label: string | null;
   device_info: Record<string, unknown> | null;
+  shift_number?: number | null;
   created_at: string;
 };
+
+export const EMPLOYEE_ATTENDANCE_SELECT =
+  "id,employee_id,owner_id,event_type,device_id,device_label,device_info,shift_number,created_at";
 
 export function mapEmployeeRow(row: EmployeeRow): EmployeeRecord {
   return {
@@ -128,6 +132,9 @@ export function mapEmployeeRow(row: EmployeeRow): EmployeeRecord {
 }
 
 export function mapAttendanceRow(row: EmployeeAttendanceRow): EmployeeAttendanceRecord {
+  const shiftRaw = row.shift_number;
+  const shiftNumber =
+    shiftRaw === 1 || shiftRaw === 2 ? shiftRaw : shiftRaw != null ? Number(shiftRaw) : null;
   return {
     id: row.id,
     employeeId: row.employee_id,
@@ -139,6 +146,7 @@ export function mapAttendanceRow(row: EmployeeAttendanceRow): EmployeeAttendance
         ? (row.device_info as Record<string, unknown>)
         : {},
     createdAt: row.created_at,
+    shiftNumber: shiftNumber === 1 || shiftNumber === 2 ? shiftNumber : null,
   };
 }
 

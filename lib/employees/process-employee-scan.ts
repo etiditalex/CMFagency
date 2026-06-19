@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   EMPLOYEES_SETUP_MESSAGE,
+  EMPLOYEE_ATTENDANCE_SELECT,
   isMissingEmployeesTable,
   mapAttendanceRow,
   mapEmployeeRow,
@@ -34,7 +35,7 @@ export async function fetchTodayAttendanceStatus(
 
   const { data: todayRows } = await admin
     .from("visitor_employee_attendance")
-    .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+    .select(EMPLOYEE_ATTENDANCE_SELECT)
     .eq("employee_id", employeeId)
     .gte("created_at", startIso)
     .lte("created_at", endIso)
@@ -185,7 +186,7 @@ export async function processEmployeeQrScan(
   const { startIso, endIso } = todayLocalBounds();
   const { data: todayRows, error: todayErr } = await admin
     .from("visitor_employee_attendance")
-    .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+    .select(EMPLOYEE_ATTENDANCE_SELECT)
     .eq("employee_id", employee.id)
     .gte("created_at", startIso)
     .lte("created_at", endIso)
@@ -301,7 +302,7 @@ export async function processEmployeeQrScan(
   const { data: attendanceRow, error: attErr } = await admin
     .from("visitor_employee_attendance")
     .insert(attendanceInsert)
-    .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+    .select(EMPLOYEE_ATTENDANCE_SELECT)
     .single();
 
   if (attErr) {

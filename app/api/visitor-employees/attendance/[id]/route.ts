@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isMissingEmployeesTable, mapAttendanceRow, type EmployeeAttendanceRow } from "@/lib/employees/db-mapper";
+import { EMPLOYEE_ATTENDANCE_SELECT, isMissingEmployeesTable, mapAttendanceRow, type EmployeeAttendanceRow } from "@/lib/employees/db-mapper";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
 
 function parseIso(v: unknown): string | null {
@@ -35,7 +35,7 @@ export async function PATCH(
     if (!isAdmin) q = q.eq("owner_id", userId);
 
     const { data, error } = await q
-      .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+      .select(EMPLOYEE_ATTENDANCE_SELECT)
       .maybeSingle();
 
     if (error) {

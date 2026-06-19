@@ -733,6 +733,7 @@ export default function EmployeeSummaryReportsPage() {
                     subtitle={`Approved leave and daily sign-in / sign-out · times in EAT`}
                     exportingExcel={exportingSection === "register"}
                     onExportExcel={() => void handleExportRegister()}
+                    labelSignOutOvertime={reportingSettings.shiftEnabled}
                   />
                 </div>
 

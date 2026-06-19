@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import {
+  EMPLOYEE_ATTENDANCE_SELECT,
   isMissingEmployeesTable,
   mapAttendanceRow,
   type EmployeeAttendanceRow,
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     let q = auth.admin
       .from("visitor_employee_attendance")
-      .select("id,employee_id,owner_id,event_type,device_id,device_label,device_info,created_at")
+      .select(EMPLOYEE_ATTENDANCE_SELECT)
       .eq("owner_id", auth.ownerId)
       .gte("created_at", parsed.fromIso)
       .lte("created_at", parsed.toIso)
