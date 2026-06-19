@@ -1,6 +1,7 @@
 import type {
   EmployeeAttendanceRecord,
   EmployeeAttendanceStatus,
+  EmployeeLeaveAllocation,
   EmployeeLeaveRecord,
   EmployeeLeaveType,
   EmployeeMemberType,
@@ -8,6 +9,7 @@ import type {
   EmployeeReportingSettings,
   EmployeeStatus,
 } from "@/lib/employees/types";
+import { defaultAllocationForEmployee } from "@/lib/employees/leave-balance";
 import { parseLeaveType, parseLeaveStatus } from "@/lib/employees/leave-rules";
 
 export type EmployeeRow = {
@@ -186,6 +188,7 @@ export function mapLeaveRow(row: EmployeeLeaveRow): EmployeeLeaveRecord {
 
 const EMPLOYEES_TABLE = "visitor_employees";
 const LEAVE_TABLE = "visitor_employee_leave";
+const LEAVE_ALLOCATIONS_TABLE = "visitor_employee_leave_allocations";
 
 export function isMissingEmployeesTable(err: unknown): boolean {
   const msg = String((err as { message?: string })?.message ?? "").toLowerCase();
@@ -223,6 +226,65 @@ export function isMissingLeaveTable(err: unknown): boolean {
 
 export const LEAVE_SETUP_MESSAGE =
   "Run database/visitor_employees_patch_11_leave.sql in the Supabase SQL Editor, then reload the API schema if needed.";
+
+export const LEAVE_ALLOCATIONS_SETUP_MESSAGE =
+  "Run database/visitor_employees_patch_16_leave_allocations.sql in the Supabase SQL Editor, then reload the API schema if needed.";
+
+export type EmployeeLeaveAllocationRow = {
+  id: string;
+  owner_id: string;
+  employee_id: string;
+  leave_year: number;
+  annual_days: number | string;
+  sick_days: number | string;
+  compassionate_days: number | string;
+  unpaid_days: number | string | null;
+  other_days: number | string;
+  created_at: string;
+  updated_at: string;
+};
+
+function toNumber(value: number | string | null | undefined, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round(n * 10) / 10 : fallback;
+}
+
+export function mapLeaveAllocationRow(
+  row: EmployeeLeaveAllocationRow | null,
+  employeeId: string,
+  leaveYear: number
+): EmployeeLeaveAllocation {
+  if (!row) {
+    return defaultAllocationForEmployee(employeeId, leaveYear);
+  }
+  return {
+    id: row.id,
+    employeeId: row.employee_id,
+    leaveYear: row.leave_year,
+    annualDays: toNumber(row.annual_days, 21),
+    sickDays: toNumber(row.sick_days, 14),
+    compassionateDays: toNumber(row.compassionate_days, 5),
+    unpaidDays: row.unpaid_days == null ? null : toNumber(row.unpaid_days, 0),
+    otherDays: toNumber(row.other_days, 0),
+    updatedAt: row.updated_at ?? null,
+  };
+}
+
+export function isMissingLeaveAllocationsTable(err: unknown): boolean {
+  const msg = String((err as { message?: string })?.message ?? "").toLowerCase();
+  const code = String((err as { code?: string })?.code ?? "").toUpperCase();
+  if (code === "42P01" || code === "PGRST205" || code === "PGRST204") {
+    return msg.includes(LEAVE_ALLOCATIONS_TABLE) || msg.includes("leave_allocations");
+  }
+  if (!msg.includes(LEAVE_ALLOCATIONS_TABLE) && !msg.includes("leave_allocations")) return false;
+  return (
+    msg.includes("does not exist") ||
+    msg.includes("schema cache") ||
+    msg.includes("could not find the table") ||
+    msg.includes("relation") ||
+    msg.includes("patch_16")
+  );
+}
 
 export const EMPLOYEES_SETUP_MESSAGE =
   "Run database/visitor_employees_patch_01.sql in the Supabase SQL Editor (after visitor_management_patch_01.sql). Then open Project Settings → API and click “Reload schema” if the error persists.";

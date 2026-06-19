@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,6 +19,8 @@ import type { EmployeeRecord } from "@/lib/employees/types";
 import { supabase } from "@/lib/supabase";
 import {
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
+  VISITOR_MANAGEMENT_LEAVE_PATH,
+  VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH,
   VISITOR_MANAGEMENT_PATH,
 } from "@/lib/visitors/industry-options";
 
@@ -162,6 +165,16 @@ export default function VisitorManagementLeavePage() {
           </header>
 
           <div className="bg-primary-600 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+            <p className="mb-4 text-sm text-white/90">
+              <Link
+                href={VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH}
+                className="font-semibold underline-offset-2 hover:underline"
+              >
+                Leave day settings
+              </Link>
+              {" · "}
+              Configure annual leave balances per employee.
+            </p>
             <EmployeeLeavePanel
               employees={employees}
               disabled={setupRequired}

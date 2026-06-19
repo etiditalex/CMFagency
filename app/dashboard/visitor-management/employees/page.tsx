@@ -71,6 +71,7 @@ import {
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_PATH,
@@ -591,6 +592,9 @@ export default function VisitorManagementEmployeesPage() {
           </Link>
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Summary reports
+          </Link>
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+            Per employee attendance report
           </Link>
           {isRealEstateOrg ? (
             <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">

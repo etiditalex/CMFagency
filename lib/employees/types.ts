@@ -96,3 +96,15 @@ export type EmployeeLeaveRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type EmployeeLeaveAllocation = {
+  id: string | null;
+  employeeId: string;
+  leaveYear: number;
+  annualDays: number;
+  sickDays: number;
+  compassionateDays: number;
+  unpaidDays: number | null;
+  otherDays: number;
+  updatedAt: string | null;
+};

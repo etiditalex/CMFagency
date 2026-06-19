@@ -24,9 +24,11 @@ export const VISITOR_MANAGEMENT_ACCOUNTS_PATH = `${VISITOR_MANAGEMENT_PATH}/acco
 export const VISITOR_MANAGEMENT_EMPLOYEES_PATH = `${VISITOR_MANAGEMENT_PATH}/employees`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/summary-reports`;
+export const VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/per-employee-attendance-report`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/crm-site-gps`;
 export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/kiosk`;
 export const VISITOR_MANAGEMENT_LEAVE_PATH = `${VISITOR_MANAGEMENT_PATH}/leave`;
+export const VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH = `${VISITOR_MANAGEMENT_LEAVE_PATH}/settings`;
 export const VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH = `${VISITOR_MANAGEMENT_PATH}/hr-payroll-api`;
 export const VISITOR_MANAGEMENT_DOCS_PATH = `${VISITOR_MANAGEMENT_PATH}/docs`;
 export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-site-check";
@@ -35,11 +37,20 @@ export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-
 export const VISITOR_MANAGEMENT_EMPLOYEES_NESTED_PATHS = [
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
 ] as const;
 
+export const VISITOR_MANAGEMENT_LEAVE_NESTED_PATHS = [VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH] as const;
+
 export function isEmployeesNestedNavPath(pathname: string): boolean {
   return VISITOR_MANAGEMENT_EMPLOYEES_NESTED_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`)
+  );
+}
+
+export function isLeaveNestedNavPath(pathname: string): boolean {
+  return VISITOR_MANAGEMENT_LEAVE_NESTED_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 }
@@ -76,6 +87,8 @@ export type VisitorManagementLinkNavChild = {
   adminOnly?: boolean;
   /** Nested visually under Employees in the Visitor Management sidebar. */
   underEmployees?: boolean;
+  /** Nested visually under Leave in the Visitor Management sidebar. */
+  underLeave?: boolean;
   /** Only shown when organisation industry is real-estate. */
   realEstateOnly?: boolean;
   /** Smart Visitor Management business accounts (and admins managing them). */
@@ -114,6 +127,12 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD: VisitorManagementLi
   underEmployees: true,
 };
 
+export const VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Per employee attendance report",
+  href: VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
+  underEmployees: true,
+};
+
 export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "CRM site GPS",
   href: VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
@@ -124,6 +143,13 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD: VisitorManagem
 export const VISITOR_MANAGEMENT_LEAVE_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "Leave",
   href: VISITOR_MANAGEMENT_LEAVE_PATH,
+  businessAccountOnly: true,
+};
+
+export const VISITOR_MANAGEMENT_LEAVE_SETTINGS_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Leave settings",
+  href: VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH,
+  underLeave: true,
   businessAccountOnly: true,
 };
 

@@ -3,9 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   isMissingLeaveTable,
+  mapLeaveAllocationRow,
   mapLeaveRow,
+  type EmployeeLeaveAllocationRow,
   type EmployeeLeaveRow,
 } from "@/lib/employees/db-mapper";
+import {
+  currentLeaveYear,
+  defaultAllocationForEmployee,
+  validateLeaveAgainstBalance,
+} from "@/lib/employees/leave-balance";
 import { isValidLeaveDate, parseLeaveStatus, parseLeaveType } from "@/lib/employees/leave-rules";
 import { notifyEmployeeLeaveApproved } from "@/lib/employees/notify-employee-leave-approved";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
@@ -100,6 +107,50 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     }
     if (body.notes !== undefined) {
       updates.notes = safeText(body.notes, 500);
+    }
+
+    const nextStartDate = String(updates.start_date ?? current.startDate);
+    const nextEndDate = String(updates.end_date ?? current.endDate);
+    const nextLeaveType = parseLeaveType(updates.leave_type ?? current.leaveType);
+
+    if (isApproval) {
+      const leaveYear = currentLeaveYear();
+      const { data: allocationRow } = await admin
+        .from("visitor_employee_leave_allocations")
+        .select(
+          "id,owner_id,employee_id,leave_year,annual_days,sick_days,compassionate_days,unpaid_days,other_days,created_at,updated_at"
+        )
+        .eq("owner_id", existing.owner_id)
+        .eq("employee_id", current.employeeId)
+        .eq("leave_year", leaveYear)
+        .maybeSingle();
+
+      const allocation = allocationRow
+        ? mapLeaveAllocationRow(allocationRow as EmployeeLeaveAllocationRow, current.employeeId, leaveYear)
+        : defaultAllocationForEmployee(current.employeeId, leaveYear);
+
+      const yearStart = `${leaveYear}-01-01`;
+      const yearEnd = `${leaveYear}-12-31`;
+      const { data: leaveRows } = await admin
+        .from("visitor_employee_leave")
+        .select(LEAVE_SELECT)
+        .eq("owner_id", existing.owner_id)
+        .eq("employee_id", current.employeeId)
+        .lte("start_date", yearEnd)
+        .gte("end_date", yearStart);
+
+      const balanceCheck = validateLeaveAgainstBalance(
+        allocation,
+        ((leaveRows ?? []) as EmployeeLeaveRow[]).map(mapLeaveRow),
+        current.employeeId,
+        nextLeaveType,
+        nextStartDate,
+        nextEndDate,
+        leaveId
+      );
+      if (!balanceCheck.ok) {
+        return NextResponse.json({ error: balanceCheck.error }, { status: 400 });
+      }
     }
 
     let q = admin

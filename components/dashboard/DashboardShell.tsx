@@ -52,15 +52,20 @@ import {
   VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
+  VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
   VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
   VISITOR_MANAGEMENT_DOCS_NAV_CHILD,
   VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
+  VISITOR_MANAGEMENT_LEAVE_SETTINGS_NAV_CHILD,
   VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
   VISITOR_MANAGEMENT_LEAVE_PATH,
+  VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   isEmployeesNestedNavPath,
+  isLeaveNestedNavPath,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
@@ -194,6 +199,12 @@ function isVisitorNavChildActive(
         (pathname.startsWith(`${child.href}/`) && !isEmployeesNestedNavPath(pathname))
       );
     }
+    if (child.href === VISITOR_MANAGEMENT_LEAVE_PATH) {
+      return (
+        pathname === child.href ||
+        (pathname.startsWith(`${child.href}/`) && !isLeaveNestedNavPath(pathname))
+      );
+    }
     return pathname === child.href || pathname.startsWith(`${child.href}/`);
   }
   return isVisitorIndustryChildActive(pathname, industryParam, child.industrySlug);
@@ -285,6 +296,9 @@ function DashboardNavItem({
                 const childKey = "href" in child ? child.href : child.industrySlug;
                 const nestedUnderEmployees =
                   "href" in child && "underEmployees" in child && child.underEmployees;
+                const nestedUnderLeave =
+                  "href" in child && "underLeave" in child && child.underLeave;
+                const nestedChild = nestedUnderEmployees || nestedUnderLeave;
                 return (
                   <Link
                     key={childKey}
@@ -292,7 +306,7 @@ function DashboardNavItem({
                     prefetch={false}
                     onClick={onNavigate}
                     className={`block rounded-md py-2 font-medium transition-colors ${
-                      nestedUnderEmployees ? "ml-3 px-3 text-xs" : "px-3 text-sm"
+                      nestedChild ? "ml-3 px-3 text-xs" : "px-3 text-sm"
                     } ${
                       childActive
                         ? "bg-primary-600/25 text-white border border-primary-500/20"
@@ -357,9 +371,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const isLeaveManagementPage =
     pathname === VISITOR_MANAGEMENT_LEAVE_PATH ||
     pathname.startsWith(`${VISITOR_MANAGEMENT_LEAVE_PATH}/`);
+  const isLeaveSettingsPage =
+    pathname === VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH ||
+    pathname.startsWith(`${VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH}/`);
   const isSummaryReportsPage =
     pathname === VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH ||
     pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH}/`);
+  const isPerEmployeeReportPage =
+    pathname === VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH ||
+    pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH}/`);
   const isEmployeesPage =
     pathname === VISITOR_MANAGEMENT_EMPLOYEES_PATH ||
     pathname.startsWith(`${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/`);
@@ -391,8 +411,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           children: filterVmChildren([
             VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
             VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
+            VISITOR_MANAGEMENT_LEAVE_SETTINGS_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
+            VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_NAV_CHILD,
             VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
             VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
             VISITOR_MANAGEMENT_SUBSCRIPTION_NAV_CHILD,
@@ -404,8 +426,10 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         ...(isAdmin ? [] : VISITOR_MANAGEMENT_NAV_CHILDREN),
         VISITOR_MANAGEMENT_EMPLOYEES_NAV_CHILD,
         VISITOR_MANAGEMENT_LEAVE_NAV_CHILD,
+        VISITOR_MANAGEMENT_LEAVE_SETTINGS_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_GPS_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_NAV_CHILD,
+        VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_NAV_CHILD,
         VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_NAV_CHILD,
         VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
         ...(isAdmin ? [VISITOR_MANAGEMENT_ACCOUNTS_NAV_CHILD] : []),
@@ -860,14 +884,24 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
           <div
             className={
-              isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage || isVisitorManagementPage
+              isLeaveManagementPage ||
+              isLeaveSettingsPage ||
+              isSummaryReportsPage ||
+              isPerEmployeeReportPage ||
+              isEmployeesPage ||
+              isVisitorManagementPage
                 ? "max-w-none"
                 : "mx-auto max-w-4xl lg:max-w-5xl"
             }
           >
             <div
               className={
-                isLeaveManagementPage || isSummaryReportsPage || isEmployeesPage || isVisitorManagementPage
+                isLeaveManagementPage ||
+              isLeaveSettingsPage ||
+              isSummaryReportsPage ||
+              isPerEmployeeReportPage ||
+              isEmployeesPage ||
+              isVisitorManagementPage
                   ? "p-0"
                   : "rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8"
               }
