@@ -4,7 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { ArrowRight, CheckCircle2, Globe, Linkedin, List, MessageCircle, Music2 } from "lucide-react";
+import Link from "next/link";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { FX_QR_GENERATOR_DESCRIPTION, FX_QR_GENERATOR_FAQ } from "@/lib/fx-qr-code-generator-seo";
 
 type QrChannel = "whatsapp" | "website" | "linkedin" | "tiktok" | "custom";
 
@@ -175,10 +177,10 @@ export default function FxQrCodeGeneratorClient() {
               className="h-14 w-auto object-contain drop-shadow-sm sm:h-20 lg:h-[105px]"
               priority
             />
-            <div className="hidden leading-tight text-slate-900 sm:block">
-              <div className="text-sm font-extrabold tracking-wide sm:text-lg lg:text-xl">FX QR CODE</div>
-              <div className="text-sm font-extrabold tracking-wide sm:text-lg lg:text-xl">GENERATOR</div>
-            </div>
+            <h1 className="leading-tight text-slate-900">
+              <span className="block text-xs font-extrabold tracking-wide sm:text-lg lg:text-xl">FX QR CODE</span>
+              <span className="block text-xs font-extrabold tracking-wide sm:text-lg lg:text-xl">GENERATOR</span>
+            </h1>
           </div>
           <div className="hidden min-w-0 flex-1 items-center justify-start gap-[30px] pl-4 text-sm font-semibold text-slate-600 lg:flex">
             <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-secondary-200/50 bg-secondary-50/60 px-3 py-1.5 text-secondary-700 shadow-[0_2px_8px_rgba(44,165,124,0.08)] backdrop-blur-sm">
@@ -211,14 +213,19 @@ export default function FxQrCodeGeneratorClient() {
       </header>
 
       <main className="relative z-10 w-full px-0 py-0">
-        <h1 className="sr-only">FX QR Code Generator - WhatsApp, Website, LinkedIn and TikTok QR Codes</h1>
+        <div className="border-b border-white/50 bg-white/35 px-3 py-3 backdrop-blur-md sm:px-6 lg:px-10">
+          <p className="max-w-4xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">{FX_QR_GENERATOR_DESCRIPTION}</p>
+        </div>
         <div className="w-full px-3 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
           <div className="grid w-full grid-cols-1 gap-5 lg:gap-7 xl:grid-cols-[1.55fr_0.45fr]">
             <div className="space-y-6 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:space-y-7 sm:p-7">
-              <section>
-                <div className="mb-4 inline-flex rounded-full border border-secondary-200/60 bg-gradient-to-r from-secondary-50/90 via-emerald-50/70 to-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-secondary-700 shadow-[0_2px_10px_rgba(44,165,124,0.08)] backdrop-blur-sm">
+              <section aria-labelledby="choose-qr-type-heading">
+                <h2
+                  id="choose-qr-type-heading"
+                  className="mb-4 inline-flex rounded-full border border-secondary-200/60 bg-gradient-to-r from-secondary-50/90 via-emerald-50/70 to-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-secondary-700 shadow-[0_2px_10px_rgba(44,165,124,0.08)] backdrop-blur-sm"
+                >
                   Choose a QR Type
-                </div>
+                </h2>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {CHANNEL_OPTIONS.map((option) => {
                     const meta = TYPE_CARD_META[option.value];
@@ -252,8 +259,10 @@ export default function FxQrCodeGeneratorClient() {
                 </div>
               </section>
 
-              <section className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">Add Content</h2>
+              <section aria-labelledby="add-content-heading" className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
+                <h2 id="add-content-heading" className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
+                  Add Content
+                </h2>
                 <div className="mt-4 space-y-4">
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-700">Label (optional)</span>
@@ -301,8 +310,10 @@ export default function FxQrCodeGeneratorClient() {
                 </div>
               </section>
 
-              <section className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
-                <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">Design QR Code</h2>
+              <section aria-labelledby="design-qr-heading" className="rounded-[22px] bg-gradient-to-br from-white/85 via-slate-50/50 to-white/40 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_4px_20px_rgba(15,23,42,0.04)] backdrop-blur-md sm:p-5">
+                <h2 id="design-qr-heading" className="text-sm font-bold uppercase tracking-[0.14em] text-slate-500">
+                  Design QR Code
+                </h2>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-700">Foreground</span>
@@ -369,7 +380,10 @@ export default function FxQrCodeGeneratorClient() {
               ) : null}
             </div>
 
-            <aside className="rounded-[24px] border border-white/80 bg-white/50 p-4 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
+            <aside aria-labelledby="qr-preview-heading" className="rounded-[24px] border border-white/80 bg-white/50 p-4 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
+              <h2 id="qr-preview-heading" className="sr-only">
+                QR code mobile preview
+              </h2>
               <div className="relative flex justify-center py-4 sm:py-6">
                 <div
                   aria-hidden
@@ -429,6 +443,33 @@ export default function FxQrCodeGeneratorClient() {
               </div>
             </aside>
           </div>
+
+          <section
+            aria-labelledby="fx-qr-faq-heading"
+            className="mt-8 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:mt-10 sm:p-7"
+          >
+            <h2 id="fx-qr-faq-heading" className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
+              Frequently asked questions
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+              Learn how to create WhatsApp, website, LinkedIn, and TikTok QR codes with{" "}
+              <Link href="/fusion-xpress" className="font-semibold text-primary-700 underline-offset-2 hover:underline">
+                Fusion Xpress
+              </Link>
+              .
+            </p>
+            <dl className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {FX_QR_GENERATOR_FAQ.map((item) => (
+                <div
+                  key={item.question}
+                  className="rounded-[20px] border border-white/80 bg-white/75 p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] backdrop-blur-sm"
+                >
+                  <dt className="text-sm font-bold text-slate-900">{item.question}</dt>
+                  <dd className="mt-2 text-sm leading-relaxed text-slate-600">{item.answer}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         </div>
       </main>
     </div>
