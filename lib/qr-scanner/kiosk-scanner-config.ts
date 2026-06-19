@@ -1,10 +1,22 @@
-/** Touch-first phones/tablets vs laptop/desktop webcam kiosks. */
+/** Laptop/desktop webcam kiosks vs phones/tablets (touch-first). */
 export function isDesktopScannerDevice(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.matchMedia("(pointer: coarse)").matches) return false;
-  return !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  );
+
+  const ua = navigator.userAgent;
+
+  if (/iPhone|iPod/i.test(ua)) return false;
+  if (/iPad/i.test(ua)) return false;
+  // iPadOS 13+ reports as Macintosh with touch.
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return false;
+
+  if (/Android/i.test(ua)) {
+    // Android phones include "Mobile"; tablets usually do not.
+    return !/Mobile/i.test(ua);
+  }
+
+  if (/webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return false;
+
+  return true;
 }
 
 export type KioskCameraFacing = "environment" | "user";
@@ -16,8 +28,9 @@ export function defaultKioskCameraFacing(): KioskCameraFacing {
 export type KioskScannerRuntimeConfig = {
   fps: number;
   qrbox: { width: number; height: number };
-  aspectRatio: number;
-  disableFlip: boolean;
+  aspectRatio?: number;
+  disableFlip?: boolean;
+  videoConstraints?: MediaTrackConstraints;
 };
 
 export function buildKioskScannerRuntimeConfig(
@@ -33,46 +46,54 @@ export function buildKioskScannerRuntimeConfig(
     ? Math.max(180, Math.min(scanSize, 280))
     : Math.max(240, Math.min(scanSize, 400));
 
+  if (isDesktop) {
+    return {
+      isDesktop,
+      config: {
+        fps: 20,
+        qrbox: { width: qrbox, height: qrbox },
+        disableFlip: true,
+        videoConstraints: {
+          facingMode: { ideal: "user" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      },
+    };
+  }
+
+  const facing = options?.facing ?? defaultKioskCameraFacing();
   return {
     isDesktop,
     config: {
-      fps: isDesktop ? 30 : 20,
+      fps: 20,
       qrbox: { width: qrbox, height: qrbox },
       aspectRatio: 1,
-      disableFlip: isDesktop,
+      disableFlip: false,
+      videoConstraints: {
+        facingMode: { ideal: facing },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
     },
   };
 }
 
-/** Camera inputs to try with html5-qrcode — device ids first, then loose constraints. */
+/** Camera inputs to try with html5-qrcode — loose constraints first, then enumerated device ids. */
 export async function buildKioskCameraStartAttempts(
   facing: KioskCameraFacing
 ): Promise<Array<string | MediaTrackConstraints>> {
   const isDesktop = isDesktopScannerDevice();
   const attempts: Array<string | MediaTrackConstraints> = [];
 
-  try {
-    const { Html5Qrcode } = await import("html5-qrcode");
-    const cameras = await Html5Qrcode.getCameras();
-    for (const camera of cameras) {
-      if (camera.id) attempts.push(camera.id);
-    }
-  } catch {
-    /* getCameras needs permission on some browsers — fall through to constraints */
-  }
-
   if (isDesktop) {
     attempts.push(
+      {},
       { facingMode: "user" },
-      { facingMode: "environment" },
       { facingMode: { ideal: "user" } },
-      { facingMode: { ideal: "environment" } },
-      {}
+      { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
     );
-    return dedupeAttempts(attempts);
-  }
-
-  if (facing === "environment") {
+  } else if (facing === "environment") {
     attempts.push(
       { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
       { facingMode: "environment" },
@@ -86,6 +107,16 @@ export async function buildKioskCameraStartAttempts(
       { facingMode: "environment" },
       {}
     );
+  }
+
+  try {
+    const { Html5Qrcode } = await import("html5-qrcode");
+    const cameras = await Html5Qrcode.getCameras();
+    for (const camera of cameras) {
+      if (camera.id) attempts.push(camera.id);
+    }
+  } catch {
+    /* getCameras needs permission on some browsers — constraint fallbacks above still apply */
   }
 
   return dedupeAttempts(attempts);
@@ -140,6 +171,8 @@ export function formatKioskCameraStartError(
       : "Could not open front camera. Try Flip to switch cameras.";
 }
 
+const WARMUP_RELEASE_DELAY_MS = 350;
+
 /** Optional warm-up permission request — helps getCameras() return device ids on desktop. */
 export async function warmupCameraPermission(): Promise<void> {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
@@ -157,5 +190,8 @@ export async function warmupCameraPermission(): Promise<void> {
     }
   } finally {
     stream?.getTracks().forEach((track) => track.stop());
+    if (isDesktopScannerDevice()) {
+      await new Promise((r) => setTimeout(r, WARMUP_RELEASE_DELAY_MS));
+    }
   }
 }

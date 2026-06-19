@@ -283,6 +283,11 @@ export default function EmployeeKioskPage() {
         } catch (e: unknown) {
           lastError = e;
           try {
+            await scanner.stop();
+          } catch {
+            /* ignore */
+          }
+          try {
             scanner.clear();
           } catch {
             /* ignore */
@@ -317,18 +322,10 @@ export default function EmployeeKioskPage() {
       return;
     }
 
-    try {
-      kioskDeviceIdRef.current = getOrCreateKioskDeviceId();
-      await ensureKioskLocation();
-    } catch (e: unknown) {
-      setCameraError(
-        e instanceof Error
-          ? e.message
-          : "Allow location for this site on the kiosk device, then try again."
-      );
-      setRequestingCamera(false);
-      return;
-    }
+    kioskDeviceIdRef.current = getOrCreateKioskDeviceId();
+    void ensureKioskLocation().catch(() => {
+      /* location is required when a QR is scanned, not to open the camera */
+    });
 
     if (scannerRef.current) {
       await stopScannerStream();
@@ -347,7 +344,7 @@ export default function EmployeeKioskPage() {
       setCameraFacing(initialFacing);
     });
 
-    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
     try {
       await launchScanner(initialFacing);
@@ -357,7 +354,7 @@ export default function EmployeeKioskPage() {
       setCameraError(
         e instanceof Error
           ? e.message
-          : "Could not start camera. Allow camera and location for this site."
+          : "Could not start camera. Allow camera access for this site."
       );
       setCameraActive(false);
       await stopScannerStream();
@@ -374,7 +371,7 @@ export default function EmployeeKioskPage() {
       flushSync(() => {
         setCameraFacing(nextFacing);
       });
-      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       await launchScanner(nextFacing);
     } catch (e: unknown) {
       setCameraError(e instanceof Error ? e.message : "Could not switch camera.");
@@ -579,7 +576,7 @@ export default function EmployeeKioskPage() {
                 {requestingCamera ? "Starting camera…" : "Start camera"}
               </button>
               <p className="mt-3 text-xs text-white/70 max-w-xs">
-                Allow camera and location. Then scan any staff or CRM pass.
+                Allow camera access when prompted. Location is required when recording each scan.
               </p>
             </div>
           ) : null}
