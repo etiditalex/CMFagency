@@ -15,6 +15,8 @@ export type NotificationAdminRecord = {
   fullName: string;
   notifySignIn: boolean;
   notifySignOut: boolean;
+  whatsappPhone: string;
+  notifyWhatsapp: boolean;
   createdAt: string;
 };
 
@@ -24,6 +26,8 @@ function mapRow(row: {
   full_name: string | null;
   notify_sign_in: boolean;
   notify_sign_out: boolean;
+  whatsapp_phone?: string | null;
+  notify_whatsapp?: boolean | null;
   created_at: string;
 }): NotificationAdminRecord {
   return {
@@ -32,6 +36,8 @@ function mapRow(row: {
     fullName: row.full_name ?? "",
     notifySignIn: row.notify_sign_in !== false,
     notifySignOut: row.notify_sign_out !== false,
+    whatsappPhone: String(row.whatsapp_phone ?? "").replace(/\D/g, ""),
+    notifyWhatsapp: row.notify_whatsapp !== false,
     createdAt: row.created_at,
   };
 }
@@ -44,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     let q = admin
       .from("visitor_employee_notification_admins")
-      .select("id,email,full_name,notify_sign_in,notify_sign_out,created_at")
+      .select("id,email,full_name,notify_sign_in,notify_sign_out,whatsapp_phone,notify_whatsapp,created_at")
       .order("created_at", { ascending: true });
 
     if (!isAdmin) q = q.eq("owner_id", userId);
@@ -78,6 +84,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valid email is required." }, { status: 400 });
     }
 
+    const whatsappPhone = safeText(body.whatsappPhone ?? body.whatsapp_phone, 20).replace(/\D/g, "");
+
     const { data, error } = await admin
       .from("visitor_employee_notification_admins")
       .insert({
@@ -86,8 +94,10 @@ export async function POST(req: NextRequest) {
         full_name: safeText(body.fullName ?? body.full_name, 120),
         notify_sign_in: body.notifySignIn !== false,
         notify_sign_out: body.notifySignOut !== false,
+        whatsapp_phone: whatsappPhone,
+        notify_whatsapp: body.notifyWhatsapp !== false,
       })
-      .select("id,email,full_name,notify_sign_in,notify_sign_out,created_at")
+      .select("id,email,full_name,notify_sign_in,notify_sign_out,whatsapp_phone,notify_whatsapp,created_at")
       .single();
 
     if (error) {

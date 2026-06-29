@@ -19,6 +19,11 @@ export async function sendEmployeeAttendanceNotificationEmail(params: {
   eventType: EmployeeAttendanceEventType;
   occurredAt: string;
   deviceLabel: string;
+  /** Excel attendance register attached to the email (no login required to open). */
+  registerAttachment?: { filename: string; contentBase64: string } | null;
+  /** Optional public link to re-download the register from email on mobile. */
+  registerDownloadUrl?: string | null;
+  registerDayKey?: string | null;
 }): Promise<void> {
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
   if (!resendApiKey) return;
@@ -40,6 +45,15 @@ export async function sendEmployeeAttendanceNotificationEmail(params: {
 
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
   const dashboardUrl = `${base}/dashboard/visitor-management/employees`;
+  const registerDay = params.registerDayKey ? escapeHtml(params.registerDayKey) : "";
+  const downloadUrl = params.registerDownloadUrl?.trim() ?? "";
+  const registerBlock =
+    params.registerAttachment || downloadUrl
+      ? `<p style="margin: 0 0 16px; padding: 14px; background: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0;">
+<strong>Today's attendance register</strong>${registerDay ? ` (${registerDay})` : ""} is attached to this email as an Excel file — no login required.
+${downloadUrl ? `<br><br><a href="${escapeHtml(downloadUrl)}" style="color: #047857; font-weight: 700;">Download register again</a> (link valid 7 days)` : ""}
+</p>`
+      : "";
 
   const html = `<!DOCTYPE html>
 <html>
@@ -57,6 +71,7 @@ ${buildResendEmailHeaderHtml({ subtitle: "Fusion Xpress · Employee attendance" 
 <li><strong>Date &amp; time:</strong> ${when}</li>
 <li><strong>Device:</strong> ${device}</li>
 </ul>
+${registerBlock}
 <p style="margin: 0 0 16px;">
 <a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: #2ca57c; color: #ffffff; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 6px;">View employee dashboard</a>
 </p>
@@ -68,6 +83,10 @@ ${"</"}div>
 </html>`;
 
   try {
+    const attachments = params.registerAttachment
+      ? [{ filename: params.registerAttachment.filename, content: params.registerAttachment.contentBase64 }]
+      : undefined;
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
@@ -76,6 +95,7 @@ ${"</"}div>
         to: recipients,
         subject: `${subjectAction}: ${params.employeeName} — ${params.businessName}`,
         html,
+        ...(attachments ? { attachments } : {}),
       }),
     });
     if (!res.ok) {

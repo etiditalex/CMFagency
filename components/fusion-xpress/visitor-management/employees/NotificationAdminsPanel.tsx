@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Mail, Plus, Trash2 } from "lucide-react";
+import { Mail, MessageCircle, Plus, Trash2 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -11,6 +11,8 @@ export type NotificationAdmin = {
   fullName: string;
   notifySignIn: boolean;
   notifySignOut: boolean;
+  whatsappPhone: string;
+  notifyWhatsapp: boolean;
   createdAt: string;
 };
 
@@ -23,8 +25,12 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
+  const [whatsappPhone, setWhatsappPhone] = useState("");
   const [notifySignOut, setNotifySignOut] = useState(true);
+  const [notifyWhatsapp, setNotifyWhatsapp] = useState(true);
+  const [ownerWhatsapp, setOwnerWhatsapp] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingOwnerWhatsapp, setSavingOwnerWhatsapp] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
 
@@ -32,6 +38,21 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token ?? null;
   }, []);
+
+  const loadOwnerSettings = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const res = await fetch("/api/visitor-employees/notification-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => ({}))) as { attendanceWhatsapp?: string };
+      if (res.ok) setOwnerWhatsapp(json.attendanceWhatsapp ?? "");
+    } catch {
+      /* optional */
+    }
+  }, [getToken]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +85,32 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
 
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadOwnerSettings();
+  }, [load, loadOwnerSettings]);
+
+  const handleSaveOwnerWhatsapp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingOwnerWhatsapp(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/visitor-employees/notification-settings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ attendanceWhatsapp: ownerWhatsapp }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not save");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not save owner WhatsApp");
+    } finally {
+      setSavingOwnerWhatsapp(false);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +130,8 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
           fullName,
           notifySignIn: true,
           notifySignOut,
+          whatsappPhone,
+          notifyWhatsapp,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as { admin?: NotificationAdmin; error?: string };
@@ -91,7 +139,9 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
       if (json.admin) setAdmins((prev) => [...prev, json.admin!]);
       setEmail("");
       setFullName("");
+      setWhatsappPhone("");
       setNotifySignOut(true);
+      setNotifyWhatsapp(true);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not add admin");
     } finally {
@@ -121,13 +171,13 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
     <section className="rounded-xl border border-gray-200 overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
         <Mail className="w-4 h-4 text-gray-500" />
-        <span className="text-sm font-bold text-gray-800">Attendance email recipients</span>
+        <span className="text-sm font-bold text-gray-800">Attendance notifications</span>
       </div>
       <div className="p-4 space-y-4">
         <p className="text-xs text-gray-600">
-          The account owner always receives sign-in and sign-out emails. Add directors or HR admins
-          below — by default they are notified on <strong>sign-in</strong> only. Enable sign-out
-          alerts per person if needed.
+          When staff sign in or out, the account owner and listed recipients automatically receive an
+          email with <strong>today&apos;s attendance register</strong> attached as Excel — no login
+          required. Add a WhatsApp number below to also receive alerts and a download link on your phone.
         </p>
         {setupRequired ? (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -138,6 +188,37 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
         {error ? (
           <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
         ) : null}
+
+        <form onSubmit={handleSaveOwnerWhatsapp} className="rounded-lg border border-gray-100 bg-gray-50/80 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+            Owner WhatsApp (optional)
+          </div>
+          <p className="text-[10px] text-gray-500">
+            International format without +, e.g. 254712345678. Requires WhatsApp Cloud API on the server.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 items-end">
+            <label className="flex-1 min-w-[160px]">
+              <span className="text-[10px] font-semibold uppercase text-gray-500">WhatsApp number</span>
+              <input
+                type="tel"
+                disabled={disabled}
+                value={ownerWhatsapp}
+                onChange={(e) => setOwnerWhatsapp(e.target.value.replace(/\D/g, ""))}
+                placeholder="254712345678"
+                className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={disabled || savingOwnerWhatsapp}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {savingOwnerWhatsapp ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+
         {loading ? (
           <p className="text-sm text-gray-500">Loading…</p>
         ) : admins.length > 0 ? (
@@ -149,6 +230,7 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
                   {a.fullName ? <p className="text-xs text-gray-500">{a.fullName}</p> : null}
                   <p className="text-[10px] text-gray-400 mt-0.5">
                     Sign-in emails{a.notifySignOut ? " · Sign-out emails" : ""}
+                    {a.whatsappPhone && a.notifyWhatsapp ? ` · WhatsApp ${a.whatsappPhone}` : ""}
                   </p>
                 </div>
                 <button
@@ -164,47 +246,71 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">No extra recipients yet.</p>
+          <p className="text-sm text-gray-500">No extra email recipients yet.</p>
         )}
-        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row flex-wrap gap-2 items-end">
-          <label className="flex-1 min-w-[140px]">
-            <span className="text-[10px] font-semibold uppercase text-gray-500">Email</span>
-            <input
-              type="email"
-              required
-              disabled={disabled || setupRequired}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="flex-1 min-w-[120px]">
-            <span className="text-[10px] font-semibold uppercase text-gray-500">Name (optional)</span>
-            <input
-              type="text"
-              disabled={disabled || setupRequired}
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs text-gray-600 pb-2">
-            <input
-              type="checkbox"
-              checked={notifySignOut}
-              disabled={disabled || setupRequired}
-              onChange={(e) => setNotifySignOut(e.target.checked)}
-            />
-            Also notify on sign-out
-          </label>
-          <button
-            type="submit"
-            disabled={disabled || setupRequired || saving}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
+        <form onSubmit={handleAdd} className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 items-end">
+            <label className="flex-1 min-w-[140px]">
+              <span className="text-[10px] font-semibold uppercase text-gray-500">Email</span>
+              <input
+                type="email"
+                required
+                disabled={disabled || setupRequired}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="flex-1 min-w-[120px]">
+              <span className="text-[10px] font-semibold uppercase text-gray-500">Name (optional)</span>
+              <input
+                type="text"
+                disabled={disabled || setupRequired}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="flex-1 min-w-[140px]">
+              <span className="text-[10px] font-semibold uppercase text-gray-500">WhatsApp (optional)</span>
+              <input
+                type="tel"
+                disabled={disabled || setupRequired}
+                value={whatsappPhone}
+                onChange={(e) => setWhatsappPhone(e.target.value.replace(/\D/g, ""))}
+                placeholder="254712345678"
+                className="mt-0.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={notifySignOut}
+                disabled={disabled || setupRequired}
+                onChange={(e) => setNotifySignOut(e.target.checked)}
+              />
+              Also notify on sign-out
+            </label>
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={notifyWhatsapp}
+                disabled={disabled || setupRequired}
+                onChange={(e) => setNotifyWhatsapp(e.target.checked)}
+              />
+              Send WhatsApp when number is set
+            </label>
+            <button
+              type="submit"
+              disabled={disabled || setupRequired || saving}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+              Add recipient
+            </button>
+          </div>
         </form>
       </div>
     </section>

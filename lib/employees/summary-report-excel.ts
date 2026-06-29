@@ -1,4 +1,4 @@
-import { buildAttendanceDailyLogRows } from "@/lib/employees/attendance-daily-log";
+import { buildAttendanceRegisterExcelBuffer } from "@/lib/employees/build-attendance-register-buffer";
 import type {
   AttendanceSummaryEmployeeRow,
   AttendanceSummaryEventRow,
@@ -130,41 +130,16 @@ export async function downloadAttendanceRegisterExcel(
   reportingSettings?: EmployeeReportingSettings,
   leaveRecords?: EmployeeLeaveRecord[]
 ): Promise<void> {
-  const XLSX = await loadXlsx();
-  const logRows = buildAttendanceDailyLogRows(events, employees, reportingSettings, {
-    leaveRecords,
-    from: meta.from,
-    to: meta.to,
-  });
-  const shiftEnabled = reportingSettings?.shiftEnabled === true;
-  const data = logRows.map((row) => {
-    const base: Record<string, string> = {
-      Name: row.fullName,
-      "Member ID": row.memberId,
-      Department: row.department,
-      Status: row.status === "on_leave" ? "On leave" : "Present",
-      "Leave type": row.leaveType,
-      "Sign in": row.signInLabel,
-      Date: row.signInDate,
-      "Sign in time": row.signInTime,
-      "Sign out": row.signOutLabel,
-      "Sign out time": row.signOutTime,
-    };
-    if (shiftEnabled) {
-      base.Shift = row.shiftLabel;
-      base["Hours worked"] = row.hoursWorked;
-    }
-    return base;
-  });
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.json_to_sheet(data.length ? data : [{ note: "No attendance recorded in this period" }]),
-    "Attendance register"
+  const { buffer, filename } = await buildAttendanceRegisterExcelBuffer(
+    events,
+    employees,
+    meta,
+    reportingSettings,
+    leaveRecords
   );
-
-  const org = orgSlug(meta.organizationName);
-  const buffer = XLSX.write(wb, { type: "array", bookType: "xlsx" });
-  triggerDownload(buffer, `attendance-register-${org}-${meta.from}-to-${meta.to}.xlsx`);
+  const arrayBuffer = buffer.buffer.slice(
+    buffer.byteOffset,
+    buffer.byteOffset + buffer.byteLength
+  ) as ArrayBuffer;
+  triggerDownload(arrayBuffer, filename);
 }
