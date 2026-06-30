@@ -44,7 +44,7 @@ export async function GET(req: Request) {
   const { data: rows, error } = await supabase
     .from("transactions")
     .select(
-      "reference,created_at,checked_in_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status,metadata"
+      "reference,created_at,checked_in_at,revoked_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status,metadata"
     )
     .eq("status", "success")
     .neq("campaign_type", "vote")
@@ -57,6 +57,7 @@ export async function GET(req: Request) {
     reference: string;
     created_at: string;
     checked_in_at: string | null;
+    revoked_at?: string | null;
     payer_name?: string | null;
     email?: string | null;
     amount: number;
@@ -94,6 +95,7 @@ export async function GET(req: Request) {
       reference: t.reference,
       purchased_at: t.created_at,
       checked_in_at: t.checked_in_at,
+      revoked_at: t.revoked_at ?? null,
       campaign: campaignTitleById[t.campaign_id] ?? t.campaign_id,
       payer_name: (t.payer_name ?? "").trim() || "—",
       email: (t.email ?? "").trim() || "—",

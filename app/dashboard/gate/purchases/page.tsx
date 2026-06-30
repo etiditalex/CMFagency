@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Ticket } from "lucide-react";
+import { ArrowLeft, Ban, Loader2, Ticket, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -13,6 +13,7 @@ type PurchaseRow = {
   reference: string;
   purchased_at: string;
   checked_in_at: string | null;
+  revoked_at: string | null;
   campaign: string;
   payer_name: string;
   email: string;
@@ -35,6 +36,9 @@ export default function GateTicketPurchasesPage() {
   const [eventSlug, setEventSlug] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [revokingRef, setRevokingRef] = useState<string | null>(null);
+  const [deletingRef, setDeletingRef] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -100,6 +104,78 @@ export default function GateTicketPurchasesPage() {
     };
   }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature, eventSlug]);
 
+  const revokePurchase = async (row: PurchaseRow) => {
+    const label = row.payer_name !== "—" ? row.payer_name : row.reference;
+    const ok = window.confirm(
+      `Revoke ticket for ${label}? The receipt/QR will be denied at the gate. The purchase record stays for reporting.`
+    );
+    if (!ok) return;
+
+    setRevokingRef(row.reference);
+    setNotice(null);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch(`/api/gate/ticket-purchases/${encodeURIComponent(row.reference)}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; revoked_at?: string };
+      if (!res.ok) throw new Error(json.error ?? "Revoke failed");
+
+      setPurchases((prev) =>
+        prev.map((p) =>
+          p.reference === row.reference
+            ? { ...p, revoked_at: json.revoked_at ?? new Date().toISOString() }
+            : p
+        )
+      );
+      setNotice(`Ticket revoked for ${label}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Revoke failed");
+    } finally {
+      setRevokingRef(null);
+    }
+  };
+
+  const deletePurchase = async (row: PurchaseRow) => {
+    const label = row.payer_name !== "—" ? row.payer_name : row.reference;
+    const ok = window.confirm(
+      `Delete purchase for ${label}? This permanently removes the transaction and cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingRef(row.reference);
+    setNotice(null);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch(`/api/gate/ticket-purchases/${encodeURIComponent(row.reference)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Delete failed");
+
+      setPurchases((prev) => prev.filter((p) => p.reference !== row.reference));
+      setNotice(`Purchase removed for ${label}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeletingRef(null);
+    }
+  };
+
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember) return null;
   if (!hasFeature("reports")) return null;
@@ -141,6 +217,9 @@ export default function GateTicketPurchasesPage() {
         </div>
       </div>
 
+      {notice && (
+        <div className="mt-4 p-4 rounded-lg bg-green-50 border border-green-200 text-green-800">{notice}</div>
+      )}
       {error && (
         <div className="mt-4 p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">{error}</div>
       )}
@@ -166,6 +245,8 @@ export default function GateTicketPurchasesPage() {
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Referrer</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Referrer phone</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Qty</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Revoke</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,14 +261,20 @@ export default function GateTicketPurchasesPage() {
                         timeStyle: "medium",
                       })
                     : "—";
+                  const isRevoked = !!row.revoked_at;
+                  const busy = revokingRef === row.reference || deletingRef === row.reference;
                   return (
                     <tr
                       key={row.reference}
-                      className="border-b border-gray-100 hover:bg-gray-50/50"
+                      className={`border-b border-gray-100 hover:bg-gray-50/50 ${isRevoked ? "bg-red-50/40" : ""}`}
                     >
                       <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{purchasedAt}</td>
                       <td className="py-3 px-4 whitespace-nowrap">
-                        {row.checked_in_at ? (
+                        {isRevoked ? (
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">
+                            Revoked
+                          </span>
+                        ) : row.checked_in_at ? (
                           <span className="text-green-800">{gateAt}</span>
                         ) : (
                           <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
@@ -205,6 +292,45 @@ export default function GateTicketPurchasesPage() {
                       <td className="py-3 px-4 text-gray-700">{row.referred_by}</td>
                       <td className="py-3 px-4 text-gray-700 font-mono">{row.referrer_phone}</td>
                       <td className="py-3 px-4 text-right text-gray-700">{row.quantity}</td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        {isRevoked ? (
+                          <span className="text-xs text-gray-500">
+                            {new Date(row.revoked_at!).toLocaleString("en-GB", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => void revokePurchase(row)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold disabled:opacity-60"
+                          >
+                            {revokingRef === row.reference ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Ban className="w-3.5 h-3.5" />
+                            )}
+                            Revoke
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => void deletePurchase(row)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold disabled:opacity-60"
+                        >
+                          {deletingRef === row.reference ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}

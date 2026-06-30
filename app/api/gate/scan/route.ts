@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     const { data: tx, error } = await supabaseAdmin
       .from("transactions")
-      .select("id, reference, payer_name, email, status, campaign_type, metadata, checked_in_at")
+      .select("id, reference, payer_name, email, status, campaign_type, metadata, checked_in_at, revoked_at")
       .eq("reference", ref)
       .maybeSingle();
 
@@ -106,6 +106,39 @@ export async function POST(req: NextRequest) {
 
       if ((tx as { status?: string }).status !== "success") {
         return NextResponse.json({ error: "Transaction not paid" }, { status: 400 });
+      }
+
+      const revokedAt = (tx as { revoked_at?: string | null }).revoked_at;
+      if (revokedAt) {
+        const meta =
+          (typeof (tx as { metadata?: unknown }).metadata === "object" &&
+            (tx as { metadata?: Record<string, unknown> }).metadata) ||
+          {};
+        const slug = (meta.slug as string) || "event";
+        const suffix = ref.replace(/^cmf_/, "").slice(-8).toUpperCase();
+        const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+        const typeCode =
+          (tx as { campaign_type?: string }).campaign_type === "vote"
+            ? "VOT"
+            : meta.merchandise_cart
+              ? "ORD"
+              : "TKT";
+        const ticketOrVoteId = `${prefix}-${typeCode}-${suffix}`;
+        const name =
+          (tx as { payer_name?: string | null }).payer_name?.trim?.() ||
+          (tx as { email?: string | null }).email?.trim?.() ||
+          "—";
+        return NextResponse.json(
+          {
+            valid: false,
+            duplicate: false,
+            revoked: true,
+            name,
+            ticketId: ticketOrVoteId,
+            message: "Ticket revoked. Do not allow entry.",
+          },
+          { headers: { "Cache-Control": "no-store" } }
+        );
       }
 
       const meta = (typeof (tx as { metadata?: unknown }).metadata === "object" && (tx as { metadata?: Record<string, unknown> }).metadata) || {};
