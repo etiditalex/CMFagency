@@ -26,6 +26,7 @@ import {
   Search,
   ClipboardList,
   Crown,
+  QrCode,
   ScanLine,
   Shield,
   ShoppingBag,
@@ -123,6 +124,7 @@ const NAV: NavItem[] = [
     featureKey: "reports",
   },
   { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "main", featureKey: "reports" },
+  { label: "FX QR Code Generator", href: "/dashboard/fx-qr-code-generator", icon: QrCode, section: "main" },
   {
     label: "Visitor Management",
     href: VISITOR_MANAGEMENT_PATH,

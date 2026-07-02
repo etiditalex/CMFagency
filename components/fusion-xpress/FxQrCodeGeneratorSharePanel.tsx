@@ -27,7 +27,11 @@ function copyValue(key: CopyKey): string {
   return fxQrGeneratorCitationMarkdown();
 }
 
-export default function FxQrCodeGeneratorSharePanel() {
+export default function FxQrCodeGeneratorSharePanel({
+  variant = "public",
+}: {
+  variant?: "public" | "dashboard";
+}) {
   const [copiedKey, setCopiedKey] = useState<CopyKey | null>(null);
   const social = buildFxQrSocialShareUrls();
 
@@ -41,17 +45,19 @@ export default function FxQrCodeGeneratorSharePanel() {
     }
   }, []);
 
+  const isDashboard = variant === "dashboard";
+  const sectionClass = isDashboard
+    ? "rounded-xl border border-gray-200 bg-white p-5 sm:p-6"
+    : "mt-6 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7";
+
   return (
-    <section
-      aria-labelledby="fx-qr-share-heading"
-      className="mt-6 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7"
-    >
+    <section aria-labelledby="fx-qr-share-heading" className={sectionClass}>
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-700">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isDashboard ? "bg-primary-100 text-primary-700" : "bg-primary-100 text-primary-700"}`}>
           <Share2 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <h2 id="fx-qr-share-heading" className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
+          <h2 id="fx-qr-share-heading" className={`font-extrabold tracking-tight text-slate-900 ${isDashboard ? "text-lg" : "text-lg sm:text-xl"}`}>
             Share this tool &amp; build backlinks
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">

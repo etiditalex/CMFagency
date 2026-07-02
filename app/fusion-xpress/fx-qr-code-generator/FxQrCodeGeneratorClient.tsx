@@ -10,9 +10,6 @@ import {
   downloadQrSvg,
   type QrDownloadFormat,
 } from "@/lib/fx-qr-code-generator-download";
-import { FX_QR_GENERATOR_FAQ, FX_QR_GENERATOR_SHORT_ANSWER } from "@/lib/fx-qr-code-generator-seo";
-import FxQrCodeGeneratorSeoContent from "@/components/fusion-xpress/FxQrCodeGeneratorSeoContent";
-import FxQrCodeGeneratorSharePanel from "@/components/fusion-xpress/FxQrCodeGeneratorSharePanel";
 
 type QrChannel = "whatsapp" | "website" | "linkedin" | "tiktok" | "custom";
 
@@ -197,7 +194,8 @@ export default function FxQrCodeGeneratorClient() {
       <main className="relative z-10 w-full px-0 py-0">
         <div className="border-b border-white/50 bg-white/35 px-3 py-3 backdrop-blur-md sm:px-6 lg:px-10">
           <p className="fx-qr-speakable-summary max-w-4xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">
-            {FX_QR_GENERATOR_SHORT_ANSWER}
+            Create QR codes for WhatsApp, website links, LinkedIn, TikTok, and custom URLs. Customize
+            colors, preview on mobile, then download PNG or SVG.
           </p>
         </div>
         <div className="w-full px-3 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
@@ -444,33 +442,6 @@ export default function FxQrCodeGeneratorClient() {
               </div>
             </aside>
           </div>
-
-          <FxQrCodeGeneratorSeoContent />
-
-          <FxQrCodeGeneratorSharePanel />
-
-          <section
-            aria-labelledby="fx-qr-faq-heading"
-            className="mt-8 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:mt-10 sm:p-7"
-          >
-            <h2 id="fx-qr-faq-heading" className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
-              Frequently asked questions
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Answers about free WhatsApp, website, LinkedIn, and TikTok QR codes with PNG and SVG download.
-            </p>
-            <dl className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {FX_QR_GENERATOR_FAQ.map((item) => (
-                <div
-                  key={item.question}
-                  className="rounded-[20px] border border-white/80 bg-white/75 p-4 shadow-[0_2px_12px_rgba(15,23,42,0.04)] backdrop-blur-sm"
-                >
-                  <dt className="text-sm font-bold text-slate-900">{item.question}</dt>
-                  <dd className="mt-2 text-sm leading-relaxed text-slate-600">{item.answer}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
         </div>
       </main>
     </div>
