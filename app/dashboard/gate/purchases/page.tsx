@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Ban, Loader2, Ticket, Trash2 } from "lucide-react";
+import { ArrowLeft, Ban, Loader2, Send, Ticket, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -39,6 +39,7 @@ export default function GateTicketPurchasesPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [revokingRef, setRevokingRef] = useState<string | null>(null);
   const [deletingRef, setDeletingRef] = useState<string | null>(null);
+  const [sendingRef, setSendingRef] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -176,6 +177,33 @@ export default function GateTicketPurchasesPage() {
     }
   };
 
+  const resendTicketEmail = async (row: PurchaseRow) => {
+    const label = row.payer_name !== "—" ? row.payer_name : row.reference;
+    setSendingRef(row.reference);
+    setNotice(null);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const res = await fetch(`/api/gate/ticket-purchases/${encodeURIComponent(row.reference)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; email?: string };
+      if (!res.ok) throw new Error(json.error ?? "Send failed");
+
+      setNotice(`Ticket email sent again to ${json.email ?? label}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Send failed");
+    } finally {
+      setSendingRef(null);
+    }
+  };
+
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember) return null;
   if (!hasFeature("reports")) return null;
@@ -245,6 +273,7 @@ export default function GateTicketPurchasesPage() {
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Referrer</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Referrer phone</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Qty</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Send</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Revoke</th>
                   <th className="text-right py-3 px-4 font-semibold text-gray-700">Delete</th>
                 </tr>
@@ -262,7 +291,10 @@ export default function GateTicketPurchasesPage() {
                       })
                     : "—";
                   const isRevoked = !!row.revoked_at;
-                  const busy = revokingRef === row.reference || deletingRef === row.reference;
+                  const busy =
+                    revokingRef === row.reference ||
+                    deletingRef === row.reference ||
+                    sendingRef === row.reference;
                   return (
                     <tr
                       key={row.reference}
@@ -292,6 +324,21 @@ export default function GateTicketPurchasesPage() {
                       <td className="py-3 px-4 text-gray-700">{row.referred_by}</td>
                       <td className="py-3 px-4 text-gray-700 font-mono">{row.referrer_phone}</td>
                       <td className="py-3 px-4 text-right text-gray-700">{row.quantity}</td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          disabled={busy || isRevoked}
+                          onClick={() => void resendTicketEmail(row)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-primary-200 bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-semibold disabled:opacity-60"
+                        >
+                          {sendingRef === row.reference ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5" />
+                          )}
+                          Send
+                        </button>
+                      </td>
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         {isRevoked ? (
                           <span className="text-xs text-gray-500">
