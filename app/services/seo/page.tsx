@@ -664,6 +664,14 @@ ${dropLineForm.message}`;
                     Social media marketing
                   </Link>
                 </li>
+                <li className="min-w-0">
+                  <Link
+                    href="/fusion-xpress/fx-qr-code-generator"
+                    className="inline-flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-center text-sm font-bold text-gray-900 transition-colors hover:border-secondary-500/40 hover:bg-white sm:px-5"
+                  >
+                    Free QR code generator (WhatsApp &amp; links)
+                  </Link>
+                </li>
                 <li className="min-w-0 sm:col-span-2 xl:col-span-1">
                   <Link
                     href="/contact"

@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/kcm", priority: 0.94, changeFrequency: "weekly" as const },
     { path: "/kcm/cfm-tickets", priority: 0.98, changeFrequency: "daily" as const },
     { path: "/fusion-xpress", priority: 0.9, changeFrequency: "weekly" as const },
-    { path: "/fusion-xpress/fx-qr-code-generator", priority: 0.92, changeFrequency: "weekly" as const },
+    { path: "/fusion-xpress/fx-qr-code-generator", priority: 0.98, changeFrequency: "daily" as const },
     { path: "/research", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/application", priority: 0.7, changeFrequency: "monthly" as const },
     { path: "/careers", priority: 0.82, changeFrequency: "weekly" as const },

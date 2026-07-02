@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   keywords: [...FX_QR_GENERATOR_KEYWORDS],
   alternates: {
     canonical: FX_QR_GENERATOR_PATH,
+    languages: {
+      "en-KE": FX_QR_GENERATOR_PATH,
+      en: FX_QR_GENERATOR_PATH,
+    },
   },
   robots: {
     index: true,

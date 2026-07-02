@@ -20,6 +20,7 @@ export default function Footer() {
     { href: "/jobs", label: "Job Board" },
     { href: "/about", label: "About Us" },
     { href: "/contact", label: "Contact" },
+    { href: "/fusion-xpress/fx-qr-code-generator", label: "Free QR Code Generator" },
     { href: "/research", label: "Research" },
     { href: "/merchandise", label: "Merchandise" },
   ];

@@ -1,4 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, QrCode } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Fusion Xpress (Portal Login)
@@ -137,6 +138,30 @@ export default function FusionXpressAdminLoginPage() {
                   <div className="mt-1 text-sm text-white/80">Includes payment processing fees and webhook verification.</div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-3xl border border-primary-200 bg-gradient-to-r from-primary-50 via-white to-secondary-50 p-6 md:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-700">
+                  <QrCode className="h-4 w-4" />
+                  Free Fusion Xpress tool
+                </div>
+                <h2 className="mt-3 text-2xl font-extrabold text-gray-900 md:text-3xl">
+                  Free QR Code Generator for WhatsApp, websites &amp; social links
+                </h2>
+                <p className="mt-3 text-gray-600 leading-relaxed">
+                  Create branded QR codes in seconds, preview on mobile, and download PNG or SVG files for menus,
+                  posters, and campaigns — no signup required.
+                </p>
+              </div>
+              <Link
+                href="/fusion-xpress/fx-qr-code-generator"
+                className="inline-flex shrink-0 items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-primary-700"
+              >
+                Open QR Code Generator
+              </Link>
             </div>
           </div>
 

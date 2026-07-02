@@ -4,9 +4,15 @@ import { useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Image from "next/image";
 import { ArrowRight, CheckCircle2, Globe, Linkedin, List, MessageCircle, Music2 } from "lucide-react";
-import Link from "next/link";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
-import { FX_QR_GENERATOR_DESCRIPTION, FX_QR_GENERATOR_FAQ } from "@/lib/fx-qr-code-generator-seo";
+import {
+  downloadQrPng,
+  downloadQrSvg,
+  type QrDownloadFormat,
+} from "@/lib/fx-qr-code-generator-download";
+import { FX_QR_GENERATOR_FAQ, FX_QR_GENERATOR_SHORT_ANSWER } from "@/lib/fx-qr-code-generator-seo";
+import FxQrCodeGeneratorSeoContent from "@/components/fusion-xpress/FxQrCodeGeneratorSeoContent";
+import FxQrCodeGeneratorSharePanel from "@/components/fusion-xpress/FxQrCodeGeneratorSharePanel";
 
 type QrChannel = "whatsapp" | "website" | "linkedin" | "tiktok" | "custom";
 
@@ -53,6 +59,7 @@ export default function FxQrCodeGeneratorClient() {
   const [fgColor, setFgColor] = useState("#111827");
   const [bgColor, setBgColor] = useState("#ffffff");
   const [qrSize, setQrSize] = useState(240);
+  const [downloadFormat, setDownloadFormat] = useState<QrDownloadFormat>("png");
   const [generatedPayload, setGeneratedPayload] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -100,7 +107,7 @@ export default function FxQrCodeGeneratorClient() {
     }
   }
 
-  function handleDownloadPng() {
+  async function handleDownload() {
     if (!downloadablePayload || !qrWrapRef.current) {
       setFeedback({ type: "error", message: "Generate a valid QR code before downloading." });
       return;
@@ -112,47 +119,22 @@ export default function FxQrCodeGeneratorClient() {
       return;
     }
 
-    const serializer = new XMLSerializer();
-    const svgMarkup = serializer.serializeToString(svg);
-    const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new window.Image();
-
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 1200;
-      canvas.height = 1200;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        URL.revokeObjectURL(url);
-        setFeedback({ type: "error", message: "Download failed. Please try again." });
-        return;
+    try {
+      if (downloadFormat === "svg") {
+        downloadQrSvg({ svg, label, channel });
+      } else {
+        await downloadQrPng({ svg, bgColor, label, channel });
       }
-
-      context.fillStyle = bgColor;
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(url);
-        if (!blob) {
-          setFeedback({ type: "error", message: "Download failed. Please try again." });
-          return;
-        }
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `fx-qr-code-${channel}.png`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-      }, "image/png");
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      setFeedback({ type: "error", message: "Download failed. Please try again." });
-    };
-
-    img.src = url;
+      setFeedback({
+        type: "success",
+        message: `QR code downloaded as ${downloadFormat.toUpperCase()}.`,
+      });
+    } catch (error: unknown) {
+      setFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "Download failed. Please try again.",
+      });
+    }
   }
 
   return (
@@ -214,7 +196,9 @@ export default function FxQrCodeGeneratorClient() {
 
       <main className="relative z-10 w-full px-0 py-0">
         <div className="border-b border-white/50 bg-white/35 px-3 py-3 backdrop-blur-md sm:px-6 lg:px-10">
-          <p className="max-w-4xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">{FX_QR_GENERATOR_DESCRIPTION}</p>
+          <p className="fx-qr-speakable-summary max-w-4xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+            {FX_QR_GENERATOR_SHORT_ANSWER}
+          </p>
         </div>
         <div className="w-full px-3 py-5 sm:px-6 sm:py-7 lg:px-10 lg:py-9">
           <div className="grid w-full grid-cols-1 gap-5 lg:gap-7 xl:grid-cols-[1.55fr_0.45fr]">
@@ -272,6 +256,9 @@ export default function FxQrCodeGeneratorClient() {
                       placeholder="Campaign, profile name, or department"
                       className="mt-2 w-full rounded-xl border border-slate-200/70 bg-white/90 px-3 py-2.5 text-sm text-slate-900 shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none backdrop-blur-sm transition focus:border-primary-400/60 focus:bg-white focus:ring-2 focus:ring-primary-200/50"
                     />
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      Used as the download filename and optional caption on PNG exports.
+                    </p>
                   </label>
 
                   {channel === "whatsapp" ? (
@@ -348,7 +335,7 @@ export default function FxQrCodeGeneratorClient() {
                 </div>
               </section>
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 <button
                   type="button"
                   onClick={handleGenerate}
@@ -357,14 +344,28 @@ export default function FxQrCodeGeneratorClient() {
                 >
                   {isSaving ? "Generating..." : "Generate QR Code"}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDownloadPng}
-                  disabled={!downloadablePayload}
-                  className="inline-flex min-h-[46px] w-full items-center justify-center rounded-xl bg-gradient-to-b from-secondary-500 to-secondary-700 px-5 py-2.5 text-sm font-bold text-white shadow-[0_4px_16px_rgba(44,165,124,0.35),inset_0_1px_0_rgba(255,255,255,0.2)] transition-all duration-200 hover:from-secondary-600 hover:to-secondary-800 hover:shadow-[0_8px_24px_rgba(44,165,124,0.4)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Download QR (PNG)
-                </button>
+                <div className="flex min-h-[46px] w-full overflow-hidden rounded-xl border border-secondary-300/60 bg-white/90 shadow-[0_2px_10px_rgba(15,23,42,0.04)]">
+                  <label className="sr-only" htmlFor="fx-qr-download-format">
+                    Download format
+                  </label>
+                  <select
+                    id="fx-qr-download-format"
+                    value={downloadFormat}
+                    onChange={(e) => setDownloadFormat(e.target.value as QrDownloadFormat)}
+                    className="min-w-[92px] border-r border-slate-200/80 bg-slate-50/90 px-3 text-sm font-semibold text-slate-700 outline-none"
+                  >
+                    <option value="png">PNG</option>
+                    <option value="svg">SVG</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownload()}
+                    disabled={!downloadablePayload}
+                    className="inline-flex flex-1 items-center justify-center bg-gradient-to-b from-secondary-500 to-secondary-700 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:from-secondary-600 hover:to-secondary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Download QR
+                  </button>
+                </div>
               </div>
 
               {feedback ? (
@@ -444,6 +445,10 @@ export default function FxQrCodeGeneratorClient() {
             </aside>
           </div>
 
+          <FxQrCodeGeneratorSeoContent />
+
+          <FxQrCodeGeneratorSharePanel />
+
           <section
             aria-labelledby="fx-qr-faq-heading"
             className="mt-8 rounded-[24px] border border-white/80 bg-white/60 p-5 shadow-[0_4px_6px_-1px_rgba(15,23,42,0.03),0_24px_64px_-16px_rgba(15,23,42,0.1)] backdrop-blur-2xl backdrop-saturate-150 sm:mt-10 sm:p-7"
@@ -452,11 +457,7 @@ export default function FxQrCodeGeneratorClient() {
               Frequently asked questions
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              Learn how to create WhatsApp, website, LinkedIn, and TikTok QR codes with{" "}
-              <Link href="/fusion-xpress" className="font-semibold text-primary-700 underline-offset-2 hover:underline">
-                Fusion Xpress
-              </Link>
-              .
+              Answers about free WhatsApp, website, LinkedIn, and TikTok QR codes with PNG and SVG download.
             </p>
             <dl className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
               {FX_QR_GENERATOR_FAQ.map((item) => (

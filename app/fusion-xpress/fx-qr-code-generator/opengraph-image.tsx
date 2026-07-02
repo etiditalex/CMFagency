@@ -50,7 +50,7 @@ export default function OpenGraphImage() {
               Free QR Code Generator
             </div>
             <div style={{ color: "rgba(255,255,255,0.92)", fontSize: 30, lineHeight: 1.35 }}>
-              WhatsApp, websites, LinkedIn, TikTok & custom links — customize, preview, and download PNG.
+              WhatsApp, websites, LinkedIn, TikTok & custom links — customize, preview, and download PNG or SVG.
             </div>
           </div>
 
