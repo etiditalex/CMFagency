@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
@@ -184,6 +184,14 @@ export default function TransactionsPage() {
       setSyncing(false);
     }
   };
+
+  const syncOnMountRef = useRef(false);
+  useEffect(() => {
+    if (authLoading || portalLoading || !user || !isPortalMember || !hasFeature("reports")) return;
+    if (syncOnMountRef.current) return;
+    syncOnMountRef.current = true;
+    void handleSyncPending();
+  }, [authLoading, portalLoading, user, isPortalMember, hasFeature]);
 
   const handleDownload = async () => {
     setDownloading(true);

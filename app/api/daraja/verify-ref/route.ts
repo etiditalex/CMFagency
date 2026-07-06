@@ -14,41 +14,11 @@ import {
   darajaStkTimestamp,
   parseMpesaBusinessShortCode,
 } from "@/lib/daraja-stk-config";
+import { parseDarajaStkQueryResponse } from "@/lib/daraja-stk-query-parse";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
 export const dynamic = "force-dynamic";
-
-type ParsedStkQuery = {
-  parseOk: boolean;
-  resultCode: number;
-  resultDesc: string;
-  items: CallbackMetadataItem[];
-};
-
-function parseStkQueryResult(body: unknown): ParsedStkQuery {
-  if (!body || typeof body !== "object") {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const o = body as Record<string, unknown>;
-  const inner = (o.Result as Record<string, unknown>) ?? o["result"];
-  const root =
-    inner && typeof inner === "object" ? (inner as Record<string, unknown>) : o;
-  const rcRaw = root.ResultCode ?? root.resultCode ?? o.ResultCode;
-  if (rcRaw === undefined || rcRaw === null || rcRaw === "") {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const resultCode = Number(rcRaw);
-  if (!Number.isFinite(resultCode)) {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const rdRaw =
-    root.ResultDesc ?? root.resultDesc ?? o.ResultDesc ?? o.ResponseDescription ?? o.responseDescription;
-  const resultDesc = String(rdRaw ?? "");
-  const meta = (root.CallbackMetadata ?? o.CallbackMetadata) as { Item?: CallbackMetadataItem[] } | undefined;
-  const items = meta?.Item ?? [];
-  return { parseOk: true, resultCode, resultDesc, items };
-}
 
 /**
  * Queries Safaricom STK status for a pending M-Pesa transaction and finalizes it when paid.
@@ -162,7 +132,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const parsed = parseStkQueryResult(queryJson);
+  const parsed = parseDarajaStkQueryResponse(queryJson);
   if (!parsed.parseOk) {
     return NextResponse.json(
       {

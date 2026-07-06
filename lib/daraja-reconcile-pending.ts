@@ -10,6 +10,7 @@ import {
   darajaStkTimestamp,
   parseMpesaBusinessShortCode,
 } from "@/lib/daraja-stk-config";
+import { parseDarajaStkQueryResponse } from "@/lib/daraja-stk-query-parse";
 import {
   isStkQueryStillPending,
   wasPrematureDarajaVerifyRefFailure,
@@ -42,33 +43,19 @@ export type DarajaReconcileOutcome =
   | { result: "skipped"; reason: string }
   | { result: "error"; message: string };
 
-const STALE_NO_CHECKOUT_MS = 20 * 60 * 1000;
+export type DarajaReconcileOptions = {
+  reconciledVia?: string;
+  /** Manual sync: close stale rows aggressively (no checkout id → failed immediately). */
+  forceCloseStale?: boolean;
+};
 
-function parseStkQueryResult(body: unknown): {
-  parseOk: boolean;
-  resultCode: number;
-  resultDesc: string;
-  items: CallbackMetadataItem[];
-} {
-  if (!body || typeof body !== "object") {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const o = body as Record<string, unknown>;
-  const inner = (o.Result as Record<string, unknown>) ?? o["result"];
-  const root = inner && typeof inner === "object" ? (inner as Record<string, unknown>) : o;
-  const rcRaw = root.ResultCode ?? root.resultCode ?? o.ResultCode;
-  if (rcRaw === undefined || rcRaw === null || rcRaw === "") {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const resultCode = Number(rcRaw);
-  if (!Number.isFinite(resultCode)) {
-    return { parseOk: false, resultCode: -1, resultDesc: "", items: [] };
-  }
-  const rdRaw =
-    root.ResultDesc ?? root.resultDesc ?? o.ResultDesc ?? o.ResponseDescription ?? o.responseDescription;
-  const resultDesc = String(rdRaw ?? "");
-  const meta = (root.CallbackMetadata ?? o.CallbackMetadata) as { Item?: CallbackMetadataItem[] } | undefined;
-  return { parseOk: true, resultCode, resultDesc, items: meta?.Item ?? [] };
+const STALE_NO_CHECKOUT_MS = 5 * 60 * 1000;
+const STALE_STK_PENDING_MS = 15 * 60 * 1000;
+const STALE_QUERY_ERROR_MS = 5 * 60 * 1000;
+
+function txAgeMs(tx: DarajaTxRow): number {
+  const created = tx.created_at ? Date.parse(String(tx.created_at)) : NaN;
+  return Number.isNaN(created) ? STALE_QUERY_ERROR_MS + 1 : Date.now() - created;
 }
 
 function txMeta(tx: DarajaTxRow): Record<string, unknown> {
@@ -91,7 +78,7 @@ async function markDarajaFailed(
       metadata: { ...txMeta(tx), ...patch },
     } as Record<string, unknown>)
     .eq("id", tx.id)
-    .in("status", ["pending", "failed"]);
+    .eq("status", "pending");
 
   if (error) return false;
 
@@ -112,15 +99,31 @@ async function markDarajaFailed(
   return true;
 }
 
+async function markDarajaFailedIfStale(
+  supabase: SupabaseClient,
+  tx: DarajaTxRow,
+  reconciledVia: string,
+  patch: Record<string, unknown>,
+  notifyReason: string,
+  minAgeMs: number,
+  forceCloseStale: boolean
+): Promise<DarajaReconcileOutcome | null> {
+  const ageMs = txAgeMs(tx);
+  if (!forceCloseStale && ageMs < minAgeMs) return null;
+  const ok = await markDarajaFailed(supabase, tx, { reconciled_via: reconciledVia, ...patch }, notifyReason);
+  return ok ? { result: "failed" } : { result: "error", message: "Could not mark stale row failed" };
+}
+
 /**
- * Query Safaricom for one pending/failed-premature Daraja row and finalize or mark terminal.
+ * Query Safaricom for one pending Daraja row and finalize or mark terminal.
  */
 export async function reconcileDarajaPendingTransaction(
   supabase: SupabaseClient,
   tx: DarajaTxRow,
-  options?: { reconciledVia?: string }
+  options?: DarajaReconcileOptions
 ): Promise<DarajaReconcileOutcome> {
   const reconciledVia = options?.reconciledVia ?? "daraja_sync_pending";
+  const forceCloseStale = options?.forceCloseStale ?? false;
 
   const status = String(tx.status ?? "pending");
   const meta = txMeta(tx);
@@ -132,20 +135,20 @@ export async function reconcileDarajaPendingTransaction(
 
   const checkoutRequestId = String(meta.checkout_request_id ?? "").trim();
   if (!checkoutRequestId) {
-    const created = tx.created_at ? Date.parse(String(tx.created_at)) : NaN;
-    const ageMs = Number.isNaN(created) ? STALE_NO_CHECKOUT_MS + 1 : Date.now() - created;
-    if (ageMs >= STALE_NO_CHECKOUT_MS) {
-      const ok = await markDarajaFailed(
+    if (forceCloseStale || txAgeMs(tx) >= STALE_NO_CHECKOUT_MS) {
+      const stale = await markDarajaFailedIfStale(
         supabase,
         tx,
+        reconciledVia,
         {
           daraja_result_desc: "No M-Pesa checkout id was stored; payment cannot be confirmed.",
-          reconciled_via: reconciledVia,
           stale_no_checkout: true,
         },
-        "M-Pesa: checkout was never linked to this order"
+        "M-Pesa: checkout was never linked to this order",
+        0,
+        true
       );
-      return ok ? { result: "failed" } : { result: "error", message: "Could not mark stale row failed" };
+      if (stale) return stale;
     }
     return { result: "pending", reason: "missing checkout_request_id" };
   }
@@ -189,35 +192,60 @@ export async function reconcileDarajaPendingTransaction(
   });
 
   const queryJson: unknown = await queryRes.json().catch(() => ({}));
+
   if (!queryRes.ok) {
+    const stale = await markDarajaFailedIfStale(
+      supabase,
+      tx,
+      reconciledVia,
+      {
+        daraja_result_desc: `STK query HTTP ${queryRes.status}`,
+        daraja_query_http_status: queryRes.status,
+      },
+      `M-Pesa STK query failed (HTTP ${queryRes.status})`,
+      STALE_QUERY_ERROR_MS,
+      forceCloseStale
+    );
+    if (stale) return stale;
     return { result: "error", message: `Daraja STK query HTTP ${queryRes.status}` };
   }
 
-  const parsed = parseStkQueryResult(queryJson);
+  const parsed = parseDarajaStkQueryResponse(queryJson);
   if (!parsed.parseOk) {
-    return { result: "error", message: "Could not parse Daraja STK query response" };
+    const stale = await markDarajaFailedIfStale(
+      supabase,
+      tx,
+      reconciledVia,
+      {
+        daraja_result_desc: parsed.rawError ?? parsed.resultDesc ?? "Could not parse STK query response",
+        daraja_query_unparsed: true,
+      },
+      `M-Pesa STK query unreadable: ${parsed.rawError ?? parsed.resultDesc ?? "unknown"}`,
+      STALE_QUERY_ERROR_MS,
+      forceCloseStale
+    );
+    if (stale) return stale;
+    return { result: "error", message: parsed.rawError ?? "Could not parse Daraja STK query response" };
   }
 
   const { resultCode, resultDesc, items } = parsed;
 
   if (resultCode !== 0) {
     if (isStkQueryStillPending(resultCode, resultDesc, items)) {
-      const created = tx.created_at ? Date.parse(String(tx.created_at)) : NaN;
-      const ageMs = Number.isNaN(created) ? 0 : Date.now() - created;
-      if (ageMs >= 60 * 60 * 1000) {
-        const ok = await markDarajaFailed(
-          supabase,
-          tx,
-          {
-            daraja_result_code: resultCode,
-            daraja_result_desc: resultDesc || "STK still pending after 1 hour",
-            reconciled_via: reconciledVia,
-            stale_stk_pending: true,
-          },
-          resultDesc ? `M-Pesa (STK query): ${resultDesc}` : `M-Pesa STK query code ${resultCode}`
-        );
-        return ok ? { result: "failed" } : { result: "error", message: "Could not mark stale STK failed" };
-      }
+      const stale = await markDarajaFailedIfStale(
+        supabase,
+        tx,
+        reconciledVia,
+        {
+          daraja_result_code: resultCode,
+          daraja_result_desc: resultDesc || "STK still pending at Safaricom",
+          stale_stk_pending: true,
+        },
+        resultDesc ? `M-Pesa (STK query): ${resultDesc}` : `M-Pesa STK query code ${resultCode}`,
+        forceCloseStale ? STALE_STK_PENDING_MS : 60 * 60 * 1000,
+        forceCloseStale
+      );
+      if (stale) return stale;
       return { result: "pending", reason: resultDesc || `STK code ${resultCode}` };
     }
 
@@ -255,7 +283,7 @@ export async function reconcileDarajaPendingTransaction(
   const fin = await finalizeDarajaStkFromMetadataItems(
     supabase,
     tx2,
-    items,
+    items as CallbackMetadataItem[],
     `[${reconciledVia}]`
   );
 

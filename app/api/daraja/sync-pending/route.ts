@@ -78,6 +78,7 @@ export async function GET(req: Request) {
     try {
       const outcome = await reconcileDarajaPendingTransaction(supabase, row, {
         reconciledVia: "daraja_sync_pending",
+        forceCloseStale: true,
       });
 
       if (outcome.result === "success") {
