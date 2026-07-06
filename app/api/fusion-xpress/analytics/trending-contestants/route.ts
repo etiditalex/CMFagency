@@ -122,13 +122,14 @@ export async function GET(req: Request) {
   }
 
   const userId = userData.user.id;
-  if (!(await canAccessReports(supabase, userId, supabaseUrl))) {
+  const accessOk = await canAccessReports(supabase, userId, supabaseUrl);
+  if (!accessOk) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { weekStartIso, weekEndIso, label } = getWeekWindowNairobi(new Date());
 
-  // Pull all visible vote campaigns first (RLS scopes them).
+  // Pull visible vote campaigns (RLS scopes them).
   type CampaignRow = { id: string; title?: string; type?: string };
   let campaigns: CampaignRow[];
   try {
@@ -156,20 +157,22 @@ export async function GET(req: Request) {
     });
   }
 
-  // Aggregate votes *for this week* across all campaigns (general trending).
-  type VoteRow = { contestant_id: string; votes: number; campaign_id: string };
-  let voteRows: VoteRow[];
+  // Aggregate from successful vote transactions this week (indexed on created_at).
+  type VoteTxRow = { contestant_id: string | null; quantity: number | null; campaign_id: string };
+  let voteTxRows: VoteTxRow[];
   try {
-    voteRows = await fetchAllSupabasePages(async (from, to) => {
+    voteTxRows = await fetchAllSupabasePages(async (from, to) => {
       const r = await supabase
-        .from("votes")
-        .select("contestant_id,votes,campaign_id,created_at")
+        .from("transactions")
+        .select("contestant_id,quantity,campaign_id")
+        .eq("status", "success")
+        .eq("campaign_type", "vote")
         .in("campaign_id", campaignIds)
         .gte("created_at", weekStartIso)
         .lt("created_at", weekEndIso)
         .order("id", { ascending: true })
         .range(from, to);
-      return { data: r.data as any[] | null, error: r.error };
+      return { data: r.data as VoteTxRow[] | null, error: r.error };
     });
   } catch (e: unknown) {
     const msg = e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "votes query failed";
@@ -177,14 +180,13 @@ export async function GET(req: Request) {
   }
 
   const totals = new Map<string, { votes: number; campaignId: string }>();
-  for (const r of voteRows) {
-    const id = String((r as any).contestant_id ?? "");
-    const v = Number((r as any).votes ?? 0) || 0;
-    const cid = String((r as any).campaign_id ?? "");
+  for (const r of voteTxRows) {
+    const id = String(r.contestant_id ?? "");
+    const v = Math.trunc(Number(r.quantity ?? 0)) || 0;
+    const cid = String(r.campaign_id ?? "");
     if (!id || v <= 0) continue;
     const cur = totals.get(id) ?? { votes: 0, campaignId: cid };
     cur.votes += v;
-    // Keep first-seen campaignId (contestant_id is globally unique anyway, but keep stable).
     if (!cur.campaignId) cur.campaignId = cid;
     totals.set(id, cur);
   }

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { contactFromTransactionMetadata } from "@/lib/transaction-contact";
 
+const DEFAULT_LIMIT = 500;
+const MAX_LIMIT = 2000;
+
 /**
  * Successful ticket purchases for Gate staff (includes referral contact from metadata).
  * RLS limits rows to the portal member's campaigns.
@@ -21,27 +24,52 @@ export async function GET(req: Request) {
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
+  const supabaseAdmin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  const { searchParams } = new URL(req.url);
+  const eventSlug = searchParams.get("event_slug")?.trim() || null;
+  const limitRaw = Number(searchParams.get("limit") ?? DEFAULT_LIMIT);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, Number.isFinite(limitRaw) ? Math.trunc(limitRaw) : DEFAULT_LIMIT));
+
   const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
   if (userErr || !user) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
-  const supabaseAdmin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  const { data: pm } = await supabaseAdmin.from("portal_members").select("role, features").eq("user_id", user.id).maybeSingle();
-  const { data: au } = await supabaseAdmin.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle();
-  const isPortal = !!pm || !!au;
+  const [{ data: pmRow }, { data: auRow }] = await Promise.all([
+    supabaseAdmin.from("portal_members").select("role, features").eq("user_id", user.id).maybeSingle(),
+    supabaseAdmin.from("admin_users").select("user_id").eq("user_id", user.id).maybeSingle(),
+  ]);
+
+  const isPortal = !!pmRow || !!auRow;
   const hasReports =
-    !!au ||
-    (!!pm &&
-      ((pm.role === "admin" || pm.role === "manager") ||
-        (Array.isArray((pm as { features?: string[] }).features) &&
-          (pm as { features?: string[] }).features?.includes("reports"))));
+    !!auRow ||
+    (!!pmRow &&
+      ((pmRow.role === "admin" || pmRow.role === "manager") ||
+        (Array.isArray((pmRow as { features?: string[] }).features) &&
+          (pmRow as { features?: string[] }).features?.includes("reports"))));
   if (!isPortal || !hasReports) {
     return NextResponse.json({ error: "Gate access requires reports permission" }, { status: 403 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const eventSlug = searchParams.get("event_slug")?.trim() || null;
+  let filterCampaignId: string | null = null;
+  if (eventSlug) {
+    const { data: fe } = await supabaseAdmin
+      .from("fusion_events")
+      .select("ticket_campaign_slug")
+      .eq("slug", eventSlug)
+      .maybeSingle();
+    const campaignSlug = (fe as { ticket_campaign_slug?: string | null } | null)?.ticket_campaign_slug;
+    if (!campaignSlug) return NextResponse.json({ purchases: [] });
 
-  const { data: rows, error } = await supabase
+    const { data: camp } = await supabase
+      .from("campaigns")
+      .select("id")
+      .eq("slug", campaignSlug)
+      .maybeSingle();
+    filterCampaignId = (camp as { id?: string } | null)?.id ?? null;
+    if (!filterCampaignId) return NextResponse.json({ purchases: [] });
+  }
+
+  let txQuery = supabase
     .from("transactions")
     .select(
       "reference,created_at,checked_in_at,revoked_at,payer_name,email,amount,currency,quantity,campaign_type,campaign_id,status,metadata"
@@ -49,11 +77,17 @@ export async function GET(req: Request) {
     .eq("status", "success")
     .neq("campaign_type", "vote")
     .order("created_at", { ascending: false })
-    .limit(2000);
+    .limit(limit);
+
+  if (filterCampaignId) {
+    txQuery = txQuery.eq("campaign_id", filterCampaignId);
+  }
+
+  const { data: rows, error } = await txQuery;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  let txRows = (rows ?? []) as Array<{
+  const txRows = (rows ?? []) as Array<{
     reference: string;
     created_at: string;
     checked_in_at: string | null;
@@ -73,20 +107,9 @@ export async function GET(req: Request) {
     .from("campaigns")
     .select("id,title,slug")
     .in("id", campaignIdsSeen.length ? campaignIdsSeen : ["__none__"]);
-  const campaignsList = (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>;
   const campaignTitleById: Record<string, string> = {};
-  for (const c of campaignsList) {
+  for (const c of (campaigns ?? []) as Array<{ id: string; title?: string; slug?: string }>) {
     campaignTitleById[c.id] = String(c.title || c.slug || c.id);
-  }
-
-  if (eventSlug) {
-    const fe = await supabaseAdmin.from("fusion_events").select("ticket_campaign_slug").eq("slug", eventSlug).maybeSingle();
-    const ev = fe.data as { ticket_campaign_slug?: string | null } | null;
-    const campaignSlug = ev?.ticket_campaign_slug;
-    const campRow = campaignsList.find((c) => c.slug === campaignSlug);
-    const campId = campRow?.id ?? null;
-    if (campId) txRows = txRows.filter((t) => t.campaign_id === campId);
-    else txRows = [];
   }
 
   const purchases = txRows.map((t) => {

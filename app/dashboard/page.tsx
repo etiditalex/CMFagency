@@ -20,7 +20,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { reconcileStalePendingTransactions } from "@/lib/reconcile-pending-transaction-refs";
+import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 
 type TrendingItem = {
@@ -245,16 +245,17 @@ export default function DashboardHomePage() {
       setCampaignTitleById(j.campaignTitleById ?? {});
 
       let rawTx = Array.isArray(j.recentTransactions) ? j.recentTransactions : [];
-      const touchedPending = await reconcileStalePendingTransactions(rawTx);
-      if (touchedPending && rawTx.length > 0) {
-        const again = await supabase
-          .from("transactions")
-          .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
-          .order("created_at", { ascending: false })
-          .limit(10);
-        if (!again.error && again.data) rawTx = again.data as typeof recentTransactions;
-      }
       setRecentTransactions(rawTx);
+      reconcileStalePendingTransactionsInBackground(rawTx, () => {
+        void (async () => {
+          const again = await supabase
+            .from("transactions")
+            .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
+            .order("created_at", { ascending: false })
+            .limit(10);
+          if (!again.error && again.data) setRecentTransactions(again.data as typeof recentTransactions);
+        })();
+      });
 
       setSuccessfulPayments(Number(j.successfulPayments ?? 0));
       setRevenueByCurrency(j.revenueByCurrency ?? {});
@@ -334,7 +335,7 @@ export default function DashboardHomePage() {
     realtimeRefreshTimeoutRef.current = window.setTimeout(() => {
       realtimeRefreshTimeoutRef.current = null;
       void refreshData();
-    }, 2000);
+    }, 5000);
   }, [refreshData]);
 
   const syncPendingPaystack = useCallback(async () => {
@@ -419,7 +420,7 @@ export default function DashboardHomePage() {
         if (cancelled) return;
         setError(null);
         setSessionChecking(false);
-        await refreshData();
+        await Promise.all([refreshData(), loadTrending()]);
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
         if (!cancelled) setSessionChecking(false);
@@ -430,12 +431,7 @@ export default function DashboardHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
-
-  useEffect(() => {
-    if (!lastUpdatedAt) return;
-    void loadTrending();
-  }, [lastUpdatedAt, loadTrending]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, loadTrending, router, user]);
 
   useEffect(() => {
     if (!isPortalMember || !user?.id || isEmployer) return;
@@ -443,16 +439,12 @@ export default function DashboardHomePage() {
     const channel = supabase
       .channel(`fusion-xpress-dashboard-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "votes" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "ticket_issues" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "contestants" }, scheduleRefresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "campaigns" }, scheduleRefresh)
       .subscribe();
 
     const interval = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       void refreshData();
-    }, 60_000);
+    }, 120_000);
 
     return () => {
       window.clearInterval(interval);

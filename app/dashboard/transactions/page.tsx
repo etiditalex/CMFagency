@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink, Loader2, RefreshCw } from "lucide-react";
 
-import { reconcileStalePendingTransactions } from "@/lib/reconcile-pending-transaction-refs";
+import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -81,18 +81,26 @@ export default function TransactionsPage() {
 
       let rows = (txRows ?? []) as TxRow[];
       if (offset === 0 && rows.length > 0) {
-        const touched = await reconcileStalePendingTransactions(rows);
-        if (touched) {
-          let q2 = supabase
-            .from("transactions")
-            .select("id,reference,status,amount,currency,quantity,created_at,campaign_id,campaign_type,provider,email,payer_name")
-            .order("created_at", { ascending: false });
-          if (typeFilter !== "all") {
-            q2 = q2.eq("campaign_type", typeFilter);
-          }
-          const again = await q2.range(0, PAGE_SIZE - 1);
-          if (!again.error && again.data) rows = again.data as TxRow[];
-        }
+        reconcileStalePendingTransactionsInBackground(rows, () => {
+          void (async () => {
+            let q2 = supabase
+              .from("transactions")
+              .select("id,reference,status,amount,currency,quantity,created_at,campaign_id,campaign_type,provider,email,payer_name")
+              .order("created_at", { ascending: false });
+            if (typeFilter !== "all") {
+              q2 = q2.eq("campaign_type", typeFilter);
+            }
+            const again = await q2.range(0, PAGE_SIZE - 1);
+            if (!again.error && again.data) {
+              const refreshed = again.data as TxRow[];
+              await loadCampaignTitlesForIds([...new Set(refreshed.map((r) => String(r.campaign_id ?? "")))]);
+              const visible = isAdmin
+                ? refreshed
+                : refreshed.filter((t) => t.status !== "failed" && t.status !== "abandoned");
+              setTransactions(visible);
+            }
+          })();
+        });
       }
 
       await loadCampaignTitlesForIds([...new Set(rows.map((r) => String(r.campaign_id ?? "")))]);

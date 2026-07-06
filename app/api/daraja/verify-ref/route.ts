@@ -8,6 +8,7 @@ import {
   isStkQueryStillPending,
   wasPrematureDarajaVerifyRefFailure,
 } from "@/lib/daraja-stk-result";
+import { fetchDarajaAccessToken } from "@/lib/daraja-oauth";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
@@ -68,10 +69,6 @@ export async function POST(req: Request) {
   const shortCode = process.env.MPESA_SHORTCODE;
   const passKey = process.env.MPESA_PASSKEY;
   const baseUrl = (process.env.MPESA_BASE_URL ?? "https://sandbox.safaricom.co.ke").replace(/\/$/, "");
-  let oauthUrl = process.env.MPESA_OAUTH_URL ?? `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
-  if (!oauthUrl.includes("grant_type=")) {
-    oauthUrl += (oauthUrl.includes("?") ? "&" : "?") + "grant_type=client_credentials";
-  }
   const stkQueryUrl = process.env.MPESA_STKPUSH_QUERY_URL ?? `${baseUrl}/mpesa/stkpushquery/v1/query`;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -114,13 +111,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing checkout_request_id" }, { status: 400 });
   }
 
-  const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-  const tokenRes = await fetch(oauthUrl, {
-    headers: { Authorization: `Basic ${auth}` },
-  });
-  const tokenJson = (await tokenRes.json()) as { access_token?: string; error?: string };
-  if (!tokenRes.ok || !tokenJson.access_token) {
-    return NextResponse.json({ error: "Daraja OAuth failed", detail: tokenJson.error }, { status: 502 });
+  const tokenResult = await fetchDarajaAccessToken();
+  if (!tokenResult.ok) {
+    return NextResponse.json({ error: "Daraja OAuth failed", detail: tokenResult.error }, { status: 502 });
   }
 
   const timestamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
@@ -137,7 +130,7 @@ export async function POST(req: Request) {
   const queryRes = await fetch(stkQueryUrl, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${tokenJson.access_token}`,
+      Authorization: `Bearer ${tokenResult.accessToken}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(stkQueryBody),

@@ -7,6 +7,8 @@ const PAYSTACK_PENDING_MIN_AGE_MS = 25_000;
  */
 const DARAJA_PENDING_MIN_AGE_MS = 20_000;
 
+const DEFAULT_MAX_RECONCILE = 3;
+
 export type ReconcileTxRow = {
   reference: string;
   status?: string | null;
@@ -14,11 +16,12 @@ export type ReconcileTxRow = {
   created_at?: string | null;
 };
 
-/**
- * Best-effort: asks Paystack / Daraja verify endpoints to refresh stuck `pending` rows.
- * Used by dashboard lists after webhook lag.
- */
-export async function reconcileStalePendingTransactions(rows: ReconcileTxRow[]): Promise<boolean> {
+export type ReconcileOptions = {
+  /** Cap verify-ref calls per refresh so dashboard lists stay snappy. */
+  maxRefs?: number;
+};
+
+function pickStalePending(rows: ReconcileTxRow[], maxRefs: number): ReconcileTxRow[] {
   const now = Date.now();
   const pending = rows.filter((t) => {
     if (String(t.status ?? "").toLowerCase() !== "pending") return false;
@@ -29,6 +32,18 @@ export async function reconcileStalePendingTransactions(rows: ReconcileTxRow[]):
     const minAge = p === "paystack" ? PAYSTACK_PENDING_MIN_AGE_MS : DARAJA_PENDING_MIN_AGE_MS;
     return now - created >= minAge;
   });
+  return pending.slice(0, Math.max(0, maxRefs));
+}
+
+/**
+ * Best-effort: asks Paystack / Daraja verify endpoints to refresh stuck `pending` rows.
+ * Used by dashboard lists after webhook lag.
+ */
+export async function reconcileStalePendingTransactions(
+  rows: ReconcileTxRow[],
+  options?: ReconcileOptions
+): Promise<boolean> {
+  const pending = pickStalePending(rows, options?.maxRefs ?? DEFAULT_MAX_RECONCILE);
   if (pending.length === 0) return false;
 
   await Promise.all(
@@ -43,4 +58,21 @@ export async function reconcileStalePendingTransactions(rows: ReconcileTxRow[]):
     })
   );
   return true;
+}
+
+/**
+ * Fire-and-forget reconcile — does not block dashboard render.
+ * Calls `onUpdated` when any pending row may have changed.
+ */
+export function reconcileStalePendingTransactionsInBackground(
+  rows: ReconcileTxRow[],
+  onUpdated?: () => void,
+  options?: ReconcileOptions
+): void {
+  const pending = pickStalePending(rows, options?.maxRefs ?? DEFAULT_MAX_RECONCILE);
+  if (pending.length === 0) return;
+
+  void reconcileStalePendingTransactions(pending, { maxRefs: pending.length }).then((touched) => {
+    if (touched) onUpdated?.();
+  });
 }

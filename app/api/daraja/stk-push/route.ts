@@ -6,6 +6,7 @@ import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-fr
 import { validateCoupon } from "@/lib/validate-coupon";
 import { resolveInstallmentPaymentKes, isKenyaShillingsForLipa, normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
+import { fetchDarajaAccessToken, prefetchDarajaAccessToken } from "@/lib/daraja-oauth";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 
 type StkPushBody = {
@@ -82,10 +83,6 @@ export async function POST(req: Request) {
     const passKey = process.env.MPESA_PASSKEY;
     const baseUrl = (process.env.MPESA_BASE_URL ?? "https://sandbox.safaricom.co.ke").replace(/\/$/, "");
     // Production: Safaricom may provide custom proxy URLs. Use these if set.
-    let oauthUrl = process.env.MPESA_OAUTH_URL ?? `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`;
-    if (!oauthUrl.includes("grant_type=")) {
-      oauthUrl += (oauthUrl.includes("?") ? "&" : "?") + "grant_type=client_credentials";
-    }
     const stkPushUrl = process.env.MPESA_STKPUSH_URL ?? `${baseUrl}/mpesa/stkpush/v1/processrequest`;
 
     if (!consumerKey || !consumerSecret || !shortCode || !passKey) {
@@ -94,6 +91,9 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    // Overlap Safaricom OAuth with campaign lookup + DB insert below.
+    prefetchDarajaAccessToken();
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -325,43 +325,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get OAuth token
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-    let tokenRes: Response;
-    try {
-      tokenRes = await fetch(oauthUrl, {
-        method: "GET",
-        headers: { Authorization: `Basic ${auth}` },
-      });
-    } catch (fetchErr) {
-      const msg = fetchErr instanceof Error ? fetchErr.message : "Network error";
-      return NextResponse.json(
-        { error: `Cannot reach Daraja OAuth (${msg}). Check MPESA_OAUTH_URL or MPESA_BASE_URL.` },
-        { status: 502 }
-      );
-    }
-
-    let tokenJson: { access_token?: string; error?: string; error_description?: string };
-    try {
-      tokenJson = (await tokenRes.json()) as typeof tokenJson;
-    } catch {
-      return NextResponse.json(
-        { error: `Daraja OAuth returned invalid response (HTTP ${tokenRes.status}). Check MPESA_OAUTH_URL.` },
-        { status: 502 }
-      );
-    }
-
-    if (!tokenRes.ok || !tokenJson.access_token) {
-      const statusHint =
-        tokenRes.status === 401 ? "Invalid consumer key or secret" :
-        tokenRes.status === 404 ? "OAuth URL not found — check MPESA_OAUTH_URL" :
-        tokenRes.status >= 500 ? "Safaricom server error — try again later" :
-        "Failed to get Daraja OAuth token";
-      const errMsg = tokenJson.error_description ?? tokenJson.error ?? statusHint;
-      return NextResponse.json(
-        { error: `${errMsg} (HTTP ${tokenRes.status})` },
-        { status: 502 }
-      );
+    const tokenResult = await fetchDarajaAccessToken();
+    if (!tokenResult.ok) {
+      return NextResponse.json({ error: tokenResult.error }, { status: 502 });
     }
 
     const timestamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
@@ -390,7 +356,7 @@ export async function POST(req: Request) {
     const stkRes = await fetch(stkPushUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${tokenJson.access_token}`,
+        Authorization: `Bearer ${tokenResult.accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(stkBody),

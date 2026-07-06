@@ -122,6 +122,36 @@ async function fallbackMetrics(
   };
 }
 
+async function loadKcmSummary(admin: ReturnType<typeof createClient<any>>) {
+  const [{ data: paidMemberships, error: mErr }, { data: walletRows, error: wErr }] = await Promise.all([
+    admin
+      .from("kcm_memberships")
+      .select("payment_amount_kes")
+      .or("payment_status.eq.success,payment_confirmed.eq.true"),
+    admin.from("kcm_member_wallet_transactions").select("amount_kes").eq("status", "success"),
+  ]);
+
+  if (mErr || wErr) return null;
+
+  let totalMembershipPaidKes = 0;
+  let membershipPaidCount = 0;
+  for (const row of (paidMemberships ?? []) as Array<{ payment_amount_kes?: number | null }>) {
+    const amount = Number(row.payment_amount_kes ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    totalMembershipPaidKes += amount;
+    membershipPaidCount += 1;
+  }
+
+  let totalContributionKes = 0;
+  for (const row of (walletRows ?? []) as Array<{ amount_kes?: number | null }>) {
+    const amount = Number(row.amount_kes ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    totalContributionKes += amount;
+  }
+
+  return { totalMembershipPaidKes, membershipPaidCount, totalContributionKes };
+}
+
 /**
  * Single round-trip dashboard payload: campaigns, KPI rollups, recent transactions.
  * Uses the caller's JWT so Supabase RLS matches the existing client-side dashboard.
@@ -154,10 +184,20 @@ export async function GET(req: NextRequest) {
   const features = parsePortalFeatures((memberRow as { features?: unknown } | null)?.features);
   const hasKcmMembership = isAdminOrManager || features.includes("kcm_membership");
 
-  const { data: campaigns, error: cErr } = await supabase
-    .from("campaigns")
-    .select("id,title,type,slug,is_active,created_at")
-    .order("created_at", { ascending: false });
+  const [{ data: campaigns, error: cErr }, kcmSummary, pendingJobApplications] = await Promise.all([
+    supabase
+      .from("campaigns")
+      .select("id,title,type,slug,is_active,created_at")
+      .order("created_at", { ascending: false }),
+    hasKcmMembership ? loadKcmSummary(auth.admin) : Promise.resolve(null),
+    isAdminOrManager
+      ? auth.admin
+          .from("applications")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .then(({ count }) => count ?? 0)
+      : Promise.resolve(0),
+  ]);
 
   if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 });
 
@@ -200,11 +240,16 @@ export async function GET(req: NextRequest) {
   let totalTicketsIssued = 0;
 
   if (campaignIds.length > 0) {
-    const { data: txData, error: txErr } = await supabase
-      .from("transactions")
-      .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
-      .order("created_at", { ascending: false })
-      .limit(10);
+    const [{ data: txData, error: txErr }, { data: metricsJson, error: metricsErr }] = await Promise.all([
+      supabase
+        .from("transactions")
+        .select("id,reference,status,amount,currency,created_at,campaign_id,provider,email,payer_name")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase.rpc("dashboard_reportable_success_metrics", {
+        p_campaign_ids: campaignIds,
+      }),
+    ]);
 
     if (txErr) return NextResponse.json({ error: txErr.message }, { status: 500 });
 
@@ -212,10 +257,6 @@ export async function GET(req: NextRequest) {
     recentTransactions = isAdminOrManager
       ? rawTx
       : rawTx.filter((t) => t.status !== "failed" && t.status !== "abandoned");
-
-    const { data: metricsJson, error: metricsErr } = await supabase.rpc("dashboard_reportable_success_metrics", {
-      p_campaign_ids: campaignIds,
-    });
 
     const rolled = !metricsErr ? rollupMetrics(metricsJson, merchandiseCampaignId, campaignIds) : null;
     const metrics = rolled ?? (await fallbackMetrics(supabase, campaignIds, merchandiseCampaignId));
@@ -227,56 +268,6 @@ export async function GET(req: NextRequest) {
     revenueByCurrencyMerchandise = metrics.revMerchandise;
     totalVotes = metrics.voteUnits;
     totalTicketsIssued = metrics.ticketUnits;
-  }
-
-  let kcmSummary: {
-    totalMembershipPaidKes: number;
-    membershipPaidCount: number;
-    totalContributionKes: number;
-  } | null = null;
-
-  if (hasKcmMembership) {
-    const { data: memberships, error: mErr } = await auth.admin
-      .from("kcm_memberships")
-      .select("payment_status,payment_confirmed,payment_amount_kes");
-    if (!mErr) {
-      const { data: walletRows, error: wErr } = await auth.admin
-        .from("kcm_member_wallet_transactions")
-        .select("amount_kes,status");
-      if (!wErr) {
-        let totalMembershipPaidKes = 0;
-        let membershipPaidCount = 0;
-        for (const row of (memberships ?? []) as Array<{
-          payment_status?: string | null;
-          payment_confirmed?: boolean | null;
-          payment_amount_kes?: number | null;
-        }>) {
-          const isPaid =
-            String(row.payment_status ?? "").toLowerCase() === "success" || !!row.payment_confirmed;
-          if (!isPaid) continue;
-          const amount = Number(row.payment_amount_kes ?? 0);
-          if (!Number.isFinite(amount) || amount <= 0) continue;
-          totalMembershipPaidKes += amount;
-          membershipPaidCount += 1;
-        }
-        let totalContributionKes = 0;
-        for (const row of (walletRows ?? []) as Array<{ amount_kes?: number | null; status?: string | null }>) {
-          const amount = Number(row.amount_kes ?? 0);
-          if (!Number.isFinite(amount) || amount <= 0) continue;
-          if (String(row.status ?? "").toLowerCase() === "success") totalContributionKes += amount;
-        }
-        kcmSummary = { totalMembershipPaidKes, membershipPaidCount, totalContributionKes };
-      }
-    }
-  }
-
-  let pendingJobApplications = 0;
-  if (isAdminOrManager) {
-    const { count } = await auth.admin
-      .from("applications")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending");
-    pendingJobApplications = count ?? 0;
   }
 
   return NextResponse.json({
