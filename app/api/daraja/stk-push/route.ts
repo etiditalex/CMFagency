@@ -10,6 +10,8 @@ import { fetchDarajaAccessToken, prefetchDarajaAccessToken } from "@/lib/daraja-
 import {
   buildStkAccountReference,
   buildStkTransactionDesc,
+  buildDarajaStkPassword,
+  darajaStkTimestamp,
   describeStkPushFailure,
   isStkPushAccepted,
   parseMpesaBusinessShortCode,
@@ -120,7 +122,19 @@ export async function POST(req: Request) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const supabaseAdmin = supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } }) : null;
+    const supabaseAdmin = supabaseServiceKey
+      ? createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } })
+      : null;
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        {
+          error:
+            "M-Pesa requires SUPABASE_SERVICE_ROLE_KEY on the server so checkout IDs can be stored for payment confirmation.",
+        },
+        { status: 500 }
+      );
+    }
 
     type CampaignRow = { id: string; created_by: string; type: string; slug: string; title: string; currency: string; unit_amount: number; max_per_txn: number };
     let campaign: CampaignRow | null = null;
@@ -316,8 +330,7 @@ export async function POST(req: Request) {
       },
     };
 
-    // Lipa uses unit_amount = installment KES (≠ campaign.unit_amount); anon RLS requires equality → use service role (same as coupon inserts).
-    const insertClient = couponId || useInstallment ? supabaseAdmin! : supabase;
+    const insertClient = supabaseAdmin;
     const { error: insertErr } = await insertClient.from("transactions").insert(insertPayload);
 
     if (insertErr) {
@@ -351,9 +364,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: tokenResult.error }, { status: 502 });
     }
 
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
-    const passStr = `${businessShortCode}${passKey}${timestamp}`;
-    const password = Buffer.from(passStr).toString("base64");
+    const timestamp = darajaStkTimestamp();
+    const password = buildDarajaStkPassword(businessShortCode, passKey, timestamp);
 
     const callbackBase = `${siteUrl}`.replace(/\/$/, "") || "https://cmfagency.co.ke";
     const callbackUrl = `${callbackBase}/api/daraja/callback`;
@@ -402,17 +414,28 @@ export async function POST(req: Request) {
     }
 
     const checkoutRequestId = stkJson.CheckoutRequestID!;
+    const merchantRequestId = stkJson.MerchantRequestID ?? null;
 
-    // Store CheckoutRequestID for callback lookup (service role needed for update)
     const metaUpdate = {
       ...(insertPayload.metadata as Record<string, unknown>),
       checkout_request_id: checkoutRequestId,
+      ...(merchantRequestId ? { merchant_request_id: merchantRequestId } : {}),
     };
-    if (supabaseAdmin) {
-      await supabaseAdmin
-        .from("transactions")
-        .update({ metadata: metaUpdate } as Record<string, unknown>)
-        .eq("reference", reference);
+    const { error: metaErr } = await supabaseAdmin
+      .from("transactions")
+      .update({ metadata: metaUpdate } as Record<string, unknown>)
+      .eq("reference", reference);
+
+    if (metaErr) {
+      console.error("[daraja/stk-push] Failed to store checkout_request_id:", metaErr.message);
+      return NextResponse.json(
+        {
+          error:
+            "M-Pesa prompt was sent but we could not link it to your order. Contact support with reference: " +
+            reference,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

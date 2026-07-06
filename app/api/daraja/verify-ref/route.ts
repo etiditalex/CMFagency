@@ -9,6 +9,11 @@ import {
   wasPrematureDarajaVerifyRefFailure,
 } from "@/lib/daraja-stk-result";
 import { fetchDarajaAccessToken } from "@/lib/daraja-oauth";
+import {
+  buildDarajaStkPassword,
+  darajaStkTimestamp,
+  parseMpesaBusinessShortCode,
+} from "@/lib/daraja-stk-config";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
@@ -80,6 +85,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "M-Pesa not configured" }, { status: 500 });
   }
 
+  const businessShortCode = parseMpesaBusinessShortCode(shortCode);
+  if (!businessShortCode) {
+    return NextResponse.json({ error: "MPESA_SHORTCODE must be a valid numeric business short code." }, { status: 500 });
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
   const { data: tx, error: txErr } = await supabase
@@ -108,7 +118,11 @@ export async function POST(req: Request) {
   }
   const checkoutRequestId = String(meta.checkout_request_id ?? "").trim();
   if (!checkoutRequestId) {
-    return NextResponse.json({ ok: false, error: "Missing checkout_request_id" }, { status: 400 });
+    return NextResponse.json({
+      ok: true,
+      status: "pending",
+      error: "Waiting for M-Pesa checkout id — STK may still be starting.",
+    });
   }
 
   const tokenResult = await fetchDarajaAccessToken();
@@ -116,12 +130,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Daraja OAuth failed", detail: tokenResult.error }, { status: 502 });
   }
 
-  const timestamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
-  const passStr = `${shortCode}${passKey}${timestamp}`;
-  const password = Buffer.from(passStr).toString("base64");
+  const timestamp = darajaStkTimestamp();
+  const password = buildDarajaStkPassword(businessShortCode, passKey, timestamp);
 
   const stkQueryBody = {
-    BusinessShortCode: shortCode,
+    BusinessShortCode: businessShortCode,
     Password: password,
     Timestamp: timestamp,
     CheckoutRequestID: checkoutRequestId,

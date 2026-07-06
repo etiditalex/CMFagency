@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { finalizeDarajaStkFromMetadataItems } from "@/lib/daraja-finalize-stk-from-items";
+import { findDarajaTransactionForStkCallback } from "@/lib/daraja-callback-lookup";
 import { isStkCallbackSuccess } from "@/lib/daraja-stk-result";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
@@ -56,17 +57,10 @@ export async function POST(req: Request) {
       auth: { persistSession: false },
     });
 
-    const { data: tx } = await supabase
-      .from("transactions")
-      .select(
-        "id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id"
-      )
-      .eq("provider", "daraja")
-      .in("status", ["pending", "failed"])
-      .filter("metadata->>checkout_request_id", "eq", checkoutRequestId)
-      .maybeSingle();
+    const tx = await findDarajaTransactionForStkCallback(supabase, checkoutRequestId);
 
     if (!tx) {
+      console.warn("[Daraja callback] No transaction for CheckoutRequestID:", checkoutRequestId);
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 

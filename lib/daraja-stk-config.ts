@@ -32,6 +32,15 @@ export function buildStkAccountReference(reference: string): string {
   return reference.replace(/[^A-Za-z0-9]/g, "").slice(0, STK_ACCOUNT_REFERENCE_MAX);
 }
 
+/** Daraja password = base64(shortCode + passkey + YYYYMMDDHHmmss). */
+export function buildDarajaStkPassword(shortCode: number, passKey: string, timestamp: string): string {
+  return Buffer.from(`${shortCode}${passKey}${timestamp}`).toString("base64");
+}
+
+export function darajaStkTimestamp(): string {
+  return new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
+}
+
 export type StkPushJson = {
   MerchantRequestID?: string;
   CheckoutRequestID?: string;
