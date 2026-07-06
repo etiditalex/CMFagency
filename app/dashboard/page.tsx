@@ -132,7 +132,7 @@ export default function DashboardHomePage() {
     setAllVotingPublicUrl(base ? `${base}/voting/all` : `${window.location.origin}/voting/all`);
   }, []);
   const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string } | null>(null);
+  const [syncResult, setSyncResult] = useState<{ updated?: number; error?: string; detail?: string } | null>(null);
   const realtimeRefreshTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -338,7 +338,7 @@ export default function DashboardHomePage() {
     }, 5000);
   }, [refreshData]);
 
-  const syncPendingPaystack = useCallback(async () => {
+  const syncPendingPayments = useCallback(async () => {
     if (!user) return;
     setSyncing(true);
     setSyncResult(null);
@@ -349,16 +349,46 @@ export default function DashboardHomePage() {
         setSyncResult({ error: "Not logged in" });
         return;
       }
-      const res = await fetch("/api/paystack/sync-pending", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = (await res.json()) as { updated?: number; error?: string };
-      if (!res.ok) {
-        setSyncResult({ error: json?.error ?? `HTTP ${res.status}` });
+      const headers = { Authorization: `Bearer ${token}` };
+      const [paystackRes, darajaRes] = await Promise.all([
+        fetch("/api/paystack/sync-pending", { headers }),
+        fetch("/api/daraja/sync-pending", { headers }),
+      ]);
+      const paystackJson = (await paystackRes.json()) as { updated?: number; error?: string };
+      const darajaJson = (await darajaRes.json()) as {
+        updated?: number;
+        marked_success?: number;
+        marked_failed?: number;
+        still_pending?: number;
+        error?: string;
+      };
+
+      if (!paystackRes.ok && !darajaRes.ok) {
+        setSyncResult({
+          error: paystackJson?.error ?? darajaJson?.error ?? `HTTP ${paystackRes.status}`,
+        });
         return;
       }
-      setSyncResult({ updated: json.updated ?? 0 });
-      if ((json.updated ?? 0) > 0) await refreshData();
+
+      const totalUpdated = (paystackJson.updated ?? 0) + (darajaJson.updated ?? 0);
+      const parts: string[] = [];
+      if ((darajaJson.marked_success ?? 0) > 0) parts.push(`${darajaJson.marked_success} M-Pesa paid`);
+      if ((darajaJson.marked_failed ?? 0) > 0) parts.push(`${darajaJson.marked_failed} M-Pesa failed`);
+      if ((paystackJson.updated ?? 0) > 0) parts.push(`${paystackJson.updated} Paystack updated`);
+      if ((darajaJson.still_pending ?? 0) > 0) {
+        parts.push(`${darajaJson.still_pending} still processing at Safaricom`);
+      }
+
+      setSyncResult({
+        updated: totalUpdated,
+        detail:
+          parts.length > 0
+            ? parts.join(" · ")
+            : totalUpdated === 0
+              ? "All payments already confirmed."
+              : undefined,
+      });
+      if (totalUpdated > 0) await refreshData();
     } catch (e: any) {
       setSyncResult({ error: e?.message ?? "Sync failed" });
     } finally {
@@ -969,14 +999,16 @@ export default function DashboardHomePage() {
             )}
             {syncResult && (
               <p className={`mt-2 text-sm font-medium ${syncResult.error ? "text-red-600" : "text-green-700"}`}>
-                {syncResult.error ?? `Synced ${syncResult.updated} transaction(s).`}
+                {syncResult.error ??
+                  syncResult.detail ??
+                  `Synced ${syncResult.updated ?? 0} transaction(s).`}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={syncPendingPaystack}
+              onClick={syncPendingPayments}
               disabled={syncing}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary-200 bg-primary-50 text-primary-800 font-semibold hover:bg-primary-100 disabled:opacity-60"
             >

@@ -37,6 +37,8 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<TxRow[]>([]);
   const [campaignTitleById, setCampaignTitleById] = useState<Record<string, string>>({});
   const [downloading, setDownloading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -137,6 +139,52 @@ export default function TransactionsPage() {
     refreshData(nextOffset, true);
   };
 
+  const handleSyncPending = async () => {
+    setSyncing(true);
+    setSyncNotice(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setSyncNotice("Not logged in");
+        return;
+      }
+      const headers = { Authorization: `Bearer ${token}` };
+      const [paystackRes, darajaRes] = await Promise.all([
+        fetch("/api/paystack/sync-pending", { headers }),
+        fetch("/api/daraja/sync-pending", { headers }),
+      ]);
+      const paystackJson = (await paystackRes.json()) as { updated?: number; error?: string };
+      const darajaJson = (await darajaRes.json()) as {
+        updated?: number;
+        marked_success?: number;
+        marked_failed?: number;
+        still_pending?: number;
+        error?: string;
+      };
+      if (!paystackRes.ok && !darajaRes.ok) {
+        setSyncNotice(paystackJson.error ?? darajaJson.error ?? "Sync failed");
+        return;
+      }
+      const parts: string[] = [];
+      if ((darajaJson.marked_success ?? 0) > 0) parts.push(`${darajaJson.marked_success} M-Pesa paid`);
+      if ((darajaJson.marked_failed ?? 0) > 0) parts.push(`${darajaJson.marked_failed} M-Pesa failed`);
+      if ((paystackJson.updated ?? 0) > 0) parts.push(`${paystackJson.updated} Paystack updated`);
+      if ((darajaJson.still_pending ?? 0) > 0) {
+        parts.push(`${darajaJson.still_pending} still at Safaricom`);
+      }
+      const total = (paystackJson.updated ?? 0) + (darajaJson.updated ?? 0);
+      setSyncNotice(parts.length ? parts.join(" · ") : total === 0 ? "Nothing left to confirm." : `Updated ${total}`);
+      if (total > 0) await refreshData(0, false);
+    } catch (e) {
+      setSyncNotice(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDownload = async () => {
     setDownloading(true);
     try {
@@ -224,6 +272,15 @@ export default function TransactionsPage() {
           </div>
           <button
             type="button"
+            onClick={handleSyncPending}
+            disabled={syncing}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary-200 bg-primary-50 text-primary-800 font-semibold hover:bg-primary-100 disabled:opacity-60"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Confirming…" : "Confirm pending"}
+          </button>
+          <button
+            type="button"
             onClick={() => refreshData(0, false)}
             disabled={loading}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 font-semibold text-gray-900 disabled:opacity-60"
@@ -242,6 +299,10 @@ export default function TransactionsPage() {
           </button>
         </div>
       </div>
+
+      {syncNotice && (
+        <div className="p-4 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">{syncNotice}</div>
+      )}
 
       {error && (
         <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700">
