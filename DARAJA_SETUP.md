@@ -85,6 +85,7 @@ If these are set, they override `MPESA_BASE_URL` for those calls. If not set, th
 | Variable | Description |
 |----------|-------------|
 | `MPESA_BASE_URL` | **Sandbox**: `https://sandbox.safaricom.co.ke` (default) / **Production**: `https://api.safaricom.co.ke` |
+| `MPESA_STK_TRANSACTION_TYPE` | **Till (Buy Goods)**: `CustomerBuyGoodsOnline` / **Paybill** (default): omit or `CustomerPayBillOnline` |
 | `RESEND_API_KEY` | For sending receipt emails |
 | `RESEND_FROM_EMAIL` | From address for receipts |
 
@@ -122,6 +123,20 @@ Safaricom must be able to reach your callback URL. It is set automatically to:
 
 - **Sandbox**: Use sandbox credentials and `MPESA_BASE_URL=https://sandbox.safaricom.co.ke`. Test numbers: [Safaricom sandbox docs](https://developer.safaricom.co.ke/).
 - **Production**: Switch to production credentials, `MPESA_BASE_URL=https://api.safaricom.co.ke`, and ensure your app is approved for production.
+
+### "Sorry there was a problem with your request" (after M-Pesa PIN)
+
+This message is shown **on the phone by Safaricom**, not by CMF Agency. It means the STK prompt was sent, but M-Pesa **could not complete the debit** after the customer entered their PIN.
+
+| Cause | Fix |
+|-------|-----|
+| **Till vs Paybill mismatch** (most common) | If `MPESA_SHORTCODE` is a **Till** (Buy Goods), set `MPESA_STK_TRANSACTION_TYPE=CustomerBuyGoodsOnline` in Vercel and redeploy. Paybill short codes use the default `CustomerPayBillOnline`. |
+| **Wrong passkey or short code** | Re-copy `MPESA_PASSKEY` and `MPESA_SHORTCODE` from [Safaricom Developer Portal](https://developer.safaricom.co.ke/) → Lipa Na M-Pesa Online. |
+| **Sandbox vs production** | Production phones need production keys and `MPESA_BASE_URL=https://api.safaricom.co.ke`. Sandbox test numbers only work with sandbox credentials. |
+| **Insufficient M-Pesa balance** | Customer needs enough funds plus any fees. |
+| **STK not enabled on short code** | In the Daraja portal, confirm Lipa Na M-Pesa Online / STK Push is enabled for your app and short code. |
+
+After a failed PIN attempt, the site may still show **"Confirming your payment"** while the transaction stays `pending` or is marked `failed` when Safaricom sends the callback. Use **Check receipt again** or wait for the email/SMS reminder.
 
 ## Paystack vs Daraja
 

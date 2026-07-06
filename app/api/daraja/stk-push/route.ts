@@ -7,6 +7,15 @@ import { validateCoupon } from "@/lib/validate-coupon";
 import { resolveInstallmentPaymentKes, isKenyaShillingsForLipa, normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 import { fetchDarajaAccessToken, prefetchDarajaAccessToken } from "@/lib/daraja-oauth";
+import {
+  buildStkAccountReference,
+  buildStkTransactionDesc,
+  describeStkPushFailure,
+  isStkPushAccepted,
+  parseMpesaBusinessShortCode,
+  resolveStkTransactionType,
+  type StkPushJson,
+} from "@/lib/daraja-stk-config";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 
 type StkPushBody = {
@@ -91,6 +100,13 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
+
+    const businessShortCode = parseMpesaBusinessShortCode(shortCode);
+    if (!businessShortCode) {
+      return NextResponse.json({ error: "MPESA_SHORTCODE must be a valid numeric business short code." }, { status: 500 });
+    }
+
+    const transactionType = resolveStkTransactionType();
 
     // Overlap Safaricom OAuth with campaign lookup + DB insert below.
     prefetchDarajaAccessToken();
@@ -325,32 +341,35 @@ export async function POST(req: Request) {
       );
     }
 
+    const amountKes = Math.round(Number(amount));
+    if (!Number.isFinite(amountKes) || amountKes < 1) {
+      return NextResponse.json({ error: "Payment amount must be at least KES 1." }, { status: 400 });
+    }
+
     const tokenResult = await fetchDarajaAccessToken();
     if (!tokenResult.ok) {
       return NextResponse.json({ error: tokenResult.error }, { status: 502 });
     }
 
     const timestamp = new Date().toISOString().slice(0, 19).replace(/-/g, "").replace(/:/g, "").replace(/T/g, "");
-    const passStr = `${shortCode}${passKey}${timestamp}`;
+    const passStr = `${businessShortCode}${passKey}${timestamp}`;
     const password = Buffer.from(passStr).toString("base64");
 
     const callbackBase = `${siteUrl}`.replace(/\/$/, "") || "https://cmfagency.co.ke";
     const callbackUrl = `${callbackBase}/api/daraja/callback`;
 
     const stkBody = {
-      BusinessShortCode: shortCode,
+      BusinessShortCode: businessShortCode,
       Password: password,
       Timestamp: timestamp,
-      TransactionType: "CustomerPayBillOnline",
-      Amount: Math.round(amount),
+      TransactionType: transactionType,
+      Amount: amountKes,
       PartyA: phone,
-      PartyB: shortCode,
+      PartyB: businessShortCode,
       PhoneNumber: phone,
       CallBackURL: callbackUrl,
-      AccountReference: reference.slice(0, 12),
-      TransactionDesc: useInstallment
-        ? `LipaPolePole ${campaign.slug}`.slice(0, 20)
-        : `${campaign.title?.slice(0, 20) ?? campaign.slug} (${q} ${campaign.type === "ticket" ? "ticket(s)" : "vote(s)"})`,
+      AccountReference: buildStkAccountReference(reference),
+      TransactionDesc: useInstallment ? "Lipa Pole" : buildStkTransactionDesc(campaign.type, q),
     };
 
     const stkRes = await fetch(stkPushUrl, {
@@ -362,28 +381,27 @@ export async function POST(req: Request) {
       body: JSON.stringify(stkBody),
     });
 
-    const stkJson = (await stkRes.json()) as {
-      ResponseCode?: number;
-      CheckoutRequestID?: string;
-      MerchantRequestID?: string;
-      CustomerMessage?: string;
-      errorMessage?: string;
-    };
+    const stkJson = (await stkRes.json()) as StkPushJson;
 
     if (!stkRes.ok) {
       return NextResponse.json(
-        { error: stkJson.errorMessage ?? stkJson.CustomerMessage ?? "STK Push failed" },
+        { error: describeStkPushFailure(stkJson, stkRes.status) },
         { status: 502 }
       );
     }
 
-    const checkoutRequestId = stkJson.CheckoutRequestID;
-    if (!checkoutRequestId) {
+    if (!isStkPushAccepted(stkJson)) {
       return NextResponse.json(
-        { error: stkJson.CustomerMessage ?? "No CheckoutRequestID from Daraja" },
+        {
+          error:
+            describeStkPushFailure(stkJson, stkRes.status) ||
+            "M-Pesa did not accept the payment request. Check MPESA_SHORTCODE, passkey, and transaction type (Till vs Paybill).",
+        },
         { status: 502 }
       );
     }
+
+    const checkoutRequestId = stkJson.CheckoutRequestID!;
 
     // Store CheckoutRequestID for callback lookup (service role needed for update)
     const metaUpdate = {
