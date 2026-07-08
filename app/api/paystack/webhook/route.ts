@@ -230,6 +230,7 @@ export async function POST(req: Request) {
       const emailResult = await sendReceiptEmail({
         to: toEmail,
         campaignTitle,
+        campaignSlug: slug !== "event" ? slug : undefined,
         typeLabel,
         ticketNumber,
         holderName,

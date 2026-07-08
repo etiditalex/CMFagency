@@ -12,6 +12,11 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import {
+  resolveTicketEmailTier,
+  ticketEmailAccentColor,
+  ticketEmailHeaderStyle,
+} from "@/lib/ticket-email-header";
 
 export type EventInviteEmailProps = {
   eventTitle: string;
@@ -30,20 +35,7 @@ function qrCodeUrl(data: string, size = 150): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }
 
-const CFMA_GOLD_HEADER = { background: "linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)" };
 const DEFAULT_HEADER = { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" };
-
-function isCfmaEvent(eventTitle: string, reference: string): boolean {
-  if (reference.startsWith("cmfa_reg_")) return true;
-  const t = eventTitle.toLowerCase();
-  return (
-    t.includes("coast fashion") ||
-    t.includes("modelling awards") ||
-    t.includes("modeling awards") ||
-    t.includes("cmfa") ||
-    t.includes("cfma")
-  );
-}
 
 export function EventInviteEmail({
   eventTitle,
@@ -61,10 +53,14 @@ export function EventInviteEmail({
     ? `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`
     : `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
   const qrData = reference;
-  const cfmaEvent = isCfmaEvent(eventTitle, reference);
-  const headerStyle = cfmaEvent ? CFMA_GOLD_HEADER : DEFAULT_HEADER;
-  const locationStyle = cfmaEvent ? locationHighlightGold : locationHighlight;
-  const linkStyle = cfmaEvent ? organizerLinkGold : organizerLink;
+  const ticketTier = resolveTicketEmailTier({ reference, campaignTitle: eventTitle });
+  const isComplimentary = ticketTier === "complimentary";
+  const headerStyle = isComplimentary ? ticketEmailHeaderStyle(ticketTier) : DEFAULT_HEADER;
+  const accentColor = isComplimentary ? ticketEmailAccentColor(ticketTier) : "#059669";
+  const locationStyle = isComplimentary
+    ? { ...locationHighlight, backgroundColor: "#fef2f2", borderLeftColor: accentColor }
+    : locationHighlight;
+  const linkStyle = { color: accentColor, textDecoration: "none" as const };
 
   return (
     <Html>
@@ -232,12 +228,6 @@ const locationHighlight = {
   borderRadius: "0 8px 8px 0",
 };
 
-const locationHighlightGold = {
-  ...locationHighlight,
-  backgroundColor: "#fef9e7",
-  borderLeft: "4px solid #B8860B",
-};
-
 const referenceText = { marginTop: "20px", fontSize: "12px", color: "#666" };
 const code = { backgroundColor: "#e9ecef", padding: "2px 6px", borderRadius: "4px", fontFamily: "monospace" };
 const hr = { borderColor: "#e9ecef", margin: "20px 0" };
@@ -271,6 +261,4 @@ const secondaryButton = {
 };
 const organizerLabel = { margin: "0 0 4px", fontSize: "13px", fontWeight: "600", color: "#333" };
 const organizerText = { margin: "0", fontSize: "13px", color: "#555" };
-const organizerLink = { color: "#059669", textDecoration: "none" };
-const organizerLinkGold = { color: "#B8860B", textDecoration: "none" };
 const footer = { color: "#888", fontSize: "11px", margin: "0 24px 24px" };

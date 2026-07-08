@@ -26,6 +26,7 @@ export type ReceiptParams = {
   organizerName?: string;
   organizerEmail?: string;
   rsvpUrl?: string;
+  campaignSlug?: string;
 };
 
 const receiptProps = (
@@ -50,6 +51,7 @@ const receiptProps = (
   organizerName: params.organizerName,
   organizerEmail: params.organizerEmail,
   rsvpUrl: params.rsvpUrl,
+  campaignSlug: params.campaignSlug,
 });
 
 export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {

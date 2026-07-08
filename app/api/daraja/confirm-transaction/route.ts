@@ -204,6 +204,7 @@ export async function POST(req: NextRequest) {
       await sendReceiptEmail({
         to: toEmail,
         campaignTitle,
+        campaignSlug: slug !== "event" ? slug : undefined,
         typeLabel,
         ticketNumber,
         holderName,

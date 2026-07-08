@@ -13,6 +13,12 @@ import {
   Text,
 } from "@react-email/components";
 import * as React from "react";
+import {
+  resolveTicketEmailTier,
+  ticketEmailAccentColor,
+  ticketEmailHeaderStyle,
+  type TicketEmailTier,
+} from "@/lib/ticket-email-header";
 
 export type ReceiptEmailProps = {
   campaignTitle: string;
@@ -26,8 +32,12 @@ export type ReceiptEmailProps = {
   mpesaReceipt?: string;
   /** Vote receipts: who the voter supported */
   votedForName?: string;
-  /** "mpesa" = green gradient, "paystack" = purple gradient */
+  /** "mpesa" = gold gradient, "paystack" = purple gradient (votes/orders; tickets use tier colors) */
   variant?: "mpesa" | "paystack";
+  /** Campaign slug used to pick ticket tier header color */
+  campaignSlug?: string;
+  /** Override auto-detected ticket tier header color */
+  ticketTier?: TicketEmailTier;
   /** Link to view ticket / event page (e.g. success page or event URL) */
   viewTicketsUrl?: string;
   /** Link to download/print receipt (opens print-friendly page) */
@@ -69,6 +79,8 @@ export function ReceiptEmail({
   mpesaReceipt,
   votedForName,
   variant = "paystack",
+  campaignSlug,
+  ticketTier,
   viewTicketsUrl,
   downloadReceiptUrl,
   eventDate,
@@ -81,6 +93,19 @@ export function ReceiptEmail({
   const holderLabel = typeLabel === "Order" ? "Customer" : `${typeLabel} holder`;
   const isTicket = typeLabel === "Ticket";
   const isVote = typeLabel === "Vote";
+  const resolvedTicketTier =
+    ticketTier ??
+    (isTicket
+      ? resolveTicketEmailTier({ reference, campaignSlug, campaignTitle })
+      : undefined);
+  const headerStyle = isTicket && resolvedTicketTier
+    ? ticketEmailHeaderStyle(resolvedTicketTier)
+    : headerStyles[variant];
+  const buttonStyle = isTicket && resolvedTicketTier
+    ? ticketEmailHeaderStyle(resolvedTicketTier)
+    : buttonStyles[variant];
+  const accentColor =
+    isTicket && resolvedTicketTier ? ticketEmailAccentColor(resolvedTicketTier) : undefined;
   const qrData = `${ticketNumber}\n${reference}`;
   const viewButtonText = typeLabel === "Vote" ? "View Vote" : typeLabel === "Ticket" ? "View Ticket" : "View Order";
   const previewText =
@@ -94,7 +119,7 @@ export function ReceiptEmail({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Section style={{ ...header, ...headerStyles[variant] }}>
+          <Section style={{ ...header, ...headerStyle }}>
             <Img
               src="cid:changer-logo"
               alt="Changer Fusions"
@@ -133,7 +158,7 @@ export function ReceiptEmail({
                     </td>
                     <td style={buttonCell}>
                       {viewTicketsUrl && (
-                        <Button href={viewTicketsUrl} style={{ ...viewTicketsButton, ...buttonStyles[variant] }}>
+                        <Button href={viewTicketsUrl} style={{ ...viewTicketsButton, ...buttonStyle }}>
                           {viewButtonText}
                         </Button>
                       )}
@@ -153,7 +178,13 @@ export function ReceiptEmail({
             </Text>
 
             {eventLocation && (
-              <Text style={locationHighlight}>
+              <Text
+                style={
+                  accentColor
+                    ? { ...locationHighlight, borderLeftColor: accentColor }
+                    : locationHighlight
+                }
+              >
                 {campaignTitle} will be happening at {eventLocation}.
               </Text>
             )}
@@ -194,7 +225,7 @@ export function ReceiptEmail({
 
             {isTicket && rsvpUrl && (
               <Section style={downloadSection}>
-                <Button href={rsvpUrl} style={{ ...downloadButton, ...buttonStyles[variant] }}>
+                <Button href={rsvpUrl} style={{ ...downloadButton, ...buttonStyle }}>
                   Confirm your details / RSVP
                 </Button>
                 <Text style={downloadHint}>
@@ -205,7 +236,7 @@ export function ReceiptEmail({
 
             {downloadReceiptUrl && (
               <Section style={downloadSection}>
-                <Button href={downloadReceiptUrl} style={{ ...downloadButton, ...buttonStyles[variant] }}>
+                <Button href={downloadReceiptUrl} style={{ ...downloadButton, ...buttonStyle }}>
                   Download receipt
                 </Button>
                 <Text style={downloadHint}>Opens a print-friendly page — use your browser&apos;s Print or Save as PDF to save.</Text>

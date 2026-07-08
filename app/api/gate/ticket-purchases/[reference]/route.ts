@@ -172,6 +172,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ reference:
   const result = await sendReceiptEmail({
     to: toEmail,
     campaignTitle,
+    campaignSlug: slug !== "event" ? slug : undefined,
     typeLabel,
     ticketNumber,
     holderName,
