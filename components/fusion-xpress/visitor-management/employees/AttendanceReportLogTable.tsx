@@ -27,6 +27,7 @@ type SortKey =
   | "signInTime"
   | "signOutLabel"
   | "signOutTime"
+  | "hoursWorked"
   | "sortKey";
 
 type SortDir = "asc" | "desc";
@@ -332,21 +333,23 @@ export default function AttendanceReportLogTable({
                 onSort={handleSort}
               />
               {shiftEnabled ? (
-                <>
-                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-white/90">
-                    Shift
-                  </th>
-                  <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-white/90">
-                    Hours worked
-                  </th>
-                </>
+                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-white/90">
+                  Shift
+                </th>
               ) : null}
+              <SortableHeader
+                label="Hours worked"
+                column="hoursWorked"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={handleSort}
+              />
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={shiftEnabled ? 13 : 11} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={shiftEnabled ? 13 : 12} className="px-4 py-12 text-center text-gray-500">
                   No attendance or leave recorded in this period.
                 </td>
               </tr>
@@ -397,13 +400,11 @@ export default function AttendanceReportLogTable({
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutLabel}</td>
                   <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.signOutTime}</td>
                   {shiftEnabled ? (
-                    <>
-                      <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.shiftLabel}</td>
-                      <td className="px-4 py-4 text-gray-900 font-semibold whitespace-nowrap">
-                        {row.hoursWorked}
-                      </td>
-                    </>
+                    <td className="px-4 py-4 text-gray-700 whitespace-nowrap">{row.shiftLabel}</td>
                   ) : null}
+                  <td className="px-4 py-4 text-gray-900 font-semibold whitespace-nowrap">
+                    {row.hoursWorked}
+                  </td>
                 </tr>
               ))
             )}

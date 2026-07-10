@@ -8,9 +8,11 @@ import { formatReportingTime } from "@/lib/employees/reporting-time";
 import { formatCheckInEmailDateTime } from "@/lib/visitors/format-check-in-display";
 import {
   eachEatDayKeys,
+  eatDayBoundsUtc,
   eatDaySpanInclusive,
   eatHourFromIso,
   eatMinutesFromIso,
+  eatNextDayKey,
   eatRangeBoundsUtc,
   formatEatHourLabel,
 } from "@/lib/time/eat";
@@ -368,7 +370,24 @@ export function buildAttendanceSummary(params: {
     crm: buildTeamRankings(employeeSummaries, "crm"),
   };
 
-  const events: AttendanceSummaryEventRow[] = inRange
+  // Raw events (not day-deduped) so overnight sign-outs stay available for hours pairing.
+  const registerSource = [...rawInRange];
+  const lookAheadKey = eatNextDayKey(params.to);
+  const lookAheadBounds = lookAheadKey ? eatDayBoundsUtc(lookAheadKey) : null;
+  if (lookAheadBounds) {
+    const seen = new Set(registerSource.map((e) => e.id));
+    for (const a of params.attendance) {
+      if (a.eventType !== "sign_out") continue;
+      const t = new Date(a.createdAt).getTime();
+      if (t < new Date(lookAheadBounds.startIso).getTime()) continue;
+      if (t > new Date(lookAheadBounds.endIso).getTime()) continue;
+      if (seen.has(a.id)) continue;
+      seen.add(a.id);
+      registerSource.push(a);
+    }
+  }
+
+  const events: AttendanceSummaryEventRow[] = registerSource
     .map((a) => {
       const emp = employeeById.get(a.employeeId);
       return {

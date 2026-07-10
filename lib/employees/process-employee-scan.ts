@@ -10,18 +10,45 @@ import {
   type EmployeeRow,
 } from "@/lib/employees/db-mapper";
 import {
-  effectiveAttendanceStatusForToday,
+  effectiveAttendanceStatus,
   todayLocalBounds,
   validateDailyAttendanceTransition,
 } from "@/lib/employees/daily-attendance-rules";
+import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/employees/device-fingerprint";
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
+import { notifyEmployeeAttendance } from "@/lib/employees/notify-employee-attendance";
 import {
   effectiveShiftAttendanceStatus,
   validateShiftAttendanceTransition,
 } from "@/lib/employees/shift-attendance-rules";
 import { shiftsFromSettings } from "@/lib/employees/shifts";
+import type {
+  EmployeeAttendanceEventType,
+  EmployeeAttendanceRecord,
+  EmployeeRecord,
+} from "@/lib/employees/types";
+import { isValidCoordinate } from "@/lib/visitors/geocode";
+import { validateEmployeeScanGps } from "@/lib/visitors/validate-employee-gps";
 
-/** Today's sign-in/out state for an employee (ignores stale persisted status from prior days). */
+async function fetchLastEventBeforeToday(
+  admin: SupabaseClient,
+  employeeId: string,
+  todayStartIso: string
+): Promise<EmployeeAttendanceRecord | null> {
+  const { data } = await admin
+    .from("visitor_employee_attendance")
+    .select(EMPLOYEE_ATTENDANCE_SELECT)
+    .eq("employee_id", employeeId)
+    .lt("created_at", todayStartIso)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return mapAttendanceRow(data as EmployeeAttendanceRow);
+}
+
+/** Today's sign-in/out state for an employee (includes open overnight sessions). */
 export async function fetchTodayAttendanceStatus(
   admin: SupabaseClient,
   employeeId: string
@@ -42,21 +69,17 @@ export async function fetchTodayAttendanceStatus(
     .order("created_at", { ascending: true });
 
   const todayEvents = ((todayRows ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
+  const lastEventBeforeToday = await fetchLastEventBeforeToday(admin, employeeId, startIso);
   const ownerId = String(empRow?.owner_id ?? "");
   if (ownerId) {
     const reportingSettings = await fetchOwnerReportingSettings(admin, ownerId);
     if (reportingSettings.shiftEnabled) {
-      return effectiveShiftAttendanceStatus(todayEvents);
+      if (todayEvents.length > 0) return effectiveShiftAttendanceStatus(todayEvents);
+      return effectiveAttendanceStatus({ todayEvents, lastEventBeforeToday });
     }
   }
-  return effectiveAttendanceStatusForToday(todayEvents);
+  return effectiveAttendanceStatus({ todayEvents, lastEventBeforeToday });
 }
-import { normalizeDeviceFingerprint, type DeviceFingerprintInput } from "@/lib/employees/device-fingerprint";
-import { notifyEmployeeAttendance } from "@/lib/employees/notify-employee-attendance";
-import type { EmployeeAttendanceEventType, EmployeeRecord } from "@/lib/employees/types";
-import { isValidCoordinate } from "@/lib/visitors/geocode";
-import { validateEmployeeScanGps } from "@/lib/visitors/validate-employee-gps";
-
 function isValidScanCoords(lat: unknown, lon: unknown): boolean {
   return isValidCoordinate(lat, lon);
 }
@@ -197,12 +220,15 @@ export async function processEmployeeQrScan(
   }
 
   const todayEvents = ((todayRows ?? []) as EmployeeAttendanceRow[]).map(mapAttendanceRow);
+  const lastEventBeforeToday = await fetchLastEventBeforeToday(admin, employee.id, startIso);
   const reportingSettings = await fetchOwnerReportingSettings(admin, ownerId);
   const shiftEnabled = reportingSettings.shiftEnabled === true;
   const shifts = shiftsFromSettings(reportingSettings);
   const statusToday = shiftEnabled
-    ? effectiveShiftAttendanceStatus(todayEvents)
-    : effectiveAttendanceStatusForToday(todayEvents);
+    ? todayEvents.length > 0
+      ? effectiveShiftAttendanceStatus(todayEvents)
+      : effectiveAttendanceStatus({ todayEvents, lastEventBeforeToday })
+    : effectiveAttendanceStatus({ todayEvents, lastEventBeforeToday });
 
   const scanAction = parseScanAction(input.action ?? input.mode);
   let eventType: EmployeeAttendanceEventType;
@@ -221,10 +247,12 @@ export async function processEmployeeQrScan(
         nextEvent: eventType,
         shiftEnabled: true,
         shifts,
+        lastEventBeforeToday,
       })
     : validateDailyAttendanceTransition({
         todayEvents,
         nextEvent: eventType,
+        lastEventBeforeToday,
       });
   if (!transitionCheck.ok) {
     return { ok: false, error: transitionCheck.error, status: 409 };

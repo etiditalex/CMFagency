@@ -18,6 +18,7 @@ import {
 } from "@/lib/employees/db-mapper";
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
 import { formatEmployeeReportDate, formatEmployeeReportTime } from "@/lib/employees/utils";
+import { eatDayBoundsUtc, eatNextDayKey } from "@/lib/time/eat";
 import { integrationJson, integrationOptions } from "@/lib/integrations/integration-http";
 import { mapIntegrationDailyRegisterRow } from "@/lib/integrations/integration-mapper";
 import { requireIntegrationApiKey } from "@/lib/integrations/require-integration-api-key";
@@ -71,7 +72,10 @@ export async function GET(req: NextRequest) {
       .select(EMPLOYEE_ATTENDANCE_SELECT)
       .eq("owner_id", auth.ownerId)
       .gte("created_at", parsed.fromDate.toISOString())
-      .lte("created_at", parsed.toDate.toISOString())
+      .lte(
+        "created_at",
+        eatDayBoundsUtc(eatNextDayKey(parsed.to))?.endIso ?? parsed.toDate.toISOString()
+      )
       .order("created_at", { ascending: true })
       .limit(15000);
 

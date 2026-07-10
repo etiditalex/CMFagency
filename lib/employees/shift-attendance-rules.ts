@@ -1,4 +1,8 @@
 import { eatDayKey } from "@/lib/time/eat";
+import {
+  hasOpenOvernightSession,
+  validateDailyAttendanceTransition,
+} from "@/lib/employees/daily-attendance-rules";
 import type { EmployeeAttendanceRecord, ShiftDefinition } from "@/lib/employees/types";
 import { resolveShiftForAttendanceEvent, detectShiftForEvent } from "@/lib/employees/shifts";
 
@@ -100,6 +104,7 @@ function eventsForShift(
 /**
  * Validate shift-aware attendance transition.
  * With shifts enabled, allows multiple sign-in/out pairs per day (one pair per shift).
+ * Overnight open sessions must be signed out before the next day's sign-in.
  */
 export function validateShiftAttendanceTransition(params: {
   todayEvents: EmployeeAttendanceRecord[];
@@ -107,16 +112,39 @@ export function validateShiftAttendanceTransition(params: {
   shiftEnabled: boolean;
   shifts?: ShiftDefinition[];
   currentTime?: Date;
+  lastEventBeforeToday?: EmployeeAttendanceRecord | null;
 }): { ok: true; shiftNumber?: number } | { ok: false; error: string } {
-  const { shiftEnabled, shifts, currentTime = new Date(), nextEvent, todayEvents } = params;
+  const {
+    shiftEnabled,
+    shifts,
+    currentTime = new Date(),
+    nextEvent,
+    todayEvents,
+    lastEventBeforeToday,
+  } = params;
 
   if (!shiftEnabled || !shifts || shifts.length === 0) {
-    return validateDailyAttendanceTransition({ todayEvents, nextEvent });
+    return validateDailyAttendanceTransition({
+      todayEvents,
+      nextEvent,
+      lastEventBeforeToday,
+    });
   }
 
+  const overnightOpen = hasOpenOvernightSession(lastEventBeforeToday);
   const statusToday = effectiveShiftAttendanceStatus(todayEvents);
 
   if (nextEvent === "sign_out") {
+    if (overnightOpen && todayEvents.length === 0) {
+      const overnightShift =
+        lastEventBeforeToday?.shiftNumber != null
+          ? shifts.find((s) => s.shiftNumber === lastEventBeforeToday.shiftNumber)
+          : null;
+      return {
+        ok: true,
+        shiftNumber: overnightShift?.shiftNumber ?? lastEventBeforeToday?.shiftNumber ?? undefined,
+      };
+    }
     if (statusToday === "out") {
       return { ok: false, error: "Not signed in. Please sign in first." };
     }
@@ -136,6 +164,14 @@ export function validateShiftAttendanceTransition(params: {
       };
     }
     return { ok: true, shiftNumber: activeShift.shiftNumber };
+  }
+
+  if (overnightOpen && todayEvents.length === 0) {
+    return {
+      ok: false,
+      error:
+        "You forgot to sign out yesterday. Sign out first to close that day, then sign in for today.",
+    };
   }
 
   const shift = detectShiftForEvent(currentTime.toISOString(), shifts);
@@ -173,30 +209,4 @@ export function validateShiftAttendanceTransition(params: {
   }
 
   return { ok: true, shiftNumber: shift.shiftNumber };
-}
-
-function validateDailyAttendanceTransition(params: {
-  todayEvents: EmployeeAttendanceRecord[];
-  nextEvent: "sign_in" | "sign_out";
-}): { ok: true; shiftNumber?: number } | { ok: false; error: string } {
-  const { todayEvents, nextEvent } = params;
-  const signIns = todayEvents.filter((e) => e.eventType === "sign_in");
-  const signOuts = todayEvents.filter((e) => e.eventType === "sign_out");
-  const currentStatus = signIns.length > signOuts.length ? "in" : "out";
-
-  if (nextEvent === "sign_in") {
-    if (currentStatus === "in") {
-      return { ok: false, error: "Already signed in today. Please sign out first." };
-    }
-    if (signOuts.length > 0) {
-      return {
-        ok: false,
-        error: "You already signed out today. You cannot sign in again until the next working day.",
-      };
-    }
-  } else if (currentStatus === "out") {
-    return { ok: false, error: "Not signed in. Please sign in first." };
-  }
-
-  return { ok: true };
 }

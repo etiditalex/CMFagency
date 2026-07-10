@@ -64,9 +64,91 @@ type DayBucket = {
   signOutAt: string | null;
 };
 
+function toAttendanceRecord(e: AttendanceSummaryEventRow): EmployeeAttendanceRecord {
+  return {
+    id: e.id,
+    employeeId: e.employeeId,
+    eventType: e.eventType,
+    deviceId: null,
+    deviceLabel: null,
+    deviceInfo: {},
+    createdAt: e.createdAt,
+    shiftNumber: e.shiftNumber ?? null,
+  };
+}
+
+/**
+ * Pair sign-in/out chronologically so an overnight sign-out closes the prior day's
+ * open session (hours land on the sign-in day).
+ */
+function buildSessionBuckets(
+  events: AttendanceSummaryEventRow[],
+  shiftEnabled: boolean,
+  shifts: ReturnType<typeof shiftsFromSettings>
+): DayBucket[] {
+  const byEmployee = new Map<string, AttendanceSummaryEventRow[]>();
+  for (const ev of events) {
+    const list = byEmployee.get(ev.employeeId) ?? [];
+    list.push(ev);
+    byEmployee.set(ev.employeeId, list);
+  }
+
+  const buckets: DayBucket[] = [];
+
+  for (const [employeeId, empEvents] of byEmployee) {
+    const sorted = [...empEvents].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const dayEventsByKey = new Map<string, EmployeeAttendanceRecord[]>();
+    for (const ev of sorted) {
+      const dayKey = localDayKey(ev.createdAt);
+      const list = dayEventsByKey.get(dayKey) ?? [];
+      list.push(toAttendanceRecord(ev));
+      dayEventsByKey.set(dayKey, list);
+    }
+
+    let open: DayBucket | null = null;
+
+    const commitOpen = (signOutAt: string | null) => {
+      if (!open) return;
+      buckets.push({ ...open, signOutAt });
+      open = null;
+    };
+
+    for (const ev of sorted) {
+      const dayKey = localDayKey(ev.createdAt);
+      const dayEvents = dayEventsByKey.get(dayKey) ?? [];
+      const shift = shiftEnabled
+        ? resolveShiftForAttendanceEvent(toAttendanceRecord(ev), shifts, dayEvents)
+        : null;
+      const shiftKey = shift ? String(shift.shiftNumber) : "day";
+      const shiftLabel = shift ? `Shift ${shift.shiftNumber}` : "—";
+
+      if (ev.eventType === "sign_in") {
+        if (open) commitOpen(null);
+        open = {
+          employeeId,
+          dayKey,
+          shiftKey,
+          shiftLabel,
+          signInAt: ev.createdAt,
+          signOutAt: null,
+        };
+      } else if (open) {
+        // Sign-out closes the open session (may be a prior calendar day).
+        commitOpen(ev.createdAt);
+      }
+      // Orphan sign-out with no open session is ignored.
+    }
+
+    if (open) commitOpen(null);
+  }
+
+  return buckets;
+}
+
 /**
  * One row per employee per calendar day (EAT), or per shift when shift reporting is enabled.
  * Merges approved leave days so employees on leave appear in the register even without scans.
+ * Overnight sign-outs are attributed to the sign-in day for hours worked.
  */
 export function buildAttendanceDailyLogRows(
   events: AttendanceSummaryEventRow[],
@@ -80,63 +162,23 @@ export function buildAttendanceDailyLogRows(
   const labelSignOutOvertime =
     options?.labelSignOutOvertime === true || reportingSettings?.shiftEnabled === true;
 
-  const buckets = new Map<string, DayBucket>();
-  const attendedEmployeeDays = new Set<string>();
-  const eventsByEmployeeDay = new Map<string, AttendanceSummaryEventRow[]>();
+  const buckets = buildSessionBuckets(events, shiftEnabled, shifts);
+  const attendedEmployeeDays = new Set(
+    buckets.map((b) => `${b.employeeId}:${b.dayKey}`)
+  );
 
-  for (const ev of events) {
-    const dayKey = localDayKey(ev.createdAt);
-    const dayEventsKey = `${ev.employeeId}:${dayKey}`;
-    const dayList = eventsByEmployeeDay.get(dayEventsKey) ?? [];
-    dayList.push(ev);
-    eventsByEmployeeDay.set(dayEventsKey, dayList);
-  }
-
-  for (const ev of events) {
-    const dayKey = localDayKey(ev.createdAt);
-    attendedEmployeeDays.add(`${ev.employeeId}:${dayKey}`);
-    const dayEvents = (eventsByEmployeeDay.get(`${ev.employeeId}:${dayKey}`) ?? []).map(
-      (e): EmployeeAttendanceRecord => ({
-        id: e.id,
-        employeeId: e.employeeId,
-        eventType: e.eventType,
-        deviceId: null,
-        deviceLabel: null,
-        deviceInfo: {},
-        createdAt: e.createdAt,
-        shiftNumber: e.shiftNumber ?? null,
-      })
-    );
-    const shift = shiftEnabled
-      ? resolveShiftForAttendanceEvent(
-          {
-            createdAt: ev.createdAt,
-            eventType: ev.eventType,
-            employeeId: ev.employeeId,
-            shiftNumber: ev.shiftNumber ?? null,
-          },
-          shifts,
-          dayEvents
-        )
-      : null;
-    const shiftKey = shift ? String(shift.shiftNumber) : "day";
-    const shiftLabel = shift ? `Shift ${shift.shiftNumber}` : "—";
-    const key = `${ev.employeeId}:${dayKey}:${shiftKey}`;
-    let bucket = buckets.get(key);
-    if (!bucket) {
-      bucket = { employeeId: ev.employeeId, dayKey, shiftKey, shiftLabel, signInAt: null, signOutAt: null };
-      buckets.set(key, bucket);
-    }
-    if (ev.eventType === "sign_in") {
-      if (!bucket.signInAt || ev.createdAt < bucket.signInAt) bucket.signInAt = ev.createdAt;
-    } else if (!bucket.signOutAt || ev.createdAt > bucket.signOutAt) {
-      bucket.signOutAt = ev.createdAt;
-    }
-  }
+  const from = options?.from?.trim() ?? "";
+  const to = options?.to?.trim() ?? "";
+  const inRange = (dayKey: string) => {
+    if (!from || !to) return true;
+    return dayKey >= from && dayKey <= to;
+  };
 
   const rows: AttendanceDailyLogRow[] = [];
 
-  for (const bucket of buckets.values()) {
+  for (const bucket of buckets) {
+    if (!inRange(bucket.dayKey)) continue;
+
     const emp = employeeById.get(bucket.employeeId);
     const signInDate = bucket.signInAt ? formatEmployeeReportDate(bucket.signInAt) : "—";
     const signInTime = bucket.signInAt ? formatEmployeeReportTime(bucket.signInAt) : "—";
@@ -170,7 +212,7 @@ export function buildAttendanceDailyLogRows(
     })();
 
     rows.push({
-      id: `${bucket.employeeId}:${bucket.dayKey}:${bucket.shiftKey}`,
+      id: `${bucket.employeeId}:${bucket.dayKey}:${bucket.shiftKey}:${bucket.signInAt ?? "open"}`,
       employeeId: bucket.employeeId,
       dayKey: bucket.dayKey,
       shiftLabel: bucket.shiftLabel,
@@ -190,8 +232,6 @@ export function buildAttendanceDailyLogRows(
   }
 
   const leaveRecords = options?.leaveRecords ?? [];
-  const from = options?.from?.trim() ?? "";
-  const to = options?.to?.trim() ?? "";
   if (leaveRecords.length > 0 && from && to) {
     const dayKeys = eachEatDayKeys(from, to);
     const activeEmployees = employees.filter((e) => e.status === "active");

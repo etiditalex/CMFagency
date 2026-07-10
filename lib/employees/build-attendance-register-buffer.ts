@@ -46,8 +46,8 @@ export async function buildAttendanceRegisterExcelBuffer(
     };
     if (shiftEnabled) {
       base.Shift = row.shiftLabel;
-      base["Hours worked"] = row.hoursWorked;
     }
+    base["Hours worked"] = row.hoursWorked;
     return base;
   });
 

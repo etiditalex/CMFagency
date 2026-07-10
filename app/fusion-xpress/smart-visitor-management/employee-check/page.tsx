@@ -171,7 +171,7 @@ export default function EmployeeCheckPage() {
 
   const runScan = useCallback(
     async (
-      action: "sign_in" | "sign_out",
+      action: "sign_in" | "sign_out" | "toggle",
       opts: {
         token?: string;
         gate?: string;
@@ -307,7 +307,13 @@ export default function EmployeeCheckPage() {
     e.preventDefault();
     const code = memberCodeInput.trim();
     if (!code || !gateToken) return;
-    void runScan("sign_in", { gate: gateToken, memberCode: code, memberType: gateSetup?.memberType, teamLabel: gateSetup?.teamLabel });
+    // Toggle so an open overnight session signs out first instead of blocking a forced sign-in.
+    void runScan("toggle", {
+      gate: gateToken,
+      memberCode: code,
+      memberType: gateSetup?.memberType,
+      teamLabel: gateSetup?.teamLabel,
+    });
   };
 
   const activeEmployee = useMemo(() => {
@@ -493,7 +499,7 @@ export default function EmployeeCheckPage() {
                   disabled={submitting || !memberCodeInput.trim()}
                   className="w-full rounded-xl bg-primary-600 py-3.5 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
                 >
-                  Link phone & sign in
+                  Link phone & continue
                 </button>
                 <p className="text-[10px] text-gray-500 text-center">
                   {gateSetup.teamLabel} team · do not use someone else&apos;s ID

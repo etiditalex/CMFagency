@@ -73,6 +73,14 @@ export function eachEatDayKeys(fromYmd: string, toYmd: string): string[] {
   return keys;
 }
 
+/** Next calendar day key (yyyy-MM-dd) in EAT. */
+export function eatNextDayKey(ymd: string): string {
+  if (!YMD_RE.test(ymd)) return "";
+  const next = new Date(`${ymd}T12:00:00+03:00`);
+  next.setTime(next.getTime() + 86_400_000);
+  return eatDayKey(next);
+}
+
 export function eatDaySpanInclusive(fromYmd: string, toYmd: string): number {
   return eachEatDayKeys(fromYmd, toYmd).length;
 }

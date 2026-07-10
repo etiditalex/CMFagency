@@ -15,7 +15,7 @@ import {
 import { fetchOwnerReportingSettings } from "@/lib/employees/fetch-reporting-settings";
 import { resolveOwnerBusinessName } from "@/lib/employees/owner-business-name";
 import { formatEmployeeReportDate, formatEmployeeReportTime } from "@/lib/employees/utils";
-import { eatDayBoundsUtc } from "@/lib/time/eat";
+import { eatDayBoundsUtc, eatNextDayKey } from "@/lib/time/eat";
 
 export type OwnerAttendanceRegisterResult = {
   buffer: Buffer;
@@ -33,6 +33,8 @@ export async function fetchOwnerAttendanceRegister(
 ): Promise<OwnerAttendanceRegisterResult | null> {
   const bounds = eatDayBoundsUtc(dayKey);
   if (!bounds) return null;
+  const lookAheadEnd =
+    eatDayBoundsUtc(eatNextDayKey(dayKey))?.endIso ?? bounds.endIso;
 
   const { data: empData, error: empErr } = await admin
     .from("visitor_employees")
@@ -52,7 +54,7 @@ export async function fetchOwnerAttendanceRegister(
     .select(EMPLOYEE_ATTENDANCE_SELECT)
     .eq("owner_id", ownerId)
     .gte("created_at", bounds.startIso)
-    .lte("created_at", bounds.endIso)
+    .lte("created_at", lookAheadEnd)
     .order("created_at", { ascending: true })
     .limit(5000);
 
