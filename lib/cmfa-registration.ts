@@ -5,6 +5,7 @@ export const CMFA_DESIGNATIONS = [
   { value: "high_fashion_model", label: "High Fashion Model" },
   { value: "award_contestant", label: "Award Contestant" },
   { value: "sponsor_partner", label: "Sponsor/partner" },
+  { value: "entertainment", label: "Entertainment" },
 ] as const;
 
 export type CmfaDesignation = (typeof CMFA_DESIGNATIONS)[number]["value"];

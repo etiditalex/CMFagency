@@ -19,6 +19,15 @@ function isValidEmail(s: string): boolean {
   return v.includes("@") && v.includes(".") && v.length <= 254;
 }
 
+function normalizeName(s: string): string {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function isUniqueViolationOnName(message: string | undefined): boolean {
+  const m = (message ?? "").toLowerCase();
+  return m.includes("event_name_active") || m.includes("lower(regexp_replace");
+}
+
 type GuestPayload = {
   name?: string;
   email?: string;
@@ -68,6 +77,12 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
+      if (normalizeName(guestName) === normalizeName(name)) {
+        return NextResponse.json(
+          { error: "Guest name must be different from your name." },
+          { status: 400 }
+        );
+      }
       guest = { name: guestName, email: guestEmail, phone: guestPhone };
     }
   }
@@ -96,9 +111,32 @@ export async function POST(req: NextRequest) {
     return "This email is already registered and approved for CMFA.";
   }
 
+  async function activeNameMessage(forName: string): Promise<string | null> {
+    const normalized = normalizeName(forName);
+    const { data } = await supabase
+      .from("cmfa_registrations")
+      .select("status, name")
+      .eq("event_slug", CMFA_EVENT_SLUG)
+      .in("status", ["pending", "approved"]);
+
+    const match = (data ?? []).find(
+      (row) => normalizeName((row as { name: string }).name) === normalized
+    );
+    if (!match) return null;
+    if ((match as { status: string }).status === "pending") {
+      return "This name already has a pending CMFA registration. Each person can only register once.";
+    }
+    return "This name is already registered for CMFA. Each person can only register once.";
+  }
+
   const mainDup = await activeRegistrationMessage(email);
   if (mainDup) {
     return NextResponse.json({ error: mainDup }, { status: 409 });
+  }
+
+  const mainNameDup = await activeNameMessage(name);
+  if (mainNameDup) {
+    return NextResponse.json({ error: mainNameDup }, { status: 409 });
   }
 
   if (guest) {
@@ -106,6 +144,13 @@ export async function POST(req: NextRequest) {
     if (guestDup) {
       return NextResponse.json(
         { error: `Guest email: ${guestDup}` },
+        { status: 409 }
+      );
+    }
+    const guestNameDup = await activeNameMessage(guest.name);
+    if (guestNameDup) {
+      return NextResponse.json(
+        { error: `Guest name: ${guestNameDup}` },
         { status: 409 }
       );
     }
@@ -132,8 +177,13 @@ export async function POST(req: NextRequest) {
 
   if (mainErr || !mainInsert) {
     if (mainErr?.code === "23505") {
+      const onName = isUniqueViolationOnName(mainErr.message);
       return NextResponse.json(
-        { error: "This email is already registered for CMFA." },
+        {
+          error: onName
+            ? "This name is already registered for CMFA. Each person can only register once."
+            : "This email is already registered for CMFA.",
+        },
         { status: 409 }
       );
     }
@@ -159,8 +209,13 @@ export async function POST(req: NextRequest) {
     if (guestErr) {
       await supabase.from("cmfa_registrations").delete().eq("id", (mainInsert as { id: string }).id);
       if (guestErr.code === "23505") {
+        const onName = isUniqueViolationOnName(guestErr.message);
         return NextResponse.json(
-          { error: "The guest email is already registered for CMFA." },
+          {
+            error: onName
+              ? "The guest name is already registered for CMFA. Each person can only register once."
+              : "The guest email is already registered for CMFA.",
+          },
           { status: 409 }
         );
       }
