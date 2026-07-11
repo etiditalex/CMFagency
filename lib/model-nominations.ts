@@ -19,8 +19,8 @@ export type ModelNominationStatus =
 export type ModelNomination = {
   id: string;
   event_slug: string;
-  nominator_name: string;
-  nominator_email: string;
+  nominator_name: string | null;
+  nominator_email: string | null;
   nominator_phone: string | null;
   nominee_name: string;
   nominee_email: string | null;

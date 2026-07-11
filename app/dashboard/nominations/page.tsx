@@ -310,10 +310,16 @@ export default function DashboardNominatePage() {
                           </span>
                         </div>
                         <p className="mt-1 text-sm text-gray-600">
-                          Nominated by{" "}
-                          <span className="font-medium text-gray-800">
-                            {n.nominator_name}
-                          </span>
+                          {n.nominator_name ? (
+                            <>
+                              Nominated by{" "}
+                              <span className="font-medium text-gray-800">
+                                {n.nominator_name}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-gray-500">Public nomination</span>
+                          )}
                         </p>
                         <p className="mt-1 text-xs text-gray-500 font-medium">
                           {formatDate(n.created_at)}
@@ -328,30 +334,36 @@ export default function DashboardNominatePage() {
                   {open && (
                     <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
-                            Nominator
-                          </p>
-                          <p className="font-semibold text-gray-900">
-                            {n.nominator_name}
-                          </p>
-                          <a
-                            href={`mailto:${n.nominator_email}`}
-                            className="mt-1 inline-flex items-center gap-1.5 text-primary-600 hover:underline"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            {n.nominator_email}
-                          </a>
-                          {n.nominator_phone && (
-                            <a
-                              href={`tel:${n.nominator_phone}`}
-                              className="mt-1 flex items-center gap-1.5 text-gray-700"
-                            >
-                              <Phone className="w-3.5 h-3.5" />
-                              {n.nominator_phone}
-                            </a>
-                          )}
-                        </div>
+                        {n.nominator_name || n.nominator_email || n.nominator_phone ? (
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
+                              Nominator
+                            </p>
+                            {n.nominator_name && (
+                              <p className="font-semibold text-gray-900">
+                                {n.nominator_name}
+                              </p>
+                            )}
+                            {n.nominator_email && (
+                              <a
+                                href={`mailto:${n.nominator_email}`}
+                                className="mt-1 inline-flex items-center gap-1.5 text-primary-600 hover:underline"
+                              >
+                                <Mail className="w-3.5 h-3.5" />
+                                {n.nominator_email}
+                              </a>
+                            )}
+                            {n.nominator_phone && (
+                              <a
+                                href={`tel:${n.nominator_phone}`}
+                                className="mt-1 flex items-center gap-1.5 text-gray-700"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                {n.nominator_phone}
+                              </a>
+                            )}
+                          </div>
+                        ) : null}
                         <div>
                           <p className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
                             Nominee

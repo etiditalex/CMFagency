@@ -12,10 +12,6 @@ function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) && s.length <= 254;
 }
 
-function normalizeName(s: string): string {
-  return s.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
@@ -23,12 +19,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    const nominatorName = sanitizeText(String((body as { nominator_name?: string }).nominator_name ?? ""));
-    const nominatorEmail = sanitizeText(
-      String((body as { nominator_email?: string }).nominator_email ?? "")
-    ).toLowerCase();
-    const nominatorPhone =
-      sanitizeText(String((body as { nominator_phone?: string }).nominator_phone ?? "")) || null;
     const nomineeName = sanitizeText(String((body as { nominee_name?: string }).nominee_name ?? ""));
     const nomineeEmailRaw = sanitizeText(
       String((body as { nominee_email?: string }).nominee_email ?? "")
@@ -43,18 +33,13 @@ export async function POST(request: NextRequest) {
     const reason = sanitizeText(String((body as { reason?: string }).reason ?? ""));
     const confirmNotSelf = Boolean((body as { confirm_not_self?: boolean }).confirm_not_self);
 
-    if (!nominatorName || !nominatorEmail || !nomineeName || !category || !reason) {
+    if (!nomineeName || !category || !reason) {
       return NextResponse.json(
         {
-          error:
-            "Nominator name, nominator email, nominee name, category, and reason are required.",
+          error: "Nominee name, category, and reason are required.",
         },
         { status: 400 }
       );
-    }
-
-    if (!isValidEmail(nominatorEmail)) {
-      return NextResponse.json({ error: "Invalid nominator email address." }, { status: 400 });
     }
 
     if (nomineeEmail && !isValidEmail(nomineeEmail)) {
@@ -75,16 +60,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (normalizeName(nominatorName) === normalizeName(nomineeName)) {
-      return NextResponse.json(
-        { error: "You cannot nominate yourself. Please nominate someone else." },
-        { status: 400 }
-      );
-    }
-
     if (reason.length < 20) {
       return NextResponse.json(
-        { error: "Please share a bit more about why this model should be nominated (at least 20 characters)." },
+        {
+          error:
+            "Please share a bit more about why this model should be nominated (at least 20 characters).",
+        },
         { status: 400 }
       );
     }
@@ -110,9 +91,9 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           event_slug: MODEL_NOMINATION_EVENT_SLUG,
-          nominator_name: nominatorName,
-          nominator_email: nominatorEmail,
-          nominator_phone: nominatorPhone,
+          nominator_name: null,
+          nominator_email: null,
+          nominator_phone: null,
           nominee_name: nomineeName,
           nominee_email: nomineeEmail,
           nominee_phone: nomineePhone,
@@ -130,11 +111,16 @@ export async function POST(request: NextRequest) {
       console.error("Error saving nomination:", error);
       const isMissingTable =
         error.message?.includes("does not exist") || error.code === "42P01";
+      const isNotNull =
+        error.message?.toLowerCase().includes("null value") ||
+        error.code === "23502";
       return NextResponse.json(
         {
           error: isMissingTable
             ? "Nominations table not set up. Run database/ticketing_voting_mvp_patch_81_model_nominations.sql in Supabase SQL Editor."
-            : "Failed to save nomination",
+            : isNotNull
+              ? "Nominations schema needs an update. Run database/ticketing_voting_mvp_patch_82_model_nominations_optional_nominator.sql in Supabase SQL Editor."
+              : "Failed to save nomination",
           details: error.message,
         },
         { status: 500 }
