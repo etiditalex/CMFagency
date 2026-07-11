@@ -119,6 +119,7 @@ export default function Navbar() {
     { href: "/events/upcoming", label: "All Upcoming Events", nested: false },
     { href: "/events/upcoming/cmfa-registration", label: "CMFA Registration", nested: true },
     { href: "/events/register-as-model", label: "Register as a Model", nested: true },
+    { href: "/events/nominate-model", label: "Nominate Model", nested: true },
   ];
 
   const eventsCol1 = [eventsLinks[0]];
@@ -726,6 +727,12 @@ export default function Navbar() {
                           className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
                         >
                           View Event Details
+                        </Link>
+                        <Link
+                          href="/events/nominate-model"
+                          className="block px-2 py-2 rounded-md text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        >
+                          Nominate Model
                         </Link>
                         <a
                           href="https://forms.gle/GM5fRiutVXko1MaZ9"
