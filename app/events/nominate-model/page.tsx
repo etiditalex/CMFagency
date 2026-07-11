@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Globe,
   MapPin,
@@ -680,72 +681,122 @@ export default function NominateModelPage() {
         </div>
       )}
 
-      {/* FAQ */}
+      {/* FAQ — full-bleed like SEO page */}
       <section
-        className="bg-white py-12 sm:py-16 md:py-24"
+        id="nominate-faqs"
+        className="relative ml-[calc(50%-50vw)] w-screen max-w-[100vw] border-y border-gray-200 bg-gray-50"
         aria-labelledby="nominate-faq-heading"
       >
-        <div className="container-custom max-w-3xl">
-          <h2
-            id="nominate-faq-heading"
-            className="font-montserrat text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-8 sm:mb-10"
-          >
-            Frequently asked questions
-          </h2>
-          <div className="space-y-5 sm:space-y-6">
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">
-                How do I nominate a model for CFMA 2026?
-              </h3>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 leading-relaxed text-justify">
-                Click <strong className="font-semibold text-gray-800">Nominate Now</strong> on
-                this page, then complete the online form with the nominee&apos;s
-                information for Top 10 Male Models or Top 10 Female Models.
-                Nominations are free and reviewed by the CMF Agency team.
-              </p>
+        <div className="w-full px-4 py-10 sm:px-6 md:py-14 lg:px-10 xl:px-14 2xl:px-16">
+          <div className="mx-auto max-w-3xl text-left">
+            <div className="text-xs font-extrabold tracking-[0.2em] text-secondary-600 uppercase">
+              FAQ
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">
-                Can I nominate myself?
-              </h3>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 leading-relaxed text-justify">
-                No. Someone else must nominate you. Self-nominations are not
-                accepted for the Coast Fashion &amp; Modelling Awards Top 10
-                categories.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">
-                When and where is CFMA 2026?
-              </h3>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 leading-relaxed text-justify">
-                Saturday 15th August 2026 at City Blue Creekside Hotel, Mombasa,
-                from 7PM till late. Top 10 Male and Top 10 Female Models will be
-                recognized and certified on event day.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-gray-900">
-                What if I want to register as a contestant instead?
-              </h3>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 leading-relaxed text-justify">
-                Use our{" "}
-                <Link
-                  href="/events/register-as-model"
-                  className="text-primary-600 font-semibold hover:underline"
-                >
-                  Register as a Model
-                </Link>{" "}
-                page for CFMA award category registration, or view full{" "}
-                <Link
-                  href="/events/upcoming/coast-fashion-modelling-awards-2026"
-                  className="text-primary-600 font-semibold hover:underline"
-                >
-                  CFMA 2026 event details
-                </Link>
-                .
-              </p>
-            </div>
+            <h2
+              id="nominate-faq-heading"
+              className="mt-3 font-montserrat text-2xl font-extrabold tracking-tight text-gray-900 text-pretty break-words sm:text-3xl md:text-4xl"
+            >
+              Frequently asked questions
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-gray-600 text-justify sm:text-left">
+              Quick answers about nominating Top 10 Male and Top 10 Female Models
+              for CFMA 2026 in Mombasa.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-8 max-w-3xl space-y-3">
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm open:shadow-md [&[open]_summary_svg]:rotate-180">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 text-left marker:hidden sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 text-base font-bold text-gray-900 text-pretty break-words">
+                  How do I nominate a model for CFMA 2026?
+                </span>
+                <ChevronDown
+                  className="mt-0.5 h-5 w-5 shrink-0 text-secondary-600 transition-transform duration-200"
+                  aria-hidden
+                />
+              </summary>
+              <div className="border-t border-gray-100 px-4 pb-4 text-left text-sm leading-relaxed text-gray-600 sm:px-5 sm:pb-5">
+                <p className="pt-3 text-pretty text-justify sm:text-left">
+                  Click{" "}
+                  <strong className="font-semibold text-gray-800">
+                    Nominate Now
+                  </strong>{" "}
+                  on this page, then complete the online form with the
+                  nominee&apos;s information for Top 10 Male Models or Top 10
+                  Female Models. Nominations are free and reviewed by the CMF
+                  Agency team.
+                </p>
+              </div>
+            </details>
+
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm open:shadow-md [&[open]_summary_svg]:rotate-180">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 text-left marker:hidden sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 text-base font-bold text-gray-900 text-pretty break-words">
+                  Can I nominate myself?
+                </span>
+                <ChevronDown
+                  className="mt-0.5 h-5 w-5 shrink-0 text-secondary-600 transition-transform duration-200"
+                  aria-hidden
+                />
+              </summary>
+              <div className="border-t border-gray-100 px-4 pb-4 text-left text-sm leading-relaxed text-gray-600 sm:px-5 sm:pb-5">
+                <p className="pt-3 text-pretty text-justify sm:text-left">
+                  No. Someone else must nominate you. Self-nominations are not
+                  accepted for the Coast Fashion &amp; Modelling Awards Top 10
+                  categories.
+                </p>
+              </div>
+            </details>
+
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm open:shadow-md [&[open]_summary_svg]:rotate-180">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 text-left marker:hidden sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 text-base font-bold text-gray-900 text-pretty break-words">
+                  When and where is CFMA 2026?
+                </span>
+                <ChevronDown
+                  className="mt-0.5 h-5 w-5 shrink-0 text-secondary-600 transition-transform duration-200"
+                  aria-hidden
+                />
+              </summary>
+              <div className="border-t border-gray-100 px-4 pb-4 text-left text-sm leading-relaxed text-gray-600 sm:px-5 sm:pb-5">
+                <p className="pt-3 text-pretty text-justify sm:text-left">
+                  Saturday 15th August 2026 at City Blue Creekside Hotel,
+                  Mombasa, from 7PM till late. Top 10 Male and Top 10 Female
+                  Models will be recognized and certified on event day.
+                </p>
+              </div>
+            </details>
+
+            <details className="rounded-xl border border-gray-200 bg-white shadow-sm open:shadow-md [&[open]_summary_svg]:rotate-180">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-4 text-left marker:hidden sm:px-5 sm:py-4 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 text-base font-bold text-gray-900 text-pretty break-words">
+                  What if I want to register as a contestant instead?
+                </span>
+                <ChevronDown
+                  className="mt-0.5 h-5 w-5 shrink-0 text-secondary-600 transition-transform duration-200"
+                  aria-hidden
+                />
+              </summary>
+              <div className="border-t border-gray-100 px-4 pb-4 text-left text-sm leading-relaxed text-gray-600 sm:px-5 sm:pb-5">
+                <p className="pt-3 text-pretty text-justify sm:text-left">
+                  Use our{" "}
+                  <Link
+                    href="/events/register-as-model"
+                    className="text-primary-600 font-semibold hover:underline"
+                  >
+                    Register as a Model
+                  </Link>{" "}
+                  page for CFMA award category registration, or view full{" "}
+                  <Link
+                    href="/events/upcoming/coast-fashion-modelling-awards-2026"
+                    className="text-primary-600 font-semibold hover:underline"
+                  >
+                    CFMA 2026 event details
+                  </Link>
+                  .
+                </p>
+              </div>
+            </details>
           </div>
         </div>
       </section>
