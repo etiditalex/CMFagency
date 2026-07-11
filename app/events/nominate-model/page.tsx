@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import {
   Send,
   Star,
   Users,
+  X,
 } from "lucide-react";
 import { MODEL_NOMINATION_CATEGORIES } from "@/lib/model-nominations";
 
@@ -70,10 +71,39 @@ const emptyForm = {
 };
 
 export default function NominateModelPage() {
+  const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const openForm = () => {
+    setSubmitted(false);
+    setSubmitError(null);
+    setFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setFormOpen(false);
+    setSubmitError(null);
+  };
+
+  useEffect(() => {
+    if (!formOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setFormOpen(false);
+        setSubmitError(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [formOpen]);
 
   const updateField = (key: keyof typeof emptyForm, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -107,12 +137,53 @@ export default function NominateModelPage() {
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
+      <nav
+        aria-label="Breadcrumb"
+        className="container-custom pt-4 pb-2 text-sm text-gray-600"
+      >
+        <ol className="flex flex-wrap items-center gap-1.5">
+          <li>
+            <Link href="/" className="hover:text-primary-600 transition-colors">
+              Home
+            </Link>
+          </li>
+          <li aria-hidden className="text-gray-400">
+            /
+          </li>
+          <li>
+            <Link
+              href="/events"
+              className="hover:text-primary-600 transition-colors"
+            >
+              Events
+            </Link>
+          </li>
+          <li aria-hidden className="text-gray-400">
+            /
+          </li>
+          <li>
+            <Link
+              href="/events/upcoming"
+              className="hover:text-primary-600 transition-colors"
+            >
+              Upcoming
+            </Link>
+          </li>
+          <li aria-hidden className="text-gray-400">
+            /
+          </li>
+          <li className="font-semibold text-gray-900" aria-current="page">
+            Nominate a Model
+          </li>
+        </ol>
+      </nav>
+
       {/* Hero — Award Categories structure, CMF palette */}
       <section className="relative overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center justify-center">
         <div className="absolute inset-0">
           <Image
             src={HERO_IMAGE}
-            alt="Coast Fashion and Modelling Awards"
+            alt="Nominate a model for Coast Fashion and Modelling Awards 2026 runway show in Mombasa Kenya"
             fill
             className="object-cover object-center"
             priority
@@ -156,7 +227,7 @@ export default function NominateModelPage() {
             transition={{ duration: 0.55 }}
           >
             <h1 className="font-montserrat text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight drop-shadow-2xl">
-              Nominate Model
+              Nominate a Model
             </h1>
             <div className="mt-6 flex items-center justify-center gap-4">
               <span
@@ -164,12 +235,25 @@ export default function NominateModelPage() {
                 aria-hidden
               />
               <p className="text-base sm:text-lg font-medium tracking-[0.2em] text-white/95 uppercase">
-                2026
+                CFMA 2026
               </p>
               <span
                 className="h-px w-12 sm:w-16 bg-secondary-400"
                 aria-hidden
               />
+            </div>
+            <p className="mt-4 text-white/90 text-base md:text-lg max-w-2xl mx-auto drop-shadow-md">
+              Nominate Top 10 Male &amp; Female Models for the Coast Fashion
+              &amp; Modelling Awards in Mombasa
+            </p>
+            <div className="mt-8 flex justify-center">
+              <button
+                type="button"
+                onClick={openForm}
+                className="inline-flex items-center justify-center rounded-full bg-secondary-600 hover:bg-secondary-500 text-white font-bold tracking-wide uppercase text-sm px-8 py-3.5 shadow-lg transition-colors"
+              >
+                Nominate Now
+              </button>
             </div>
           </motion.div>
         </div>
@@ -198,7 +282,23 @@ export default function NominateModelPage() {
               <span className="text-primary-600">Nominate</span>
             </h2>
             <p className="mt-4 text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
-              Let&apos;s recognize and celebrate the best modeling talent in Coast.
+              Let&apos;s recognize and celebrate the best modeling talent in
+              Coast. Nominate{" "}
+              <strong className="font-semibold text-gray-800">
+                Top 10 Male Models
+              </strong>{" "}
+              and{" "}
+              <strong className="font-semibold text-gray-800">
+                Top 10 Female Models
+              </strong>{" "}
+              for the{" "}
+              <Link
+                href="/events/upcoming/coast-fashion-modelling-awards-2026"
+                className="text-primary-600 font-semibold hover:underline"
+              >
+                Coast Fashion &amp; Modelling Awards 2026
+              </Link>{" "}
+              in Mombasa.
             </p>
           </motion.div>
         </div>
@@ -353,19 +453,20 @@ export default function NominateModelPage() {
                 Awards 2026 — Saturday 15th August at City Blue Creekside Hotel,
                 Mombasa.
               </p>
-              <a
-                href="#nominate-form"
+              <button
+                type="button"
+                onClick={openForm}
                 className="mt-8 inline-flex items-center justify-center rounded-full bg-secondary-600 hover:bg-secondary-500 text-white font-bold tracking-wide uppercase text-sm px-8 py-3.5 shadow-lg transition-colors"
               >
                 Nominate Now
-              </a>
+              </button>
             </div>
           </motion.div>
 
           <div className="relative hidden md:block flex-1 min-h-[480px]">
             <Image
               src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg"
-              alt="Models on the runway at a Coast fashion event"
+              alt="Models on the runway at Coast Fashion event in Mombasa — nominate Top 10 models for CFMA 2026"
               fill
               className="object-cover object-center"
               sizes="(max-width: 768px) 0vw, 50vw"
@@ -374,188 +475,304 @@ export default function NominateModelPage() {
         </div>
       </section>
 
-      {/* Nomination form */}
-      <section id="nominate-form" className="bg-gray-50 section-padding scroll-mt-28">
-        <div className="container-custom max-w-3xl">
-          <div className="text-center mb-10">
-            <h2 className="font-montserrat text-3xl md:text-4xl font-extrabold text-gray-900">
-              Submit a nomination
-            </h2>
-            <p className="mt-3 text-gray-600">
-              Nominate someone else for Top 10 Male or Top 10 Female Models. Your
-              submission appears instantly in Fusion Xpress.
-            </p>
-          </div>
-
-          {submitted ? (
-            <div className="rounded-2xl border border-secondary-200 bg-secondary-50 p-8 text-center">
-              <CheckCircle2 className="w-12 h-12 text-secondary-600 mx-auto mb-3" />
-              <h3 className="text-xl font-bold text-gray-900">Nomination received</h3>
-              <p className="mt-2 text-gray-600">
-                Thank you. Our team will review your nomination for CFMA 2026.
-              </p>
+      {/* Nomination form modal */}
+      {formOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nominate-form-title"
+          onClick={closeForm}
+        >
+          <div
+            className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-100 bg-white px-5 py-4 sm:px-6">
+              <div>
+                <h2
+                  id="nominate-form-title"
+                  className="font-montserrat text-lg sm:text-xl font-extrabold text-gray-900"
+                >
+                  Submit a nomination
+                </h2>
+                <p className="mt-0.5 text-sm text-gray-500">
+                  Nominate someone else for Top 10 Male or Female Models.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setSubmitted(false)}
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 transition-colors"
+                onClick={closeForm}
+                className="shrink-0 rounded-full p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                aria-label="Close nomination form"
               >
-                Nominate another model
+                <X className="w-5 h-5" />
               </button>
             </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 shadow-sm space-y-8"
-            >
-              <div>
-                <h3 className="text-sm font-extrabold tracking-widest text-gray-500 uppercase mb-4">
-                  Your details (nominator)
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full name *
-                    </label>
-                    <input
-                      required
-                      value={form.nominator_name}
-                      onChange={(e) => updateField("nominator_name", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      required
-                      type="email"
-                      value={form.nominator_email}
-                      onChange={(e) => updateField("nominator_email", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone
-                    </label>
-                    <input
-                      value={form.nominator_phone}
-                      onChange={(e) => updateField("nominator_phone", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div>
-                <h3 className="text-sm font-extrabold tracking-widest text-gray-500 uppercase mb-4">
-                  Nominee details
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nominee full name *
-                    </label>
-                    <input
-                      required
-                      value={form.nominee_name}
-                      onChange={(e) => updateField("nominee_name", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Category *
-                    </label>
-                    <select
-                      required
-                      value={form.category}
-                      onChange={(e) => updateField("category", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            <div className="p-5 sm:p-6">
+              {submitted ? (
+                <div className="rounded-xl border border-secondary-200 bg-secondary-50 p-8 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-secondary-600 mx-auto mb-3" />
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Nomination received
+                  </h3>
+                  <p className="mt-2 text-gray-600">
+                    Thank you. Our team will review your nomination for CFMA 2026.
+                  </p>
+                  <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSubmitted(false)}
+                      className="inline-flex items-center justify-center rounded-full bg-primary-600 hover:bg-primary-700 text-white font-semibold px-6 py-3 transition-colors"
                     >
-                      <option value="">Select category</option>
-                      {MODEL_NOMINATION_CATEGORIES.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nominee email
-                    </label>
-                    <input
-                      type="email"
-                      value={form.nominee_email}
-                      onChange={(e) => updateField("nominee_email", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nominee phone
-                    </label>
-                    <input
-                      value={form.nominee_phone}
-                      onChange={(e) => updateField("nominee_phone", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Instagram / social handle
-                    </label>
-                    <input
-                      value={form.nominee_instagram}
-                      onChange={(e) => updateField("nominee_instagram", e.target.value)}
-                      placeholder="@username"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Why are you nominating them? *
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={form.reason}
-                      onChange={(e) => updateField("reason", e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
+                      Nominate another model
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeForm}
+                      className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 font-semibold px-6 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-7">
+                  <div>
+                    <h3 className="text-sm font-extrabold tracking-widest text-gray-500 uppercase mb-4">
+                      Your details (nominator)
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full name *
+                        </label>
+                        <input
+                          required
+                          value={form.nominator_name}
+                          onChange={(e) =>
+                            updateField("nominator_name", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email *
+                        </label>
+                        <input
+                          required
+                          type="email"
+                          value={form.nominator_email}
+                          onChange={(e) =>
+                            updateField("nominator_email", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone
+                        </label>
+                        <input
+                          value={form.nominator_phone}
+                          onChange={(e) =>
+                            updateField("nominator_phone", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              <label className="flex items-start gap-3 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  required
-                  checked={form.confirm_not_self}
-                  onChange={(e) => updateField("confirm_not_self", e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span>
-                  I confirm I am nominating someone else, not myself. *
-                </span>
-              </label>
+                  <div>
+                    <h3 className="text-sm font-extrabold tracking-widest text-gray-500 uppercase mb-4">
+                      Nominee details
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nominee full name *
+                        </label>
+                        <input
+                          required
+                          value={form.nominee_name}
+                          onChange={(e) =>
+                            updateField("nominee_name", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Category *
+                        </label>
+                        <select
+                          required
+                          value={form.category}
+                          onChange={(e) => updateField("category", e.target.value)}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="">Select category</option>
+                          {MODEL_NOMINATION_CATEGORIES.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nominee email
+                        </label>
+                        <input
+                          type="email"
+                          value={form.nominee_email}
+                          onChange={(e) =>
+                            updateField("nominee_email", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nominee phone
+                        </label>
+                        <input
+                          value={form.nominee_phone}
+                          onChange={(e) =>
+                            updateField("nominee_phone", e.target.value)
+                          }
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Instagram / social handle
+                        </label>
+                        <input
+                          value={form.nominee_instagram}
+                          onChange={(e) =>
+                            updateField("nominee_instagram", e.target.value)
+                          }
+                          placeholder="@username"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Why are you nominating them? *
+                        </label>
+                        <textarea
+                          required
+                          rows={4}
+                          value={form.reason}
+                          onChange={(e) => updateField("reason", e.target.value)}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              {submitError && (
-                <p className="text-sm text-red-600 font-medium">{submitError}</p>
+                  <label className="flex items-start gap-3 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      required
+                      checked={form.confirm_not_self}
+                      onChange={(e) =>
+                        updateField("confirm_not_self", e.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span>
+                      I confirm I am nominating someone else, not myself. *
+                    </span>
+                  </label>
+
+                  {submitError && (
+                    <p className="text-sm text-red-600 font-medium">{submitError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-secondary-600 hover:bg-secondary-500 disabled:opacity-60 text-white font-bold tracking-wide uppercase text-sm px-8 py-3.5 shadow-lg transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                    {submitting ? "Submitting…" : "Submit nomination"}
+                  </button>
+                </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-secondary-600 hover:bg-secondary-500 disabled:opacity-60 text-white font-bold tracking-wide uppercase text-sm px-8 py-3.5 shadow-lg transition-colors"
-              >
-                <Send className="w-4 h-4" />
-                {submitting ? "Submitting…" : "Submit nomination"}
-              </button>
-            </form>
-          )}
+      {/* FAQ — visible content matching FAQ schema */}
+      <section className="bg-white section-padding" aria-labelledby="nominate-faq-heading">
+        <div className="container-custom max-w-3xl">
+          <h2
+            id="nominate-faq-heading"
+            className="font-montserrat text-2xl md:text-3xl font-extrabold text-gray-900 text-center mb-10"
+          >
+            Frequently asked questions
+          </h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                How do I nominate a model for CFMA 2026?
+              </h3>
+              <p className="mt-2 text-gray-600 leading-relaxed">
+                Click <strong className="font-semibold text-gray-800">Nominate Now</strong> on
+                this page, then complete the online form with your details and the
+                nominee&apos;s information for Top 10 Male Models or Top 10 Female
+                Models. Nominations are free and reviewed by the CMF Agency team.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Can I nominate myself?
+              </h3>
+              <p className="mt-2 text-gray-600 leading-relaxed">
+                No. Someone else must nominate you. Self-nominations are not
+                accepted for the Coast Fashion &amp; Modelling Awards Top 10
+                categories.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                When and where is CFMA 2026?
+              </h3>
+              <p className="mt-2 text-gray-600 leading-relaxed">
+                Saturday 15th August 2026 at City Blue Creekside Hotel, Mombasa,
+                from 7PM till late. Top 10 Male and Top 10 Female Models will be
+                recognized and certified on event day.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                What if I want to register as a contestant instead?
+              </h3>
+              <p className="mt-2 text-gray-600 leading-relaxed">
+                Use our{" "}
+                <Link
+                  href="/events/register-as-model"
+                  className="text-primary-600 font-semibold hover:underline"
+                >
+                  Register as a Model
+                </Link>{" "}
+                page for CFMA award category registration, or view full{" "}
+                <Link
+                  href="/events/upcoming/coast-fashion-modelling-awards-2026"
+                  className="text-primary-600 font-semibold hover:underline"
+                >
+                  CFMA 2026 event details
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

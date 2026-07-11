@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
-/** Poster URL alias → canonical nominate page */
+/** Poster / marketing URL → canonical nominate page (301/308 for SEO). */
 export default function NominateModelsRedirectPage() {
-  redirect("/events/nominate-model");
+  permanentRedirect("/events/nominate-model");
 }

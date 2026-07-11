@@ -1,44 +1,72 @@
 import { Metadata } from "next";
-import { EVENTS_BANNER_OG } from "@/lib/og-images";
+
+const PAGE_URL = "https://cmfagency.co.ke/events/nominate-model";
+const OG_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1776166126/models2_zb5yfj.jpg";
 
 export const metadata: Metadata = {
-  title: "Nominate Model | Coast Fashion & Modelling Awards 2026 | CMF Agency",
+  title:
+    "Nominate a Model Kenya | Top 10 Male & Female Models CFMA 2026 | CMF Agency",
   description:
-    "Call to nominate Top 10 Male and Top 10 Female Models for the Coast Fashion & Modelling Awards 2026. Crowning Change — recognize the best modeling talent on the Coast.",
+    "Nominate a model for the Coast Fashion & Modelling Awards 2026 in Mombasa. Submit Top 10 Male or Top 10 Female Model nominations online. CFMA 2026 — Saturday 15 August at City Blue Creekside Hotel.",
   keywords: [
-    "nominate model",
-    "nominate models Kenya",
-    "Coast Fashion Modelling Awards",
-    "CFMA 2026",
-    "Top 10 Male Models",
-    "Top 10 Female Models",
-    "CMF Agency",
+    "nominate a model Kenya",
+    "nominate model Mombasa",
+    "nominate model CFMA 2026",
+    "Coast Fashion Modelling Awards nominate",
+    "Top 10 Male Models Kenya",
+    "Top 10 Female Models Kenya",
+    "nominate fashion model Coast Kenya",
+    "CFMA 2026 nominations",
+    "CMF Agency nominate model",
+    "Changer Fusions awards nomination",
+    "model awards Mombasa 2026",
   ],
+  authors: [{ name: "Changer Fusions", url: "https://cmfagency.co.ke" }],
+  creator: "Changer Fusions",
+  publisher: "CMF Agency",
+  category: "Events",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
-    title: "Nominate Model | CFMA 2026 | CMF Agency",
+    locale: "en_KE",
+    title: "Nominate a Model for CFMA 2026 | Top 10 Male & Female | Mombasa",
     description:
-      "Nominate Top 10 Male and Top 10 Female Models for the Coast Fashion & Modelling Awards 2026. Crowning Change.",
-    url: "https://cmfagency.co.ke/events/nominate-model",
-    siteName: "Changer Fusions",
+      "Nominate Top 10 Male and Top 10 Female Models for the Coast Fashion & Modelling Awards 2026 in Mombasa. Free online nomination — recognized on event day, 15 August 2026.",
+    url: PAGE_URL,
+    siteName: "Changer Fusions | CMF Agency",
     images: [
       {
-        url: EVENTS_BANNER_OG.url,
-        width: EVENTS_BANNER_OG.width,
-        height: EVENTS_BANNER_OG.height,
-        alt: EVENTS_BANNER_OG.alt,
-        type: EVENTS_BANNER_OG.type,
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "Nominate a model for Coast Fashion & Modelling Awards 2026 runway in Mombasa",
+        type: "image/jpeg",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nominate Model | CFMA 2026 | CMF Agency",
+    title: "Nominate a Model for CFMA 2026 | Mombasa",
     description:
-      "Nominate Top 10 Male and Top 10 Female Models for the Coast Fashion & Modelling Awards 2026.",
-    images: [EVENTS_BANNER_OG.url],
+      "Nominate Top 10 Male & Female Models for the Coast Fashion & Modelling Awards 2026. Event: 15 August, City Blue Creekside Hotel, Mombasa.",
+    images: [OG_IMAGE],
   },
   alternates: {
-    canonical: "https://cmfagency.co.ke/events/nominate-model",
+    canonical: PAGE_URL,
+    languages: {
+      "en-KE": PAGE_URL,
+      en: PAGE_URL,
+    },
   },
 };

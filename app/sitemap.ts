@@ -31,6 +31,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/events/upcoming/coast-fashion-modelling-awards-2026", priority: 0.95, changeFrequency: "weekly" as const },
     { path: "/events/past", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/events/register-as-model", priority: 0.93, changeFrequency: "weekly" as const },
+    { path: "/events/nominate-model", priority: 0.96, changeFrequency: "daily" as const },
+    { path: "/nominate-models", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events/upcoming/cmfa-registration", priority: 0.94, changeFrequency: "weekly" as const },
     { path: "/testimonials", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/portfolios", priority: 0.85, changeFrequency: "weekly" as const },

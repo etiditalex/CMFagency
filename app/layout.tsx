@@ -134,9 +134,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Add your verification codes here when available
-    // google: "your-google-verification-code",
-    // yandex: "your-yandex-verification-code",
+    google: "_0K0me0Zv8ohErQiUwZ3v7NJKpg9jnzbhdnHarLfH5w",
   },
   alternates: {
     canonical: "https://cmfagency.co.ke",
