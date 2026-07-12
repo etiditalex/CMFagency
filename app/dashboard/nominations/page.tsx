@@ -31,6 +31,8 @@ const STATUS_OPTIONS: ModelNominationStatus[] = [
   "rejected",
 ];
 
+const PAGE_SIZES = [10, 20, 50, 100] as const;
+
 type RankedNominee = {
   key: string;
   name: string;
@@ -169,6 +171,8 @@ export default function DashboardNominatePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
+  const [page, setPage] = useState(0);
 
   const loadNominations = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -299,11 +303,24 @@ export default function DashboardNominatePage() {
     }
   };
 
-  const filtered = nominations.filter((n) => {
-    if (statusFilter !== "all" && n.status !== statusFilter) return false;
-    if (categoryFilter !== "all" && n.category !== categoryFilter) return false;
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return nominations.filter((n) => {
+      if (statusFilter !== "all" && n.status !== statusFilter) return false;
+      if (categoryFilter !== "all" && n.category !== categoryFilter) return false;
+      return true;
+    });
+  }, [nominations, statusFilter, categoryFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = useMemo(
+    () => filtered.slice(safePage * pageSize, safePage * pageSize + pageSize),
+    [filtered, safePage, pageSize]
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [statusFilter, categoryFilter, pageSize]);
 
   const topMale = useMemo(
     () => rankNomineesByCategory(nominations, "top_10_male"),
@@ -453,10 +470,38 @@ export default function DashboardNominatePage() {
       </div>
 
       <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+        <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
             All nominations
           </h3>
+          {filtered.length > 0 && (
+            <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
+                  setPage(0);
+                }}
+                className="rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium text-gray-800 shadow-sm"
+                aria-label="Rows per page"
+              >
+                {PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n} rows
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-gray-500">
+                Showing{" "}
+                {filtered.length === 0
+                  ? 0
+                  : safePage * pageSize + 1}
+                –
+                {Math.min((safePage + 1) * pageSize, filtered.length)} of{" "}
+                {filtered.length}
+              </span>
+            </label>
+          )}
         </div>
         {loading && nominations.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
@@ -477,7 +522,7 @@ export default function DashboardNominatePage() {
           </div>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {filtered.map((n) => {
+            {pageRows.map((n) => {
               const open = expandedId === n.id;
               return (
                 <li key={n.id} className="p-4 sm:p-5 hover:bg-gray-50/80">
@@ -638,6 +683,29 @@ export default function DashboardNominatePage() {
             })}
           </ul>
         )}
+        {filtered.length > pageSize ? (
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-100 text-sm text-gray-600">
+            <button
+              type="button"
+              disabled={safePage <= 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <span>
+              Page {safePage + 1} of {pageCount}
+            </span>
+            <button
+              type="button"
+              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40 hover:bg-gray-50"
+            >
+              Next
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );
