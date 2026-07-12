@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Mail,
@@ -9,6 +9,8 @@ import {
   Star,
   Instagram,
   Radio,
+  Trash2,
+  Trophy,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +18,9 @@ import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 import {
   categoryLabel,
+  normalizeNomineeName,
   type ModelNomination,
+  type ModelNominationCategory,
   type ModelNominationStatus,
 } from "@/lib/model-nominations";
 
@@ -26,6 +30,129 @@ const STATUS_OPTIONS: ModelNominationStatus[] = [
   "shortlisted",
   "rejected",
 ];
+
+type RankedNominee = {
+  key: string;
+  name: string;
+  count: number;
+  instagram: string | null;
+};
+
+function rankNomineesByCategory(
+  nominations: ModelNomination[],
+  category: ModelNominationCategory
+): RankedNominee[] {
+  const map = new Map<
+    string,
+    { name: string; count: number; instagram: string | null }
+  >();
+
+  for (const n of nominations) {
+    if (n.category !== category) continue;
+    if (n.status === "rejected") continue;
+
+    const key =
+      n.nominee_name_normalized?.trim() ||
+      normalizeNomineeName(n.nominee_name);
+    if (!key) continue;
+
+    const existing = map.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (!existing.instagram && n.nominee_instagram) {
+        existing.instagram = n.nominee_instagram;
+      }
+      existing.name = n.nominee_name;
+    } else {
+      map.set(key, {
+        name: n.nominee_name,
+        count: 1,
+        instagram: n.nominee_instagram,
+      });
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([key, v]) => ({ key, ...v }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+function MostNominatedPanel({
+  title,
+  items,
+}: {
+  title: string;
+  items: RankedNominee[];
+}) {
+  const top = items.slice(0, 10);
+  const max = top[0]?.count ?? 0;
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
+        <Trophy className="w-4 h-4 text-secondary-600" aria-hidden />
+        <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
+          {title}
+        </h3>
+        <span className="ml-auto text-xs font-semibold text-gray-500">
+          {items.length} nominee{items.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      {top.length === 0 ? (
+        <p className="px-4 py-8 text-sm text-gray-500 text-center">
+          No nominations yet.
+        </p>
+      ) : (
+        <ol className="divide-y divide-gray-100">
+          {top.map((item, index) => {
+            const pct = max > 0 ? Math.round((item.count / max) * 100) : 0;
+            return (
+              <li key={item.key} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex items-start gap-3">
+                    <span
+                      className={`shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-extrabold ${
+                        index === 0
+                          ? "bg-secondary-100 text-secondary-800"
+                          : index < 3
+                            ? "bg-primary-50 text-primary-700"
+                            : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900 truncate">
+                        {item.name}
+                      </p>
+                      {item.instagram && (
+                        <p className="mt-0.5 text-xs text-gray-500 truncate">
+                          {item.instagram}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-sm font-extrabold text-primary-700">
+                    {item.count}
+                    <span className="ml-1 text-xs font-semibold text-gray-500">
+                      {item.count === 1 ? "nom." : "noms."}
+                    </span>
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-primary-500 to-secondary-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
 
 export default function DashboardNominatePage() {
   const router = useRouter();
@@ -39,6 +166,7 @@ export default function DashboardNominatePage() {
   const [categoryFilter, setCategoryFilter] = useState<"all" | "top_10_male" | "top_10_female">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [live, setLive] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -49,7 +177,7 @@ export default function DashboardNominatePage() {
       const { data, error: fetchErr } = await supabase
         .from("model_nominations")
         .select(
-          "id,event_slug,nominator_name,nominator_email,nominator_phone,nominee_name,nominee_email,nominee_phone,nominee_instagram,category,reason,status,source,created_at,updated_at"
+          "id,event_slug,nominator_name,nominator_email,nominator_phone,nominee_name,nominee_name_normalized,nominee_email,nominee_phone,nominee_instagram,category,reason,status,source,device_id,created_at,updated_at"
         )
         .order("created_at", { ascending: false });
 
@@ -93,7 +221,6 @@ export default function DashboardNominatePage() {
     user,
   ]);
 
-  // Realtime + polling for live dates
   useEffect(() => {
     if (!isAuthenticated || !isAdmin || !isPortalMember) return;
 
@@ -142,11 +269,50 @@ export default function DashboardNominatePage() {
     }
   };
 
+  const deleteNomination = async (n: ModelNomination) => {
+    const ok = window.confirm(
+      `Delete nomination for "${n.nominee_name}"? This cannot be undone.`
+    );
+    if (!ok) return;
+
+    setDeletingId(n.id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+
+      const res = await fetch(`/api/nominations/${n.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? "Failed to delete");
+
+      setNominations((prev) => prev.filter((row) => row.id !== n.id));
+      if (expandedId === n.id) setExpandedId(null);
+      setLastUpdated(new Date());
+    } catch (e: unknown) {
+      console.error("Failed to delete nomination:", e);
+      window.alert(e instanceof Error ? e.message : "Failed to delete nomination");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filtered = nominations.filter((n) => {
     if (statusFilter !== "all" && n.status !== statusFilter) return false;
     if (categoryFilter !== "all" && n.category !== categoryFilter) return false;
     return true;
   });
+
+  const topMale = useMemo(
+    () => rankNomineesByCategory(nominations, "top_10_male"),
+    [nominations]
+  );
+  const topFemale = useMemo(
+    () => rankNomineesByCategory(nominations, "top_10_female"),
+    [nominations]
+  );
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);
@@ -269,7 +435,29 @@ export default function DashboardNominatePage() {
         </span>
       </div>
 
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-6">
+        <div className="mb-3 flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-secondary-600" aria-hidden />
+          <h3 className="text-base md:text-lg font-extrabold text-gray-900">
+            Most nominated so far
+          </h3>
+        </div>
+        <p className="mb-4 text-sm text-gray-600">
+          Ranked by nomination count (rejected entries excluded). Updates live
+          with new submissions.
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <MostNominatedPanel title="Top Male Models" items={topMale} />
+          <MostNominatedPanel title="Top Female Models" items={topFemale} />
+        </div>
+      </div>
+
+      <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+          <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
+            All nominations
+          </h3>
+        </div>
         {loading && nominations.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <Star className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -413,7 +601,7 @@ export default function DashboardNominatePage() {
                         </label>
                         <select
                           value={n.status}
-                          disabled={updatingId === n.id}
+                          disabled={updatingId === n.id || deletingId === n.id}
                           onChange={(e) =>
                             updateStatus(
                               n.id,
@@ -428,7 +616,21 @@ export default function DashboardNominatePage() {
                             </option>
                           ))}
                         </select>
+                        <button
+                          type="button"
+                          onClick={() => deleteNomination(n)}
+                          disabled={deletingId === n.id || updatingId === n.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-red-200 bg-red-50 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          {deletingId === n.id ? "Deleting…" : "Delete"}
+                        </button>
                       </div>
+                      {n.device_id && (
+                        <p className="text-xs text-gray-400 break-all">
+                          Device: {n.device_id.slice(0, 8)}…
+                        </p>
+                      )}
                     </div>
                   )}
                 </li>

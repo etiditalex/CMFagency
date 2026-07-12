@@ -23,6 +23,7 @@ export type ModelNomination = {
   nominator_email: string | null;
   nominator_phone: string | null;
   nominee_name: string;
+  nominee_name_normalized?: string | null;
   nominee_email: string | null;
   nominee_phone: string | null;
   nominee_instagram: string | null;
@@ -30,6 +31,8 @@ export type ModelNomination = {
   reason: string;
   status: ModelNominationStatus;
   source: string;
+  device_id?: string | null;
+  device_fingerprint?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,4 +48,9 @@ export function categoryLabel(category: ModelNominationCategory): string {
     MODEL_NOMINATION_CATEGORIES.find((c) => c.value === category)?.label ??
     category
   );
+}
+
+/** Lowercase + collapse whitespace for duplicate nominee checks. */
+export function normalizeNomineeName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
 }

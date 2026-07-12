@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { MODEL_NOMINATION_CATEGORIES } from "@/lib/model-nominations";
+import { getOrCreateNominationDeviceId } from "@/lib/nomination-device";
 
 const HERO_IMAGE =
   "https://res.cloudinary.com/dyfnobo9r/image/upload/v1776166126/models2_zb5yfj.jpg";
@@ -119,10 +120,11 @@ export default function NominateModelPage() {
     setSubmitError(null);
 
     try {
+      const deviceId = getOrCreateNominationDeviceId();
       const res = await fetch("/api/nominations/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, device_id: deviceId }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
