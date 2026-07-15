@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildAttendanceSummary } from "@/lib/employees/attendance-summary";
 import { buildAttendanceRegisterExcelBuffer } from "@/lib/employees/build-attendance-register-buffer";
+import { buildAttendanceRegisterPdfBuffer } from "@/lib/employees/build-attendance-register-pdf";
 import {
   EMPLOYEE_ATTENDANCE_SELECT,
   isMissingLeaveTable,
@@ -17,24 +18,28 @@ import { resolveOwnerBusinessName } from "@/lib/employees/owner-business-name";
 import { formatEmployeeReportDate, formatEmployeeReportTime } from "@/lib/employees/utils";
 import { eatDayBoundsUtc, eatNextDayKey } from "@/lib/time/eat";
 
-export type OwnerAttendanceRegisterResult = {
-  buffer: Buffer;
-  filename: string;
+export type OwnerAttendanceRegisterRangeResult = {
   businessName: string;
-  dayKey: string;
+  from: string;
+  to: string;
   rowCount: number;
+  pdf: { buffer: Buffer; filename: string };
+  excel: { buffer: Buffer; filename: string };
 };
 
-/** Builds today's attendance register Excel for one organisation (EAT calendar day). */
-export async function fetchOwnerAttendanceRegister(
+/** Builds attendance register PDF (+ Excel) for an organisation date range (EAT). */
+export async function fetchOwnerAttendanceRegisterRange(
   admin: SupabaseClient,
   ownerId: string,
-  dayKey: string
-): Promise<OwnerAttendanceRegisterResult | null> {
-  const bounds = eatDayBoundsUtc(dayKey);
-  if (!bounds) return null;
+  from: string,
+  to: string,
+  periodLabel?: string
+): Promise<OwnerAttendanceRegisterRangeResult | null> {
+  const fromBounds = eatDayBoundsUtc(from);
+  const toBounds = eatDayBoundsUtc(to);
+  if (!fromBounds || !toBounds) return null;
   const lookAheadEnd =
-    eatDayBoundsUtc(eatNextDayKey(dayKey))?.endIso ?? bounds.endIso;
+    eatDayBoundsUtc(eatNextDayKey(to))?.endIso ?? toBounds.endIso;
 
   const { data: empData, error: empErr } = await admin
     .from("visitor_employees")
@@ -47,16 +52,15 @@ export async function fetchOwnerAttendanceRegister(
   if (empErr || !empData?.length) return null;
 
   const employees = ((empData ?? []) as EmployeeRow[]).map(mapEmployeeRow);
-  const employeeIds = employees.map((e) => e.id);
 
   const { data: attData, error: attErr } = await admin
     .from("visitor_employee_attendance")
     .select(EMPLOYEE_ATTENDANCE_SELECT)
     .eq("owner_id", ownerId)
-    .gte("created_at", bounds.startIso)
+    .gte("created_at", fromBounds.startIso)
     .lte("created_at", lookAheadEnd)
     .order("created_at", { ascending: true })
-    .limit(5000);
+    .limit(15000);
 
   if (attErr) return null;
 
@@ -72,8 +76,8 @@ export async function fetchOwnerAttendanceRegister(
     )
     .eq("owner_id", ownerId)
     .eq("status", "approved")
-    .lte("start_date", dayKey)
-    .gte("end_date", dayKey);
+    .lte("start_date", to)
+    .gte("end_date", from);
 
   if (!leaveErr && leaveData) {
     leaveRecords = ((leaveData ?? []) as EmployeeLeaveRow[]).map(mapLeaveRow);
@@ -82,10 +86,10 @@ export async function fetchOwnerAttendanceRegister(
   }
 
   const summary = buildAttendanceSummary({
-    from: dayKey,
-    to: dayKey,
-    fromDate: new Date(bounds.startIso),
-    toDate: new Date(bounds.endIso),
+    from,
+    to,
+    fromDate: new Date(fromBounds.startIso),
+    toDate: new Date(toBounds.endIso),
     attendance,
     employees,
     formatDisplayTime: formatEmployeeReportTime,
@@ -94,19 +98,52 @@ export async function fetchOwnerAttendanceRegister(
     leaveRecords,
   });
 
-  const { buffer, filename } = await buildAttendanceRegisterExcelBuffer(
-    summary.events,
-    employees,
-    { organizationName: businessName, from: dayKey, to: dayKey },
-    reportingSettings,
-    leaveRecords
-  );
+  const [pdf, excel] = await Promise.all([
+    buildAttendanceRegisterPdfBuffer(
+      summary.events,
+      employees,
+      { organizationName: businessName, from, to, periodLabel },
+      reportingSettings,
+      leaveRecords
+    ),
+    buildAttendanceRegisterExcelBuffer(
+      summary.events,
+      employees,
+      { organizationName: businessName, from, to },
+      reportingSettings,
+      leaveRecords
+    ),
+  ]);
 
   return {
-    buffer,
-    filename,
     businessName,
+    from,
+    to,
+    rowCount: pdf.rowCount,
+    pdf: { buffer: pdf.buffer, filename: pdf.filename },
+    excel: { buffer: excel.buffer, filename: excel.filename },
+  };
+}
+
+/** Builds today's attendance register Excel for one organisation (EAT calendar day). */
+export async function fetchOwnerAttendanceRegister(
+  admin: SupabaseClient,
+  ownerId: string,
+  dayKey: string
+): Promise<{
+  buffer: Buffer;
+  filename: string;
+  businessName: string;
+  dayKey: string;
+  rowCount: number;
+} | null> {
+  const range = await fetchOwnerAttendanceRegisterRange(admin, ownerId, dayKey, dayKey);
+  if (!range) return null;
+  return {
+    buffer: range.excel.buffer,
+    filename: range.excel.filename,
+    businessName: range.businessName,
     dayKey,
-    rowCount: summary.events.length,
+    rowCount: range.rowCount,
   };
 }
