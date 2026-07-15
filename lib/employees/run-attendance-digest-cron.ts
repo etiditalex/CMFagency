@@ -247,10 +247,11 @@ export async function runAttendanceDigestCron(
 
   for (const ownerId of ownerIds) {
     const settings = await fetchOwnerReportingSettings(admin, ownerId);
-    const shifts = settings.shiftEnabled ? shiftsFromSettings(settings) : [];
+    const shiftEnabled = settings.shiftEnabled === true;
+    const shifts = shiftEnabled ? shiftsFromSettings(settings) : [];
     const shiftSignOuts = shifts.map((s) => s.signOutTime).filter(Boolean);
 
-    if (dailySendReady(settings.staffReportingSignOut, settings.shiftEnabled, shiftSignOuts, minutes)) {
+    if (dailySendReady(settings.staffReportingSignOut, shiftEnabled, shiftSignOuts, minutes)) {
       const periodKey = `daily:${dayKey}`;
       const status = await sendOneDigest({
         admin,
