@@ -56,7 +56,6 @@ export default function SmartManagementInvoicePage() {
   const [plan, setPlan] = useState<PaidVisitorPlan>("professional");
   const [totalAmountKes, setTotalAmountKes] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "mpesa" | "cash_or_mpesa">("cash");
   const [notes, setNotes] = useState(
     "Lifetime access to Fusion Xpress Smart Visitor Management for the selected package."
   );
@@ -162,7 +161,6 @@ export default function SmartManagementInvoicePage() {
           plan,
           totalAmountKes: totalParsed,
           dueDateIso: dueDate.trim() || null,
-          paymentMethod,
           notes: notes.trim() || undefined,
         }),
       });
@@ -205,8 +203,8 @@ export default function SmartManagementInvoicePage() {
         <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
           Generate a <span className="font-semibold text-gray-800">Smart Management Invoice</span> for clients
           buying a <span className="font-semibold text-gray-800">lifetime</span> Fusion Xpress Visitor Management
-          package (Professional or Enterprise), typically paid in cash. The PDF lists all included features and
-          shows only the total amount — no per-feature prices.
+          package (Professional or Enterprise). The PDF lists all included features and shows only the total amount
+          — no per-feature prices.
         </p>
       </div>
 
@@ -350,20 +348,6 @@ export default function SmartManagementInvoicePage() {
               onChange={(e) => setDueDate(e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Payment method</label>
-            <select
-              value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value as "cash" | "mpesa" | "cash_or_mpesa")
-              }
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            >
-              <option value="cash">Cash</option>
-              <option value="mpesa">M-Pesa Paybill</option>
-              <option value="cash_or_mpesa">Cash or M-Pesa</option>
-            </select>
           </div>
         </div>
       </div>

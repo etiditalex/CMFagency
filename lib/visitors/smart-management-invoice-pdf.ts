@@ -1,7 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
-import { INVOICE_MPESA_ACCOUNT, INVOICE_MPESA_PAYBILL } from "@/lib/invoice-payment-details";
 import {
   getSmartManagementInvoiceFeatures,
   smartManagementPackageLabel,
@@ -19,8 +18,6 @@ export type BuildSmartManagementInvoicePdfInput = {
   notes?: string;
   dueDateIso?: string | null;
   invoiceRef: string;
-  /** Default: Cash */
-  paymentMethod?: "cash" | "mpesa" | "cash_or_mpesa";
 };
 
 const PAGE_W = 595.27;
@@ -98,89 +95,6 @@ function addCompanyFooter(page: PDFPage, fontReg: PDFFont) {
   const t = "Thank you for your business · Changer Fusions · Fusion Xpress";
   const w = fontReg.widthOfTextAtSize(t, 8);
   page.drawText(t, { x: (PAGE_W - w) / 2, y: 22, size: 8, font: fontReg, color: BRAND_GRAY });
-}
-
-const MIN_Y_BEFORE_PAYMENT_BLOCK = 148;
-
-function drawPaymentAndSignature(
-  page: PDFPage,
-  fontReg: PDFFont,
-  fontBold: PDFFont,
-  invoiceRef: string,
-  paymentMethod: BuildSmartManagementInvoicePdfInput["paymentMethod"],
-  topY: number
-): void {
-  let y = topY;
-  y -= 6;
-
-  const method = paymentMethod ?? "cash";
-  if (method === "cash") {
-    page.drawText("Payment — Cash", { x: M, y, size: 10, font: fontBold, color: BRAND_DARK });
-    y -= 13;
-    page.drawText("Pay in cash to Changer Fusions against this invoice reference.", {
-      x: M,
-      y,
-      size: 9,
-      font: fontReg,
-      color: BRAND_DARK,
-    });
-    y -= 12;
-  } else if (method === "mpesa") {
-    page.drawText("Payment — M-Pesa Paybill", { x: M, y, size: 10, font: fontBold, color: BRAND_DARK });
-    y -= 13;
-    page.drawText(`Paybill No: ${INVOICE_MPESA_PAYBILL}`, { x: M, y, size: 9, font: fontReg, color: BRAND_DARK });
-    y -= 12;
-    page.drawText(`Account No: ${INVOICE_MPESA_ACCOUNT}`, { x: M, y, size: 9, font: fontReg, color: BRAND_DARK });
-    y -= 12;
-  } else {
-    page.drawText("Payment — Cash or M-Pesa Paybill", { x: M, y, size: 10, font: fontBold, color: BRAND_DARK });
-    y -= 13;
-    page.drawText("Cash: pay to Changer Fusions against this invoice reference.", {
-      x: M,
-      y,
-      size: 9,
-      font: fontReg,
-      color: BRAND_DARK,
-    });
-    y -= 12;
-    page.drawText(`M-Pesa Paybill: ${INVOICE_MPESA_PAYBILL} · Account: ${INVOICE_MPESA_ACCOUNT}`, {
-      x: M,
-      y,
-      size: 9,
-      font: fontReg,
-      color: BRAND_DARK,
-    });
-    y -= 12;
-  }
-
-  const payNote = `Use invoice reference ${invoiceRef} as the payment description / narration where applicable.`;
-  for (const ln of wrapLines(payNote, fontReg, 8, BODY_W)) {
-    page.drawText(ln, { x: M, y, size: 8, font: fontReg, color: BRAND_GRAY });
-    y -= 10;
-  }
-  y -= 12;
-  page.drawText("Authorized signature", { x: M, y, size: 9, font: fontBold, color: BRAND_DARK });
-  y -= 6;
-  const lineW = 230;
-  const lineY = y;
-  const lineColor = rgb(0.25, 0.26, 0.28);
-  page.drawLine({
-    start: { x: M, y: lineY },
-    end: { x: M + lineW, y: lineY },
-    thickness: 0.6,
-    color: lineColor,
-  });
-  page.drawText("For Changer Fusions", { x: M, y: lineY - 11, size: 8, font: fontReg, color: BRAND_GRAY });
-
-  const dateLineW = 160;
-  const dx = PAGE_W - M - dateLineW;
-  page.drawLine({
-    start: { x: dx, y: lineY },
-    end: { x: dx + dateLineW, y: lineY },
-    thickness: 0.6,
-    color: lineColor,
-  });
-  page.drawText("Date", { x: dx, y: lineY - 11, size: 8, font: fontReg, color: BRAND_GRAY });
 }
 
 function ensureSpace(
@@ -382,7 +296,7 @@ export async function buildSmartManagementInvoicePdfBytes(
 
   // Total only (single amount on the document)
   const summaryH = 56;
-  ({ page, y } = ensureSpace(doc, page, y, summaryH + MIN_Y_BEFORE_PAYMENT_BLOCK, fontReg, H));
+  ({ page, y } = ensureSpace(doc, page, y, summaryH + 80, fontReg, H));
   page.drawRectangle({
     x: M,
     y: y - summaryH,
@@ -427,7 +341,7 @@ export async function buildSmartManagementInvoicePdfBytes(
     "Changer Fusions",
     "Ambalal Building, Nkruma Road",
     "Ambalal, Mombasa, Kenya",
-    `Reference on payment: ${input.invoiceRef}`,
+    `Invoice reference: ${input.invoiceRef}`,
   ];
   for (const ln of addrLines) {
     ({ page, y } = ensureSpace(doc, page, y, 14, fontReg, H));
@@ -435,15 +349,6 @@ export async function buildSmartManagementInvoicePdfBytes(
     y -= 10;
   }
 
-  if (y < MIN_Y_BEFORE_PAYMENT_BLOCK) {
-    addCompanyFooter(page, fontReg);
-    page = doc.addPage([PAGE_W, PAGE_H]);
-    y = H - M - 8;
-    page.drawText(`Changer Fusions · ${input.invoiceRef}`, { x: M, y, size: 9, font: fontReg, color: BRAND_GRAY });
-    y -= 20;
-  }
-
-  drawPaymentAndSignature(page, fontReg, fontBold, input.invoiceRef, input.paymentMethod ?? "cash", y);
   addCompanyFooter(page, fontReg);
 
   return doc.save();

@@ -24,7 +24,6 @@ type SmartManagementInvoicePdfRequestBody = {
   totalAmountKes?: number;
   notes?: string;
   dueDateIso?: string | null;
-  paymentMethod?: "cash" | "mpesa" | "cash_or_mpesa";
 };
 
 export async function POST(req: NextRequest) {
@@ -53,10 +52,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "totalAmountKes must be a valid non-negative amount (KSh)" }, { status: 400 });
   }
 
-  const paymentRaw = String(payload.paymentMethod ?? "cash").toLowerCase();
-  const paymentMethod: "cash" | "mpesa" | "cash_or_mpesa" =
-    paymentRaw === "mpesa" ? "mpesa" : paymentRaw === "cash_or_mpesa" ? "cash_or_mpesa" : "cash";
-
   const notes = String(payload.notes ?? "").trim().slice(0, MAX_NOTES) || undefined;
   const dueRaw = payload.dueDateIso != null ? String(payload.dueDateIso).trim() : "";
   const dueDateIso = dueRaw ? dueRaw : null;
@@ -75,7 +70,6 @@ export async function POST(req: NextRequest) {
     notes,
     dueDateIso,
     invoiceRef,
-    paymentMethod,
   });
 
   const safeLabel = sanitizeFilenameLabel(billToName);
