@@ -17,12 +17,17 @@ function parseNotificationEmails(raw: unknown): string[] {
   return [];
 }
 
-/** Owner + director/notification emails + notification admins + platform admins. */
+/**
+ * Recipients for one organisation's attendance PDF digest:
+ * 1. Business account email (subscription owner)
+ * 2. People listed to receive notifications for that business
+ * 3. Fusion Xpress platform admin emails (always get a copy)
+ */
 export async function resolveAttendanceDigestRecipients(
   admin: SupabaseClient,
   ownerId: string
 ): Promise<string[]> {
-  const recipients = new Set<string>(parseFusionXpressAdminEmails());
+  const recipients = new Set<string>();
 
   const { data: ownerRes } = await admin.auth.admin.getUserById(ownerId);
   const ownerEmail = String(ownerRes?.user?.email ?? "")
@@ -47,6 +52,10 @@ export async function resolveAttendanceDigestRecipients(
       .trim()
       .toLowerCase();
     if (email.includes("@")) recipients.add(email);
+  }
+
+  for (const email of parseFusionXpressAdminEmails()) {
+    recipients.add(email);
   }
 
   return [...recipients];

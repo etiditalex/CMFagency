@@ -63,7 +63,7 @@ Here is the <strong>${escapeHtml(kindLabel.toLowerCase())}</strong> attendance r
 <a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: #2ca57c; color: #ffffff; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Open summary reports</a>
 </p>
 <p style="margin: 24px 0 0; font-size: 12px; color: #6b7280;">
-Individual sign-in/sign-out emails are no longer sent for each scan. You receive daily, weekly, and monthly PDF summaries instead.
+This summary is sent to the business account, listed notification recipients, and Fusion Xpress platform admins. Individual sign-in/sign-out emails are no longer sent for each scan.
 </p>
 </div>
 </body>
