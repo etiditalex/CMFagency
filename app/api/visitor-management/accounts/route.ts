@@ -62,12 +62,35 @@ export async function GET(req: NextRequest) {
       const extensionActive = isAdminExtensionActive(subRow);
       const paid = hasPaidSubscription(subRow);
 
+      const addressLine1 = String(meta.address_line_1 ?? meta.addressLine1 ?? "").trim();
+      const addressLine2 = String(meta.address_line_2 ?? meta.addressLine2 ?? "").trim();
+      const suburb = String(meta.suburb ?? meta.city ?? "").trim();
+      const state = String(meta.state ?? "").trim();
+      const postcode = String(meta.postcode ?? "").trim();
+      const country = String(meta.country ?? "").trim();
+      const phone = String(meta.phone ?? meta.phone_number ?? meta.mobile ?? "").trim();
+      const addressParts = [
+        addressLine1,
+        addressLine2,
+        [suburb, state, postcode].filter(Boolean).join(", "),
+        country,
+      ].filter(Boolean);
+
       return {
         user_id: userId,
         email: authUser?.email ?? "—",
         business_name: String(meta.business_name ?? "").trim() || "—",
         contact_name: String(meta.name ?? meta.contact_name ?? "").trim() || "—",
         organization_industry: String(meta.organization_industry ?? "").trim() || null,
+        phone: phone || null,
+        address_line_1: addressLine1 || null,
+        address_line_2: addressLine2 || null,
+        suburb: suburb || null,
+        state: state || null,
+        postcode: postcode || null,
+        country: country || null,
+        /** Single multi-line string for invoice / bill-to autofill */
+        billing_address: addressParts.length ? addressParts.join("\n") : null,
         email_confirmed: Boolean(authUser?.email_confirmed_at),
         created_at: (m as { created_at?: string }).created_at ?? null,
         subscription: {

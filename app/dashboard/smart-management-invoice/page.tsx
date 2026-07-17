@@ -1,19 +1,30 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Loader2 } from "lucide-react";
+import { ChevronDown, FileText, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { industryLabel } from "@/lib/visitors/industry-options";
 import {
   getSmartManagementInvoiceFeatures,
   smartManagementPackageLabel,
 } from "@/lib/visitors/smart-management-invoice-features";
 import type { PaidVisitorPlan } from "@/lib/visitors/subscription-pricing";
 import { supabase } from "@/lib/supabase";
+
+type RegisteredBusiness = {
+  user_id: string;
+  business_name: string;
+  email: string;
+  phone: string | null;
+  billing_address: string | null;
+  organization_industry: string | null;
+  subscription?: { plan?: string };
+};
 
 function parseFilenameFromDisposition(header: string | null): string | null {
   if (!header) return null;
@@ -33,8 +44,11 @@ function parseFilenameFromDisposition(header: string | null): string | null {
 export default function SmartManagementInvoicePage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isEmployer } = usePortal();
+  const { isPortalMember, loading: portalLoading, isEmployer, isAdmin } = usePortal();
 
+  const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [businesses, setBusinesses] = useState<RegisteredBusiness[]>([]);
+  const [businessesLoading, setBusinessesLoading] = useState(false);
   const [billToName, setBillToName] = useState("");
   const [billToEmail, setBillToEmail] = useState("");
   const [billToPhone, setBillToPhone] = useState("");
@@ -60,6 +74,60 @@ export default function SmartManagementInvoicePage() {
       router.replace("/dashboard");
     }
   }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isEmployer, router, user]);
+
+  const loadBusinesses = useCallback(async () => {
+    if (!isAdmin) return;
+    setBusinessesLoading(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/visitor-management/accounts", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = (await res.json()) as { accounts?: RegisteredBusiness[]; error?: string };
+      if (res.ok && Array.isArray(json.accounts)) {
+        setBusinesses(
+          json.accounts
+            .map((a) => ({
+              user_id: a.user_id,
+              business_name: a.business_name === "—" ? "" : a.business_name || "",
+              email: a.email === "—" ? "" : a.email || "",
+              phone: a.phone ?? null,
+              billing_address: a.billing_address ?? null,
+              organization_industry: a.organization_industry ?? null,
+              subscription: a.subscription,
+            }))
+            .sort((a, b) =>
+              (a.business_name || a.email).localeCompare(b.business_name || b.email, undefined, {
+                sensitivity: "base",
+              })
+            )
+        );
+      }
+    } finally {
+      setBusinessesLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    void loadBusinesses();
+  }, [loadBusinesses]);
+
+  const applyBusiness = (accountId: string) => {
+    setSelectedAccountId(accountId);
+    if (!accountId) return;
+    const account = businesses.find((b) => b.user_id === accountId);
+    if (!account) return;
+    setBillToName(account.business_name || account.email || "");
+    setBillToEmail(account.email || "");
+    setBillToPhone(account.phone || "");
+    setBillToAddress(account.billing_address || "");
+    const subPlan = String(account.subscription?.plan ?? "").toLowerCase();
+    if (subPlan === "enterprise") setPlan("enterprise");
+    else if (subPlan === "professional" || subPlan === "basic") setPlan("professional");
+  };
 
   const features = useMemo(() => getSmartManagementInvoiceFeatures(plan), [plan]);
 
@@ -163,11 +231,50 @@ export default function SmartManagementInvoicePage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-4">
+          {isAdmin ? (
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                Registered business
+              </label>
+              <div className="relative mt-1">
+                <select
+                  value={selectedAccountId}
+                  onChange={(e) => applyBusiness(e.target.value)}
+                  disabled={businessesLoading}
+                  className="w-full appearance-none rounded-md border border-gray-300 bg-white py-2 pl-3 pr-9 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                >
+                  <option value="">
+                    {businessesLoading
+                      ? "Loading businesses…"
+                      : businesses.length
+                        ? "Select a registered business"
+                        : "No registered businesses found"}
+                  </option>
+                  {businesses.map((b) => (
+                    <option key={b.user_id} value={b.user_id}>
+                      {(b.business_name || b.email || "Business") +
+                        (b.organization_industry
+                          ? ` · ${industryLabel(b.organization_industry)}`
+                          : "")}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Selecting a business fills bill-to name, email, and address. You can still edit the fields
+                below.
+              </p>
+            </div>
+          ) : null}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Bill to name *</label>
             <input
               value={billToName}
-              onChange={(e) => setBillToName(e.target.value)}
+              onChange={(e) => {
+                setSelectedAccountId("");
+                setBillToName(e.target.value);
+              }}
               placeholder="e.g. Acme Properties Ltd"
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
             />
