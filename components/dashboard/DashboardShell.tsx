@@ -117,6 +117,12 @@ const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
   { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "main", featureKey: "reports" },
   { label: "Invoices", href: "/dashboard/invoices", icon: FileText, section: "main" },
+  {
+    label: "Smart Management Invoice",
+    href: "/dashboard/smart-management-invoice",
+    icon: FileText,
+    section: "main",
+  },
   { label: "Quotation", href: "/dashboard/quotations", icon: FilePenLine, section: "main" },
   {
     label: "Sales & votes",
