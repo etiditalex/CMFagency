@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
   Download,
+  Fingerprint,
   LogIn,
   LogOut,
   Plus,
@@ -68,6 +69,7 @@ import {
 } from "@/lib/employees/utils";
 import { supabase } from "@/lib/supabase";
 import {
+  VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
@@ -601,6 +603,9 @@ export default function VisitorManagementEmployeesPage() {
               CRM site GPS
             </Link>
           ) : null}
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+            Biometric fingerprint
+          </Link>
         </p>
       ) : null}
       {loadError && !setupRequired ? (
@@ -638,6 +643,13 @@ export default function VisitorManagementEmployeesPage() {
           >
             <ScanLine className="w-4 h-4" />
             Kiosk scanner
+          </Link>
+          <Link
+            href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH, adminOwnerId)}
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-sky-300 bg-white px-4 py-2.5 text-sm font-semibold text-sky-900 hover:bg-sky-50"
+          >
+            <Fingerprint className="w-4 h-4" />
+            Biometric fingerprint
           </Link>
           <button
             type="button"

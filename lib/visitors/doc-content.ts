@@ -1,5 +1,7 @@
 import {
+  BIOMETRIC_CHECK_PATH,
   CRM_SITE_CHECK_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
@@ -37,7 +39,7 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     id: "overview",
     title: "System overview",
     summary:
-      "Fusion Xpress Smart Visitor Management is a QR-based platform for guest check-ins and employee attendance. One organisation account manages visitors, staff, leave, GPS, and reports from the dashboard. Employees and guests interact through shareable links and QR codes — no app install required.",
+      "Fusion Xpress Smart Visitor Management is a QR-based platform for guest check-ins and employee attendance. One organisation account manages visitors, staff, leave, GPS, biometric fingerprint, and reports from the dashboard. Employees and guests interact through shareable links, QR codes, and an optional fingerprint terminal — no app install required.",
     bullets: [
       "Dashboard (managers): register guests, approve visits, manage employees, review attendance, approve leave, export reports.",
       "Public flows (staff & guests): scan a QR or open a personal link on any phone to check in, check out, apply for leave, or complete a visitor form.",
@@ -109,11 +111,12 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     id: "employees",
     title: "Employee attendance",
     summary:
-      "Each employee has a profile with department, designation, and a unique QR token. Staff sign in and sign out by scanning their personal QR or using the reception gate flow on a shared device.",
+      "Each employee has a profile with department, designation, and a unique QR token. Staff sign in and sign out by scanning their personal QR, using the reception gate flow, or the biometric fingerprint terminal.",
     bullets: [
       "Personal QR link: employee opens their link and taps Sign in or Sign out.",
       "Reception gate QR: one QR at reception; each employee scans and enters their code to record attendance on a shared tablet or phone.",
       "Kiosk scanner: reception staff open the Kiosk page and scan employee QR codes with the device camera.",
+      "Biometric fingerprint: enroll fingers per employee, then use the shared reception terminal (member ID + fingerprint pad) for sign-in/out.",
       "Attendance log: every sign-in/out is recorded with time, device/browser label, and optional GPS.",
       "Reporting times: configure expected arrival windows; late or early sign-ins are flagged (retail/hospitality and real estate).",
       "Notification admins: directors receive email when employees sign in or out.",
@@ -132,6 +135,10 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
         body: "Use Reception QR to generate a gate link for a shared device at the front desk.",
       },
       {
+        title: "Enroll fingerprints (optional)",
+        body: "Employees → Biometric fingerprint. Select the employee and finger, complete the pad capture, then open the terminal link on a reception tablet.",
+      },
+      {
         title: "Review attendance",
         body: "The attendance log on the Employees page lists every event. Managers can edit times if a correction is needed.",
       },
@@ -139,9 +146,15 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     links: [
       { label: "Employees", href: VISITOR_MANAGEMENT_EMPLOYEES_PATH },
       { label: "Kiosk scanner", href: VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH },
+      { label: "Biometric fingerprint", href: VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH },
       {
         label: "Employee check-in page",
         href: "/fusion-xpress/smart-visitor-management/employee-check",
+        external: true,
+      },
+      {
+        label: "Biometric terminal",
+        href: BIOMETRIC_CHECK_PATH,
         external: true,
       },
     ],
@@ -288,6 +301,15 @@ export const VISITOR_MANAGEMENT_DOC_FLOWS = [
   {
     title: "Employee attendance",
     steps: ["Employee scans QR", "Sign in recorded", "Work day ends", "Sign out recorded"],
+  },
+  {
+    title: "Biometric fingerprint",
+    steps: [
+      "Manager enrolls finger",
+      "Employee enters member ID",
+      "Fingerprint pad match",
+      "Sign in / out recorded",
+    ],
   },
   {
     title: "Leave request",

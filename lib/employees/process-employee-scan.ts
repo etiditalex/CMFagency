@@ -152,7 +152,9 @@ export async function lookupEmployeeByToken(
 
 function isKioskScan(input: { kioskScan?: unknown; scanSource?: unknown }): boolean {
   if (input.kioskScan === true || input.kioskScan === "true") return true;
-  return String(input.scanSource ?? "").toLowerCase() === "kiosk";
+  const source = String(input.scanSource ?? "").toLowerCase();
+  // Shared terminals skip personal phone–pass device binding.
+  return source === "kiosk" || source === "biometric";
 }
 
 export async function processEmployeeQrScan(
