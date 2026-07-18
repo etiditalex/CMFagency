@@ -34,7 +34,8 @@ export default function ConditionalLayout({
   const isEmployeeAttendanceCheck =
     pathname === "/fusion-xpress/smart-visitor-management/employee-check" ||
     pathname === "/fusion-xpress/smart-visitor-management/crm-site-check" ||
-    pathname === "/fusion-xpress/smart-visitor-management/employee-leave";
+    pathname === "/fusion-xpress/smart-visitor-management/employee-leave" ||
+    pathname === "/fusion-xpress/smart-visitor-management/biometric-check";
   const isIndustryCheckInForm = pathname?.startsWith(
     "/fusion-xpress/smart-visitor-management/demo/"
   );
