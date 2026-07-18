@@ -269,8 +269,9 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                   Reception fingerprint terminal
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Open this link on a shared tablet at reception. Staff enter their member ID, place
-                  an enrolled finger on the pad, and sign in or out.
+                  Open this link on a shared tablet at reception. Staff enter their member ID and
+                  hold a finger on the pad — the first scan registers that finger, then records
+                  sign-in or sign-out.
                 </p>
               </div>
               <button

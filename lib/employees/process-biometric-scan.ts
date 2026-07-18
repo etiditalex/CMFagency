@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   BIOMETRIC_SETUP_MESSAGE,
+  createBiometricTemplateMaterial,
   createBiometricTerminalToken,
   fingerLabelForIndex,
   isMissingBiometricTable,
@@ -156,6 +157,51 @@ async function findActiveEnrollment(
   return mapBiometricEnrollmentRow(data);
 }
 
+/** First successful terminal scan for a finger registers that enrollment. */
+async function enrollFingerAtTerminal(
+  admin: SupabaseClient,
+  ownerId: string,
+  employeeId: string,
+  fingerIndex: number
+): Promise<
+  | { ok: true; enrollment: BiometricEnrollmentRecord }
+  | { ok: false; error: string; status: number }
+> {
+  const { salt, hash } = createBiometricTemplateMaterial();
+  const now = new Date().toISOString();
+  const fingerLabel = fingerLabelForIndex(fingerIndex);
+
+  const { data, error } = await admin
+    .from("visitor_employee_biometric_enrollments")
+    .insert({
+      owner_id: ownerId,
+      employee_id: employeeId,
+      finger_index: fingerIndex,
+      finger_label: fingerLabel,
+      template_hash: hash,
+      template_salt: salt,
+      status: "active",
+      vendor: "fusion_pad",
+      enrolled_at: now,
+      created_at: now,
+      updated_at: now,
+    })
+    .select(ENROLLMENT_SELECT)
+    .single();
+
+  if (error) {
+    if (isMissingBiometricTable(error)) {
+      return { ok: false, error: BIOMETRIC_SETUP_MESSAGE, status: 503 };
+    }
+    // Race: another request enrolled the same finger — reload it.
+    const existing = await findActiveEnrollment(admin, employeeId, fingerIndex);
+    if (existing) return { ok: true, enrollment: existing };
+    return { ok: false, error: error.message, status: 500 };
+  }
+
+  return { ok: true, enrollment: mapBiometricEnrollmentRow(data) };
+}
+
 async function findEnrollmentByExternalId(
   admin: SupabaseClient,
   ownerId: string,
@@ -198,7 +244,7 @@ export async function processEmployeeBiometricScan(
     accuracyMeters?: unknown;
     accuracy?: unknown;
   }
-): Promise<EmployeeScanResult & { fingerLabel?: string }> {
+): Promise<EmployeeScanResult & { fingerLabel?: string; firstEnrollment?: boolean }> {
   const terminalLookup = await lookupBiometricTerminal(
     admin,
     input.terminal ?? input.terminalToken
@@ -216,6 +262,7 @@ export async function processEmployeeBiometricScan(
   let employee: EmployeeRecord | null = null;
   let enrollment: BiometricEnrollmentRecord | null = null;
   let fingerLabel = "";
+  let firstEnrollment = false;
 
   if (externalId) {
     const byExternal = await findEnrollmentByExternalId(admin, terminal.ownerId, externalId);
@@ -246,11 +293,17 @@ export async function processEmployeeBiometricScan(
 
     enrollment = await findActiveEnrollment(admin, employee.id, fingerIndex);
     if (!enrollment) {
-      return {
-        ok: false,
-        error: `${fingerLabelForIndex(fingerIndex)} is not enrolled for this employee.`,
-        status: 404,
-      };
+      const enrolled = await enrollFingerAtTerminal(
+        admin,
+        terminal.ownerId,
+        employee.id,
+        fingerIndex
+      );
+      if (!enrolled.ok) {
+        return { ok: false, error: enrolled.error, status: enrolled.status };
+      }
+      enrollment = enrolled.enrollment;
+      firstEnrollment = true;
     }
     fingerLabel = enrollment.fingerLabel;
   }
@@ -280,5 +333,5 @@ export async function processEmployeeBiometricScan(
     .update({ last_matched_at: matchedAt, updated_at: matchedAt })
     .eq("id", enrollment.id);
 
-  return { ...result, fingerLabel };
+  return { ...result, fingerLabel, firstEnrollment };
 }

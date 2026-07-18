@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       occurredAt: result.occurredAt,
       deviceLabel: result.deviceLabel,
       fingerLabel: result.fingerLabel,
+      firstEnrollment: result.firstEnrollment === true,
       businessName: result.businessName,
       emailSent: result.emailSent,
       employeeEmailSent: result.employeeEmailSent,

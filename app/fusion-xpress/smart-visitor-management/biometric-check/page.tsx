@@ -101,16 +101,26 @@ function BiometricCheckInner() {
         employee?: { fullName?: string; attendanceStatus?: string };
         fingerLabel?: string;
         occurredAt?: string;
+        firstEnrollment?: boolean;
       };
       if (!res.ok) throw new Error(json.error ?? "Fingerprint scan failed");
 
       const signedIn = json.eventType === "sign_in";
+      const enrolledNote = json.firstEnrollment
+        ? ` · ${json.fingerLabel ?? "Fingerprint"} registered for next time`
+        : "";
       setFeedback({
         ok: true,
-        title: signedIn ? "Signed in" : "Signed out",
+        title: json.firstEnrollment
+          ? signedIn
+            ? "Fingerprint registered · Signed in"
+            : "Fingerprint registered · Signed out"
+          : signedIn
+            ? "Signed in"
+            : "Signed out",
         detail: `${json.employee?.fullName ?? "Employee"} · ${json.fingerLabel ?? "Fingerprint"} · ${
           json.occurredAt ? new Date(json.occurredAt).toLocaleTimeString() : "now"
-        }`,
+        }${enrolledNote}`,
       });
       setMemberCode("");
       setPadKey((k) => k + 1);
@@ -157,8 +167,8 @@ function BiometricCheckInner() {
           </p>
           <h1 className="mt-1 text-2xl font-extrabold text-gray-900">{terminalName}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your member ID, choose your enrolled finger, then hold on the pad to sign in or
-            out.
+            Enter your member ID, choose a finger, then hold on the pad. The first scan registers
+            that finger; later scans sign you in or out.
           </p>
         </header>
 
