@@ -26,8 +26,10 @@ export default function CmfaRegistrationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [paymentNotice, setPaymentNotice] = useState<{ amount: number; url: string } | null>(null);
 
   const showGuestFields = designation === "cmf_executive";
+  const isKpcStudent = designation === "kpc_student";
   const eventDateLabel = format(new Date(EVENT.date), "EEEE, MMMM d, yyyy");
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -36,6 +38,7 @@ export default function CmfaRegistrationPage() {
 
     setSubmitting(true);
     setError(null);
+    setPaymentNotice(null);
 
     try {
       const payload: Record<string, unknown> = {
@@ -43,6 +46,7 @@ export default function CmfaRegistrationPage() {
         email: email.trim(),
         phone: phone.trim() || undefined,
         designation,
+        is_kpc_student: isKpcStudent,
       };
 
       if (showGuestFields && (guestName.trim() || guestEmail.trim() || guestPhone.trim())) {
@@ -58,8 +62,19 @@ export default function CmfaRegistrationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        requires_payment?: boolean;
+        payment_amount?: number;
+        payment_url?: string;
+      };
       if (!res.ok) {
+        if (json.requires_payment) {
+          setPaymentNotice({
+            amount: json.payment_amount ?? 300,
+            url: json.payment_url ?? "/kcm/cfm-tickets",
+          });
+        }
         setError(json.error ?? "Registration failed.");
         return;
       }
@@ -117,6 +132,21 @@ export default function CmfaRegistrationPage() {
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
           )}
 
+          {paymentNotice && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-semibold">Regular ticket required</p>
+              <p className="mt-1">
+                The complimentary KPC student slots are now full. Please pay KES {paymentNotice.amount} for a regular ticket.
+              </p>
+              <a
+                href={paymentNotice.url}
+                className="mt-2 inline-flex font-semibold text-amber-900 underline underline-offset-2"
+              >
+                Continue to ticket purchase
+              </a>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full name *</label>
             <input
@@ -164,8 +194,13 @@ export default function CmfaRegistrationPage() {
                   {d.label}
                 </option>
               ))}
+              <option value="kpc_student">KPC student</option>
             </select>
-            <p className="text-xs text-gray-500 mt-1">All roles receive a complimentary ticket after approval.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {designation === "kpc_student"
+                ? "Only the first 10 KPC student registrations are complimentary. After that, students pay KES 300 for a regular ticket."
+                : "All roles receive a complimentary ticket after approval."}
+            </p>
           </div>
 
           {showGuestFields && (

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     email?: string;
     phone?: string;
     designation?: string;
+    is_kpc_student?: boolean | string;
     guest?: GuestPayload | null;
   } | null;
 
@@ -47,6 +48,8 @@ export async function POST(req: NextRequest) {
   const email = (body?.email ?? "").trim().toLowerCase();
   const phone = (body?.phone ?? "").trim() || null;
   const designation = (body?.designation ?? "").trim() as CmfaDesignation;
+  const isKpcStudent =
+    body?.is_kpc_student === true || String(body?.is_kpc_student ?? "").toLowerCase() === "true";
 
   if (!name || !email || !isValidEmail(email)) {
     return NextResponse.json({ error: "Full name and a valid email are required." }, { status: 400 });
@@ -156,6 +159,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  if (isKpcStudent) {
+    const { count, error: kpcCountErr } = await supabase
+      .from("cmfa_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("event_slug", CMFA_EVENT_SLUG)
+      .eq("is_kpc_student", true)
+      .in("status", ["pending", "approved"]);
+
+    if (kpcCountErr) {
+      return NextResponse.json({ error: kpcCountErr.message ?? "Registration failed." }, { status: 500 });
+    }
+
+    if ((count ?? 0) >= 10) {
+      return NextResponse.json(
+        {
+          error: "The first 10 KPC student complimentary slots are already full. Please pay KES 300 for a regular ticket.",
+          requires_payment: true,
+          payment_amount: 300,
+          payment_url: "/kcm/cfm-tickets",
+        },
+        { status: 402 }
+      );
+    }
+  }
+
   const mainReference = generateRef();
   const mainRow = {
     reference: mainReference,
@@ -166,6 +194,7 @@ export async function POST(req: NextRequest) {
     designation,
     status: "pending",
     is_guest: false,
+    is_kpc_student: isKpcStudent,
     parent_registration_id: null,
   };
 
@@ -203,6 +232,7 @@ export async function POST(req: NextRequest) {
       designation: "cmf_executive",
       status: "pending",
       is_guest: true,
+      is_kpc_student: false,
       parent_registration_id: (mainInsert as { id: string }).id,
     });
 
