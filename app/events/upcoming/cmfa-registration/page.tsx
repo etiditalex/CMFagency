@@ -194,7 +194,6 @@ export default function CmfaRegistrationPage() {
                   {d.label}
                 </option>
               ))}
-              <option value="kpc_student">KPC student</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {designation === "kpc_student"

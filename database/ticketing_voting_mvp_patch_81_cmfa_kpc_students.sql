@@ -4,6 +4,22 @@
 alter table public.cmfa_registrations
   add column if not exists is_kpc_student boolean not null default false;
 
+alter table public.cmfa_registrations
+  drop constraint if exists cmfa_registrations_designation_check;
+
+alter table public.cmfa_registrations
+  add constraint cmfa_registrations_designation_check
+  check (
+    designation in (
+      'cmf_executive',
+      'high_fashion_model',
+      'award_contestant',
+      'sponsor_partner',
+      'entertainment',
+      'kpc_student'
+    )
+  );
+
 create index if not exists cmfa_registrations_kpc_student_idx
   on public.cmfa_registrations (event_slug, is_kpc_student, status);
 
