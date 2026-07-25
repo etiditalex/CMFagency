@@ -81,26 +81,25 @@ const faqItems = [
 
 export default function DigitalMarketingPage() {
   const route = "/services/digital-marketing";
-  const { loading, page } = useManagedPublicPage(route);
+  const { page } = useManagedPublicPage(route);
   const isManaged = !!page;
 
+  const resolvedTitle = isManaged ? page?.title ?? "" : "Digital Marketing";
+  const resolvedHeroLabel = isManaged ? page?.hero_label ?? "" : "DIGITAL MARKETING";
+  const resolvedDescription = isManaged
+    ? page?.description ?? ""
+    : "Reach your target audience effectively through social media marketing, email campaigns, and online reputation management. We help businesses establish a strong digital presence and drive meaningful engagement.";
+
   return (
-    loading && !page ? (
-      <div className="pt-28 min-h-screen bg-gray-50" />
-    ) : (
-      <ServiceDetailTemplate
-        activeHref={route}
-        layout="fullWidth"
-        heroVariant="digitalMarketing"
-        title={isManaged ? page?.title ?? "" : "Digital Marketing"}
-        heroLabel={isManaged ? page?.hero_label ?? "" : "DIGITAL MARKETING"}
-        description={
-          isManaged
-            ? page?.description ?? ""
-            : "Reach your target audience effectively through social media marketing, email campaigns, and online reputation management. We help businesses establish a strong digital presence and drive meaningful engagement."
-        }
-        introContent={
-          <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
+    <ServiceDetailTemplate
+      activeHref={route}
+      layout="fullWidth"
+      heroVariant="digitalMarketing"
+      title={resolvedTitle}
+      heroLabel={resolvedHeroLabel}
+      description={resolvedDescription}
+      introContent={
+        <section className="bg-white border border-gray-200 rounded-xl p-6 md:p-8 shadow-sm">
             <script
               type="application/ld+json"
               // Keep on-page for AI/SEO, no visual changes.
@@ -259,10 +258,9 @@ export default function DigitalMarketingPage() {
             </div>
           </section>
         }
-        backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
-        icon={TrendingUp}
-      />
-    )
+      backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
+      icon={TrendingUp}
+    />
   );
 }
 
