@@ -4,7 +4,6 @@ import { JOBS_BOARD_OG_IMAGE } from "./metadata";
 import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
 import { JobsBoardClient } from "./JobsBoardClient";
-import { JobsEditorialIntro } from "@/components/jobs/JobsEditorialIntro";
 
 /** Job feed aggregates DB + external sources — too slow/heavy for reliable build-time prerender on Vercel. */
 export const dynamic = "force-dynamic";
@@ -52,7 +51,6 @@ export default async function JobsPage({ searchParams }: PageProps) {
         initialJobs={jobs}
         initialError={error}
         initialQuery={query}
-        intro={query.trim().length === 0 ? <JobsEditorialIntro /> : undefined}
       />
     </>
   );
