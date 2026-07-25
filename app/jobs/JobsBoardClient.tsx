@@ -186,11 +186,11 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
-        <div className="container-custom">
+        <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           {intro ? <div className="mb-8">{intro}</div> : null}
           <header className="mb-6 text-left">
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">Jobs in Kenya &amp; remote</h1>
-            <p className="mt-1 max-w-3xl text-sm text-gray-600">
+            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl text-left">Jobs in Kenya &amp; remote</h1>
+            <p className="mt-1 text-sm text-gray-600">
               Changer Fusions job board — employer vacancies, Nairobi &amp; Mombasa roles, work-from-home and international
               remote listings in one search.
             </p>
@@ -231,7 +231,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
 
           {activeTab === "find" && (
             <div className="mb-6 space-y-4 text-left">
-              <form onSubmit={applySearch} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 max-w-2xl">
+              <form onSubmit={applySearch} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 w-full">
                 <label className="relative flex min-w-0 flex-1">
                   <span className="sr-only">Search jobs</span>
                   <Search
@@ -266,10 +266,10 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
                 </div>
               </form>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm max-w-3xl">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm w-full">
                 <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 mb-2">
                   <Sparkles className="h-4 w-4 text-primary-600" aria-hidden />
-                  AI job match
+                  Smart match
                 </div>
                 <textarea
                   value={profileText}
@@ -355,7 +355,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
             <div className="mb-10 space-y-10">
               <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 shadow-sm text-left">
                 <h2 className="text-left text-lg font-bold text-gray-900 mb-2">Sign in</h2>
-                <p className="text-sm text-gray-600 mb-4 max-w-xl">
+                <p className="text-sm text-gray-600 mb-4 w-full">
                   Use the same email and password you set when you created your hiring account. You will be asked for a
                   one-time code by email, then taken to the dashboard to manage <strong>Job listings</strong>.
                 </p>
@@ -366,20 +366,20 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
 
               <div className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 shadow-sm text-left">
                 <h2 className="text-left text-lg font-bold text-gray-900 mb-2">New employer — create hiring account</h2>
-                <p className="text-sm text-gray-600 mb-6 max-w-xl">
+                <p className="text-sm text-gray-600 mb-6 w-full">
                   Register here, then sign in using the form above. Job descriptions, requirements, and filters are edited in
                   the Fusion dashboard, not on this page.
                 </p>
 
                 {empSuccess ? (
-                  <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-4 text-secondary-950 text-sm max-w-lg">
+                  <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-4 text-secondary-950 text-sm w-full">
                     {empSuccess}
                     <p className="mt-3 text-xs text-gray-600">
                       Sign in with the form above, then open <strong>Job listings</strong> in the sidebar.
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={submitEmployerRegister} className="max-w-lg space-y-4">
+                  <form onSubmit={submitEmployerRegister} className="w-full space-y-4">
                     {empError && (
                       <p className="text-sm text-red-600" role="alert">
                         {empError}
