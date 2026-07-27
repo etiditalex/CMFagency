@@ -96,6 +96,9 @@ export default function CfmTicketsPage() {
   const payerName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || null;
   const normalizedQuantity = Math.max(1, Math.min(10000, Math.trunc(Number(quantity) || 1)));
 
+  // Keep selected package stable when quantity changes. Selection only changes
+  // when the user explicitly clicks a package button.
+
   useEffect(() => {
     setInstallmentPlanId(null);
     setInstallmentLookup(null);
@@ -455,7 +458,6 @@ export default function CfmTicketsPage() {
     if (!pendingReference) return;
 
     let cancelled = false;
-    let interval: number | undefined;
     const darajaVerifyEligibleAt = Date.now() + DARAJA_CLIENT_VERIFY_MIN_AGE_MS;
 
     const pollStatus = async () => {
@@ -502,10 +504,10 @@ export default function CfmTicketsPage() {
 
         if (status === "success") {
           setNotice("Payment confirmed successfully. You can open your receipt now.");
-          if (interval) window.clearInterval(interval);
+          if (intervalId) window.clearInterval(intervalId);
         } else if (status === "failed" || status === "abandoned") {
           setError("Payment was not completed. You can retry payment.");
-          if (interval) window.clearInterval(interval);
+          if (intervalId) window.clearInterval(intervalId);
         }
       } catch {
         // Keep polling quietly.
@@ -513,15 +515,15 @@ export default function CfmTicketsPage() {
     };
 
     void pollStatus();
-    interval = window.setInterval(pollStatus, 2000);
+    const intervalId = window.setInterval(pollStatus, 2000);
 
     const stopTimeout = window.setTimeout(() => {
-      if (interval) window.clearInterval(interval);
+      window.clearInterval(intervalId);
     }, 300000);
 
     return () => {
       cancelled = true;
-      if (interval) window.clearInterval(interval);
+      window.clearInterval(intervalId);
       window.clearTimeout(stopTimeout);
     };
   }, [pendingReference]);
@@ -532,7 +534,13 @@ export default function CfmTicketsPage() {
         {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js'); fbq('init', '443925778134913'); fbq('track', 'PageView');`}
       </Script>
       <noscript>
-        <img height="1" width="1" src="https://www.facebook.com/tr?id=443925778134913&ev=PageView&noscript=1" alt="Facebook Pixel" />
+        <Image
+          height={1}
+          width={1}
+          src="https://www.facebook.com/tr?id=443925778134913&ev=PageView&noscript=1"
+          alt="Facebook Pixel"
+          unoptimized
+        />
       </noscript>
       <script
         type="application/ld+json"
@@ -578,7 +586,7 @@ export default function CfmTicketsPage() {
                   <div className="relative aspect-[4/5] w-full max-w-[520px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
                     <Image
                       loader={cloudinaryLoader}
-                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1778484100/cfm_tickets_fx0rpu.jpg"
+                      src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1785146685/WhatsApp_Image_2026-07-23_at_15.55.25_2_nv8rm3.jpg"
                       alt="Coast Fashion & Modelling Awards 2026 ticket poster"
                       fill
                       className="object-contain object-center"
@@ -676,7 +684,19 @@ export default function CfmTicketsPage() {
                   Checkout
                 </h2>
                 <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm max-md:text-xs max-md:font-medium max-md:leading-snug max-md:break-words">
-                  Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}
+                  {(() => {
+                    const total = selectedPackage.amount * normalizedQuantity;
+                    if (normalizedQuantity > 1) {
+                      return (
+                        <>
+                          Selected: {selectedPackage.name} - KES {total.toLocaleString()} <span className="text-[11px] text-gray-600">({selectedPackage.amount.toLocaleString()} / ticket)</span>
+                        </>
+                      );
+                    }
+                    return (
+                      <>Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}</>
+                    );
+                  })()}
                 </p>
               </div>
 
