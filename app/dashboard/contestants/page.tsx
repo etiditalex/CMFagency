@@ -712,6 +712,29 @@ export default function DashboardContestantsPage() {
                         <td colSpan={5} className="px-6 py-4">
                           <div className="flex items-center gap-2 mb-3">
                             <FileCheck className="w-5 h-5 text-primary-600" />
+                            <span className="font-semibold text-gray-800">Contestant controls</span>
+                          </div>
+                          <p className="text-xs text-gray-600 mb-3">
+                            Use the buttons below to decide whether each contestant&apos;s live vote total is visible to the public on the voting page.
+                          </p>
+                          <div className="mb-4 flex flex-wrap gap-2">
+                            {cat.contestants.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                disabled={togglingVisibilityId === c.id || approvingId === c.id || deletingId === c.id}
+                                onClick={() => void toggleVoteTotalVisibility(c)}
+                                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold transition ${c.show_vote_total ?? true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"} disabled:opacity-60`}
+                                title={c.show_vote_total ?? true ? "Hide vote totals on the public page" : "Show vote totals on the public page"}
+                              >
+                                {(c.show_vote_total ?? true) ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                <span>{c.name}</span>
+                                <span className="text-xs font-semibold uppercase tracking-wide">{togglingVisibilityId === c.id ? "…" : (c.show_vote_total ?? true) ? "Visible" : "Hidden"}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileCheck className="w-5 h-5 text-primary-600" />
                             <span className="font-semibold text-gray-800">Certificate of participation</span>
                           </div>
                           <p className="text-xs text-gray-600 mb-3">
@@ -724,7 +747,6 @@ export default function DashboardContestantsPage() {
                                 <th className="px-4 py-2 font-medium text-gray-700">Email</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Approved</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Downloaded</th>
-                                <th className="px-4 py-2 font-medium text-gray-700">Vote totals</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Certificate</th>
                                 <th className="px-4 py-2 font-medium text-gray-700">Remove</th>
                               </tr>
@@ -757,18 +779,6 @@ export default function DashboardContestantsPage() {
                                     ) : (
                                       <span className="text-green-600 text-xs font-medium">Approved</span>
                                     )}
-                                  </td>
-                                  <td className="px-4 py-2">
-                                    <button
-                                      type="button"
-                                      disabled={togglingVisibilityId === c.id || approvingId === c.id || deletingId === c.id}
-                                      onClick={() => void toggleVoteTotalVisibility(c)}
-                                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition ${c.show_vote_total ?? true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"} disabled:opacity-60`}
-                                      title={c.show_vote_total ?? true ? "Hide vote totals on the public page" : "Show vote totals on the public page"}
-                                    >
-                                      {(c.show_vote_total ?? true) ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                                      {togglingVisibilityId === c.id ? "…" : (c.show_vote_total ?? true) ? "Visible" : "Hidden"}
-                                    </button>
                                   </td>
                                   <td className="px-4 py-2">
                                     <button
