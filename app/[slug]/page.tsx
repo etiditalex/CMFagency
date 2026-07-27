@@ -44,6 +44,7 @@ type Contestant = {
   image_url: string | null;
   sort_order: number;
   created_at: string | null;
+  show_vote_total?: boolean | null;
 };
 
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
@@ -1032,6 +1033,7 @@ export default function CampaignPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {contestantsSorted.map((c) => {
                     const votes = voteCounts[c.id] ?? 0;
+                    const showVoteTotals = c.show_vote_total ?? true;
                     const isSuggested = linkSuggestedContestantId === c.id;
                     return (
                       <label
@@ -1069,8 +1071,8 @@ export default function CampaignPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm font-semibold text-primary-600 mt-0.5">
-                              {votes.toLocaleString()} vote{votes !== 1 ? "s" : ""}
+                            <div className={`text-sm font-semibold mt-0.5 ${showVoteTotals ? "text-primary-600" : "text-gray-500"}`}>
+                              {showVoteTotals ? `${votes.toLocaleString()} vote${votes !== 1 ? "s" : ""}` : "Vote totals hidden"}
                             </div>
                             {c.description && <div className="text-sm text-gray-600 break-words line-clamp-2">{c.description}</div>}
                           </div>

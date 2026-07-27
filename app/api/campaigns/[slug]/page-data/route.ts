@@ -118,16 +118,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   let vote_counts: Record<string, number>;
 
   try {
-    const pair = await Promise.all([
-      supabase
+    const contestantsQuery = supabase
+      .from("contestants")
+      .select("id,name,description,image_url,sort_order,created_at,show_vote_total")
+      .eq("campaign_id", row.id)
+      .order("sort_order", { ascending: true });
+
+    const initialContestants = await contestantsQuery;
+    if (initialContestants.error && String(initialContestants.error.message ?? "").toLowerCase().includes("show_vote_total")) {
+      conResult = await supabase
         .from("contestants")
         .select("id,name,description,image_url,sort_order,created_at")
         .eq("campaign_id", row.id)
-        .order("sort_order", { ascending: true }),
-      getVoteTransactionTotalsByCampaign(supabase, row.id),
-    ]);
-    conResult = pair[0];
-    vote_counts = pair[1];
+        .order("sort_order", { ascending: true });
+    } else {
+      conResult = initialContestants;
+    }
+
+    vote_counts = await getVoteTransactionTotalsByCampaign(supabase, row.id);
   } catch (e: unknown) {
     const msg =
       e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Failed to load vote totals";
