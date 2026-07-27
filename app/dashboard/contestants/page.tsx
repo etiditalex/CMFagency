@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Download, ExternalLink, Eye, EyeOff, FileCheck, Trash2, UserPlus } from "lucide-react";
+import { Bell, Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -29,7 +29,6 @@ type Contestant = {
   email?: string | null;
   created_at: string;
   sort_order?: number;
-  show_vote_total?: boolean | null;
   voting_link_sent_at?: string | null;
   certificate_approved_at?: string | null;
   certificate_downloaded_at?: string | null;
@@ -42,10 +41,6 @@ function isMissingContestantColumn(err: unknown, columnName: string) {
 
 function isMissingContestantEmailColumn(err: unknown) {
   return isMissingContestantColumn(err, "email");
-}
-
-function isMissingContestantShowVoteTotalColumn(err: unknown) {
-  return isMissingContestantColumn(err, "show_vote_total");
 }
 
 type CategoryWithCount = Campaign & { contestant_count: number; contestants: Contestant[] };
@@ -147,7 +142,6 @@ const SELECT_EMBEDDED_FULL = `
     email,
     created_at,
     sort_order,
-    show_vote_total,
     voting_link_sent_at,
     certificate_approved_at,
     certificate_downloaded_at
@@ -165,26 +159,11 @@ const SELECT_EMBEDDED_NO_CERT = `
     email,
     created_at,
     sort_order,
-    show_vote_total,
     voting_link_sent_at
   )
 `;
 
 const SELECT_EMBEDDED_MIN = `
-  id,
-  slug,
-  title,
-  contestants (
-    id,
-    campaign_id,
-    name,
-    created_at,
-    sort_order,
-    show_vote_total
-  )
-`;
-
-const SELECT_EMBEDDED_NO_VOTE_VISIBILITY = `
   id,
   slug,
   title,
@@ -211,7 +190,6 @@ export default function DashboardContestantsPage() {
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingVisibilityId, setTogglingVisibilityId] = useState<string | null>(null);
   const [certificateRequests, setCertificateRequests] = useState<
     Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
   >([]);
@@ -262,10 +240,6 @@ export default function DashboardContestantsPage() {
         if (tryFull.error && isMissingContestantEmailColumn(tryFull.error)) {
           setMissingEmailColumn(true);
           const r = await baseCampaignsQuery(SELECT_EMBEDDED_MIN);
-          if (r.error) throw r.error;
-          embeddedRows = r.data as unknown as CampaignRowWithContestants[];
-        } else if (tryFull.error && isMissingContestantShowVoteTotalColumn(tryFull.error)) {
-          const r = await baseCampaignsQuery(SELECT_EMBEDDED_NO_VOTE_VISIBILITY);
           if (r.error) throw r.error;
           embeddedRows = r.data as unknown as CampaignRowWithContestants[];
         } else if (
@@ -414,30 +388,6 @@ export default function DashboardContestantsPage() {
       cancelled = true;
     };
   }, [authLoading, isAuthenticated, isPortalMember, hasFeature, isFullAdmin, router, user?.id]);
-
-  const toggleVoteTotalVisibility = async (contestant: Contestant) => {
-    const nextValue = !(contestant.show_vote_total ?? true);
-    setTogglingVisibilityId(contestant.id);
-    setError(null);
-    try {
-      const { error: updateErr } = await supabase
-        .from("contestants")
-        .update({ show_vote_total: nextValue })
-        .eq("id", contestant.id);
-      if (updateErr) throw updateErr;
-
-      setCategories((prev) =>
-        prev.map((cat) => ({
-          ...cat,
-          contestants: cat.contestants.map((c) => (c.id === contestant.id ? { ...c, show_vote_total: nextValue } : c)),
-        }))
-      );
-    } catch (e) {
-      setError((e as Error)?.message ?? "Failed to update vote total visibility.");
-    } finally {
-      setTogglingVisibilityId(null);
-    }
-  };
 
   const approveCertificate = async (contestantId: string) => {
     setApprovingId(contestantId);
@@ -757,18 +707,6 @@ export default function DashboardContestantsPage() {
                                     ) : (
                                       <span className="text-green-600 text-xs font-medium">Approved</span>
                                     )}
-                                  </td>
-                                  <td className="px-4 py-2">
-                                    <button
-                                      type="button"
-                                      disabled={togglingVisibilityId === c.id || approvingId === c.id || deletingId === c.id}
-                                      onClick={() => void toggleVoteTotalVisibility(c)}
-                                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition ${c.show_vote_total ?? true ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"} disabled:opacity-60`}
-                                      title={c.show_vote_total ?? true ? "Hide vote totals on the public page" : "Show vote totals on the public page"}
-                                    >
-                                      {(c.show_vote_total ?? true) ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                                      {togglingVisibilityId === c.id ? "…" : (c.show_vote_total ?? true) ? "Visible" : "Hidden"}
-                                    </button>
                                   </td>
                                   <td className="px-4 py-2">
                                     <button
