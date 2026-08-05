@@ -100,6 +100,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     currency: normalizeKenyaCurrencyForPayments(row.currency),
     unit_amount: row.unit_amount,
     max_per_txn: row.max_per_txn,
+    ends_at: row.ends_at ?? null,
   };
 
   if (row.type !== "vote") {

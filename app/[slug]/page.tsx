@@ -35,6 +35,7 @@ type Campaign = {
   currency: string;
   unit_amount: number;
   max_per_txn: number;
+  ends_at?: string | null;
 };
 
 type Contestant = {
@@ -48,7 +49,7 @@ type Contestant = {
 
 /** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
 const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
-const VOTING_ENDS_AT_ISO = "2026-08-11T00:00:00+03:00";
+const VOTING_ENDS_AT_ISO = "2026-08-14T00:00:00+03:00";
 
 function formatVotingOpensInNairobi(isoMs: number): string {
   try {
@@ -132,8 +133,7 @@ function computeCountdown(now: Date, target: Date): { months: number; days: numb
   return { months, days, hours, minutes, seconds };
 }
 
-function VotingEndsCountdown({ show }: { show: boolean }) {
-  const targetMs = useMemo(() => new Date(VOTING_ENDS_AT_ISO).getTime(), []);
+function VotingEndsCountdown({ show, targetMs }: { show: boolean; targetMs: number }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -877,6 +877,14 @@ export default function CampaignPage() {
     document.getElementById("vote-counts")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  const votingEndsMs = useMemo(() => {
+    if (campaign?.ends_at) {
+      const t = Date.parse(campaign.ends_at);
+      if (!Number.isNaN(t)) return t;
+    }
+    return new Date(VOTING_ENDS_AT_ISO).getTime();
+  }, [campaign?.ends_at]);
+
   if (votingLocked) {
     return (
       <div className="pt-24 min-h-screen bg-gray-50">
@@ -884,7 +892,7 @@ export default function CampaignPage() {
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
             <div className="flex items-start gap-3">
               <div>
-                <VotingEndsCountdown show />
+                <VotingEndsCountdown show={true} targetMs={votingEndsMs} />
                 <h1 className="text-2xl font-bold text-gray-900">Voting opens {votingOpensLabel}</h1>
                 <p className="text-gray-600 mt-2">
                   This voting page is not open yet. Please come back when voting starts (East Africa Time).
@@ -920,7 +928,7 @@ export default function CampaignPage() {
                 </span>
               )}
               <div className="min-w-0">
-                <VotingEndsCountdown show={isVote} />
+                <VotingEndsCountdown show={isVote} targetMs={votingEndsMs} />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{campaign.title}</h1>
                 <p className="text-gray-600 mt-2">{campaign.description ?? "Complete payment to continue."}</p>
               </div>
