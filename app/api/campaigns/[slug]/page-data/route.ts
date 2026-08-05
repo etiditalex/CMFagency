@@ -88,6 +88,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     currency: string;
     unit_amount: number;
     max_per_txn: number;
+    ends_at?: string | null;
   };
 
   const campaign = {
