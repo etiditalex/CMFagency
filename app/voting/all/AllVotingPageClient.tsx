@@ -314,12 +314,6 @@ export default function AllVotingPageClient({
                     {cat.description ? (
                       <p className="text-sm text-gray-600 mt-1 line-clamp-3">{cat.description}</p>
                     ) : null}
-                    {results ? (
-                      <p className="text-sm font-semibold text-primary-700 mt-2">
-                        {results.totalVotes.toLocaleString("en-KE")} total vote
-                        {results.totalVotes !== 1 ? "s" : ""} cast in this category
-                      </p>
-                    ) : null}
                     <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
                   </div>
                   {/* Category pages render live tallies on the server; a forced prefetch of every
