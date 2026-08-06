@@ -117,6 +117,17 @@ export default function AllVotingPageClient({
     return map;
   }, [initialCategories]);
 
+  /** Highest total votes first; categories without tallies sort as 0. */
+  const sortedCategories = useMemo(
+    () =>
+      [...initialCategories].sort((a, b) => {
+        const aVotes = resultsByCategory.get(a.id)?.totalVotes ?? 0;
+        const bVotes = resultsByCategory.get(b.id)?.totalVotes ?? 0;
+        return bVotes - aVotes;
+      }),
+    [initialCategories, resultsByCategory]
+  );
+
   if (initialError) {
     return (
       <VotingHubShell width="narrow">
@@ -201,22 +212,17 @@ export default function AllVotingPageClient({
 
   return (
     <VotingHubShell>
-      <div className="mb-10 flex items-start gap-4">
-        <span className="inline-flex w-11 h-11 rounded-xl bg-white/15 ring-1 ring-white/25 items-center justify-center flex-shrink-0">
-          <Vote className="w-5 h-5 text-white" />
-        </span>
-        <div className="min-w-0">
-          <h1 className="text-3xl md:text-4xl font-bold text-white">Vote — all categories</h1>
-          <p className="text-primary-100 mt-2 max-w-3xl">
-            Browse every open category and jump in to cast votes. Payment and vote rules are unchanged: each category
-            has its own price and checkout on its page ({totalContestants} contestant
-            {totalContestants !== 1 ? "s" : ""} listed below).
-          </p>
-        </div>
+      <div className="mb-10">
+        <h1 className="text-3xl md:text-4xl font-bold text-white">Vote — all categories</h1>
+        <p className="text-primary-100 mt-2 max-w-3xl">
+          Browse every open category and jump in to cast votes. Payment and vote rules are unchanged: each category
+          has its own price and checkout on its page ({totalContestants} contestant
+          {totalContestants !== 1 ? "s" : ""} listed below).
+        </p>
       </div>
 
       <div className="space-y-10">
-        {initialCategories.map((cat) => {
+        {sortedCategories.map((cat) => {
           const results = resultsByCategory.get(cat.id);
           return (
             <section
