@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { getVoteTransactionTotalsByCampaign } from "@/lib/vote-transaction-totals";
+import { readVotingSettings } from "@/lib/voting-visibility";
 
 /**
  * Public vote totals per contestant for an active vote campaign.
  * Sums successful vote transaction quantities (same source as payment-backed votes).
+ * Returns no tallies while the global `show_vote_totals` switch is off.
  */
 export async function GET(
   _req: Request,
@@ -25,16 +27,26 @@ export async function GET(
   });
 
   // Resolve campaign by slug (must be vote type and active)
-  const { data: campaign, error: campErr } = await supabase
-    .from("campaigns")
-    .select("id,type")
-    .eq("slug", slug)
-    .eq("type", "vote")
-    .eq("is_active", true)
-    .maybeSingle();
+  const [{ data: campaign, error: campErr }, votingSettings] = await Promise.all([
+    supabase
+      .from("campaigns")
+      .select("id,type")
+      .eq("slug", slug)
+      .eq("type", "vote")
+      .eq("is_active", true)
+      .maybeSingle(),
+    readVotingSettings(supabase),
+  ]);
 
   if (campErr) return NextResponse.json({ error: campErr.message }, { status: 500 });
   if (!campaign) return NextResponse.json({ error: "Campaign not found or not a vote campaign" }, { status: 404 });
+
+  if (!votingSettings.show_vote_totals) {
+    return NextResponse.json(
+      { counts: {} as Record<string, number>, show_vote_totals: false },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
+  }
 
   const campaignId = (campaign as { id: string }).id;
 
@@ -47,7 +59,7 @@ export async function GET(
   }
 
   return NextResponse.json(
-    { counts: byContestant },
+    { counts: byContestant, show_vote_totals: true },
     { headers: { "Cache-Control": "no-store, max-age=0" } }
   );
 }

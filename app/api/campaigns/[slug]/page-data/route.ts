@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 import { getVoteTransactionTotalsByCampaign } from "@/lib/vote-transaction-totals";
 import { normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
+import { readVotingSettings } from "@/lib/voting-visibility";
 
 function isCampaignInPublicWindow(c: { starts_at?: string | null; ends_at?: string | null }) {
   const t = Date.now();
@@ -15,14 +16,6 @@ function isCampaignInPublicWindow(c: { starts_at?: string | null; ends_at?: stri
     if (!Number.isNaN(e) && t > e) return false;
   }
   return true;
-}
-
-function votingStartsAtFromSchedule(schedResult: {
-  data: unknown;
-  error: { message?: string } | null;
-}): string | null {
-  if (schedResult.error || !schedResult.data) return null;
-  return (schedResult.data as { voting_starts_at?: string | null }).voting_starts_at ?? null;
 }
 
 /**
@@ -42,20 +35,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
 
-  const readSchedule = () =>
-    supabase.from("fusion_voting_schedule").select("voting_starts_at").eq("id", 1).maybeSingle();
-
-  const [{ data: c, error: cErr }, schedEarly] = await Promise.all([
+  const [{ data: c, error: cErr }, votingSettings] = await Promise.all([
     supabase
       .from("campaigns")
       .select("id,type,slug,title,description,image_url,currency,unit_amount,max_per_txn,is_active,starts_at,ends_at")
       .eq("slug", slug)
       .eq("is_active", true)
       .maybeSingle(),
-    readSchedule(),
+    readVotingSettings(supabase),
   ]);
 
-  const voting_starts_at = votingStartsAtFromSchedule(schedEarly);
+  const voting_starts_at = votingSettings.voting_starts_at;
+  const show_vote_totals = votingSettings.show_vote_totals;
 
   if (cErr) {
     return NextResponse.json({ error: cErr.message }, { status: 500 });
@@ -69,6 +60,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json(
       {
         voting_starts_at,
+        show_vote_totals,
         campaign: null,
         contestants: [] as unknown[],
         vote_counts: {} as Record<string, number>,
@@ -106,6 +98,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json(
       {
         voting_starts_at,
+        show_vote_totals,
         campaign,
         contestants: [],
         vote_counts: {},
@@ -124,7 +117,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
       .eq("campaign_id", row.id)
       .order("sort_order", { ascending: true });
 
-    vote_counts = await getVoteTransactionTotalsByCampaign(supabase, row.id);
+    vote_counts = show_vote_totals ? await getVoteTransactionTotalsByCampaign(supabase, row.id) : {};
   } catch (e: unknown) {
     const msg =
       e && typeof e === "object" && "message" in e ? String((e as { message: string }).message) : "Failed to load vote totals";
@@ -138,6 +131,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   return NextResponse.json(
     {
       voting_starts_at,
+      show_vote_totals,
       campaign,
       contestants: conResult.data ?? [],
       vote_counts,

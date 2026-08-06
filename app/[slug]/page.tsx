@@ -240,6 +240,8 @@ export default function CampaignPage() {
   const [lipaPayMode, setLipaPayMode] = useState<"full" | "installment">("full");
   const [lipaFirstPayKes, setLipaFirstPayKes] = useState("");
   const [votingStartMs, setVotingStartMs] = useState<number>(FALLBACK_VOTING_START_MS);
+  /** Global admin switch; when off, tallies and vote-based ranking stay hidden from voters. */
+  const [showVoteTotals, setShowVoteTotals] = useState(true);
   const [voteSuccessToastShow, setVoteSuccessToastShow] = useState(false);
 
   useEffect(() => {
@@ -259,6 +261,7 @@ export default function CampaignPage() {
           contestants?: Contestant[];
           vote_counts?: Record<string, number>;
           voting_starts_at?: string | null;
+          show_vote_totals?: boolean;
         };
 
         if (!res.ok) throw new Error();
@@ -273,6 +276,7 @@ export default function CampaignPage() {
         const list = (body.contestants ?? []) as Contestant[];
         setContestants(body.campaign.type === "vote" ? list : []);
         setContestantId("");
+        setShowVoteTotals(body.show_vote_totals !== false);
         if (body.campaign.type === "vote" && body.vote_counts && typeof body.vote_counts === "object") {
           setVoteCounts(body.vote_counts);
         } else {
@@ -329,7 +333,11 @@ export default function CampaignPage() {
       try {
         const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}/vote-counts`);
         if (!res.ok) return;
-        const { counts } = (await res.json()) as { counts?: Record<string, number> };
+        const { counts, show_vote_totals } = (await res.json()) as {
+          counts?: Record<string, number>;
+          show_vote_totals?: boolean;
+        };
+        setShowVoteTotals(show_vote_totals !== false);
         if (counts && typeof counts === "object") setVoteCounts(counts);
       } catch {
         // Non-blocking
@@ -355,8 +363,8 @@ export default function CampaignPage() {
   const contestantsSorted = useMemo(() => {
     if (contestants.length === 0) return contestants;
     return [...contestants].sort((a, b) => {
-      const va = voteCounts[a.id] ?? 0;
-      const vb = voteCounts[b.id] ?? 0;
+      const va = showVoteTotals ? voteCounts[a.id] ?? 0 : 0;
+      const vb = showVoteTotals ? voteCounts[b.id] ?? 0 : 0;
       if (vb !== va) return vb - va;
       if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
       const ta = a.created_at ? Date.parse(a.created_at) : 0;
@@ -364,7 +372,7 @@ export default function CampaignPage() {
       if (ta !== tb) return ta - tb;
       return a.name.localeCompare(b.name);
     });
-  }, [contestants, voteCounts]);
+  }, [contestants, voteCounts, showVoteTotals]);
 
   useEffect(() => {
     if (!ref) return;
@@ -1019,8 +1027,10 @@ export default function CampaignPage() {
               <div className="mt-6" id="vote-counts">
                 <h2 className="text-lg font-bold text-gray-900 mb-3">Contestants</h2>
                 <p className="text-sm text-gray-600 mb-3">
-                  <strong className="text-gray-800">Choose who you are voting for</strong> (required before paying). Counts update in real
-                  time so you can see who&apos;s leading.
+                  <strong className="text-gray-800">Choose who you are voting for</strong> (required before paying).{" "}
+                  {showVoteTotals
+                    ? "Counts update in real time so you can see who's leading."
+                    : "Vote totals are hidden for this competition — every vote still counts."}
                 </p>
                 {linkSuggestedContestantId && (
                   <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
@@ -1069,9 +1079,11 @@ export default function CampaignPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm font-semibold text-primary-600 mt-0.5">
-                              {votes.toLocaleString()} vote{votes !== 1 ? "s" : ""}
-                            </div>
+                            {showVoteTotals && (
+                              <div className="text-sm font-semibold text-primary-600 mt-0.5">
+                                {votes.toLocaleString()} vote{votes !== 1 ? "s" : ""}
+                              </div>
+                            )}
                             {c.description && <div className="text-sm text-gray-600 break-words line-clamp-2">{c.description}</div>}
                           </div>
                         </div>

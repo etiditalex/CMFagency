@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 import { getVoteTransactionTotalsForCampaignsFlat } from "@/lib/vote-transaction-totals";
+import { readVotingSettings } from "@/lib/voting-visibility";
 
 /** Avoid oversized `.in()` lists; safe with hundreds of categories. */
 const CAMPAIGN_ID_CHUNK = 40;
@@ -86,6 +87,7 @@ export type VotingAllCatalogResult =
       ok: true;
       categories: VotingAllCategoryRow[];
       voting_starts_at: string | null;
+      show_vote_totals: boolean;
       rlsAnon: boolean;
     }
   | { ok: false; error: string };
@@ -108,27 +110,21 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
   }
   const sup = createSupabaseForVotingCatalog();
   if (!sup) {
-    return { ok: true, categories: [], voting_starts_at: null, rlsAnon: false };
+    return { ok: true, categories: [], voting_starts_at: null, show_vote_totals: true, rlsAnon: false };
   }
 
   const { client, bypassesRls } = sup;
 
-  const readSchedule = () =>
-    client.from("fusion_voting_schedule").select("voting_starts_at").eq("id", 1).maybeSingle();
-
-  const [{ data: rawCampaigns, error: cErr }, schedRes] = await Promise.all([
+  const [{ data: rawCampaigns, error: cErr }, votingSettings] = await Promise.all([
     client
       .from("campaigns")
       .select("id, slug, title, description, image_url, is_active, starts_at, ends_at")
       .eq("type", "vote")
       .order("title", { ascending: true }),
-    readSchedule(),
+    readVotingSettings(client),
   ]);
 
-  const voting_starts_at =
-    !schedRes.error && schedRes.data
-      ? (schedRes.data as { voting_starts_at?: string | null }).voting_starts_at ?? null
-      : null;
+  const { voting_starts_at, show_vote_totals } = votingSettings;
 
   if (cErr) {
     return { ok: false, error: cErr.message ?? "Failed to load voting categories" };
@@ -140,6 +136,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
       ok: true,
       categories: [],
       voting_starts_at,
+      show_vote_totals,
       rlsAnon: !bypassesRls,
     };
     votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };
@@ -160,7 +157,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
   );
 
   const voteTotalsPromise =
-    bypassesRls && ids.length > 0
+    show_vote_totals && bypassesRls && ids.length > 0
       ? getVoteTransactionTotalsForCampaignsFlat(client, ids)
       : Promise.resolve(new Map<string, number>());
 
@@ -226,6 +223,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
     ok: true,
     categories,
     voting_starts_at,
+    show_vote_totals,
     rlsAnon: !bypassesRls,
   };
   votingAllCatalogCache = { value: payload, expiresAt: now + VOTING_ALL_CACHE_TTL_MS };

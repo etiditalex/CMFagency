@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { readVotingSettings, VOTING_SHOW_TOTALS_PATCH_FILE } from "@/lib/voting-visibility";
+
 async function getCallerAdminRole(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
@@ -45,9 +47,33 @@ async function getCallerAdminRole(req: NextRequest) {
   }
 }
 
+function createServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) return null;
+  return createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+}
+
 /**
- * Update global voting start (Fusion Xpress admin or manager).
- * Body: `{ "date": "YYYY-MM-DD" }` (midnight East Africa Time) or `{ "voting_starts_at": "<ISO>" }`.
+ * Current global voting settings (Fusion Xpress admin or manager).
+ */
+export async function GET(req: NextRequest) {
+  const { role } = await getCallerAdminRole(req);
+  if (role !== "admin" && role !== "manager") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const admin = createServiceClient();
+  if (!admin) return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
+
+  const settings = await readVotingSettings(admin);
+  return NextResponse.json(settings, { headers: { "Cache-Control": "no-store, max-age=0" } });
+}
+
+/**
+ * Update global voting settings (Fusion Xpress admin or manager).
+ * Body accepts any of: `{ "date": "YYYY-MM-DD" }` (midnight East Africa Time),
+ * `{ "voting_starts_at": "<ISO>" }`, `{ "show_vote_totals": boolean }`.
  */
 export async function PATCH(req: NextRequest) {
   const { role } = await getCallerAdminRole(req);
@@ -55,9 +81,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let body: { voting_starts_at?: string; date?: string };
+  let body: { voting_starts_at?: string; date?: string; show_vote_totals?: unknown };
   try {
-    body = (await req.json()) as { voting_starts_at?: string; date?: string };
+    body = (await req.json()) as { voting_starts_at?: string; date?: string; show_vote_totals?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -70,32 +96,42 @@ export async function PATCH(req: NextRequest) {
     if (!Number.isNaN(t)) votingStartsAt = new Date(t).toISOString();
   }
 
-  if (!votingStartsAt) {
+  const showVoteTotals = typeof body.show_vote_totals === "boolean" ? body.show_vote_totals : null;
+
+  if (!votingStartsAt && showVoteTotals === null) {
     return NextResponse.json(
-      { error: 'Provide "date" (YYYY-MM-DD) or "voting_starts_at" (ISO 8601)' },
+      { error: 'Provide "date" (YYYY-MM-DD), "voting_starts_at" (ISO 8601) or "show_vote_totals" (boolean)' },
       { status: 400 }
     );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) {
-    return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
-  }
+  const admin = createServiceClient();
+  if (!admin) return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
 
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+  /** Upsert overwrites the whole row, so carry over whichever field this request did not set. */
+  const current = await readVotingSettings(admin);
+  const nextVotingStartsAt = votingStartsAt ?? current.voting_starts_at;
 
-  const { error } = await admin.from("fusion_voting_schedule").upsert(
-    {
-      id: 1,
-      voting_starts_at: votingStartsAt,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" }
-  );
+  const patch: Record<string, unknown> = {
+    id: 1,
+    updated_at: new Date().toISOString(),
+  };
+  /** Omitted rather than sent as null: the column is NOT NULL with a default. */
+  if (nextVotingStartsAt) patch.voting_starts_at = nextVotingStartsAt;
+  if (showVoteTotals !== null) patch.show_vote_totals = showVoteTotals;
+
+  const { error } = await admin.from("fusion_voting_schedule").upsert(patch, { onConflict: "id" });
 
   if (error) {
     const msg = String(error.message ?? "").toLowerCase();
+    if (msg.includes("show_vote_totals")) {
+      return NextResponse.json(
+        {
+          error: `Column show_vote_totals missing. Run ${VOTING_SHOW_TOTALS_PATCH_FILE} in Supabase.`,
+        },
+        { status: 500 }
+      );
+    }
     const missing = msg.includes("does not exist") || msg.includes("fusion_voting_schedule");
     if (missing) {
       return NextResponse.json(
@@ -109,5 +145,9 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, voting_starts_at: votingStartsAt });
+  return NextResponse.json({
+    ok: true,
+    voting_starts_at: nextVotingStartsAt,
+    show_vote_totals: showVoteTotals ?? current.show_vote_totals,
+  });
 }
