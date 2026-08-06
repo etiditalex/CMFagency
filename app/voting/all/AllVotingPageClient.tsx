@@ -7,24 +7,30 @@ import { ExternalLink, Vote } from "lucide-react";
 
 import type { VotingAllCategoryRow } from "@/lib/voting-all-catalog";
 import { GENERIC_VOTING_HUB_LOAD_FAILURE } from "@/lib/payment-user-message";
-import { formatVotingOpensInNairobi } from "@/lib/voting-schedule-public";
+import { formatVotingDateInNairobi } from "@/lib/voting-schedule-public";
 
 type Props = {
   initialCategories: VotingAllCategoryRow[];
   initialError: string | null;
   /** Server-computed to avoid `Date.now()` hydration mismatches */
   initialVotingLocked: boolean;
+  initialVotingClosed: boolean;
   votingStartMs: number;
+  votingEndMs: number;
 };
 
 export default function AllVotingPageClient({
   initialCategories,
   initialError,
   initialVotingLocked,
+  initialVotingClosed,
   votingStartMs,
+  votingEndMs,
 }: Props) {
   const [votingLocked, setVotingLocked] = useState(initialVotingLocked);
-  const votingOpensLabel = useMemo(() => formatVotingOpensInNairobi(votingStartMs), [votingStartMs]);
+  const [votingClosed, setVotingClosed] = useState(initialVotingClosed);
+  const votingOpensLabel = useMemo(() => formatVotingDateInNairobi(votingStartMs), [votingStartMs]);
+  const votingClosedLabel = useMemo(() => formatVotingDateInNairobi(votingEndMs), [votingEndMs]);
 
   useEffect(() => {
     if (!votingLocked) return;
@@ -35,6 +41,16 @@ export default function AllVotingPageClient({
     const id = window.setInterval(tick, 10_000);
     return () => window.clearInterval(id);
   }, [votingLocked, votingStartMs]);
+
+  useEffect(() => {
+    if (votingClosed) return;
+    const tick = () => {
+      if (Date.now() >= votingEndMs) setVotingClosed(true);
+    };
+    tick();
+    const id = window.setInterval(tick, 10_000);
+    return () => window.clearInterval(id);
+  }, [votingClosed, votingEndMs]);
 
   const totalContestants = useMemo(
     () => initialCategories.reduce((n, c) => n + (c.contestants?.length ?? 0), 0),
@@ -47,6 +63,29 @@ export default function AllVotingPageClient({
         <div className="container-custom py-10 max-w-2xl">
           <div className="bg-white rounded-xl shadow-lg p-8 border border-red-100 text-red-800">
             {GENERIC_VOTING_HUB_LOAD_FAILURE}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (votingClosed) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50">
+        <div className="container-custom py-10 max-w-2xl">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
+                <Vote className="w-5 h-5 text-gray-600" />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Voting closed on {votingClosedLabel}</h1>
+                <p className="text-gray-600 mt-2">
+                  Voting ended at 23:59 East Africa Time and no further votes can be recorded in any category. Thank you
+                  to everyone who took part.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

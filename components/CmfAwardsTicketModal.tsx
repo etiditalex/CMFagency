@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
+import PaystackPop from "@paystack/inline-js";
 import { normalizePeoplePerPackage } from "@/lib/fusion-event-ticket-tier";
 import {
   GENERIC_PAYMENT_FAILURE,
@@ -358,7 +359,6 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
 
         if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
           const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
-          const { default: PaystackPop } = await import("@paystack/inline-js");
           const paystack = new PaystackPop();
           paystack.newTransaction({
             key: paystackKey,

@@ -87,6 +87,7 @@ export type VotingAllCatalogResult =
       ok: true;
       categories: VotingAllCategoryRow[];
       voting_starts_at: string | null;
+      voting_ends_at: string | null;
       show_vote_totals: boolean;
       rlsAnon: boolean;
     }
@@ -110,7 +111,14 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
   }
   const sup = createSupabaseForVotingCatalog();
   if (!sup) {
-    return { ok: true, categories: [], voting_starts_at: null, show_vote_totals: true, rlsAnon: false };
+    return {
+      ok: true,
+      categories: [],
+      voting_starts_at: null,
+      voting_ends_at: null,
+      show_vote_totals: true,
+      rlsAnon: false,
+    };
   }
 
   const { client, bypassesRls } = sup;
@@ -124,7 +132,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
     readVotingSettings(client),
   ]);
 
-  const { voting_starts_at, show_vote_totals } = votingSettings;
+  const { voting_starts_at, voting_ends_at, show_vote_totals } = votingSettings;
 
   if (cErr) {
     return { ok: false, error: cErr.message ?? "Failed to load voting categories" };
@@ -136,6 +144,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
       ok: true,
       categories: [],
       voting_starts_at,
+      voting_ends_at,
       show_vote_totals,
       rlsAnon: !bypassesRls,
     };
@@ -223,6 +232,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
     ok: true,
     categories,
     voting_starts_at,
+    voting_ends_at,
     show_vote_totals,
     rlsAnon: !bypassesRls,
   };

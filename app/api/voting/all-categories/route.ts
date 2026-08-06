@@ -14,6 +14,7 @@ export async function GET() {
   const res = NextResponse.json({
     categories: result.categories,
     voting_starts_at: result.voting_starts_at,
+    voting_ends_at: result.voting_ends_at,
   });
   if (result.rlsAnon) {
     res.headers.set("X-Voting-Catalog-RLS", "anon");

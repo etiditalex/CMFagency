@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
+import { FALLBACK_VOTING_END_MS } from "@/lib/voting-schedule-public";
 
 type TrendingItem = {
   rank: number;
@@ -56,7 +57,7 @@ function isoToNairobiDateInput(iso: string): string {
   }
 }
 
-function formatVotingOpensInNairobi(iso: string): string {
+function formatVotingDateInNairobi(iso: string): string {
   try {
     return new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Nairobi",
@@ -69,6 +70,9 @@ function formatVotingOpensInNairobi(iso: string): string {
     return iso;
   }
 }
+
+const VOTING_START_FALLBACK_ISO = "2026-04-01T00:00:00+03:00";
+const VOTING_END_FALLBACK_ISO = new Date(FALLBACK_VOTING_END_MS).toISOString();
 
 export default function DashboardHomePage() {
   const router = useRouter();
@@ -113,7 +117,9 @@ export default function DashboardHomePage() {
   const [kcmContributionsKes, setKcmContributionsKes] = useState(0);
 
   const [votingScheduleDate, setVotingScheduleDate] = useState("2026-04-01");
+  const [votingScheduleEndDate, setVotingScheduleEndDate] = useState("");
   const [votingScheduleDisplay, setVotingScheduleDisplay] = useState("");
+  const [votingScheduleEndDisplay, setVotingScheduleEndDisplay] = useState("");
   const [votingScheduleLoading, setVotingScheduleLoading] = useState(false);
   const [votingScheduleSaving, setVotingScheduleSaving] = useState(false);
   const [votingScheduleMessage, setVotingScheduleMessage] = useState<string | null>(null);
@@ -152,18 +158,20 @@ export default function DashboardHomePage() {
       setVotingScheduleMessage(null);
       try {
         const res = await fetch("/api/voting-schedule");
-        const j = (await res.json()) as { voting_starts_at?: string | null };
+        const j = (await res.json()) as { voting_starts_at?: string | null; voting_ends_at?: string | null };
         if (cancelled) return;
-        const iso = j?.voting_starts_at;
-        const fallback = "2026-04-01T00:00:00+03:00";
-        const effective = iso || fallback;
-        const ymd = isoToNairobiDateInput(effective);
-        setVotingScheduleDate(ymd || "2026-04-01");
-        setVotingScheduleDisplay(formatVotingOpensInNairobi(effective));
+        const effectiveStart = j?.voting_starts_at || VOTING_START_FALLBACK_ISO;
+        const effectiveEnd = j?.voting_ends_at || VOTING_END_FALLBACK_ISO;
+        setVotingScheduleDate(isoToNairobiDateInput(effectiveStart) || "2026-04-01");
+        setVotingScheduleEndDate(isoToNairobiDateInput(effectiveEnd));
+        setVotingScheduleDisplay(formatVotingDateInNairobi(effectiveStart));
+        setVotingScheduleEndDisplay(formatVotingDateInNairobi(effectiveEnd));
       } catch {
         if (!cancelled) {
           setVotingScheduleDate("2026-04-01");
-          setVotingScheduleDisplay(formatVotingOpensInNairobi("2026-04-01T00:00:00+03:00"));
+          setVotingScheduleEndDate(isoToNairobiDateInput(VOTING_END_FALLBACK_ISO));
+          setVotingScheduleDisplay(formatVotingDateInNairobi(VOTING_START_FALLBACK_ISO));
+          setVotingScheduleEndDisplay(formatVotingDateInNairobi(VOTING_END_FALLBACK_ISO));
         }
       } finally {
         if (!cancelled) setVotingScheduleLoading(false);
@@ -397,8 +405,17 @@ export default function DashboardHomePage() {
   }, [user, refreshData]);
 
   const saveVotingSchedule = useCallback(async () => {
-    if (!votingScheduleDate || !/^\d{4}-\d{2}-\d{2}$/.test(votingScheduleDate)) {
-      setVotingScheduleMessage("Use a valid date (YYYY-MM-DD).");
+    const isDateOnly = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if (!isDateOnly(votingScheduleDate)) {
+      setVotingScheduleMessage("Use a valid start date (YYYY-MM-DD).");
+      return;
+    }
+    if (!isDateOnly(votingScheduleEndDate)) {
+      setVotingScheduleMessage("Use a valid end date (YYYY-MM-DD).");
+      return;
+    }
+    if (votingScheduleEndDate < votingScheduleDate) {
+      setVotingScheduleMessage("The end date must be on or after the start date.");
       return;
     }
     setVotingScheduleSaving(true);
@@ -418,22 +435,28 @@ export default function DashboardHomePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ date: votingScheduleDate }),
+        body: JSON.stringify({ date: votingScheduleDate, end_date: votingScheduleEndDate }),
       });
-      const j = (await res.json().catch(() => ({}))) as { error?: string; voting_starts_at?: string };
+      const j = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        voting_starts_at?: string;
+        voting_ends_at?: string;
+      };
       if (!res.ok) {
         setVotingScheduleMessage(String(j?.error ?? `HTTP ${res.status}`));
         return;
       }
-      const iso = j.voting_starts_at;
-      if (iso) setVotingScheduleDisplay(formatVotingOpensInNairobi(iso));
-      setVotingScheduleMessage("Saved. Public voting pages unlock at 00:00 East Africa Time on that date.");
+      if (j.voting_starts_at) setVotingScheduleDisplay(formatVotingDateInNairobi(j.voting_starts_at));
+      if (j.voting_ends_at) setVotingScheduleEndDisplay(formatVotingDateInNairobi(j.voting_ends_at));
+      setVotingScheduleMessage(
+        "Saved. Voting opens at 00:00 and the countdown runs out at 23:59 East Africa Time on the end date."
+      );
     } catch (e: any) {
       setVotingScheduleMessage(e?.message ?? "Save failed");
     } finally {
       setVotingScheduleSaving(false);
     }
-  }, [votingScheduleDate]);
+  }, [votingScheduleDate, votingScheduleEndDate]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -567,19 +590,47 @@ export default function DashboardHomePage() {
               <div>
                 <div className="font-extrabold text-gray-900 inline-flex items-center gap-2">
                   <Vote className="w-4 h-4 text-gray-600" />
-                  Voting start date
+                  Voting dates
+                </div>
+                <div className="mt-1 text-xs text-gray-600">
+                  {votingScheduleDisplay || votingScheduleEndDisplay
+                    ? `Opens ${votingScheduleDisplay || "—"} · Closes ${votingScheduleEndDisplay || "—"}`
+                    : "East Africa Time"}
                 </div>
               </div>
             </div>
-            <div className="mt-4">
-              <input
-                type="date"
-                value={votingScheduleDate}
-                onChange={(e) => setVotingScheduleDate(e.target.value)}
-                disabled={votingScheduleLoading || votingScheduleSaving}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
-              />
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="voting-start-date" className="block text-xs font-semibold text-gray-700">
+                  Start date
+                </label>
+                <input
+                  id="voting-start-date"
+                  type="date"
+                  value={votingScheduleDate}
+                  onChange={(e) => setVotingScheduleDate(e.target.value)}
+                  disabled={votingScheduleLoading || votingScheduleSaving}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
+                />
+              </div>
+              <div>
+                <label htmlFor="voting-end-date" className="block text-xs font-semibold text-gray-700">
+                  End date
+                </label>
+                <input
+                  id="voting-end-date"
+                  type="date"
+                  value={votingScheduleEndDate}
+                  min={votingScheduleDate || undefined}
+                  onChange={(e) => setVotingScheduleEndDate(e.target.value)}
+                  disabled={votingScheduleLoading || votingScheduleSaving}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
+                />
+              </div>
             </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Voting is open all of the end date; the public countdown hits zero at 23:59 East Africa Time.
+            </p>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
@@ -587,7 +638,7 @@ export default function DashboardHomePage() {
                 disabled={votingScheduleLoading || votingScheduleSaving}
                 className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
               >
-                {votingScheduleSaving ? "Saving…" : "Save date"}
+                {votingScheduleSaving ? "Saving…" : "Save dates"}
               </button>
               <button
                 type="button"

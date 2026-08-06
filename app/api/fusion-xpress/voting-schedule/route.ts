@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-import { readVotingSettings, VOTING_SHOW_TOTALS_PATCH_FILE } from "@/lib/voting-visibility";
+import { readVotingSettings, VOTING_ENDS_AT_PATCH_FILE, VOTING_SHOW_TOTALS_PATCH_FILE } from "@/lib/voting-visibility";
 
 async function getCallerAdminRole(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -70,10 +70,21 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(settings, { headers: { "Cache-Control": "no-store, max-age=0" } });
 }
 
+type SchedulePatchBody = {
+  voting_starts_at?: string;
+  date?: string;
+  voting_ends_at?: string;
+  end_date?: string;
+  show_vote_totals?: unknown;
+};
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Update global voting settings (Fusion Xpress admin or manager).
- * Body accepts any of: `{ "date": "YYYY-MM-DD" }` (midnight East Africa Time),
- * `{ "voting_starts_at": "<ISO>" }`, `{ "show_vote_totals": boolean }`.
+ * Body accepts any of: `{ "date": "YYYY-MM-DD" }` (opens midnight East Africa Time),
+ * `{ "end_date": "YYYY-MM-DD" }` (closes 23:59:59 East Africa Time on that day),
+ * `{ "voting_starts_at": "<ISO>" }`, `{ "voting_ends_at": "<ISO>" }`, `{ "show_vote_totals": boolean }`.
  */
 export async function PATCH(req: NextRequest) {
   const { role } = await getCallerAdminRole(req);
@@ -81,26 +92,38 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  let body: { voting_starts_at?: string; date?: string; show_vote_totals?: unknown };
+  let body: SchedulePatchBody;
   try {
-    body = (await req.json()) as { voting_starts_at?: string; date?: string; show_vote_totals?: unknown };
+    body = (await req.json()) as SchedulePatchBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   let votingStartsAt: string | null = null;
-  if (body.date && /^\d{4}-\d{2}-\d{2}$/.test(body.date.trim())) {
+  if (body.date && DATE_ONLY.test(body.date.trim())) {
     votingStartsAt = `${body.date.trim()}T00:00:00+03:00`;
   } else if (body.voting_starts_at?.trim()) {
     const t = Date.parse(body.voting_starts_at.trim());
     if (!Number.isNaN(t)) votingStartsAt = new Date(t).toISOString();
   }
 
+  /** A closing date means "voting runs through the end of that day" in East Africa Time. */
+  let votingEndsAt: string | null = null;
+  if (body.end_date && DATE_ONLY.test(body.end_date.trim())) {
+    votingEndsAt = `${body.end_date.trim()}T23:59:59+03:00`;
+  } else if (body.voting_ends_at?.trim()) {
+    const t = Date.parse(body.voting_ends_at.trim());
+    if (!Number.isNaN(t)) votingEndsAt = new Date(t).toISOString();
+  }
+
   const showVoteTotals = typeof body.show_vote_totals === "boolean" ? body.show_vote_totals : null;
 
-  if (!votingStartsAt && showVoteTotals === null) {
+  if (!votingStartsAt && !votingEndsAt && showVoteTotals === null) {
     return NextResponse.json(
-      { error: 'Provide "date" (YYYY-MM-DD), "voting_starts_at" (ISO 8601) or "show_vote_totals" (boolean)' },
+      {
+        error:
+          'Provide "date"/"end_date" (YYYY-MM-DD), "voting_starts_at"/"voting_ends_at" (ISO 8601) or "show_vote_totals" (boolean)',
+      },
       { status: 400 }
     );
   }
@@ -111,6 +134,15 @@ export async function PATCH(req: NextRequest) {
   /** Upsert overwrites the whole row, so carry over whichever field this request did not set. */
   const current = await readVotingSettings(admin);
   const nextVotingStartsAt = votingStartsAt ?? current.voting_starts_at;
+  const nextVotingEndsAt = votingEndsAt ?? current.voting_ends_at;
+
+  if (nextVotingStartsAt && nextVotingEndsAt) {
+    const startMs = Date.parse(nextVotingStartsAt);
+    const endMs = Date.parse(nextVotingEndsAt);
+    if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs <= startMs) {
+      return NextResponse.json({ error: "Voting must close after it opens. Pick a later closing date." }, { status: 400 });
+    }
+  }
 
   const patch: Record<string, unknown> = {
     id: 1,
@@ -118,6 +150,7 @@ export async function PATCH(req: NextRequest) {
   };
   /** Omitted rather than sent as null: the column is NOT NULL with a default. */
   if (nextVotingStartsAt) patch.voting_starts_at = nextVotingStartsAt;
+  if (nextVotingEndsAt) patch.voting_ends_at = nextVotingEndsAt;
   if (showVoteTotals !== null) patch.show_vote_totals = showVoteTotals;
 
   const { error } = await admin.from("fusion_voting_schedule").upsert(patch, { onConflict: "id" });
@@ -129,6 +162,12 @@ export async function PATCH(req: NextRequest) {
         {
           error: `Column show_vote_totals missing. Run ${VOTING_SHOW_TOTALS_PATCH_FILE} in Supabase.`,
         },
+        { status: 500 }
+      );
+    }
+    if (msg.includes("voting_ends_at")) {
+      return NextResponse.json(
+        { error: `Column voting_ends_at missing. Run ${VOTING_ENDS_AT_PATCH_FILE} in Supabase.` },
         { status: 500 }
       );
     }
@@ -148,6 +187,7 @@ export async function PATCH(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     voting_starts_at: nextVotingStartsAt,
+    voting_ends_at: nextVotingEndsAt,
     show_vote_totals: showVoteTotals ?? current.show_vote_totals,
   });
 }

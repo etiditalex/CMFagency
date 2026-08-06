@@ -46,6 +46,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   ]);
 
   const voting_starts_at = votingSettings.voting_starts_at;
+  const voting_ends_at = votingSettings.voting_ends_at;
   const show_vote_totals = votingSettings.show_vote_totals;
 
   if (cErr) {
@@ -60,6 +61,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json(
       {
         voting_starts_at,
+        voting_ends_at,
         show_vote_totals,
         campaign: null,
         contestants: [] as unknown[],
@@ -98,6 +100,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json(
       {
         voting_starts_at,
+        voting_ends_at,
         show_vote_totals,
         campaign,
         contestants: [],
@@ -131,6 +134,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   return NextResponse.json(
     {
       voting_starts_at,
+      voting_ends_at,
       show_vote_totals,
       campaign,
       contestants: conResult.data ?? [],

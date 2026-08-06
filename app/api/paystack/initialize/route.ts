@@ -7,6 +7,7 @@ import { validateCoupon } from "@/lib/validate-coupon";
 import { normalizeKenyaCurrencyForPayments, resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
+import { findVotingWindowRejection } from "@/lib/voting-window";
 
 type InitBody = {
   slug?: string;
@@ -153,6 +154,9 @@ export async function POST(req: Request) {
     const q = Math.max(1, Math.min(effectiveMax, quantity));
 
     if (campaign.type === "vote") {
+      const windowRejection = await findVotingWindowRejection(supabaseAdmin ?? supabase);
+      if (windowRejection) return NextResponse.json({ error: windowRejection }, { status: 400 });
+
       if (!contestantId) return NextResponse.json({ error: "contestant_id is required for voting" }, { status: 400 });
 
       const { data: contestant, error: contestantErr } = await supabase

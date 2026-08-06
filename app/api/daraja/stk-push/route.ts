@@ -19,6 +19,7 @@ import {
   type StkPushJson,
 } from "@/lib/daraja-stk-config";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
+import { findVotingWindowRejection } from "@/lib/voting-window";
 
 type StkPushBody = {
   slug?: string;
@@ -200,6 +201,9 @@ export async function POST(req: Request) {
     const q = Math.max(1, Math.min(effectiveMax, quantity));
 
     if (campaign.type === "vote") {
+      const windowRejection = await findVotingWindowRejection(supabaseAdmin);
+      if (windowRejection) return NextResponse.json({ error: windowRejection }, { status: 400 });
+
       if (!contestantId) return NextResponse.json({ error: "contestant_id is required for voting" }, { status: 400 });
       const { data: contestant, error: contestantErr } = await supabase
         .from("contestants")

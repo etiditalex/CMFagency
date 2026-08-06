@@ -14,6 +14,13 @@ import {
 } from "@/lib/payment-user-message";
 import { isKenyaShillingsForLipa, LIPA_POLE_POLE_MIN_KES } from "@/lib/lipa-pole-pole";
 import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
+import {
+  FALLBACK_VOTING_END_MS,
+  FALLBACK_VOTING_START_MS,
+  formatVotingDateInNairobi,
+  votingEndMsFromSchedule,
+  VOTING_CLOSED_MESSAGE,
+} from "@/lib/voting-schedule-public";
 
 /** Match `/api/cfm-tickets/installment/plan` so plan phone equals STK phone. */
 function normalizeKenyaPhoneForPlan(raw: string): string {
@@ -45,24 +52,6 @@ type Contestant = {
   sort_order: number;
   created_at: string | null;
 };
-
-/** Used if `/api/voting-schedule` is unavailable (migration not applied yet). */
-const FALLBACK_VOTING_START_MS = new Date("2026-04-01T00:00:00+03:00").getTime();
-const VOTING_ENDS_AT_ISO = "2026-08-11T00:00:00+03:00";
-
-function formatVotingOpensInNairobi(isoMs: number): string {
-  try {
-    return new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Africa/Nairobi",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(new Date(isoMs));
-  } catch {
-    return "soon";
-  }
-}
 
 function nairobiParts(d: Date): { y: number; m: number; day: number; hh: number; mm: number; ss: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -132,8 +121,7 @@ function computeCountdown(now: Date, target: Date): { months: number; days: numb
   return { months, days, hours, minutes, seconds };
 }
 
-function VotingEndsCountdown({ show }: { show: boolean }) {
-  const targetMs = useMemo(() => new Date(VOTING_ENDS_AT_ISO).getTime(), []);
+function VotingEndsCountdown({ show, targetMs }: { show: boolean; targetMs: number }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -240,6 +228,9 @@ export default function CampaignPage() {
   const [lipaPayMode, setLipaPayMode] = useState<"full" | "installment">("full");
   const [lipaFirstPayKes, setLipaFirstPayKes] = useState("");
   const [votingStartMs, setVotingStartMs] = useState<number>(FALLBACK_VOTING_START_MS);
+  const [votingEndMs, setVotingEndMs] = useState<number>(FALLBACK_VOTING_END_MS);
+  /** Closes the page the moment the countdown runs out, without waiting for a refresh. */
+  const [votingClosed, setVotingClosed] = useState(false);
   /** Global admin switch; when off, tallies and vote-based ranking stay hidden from voters. */
   const [showVoteTotals, setShowVoteTotals] = useState(true);
   const [voteSuccessToastShow, setVoteSuccessToastShow] = useState(false);
@@ -261,6 +252,7 @@ export default function CampaignPage() {
           contestants?: Contestant[];
           vote_counts?: Record<string, number>;
           voting_starts_at?: string | null;
+          voting_ends_at?: string | null;
           show_vote_totals?: boolean;
         };
 
@@ -288,6 +280,7 @@ export default function CampaignPage() {
           const t = Date.parse(iso);
           if (!Number.isNaN(t)) setVotingStartMs(t);
         }
+        setVotingEndMs(votingEndMsFromSchedule(body.voting_ends_at));
       } catch {
         if (cancelled) return;
         setError(GENERIC_CAMPAIGN_LOAD_FAILURE);
@@ -309,6 +302,14 @@ export default function CampaignPage() {
     setLipaPayMode("full");
     setLipaFirstPayKes("");
   }, [slug]);
+
+  useEffect(() => {
+    /** Same value re-set is a no-op in React, so this only re-renders on the actual transition. */
+    const tick = () => setVotingClosed(Date.now() >= votingEndMs);
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [votingEndMs]);
 
   /** Optional `?c=` id for a hint only — selection still requires an explicit tap. */
   const linkSuggestedContestantId = useMemo(() => {
@@ -561,6 +562,9 @@ export default function CampaignPage() {
 
     try {
       const q = Math.max(1, Math.min(effectiveMax, Math.trunc(quantity)));
+      if (campaign.type === "vote" && votingClosed) {
+        throw new PaymentClientError(VOTING_CLOSED_MESSAGE);
+      }
       if (campaign.type === "vote" && !contestantId) {
         throw new PaymentClientError("Please select a contestant.");
       }
@@ -868,7 +872,9 @@ export default function CampaignPage() {
 
   const isVote = campaign.type === "vote";
   const votingLocked = isVote && Date.now() < votingStartMs;
-  const votingOpensLabel = formatVotingOpensInNairobi(votingStartMs);
+  const votingEnded = isVote && votingClosed;
+  const votingOpensLabel = formatVotingDateInNairobi(votingStartMs);
+  const votingClosedLabel = formatVotingDateInNairobi(votingEndMs);
   const Icon = isVote ? Vote : Ticket;
 
   const goVoteAgain = () => {
@@ -885,6 +891,33 @@ export default function CampaignPage() {
     document.getElementById("vote-counts")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  /** A `ref` means a payment already went through here, so the receipt must stay reachable. */
+  if (votingEnded && !ref) {
+    return (
+      <div className="pt-24 min-h-screen bg-gray-50">
+        <div className="container-custom py-10 max-w-2xl">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex w-10 h-10 rounded-lg bg-gray-100 items-center justify-center flex-shrink-0">
+                <Vote className="w-5 h-5 text-gray-600" />
+              </span>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Voting closed on {votingClosedLabel}</h1>
+                <p className="text-gray-600 mt-2">
+                  Voting for {campaign.title} ended at 23:59 East Africa Time, and no further votes can be recorded.
+                  Thank you to everyone who took part.
+                </p>
+                <p className="text-sm text-gray-500 mt-3">
+                  If you paid and did not get a receipt, contact the organizer with your payment reference.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (votingLocked) {
     return (
       <div className="pt-24 min-h-screen bg-gray-50">
@@ -892,7 +925,7 @@ export default function CampaignPage() {
           <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
             <div className="flex items-start gap-3">
               <div>
-                <VotingEndsCountdown show />
+                <VotingEndsCountdown show targetMs={votingEndMs} />
                 <h1 className="text-2xl font-bold text-gray-900">Voting opens {votingOpensLabel}</h1>
                 <p className="text-gray-600 mt-2">
                   This voting page is not open yet. Please come back when voting starts (East Africa Time).
@@ -928,7 +961,7 @@ export default function CampaignPage() {
                 </span>
               )}
               <div className="min-w-0">
-                <VotingEndsCountdown show={isVote} />
+                <VotingEndsCountdown show={isVote} targetMs={votingEndMs} />
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{campaign.title}</h1>
                 <p className="text-gray-600 mt-2">{campaign.description ?? "Complete payment to continue."}</p>
               </div>
@@ -1388,10 +1421,14 @@ export default function CampaignPage() {
 
               <button
                 type="submit"
-                disabled={submitting || (allowLipa && lipaPayMode === "installment" && !lipaDepositOk)}
-                className={`w-full btn-primary inline-flex items-center justify-center gap-2 ${submitting && "opacity-60"}`}
+                disabled={submitting || votingEnded || (allowLipa && lipaPayMode === "installment" && !lipaDepositOk)}
+                className={`w-full btn-primary inline-flex items-center justify-center gap-2 ${
+                  submitting || votingEnded ? "opacity-60" : ""
+                }`}
               >
-                {submitting ? (
+                {votingEnded ? (
+                  "Voting closed"
+                ) : submitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
                     {paymentMethod === "mpesa"
