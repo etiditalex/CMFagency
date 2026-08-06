@@ -6,7 +6,7 @@ import { Loader2, MapPin, ArrowRight, Ticket } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
-import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
+import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { supabase } from "@/lib/supabase";
 

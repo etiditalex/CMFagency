@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, Loader2, Minus, Plus, X } from "lucide-react";
-import PaystackPop from "@paystack/inline-js";
 import { normalizePeoplePerPackage } from "@/lib/fusion-event-ticket-tier";
 import {
   GENERIC_PAYMENT_FAILURE,
@@ -60,13 +59,15 @@ type FormDetails = {
   address: string;
 };
 
-type Props = {
+export type CmfAwardsTicketModalProps = {
   open: boolean;
   onClose: () => void;
   /** When provided, modal shows this event and tiers (Fusion Xpress tiered events). Otherwise CFMA 2026 defaults. */
   event?: EventTicketModalEvent | null;
   tiers?: TicketTierInput[] | null;
 };
+
+type Props = CmfAwardsTicketModalProps;
 
 function normalizeTiers(
   tiers: TicketTierInput[] | null | undefined
@@ -359,6 +360,8 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
 
         if (useInline && json.reference && json.amount_subunit != null && json.email && json.currency) {
           const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
+          /** Loaded on demand so browsing tickets never downloads the card SDK. */
+          const { default: PaystackPop } = await import("@paystack/inline-js");
           const paystack = new PaystackPop();
           paystack.newTransaction({
             key: paystackKey,

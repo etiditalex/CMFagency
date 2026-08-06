@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-import { readVotingSettings, VOTING_ENDS_AT_PATCH_FILE, VOTING_SHOW_TOTALS_PATCH_FILE } from "@/lib/voting-visibility";
+import {
+  invalidateVotingSettingsCache,
+  readVotingSettings,
+  VOTING_ENDS_AT_PATCH_FILE,
+  VOTING_SHOW_TOTALS_PATCH_FILE,
+} from "@/lib/voting-visibility";
 
 async function getCallerAdminRole(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -132,6 +137,7 @@ export async function PATCH(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
 
   /** Upsert overwrites the whole row, so carry over whichever field this request did not set. */
+  invalidateVotingSettingsCache();
   const current = await readVotingSettings(admin);
   const nextVotingStartsAt = votingStartsAt ?? current.voting_starts_at;
   const nextVotingEndsAt = votingEndsAt ?? current.voting_ends_at;
@@ -154,6 +160,8 @@ export async function PATCH(req: NextRequest) {
   if (showVoteTotals !== null) patch.show_vote_totals = showVoteTotals;
 
   const { error } = await admin.from("fusion_voting_schedule").upsert(patch, { onConflict: "id" });
+
+  invalidateVotingSettingsCache();
 
   if (error) {
     const msg = String(error.message ?? "").toLowerCase();

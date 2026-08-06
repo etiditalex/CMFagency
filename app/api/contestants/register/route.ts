@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { uploadCampaignImage } from "@/lib/campaign-image-storage";
 import { fromEmail } from "@/lib/resend";
 import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
-
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /**
  * Public model registration: create a contestant for an active voting campaign
@@ -61,18 +59,11 @@ export async function POST(req: NextRequest) {
 
     let imageUrl: string | null = null;
     if (photo && photo instanceof File && photo.size > 0) {
-      if (!ALLOWED_IMAGE_TYPES.includes(photo.type)) {
-        return NextResponse.json(
-          { error: `Invalid photo type. Use: ${ALLOWED_IMAGE_TYPES.join(", ")}` },
-          { status: 400 }
-        );
+      const upload = await uploadCampaignImage(supabase, photo, "contestants/registrations");
+      if (!upload.ok) {
+        return NextResponse.json({ error: upload.error }, { status: upload.status });
       }
-      if (photo.size > MAX_IMAGE_SIZE) {
-        return NextResponse.json({ error: "Photo too large. Max 5MB." }, { status: 400 });
-      }
-      const buffer = Buffer.from(await photo.arrayBuffer());
-      const base64 = buffer.toString("base64");
-      imageUrl = `data:${photo.type};base64,${base64}`;
+      imageUrl = upload.url;
     }
 
     const campaignId = (campaign as { id: string }).id;

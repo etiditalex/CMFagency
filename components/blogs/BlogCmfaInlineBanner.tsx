@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
-import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
+import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 
 function MarkIcon() {
   return (

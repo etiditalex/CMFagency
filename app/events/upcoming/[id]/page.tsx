@@ -21,7 +21,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
-import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModal";
+import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 import SponsorDropdown from "@/components/SponsorDropdown";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { usePortal } from "@/contexts/PortalContext";

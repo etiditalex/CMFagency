@@ -39,10 +39,45 @@ function isMissingOptionalColumn(err: { message?: string; code?: string } | null
 }
 
 /**
+ * The schedule is a singleton row read on nearly every public voting request, so a short
+ * TTL keeps hot paths (campaign page data, vote counts, catalog) down to one query per window.
+ */
+const VOTING_SETTINGS_TTL_MS = 15_000;
+
+let votingSettingsCache: { expiresAt: number; value: VotingSettings } | null = null;
+/** Shared across concurrent callers so a burst of requests triggers a single query. */
+let votingSettingsInFlight: Promise<VotingSettings> | null = null;
+
+/** Call after any write to `fusion_voting_schedule` so admins see their change immediately. */
+export function invalidateVotingSettingsCache(): void {
+  votingSettingsCache = null;
+  votingSettingsInFlight = null;
+}
+
+/**
  * Reads the singleton voting settings row, tolerating databases where patch 84
  * or 85 has not been applied yet (missing columns fall back to defaults).
  */
 export async function readVotingSettings(client: SupabaseClient): Promise<VotingSettings> {
+  const now = Date.now();
+  if (votingSettingsCache && votingSettingsCache.expiresAt > now) {
+    return votingSettingsCache.value;
+  }
+  if (votingSettingsInFlight) return votingSettingsInFlight;
+
+  votingSettingsInFlight = fetchVotingSettings(client)
+    .then((value) => {
+      votingSettingsCache = { value, expiresAt: Date.now() + VOTING_SETTINGS_TTL_MS };
+      return value;
+    })
+    .finally(() => {
+      votingSettingsInFlight = null;
+    });
+
+  return votingSettingsInFlight;
+}
+
+async function fetchVotingSettings(client: SupabaseClient): Promise<VotingSettings> {
   for (const columns of SELECT_FALLBACK_CHAIN) {
     const { data, error } = await client
       .from("fusion_voting_schedule")

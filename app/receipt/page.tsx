@@ -189,6 +189,30 @@ export default async function ReceiptPage({ searchParams }: Props) {
   const mpesaReceipt = (meta.mpesa_receipt as string)?.trim() || undefined;
   const isMpesa = (tx as { provider?: string }).provider === "daraja";
 
+  const isVoteReceipt = (tx as { campaign_type?: string }).campaign_type === "vote";
+  const contestantId = (tx as { contestant_id?: string | null }).contestant_id ?? null;
+
+  /**
+   * Event details and the voted-for contestant depend only on the transaction we already have,
+   * so they run alongside the installment lookup below instead of after it.
+   */
+  const eventRowPromise =
+    slug && slug !== "event"
+      ? Promise.resolve(
+          supabase
+            .from("fusion_events")
+            .select("location, venue, event_date, time")
+            .eq("ticket_campaign_slug", slug)
+            .maybeSingle()
+        )
+          .then((r) => r.data)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+  const votedForNamePromise = isVoteReceipt
+    ? fetchContestantNameById(supabase, contestantId).catch(() => undefined)
+    : Promise.resolve(undefined);
+
   const isLipaPolePole = meta.lipa_pole_pole === true;
   let lipaBalance: LipaReceiptBalance | null = null;
   if (isLipaPolePole && (tx as { campaign_type?: string }).campaign_type === "ticket") {
@@ -247,28 +271,19 @@ export default async function ReceiptPage({ searchParams }: Props) {
       ? `${lipaBalance.ticketQuantity} ${lipaBalance.ticketQuantity === 1 ? "ticket" : "tickets"} (package)`
       : `${quantity} ${quantityLabel}`;
 
+  const [eventRow, votedForName] = await Promise.all([eventRowPromise, votedForNamePromise]);
+
   let eventLocation: string | undefined;
   let eventDate: string | undefined;
   let eventTime: string | undefined;
-  if (slug && slug !== "event") {
-    const { data: eventRow } = await supabase
-      .from("fusion_events")
-      .select("location, venue, event_date, time")
-      .eq("ticket_campaign_slug", slug)
-      .maybeSingle();
-    if (eventRow) {
-      const loc = (eventRow as { location?: string | null }).location;
-      const venue = (eventRow as { venue?: string | null }).venue;
-      eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
-      const ed = (eventRow as { event_date?: string | null }).event_date;
-      if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-      eventTime = (eventRow as { time?: string | null }).time ?? undefined;
-    }
+  if (eventRow) {
+    const loc = (eventRow as { location?: string | null }).location;
+    const venue = (eventRow as { venue?: string | null }).venue;
+    eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
+    const ed = (eventRow as { event_date?: string | null }).event_date;
+    if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    eventTime = (eventRow as { time?: string | null }).time ?? undefined;
   }
-
-  const isVoteReceipt = (tx as { campaign_type?: string }).campaign_type === "vote";
-  const contestantId = (tx as { contestant_id?: string | null }).contestant_id ?? null;
-  const votedForName = isVoteReceipt ? await fetchContestantNameById(supabase, contestantId) : undefined;
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">

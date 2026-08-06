@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ExternalLink, Vote } from "lucide-react";
 
 import type { VotingAllCategoryRow } from "@/lib/voting-all-catalog";
+import { canOptimizeRemoteImage } from "@/lib/image-hosts";
 import { GENERIC_VOTING_HUB_LOAD_FAILURE } from "@/lib/payment-user-message";
 import { formatVotingDateInNairobi } from "@/lib/voting-schedule-public";
 
@@ -177,9 +178,11 @@ export default function AllVotingPageClient({
                   ) : null}
                   <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
                 </div>
+                {/* Category pages render live tallies on the server; a forced prefetch of every
+                    visible link would run those queries for pages nobody opened. The default
+                    prefetch still warms the route shell and `loading.tsx`. */}
                 <Link
                   href={`/${encodeURIComponent(cat.slug)}`}
-                  prefetch
                   className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100"
                 >
                   Open category page
@@ -199,7 +202,7 @@ export default function AllVotingPageClient({
                             src={c.image_url}
                             alt={c.name}
                             fill
-                            unoptimized
+                            unoptimized={!canOptimizeRemoteImage(c.image_url)}
                             className="object-cover"
                             sizes="56px"
                             referrerPolicy="no-referrer"
@@ -216,7 +219,7 @@ export default function AllVotingPageClient({
                       </div>
                       <Link
                         href={`/${encodeURIComponent(cat.slug)}?c=${encodeURIComponent(c.id)}`}
-                        prefetch
+                        prefetch={false}
                         className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                       >
                         Vote

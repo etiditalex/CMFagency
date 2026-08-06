@@ -37,16 +37,53 @@ export default function CfmTicketsPosterCarousel() {
     return () => el.removeEventListener("scroll", syncActiveFromScroll);
   }, [syncActiveFromScroll]);
 
+  /**
+   * The strip sits below the checkout form, so autoplay only runs while it is actually on
+   * screen — otherwise every visitor pays for smooth-scroll layout work and eager poster
+   * downloads that compete with the checkout above.
+   */
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const id = window.setInterval(() => {
-      const w = el.clientWidth;
-      const atEnd = el.scrollLeft + w >= el.scrollWidth - 8;
-      if (atEnd) el.scrollTo({ left: 0, behavior: "smooth" });
-      else el.scrollBy({ left: w, behavior: "smooth" });
-    }, 6000);
-    return () => window.clearInterval(id);
+
+    let timer: number | undefined;
+    let onScreen = false;
+
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    const start = () => {
+      if (timer !== undefined) return;
+      timer = window.setInterval(() => {
+        const w = el.clientWidth;
+        const atEnd = el.scrollLeft + w >= el.scrollWidth - 8;
+        if (atEnd) el.scrollTo({ left: 0, behavior: "smooth" });
+        else el.scrollBy({ left: w, behavior: "smooth" });
+      }, 6000);
+    };
+
+    const sync = () => {
+      if (onScreen && document.visibilityState === "visible") start();
+      else stop();
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        sync();
+      },
+      { threshold: 0.25 }
+    );
+    observer.observe(el);
+    document.addEventListener("visibilitychange", sync);
+
+    return () => {
+      stop();
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+    };
   }, []);
 
   const go = (dir: -1 | 1) => {
@@ -102,7 +139,7 @@ export default function CfmTicketsPosterCarousel() {
                 fill
                 className="object-contain object-center"
                 sizes="100vw"
-                priority={i === 0}
+                loading="lazy"
               />
             </div>
           ))}
