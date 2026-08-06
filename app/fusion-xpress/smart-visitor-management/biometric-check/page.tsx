@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Fingerprint, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Fingerprint, Loader2, MapPin, XCircle } from "lucide-react";
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
@@ -10,6 +10,7 @@ import {
   getOrCreateBiometricDeviceId,
   parseBiometricTerminalToken,
 } from "@/lib/employees/biometric";
+import type { BrowserPosition } from "@/lib/employees/browser-geolocation";
 import { browserDeviceLabel } from "@/lib/employees/device-fingerprint";
 
 type Feedback = {
@@ -33,6 +34,36 @@ function BiometricCheckInner() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [padKey, setPadKey] = useState(0);
+  const [locationReady, setLocationReady] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const positionRef = useRef<BrowserPosition | null>(null);
+
+  const ensureTerminalLocation = useCallback(async (): Promise<BrowserPosition> => {
+    if (positionRef.current) return positionRef.current;
+    setLocationLoading(true);
+    setLocationError(null);
+    try {
+      const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+      const pos = await getBrowserPosition({
+        timeoutMs: 25000,
+        maximumAge: 120_000,
+      });
+      positionRef.current = pos;
+      setLocationReady(true);
+      return pos;
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Allow location for this site on the terminal device, then try again.";
+      setLocationError(message);
+      setLocationReady(false);
+      throw e instanceof Error ? e : new Error(message);
+    } finally {
+      setLocationLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!terminalToken) {
@@ -65,6 +96,14 @@ function BiometricCheckInner() {
     })();
   }, [terminalToken]);
 
+  // Request location as soon as the terminal is ready so the browser permission prompt appears.
+  useEffect(() => {
+    if (loadingTerminal || terminalError || !terminalToken) return;
+    void ensureTerminalLocation().catch(() => {
+      // Surface via locationError state; user can retry.
+    });
+  }, [loadingTerminal, terminalError, terminalToken, ensureTerminalLocation]);
+
   const runScan = useCallback(async () => {
     if (!terminalToken || busy) return;
     const code = memberCode.trim();
@@ -80,6 +119,22 @@ function BiometricCheckInner() {
     setBusy(true);
     setFeedback(null);
     try {
+      let pos: BrowserPosition;
+      try {
+        pos = await ensureTerminalLocation();
+      } catch (e: unknown) {
+        setFeedback({
+          ok: false,
+          title: "Location required",
+          detail:
+            e instanceof Error
+              ? e.message
+              : "Allow location for this site on the terminal device, then try again.",
+        });
+        setPadKey((k) => k + 1);
+        return;
+      }
+
       const res = await fetch("/api/visitor-employees/biometric/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,6 +145,9 @@ function BiometricCheckInner() {
           action: "toggle",
           deviceId: getOrCreateBiometricDeviceId(),
           deviceLabel: `${browserDeviceLabel()} · biometric`,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          accuracyMeters: pos.accuracyMeters,
           platform: typeof navigator !== "undefined" ? navigator.platform : undefined,
           language: typeof navigator !== "undefined" ? navigator.language : undefined,
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
@@ -134,7 +192,7 @@ function BiometricCheckInner() {
     } finally {
       setBusy(false);
     }
-  }, [terminalToken, busy, memberCode, fingerIndex]);
+  }, [terminalToken, busy, memberCode, fingerIndex, ensureTerminalLocation]);
 
   if (loadingTerminal) {
     return (
@@ -167,12 +225,46 @@ function BiometricCheckInner() {
           </p>
           <h1 className="mt-1 text-2xl font-extrabold text-gray-900">{terminalName}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your member ID, choose a finger, then hold on the pad. The first scan registers
-            that finger; later scans sign you in or out.
+            Allow location when prompted, enter your member ID, choose a finger, then hold on the
+            pad. The first scan registers that finger; later scans sign you in or out.
           </p>
         </header>
 
         <div className="space-y-4 rounded-2xl border border-sky-100 bg-white/90 p-5 shadow-sm">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
+            {locationLoading ? (
+              <p className="flex items-center gap-2 text-sky-800">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Waiting for location permission…
+              </p>
+            ) : locationReady ? (
+              <p className="flex items-center gap-2 font-semibold text-emerald-700">
+                <MapPin className="h-4 w-4" />
+                GPS ready
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="flex items-start gap-2 text-amber-900">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {locationError ??
+                      "Location is required for attendance. Allow location for this site."}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    positionRef.current = null;
+                    void ensureTerminalLocation().catch(() => {});
+                  }}
+                  className="inline-flex min-h-[40px] items-center rounded-lg bg-sky-700 px-3 py-2 text-xs font-bold text-white hover:bg-sky-800"
+                >
+                  Allow location
+                </button>
+              </div>
+            )}
+          </div>
+
           <label className="block text-sm">
             <span className="font-semibold text-gray-800">Member ID</span>
             <input
@@ -208,7 +300,7 @@ function BiometricCheckInner() {
             <FingerprintPad
               key={padKey}
               mode="verify"
-              disabled={busy || !memberCode.trim()}
+              disabled={busy || !memberCode.trim() || !locationReady}
               onComplete={() => void runScan()}
               label={BIOMETRIC_FINGERS.find((f) => f.index === fingerIndex)?.label}
             />
