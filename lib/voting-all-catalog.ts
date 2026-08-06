@@ -33,6 +33,11 @@ export type VotingAllContestantRow = {
   description: string | null;
   image_url: string | null;
   sort_order: number;
+  /**
+   * Paid vote total. `null` means "do not show a tally" — either an admin hid totals, or we
+   * are on the anon key and never fetched them (rendering 0 there would look like real results).
+   */
+  votes: number | null;
 };
 
 export type VotingAllCategoryRow = {
@@ -210,6 +215,9 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
       return a.name.localeCompare(b.name);
     });
 
+  /** Matches the condition guarding `voteTotalsPromise`, so a 0 always means a real tally. */
+  const talliesVisible = show_vote_totals && bypassesRls;
+
   const categories: VotingAllCategoryRow[] = visible.map((raw) => {
     const cont = sortContestantsForCategory(byCampaign.get(raw.id) ?? []);
     return {
@@ -224,6 +232,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
         description: r.description,
         image_url: r.image_url,
         sort_order: r.sort_order,
+        votes: talliesVisible ? voteTotalsByContestant.get(r.id) ?? 0 : null,
       })),
     };
   });
