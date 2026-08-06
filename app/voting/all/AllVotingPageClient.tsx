@@ -6,10 +6,13 @@ import Link from "next/link";
 import { ExternalLink, Search, Vote, X } from "lucide-react";
 
 import VotingDotMapBackground from "@/components/voting/VotingDotMapBackground";
-import type { VotingAllCategoryRow } from "@/lib/voting-all-catalog";
+import type { VotingAllCategoryRow, VotingAllContestantRow } from "@/lib/voting-all-catalog";
 import { canOptimizeRemoteImage } from "@/lib/image-hosts";
 import { GENERIC_VOTING_HUB_LOAD_FAILURE } from "@/lib/payment-user-message";
 import { formatVotingDateInNairobi } from "@/lib/voting-schedule-public";
+
+/** First paint on phones stays light; search and "Show all" reveal the rest. */
+const INITIAL_CONTESTANTS_VISIBLE = 8;
 
 /**
  * Full-bleed blue shell shared by every state of the page. Content is always centred;
@@ -25,10 +28,187 @@ function VotingHubShell({
   return (
     <div className="relative min-h-screen overflow-x-clip bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 pt-24">
       <VotingDotMapBackground />
-      <div className="relative z-10 w-full px-4 py-10 sm:px-6">
+      <div className="relative z-10 w-full px-4 py-8 sm:px-6 sm:py-10">
         <div className={width === "narrow" ? "mx-auto max-w-2xl" : "mx-auto max-w-5xl"}>{children}</div>
       </div>
     </div>
+  );
+}
+
+type CategoryResults = {
+  totalVotes: number;
+  rankById: Map<string, number>;
+  leaderId: string | null;
+};
+
+function ContestantCard({
+  contestant,
+  categorySlug,
+  rank,
+  isLeader,
+}: {
+  contestant: VotingAllContestantRow;
+  categorySlug: string;
+  rank: number | undefined;
+  isLeader: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-3 flex items-center gap-3 min-h-[4.5rem] ${
+        isLeader ? "border-primary-300 bg-primary-50/60" : "border-gray-200 bg-gray-50/50"
+      }`}
+    >
+      {rank !== undefined ? (
+        <div
+          className={`shrink-0 w-7 text-center text-sm font-bold tabular-nums ${
+            isLeader ? "text-primary-700" : "text-gray-400"
+          }`}
+          aria-label={`Position ${rank}`}
+        >
+          {rank}
+        </div>
+      ) : null}
+      {contestant.image_url ? (
+        <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+          <Image
+            src={contestant.image_url}
+            alt={contestant.name}
+            fill
+            unoptimized={!canOptimizeRemoteImage(contestant.image_url)}
+            className="object-cover"
+            sizes="56px"
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      ) : (
+        <div className="w-14 h-14 rounded-lg bg-gray-200 flex-shrink-0" />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold text-gray-900 break-words">{contestant.name}</div>
+        {contestant.votes !== null ? (
+          <div className="text-sm font-semibold text-primary-600 mt-0.5 tabular-nums">
+            {contestant.votes.toLocaleString("en-KE")} vote{contestant.votes !== 1 ? "s" : ""}
+          </div>
+        ) : null}
+      </div>
+      <Link
+        href={`/${encodeURIComponent(categorySlug)}?c=${encodeURIComponent(contestant.id)}`}
+        prefetch={false}
+        className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+      >
+        Vote
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Mounts the contestant grid only when the section nears the viewport so mobile devices
+ * are not asked to decode every photo on first paint. Search always expands immediately.
+ */
+function CategorySection({
+  cat,
+  results,
+  forceExpand,
+  index,
+}: {
+  cat: VotingAllCategoryRow;
+  results: CategoryResults | undefined;
+  forceExpand: boolean;
+  index: number;
+}) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(index < 2);
+  const [showAll, setShowAll] = useState(false);
+  const contestants = cat.contestants ?? [];
+  const shouldRenderGrid = forceExpand || inView;
+  const limit = forceExpand || showAll ? contestants.length : INITIAL_CONTESTANTS_VISIBLE;
+  const visibleContestants = contestants.slice(0, limit);
+  const hiddenCount = Math.max(0, contestants.length - visibleContestants.length);
+
+  useEffect(() => {
+    if (forceExpand || inView) return;
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "280px 0px", threshold: 0.01 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [forceExpand, inView]);
+
+  useEffect(() => {
+    if (!forceExpand) setShowAll(false);
+  }, [forceExpand]);
+
+  return (
+    <section
+      ref={sectionRef}
+      className="bg-white rounded-2xl shadow-2xl shadow-primary-950/30 ring-1 ring-white/20 overflow-hidden [content-visibility:auto] [contain-intrinsic-size:auto_28rem]"
+    >
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold text-gray-900">{cat.title}</h2>
+          {cat.description ? (
+            <p className="text-sm text-gray-600 mt-1 line-clamp-3">{cat.description}</p>
+          ) : null}
+          <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
+        </div>
+        {/* Category pages render live tallies on the server; a forced prefetch of every
+            visible link would run those queries for pages nobody opened. The default
+            prefetch still warms the route shell and `loading.tsx`. */}
+        <Link
+          href={`/${encodeURIComponent(cat.slug)}`}
+          prefetch={false}
+          className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100"
+        >
+          Open category page
+          <ExternalLink className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {contestants.length === 0 ? (
+        <div className="p-4 sm:p-6 text-sm text-gray-600">No contestants in this category yet.</div>
+      ) : shouldRenderGrid ? (
+        <div className="p-4 sm:p-6 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {visibleContestants.map((c) => (
+              <ContestantCard
+                key={c.id}
+                contestant={c}
+                categorySlug={cat.slug}
+                rank={results?.rankById.get(c.id)}
+                isLeader={results?.leaderId === c.id}
+              />
+            ))}
+          </div>
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="w-full sm:w-auto rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+            >
+              Show {hiddenCount} more in this category
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="p-4 sm:p-6" aria-hidden>
+          <div className="h-28 rounded-lg bg-gray-50 animate-pulse" />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -93,7 +273,7 @@ export default function AllVotingPageClient({
    * Equal totals share a position ("joint 2nd") rather than being ordered arbitrarily.
    */
   const resultsByCategory = useMemo(() => {
-    const map = new Map<string, { totalVotes: number; rankById: Map<string, number>; leaderId: string | null }>();
+    const map = new Map<string, CategoryResults>();
 
     for (const cat of initialCategories) {
       const scored = (cat.contestants ?? []).filter((c) => c.votes !== null);
@@ -238,17 +418,17 @@ export default function AllVotingPageClient({
 
   return (
     <VotingHubShell>
-      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-8 sm:mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-3xl md:text-4xl font-bold text-white">Vote — all categories</h1>
-          <p className="text-primary-100 mt-2 max-w-3xl">
+          <p className="text-primary-100 mt-2 max-w-3xl text-sm sm:text-base">
             Browse every open category and jump in to cast votes. Payment and vote rules are unchanged: each category
             has its own price and checkout on its page ({totalContestants} contestant
             {totalContestants !== 1 ? "s" : ""} listed below).
           </p>
         </div>
 
-        <div className="shrink-0 sm:pt-1">
+        <div className="shrink-0 sm:pt-1 sticky top-20 z-20 self-stretch sm:self-auto">
           {searchOpen || searchQuery ? (
             <div className="flex items-center gap-2 rounded-xl bg-white/95 shadow-lg ring-1 ring-white/40 pl-3 pr-1.5 py-1.5 w-full sm:w-72">
               <Search className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
@@ -264,6 +444,7 @@ export default function AllVotingPageClient({
                 placeholder="Search name…"
                 className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
                 autoComplete="off"
+                enterKeyHint="search"
               />
               <button
                 type="button"
@@ -278,7 +459,7 @@ export default function AllVotingPageClient({
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/25"
+              className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/25 w-full sm:w-auto justify-center"
             >
               <Search className="w-4 h-4" />
               Search
@@ -300,98 +481,16 @@ export default function AllVotingPageClient({
           </button>
         </div>
       ) : (
-        <div className="space-y-10">
-          {visibleCategories.map((cat) => {
-            const results = resultsByCategory.get(cat.id);
-            return (
-              <section
-                key={cat.id}
-                className="bg-white rounded-2xl shadow-2xl shadow-primary-950/30 ring-1 ring-white/20 overflow-hidden"
-              >
-                <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-gray-900">{cat.title}</h2>
-                    {cat.description ? (
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-3">{cat.description}</p>
-                    ) : null}
-                    <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
-                  </div>
-                  {/* Category pages render live tallies on the server; a forced prefetch of every
-                      visible link would run those queries for pages nobody opened. The default
-                      prefetch still warms the route shell and `loading.tsx`. */}
-                  <Link
-                    href={`/${encodeURIComponent(cat.slug)}`}
-                    className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100"
-                  >
-                    Open category page
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                </div>
-                {cat.contestants && cat.contestants.length > 0 ? (
-                  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {cat.contestants.map((c) => {
-                      const rank = results?.rankById.get(c.id);
-                      const isLeader = results?.leaderId === c.id;
-                      return (
-                        <div
-                          key={c.id}
-                          className={`rounded-lg border p-3 flex items-center gap-3 min-h-[4.5rem] ${
-                            isLeader ? "border-primary-300 bg-primary-50/60" : "border-gray-200 bg-gray-50/50"
-                          }`}
-                        >
-                          {rank !== undefined ? (
-                            <div
-                              className={`shrink-0 w-7 text-center text-sm font-bold tabular-nums ${
-                                isLeader ? "text-primary-700" : "text-gray-400"
-                              }`}
-                              aria-label={`Position ${rank}`}
-                            >
-                              {rank}
-                            </div>
-                          ) : null}
-                          {c.image_url ? (
-                            <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                              <Image
-                                src={c.image_url}
-                                alt={c.name}
-                                fill
-                                unoptimized={!canOptimizeRemoteImage(c.image_url)}
-                                className="object-cover"
-                                sizes="56px"
-                                referrerPolicy="no-referrer"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-14 h-14 rounded-lg bg-gray-200 flex-shrink-0" />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-gray-900 break-words">{c.name}</div>
-                            {c.votes !== null ? (
-                              <div className="text-sm font-semibold text-primary-600 mt-0.5 tabular-nums">
-                                {c.votes.toLocaleString("en-KE")} vote{c.votes !== 1 ? "s" : ""}
-                              </div>
-                            ) : null}
-                            {c.description ? (
-                              <div className="text-xs text-gray-600 line-clamp-2 mt-0.5">{c.description}</div>
-                            ) : null}
-                          </div>
-                          <Link
-                            href={`/${encodeURIComponent(cat.slug)}?c=${encodeURIComponent(c.id)}`}
-                            prefetch={false}
-                            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-                          >
-                            Vote
-                          </Link>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="p-6 text-sm text-gray-600">No contestants in this category yet.</div>
-                )}
-              </section>
-            );
-          })}
+        <div className="space-y-6 sm:space-y-10">
+          {visibleCategories.map((cat, index) => (
+            <CategorySection
+              key={cat.id}
+              cat={cat}
+              results={resultsByCategory.get(cat.id)}
+              forceExpand={Boolean(searchNeedle)}
+              index={index}
+            />
+          ))}
         </div>
       )}
     </VotingHubShell>

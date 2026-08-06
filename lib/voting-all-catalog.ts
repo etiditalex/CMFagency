@@ -22,7 +22,6 @@ type ContestantRow = {
   id: string;
   campaign_id: string;
   name: string;
-  description: string | null;
   image_url: string | null;
   sort_order: number;
 };
@@ -165,7 +164,8 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
       const chunk = ids.slice(k * CAMPAIGN_ID_CHUNK, k * CAMPAIGN_ID_CHUNK + CAMPAIGN_ID_CHUNK);
       return client
         .from("contestants")
-        .select("id, campaign_id, name, description, image_url, sort_order")
+        // Hub listing only needs name/photo/votes — skip description to shrink mobile payloads.
+        .select("id, campaign_id, name, image_url, sort_order")
         .in("campaign_id", chunk);
     })
   );
@@ -229,7 +229,7 @@ export async function getVotingAllCatalog(): Promise<VotingAllCatalogResult> {
       contestants: cont.map((r) => ({
         id: r.id,
         name: r.name,
-        description: r.description,
+        description: null,
         image_url: r.image_url,
         sort_order: r.sort_order,
         votes: talliesVisible ? voteTotalsByContestant.get(r.id) ?? 0 : null,

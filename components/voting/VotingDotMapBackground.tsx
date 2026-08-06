@@ -62,9 +62,9 @@ export default function VotingDotMapBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       {/* Even wash of dots behind everything, so the pattern reads on the parts of the page the
-          map silhouettes do not reach. */}
+          map silhouettes do not reach. Wider pitch on small screens = fewer painted dots. */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 max-md:[background-size:32px_32px]"
         style={{
           backgroundImage: "radial-gradient(circle, rgba(163,209,223,0.30) 1.7px, transparent 1.9px)",
           backgroundSize: "24px 24px",
@@ -78,7 +78,7 @@ export default function VotingDotMapBackground() {
         radius={0.42}
         color="#ffffff"
         opacity={0.34}
-        className="-left-[10%] top-8 h-[24rem] w-[24rem] sm:h-[32rem] sm:w-[32rem] lg:h-[44rem] lg:w-[44rem]"
+        className="-left-[10%] top-8 h-[18rem] w-[18rem] sm:h-[32rem] sm:w-[32rem] lg:h-[44rem] lg:w-[44rem]"
       />
 
       <DottedMap
@@ -88,7 +88,7 @@ export default function VotingDotMapBackground() {
         radius={0.7}
         color="#a3d1df"
         opacity={0.6}
-        className="-right-[6%] top-[28%] h-[18rem] w-[18rem] sm:h-[24rem] sm:w-[24rem] lg:h-[30rem] lg:w-[30rem]"
+        className="hidden sm:block -right-[6%] top-[28%] h-[18rem] w-[18rem] sm:h-[24rem] sm:w-[24rem] lg:h-[30rem] lg:w-[30rem]"
       />
 
       <DottedMap
