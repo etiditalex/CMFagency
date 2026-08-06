@@ -162,7 +162,8 @@ async function enrollFingerAtTerminal(
   admin: SupabaseClient,
   ownerId: string,
   employeeId: string,
-  fingerIndex: number
+  fingerIndex: number,
+  opts?: { externalId?: string | null; vendor?: string }
 ): Promise<
   | { ok: true; enrollment: BiometricEnrollmentRecord }
   | { ok: false; error: string; status: number }
@@ -170,6 +171,8 @@ async function enrollFingerAtTerminal(
   const { salt, hash } = createBiometricTemplateMaterial();
   const now = new Date().toISOString();
   const fingerLabel = fingerLabelForIndex(fingerIndex);
+  const externalId = opts?.externalId?.trim() || null;
+  const vendor = opts?.vendor?.trim() || (externalId ? "webauthn" : "fusion_pad");
 
   const { data, error } = await admin
     .from("visitor_employee_biometric_enrollments")
@@ -181,7 +184,8 @@ async function enrollFingerAtTerminal(
       template_hash: hash,
       template_salt: salt,
       status: "active",
-      vendor: "fusion_pad",
+      vendor,
+      external_id: externalId,
       enrolled_at: now,
       created_at: now,
       updated_at: now,
@@ -195,11 +199,46 @@ async function enrollFingerAtTerminal(
     }
     // Race: another request enrolled the same finger — reload it.
     const existing = await findActiveEnrollment(admin, employeeId, fingerIndex);
-    if (existing) return { ok: true, enrollment: existing };
+    if (existing) {
+      if (externalId && !existing.externalId) {
+        await admin
+          .from("visitor_employee_biometric_enrollments")
+          .update({
+            external_id: externalId,
+            vendor,
+            updated_at: now,
+          })
+          .eq("id", existing.id);
+        return {
+          ok: true,
+          enrollment: { ...existing, externalId, vendor },
+        };
+      }
+      return { ok: true, enrollment: existing };
+    }
     return { ok: false, error: error.message, status: 500 };
   }
 
   return { ok: true, enrollment: mapBiometricEnrollmentRow(data) };
+}
+
+async function bindExternalIdToEnrollment(
+  admin: SupabaseClient,
+  enrollment: BiometricEnrollmentRecord,
+  externalId: string,
+  vendor = "webauthn"
+): Promise<BiometricEnrollmentRecord> {
+  if (enrollment.externalId === externalId) return enrollment;
+  const now = new Date().toISOString();
+  await admin
+    .from("visitor_employee_biometric_enrollments")
+    .update({
+      external_id: externalId,
+      vendor,
+      updated_at: now,
+    })
+    .eq("id", enrollment.id);
+  return { ...enrollment, externalId, vendor };
 }
 
 async function findEnrollmentByExternalId(
@@ -266,20 +305,27 @@ export async function processEmployeeBiometricScan(
 
   if (externalId) {
     const byExternal = await findEnrollmentByExternalId(admin, terminal.ownerId, externalId);
-    if (!byExternal) {
-      return {
-        ok: false,
-        error: "No active fingerprint enrollment matches this scanner id.",
-        status: 404,
-      };
+    if (byExternal) {
+      employee = byExternal.employee;
+      enrollment = byExternal.enrollment;
+      fingerLabel = enrollment.fingerLabel;
     }
-    employee = byExternal.employee;
-    enrollment = byExternal.enrollment;
-    fingerLabel = enrollment.fingerLabel;
-  } else {
+  }
+
+  // First-time (or re-bind): member ID + finger, optionally with a WebAuthn credential id.
+  if (!employee || !enrollment) {
     const memberCode = normalizeMemberCode(input.memberCode ?? input.member_code);
     const fingerIndex = parseFingerIndex(input.fingerIndex ?? input.finger_index);
+
     if (!memberCode) {
+      if (externalId) {
+        return {
+          ok: false,
+          error:
+            "Fingerprint not recognised on this terminal yet. Use “First-time register”, enter your member ID once, then you can sign in with fingerprint only.",
+          status: 404,
+        };
+      }
       return { ok: false, error: "Enter your member ID to continue.", status: 400 };
     }
     if (!fingerIndex) {
@@ -297,15 +343,29 @@ export async function processEmployeeBiometricScan(
         admin,
         terminal.ownerId,
         employee.id,
-        fingerIndex
+        fingerIndex,
+        {
+          externalId: externalId || null,
+          vendor: externalId ? "webauthn" : "fusion_pad",
+        }
       );
       if (!enrolled.ok) {
         return { ok: false, error: enrolled.error, status: enrolled.status };
       }
       enrollment = enrolled.enrollment;
       firstEnrollment = true;
+    } else if (externalId) {
+      enrollment = await bindExternalIdToEnrollment(admin, enrollment, externalId, "webauthn");
     }
     fingerLabel = enrollment.fingerLabel;
+  }
+
+  if (!employee || !enrollment) {
+    return {
+      ok: false,
+      error: "Could not resolve employee fingerprint enrollment.",
+      status: 500,
+    };
   }
 
   if (!employee.qrCodeToken) {
