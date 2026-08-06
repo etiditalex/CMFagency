@@ -12,21 +12,21 @@ import { GENERIC_VOTING_HUB_LOAD_FAILURE } from "@/lib/payment-user-message";
 import { formatVotingDateInNairobi } from "@/lib/voting-schedule-public";
 
 /**
- * Full-bleed blue shell shared by every state of the page. `width="narrow"` centres the single-card
- * states (error, closed, not-yet-open) without giving up the full-width background.
+ * Full-bleed blue shell shared by every state of the page. Content is always centred;
+ * `width="narrow"` is for single-card states (error, closed, not-yet-open).
  */
 function VotingHubShell({
   children,
-  width = "full",
+  width = "wide",
 }: {
   children: React.ReactNode;
-  width?: "full" | "narrow";
+  width?: "wide" | "narrow";
 }) {
   return (
     <div className="relative min-h-screen overflow-x-clip bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 pt-24">
       <VotingDotMapBackground />
-      <div className="relative z-10 w-full px-4 py-10 sm:px-6 lg:px-10 xl:px-14">
-        <div className={width === "narrow" ? "mx-auto max-w-2xl" : ""}>{children}</div>
+      <div className="relative z-10 w-full px-4 py-10 sm:px-6">
+        <div className={width === "narrow" ? "mx-auto max-w-2xl" : "mx-auto max-w-5xl"}>{children}</div>
       </div>
     </div>
   );
@@ -249,7 +249,7 @@ export default function AllVotingPageClient({
                 </Link>
               </div>
               {cat.contestants && cat.contestants.length > 0 ? (
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {cat.contestants.map((c) => {
                     const rank = results?.rankById.get(c.id);
                     const isLeader = results?.leaderId === c.id;
