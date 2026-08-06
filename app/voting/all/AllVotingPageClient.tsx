@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, Vote } from "lucide-react";
+import { ExternalLink, Search, Vote, X } from "lucide-react";
 
 import VotingDotMapBackground from "@/components/voting/VotingDotMapBackground";
 import type { VotingAllCategoryRow } from "@/lib/voting-all-catalog";
@@ -52,8 +52,16 @@ export default function AllVotingPageClient({
 }: Props) {
   const [votingLocked, setVotingLocked] = useState(initialVotingLocked);
   const [votingClosed, setVotingClosed] = useState(initialVotingClosed);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const votingOpensLabel = useMemo(() => formatVotingDateInNairobi(votingStartMs), [votingStartMs]);
   const votingClosedLabel = useMemo(() => formatVotingDateInNairobi(votingEndMs), [votingEndMs]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    searchInputRef.current?.focus();
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!votingLocked) return;
@@ -127,6 +135,24 @@ export default function AllVotingPageClient({
       }),
     [initialCategories, resultsByCategory]
   );
+
+  const searchNeedle = searchQuery.trim().toLowerCase();
+
+  /** Filter contestants by name; drop categories with no matches. */
+  const visibleCategories = useMemo(() => {
+    if (!searchNeedle) return sortedCategories;
+    return sortedCategories
+      .map((cat) => ({
+        ...cat,
+        contestants: (cat.contestants ?? []).filter((c) => c.name.toLowerCase().includes(searchNeedle)),
+      }))
+      .filter((cat) => (cat.contestants?.length ?? 0) > 0);
+  }, [sortedCategories, searchNeedle]);
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchOpen(false);
+  };
 
   if (initialError) {
     return (
@@ -212,114 +238,168 @@ export default function AllVotingPageClient({
 
   return (
     <VotingHubShell>
-      <div className="mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-white">Vote — all categories</h1>
-        <p className="text-primary-100 mt-2 max-w-3xl">
-          Browse every open category and jump in to cast votes. Payment and vote rules are unchanged: each category
-          has its own price and checkout on its page ({totalContestants} contestant
-          {totalContestants !== 1 ? "s" : ""} listed below).
-        </p>
+      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">Vote — all categories</h1>
+          <p className="text-primary-100 mt-2 max-w-3xl">
+            Browse every open category and jump in to cast votes. Payment and vote rules are unchanged: each category
+            has its own price and checkout on its page ({totalContestants} contestant
+            {totalContestants !== 1 ? "s" : ""} listed below).
+          </p>
+        </div>
+
+        <div className="shrink-0 sm:pt-1">
+          {searchOpen || searchQuery ? (
+            <div className="flex items-center gap-2 rounded-xl bg-white/95 shadow-lg ring-1 ring-white/40 pl-3 pr-1.5 py-1.5 w-full sm:w-72">
+              <Search className="w-4 h-4 text-primary-600 shrink-0" aria-hidden />
+              <label className="sr-only" htmlFor="voting-hub-search">
+                Search contestant by name
+              </label>
+              <input
+                id="voting-hub-search"
+                ref={searchInputRef}
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search name…"
+                className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                aria-label="Close search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/25"
+            >
+              <Search className="w-4 h-4" />
+              Search
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-10">
-        {sortedCategories.map((cat) => {
-          const results = resultsByCategory.get(cat.id);
-          return (
-            <section
-              key={cat.id}
-              className="bg-white rounded-2xl shadow-2xl shadow-primary-950/30 ring-1 ring-white/20 overflow-hidden"
-            >
-              <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-xl font-bold text-gray-900">{cat.title}</h2>
-                  {cat.description ? (
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-3">{cat.description}</p>
-                  ) : null}
-                  {results ? (
-                    <p className="text-sm font-semibold text-primary-700 mt-2">
-                      {results.totalVotes.toLocaleString("en-KE")} total vote
-                      {results.totalVotes !== 1 ? "s" : ""} cast in this category
-                    </p>
-                  ) : null}
-                  <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
+      {searchNeedle && visibleCategories.length === 0 ? (
+        <div className="bg-white/95 rounded-2xl shadow-lg p-8 text-center text-gray-700">
+          <p className="font-semibold text-gray-900">No contestants match “{searchQuery.trim()}”</p>
+          <p className="text-sm mt-1">Try another spelling, or clear search to browse all categories.</p>
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+          >
+            Clear search
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {visibleCategories.map((cat) => {
+            const results = resultsByCategory.get(cat.id);
+            return (
+              <section
+                key={cat.id}
+                className="bg-white rounded-2xl shadow-2xl shadow-primary-950/30 ring-1 ring-white/20 overflow-hidden"
+              >
+                <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-gray-900">{cat.title}</h2>
+                    {cat.description ? (
+                      <p className="text-sm text-gray-600 mt-1 line-clamp-3">{cat.description}</p>
+                    ) : null}
+                    {results ? (
+                      <p className="text-sm font-semibold text-primary-700 mt-2">
+                        {results.totalVotes.toLocaleString("en-KE")} total vote
+                        {results.totalVotes !== 1 ? "s" : ""} cast in this category
+                      </p>
+                    ) : null}
+                    <p className="text-xs text-gray-500 mt-2 font-mono">/{cat.slug}</p>
+                  </div>
+                  {/* Category pages render live tallies on the server; a forced prefetch of every
+                      visible link would run those queries for pages nobody opened. The default
+                      prefetch still warms the route shell and `loading.tsx`. */}
+                  <Link
+                    href={`/${encodeURIComponent(cat.slug)}`}
+                    className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100"
+                  >
+                    Open category page
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
                 </div>
-                {/* Category pages render live tallies on the server; a forced prefetch of every
-                    visible link would run those queries for pages nobody opened. The default
-                    prefetch still warms the route shell and `loading.tsx`. */}
-                <Link
-                  href={`/${encodeURIComponent(cat.slug)}`}
-                  className="inline-flex items-center gap-1.5 shrink-0 rounded-lg border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-100"
-                >
-                  Open category page
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
-              </div>
-              {cat.contestants && cat.contestants.length > 0 ? (
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {cat.contestants.map((c) => {
-                    const rank = results?.rankById.get(c.id);
-                    const isLeader = results?.leaderId === c.id;
-                    return (
-                      <div
-                        key={c.id}
-                        className={`rounded-lg border p-3 flex items-center gap-3 min-h-[4.5rem] ${
-                          isLeader ? "border-primary-300 bg-primary-50/60" : "border-gray-200 bg-gray-50/50"
-                        }`}
-                      >
-                        {rank !== undefined ? (
-                          <div
-                            className={`shrink-0 w-7 text-center text-sm font-bold tabular-nums ${
-                              isLeader ? "text-primary-700" : "text-gray-400"
-                            }`}
-                            aria-label={`Position ${rank}`}
-                          >
-                            {rank}
-                          </div>
-                        ) : null}
-                        {c.image_url ? (
-                          <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                            <Image
-                              src={c.image_url}
-                              alt={c.name}
-                              fill
-                              unoptimized={!canOptimizeRemoteImage(c.image_url)}
-                              className="object-cover"
-                              sizes="56px"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-14 h-14 rounded-lg bg-gray-200 flex-shrink-0" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold text-gray-900 break-words">{c.name}</div>
-                          {c.votes !== null ? (
-                            <div className="text-sm font-semibold text-primary-600 mt-0.5 tabular-nums">
-                              {c.votes.toLocaleString("en-KE")} vote{c.votes !== 1 ? "s" : ""}
+                {cat.contestants && cat.contestants.length > 0 ? (
+                  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {cat.contestants.map((c) => {
+                      const rank = results?.rankById.get(c.id);
+                      const isLeader = results?.leaderId === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          className={`rounded-lg border p-3 flex items-center gap-3 min-h-[4.5rem] ${
+                            isLeader ? "border-primary-300 bg-primary-50/60" : "border-gray-200 bg-gray-50/50"
+                          }`}
+                        >
+                          {rank !== undefined ? (
+                            <div
+                              className={`shrink-0 w-7 text-center text-sm font-bold tabular-nums ${
+                                isLeader ? "text-primary-700" : "text-gray-400"
+                              }`}
+                              aria-label={`Position ${rank}`}
+                            >
+                              {rank}
                             </div>
                           ) : null}
-                          {c.description ? (
-                            <div className="text-xs text-gray-600 line-clamp-2 mt-0.5">{c.description}</div>
-                          ) : null}
+                          {c.image_url ? (
+                            <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                              <Image
+                                src={c.image_url}
+                                alt={c.name}
+                                fill
+                                unoptimized={!canOptimizeRemoteImage(c.image_url)}
+                                className="object-cover"
+                                sizes="56px"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg bg-gray-200 flex-shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-gray-900 break-words">{c.name}</div>
+                            {c.votes !== null ? (
+                              <div className="text-sm font-semibold text-primary-600 mt-0.5 tabular-nums">
+                                {c.votes.toLocaleString("en-KE")} vote{c.votes !== 1 ? "s" : ""}
+                              </div>
+                            ) : null}
+                            {c.description ? (
+                              <div className="text-xs text-gray-600 line-clamp-2 mt-0.5">{c.description}</div>
+                            ) : null}
+                          </div>
+                          <Link
+                            href={`/${encodeURIComponent(cat.slug)}?c=${encodeURIComponent(c.id)}`}
+                            prefetch={false}
+                            className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
+                          >
+                            Vote
+                          </Link>
                         </div>
-                        <Link
-                          href={`/${encodeURIComponent(cat.slug)}?c=${encodeURIComponent(c.id)}`}
-                          prefetch={false}
-                          className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
-                        >
-                          Vote
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="p-6 text-sm text-gray-600">No contestants in this category yet.</div>
-              )}
-            </section>
-          );
-        })}
-      </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-6 text-sm text-gray-600">No contestants in this category yet.</div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </VotingHubShell>
   );
 }
