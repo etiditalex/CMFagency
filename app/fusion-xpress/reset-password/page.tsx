@@ -116,7 +116,26 @@ export default function FusionXpressResetPasswordPage() {
     });
 
     const establishSession = async () => {
-      const code = new URLSearchParams(window.location.search).get("code");
+      const params = new URLSearchParams(window.location.search);
+      const tokenHash = params.get("token_hash");
+      const otpType = params.get("type");
+      if (tokenHash && (otpType === "recovery" || !otpType)) {
+        const { data, error: otpErr } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (!cancelled && data.session) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          markReady(true);
+          return;
+        }
+        if (otpErr && !cancelled) {
+          markReady(false, otpErr.message || "Invalid or expired reset link.");
+          return;
+        }
+      }
+
+      const code = params.get("code");
       if (code) {
         const { data, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
         if (!cancelled && data.session) {

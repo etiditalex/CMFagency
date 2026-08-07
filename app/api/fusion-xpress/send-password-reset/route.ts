@@ -53,8 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email service not configured" }, { status: 503 });
     }
 
-    const origin = (req.headers.get("origin") || SITE_URL).replace(/\/$/, "");
-    const redirectTo = `${origin}/fusion-xpress/reset-password`;
+    // Always use the canonical public site URL so recovery never lands on a
+    // protected *.vercel.app deployment (which redirects to vercel.com/login).
+    const redirectTo = `${SITE_URL}/fusion-xpress/reset-password`;
 
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -66,8 +67,9 @@ export async function POST(req: NextRequest) {
       options: { redirectTo },
     });
 
+    const hashedToken = linkData?.properties?.hashed_token;
     // Do not reveal whether the account exists.
-    if (linkErr || !linkData?.properties?.action_link) {
+    if (linkErr || !hashedToken) {
       const msg = String(linkErr?.message ?? "").toLowerCase();
       if (
         msg.includes("not found") ||
@@ -87,7 +89,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    const actionLink = linkData.properties.action_link;
+    // Link opens our app directly (verifyOtp on the reset page). Avoid Supabase's
+    // action_link redirect chain, which can bounce through a protected Vercel URL.
+    const actionLink = `${SITE_URL}/fusion-xpress/reset-password?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
     const emailHtml = `
       <!DOCTYPE html>
       <html>
