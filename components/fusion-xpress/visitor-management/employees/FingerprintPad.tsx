@@ -17,7 +17,7 @@ export default function FingerprintPad({
   onComplete,
   label,
 }: Props) {
-  const needed = pressesRequired ?? (mode === "enroll" ? 3 : 1);
+  const needed = pressesRequired ?? 1;
   const [presses, setPresses] = useState(0);
   const [pressing, setPressing] = useState(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

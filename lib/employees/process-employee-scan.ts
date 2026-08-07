@@ -157,6 +157,10 @@ function isKioskScan(input: { kioskScan?: unknown; scanSource?: unknown }): bool
   return source === "kiosk" || source === "biometric";
 }
 
+function isBiometricScan(input: { scanSource?: unknown }): boolean {
+  return String(input.scanSource ?? "").toLowerCase() === "biometric";
+}
+
 export async function processEmployeeQrScan(
   admin: SupabaseClient,
   input: DeviceFingerprintInput & {
@@ -173,6 +177,7 @@ export async function processEmployeeQrScan(
   }
 ): Promise<EmployeeScanResult> {
   const fromKiosk = isKioskScan(input);
+  const fromBiometric = isBiometricScan(input);
   const token = parseToken(input.token ?? input.qrToken);
   if (!token) {
     return { ok: false, error: "Missing employee QR token.", status: 400 };
@@ -256,12 +261,19 @@ export async function processEmployeeQrScan(
         nextEvent: eventType,
         lastEventBeforeToday,
       });
-  if (!transitionCheck.ok) {
+  // Fingerprint terminal testing: allow unlimited sign-in/out toggles (skip once-per-day limits).
+  // QR / gate / kiosk keep normal daily rules.
+  if (!fromBiometric && !transitionCheck.ok) {
     return { ok: false, error: transitionCheck.error, status: 409 };
   }
 
   const shiftNumber =
-    shiftEnabled && "shiftNumber" in transitionCheck ? transitionCheck.shiftNumber : undefined;
+    !fromBiometric &&
+    shiftEnabled &&
+    transitionCheck.ok &&
+    "shiftNumber" in transitionCheck
+      ? transitionCheck.shiftNumber
+      : undefined;
 
   const device = normalizeDeviceFingerprint({
     ...input,
