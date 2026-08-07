@@ -132,7 +132,6 @@ async function findEmployeeBoundToDevice(
 async function findEmployeeByMemberCode(
   admin: SupabaseClient,
   ownerId: string,
-  memberType: EmployeeMemberType,
   memberCode: string
 ): Promise<EmployeeRecord | null> {
   if (!memberCode) return null;
@@ -141,13 +140,39 @@ async function findEmployeeByMemberCode(
     .from("visitor_employees")
     .select(EMPLOYEE_SELECT)
     .eq("owner_id", ownerId)
-    .eq("member_type", memberType)
-    .eq("status", "active")
     .ilike("employee_code", memberCode)
     .maybeSingle();
 
   if (error || !data) return null;
   return mapEmployeeRow(data as EmployeeRow);
+}
+
+async function findEmployeeByMemberCodeLoose(
+  admin: SupabaseClient,
+  ownerId: string,
+  memberCode: string
+): Promise<EmployeeRecord | null> {
+  const exact = await findEmployeeByMemberCode(admin, ownerId, memberCode);
+  if (exact) return exact;
+
+  // Fallback when codes were stored with/without hyphens or odd spacing.
+  const compact = memberCode.replace(/[^A-Z0-9]/gi, "");
+  if (!compact || compact === memberCode) return null;
+
+  const { data, error } = await admin
+    .from("visitor_employees")
+    .select(EMPLOYEE_SELECT)
+    .eq("owner_id", ownerId)
+    .limit(500);
+
+  if (error || !data?.length) return null;
+  const match = data.find((row) => {
+    const code = String((row as { employee_code?: string | null }).employee_code ?? "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/gi, "");
+    return code === compact;
+  });
+  return match ? mapEmployeeRow(match as EmployeeRow) : null;
 }
 
 async function deviceUsedByOtherEmployee(
@@ -304,12 +329,28 @@ export async function processEmployeeGateScan(
   );
 
   if (!employee && memberCode) {
-    employee = await findEmployeeByMemberCode(admin, gate.ownerId, gate.memberType, memberCode);
+    employee = await findEmployeeByMemberCodeLoose(admin, gate.ownerId, memberCode);
     if (!employee) {
       return {
         ok: false as const,
-        error: "Member ID not found. Check the code from your manager and try again.",
+        error: `Member ID ${memberCode} was not found for this organisation. Check the ID on the Employees list (e.g. STF-1DB365).`,
         status: 404,
+      };
+    }
+    if (employee.status !== "active") {
+      return {
+        ok: false as const,
+        error: `${employee.fullName} is inactive. Ask your manager to activate their profile.`,
+        status: 403,
+      };
+    }
+    if (parseMemberType(employee.memberType) !== gate.memberType) {
+      const needed = gate.memberType === "crm" ? "CRM" : "Staff";
+      const actual = parseMemberType(employee.memberType) === "crm" ? "CRM" : "Staff";
+      return {
+        ok: false as const,
+        error: `${memberCode} (${employee.fullName}) belongs to the ${actual} team. Scan the ${needed} reception QR, or move them to the ${needed} team in Employees.`,
+        status: 403,
       };
     }
   }
