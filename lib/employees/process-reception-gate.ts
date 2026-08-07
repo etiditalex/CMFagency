@@ -178,7 +178,7 @@ function assertDeviceAccess(
   if (otherOnDevice) {
     return {
       ok: false,
-      error: `This phone is already linked to ${otherOnDevice.fullName}. Use your own device or ask your manager for help.`,
+      error: `This phone is already linked to ${otherOnDevice.fullName}. Enter your member ID to use this device, or ask your manager to tap Reset phone on ${otherOnDevice.fullName}.`,
       status: 403,
     };
   }
@@ -191,7 +191,7 @@ function assertDeviceAccess(
     return {
       ok: false,
       error:
-        "This member ID is linked to another phone. Ask your manager to reset your device link if you changed phones.",
+        "This member ID is linked to another phone. Enter your member ID again to move the link here, or ask your manager to tap Reset phone on your employee row.",
       status: 403,
     };
   }
@@ -352,8 +352,34 @@ export async function processEmployeeGateScan(
     device.deviceId,
     employee.id
   );
-  const access = assertDeviceAccess(employee, device.deviceId, otherOnDevice);
-  if (!access.ok) return access;
+
+  // Entering a member ID explicitly allows taking over a shared reception device
+  // (previous staff stay linked until Reset phone, which blocked later employees).
+  if (memberCode) {
+    const now = new Date().toISOString();
+    if (otherOnDevice) {
+      await admin
+        .from("visitor_employees")
+        .update({ registered_device_id: null, updated_at: now })
+        .eq("id", otherOnDevice.id)
+        .eq("owner_id", gate.ownerId);
+    }
+    if (
+      employee.registeredDeviceId &&
+      device.deviceId !== "unknown-device" &&
+      employee.registeredDeviceId !== device.deviceId
+    ) {
+      await admin
+        .from("visitor_employees")
+        .update({ registered_device_id: null, updated_at: now })
+        .eq("id", employee.id)
+        .eq("owner_id", gate.ownerId);
+      employee = { ...employee, registeredDeviceId: null };
+    }
+  } else {
+    const access = assertDeviceAccess(employee, device.deviceId, otherOnDevice);
+    if (!access.ok) return access;
+  }
 
   if (!employee.registeredDeviceId && !memberCode && device.deviceId !== "unknown-device") {
     return {

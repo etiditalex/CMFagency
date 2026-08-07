@@ -378,21 +378,30 @@ export default function VisitorManagementEmployeesPage() {
 
   const clearEmployeeDevice = useCallback(
     async (id: string, fullName: string) => {
+      const ok = window.confirm(
+        `Reset phone link for ${fullName}? They can enter their member ID again at reception on a new or shared device.`
+      );
+      if (!ok) return;
       setPatchingId(id);
       try {
         const token = await getToken();
         if (!token) throw new Error("Not signed in");
-        const res = await fetch(`/api/visitor-employees/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ clearDeviceLink: true }),
-        });
+        const res = await fetch(
+          appendOwnerQuery(`/api/visitor-employees/${encodeURIComponent(id)}`),
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ clearDeviceLink: true }),
+          }
+        );
         const json = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) throw new Error(json.error ?? "Reset failed");
-        setNotice(`${fullName}'s phone link cleared. They can enter their member ID again at reception.`);
+        setNotice(
+          `${fullName}'s phone link cleared. They can enter their member ID again at reception.`
+        );
         await loadEmployees();
       } catch (e: unknown) {
         setNotice(e instanceof Error ? e.message : "Could not reset phone link");
@@ -400,7 +409,7 @@ export default function VisitorManagementEmployeesPage() {
         setPatchingId(null);
       }
     },
-    [getToken, loadEmployees]
+    [getToken, loadEmployees, appendOwnerQuery]
   );
 
   const setEmployeeMemberType = useCallback(
@@ -962,16 +971,19 @@ export default function VisitorManagementEmployeesPage() {
                           <Pencil className="w-3.5 h-3.5" />
                           Times
                         </button>
-                        {emp.registeredDeviceId ? (
-                          <button
-                            type="button"
-                            disabled={patchingId === emp.id || setupRequired}
-                            onClick={() => void clearEmployeeDevice(emp.id, emp.fullName)}
-                            className="text-xs font-semibold text-violet-700 hover:underline disabled:opacity-50"
-                          >
-                            Reset phone
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          disabled={patchingId === emp.id || setupRequired}
+                          onClick={() => void clearEmployeeDevice(emp.id, emp.fullName)}
+                          className="text-xs font-semibold text-violet-700 hover:underline disabled:opacity-50"
+                          title={
+                            emp.registeredDeviceId
+                              ? "Clear the phone linked to this employee"
+                              : "Clear phone link if scans are blocked on a shared device"
+                          }
+                        >
+                          Reset phone
+                        </button>
                         {emp.status === "active" ? (
                           <button
                             type="button"
