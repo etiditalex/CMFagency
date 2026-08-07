@@ -48,6 +48,7 @@ export default function VisitorSignInForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  const [passwordJustReset, setPasswordJustReset] = useState(false);
 
   const [step, setStep] = useState<Step>("login");
   const [code, setCode] = useState("");
@@ -61,6 +62,10 @@ export default function VisitorSignInForm() {
   const canSubmit = useMemo(() => email.trim() && password.length > 0, [email, password]);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("passwordReset") === "1") {
+      setPasswordJustReset(true);
+    }
+
     const check = async () => {
       const { data } = await supabase.auth.getSession();
       const uid = data.session?.user?.id;
@@ -210,7 +215,15 @@ export default function VisitorSignInForm() {
       if (resetErr) throw resetErr;
       setResetSent(true);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unable to send reset link.");
+      const msg = err instanceof Error ? err.message : "Unable to send reset link.";
+      const lower = msg.toLowerCase();
+      if (lower.includes("redirect") || lower.includes("not allowed")) {
+        setError(
+          "Password recovery is misconfigured (reset redirect URL not allowlisted in Supabase Auth). Contact support."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -247,7 +260,13 @@ export default function VisitorSignInForm() {
           ) : null}
         </div>
       ) : null}
-      {resetSent ? <p className="mt-4 text-sm text-primary-700">Password reset link sent.</p> : null}
+      {(passwordJustReset || resetSent) && !error ? (
+        <p className="mt-4 text-sm text-primary-700">
+          {passwordJustReset
+            ? "Password updated. Sign in with your new password."
+            : "Password reset link sent. Check your email, then open the link to set a new password."}
+        </p>
+      ) : null}
 
       {step === "code" ? (
         <form className="mt-6 space-y-4" onSubmit={onVerifyCode}>

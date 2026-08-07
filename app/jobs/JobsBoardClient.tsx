@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Briefcase, Loader2, Lock, Search, Sparkles, UserCircle, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,8 @@ import { industryLabel, seniorityLabel } from "@/lib/job-listing-taxonomy";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 
 type JobTab = "find" | "saved" | "applications" | "preferences" | "seekers" | "employers";
+
+const JOB_TABS: JobTab[] = ["find", "saved", "applications", "preferences", "seekers", "employers"];
 
 type Props = {
   initialJobs: UnifiedJobListing[];
@@ -58,6 +60,14 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
   const [loadError] = useState<string | null>(initialError);
   const [searchInput, setSearchInput] = useState(initialQuery);
   const [activeTab, setActiveTab] = useState<JobTab>("find");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab && JOB_TABS.includes(tab as JobTab)) {
+      setActiveTab(tab as JobTab);
+    }
+  }, []);
 
   const [profileText, setProfileText] = useState("");
   const [matchLoading, setMatchLoading] = useState(false);

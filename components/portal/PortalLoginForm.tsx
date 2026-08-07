@@ -56,8 +56,16 @@ export function PortalLoginForm({
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(initialErrorMessage);
+  const [passwordJustReset, setPasswordJustReset] = useState(false);
 
   const [resetSent, setResetSent] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("passwordReset") === "1") {
+      setPasswordJustReset(true);
+    }
+  }, []);
 
   type Step = "login" | "code";
   const [step, setStep] = useState<Step>("login");
@@ -361,7 +369,15 @@ export function PortalLoginForm({
       if (resetErr) throw resetErr;
       setResetSent(true);
     } catch (err: unknown) {
-      setError((err as { message?: string })?.message ?? "Unable to send reset link.");
+      const msg = String((err as { message?: string })?.message ?? "Unable to send reset link.");
+      const lower = msg.toLowerCase();
+      if (lower.includes("redirect") || lower.includes("not allowed")) {
+        setError(
+          "Password recovery is misconfigured (reset redirect URL not allowlisted in Supabase Auth). Contact support."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -408,6 +424,13 @@ export function PortalLoginForm({
         <div className={layout === "embedded" ? "p-5" : "p-8"}>
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          )}
+          {(passwordJustReset || resetSent) && !error && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+              {passwordJustReset
+                ? "Password updated. Sign in with your new password."
+                : "Password reset link sent. Check your email, then open the link to set a new password."}
+            </div>
           )}
 
           {step === "code" ? (
@@ -536,7 +559,6 @@ export function PortalLoginForm({
                 >
                   Forgot password
                 </button>
-                {resetSent && <span className="text-xs text-green-700 font-semibold">Reset link sent</span>}
               </div>
 
               <div className="flex items-center justify-between gap-3">

@@ -6,6 +6,66 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Lock, Shield } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import {
+  hasVisitorManagementAccess,
+  isVisitorOnlyPortalUser,
+  parsePortalFeatures,
+} from "@/lib/visitors/visitor-only-access";
+
+const ADMIN_LOGIN = "/fusion-xpress/admin-login";
+const VISITOR_SIGN_IN = "/fusion-xpress/smart-visitor-management/sign-in";
+const EMPLOYER_SIGN_IN = "/jobs?tab=employers";
+const TEAMS_WORK_SIGN_IN = "/teams-work/portal";
+
+function readUrlAuthError(): string | null {
+  if (typeof window === "undefined") return null;
+  const fromSearch = new URLSearchParams(window.location.search);
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const fromHash = new URLSearchParams(hash);
+  const description =
+    fromSearch.get("error_description") ||
+    fromHash.get("error_description") ||
+    fromSearch.get("error") ||
+    fromHash.get("error");
+  if (!description) return null;
+  return description.replace(/\+/g, " ");
+}
+
+async function resolvePostResetLoginPath(): Promise<string> {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user?.id) return ADMIN_LOGIN;
+
+    const accountType = String(user.user_metadata?.account_type ?? "").toLowerCase();
+    if (accountType === "employer") return EMPLOYER_SIGN_IN;
+    if (accountType === "visitor_management") return VISITOR_SIGN_IN;
+
+    const { data: member } = await supabase
+      .from("portal_members")
+      .select("role, features")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!member) return ADMIN_LOGIN;
+
+    const role = String(member.role ?? "").toLowerCase();
+    const features = parsePortalFeatures(member.features);
+    const isAdmin = role === "admin";
+
+    if (role === "admin" || role === "manager") return ADMIN_LOGIN;
+    if (role === "employer") return EMPLOYER_SIGN_IN;
+    if (isVisitorOnlyPortalUser(role, features, isAdmin) || hasVisitorManagementAccess(role, features, false)) {
+      return VISITOR_SIGN_IN;
+    }
+    if (features.includes("teams_work") && role === "client") return TEAMS_WORK_SIGN_IN;
+  } catch {
+    // fall through
+  }
+  return ADMIN_LOGIN;
+}
 
 export default function FusionXpressResetPasswordPage() {
   const router = useRouter();
@@ -14,62 +74,81 @@ export default function FusionXpressResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [loginHref, setLoginHref] = useState(ADMIN_LOGIN);
 
   const canSubmit = useMemo(() => {
     return password.length >= 6 && password === confirm;
   }, [confirm, password]);
 
   useEffect(() => {
-    // The reset link sets a session in the URL hash. Supabase parses it asynchronously.
-    // Use onAuthStateChange to wait for PASSWORD_RECOVERY or initial session, then
-    // fallback to polling getSession() for hash-based recovery.
-    let resolved = false;
+    let cancelled = false;
+    let hasSession = false;
 
-    const resolveReady = (hasSession: boolean) => {
-      if (resolved) return;
-      resolved = true;
-      setReady(true);
-      if (!hasSession) {
-        setError("Invalid or expired reset link. Please request a new one from Fusion Xpress login.");
+    const markReady = (ok: boolean, message?: string | null) => {
+      if (cancelled) return;
+      if (ok) {
+        hasSession = true;
+        setError(null);
+        setReady(true);
+        return;
       }
+      // Never lock out a late PASSWORD_RECOVERY / session after a timeout miss.
+      if (hasSession) return;
+      setReady(true);
+      setError(
+        message ||
+          "Invalid or expired reset link. Please request a new one from your portal sign-in page."
+      );
     };
 
+    const urlError = readUrlAuthError();
+    if (urlError) {
+      markReady(false, urlError);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
-        resolveReady(!!session);
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
+        markReady(true);
       }
     });
 
-    const check = async () => {
-      for (let i = 0; i < 6; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          resolveReady(true);
+    const establishSession = async () => {
+      const code = new URLSearchParams(window.location.search).get("code");
+      if (code) {
+        const { data, error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
+        if (!cancelled && data.session) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          markReady(true);
           return;
         }
-        if (i < 5) await new Promise((r) => setTimeout(r, 400));
+        if (exchangeErr && !cancelled) {
+          console.warn("Password recovery code exchange:", exchangeErr.message);
+        }
       }
-      resolveReady(false);
+
+      for (let i = 0; i < 15; i++) {
+        if (cancelled || hasSession) return;
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          markReady(true);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 400));
+      }
+
+      markReady(false);
     };
-    check();
 
-    return () => sub?.subscription?.unsubscribe();
+    void establishSession();
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
-
-  const maybeClaimAdmin = async () => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      await fetch("/api/fusion-xpress/claim-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: token }),
-      });
-    } catch {
-      // non-blocking
-    }
-  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,21 +158,26 @@ export default function FusionXpressResetPasswordPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         setError(
-          "Your session has expired or the link was already used. Please request a new password reset link from Fusion Xpress login."
+          "Your session has expired or the link was already used. Please request a new password reset link from your portal sign-in page."
         );
         setLoading(false);
         return;
       }
+
+      const nextLogin = await resolvePostResetLoginPath();
+      setLoginHref(nextLogin);
+
       const { error: updErr } = await supabase.auth.updateUser({ password });
       if (updErr) throw updErr;
-      // Claim admin if allowlisted, then go to dashboard (it will redirect to login if not a portal member).
-      await maybeClaimAdmin();
-      router.replace("/dashboard");
-    } catch (err: any) {
-      const msg = err?.message ?? "Unable to update password.";
+
+      // Password is updated; clear the recovery session so the next sign-in runs normal 2FA.
+      await supabase.auth.signOut();
+      router.replace(`${nextLogin}${nextLogin.includes("?") ? "&" : "?"}passwordReset=1`);
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "Unable to update password.";
       if (msg.includes("Auth session missing") || msg.includes("AuthSessionMissingError")) {
         setError(
-          "Your session expired. Please request a new password reset link from Fusion Xpress login and use it within a few minutes."
+          "Your session expired. Please request a new password reset link from your portal sign-in page and use it within a few minutes."
         );
       } else {
         setError(msg);
@@ -117,9 +201,9 @@ export default function FusionXpressResetPasswordPage() {
   return (
     <div className="min-h-screen pt-28 md:pt-32 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <Link href="/fusion-xpress" className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
+        <Link href={loginHref} className="inline-flex items-center text-gray-600 hover:text-primary-700 mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Fusion Xpress login
+          Back to sign in
         </Link>
 
         <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
@@ -130,7 +214,7 @@ export default function FusionXpressResetPasswordPage() {
               </div>
             </div>
             <h1 className="mt-5 text-3xl font-extrabold text-gray-900">Set a new password</h1>
-            <p className="mt-2 text-gray-600">Choose a strong password to access Fusion Xpress.</p>
+            <p className="mt-2 text-gray-600">Choose a strong password for your business portal account.</p>
           </div>
 
           <div className="p-8">
@@ -139,12 +223,25 @@ export default function FusionXpressResetPasswordPage() {
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                   {error}
                 </div>
-                {(error.includes("Invalid or expired") || error.includes("session expired") || error.includes("Auth session missing")) && (
+                {(error.toLowerCase().includes("invalid") ||
+                  error.toLowerCase().includes("expired") ||
+                  error.toLowerCase().includes("session") ||
+                  error.toLowerCase().includes("otp")) && (
                   <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                    <strong>How to reset your password:</strong> Go to{" "}
-                    <Link href="/fusion-xpress" className="underline font-semibold">Fusion Xpress login</Link>, enter your
-                    email, click &quot;Forgot / Create password&quot;, then click the link in the email. Do not navigate
-                    directly to this page.
+                    <strong>How to reset your password:</strong> Open your portal sign-in page (
+                    <Link href={VISITOR_SIGN_IN} className="underline font-semibold">
+                      Visitor Management
+                    </Link>
+                    ,{" "}
+                    <Link href={EMPLOYER_SIGN_IN} className="underline font-semibold">
+                      Employers
+                    </Link>
+                    , or{" "}
+                    <Link href={ADMIN_LOGIN} className="underline font-semibold">
+                      Admin login
+                    </Link>
+                    ), enter your email, click &quot;Forgot password&quot;, then open the fresh link from the
+                    email. Do not open this page directly.
                   </div>
                 )}
               </>
@@ -162,6 +259,7 @@ export default function FusionXpressResetPasswordPage() {
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="At least 6 characters"
                     required
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
@@ -177,6 +275,7 @@ export default function FusionXpressResetPasswordPage() {
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="Re-enter password"
                     required
+                    autoComplete="new-password"
                   />
                 </div>
                 {confirm && password !== confirm && (
@@ -198,4 +297,3 @@ export default function FusionXpressResetPasswordPage() {
     </div>
   );
 }
-

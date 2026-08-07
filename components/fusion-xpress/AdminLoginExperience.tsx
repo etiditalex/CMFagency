@@ -36,6 +36,14 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(initialErrorMessage);
   const [resetSent, setResetSent] = useState(false);
+  const [passwordJustReset, setPasswordJustReset] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("passwordReset") === "1") {
+      setPasswordJustReset(true);
+    }
+  }, []);
 
   const [step, setStep] = useState<Step>("login");
   const [loginEmail, setLoginEmail] = useState("");
@@ -273,7 +281,15 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
       if (resetErr) throw resetErr;
       setResetSent(true);
     } catch (err: unknown) {
-      setError((err as { message?: string })?.message ?? "Unable to send reset link.");
+      const msg = String((err as { message?: string })?.message ?? "Unable to send reset link.");
+      const lower = msg.toLowerCase();
+      if (lower.includes("redirect") || lower.includes("not allowed")) {
+        setError(
+          "Password recovery is misconfigured (reset redirect URL not allowlisted in Supabase Auth). Contact support."
+        );
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -323,6 +339,13 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
 
           {error ? (
             <div className="mb-4 rounded-lg border border-red-300/35 bg-red-500/10 px-3 py-2 text-sm text-red-100">{error}</div>
+          ) : null}
+          {(passwordJustReset || resetSent) && !error ? (
+            <div className="mb-4 rounded-lg border border-secondary-300/40 bg-secondary-400/15 px-3 py-2 text-sm text-secondary-100">
+              {passwordJustReset
+                ? "Password updated. Sign in with your new password."
+                : "Password reset link sent. Check your email, then open the link to set a new password."}
+            </div>
           ) : null}
 
           {step === "code" ? (
@@ -437,8 +460,6 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                   Forgot Password
                 </button>
               </div>
-
-              {resetSent ? <p className="text-xs text-secondary-200">Reset link sent to your email.</p> : null}
 
               <button
                 type="submit"
