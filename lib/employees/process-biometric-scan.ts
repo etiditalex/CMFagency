@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
+  BIOMETRIC_NOT_REGISTERED_MESSAGE,
   BIOMETRIC_SETUP_MESSAGE,
   createBiometricTemplateMaterial,
   createBiometricTerminalToken,
@@ -321,8 +322,7 @@ export async function processEmployeeBiometricScan(
       if (externalId) {
         return {
           ok: false,
-          error:
-            "Fingerprint not recognised on this terminal yet. Use “First-time register”, enter your member ID once, then you can sign in with fingerprint only.",
+          error: BIOMETRIC_NOT_REGISTERED_MESSAGE,
           status: 404,
         };
       }
@@ -331,7 +331,7 @@ export async function processEmployeeBiometricScan(
 
     employee = await findEmployeeByMemberCode(admin, terminal.ownerId, memberCode);
     if (!employee) {
-      return { ok: false, error: "Member ID not found for this organisation.", status: 404 };
+      return { ok: false, error: BIOMETRIC_NOT_REGISTERED_MESSAGE, status: 404 };
     }
 
     enrollment = await findActiveEnrollment(admin, employee.id, fingerIndex);

@@ -157,3 +157,6 @@ export function isMissingBiometricTable(error: unknown): boolean {
 
 export const BIOMETRIC_SETUP_MESSAGE =
   "Biometric fingerprint module not set up. Run database/visitor_employees_patch_19_biometric_fingerprint.sql in Supabase.";
+
+export const BIOMETRIC_NOT_REGISTERED_MESSAGE =
+  "You are not yet registered. Kindly contact the administrator to add you to the attendance register.";

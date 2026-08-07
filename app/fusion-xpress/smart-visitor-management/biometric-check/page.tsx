@@ -6,6 +6,7 @@ import { CheckCircle2, Fingerprint, Loader2, MapPin, XCircle } from "lucide-reac
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
+  BIOMETRIC_NOT_REGISTERED_MESSAGE,
   DEFAULT_BIOMETRIC_FINGER_INDEX,
   DEFAULT_BIOMETRIC_FINGER_LABEL,
   getOrCreateBiometricDeviceId,
@@ -216,15 +217,20 @@ function BiometricCheckInner() {
       const json = await postBiometricScan({ externalId });
       applyScanFeedback(json);
     } catch (e: unknown) {
+      const detail =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : BIOMETRIC_NOT_REGISTERED_MESSAGE;
+      const notRegistered =
+        detail.includes("not yet registered") ||
+        detail.includes(BIOMETRIC_NOT_REGISTERED_MESSAGE);
       setFeedback({
         ok: false,
-        title: "Fingerprint not recognised",
-        detail:
-          e instanceof Error
-            ? e.message
-            : "First time on this terminal? Register once with your member ID below.",
+        title: notRegistered ? "Not registered" : "Fingerprint not recognised",
+        detail: notRegistered ? BIOMETRIC_NOT_REGISTERED_MESSAGE : detail,
       });
-      setShowRegister(true);
+      // Only open register for device/cancel errors — unknown staff must contact admin.
+      if (!notRegistered) setShowRegister(true);
       clearFeedbackSoon();
     } finally {
       setBusy(false);
@@ -274,10 +280,17 @@ function BiometricCheckInner() {
       setMemberCode("");
       setShowRegister(false);
     } catch (e: unknown) {
+      const detail =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "Could not register fingerprint";
+      const notRegistered =
+        detail.includes("not yet registered") ||
+        detail.includes(BIOMETRIC_NOT_REGISTERED_MESSAGE);
       setFeedback({
         ok: false,
-        title: "Registration failed",
-        detail: e instanceof Error ? e.message : "Could not register fingerprint",
+        title: notRegistered ? "Not registered" : "Registration failed",
+        detail: notRegistered ? BIOMETRIC_NOT_REGISTERED_MESSAGE : detail,
       });
       clearFeedbackSoon();
     } finally {
@@ -379,8 +392,8 @@ function BiometricCheckInner() {
 
           <p className="mt-5 max-w-xs text-center text-sm text-slate-300">
             {hasLocalCreds
-              ? "Hold your right thumb on the pad. Next employee can scan after you."
-              : "New on this terminal? Register once below, then use the pad every day."}
+              ? "Hold your right thumb on the pad — fingerprint only, no screen password."
+              : "New on this terminal? Register once below with fingerprint (not PIN/password), then use the pad every day."}
           </p>
 
           {!webauthnSupported ? (
@@ -432,8 +445,8 @@ function BiometricCheckInner() {
           {showRegister ? (
             <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
               <p className="text-xs text-slate-300">
-                Link your right thumb to this reception terminal once. After that, only the pad is
-                needed.
+                Link your right thumb to this reception terminal once. When the device asks, use
+                fingerprint — not the phone or screen password. After that, only the pad is needed.
               </p>
               <label className="block text-sm">
                 <span className="font-semibold text-slate-100">Member ID</span>

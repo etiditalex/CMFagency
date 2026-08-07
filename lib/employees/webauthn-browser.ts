@@ -1,4 +1,9 @@
-/** Browser helpers for platform fingerprint / Windows Hello / Touch ID on the biometric terminal. */
+/** Browser helpers for platform fingerprint on the shared biometric terminal.
+ * Uses userVerification "discouraged" so the OS should not fall back to
+ * screen password / PIN — fingerprint (or Face ID) only.
+ */
+
+import { BIOMETRIC_NOT_REGISTERED_MESSAGE } from "@/lib/employees/biometric";
 
 export const BIOMETRIC_WEBAUTHN_CREDS_KEY = "fx_employee_biometric_webauthn_creds";
 
@@ -57,6 +62,22 @@ export function rememberLocalWebAuthnCredentialId(credentialId: string): void {
   }
 }
 
+function uvErrorMessage(err: unknown, kind: "register" | "scan"): string {
+  const name = err instanceof DOMException ? err.name : "";
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  if (name === "NotAllowedError" || /not allowed|cancel|abort/i.test(msg)) {
+    return kind === "register"
+      ? "Fingerprint registration was cancelled. Use the fingerprint sensor (not screen password), then try again."
+      : "Fingerprint scan was cancelled. Use the fingerprint sensor only — do not enter the phone or screen password.";
+  }
+  if (/password|pin|passcode|screen lock/i.test(msg)) {
+    return "This terminal uses fingerprint only. Dismiss the password prompt and use the fingerprint sensor, or re-register with fingerprint on this device.";
+  }
+  return err instanceof Error ? err.message : kind === "register"
+    ? "Could not register fingerprint."
+    : "Could not read fingerprint.";
+}
+
 export async function createEmployeeWebAuthnCredential(input: {
   employeeId: string;
   memberCode: string;
@@ -64,76 +85,90 @@ export async function createEmployeeWebAuthnCredential(input: {
 }): Promise<string> {
   if (!isPlatformWebAuthnAvailable()) {
     throw new Error(
-      "This device does not support fingerprint sign-in. Use a tablet or phone with fingerprint, Face ID, or Windows Hello."
+      "This device does not support fingerprint sign-in. Use a tablet or phone with a fingerprint sensor."
     );
   }
 
   const userId = new TextEncoder().encode(input.employeeId).slice(0, 64);
-  const credential = (await navigator.credentials.create({
-    publicKey: {
-      challenge: randomChallenge(),
-      rp: {
-        name: "Fusion Xpress Attendance",
-        id: window.location.hostname,
+  try {
+    const credential = (await navigator.credentials.create({
+      publicKey: {
+        challenge: randomChallenge(),
+        rp: {
+          name: "Fusion Xpress Attendance",
+          id: window.location.hostname,
+        },
+        user: {
+          id: userId,
+          name: input.memberCode.slice(0, 64) || input.employeeId,
+          displayName: input.displayName.slice(0, 64) || input.memberCode || "Employee",
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 },
+          { type: "public-key", alg: -257 },
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          // Avoid discoverable+required UV — that often forces PIN/password on phones.
+          residentKey: "discouraged",
+          requireResidentKey: false,
+          userVerification: "discouraged",
+        },
+        timeout: 90_000,
+        attestation: "none",
       },
-      user: {
-        id: userId,
-        name: input.memberCode.slice(0, 64) || input.employeeId,
-        displayName: input.displayName.slice(0, 64) || input.memberCode || "Employee",
-      },
-      pubKeyCredParams: [
-        { type: "public-key", alg: -7 },
-        { type: "public-key", alg: -257 },
-      ],
-      authenticatorSelection: {
-        authenticatorAttachment: "platform",
-        residentKey: "preferred",
-        requireResidentKey: false,
-        userVerification: "required",
-      },
-      timeout: 90_000,
-      attestation: "none",
-    },
-  })) as PublicKeyCredential | null;
+    })) as PublicKeyCredential | null;
 
-  if (!credential) {
-    throw new Error("Fingerprint registration was cancelled.");
+    if (!credential) {
+      throw new Error("Fingerprint registration was cancelled. Use the fingerprint sensor, not a password.");
+    }
+
+    const credentialId = toBase64Url(credential.rawId);
+    rememberLocalWebAuthnCredentialId(credentialId);
+    return credentialId;
+  } catch (e: unknown) {
+    throw new Error(uvErrorMessage(e, "register"));
   }
-
-  const credentialId = toBase64Url(credential.rawId);
-  rememberLocalWebAuthnCredentialId(credentialId);
-  return credentialId;
 }
 
 export async function assertEmployeeWebAuthnCredential(): Promise<string> {
   if (!isPlatformWebAuthnAvailable()) {
     throw new Error(
-      "This device does not support fingerprint sign-in. Use a tablet or phone with fingerprint, Face ID, or Windows Hello."
+      "This device does not support fingerprint sign-in. Use a tablet or phone with a fingerprint sensor."
     );
   }
 
   const localIds = listLocalWebAuthnCredentialIds();
+  if (localIds.length === 0) {
+    throw new Error(BIOMETRIC_NOT_REGISTERED_MESSAGE);
+  }
+
   const allowCredentials: PublicKeyCredentialDescriptor[] = localIds.map((id) => ({
     type: "public-key",
     id: fromBase64Url(id),
     transports: ["internal"],
   }));
 
-  const credential = (await navigator.credentials.get({
-    publicKey: {
-      challenge: randomChallenge(),
-      rpId: window.location.hostname,
-      timeout: 90_000,
-      userVerification: "required",
-      ...(allowCredentials.length > 0 ? { allowCredentials } : {}),
-    },
-  })) as PublicKeyCredential | null;
+  try {
+    const credential = (await navigator.credentials.get({
+      publicKey: {
+        challenge: randomChallenge(),
+        rpId: window.location.hostname,
+        timeout: 90_000,
+        // Fingerprint only — do not require screen password / PIN.
+        userVerification: "discouraged",
+        allowCredentials,
+      },
+    })) as PublicKeyCredential | null;
 
-  if (!credential) {
-    throw new Error("Fingerprint sign-in was cancelled.");
+    if (!credential) {
+      throw new Error("Fingerprint scan was cancelled. Use the fingerprint sensor only.");
+    }
+
+    const credentialId = toBase64Url(credential.rawId);
+    rememberLocalWebAuthnCredentialId(credentialId);
+    return credentialId;
+  } catch (e: unknown) {
+    throw new Error(uvErrorMessage(e, "scan"));
   }
-
-  const credentialId = toBase64Url(credential.rawId);
-  rememberLocalWebAuthnCredentialId(credentialId);
-  return credentialId;
 }
