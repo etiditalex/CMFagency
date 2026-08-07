@@ -24,6 +24,7 @@ type Feedback = {
   ok: boolean;
   title: string;
   detail: string;
+  eventType?: "sign_in" | "sign_out";
 };
 
 function BiometricCheckInner() {
@@ -152,27 +153,34 @@ function BiometricCheckInner() {
   const applyScanFeedback = useCallback(
     (json: {
       eventType?: string;
-      employee?: { fullName?: string };
+      employee?: { fullName?: string; attendanceStatus?: string };
       fingerLabel?: string;
       occurredAt?: string;
       firstEnrollment?: boolean;
     }) => {
       const signedIn = json.eventType === "sign_in";
+      const signedOut = json.eventType === "sign_out";
       const enrolledNote = json.firstEnrollment
-        ? " · Fingerprint registered — next time you only need your finger"
+        ? " · Fingerprint registered — next time you only need your right thumb"
         : "";
+      const timeLabel = json.occurredAt
+        ? new Date(json.occurredAt).toLocaleTimeString()
+        : "now";
       setFeedback({
         ok: true,
         title: json.firstEnrollment
           ? signedIn
             ? "Fingerprint registered · Signed in"
             : "Fingerprint registered · Signed out"
-          : signedIn
-            ? "Signed in"
-            : "Signed out",
-        detail: `${json.employee?.fullName ?? "Employee"} · ${json.fingerLabel ?? "Fingerprint"} · ${
-          json.occurredAt ? new Date(json.occurredAt).toLocaleTimeString() : "now"
-        }${enrolledNote}`,
+          : signedOut
+            ? "Signed out"
+            : signedIn
+              ? "Signed in"
+              : "Attendance recorded",
+        detail: `${json.employee?.fullName ?? "Employee"} · ${
+          signedOut ? "Sign out" : signedIn ? "Sign in" : "Scan"
+        } · ${json.fingerLabel ?? "Right thumb"} · ${timeLabel}${enrolledNote}`,
+        eventType: signedOut ? "sign_out" : signedIn ? "sign_in" : undefined,
       });
     },
     []
@@ -190,7 +198,7 @@ function BiometricCheckInner() {
     } catch (e: unknown) {
       setFeedback({
         ok: false,
-        title: "Fingerprint sign-in failed",
+        title: "Fingerprint scan failed",
         detail:
           e instanceof Error
             ? e.message
@@ -343,7 +351,7 @@ function BiometricCheckInner() {
             ) : (
               <Fingerprint className="h-5 w-5" />
             )}
-            Sign in with fingerprint
+            Sign in / sign out with fingerprint
           </button>
 
           {!webauthnSupported ? (
@@ -402,9 +410,11 @@ function BiometricCheckInner() {
           {feedback ? (
             <div
               className={`flex gap-3 rounded-xl border px-4 py-3 text-sm ${
-                feedback.ok
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                  : "border-red-200 bg-red-50 text-red-900"
+                !feedback.ok
+                  ? "border-red-200 bg-red-50 text-red-900"
+                  : feedback.eventType === "sign_out"
+                    ? "border-amber-200 bg-amber-50 text-amber-950"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
               }`}
             >
               {feedback.ok ? (

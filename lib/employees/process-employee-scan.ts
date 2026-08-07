@@ -244,6 +244,10 @@ export async function processEmployeeQrScan(
     eventType = "sign_in";
   } else if (scanAction === "sign_out") {
     eventType = "sign_out";
+  } else if (fromBiometric) {
+    // Fingerprint terminal toggles from the live employee status so sign-out
+    // still works after repeated test scans (daily "completed" state is ignored).
+    eventType = employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
   } else {
     eventType = statusToday === "in" ? "sign_out" : "sign_in";
   }
