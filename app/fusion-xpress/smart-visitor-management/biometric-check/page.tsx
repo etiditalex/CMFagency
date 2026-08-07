@@ -2,12 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Fingerprint, Loader2, MapPin, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, XCircle } from "lucide-react";
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
   BIOMETRIC_NOT_REGISTERED_MESSAGE,
-  DEFAULT_BIOMETRIC_FINGER_INDEX,
   DEFAULT_BIOMETRIC_FINGER_LABEL,
   getOrCreateBiometricDeviceId,
   parseBiometricTerminalToken,
@@ -16,7 +15,6 @@ import type { BrowserPosition } from "@/lib/employees/browser-geolocation";
 import { browserDeviceLabel } from "@/lib/employees/device-fingerprint";
 import {
   assertEmployeeWebAuthnCredential,
-  createEmployeeWebAuthnCredential,
   isPlatformWebAuthnAvailable,
   listLocalWebAuthnCredentialIds,
 } from "@/lib/employees/webauthn-browser";
@@ -40,8 +38,6 @@ function BiometricCheckInner() {
   const [terminalName, setTerminalName] = useState("Fingerprint terminal");
   const [loadingTerminal, setLoadingTerminal] = useState(true);
   const [terminalError, setTerminalError] = useState<string | null>(null);
-  const [memberCode, setMemberCode] = useState("");
-  const [showRegister, setShowRegister] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [padKey, setPadKey] = useState(0);
@@ -57,7 +53,6 @@ function BiometricCheckInner() {
     if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     feedbackTimerRef.current = setTimeout(() => {
       setFeedback(null);
-      setPadKey((k) => k + 1);
     }, FEEDBACK_CLEAR_MS);
   }, []);
 
@@ -205,7 +200,7 @@ function BiometricCheckInner() {
     [clearFeedbackSoon]
   );
 
-  /** Shared terminal: place right thumb on the pad → identify → sign in/out. */
+  /** Shared terminal: one pad only → identify → sign in/out. */
   const runThumbScan = useCallback(async () => {
     if (!terminalToken || busy || !locationReady) return;
     setBusy(true);
@@ -229,8 +224,6 @@ function BiometricCheckInner() {
         title: notRegistered ? "Not registered" : "Fingerprint not recognised",
         detail: notRegistered ? BIOMETRIC_NOT_REGISTERED_MESSAGE : detail,
       });
-      // Only open register for device/cancel errors — unknown staff must contact admin.
-      if (!notRegistered) setShowRegister(true);
       clearFeedbackSoon();
     } finally {
       setBusy(false);
@@ -240,68 +233,6 @@ function BiometricCheckInner() {
     terminalToken,
     busy,
     locationReady,
-    postBiometricScan,
-    applyScanFeedback,
-    clearFeedbackSoon,
-  ]);
-
-  const runFirstTimeRegister = useCallback(async () => {
-    if (!terminalToken || busy) return;
-    const code = memberCode.trim();
-    if (!code) {
-      setFeedback({
-        ok: false,
-        title: "Member ID required",
-        detail: "Enter your staff or CRM member ID once to link your right thumb on this terminal.",
-      });
-      return;
-    }
-
-    setBusy(true);
-    setFeedback(null);
-    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    try {
-      let externalId: string | undefined;
-      if (webauthnSupported) {
-        externalId = await createEmployeeWebAuthnCredential({
-          employeeId: code,
-          memberCode: code,
-          displayName: code,
-        });
-        setHasLocalCreds(true);
-      }
-
-      const json = await postBiometricScan({
-        memberCode: code,
-        fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
-        ...(externalId ? { externalId } : {}),
-      });
-      applyScanFeedback(json);
-      setMemberCode("");
-      setShowRegister(false);
-    } catch (e: unknown) {
-      const detail =
-        e instanceof Error && e.message.trim()
-          ? e.message
-          : "Could not register fingerprint";
-      const notRegistered =
-        detail.includes("not yet registered") ||
-        detail.includes(BIOMETRIC_NOT_REGISTERED_MESSAGE);
-      setFeedback({
-        ok: false,
-        title: notRegistered ? "Not registered" : "Registration failed",
-        detail: notRegistered ? BIOMETRIC_NOT_REGISTERED_MESSAGE : detail,
-      });
-      clearFeedbackSoon();
-    } finally {
-      setBusy(false);
-      setPadKey((k) => k + 1);
-    }
-  }, [
-    terminalToken,
-    busy,
-    memberCode,
-    webauthnSupported,
     postBiometricScan,
     applyScanFeedback,
     clearFeedbackSoon,
@@ -390,16 +321,16 @@ function BiometricCheckInner() {
             label={DEFAULT_BIOMETRIC_FINGER_LABEL}
           />
 
-          <p className="mt-5 max-w-xs text-center text-sm text-slate-300">
+          <p className="mt-5 max-w-sm text-center text-sm text-slate-300">
             {hasLocalCreds
-              ? "Hold your right thumb on the pad — fingerprint only, no screen password."
-              : "New on this terminal? Register once below with fingerprint (not PIN/password), then use the pad every day."}
+              ? "Hold your right thumb on the sensor. If the phone offers PIN or password, cancel and use fingerprint only."
+              : "Not registered yet? Contact your administrator to add you to the attendance register on this terminal."}
           </p>
 
           {!webauthnSupported ? (
             <p className="mt-3 max-w-sm text-center text-xs text-amber-200">
-              This device cannot use fingerprint. Use a tablet/phone with fingerprint, Face ID, or
-              Windows Hello, kept at reception.
+              This device cannot use fingerprint. Use a tablet or phone with a fingerprint sensor,
+              kept at reception.
             </p>
           ) : null}
 
@@ -432,46 +363,6 @@ function BiometricCheckInner() {
             </div>
           ) : null}
         </section>
-
-        <div className="mt-5 space-y-2">
-          <button
-            type="button"
-            onClick={() => setShowRegister((v) => !v)}
-            className="w-full text-center text-sm font-semibold text-sky-300 hover:text-sky-200"
-          >
-            {showRegister ? "Hide first-time register" : "First-time register (member ID once)"}
-          </button>
-
-          {showRegister ? (
-            <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs text-slate-300">
-                Link your right thumb to this reception terminal once. When the device asks, use
-                fingerprint — not the phone or screen password. After that, only the pad is needed.
-              </p>
-              <label className="block text-sm">
-                <span className="font-semibold text-slate-100">Member ID</span>
-                <input
-                  value={memberCode}
-                  onChange={(e) => setMemberCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. STF-123456"
-                  autoComplete="off"
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-slate-900 px-3 py-3 text-base tracking-wide text-white"
-                  disabled={busy}
-                />
-              </label>
-              <div className="flex justify-center py-1">
-                <FingerprintPad
-                  key={`enroll-${padKey}`}
-                  mode="enroll"
-                  tone="dark"
-                  disabled={busy || !memberCode.trim() || !locationReady}
-                  onComplete={() => void runFirstTimeRegister()}
-                  label={DEFAULT_BIOMETRIC_FINGER_LABEL}
-                />
-              </div>
-            </div>
-          ) : null}
-        </div>
       </div>
     </div>
   );

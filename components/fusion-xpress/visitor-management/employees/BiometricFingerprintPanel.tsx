@@ -11,6 +11,10 @@ import {
   BIOMETRIC_SETUP_MESSAGE,
   type BiometricEnrollmentRecord,
 } from "@/lib/employees/biometric";
+import {
+  createEmployeeWebAuthnCredential,
+  isPlatformWebAuthnAvailable,
+} from "@/lib/employees/webauthn-browser";
 import { supabase } from "@/lib/supabase";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 
@@ -153,6 +157,21 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
       const token = data.session?.access_token;
       if (!token) throw new Error("Not signed in");
 
+      const selected = employees.find((e) => e.id === employeeId);
+      let boundExternalId = externalId.trim();
+      let vendor = boundExternalId ? "hardware" : "fusion_pad";
+
+      // Bind this device's fingerprint sensor so the reception terminal can identify
+      // without member ID. Do this on the shared reception tablet/phone.
+      if (!boundExternalId && isPlatformWebAuthnAvailable()) {
+        boundExternalId = await createEmployeeWebAuthnCredential({
+          employeeId,
+          memberCode: selected?.employeeCode || employeeId,
+          displayName: selected?.fullName || "Employee",
+        });
+        vendor = "webauthn";
+      }
+
       const res = await fetch(`/api/visitor-employees/biometric/enrollments${ownerQs}`, {
         method: "POST",
         headers: {
@@ -162,8 +181,8 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
         body: JSON.stringify({
           employeeId,
           fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
-          externalId: externalId.trim() || undefined,
-          vendor: externalId.trim() ? "hardware" : "fusion_pad",
+          externalId: boundExternalId || undefined,
+          vendor,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as {
@@ -181,7 +200,9 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
         throw new Error(json.error ?? "Enrollment failed");
       }
       setMessage(
-        `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"}.`
+        vendor === "webauthn"
+          ? `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"} on this device. They can use the terminal pad only.`
+          : `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"}.`
       );
       setPadReady(false);
       setExternalId("");
@@ -314,10 +335,10 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
             <div>
               <h2 className="text-lg font-bold text-gray-900">Enroll a fingerprint</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Optional dashboard enroll using the <strong>right thumb</strong> only. For
-                fingerprint-only sign-in (no member ID), staff should complete first-time register on
-                the reception fingerprint terminal. QR stays on the Kiosk page. Optional hardware
-                scanner id is for USB/Ethernet readers.
+                Enroll on the <strong>shared reception tablet/phone</strong> using the right thumb.
+                That binds the device fingerprint sensor so staff only use the terminal pad (no
+                self-register, no member ID). Unregistered staff must be added here first. QR stays
+                on the Kiosk page. Optional hardware scanner id is for USB/Ethernet readers.
               </p>
             </div>
 

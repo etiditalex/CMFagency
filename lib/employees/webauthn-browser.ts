@@ -5,7 +5,18 @@
 
 import { BIOMETRIC_NOT_REGISTERED_MESSAGE } from "@/lib/employees/biometric";
 
-export const BIOMETRIC_WEBAUTHN_CREDS_KEY = "fx_employee_biometric_webauthn_creds";
+/** v2: credentials created with UV discouraged (v1 often forced PIN/password). */
+export const BIOMETRIC_WEBAUTHN_CREDS_KEY = "fx_employee_biometric_webauthn_creds_v2";
+const BIOMETRIC_WEBAUTHN_CREDS_KEY_LEGACY = "fx_employee_biometric_webauthn_creds";
+
+function purgeLegacyWebAuthnCreds(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(BIOMETRIC_WEBAUTHN_CREDS_KEY_LEGACY);
+  } catch {
+    /* ignore */
+  }
+}
 
 function toBase64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -36,6 +47,7 @@ export function isPlatformWebAuthnAvailable(): boolean {
 
 export function listLocalWebAuthnCredentialIds(): string[] {
   if (typeof window === "undefined") return [];
+  purgeLegacyWebAuthnCreds();
   try {
     const raw = window.localStorage.getItem(BIOMETRIC_WEBAUTHN_CREDS_KEY);
     if (!raw) return [];
