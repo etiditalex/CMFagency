@@ -116,7 +116,7 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
       "Personal QR link: employee opens their link and taps Sign in or Sign out.",
       "Reception gate QR: one QR at reception; each employee scans and enters their code to record attendance on a shared tablet or phone.",
       "Kiosk scanner: reception staff open the Kiosk page and scan employee QR codes with the device camera.",
-      "Biometric fingerprint: register once on the reception terminal (member ID + device fingerprint). After that, sign in with fingerprint only — or scan QR. Both reuse the same attendance engine.",
+      "Biometric fingerprint: separate from QR. Register once on the reception fingerprint terminal (member ID + device fingerprint). After that, sign in with fingerprint only (no staff ID).",
       "Attendance log: every sign-in/out is recorded with time, device/browser label, and optional GPS.",
       "Reporting times: configure expected arrival windows; late or early sign-ins are flagged (retail/hospitality and real estate).",
       "Notification admins: directors receive email when employees sign in or out.",
@@ -136,7 +136,7 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
       },
       {
         title: "Enroll fingerprints (optional)",
-        body: "Open the reception terminal link. Staff choose Fingerprint or QR. First fingerprint use: First-time register with member ID once on that tablet; later visits need fingerprint only (no staff ID). Both paths use the same attendance records as QR.",
+        body: "Open the reception fingerprint terminal link. First use: First-time register with member ID once on that tablet; later visits need fingerprint only (no staff ID). QR scanning remains on Employees → Kiosk.",
       },
       {
         title: "Review attendance",

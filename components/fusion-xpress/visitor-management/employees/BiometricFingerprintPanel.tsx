@@ -269,9 +269,9 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                   Reception fingerprint terminal
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Open this link on a shared tablet at reception. Staff can sign in with fingerprint
-                  or scan their QR pass — same attendance as QR. First time: register with member ID
-                  once; after that fingerprint only (no staff ID).
+                  Open this link on a shared tablet at reception for fingerprint attendance only. First
+                  time: register with member ID once; after that fingerprint only (no staff ID). QR
+                  scanning stays on Employees → Kiosk.
                 </p>
               </div>
               <button
@@ -312,9 +312,9 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
             <div>
               <h2 className="text-lg font-bold text-gray-900">Enroll a fingerprint</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Optional dashboard enroll. For “fingerprint only” sign-in (no member ID), staff should
-                complete first-time register on the reception terminal so this device stores their
-                fingerprint credential. Optional hardware scanner id is for USB/Ethernet readers.
+                Optional dashboard enroll. For fingerprint-only sign-in (no member ID), staff should
+                complete first-time register on the reception fingerprint terminal. QR stays on the
+                Kiosk page. Optional hardware scanner id is for USB/Ethernet readers.
               </p>
             </div>
 
