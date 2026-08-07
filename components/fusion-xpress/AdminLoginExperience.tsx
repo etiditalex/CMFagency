@@ -275,21 +275,16 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     }
     setLoading(true);
     try {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(value, {
-        redirectTo: `${window.location.origin}/fusion-xpress/reset-password`,
+      const res = await fetch("/api/fusion-xpress/send-password-reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
       });
-      if (resetErr) throw resetErr;
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Unable to send reset link.");
       setResetSent(true);
     } catch (err: unknown) {
-      const msg = String((err as { message?: string })?.message ?? "Unable to send reset link.");
-      const lower = msg.toLowerCase();
-      if (lower.includes("redirect") || lower.includes("not allowed")) {
-        setError(
-          "Password recovery is misconfigured (reset redirect URL not allowlisted in Supabase Auth). Contact support."
-        );
-      } else {
-        setError(msg);
-      }
+      setError((err as { message?: string })?.message ?? "Unable to send reset link.");
     } finally {
       setLoading(false);
     }

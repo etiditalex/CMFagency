@@ -71,6 +71,60 @@ export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?
   return { allowed: true };
 }
 
+const PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const PASSWORD_RESET_MAX_PER_IP = 10;
+const PASSWORD_RESET_MAX_PER_EMAIL = 5;
+
+/** Rate limit public password-reset requests by IP. */
+export function checkPasswordResetIpRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  cleanup();
+  const key = getKey(ip, "password-reset-ip");
+  const now = Date.now();
+  const entry = store.get(key);
+
+  if (!entry) {
+    store.set(key, { count: 1, resetAt: now + PASSWORD_RESET_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.resetAt < now) {
+    store.set(key, { count: 1, resetAt: now + PASSWORD_RESET_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= PASSWORD_RESET_MAX_PER_IP) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count += 1;
+  return { allowed: true };
+}
+
+/** Rate limit public password-reset requests by email. */
+export function checkPasswordResetEmailRateLimit(email: string): { allowed: boolean; retryAfter?: number } {
+  cleanup();
+  const key = getKey(email.toLowerCase(), "password-reset-email");
+  const now = Date.now();
+  const entry = store.get(key);
+
+  if (!entry) {
+    store.set(key, { count: 1, resetAt: now + PASSWORD_RESET_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.resetAt < now) {
+    store.set(key, { count: 1, resetAt: now + PASSWORD_RESET_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= PASSWORD_RESET_MAX_PER_EMAIL) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count += 1;
+  return { allowed: true };
+}
+
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
