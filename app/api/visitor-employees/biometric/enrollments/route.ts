@@ -104,9 +104,6 @@ export async function POST(req: NextRequest) {
     if (!employeeId) {
       return NextResponse.json({ error: "Select an employee to enroll." }, { status: 400 });
     }
-    if (!fingerIndex) {
-      return NextResponse.json({ error: "Select which finger to enroll." }, { status: 400 });
-    }
 
     const { data: employee, error: empErr } = await admin
       .from("visitor_employees")

@@ -6,7 +6,8 @@ import { Copy, ExternalLink, Fingerprint, Loader2, RefreshCw, Trash2 } from "luc
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
-  BIOMETRIC_FINGERS,
+  DEFAULT_BIOMETRIC_FINGER_INDEX,
+  DEFAULT_BIOMETRIC_FINGER_LABEL,
   BIOMETRIC_SETUP_MESSAGE,
   type BiometricEnrollmentRecord,
 } from "@/lib/employees/biometric";
@@ -42,7 +43,6 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [setupRequired, setSetupRequired] = useState(false);
   const [employeeId, setEmployeeId] = useState("");
-  const [fingerIndex, setFingerIndex] = useState(1);
   const [padReady, setPadReady] = useState(false);
   const [externalId, setExternalId] = useState("");
   const [copied, setCopied] = useState(false);
@@ -161,7 +161,7 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
         },
         body: JSON.stringify({
           employeeId,
-          fingerIndex,
+          fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
           externalId: externalId.trim() || undefined,
           vendor: externalId.trim() ? "hardware" : "fusion_pad",
         }),
@@ -181,7 +181,7 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
         throw new Error(json.error ?? "Enrollment failed");
       }
       setMessage(
-        `Enrolled ${BIOMETRIC_FINGERS.find((f) => f.index === fingerIndex)?.label ?? "finger"} for ${json.employeeName ?? "employee"}.`
+        `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"}.`
       );
       setPadReady(false);
       setExternalId("");
@@ -269,9 +269,10 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                   Reception fingerprint terminal
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Open this link on a shared tablet at reception for fingerprint attendance only. First
-                  time: register with member ID once; after that fingerprint only (no staff ID). QR
-                  scanning stays on Employees → Kiosk.
+                  Open this link on a shared tablet at reception for fingerprint attendance only.
+                  Every employee uses the <strong>right thumb</strong>. First time: register with
+                  member ID once; after that right thumb only (no staff ID). QR scanning stays on
+                  Employees → Kiosk.
                 </p>
               </div>
               <button
@@ -312,50 +313,36 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
             <div>
               <h2 className="text-lg font-bold text-gray-900">Enroll a fingerprint</h2>
               <p className="mt-1 text-sm text-gray-600">
-                Optional dashboard enroll. For fingerprint-only sign-in (no member ID), staff should
-                complete first-time register on the reception fingerprint terminal. QR stays on the
-                Kiosk page. Optional hardware scanner id is for USB/Ethernet readers.
+                Optional dashboard enroll using the <strong>right thumb</strong> only. For
+                fingerprint-only sign-in (no member ID), staff should complete first-time register on
+                the reception fingerprint terminal. QR stays on the Kiosk page. Optional hardware
+                scanner id is for USB/Ethernet readers.
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="font-semibold text-gray-800">Employee</span>
-                <select
-                  value={employeeId}
-                  onChange={(e) => {
-                    setEmployeeId(e.target.value);
-                    setPadReady(false);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
-                >
-                  <option value="">Select employee…</option>
-                  {employees.map((e) => (
-                    <option key={e.id} value={e.id}>
-                      {e.fullName}
-                      {e.employeeCode ? ` (${e.employeeCode})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm">
-                <span className="font-semibold text-gray-800">Finger</span>
-                <select
-                  value={fingerIndex}
-                  onChange={(e) => {
-                    setFingerIndex(Number(e.target.value));
-                    setPadReady(false);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
-                >
-                  {BIOMETRIC_FINGERS.map((f) => (
-                    <option key={f.index} value={f.index}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label className="block text-sm max-w-xl">
+              <span className="font-semibold text-gray-800">Employee</span>
+              <select
+                value={employeeId}
+                onChange={(e) => {
+                  setEmployeeId(e.target.value);
+                  setPadReady(false);
+                }}
+                className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm"
+              >
+                <option value="">Select employee…</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.fullName}
+                    {e.employeeCode ? ` (${e.employeeCode})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <p className="text-sm text-gray-700">
+              Finger: <span className="font-semibold">{DEFAULT_BIOMETRIC_FINGER_LABEL}</span>
+            </p>
 
             <label className="block text-sm max-w-xl">
               <span className="font-semibold text-gray-800">
@@ -371,13 +358,11 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
 
             <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-sky-200 bg-sky-50/50 px-4 py-6">
               <FingerprintPad
-                key={`${employeeId}-${fingerIndex}`}
+                key={employeeId}
                 mode="enroll"
                 disabled={!employeeId || saving}
                 onComplete={() => setPadReady(true)}
-                label={
-                  BIOMETRIC_FINGERS.find((f) => f.index === fingerIndex)?.label ?? "Fingerprint"
-                }
+                label={DEFAULT_BIOMETRIC_FINGER_LABEL}
               />
               <button
                 type="button"

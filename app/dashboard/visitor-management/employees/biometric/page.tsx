@@ -112,7 +112,7 @@ export default function VisitorManagementEmployeesBiometricPage() {
           Biometric fingerprint
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          Enroll employee fingerprints and use a shared reception terminal for sign-in and
+          Enroll each employee’s right thumb and use a shared reception terminal for sign-in and
           sign-out — alongside QR and member-code attendance.
         </p>
         <p className="mt-2 text-sm flex flex-wrap gap-x-4 gap-y-1">

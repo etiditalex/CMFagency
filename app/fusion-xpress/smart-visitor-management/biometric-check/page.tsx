@@ -6,7 +6,8 @@ import { CheckCircle2, Fingerprint, Loader2, MapPin, XCircle } from "lucide-reac
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
-  BIOMETRIC_FINGERS,
+  DEFAULT_BIOMETRIC_FINGER_INDEX,
+  DEFAULT_BIOMETRIC_FINGER_LABEL,
   getOrCreateBiometricDeviceId,
   parseBiometricTerminalToken,
 } from "@/lib/employees/biometric";
@@ -36,7 +37,6 @@ function BiometricCheckInner() {
   const [loadingTerminal, setLoadingTerminal] = useState(true);
   const [terminalError, setTerminalError] = useState<string | null>(null);
   const [memberCode, setMemberCode] = useState("");
-  const [fingerIndex, setFingerIndex] = useState(1);
   const [showRegister, setShowRegister] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -230,7 +230,7 @@ function BiometricCheckInner() {
 
       const json = await postBiometricScan({
         memberCode: code,
-        fingerIndex,
+        fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
         ...(externalId ? { externalId } : {}),
       });
       applyScanFeedback(json);
@@ -250,7 +250,6 @@ function BiometricCheckInner() {
     terminalToken,
     busy,
     memberCode,
-    fingerIndex,
     webauthnSupported,
     postBiometricScan,
     applyScanFeedback,
@@ -287,8 +286,8 @@ function BiometricCheckInner() {
           </p>
           <h1 className="mt-1 text-2xl font-extrabold text-gray-900">{terminalName}</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Allow location when prompted. First time: register with your member ID once. After that,
-            sign in with fingerprint only.
+            Allow location when prompted. First time: register with your member ID and right thumb
+            once. After that, sign in with your right thumb only.
           </p>
         </header>
 
@@ -329,8 +328,8 @@ function BiometricCheckInner() {
 
           <p className="text-sm text-gray-600">
             {hasLocalCreds
-              ? "Place your enrolled finger — no member ID needed."
-              : "First time on this terminal: register once with your member ID. After that, fingerprint only."}
+              ? "Use your right thumb — no member ID needed."
+              : "First time on this terminal: register once with your member ID and right thumb. After that, fingerprint only."}
           </p>
 
           <button
@@ -375,35 +374,20 @@ function BiometricCheckInner() {
                   disabled={busy}
                 />
               </label>
-              <label className="block text-sm">
-                <span className="font-semibold text-gray-800">Finger</span>
-                <select
-                  value={fingerIndex}
-                  onChange={(e) => {
-                    setFingerIndex(Number(e.target.value));
-                    setPadKey((k) => k + 1);
-                  }}
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-3 text-base"
-                  disabled={busy}
-                >
-                  {BIOMETRIC_FINGERS.map((f) => (
-                    <option key={f.index} value={f.index}>
-                      {f.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <p className="text-sm text-gray-600">
+                Use your <span className="font-semibold text-gray-800">right thumb</span> only.
+              </p>
               <div className="flex justify-center py-1">
                 <FingerprintPad
                   key={padKey}
                   mode="enroll"
                   disabled={busy || !memberCode.trim() || !locationReady}
                   onComplete={() => void runFirstTimeRegister()}
-                  label={BIOMETRIC_FINGERS.find((f) => f.index === fingerIndex)?.label}
+                  label={DEFAULT_BIOMETRIC_FINGER_LABEL}
                 />
               </div>
               <p className="text-center text-xs text-gray-500">
-                Hold on the pad to capture, then confirm with your device fingerprint.
+                Hold your right thumb on the pad, then confirm with your device fingerprint.
               </p>
             </div>
           ) : null}

@@ -328,9 +328,6 @@ export async function processEmployeeBiometricScan(
       }
       return { ok: false, error: "Enter your member ID to continue.", status: 400 };
     }
-    if (!fingerIndex) {
-      return { ok: false, error: "Select which finger to scan.", status: 400 };
-    }
 
     employee = await findEmployeeByMemberCode(admin, terminal.ownerId, memberCode);
     if (!employee) {

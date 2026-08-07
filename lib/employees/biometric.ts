@@ -3,17 +3,12 @@ import { createHash, randomBytes } from "crypto";
 export const BIOMETRIC_TERMINAL_TOKEN_PREFIX = "FX-BIO-";
 export const BIOMETRIC_DEVICE_STORAGE_KEY = "fx_employee_biometric_device_id";
 
+/** Only the right thumb is used for employee fingerprint attendance. */
+export const DEFAULT_BIOMETRIC_FINGER_INDEX = 1 as const;
+export const DEFAULT_BIOMETRIC_FINGER_LABEL = "Right thumb";
+
 export const BIOMETRIC_FINGERS = [
-  { index: 1, label: "Right thumb" },
-  { index: 2, label: "Right index" },
-  { index: 3, label: "Right middle" },
-  { index: 4, label: "Right ring" },
-  { index: 5, label: "Right little" },
-  { index: 6, label: "Left thumb" },
-  { index: 7, label: "Left index" },
-  { index: 8, label: "Left middle" },
-  { index: 9, label: "Left ring" },
-  { index: 10, label: "Left little" },
+  { index: DEFAULT_BIOMETRIC_FINGER_INDEX, label: DEFAULT_BIOMETRIC_FINGER_LABEL },
 ] as const;
 
 export type BiometricFingerIndex = (typeof BIOMETRIC_FINGERS)[number]["index"];
@@ -41,13 +36,16 @@ export type BiometricTerminalRecord = {
 };
 
 export function fingerLabelForIndex(index: number): string {
-  return BIOMETRIC_FINGERS.find((f) => f.index === index)?.label ?? `Finger ${index}`;
+  return BIOMETRIC_FINGERS.find((f) => f.index === index)?.label ?? DEFAULT_BIOMETRIC_FINGER_LABEL;
 }
 
-export function parseFingerIndex(raw: unknown): BiometricFingerIndex | null {
+/** Always resolves to right thumb — other fingers are not used. */
+export function parseFingerIndex(raw: unknown): BiometricFingerIndex {
   const n = typeof raw === "number" ? raw : Number(String(raw ?? "").trim());
-  if (!Number.isInteger(n) || n < 1 || n > 10) return null;
-  return n as BiometricFingerIndex;
+  if (Number.isInteger(n) && n === DEFAULT_BIOMETRIC_FINGER_INDEX) {
+    return DEFAULT_BIOMETRIC_FINGER_INDEX;
+  }
+  return DEFAULT_BIOMETRIC_FINGER_INDEX;
 }
 
 export function parseBiometricTerminalToken(raw: unknown): string {
