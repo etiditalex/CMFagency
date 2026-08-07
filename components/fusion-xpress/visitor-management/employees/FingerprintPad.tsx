@@ -8,6 +8,8 @@ type Props = {
   pressesRequired?: number;
   onComplete: () => void;
   label?: string;
+  /** Dark kiosk terminal vs light dashboard enroll. */
+  tone?: "light" | "dark";
 };
 
 export default function FingerprintPad({
@@ -16,6 +18,7 @@ export default function FingerprintPad({
   pressesRequired,
   onComplete,
   label,
+  tone = "light",
 }: Props) {
   const needed = pressesRequired ?? 1;
   const [presses, setPresses] = useState(0);
@@ -130,16 +133,28 @@ export default function FingerprintPad({
           }}
         />
       </button>
-      <p className="text-center text-sm text-gray-600">
+      <p
+        className={`text-center text-sm ${
+          tone === "dark" ? "text-slate-300" : "text-gray-600"
+        }`}
+      >
         {ready
           ? mode === "enroll"
-            ? "Fingerprint captured"
-            : "Fingerprint recognised"
+            ? "Right thumb captured"
+            : "Right thumb recognised"
           : mode === "enroll"
-            ? `Hold finger on the pad (${presses}/${needed})`
-            : "Place enrolled finger on the pad and hold"}
+            ? `Hold right thumb on the pad${needed > 1 ? ` (${presses}/${needed})` : ""}`
+            : "Place right thumb on the pad and hold"}
       </p>
-      {label ? <p className="text-xs font-semibold text-sky-800">{label}</p> : null}
+      {label ? (
+        <p
+          className={`text-xs font-semibold ${
+            tone === "dark" ? "text-sky-300" : "text-sky-800"
+          }`}
+        >
+          {label}
+        </p>
+      ) : null}
     </div>
   );
 }

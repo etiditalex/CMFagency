@@ -27,6 +27,8 @@ type Feedback = {
   eventType?: "sign_in" | "sign_out";
 };
 
+const FEEDBACK_CLEAR_MS = 4500;
+
 function BiometricCheckInner() {
   const searchParams = useSearchParams();
   const terminalToken = parseBiometricTerminalToken(
@@ -48,6 +50,15 @@ function BiometricCheckInner() {
   const [webauthnSupported, setWebauthnSupported] = useState(false);
   const [hasLocalCreds, setHasLocalCreds] = useState(false);
   const positionRef = useRef<BrowserPosition | null>(null);
+  const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFeedbackSoon = useCallback(() => {
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = setTimeout(() => {
+      setFeedback(null);
+      setPadKey((k) => k + 1);
+    }, FEEDBACK_CLEAR_MS);
+  }, []);
 
   const ensureTerminalLocation = useCallback(async (): Promise<BrowserPosition> => {
     if (positionRef.current) return positionRef.current;
@@ -78,6 +89,12 @@ function BiometricCheckInner() {
   useEffect(() => {
     setWebauthnSupported(isPlatformWebAuthnAvailable());
     setHasLocalCreds(listLocalWebAuthnCredentialIds().length > 0);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -127,7 +144,7 @@ function BiometricCheckInner() {
           terminal: terminalToken,
           action: "toggle",
           deviceId: getOrCreateBiometricDeviceId(),
-          deviceLabel: `${browserDeviceLabel()} · biometric`,
+          deviceLabel: `${browserDeviceLabel()} · biometric terminal`,
           latitude: pos.latitude,
           longitude: pos.longitude,
           accuracyMeters: pos.accuracyMeters,
@@ -139,7 +156,7 @@ function BiometricCheckInner() {
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
         eventType?: string;
-        employee?: { fullName?: string };
+        employee?: { fullName?: string; attendanceStatus?: string };
         fingerLabel?: string;
         occurredAt?: string;
         firstEnrollment?: boolean;
@@ -161,7 +178,7 @@ function BiometricCheckInner() {
       const signedIn = json.eventType === "sign_in";
       const signedOut = json.eventType === "sign_out";
       const enrolledNote = json.firstEnrollment
-        ? " · Fingerprint registered — next time you only need your right thumb"
+        ? " · Right thumb registered on this terminal"
         : "";
       const timeLabel = json.occurredAt
         ? new Date(json.occurredAt).toLocaleTimeString()
@@ -170,8 +187,8 @@ function BiometricCheckInner() {
         ok: true,
         title: json.firstEnrollment
           ? signedIn
-            ? "Fingerprint registered · Signed in"
-            : "Fingerprint registered · Signed out"
+            ? "Registered · Signed in"
+            : "Registered · Signed out"
           : signedOut
             ? "Signed out"
             : signedIn
@@ -179,17 +196,20 @@ function BiometricCheckInner() {
               : "Attendance recorded",
         detail: `${json.employee?.fullName ?? "Employee"} · ${
           signedOut ? "Sign out" : signedIn ? "Sign in" : "Scan"
-        } · ${json.fingerLabel ?? "Right thumb"} · ${timeLabel}${enrolledNote}`,
+        } · ${json.fingerLabel ?? DEFAULT_BIOMETRIC_FINGER_LABEL} · ${timeLabel}${enrolledNote}`,
         eventType: signedOut ? "sign_out" : signedIn ? "sign_in" : undefined,
       });
+      clearFeedbackSoon();
     },
-    []
+    [clearFeedbackSoon]
   );
 
-  const runFingerprintSignIn = useCallback(async () => {
-    if (!terminalToken || busy) return;
+  /** Shared terminal: place right thumb on the pad → identify → sign in/out. */
+  const runThumbScan = useCallback(async () => {
+    if (!terminalToken || busy || !locationReady) return;
     setBusy(true);
     setFeedback(null);
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     try {
       const externalId = await assertEmployeeWebAuthnCredential();
       setHasLocalCreds(true);
@@ -198,18 +218,26 @@ function BiometricCheckInner() {
     } catch (e: unknown) {
       setFeedback({
         ok: false,
-        title: "Fingerprint scan failed",
+        title: "Fingerprint not recognised",
         detail:
           e instanceof Error
             ? e.message
-            : "Use “First-time register” once with your member ID, then try again.",
+            : "First time on this terminal? Register once with your member ID below.",
       });
-      if (!showRegister) setShowRegister(true);
+      setShowRegister(true);
+      clearFeedbackSoon();
     } finally {
       setBusy(false);
       setPadKey((k) => k + 1);
     }
-  }, [terminalToken, busy, postBiometricScan, applyScanFeedback, showRegister]);
+  }, [
+    terminalToken,
+    busy,
+    locationReady,
+    postBiometricScan,
+    applyScanFeedback,
+    clearFeedbackSoon,
+  ]);
 
   const runFirstTimeRegister = useCallback(async () => {
     if (!terminalToken || busy) return;
@@ -218,13 +246,14 @@ function BiometricCheckInner() {
       setFeedback({
         ok: false,
         title: "Member ID required",
-        detail: "Enter your staff or CRM member ID once to link your fingerprint.",
+        detail: "Enter your staff or CRM member ID once to link your right thumb on this terminal.",
       });
       return;
     }
 
     setBusy(true);
     setFeedback(null);
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     try {
       let externalId: string | undefined;
       if (webauthnSupported) {
@@ -250,6 +279,7 @@ function BiometricCheckInner() {
         title: "Registration failed",
         detail: e instanceof Error ? e.message : "Could not register fingerprint",
       });
+      clearFeedbackSoon();
     } finally {
       setBusy(false);
       setPadKey((k) => k + 1);
@@ -261,147 +291,107 @@ function BiometricCheckInner() {
     webauthnSupported,
     postBiometricScan,
     applyScanFeedback,
+    clearFeedbackSoon,
   ]);
 
   if (loadingTerminal) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-sm text-gray-600">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-sm text-slate-200">
         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-        Loading fingerprint terminal…
+        Opening fingerprint terminal…
       </div>
     );
   }
 
   if (terminalError) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <XCircle className="mx-auto h-10 w-10 text-red-500" />
-        <h1 className="mt-4 text-xl font-bold text-gray-900">Terminal unavailable</h1>
-        <p className="mt-2 text-sm text-gray-600">{terminalError}</p>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 px-4 text-center">
+        <div>
+          <XCircle className="mx-auto h-10 w-10 text-red-400" />
+          <h1 className="mt-4 text-xl font-bold text-white">Terminal unavailable</h1>
+          <p className="mt-2 text-sm text-slate-300">{terminalError}</p>
+        </div>
       </div>
     );
   }
 
+  const thumbReady = locationReady && webauthnSupported && !busy;
+
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-b from-sky-50 via-white to-slate-50 px-4 py-8">
-      <div className="mx-auto max-w-md space-y-6">
+    <div className="min-h-[100dvh] bg-slate-950 text-white">
+      <div className="mx-auto flex min-h-[100dvh] max-w-lg flex-col px-4 py-6 sm:py-8">
         <header className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sky-100 text-sky-800">
-            <Fingerprint className="h-7 w-7" />
-          </div>
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-sky-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-300">
             {businessName}
           </p>
-          <h1 className="mt-1 text-2xl font-extrabold text-gray-900">{terminalName}</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Allow location when prompted. First time: register with your member ID and right thumb
-            once. After that, sign in with your right thumb only.
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">
+            {terminalName}
+          </h1>
+          <p className="mt-2 text-sm text-slate-300">
+            Shared terminal on site — place your <span className="font-semibold text-white">right thumb</span>{" "}
+            to sign in or sign out.
           </p>
         </header>
 
-        <div className="space-y-4 rounded-2xl border border-sky-100 bg-white/90 p-5 shadow-sm">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
-            {locationLoading ? (
-              <p className="flex items-center gap-2 text-sky-800">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Waiting for location permission…
-              </p>
-            ) : locationReady ? (
-              <p className="flex items-center gap-2 font-semibold text-emerald-700">
-                <MapPin className="h-4 w-4" />
-                GPS ready
-              </p>
-            ) : (
-              <div className="space-y-2">
-                <p className="flex items-start gap-2 text-amber-900">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    {locationError ??
-                      "Location is required for attendance. Allow location for this site."}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    positionRef.current = null;
-                    void ensureTerminalLocation().catch(() => {});
-                  }}
-                  className="inline-flex min-h-[40px] items-center rounded-lg bg-sky-700 px-3 py-2 text-xs font-bold text-white hover:bg-sky-800"
-                >
-                  Allow location
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold">
+          {locationLoading ? (
+            <span className="inline-flex items-center gap-1.5 text-sky-300">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Confirming workplace location…
+            </span>
+          ) : locationReady ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-300">
+              <MapPin className="h-3.5 w-3.5" />
+              On premise · GPS ready
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                positionRef.current = null;
+                void ensureTerminalLocation().catch(() => {});
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-3 py-1.5 text-amber-200"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Allow location (required at workplace)
+            </button>
+          )}
+        </div>
 
-          <p className="text-sm text-gray-600">
-            {hasLocalCreds
-              ? "Use your right thumb — no member ID needed."
-              : "First time on this terminal: register once with your member ID and right thumb. After that, fingerprint only."}
+        {!locationReady && locationError ? (
+          <p className="mt-3 text-center text-xs text-amber-200/90">{locationError}</p>
+        ) : null}
+
+        <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 px-4 py-8 shadow-2xl">
+          <p className="mb-4 text-center text-sm font-semibold uppercase tracking-wide text-sky-300">
+            {busy ? "Reading thumb…" : thumbReady ? "Right thumb ready" : "Waiting for GPS…"}
           </p>
 
-          <button
-            type="button"
-            disabled={busy || !locationReady || !webauthnSupported}
-            onClick={() => void runFingerprintSignIn()}
-            className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-sky-700 px-4 py-3 text-base font-bold text-white hover:bg-sky-800 disabled:opacity-50"
-          >
-            {busy ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Fingerprint className="h-5 w-5" />
-            )}
-            Sign in / sign out with fingerprint
-          </button>
+          <FingerprintPad
+            key={`scan-${padKey}`}
+            mode="verify"
+            tone="dark"
+            disabled={!thumbReady}
+            onComplete={() => void runThumbScan()}
+            label={DEFAULT_BIOMETRIC_FINGER_LABEL}
+          />
+
+          <p className="mt-5 max-w-xs text-center text-sm text-slate-300">
+            {hasLocalCreds
+              ? "Hold your right thumb on the pad. Next employee can scan after you."
+              : "New on this terminal? Register once below, then use the pad every day."}
+          </p>
 
           {!webauthnSupported ? (
-            <p className="text-xs text-amber-800">
-              This browser cannot use device fingerprint. Use a phone/tablet with fingerprint, Face
-              ID, or Windows Hello. For QR attendance, use the separate Employees → Kiosk scanner.
+            <p className="mt-3 max-w-sm text-center text-xs text-amber-200">
+              This device cannot use fingerprint. Use a tablet/phone with fingerprint, Face ID, or
+              Windows Hello, kept at reception.
             </p>
           ) : null}
 
-          <button
-            type="button"
-            onClick={() => setShowRegister((v) => !v)}
-            className="text-sm font-semibold text-sky-800 hover:underline"
-          >
-            {showRegister ? "Hide first-time register" : "First-time register (member ID once)"}
-          </button>
-
-          {showRegister ? (
-            <div className="space-y-3 rounded-xl border border-dashed border-sky-200 bg-sky-50/60 p-4">
-              <label className="block text-sm">
-                <span className="font-semibold text-gray-800">Member ID</span>
-                <input
-                  value={memberCode}
-                  onChange={(e) => setMemberCode(e.target.value.toUpperCase())}
-                  placeholder="e.g. STF-123456"
-                  autoComplete="off"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-3 text-base tracking-wide"
-                  disabled={busy}
-                />
-              </label>
-              <p className="text-sm text-gray-600">
-                Use your <span className="font-semibold text-gray-800">right thumb</span> only.
-              </p>
-              <div className="flex justify-center py-1">
-                <FingerprintPad
-                  key={padKey}
-                  mode="enroll"
-                  disabled={busy || !memberCode.trim() || !locationReady}
-                  onComplete={() => void runFirstTimeRegister()}
-                  label={DEFAULT_BIOMETRIC_FINGER_LABEL}
-                />
-              </div>
-              <p className="text-center text-xs text-gray-500">
-                Hold your right thumb on the pad, then confirm with your device fingerprint.
-              </p>
-            </div>
-          ) : null}
-
           {busy ? (
-            <p className="flex items-center justify-center gap-2 text-sm text-sky-800">
+            <p className="mt-4 flex items-center gap-2 text-sm text-sky-200">
               <Loader2 className="h-4 w-4 animate-spin" />
               Recording attendance…
             </p>
@@ -409,12 +399,12 @@ function BiometricCheckInner() {
 
           {feedback ? (
             <div
-              className={`flex gap-3 rounded-xl border px-4 py-3 text-sm ${
+              className={`mt-5 w-full max-w-sm flex gap-3 rounded-2xl border px-4 py-3 text-sm ${
                 !feedback.ok
-                  ? "border-red-200 bg-red-50 text-red-900"
+                  ? "border-red-400/40 bg-red-950/80 text-red-100"
                   : feedback.eventType === "sign_out"
-                    ? "border-amber-200 bg-amber-50 text-amber-950"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                    ? "border-amber-400/40 bg-amber-950/80 text-amber-50"
+                    : "border-emerald-400/40 bg-emerald-950/80 text-emerald-50"
               }`}
             >
               {feedback.ok ? (
@@ -428,6 +418,46 @@ function BiometricCheckInner() {
               </div>
             </div>
           ) : null}
+        </section>
+
+        <div className="mt-5 space-y-2">
+          <button
+            type="button"
+            onClick={() => setShowRegister((v) => !v)}
+            className="w-full text-center text-sm font-semibold text-sky-300 hover:text-sky-200"
+          >
+            {showRegister ? "Hide first-time register" : "First-time register (member ID once)"}
+          </button>
+
+          {showRegister ? (
+            <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs text-slate-300">
+                Link your right thumb to this reception terminal once. After that, only the pad is
+                needed.
+              </p>
+              <label className="block text-sm">
+                <span className="font-semibold text-slate-100">Member ID</span>
+                <input
+                  value={memberCode}
+                  onChange={(e) => setMemberCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. STF-123456"
+                  autoComplete="off"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-slate-900 px-3 py-3 text-base tracking-wide text-white"
+                  disabled={busy}
+                />
+              </label>
+              <div className="flex justify-center py-1">
+                <FingerprintPad
+                  key={`enroll-${padKey}`}
+                  mode="enroll"
+                  tone="dark"
+                  disabled={busy || !memberCode.trim() || !locationReady}
+                  onComplete={() => void runFirstTimeRegister()}
+                  label={DEFAULT_BIOMETRIC_FINGER_LABEL}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -438,7 +468,7 @@ export default function BiometricCheckPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[60vh] items-center justify-center text-sm text-gray-600">
+        <div className="flex min-h-[100dvh] items-center justify-center bg-slate-950 text-sm text-slate-200">
           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
           Loading…
         </div>

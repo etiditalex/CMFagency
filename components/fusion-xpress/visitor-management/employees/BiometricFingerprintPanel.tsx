@@ -269,9 +269,10 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                   Reception fingerprint terminal
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  Open this link on a shared tablet at reception for fingerprint attendance only.
-                  Every employee uses the <strong>right thumb</strong>. First time: register with
-                  member ID once; after that right thumb only (no staff ID). QR scanning stays on
+                  Keep <strong>one tablet/gadget</strong> at reception on your business premise. Open
+                  this link and leave it on the thumb-ready screen. Every employee uses the{" "}
+                  <strong>right thumb</strong> on that same terminal (GPS must stay on). First time
+                  per person: register with member ID once; after that thumb only. QR stays on
                   Employees → Kiosk.
                 </p>
               </div>
