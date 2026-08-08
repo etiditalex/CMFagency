@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
-import { ensureCfmaCampaign, isCfmaTicketSlug } from "@/lib/ensure-cfma-campaigns";
+import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { validateCoupon } from "@/lib/validate-coupon";
 import { normalizeKenyaCurrencyForPayments, resolveInstallmentPaymentKes } from "@/lib/lipa-pole-pole";
@@ -218,13 +218,6 @@ export async function POST(req: Request) {
       installmentTicketQty = resInst.plan.ticket_quantity;
       if (!referredBy && resInst.plan.referred_by) referredBy = resInst.plan.referred_by;
       if (!referrerPhone && resInst.plan.referrer_phone) referrerPhone = resInst.plan.referrer_phone;
-    }
-
-    if (isCfmaTicketSlug(slug) && campaign.type === "ticket" && !referrerPhone) {
-      return NextResponse.json(
-        { error: "Referrer phone is required for CFM ticket purchases." },
-        { status: 400 }
-      );
     }
 
     // Reference used to reconcile webhook and DB. Must be unique.
