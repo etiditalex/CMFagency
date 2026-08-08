@@ -32,6 +32,86 @@ export const cfmTicketsFaqs = [
   },
 ] as const;
 
+const ticketBrand = {
+  "@type": "Brand",
+  name: "Changer Fusions",
+} as const;
+
+const ticketProducts = [
+  {
+    "@type": "Product",
+    "@id": `${canonical}#product-regular`,
+    name: "CFM Regular Ticket — Coast Fashion Awards",
+    description: "Entry for one guest, general seating, event wristband.",
+    image: [posterImage],
+    sku: "cfm-regular-2026",
+    brand: ticketBrand,
+    category: "Event tickets",
+    offers: {
+      "@type": "Offer",
+      url: canonical,
+      price: "500",
+      priceCurrency: "KES",
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      priceValidUntil: "2026-08-15",
+      seller: {
+        "@type": "Organization",
+        name: "Changer Fusions",
+        url: SITE_URL,
+      },
+    },
+  },
+  {
+    "@type": "Product",
+    "@id": `${canonical}#product-vip`,
+    name: "CFM VIP Ticket — Coast Fashion Awards",
+    description: "Priority entry, reserved seating zone, complimentary refreshment.",
+    image: [posterImage],
+    sku: "cfm-vip-2026",
+    brand: ticketBrand,
+    category: "Event tickets",
+    offers: {
+      "@type": "Offer",
+      url: canonical,
+      price: "1500",
+      priceCurrency: "KES",
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      priceValidUntil: "2026-08-15",
+      seller: {
+        "@type": "Organization",
+        name: "Changer Fusions",
+        url: SITE_URL,
+      },
+    },
+  },
+  {
+    "@type": "Product",
+    "@id": `${canonical}#product-vvip`,
+    name: "CFM VVIP Ticket — Coast Fashion Awards",
+    description: "Front-row experience, VIP lounge access, meet & greet opportunity.",
+    image: [posterImage],
+    sku: "cfm-vvip-2026",
+    brand: ticketBrand,
+    category: "Event tickets",
+    offers: {
+      "@type": "Offer",
+      url: canonical,
+      price: "3500",
+      priceCurrency: "KES",
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      priceValidUntil: "2026-08-15",
+      seller: {
+        "@type": "Organization",
+        name: "Changer Fusions",
+        url: SITE_URL,
+      },
+    },
+  },
+] as const;
+
 /**
  * JSON-LD graph for `/kcm/cfm-tickets`: WebPage, Event (+ offers), BreadcrumbList, FAQPage, Product offers.
  */
@@ -171,59 +251,16 @@ export const cfmTicketsJsonLd = {
         },
       })),
     },
+    // Standalone Product nodes so Google Product rich results get required `image` / `brand`.
+    ...ticketProducts,
     {
       "@type": "ItemList",
       name: "CFM ticket tiers — Coast Fashion Awards",
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          item: {
-            "@type": "Product",
-            name: "CFM Regular Ticket — Coast Fashion Awards",
-            description: "Entry for one guest, general seating, event wristband.",
-            offers: {
-              "@type": "Offer",
-              price: "500",
-              priceCurrency: "KES",
-              availability: "https://schema.org/InStock",
-              url: canonical,
-            },
-          },
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          item: {
-            "@type": "Product",
-            name: "CFM VIP Ticket — Coast Fashion Awards",
-            description: "Priority entry, reserved seating zone, complimentary refreshment.",
-            offers: {
-              "@type": "Offer",
-              price: "1500",
-              priceCurrency: "KES",
-              availability: "https://schema.org/InStock",
-              url: canonical,
-            },
-          },
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          item: {
-            "@type": "Product",
-            name: "CFM VVIP Ticket — Coast Fashion Awards",
-            description: "Front-row experience, VIP lounge access, meet & greet opportunity.",
-            offers: {
-              "@type": "Offer",
-              price: "3500",
-              priceCurrency: "KES",
-              availability: "https://schema.org/InStock",
-              url: canonical,
-            },
-          },
-        },
-      ],
+      itemListElement: ticketProducts.map((product, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: { "@id": product["@id"] },
+      })),
     },
   ],
 } as const;
