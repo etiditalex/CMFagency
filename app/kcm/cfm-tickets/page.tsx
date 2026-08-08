@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Script from "next/script";
 import { Loader2, X } from "lucide-react";
 import Image from "next/image";
@@ -699,22 +700,33 @@ export default function CfmTicketsPage() {
                 ) : null}
             </div>
 
-            {checkoutOpen ? (
+              </article>
+            </div>
+
+          <CfmTicketsPosterCarousel />
+          </div>
+        </section>
+      </main>
+
+      {checkoutOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/55 sm:items-center sm:bg-black/50 sm:p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="cfm-tickets-checkout-title"
+              onClick={closeCheckout}
+            >
               <div
-                className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-0 sm:items-center sm:bg-black/50 sm:p-4"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="cfm-tickets-checkout-title"
-                onClick={closeCheckout}
+                className="flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[min(85dvh,900px)] sm:rounded-2xl"
+                style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <div
-                  className="flex max-h-[min(92dvh,100%)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[min(92dvh,900px)] sm:rounded-2xl pb-[env(safe-area-inset-bottom)]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex shrink-0 justify-center pt-2 sm:hidden" aria-hidden>
+                <div className="shrink-0 border-b border-gray-200 bg-white">
+                  <div className="flex justify-center pt-2 sm:hidden" aria-hidden>
                     <span className="h-1 w-10 rounded-full bg-gray-300" />
                   </div>
-                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4">
                     <div className="min-w-0">
                       <h2
                         id="cfm-tickets-checkout-title"
@@ -722,7 +734,7 @@ export default function CfmTicketsPage() {
                       >
                         Checkout
                       </h2>
-                      <p className="mt-0.5 text-xs font-semibold text-primary-700 sm:text-sm">
+                      <p className="mt-0.5 truncate text-xs font-semibold text-primary-700 sm:text-sm">
                         {(() => {
                           const total = selectedPackage.amount * normalizedQuantity;
                           if (normalizedQuantity > 1) {
@@ -747,304 +759,206 @@ export default function CfmTicketsPage() {
                       type="button"
                       onClick={closeCheckout}
                       disabled={submittingMethod !== null || installmentPayLoading !== null}
-                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 sm:h-9 sm:w-9 sm:rounded-lg"
+                      className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 active:bg-gray-200 disabled:opacity-50"
                       aria-label="Close checkout"
                     >
-                      <X className="h-5 w-5" />
+                      <X className="h-5 w-5 shrink-0" strokeWidth={2.5} />
+                      <span>Close</span>
                     </button>
                   </div>
-
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      void onPay("daraja");
-                    }}
-                    className="flex min-h-0 flex-1 flex-col overflow-hidden text-sm"
-                  >
-                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:p-5">
-
-              {error ? (
-                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm leading-snug text-red-700">
-                  {error}
                 </div>
-              ) : null}
-              {notice ? (
-                <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm leading-snug text-green-700">
-                  {notice}
-                </div>
-              ) : null}
-              {pendingReference && paymentStatus ? (
-                <div className="mb-3 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
-                  <p className="break-all font-semibold text-xs sm:text-sm">Payment reference: {pendingReference}</p>
-                  <p className="mt-0.5 text-xs sm:text-sm">
-                    Status:{" "}
-                    <span className="font-bold uppercase">
-                      {paymentStatus.status === "success"
-                        ? "Success"
-                        : paymentStatus.status === "failed" || paymentStatus.status === "abandoned"
-                          ? "Failed"
-                          : "Pending"}
-                    </span>
-                  </p>
-                  {paymentStatus.amount != null ? (
-                    <p className="mt-0.5 text-xs sm:text-sm">
-                      Amount: {paymentStatus.currency ?? "KES"} {paymentStatus.amount.toLocaleString()}
-                    </p>
-                  ) : null}
-                  <div className="mt-2">
-                    <a
-                      href={`/receipt?ref=${encodeURIComponent(pendingReference)}`}
-                      className="inline-flex min-h-[44px] items-center rounded-lg border border-primary-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 sm:text-sm"
-                    >
-                      Open receipt
-                    </a>
-                  </div>
-                </div>
-              ) : null}
 
-              <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="First name"
-                  autoComplete="given-name"
-                  className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
-                  required
-                />
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Last name"
-                  autoComplete="family-name"
-                  className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
-                  required
-                />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  autoComplete="email"
-                  inputMode="email"
-                  className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
-                  required
-                />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone (e.g. 0712… or 254712…)"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
-                  required
-                  aria-describedby="cfm-tickets-phone-hint"
-                />
-                <p
-                  id="cfm-tickets-phone-hint"
-                  className="col-span-full text-xs leading-snug text-gray-500"
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void onPay("daraja");
+                  }}
+                  className="flex min-h-0 flex-1 flex-col overflow-hidden text-sm"
                 >
-                  Required for all payments. M-Pesa uses this number for the STK prompt.
-                </p>
-                <label className="col-span-full block">
-                  <span className="mb-1 block text-xs font-semibold text-gray-700">Quantity</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={10000}
-                    value={normalizedQuantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    placeholder="Quantity"
-                    inputMode="numeric"
-                    className="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
-                    required
-                  />
-                </label>
-              </div>
-
-              <label className="mt-4 flex items-start gap-3 text-sm leading-snug text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span>
-                  I agree to the{" "}
-                  <a
-                    href="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-primary-700 underline"
-                  >
-                    Terms and Conditions
-                  </a>
-                  .
-                </span>
-              </label>
-
-              {SHOW_LIPA_POLE_POLE_UI ? (
-                <>
-                  <div
-                    className="mt-4 flex items-center gap-3 max-md:mt-3"
-                    role="separator"
-                    aria-label="Alternative payment option"
-                  >
-                    <span className="h-px flex-1 bg-gray-300" />
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 max-md:text-[10px]">
-                      OR
-                    </span>
-                    <span className="h-px flex-1 bg-gray-300" />
-                  </div>
-
-                  <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4 max-md:mt-3 max-md:p-3">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-white sm:text-base">Lipa Pole Pole</h3>
-                      <p className="mt-1 text-xs leading-snug text-white/90 sm:text-sm">
-                        Choose your package with the tiers above (KES 500–3,500).
-                      </p>
-                      <p className="mt-2 text-xs font-semibold text-white sm:text-sm">First payment</p>
-                      <input
-                        type="number"
-                        min={50}
-                        value={installmentDeposit}
-                        onChange={(e) => setInstallmentDeposit(e.target.value)}
-                        placeholder="First payment (KES), min 50 — required until you have paid before"
-                        inputMode="numeric"
-                        className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
-                      />
-                      <p className="mt-3 text-xs font-semibold text-white sm:text-sm">
-                        Returning / top-up — verify your balance
-                      </p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs max-md:text-[11px]">
-                        Use the phone you used when you started Lipa Pole Pole (optional if already filled in
-                        checkout).
-                      </p>
-                      <div className="mt-2 grid gap-2 sm:gap-3">
-                        <input
-                          type="tel"
-                          value={balanceLookupPhone}
-                          onChange={(e) => setBalanceLookupPhone(e.target.value)}
-                          placeholder="Phone for lookup (optional)"
-                          autoComplete="tel"
-                          inputMode="tel"
-                          className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
-                        />
+                  <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:p-5">
+                    {error ? (
+                      <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm leading-snug text-red-700">
+                        {error}
                       </div>
-                      <div className="mt-2">
-                        <button
-                          type="button"
-                          onClick={() => void lookupInstallmentBalance()}
-                          disabled={installmentLookupLoading}
-                          className="touch-manipulation w-full min-h-[44px] rounded-lg border border-white/70 bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:text-sm sm:max-w-xs disabled:opacity-60 max-md:flex max-md:items-center max-md:justify-center"
-                        >
-                          {installmentLookupLoading ? (
-                            <span className="inline-flex items-center justify-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Checking…
-                            </span>
-                          ) : (
-                            "Check my balance"
-                          )}
-                        </button>
+                    ) : null}
+                    {notice ? (
+                      <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm leading-snug text-green-700">
+                        {notice}
                       </div>
-                      {installmentLookup ? (
-                        <p className="mt-2 break-words rounded-md bg-white px-2 py-1.5 text-xs font-medium text-gray-800 shadow-sm ring-1 ring-white/50 sm:text-sm">
-                          Balance: <strong>KES {installmentLookup.balance_kes.toLocaleString()}</strong> of total{" "}
-                          <strong>KES {installmentLookup.total_due_kes.toLocaleString()}</strong> (paid KES{" "}
-                          {installmentLookup.amount_paid_kes.toLocaleString()} ·{" "}
-                          {installmentLookup.ticket_quantity} ticket
-                          {installmentLookup.ticket_quantity === 1 ? "" : "s"})
+                    ) : null}
+                    {pendingReference && paymentStatus ? (
+                      <div className="mb-3 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
+                        <p className="break-all text-xs font-semibold sm:text-sm">
+                          Payment reference: {pendingReference}
                         </p>
-                      ) : null}
-                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-                        <button
-                          type="button"
-                          onClick={() => void onInstallmentPay("daraja")}
-                          disabled={installmentPayLoading !== null}
-                          aria-label="M-Pesa Lipa Pole Pole installment payment"
-                          className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {installmentPayLoading === "daraja" ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Starting…
-                            </>
-                          ) : (
-                            <span className="text-center leading-tight">M-Pesa · Lipa Pole Pole</span>
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void onInstallmentPay("paystack")}
-                          disabled={installmentPayLoading !== null}
-                          aria-label="Card or Paystack Lipa Pole Pole installment payment"
-                          className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-900 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {installmentPayLoading === "paystack" ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Redirecting…
-                            </>
-                          ) : (
-                            <span className="text-center leading-tight">Card / Paystack · Lipa Pole Pole</span>
-                          )}
-                        </button>
+                        <p className="mt-0.5 text-xs sm:text-sm">
+                          Status:{" "}
+                          <span className="font-bold uppercase">
+                            {paymentStatus.status === "success"
+                              ? "Success"
+                              : paymentStatus.status === "failed" || paymentStatus.status === "abandoned"
+                                ? "Failed"
+                                : "Pending"}
+                          </span>
+                        </p>
+                        {paymentStatus.amount != null ? (
+                          <p className="mt-0.5 text-xs sm:text-sm">
+                            Amount: {paymentStatus.currency ?? "KES"}{" "}
+                            {paymentStatus.amount.toLocaleString()}
+                          </p>
+                        ) : null}
+                        <div className="mt-2">
+                          <a
+                            href={`/receipt?ref=${encodeURIComponent(pendingReference)}`}
+                            className="inline-flex min-h-[44px] items-center rounded-lg border border-primary-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 sm:text-sm"
+                          >
+                            Open receipt
+                          </a>
+                        </div>
                       </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+                      <input
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="First name"
+                        autoComplete="given-name"
+                        className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Last name"
+                        autoComplete="family-name"
+                        className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                        required
+                      />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email address"
+                        autoComplete="email"
+                        inputMode="email"
+                        className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                        required
+                      />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="Phone (e.g. 0712… or 254712…)"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                        required
+                        aria-describedby="cfm-tickets-phone-hint"
+                      />
+                      <p id="cfm-tickets-phone-hint" className="col-span-full text-xs leading-snug text-gray-500">
+                        Required for all payments. M-Pesa uses this number for the STK prompt.
+                      </p>
+                      <label className="col-span-full block">
+                        <span className="mb-1 block text-xs font-semibold text-gray-700">Quantity</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={10000}
+                          value={normalizedQuantity}
+                          onChange={(e) => setQuantity(Number(e.target.value))}
+                          placeholder="Quantity"
+                          inputMode="numeric"
+                          className="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                          required
+                        />
+                      </label>
+                    </div>
+
+                    <label className="mt-4 flex items-start gap-3 text-sm leading-snug text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span>
+                        I agree to the{" "}
+                        <a
+                          href="/terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-primary-700 underline"
+                        >
+                          Terms and Conditions
+                        </a>
+                        .
+                      </span>
+                    </label>
+
+                    {SHOW_LIPA_POLE_POLE_UI ? (
+                      <>
+                        <div
+                          className="mt-4 flex items-center gap-3"
+                          role="separator"
+                          aria-label="Alternative payment option"
+                        >
+                          <span className="h-px flex-1 bg-gray-300" />
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                            OR
+                          </span>
+                          <span className="h-px flex-1 bg-gray-300" />
+                        </div>
+                        <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4">
+                          <p className="text-sm font-bold text-white">Lipa Pole Pole</p>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2">
+                      <button
+                        type="submit"
+                        disabled={submittingMethod !== null}
+                        aria-label="Pay with M-Pesa"
+                        className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {submittingMethod === "daraja" ? (
+                          <>
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                            Processing…
+                          </>
+                        ) : (
+                          "Pay with M-Pesa"
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void onPay("paystack")}
+                        disabled={submittingMethod !== null}
+                        aria-label="Pay with Card or Paystack"
+                        className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-800 active:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {submittingMethod === "paystack" ? (
+                          <>
+                            <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                            Redirecting…
+                          </>
+                        ) : (
+                          "Pay with Card"
+                        )}
+                      </button>
                     </div>
                   </div>
-                </>
-              ) : null}
-                    </div>
-
-                    <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
-                      <div className="grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2">
-                        <button
-                          type="submit"
-                          disabled={submittingMethod !== null}
-                          aria-label="Pay with M-Pesa"
-                          className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {submittingMethod === "daraja" ? (
-                            <>
-                              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                              Processing…
-                            </>
-                          ) : (
-                            "Pay with M-Pesa"
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void onPay("paystack")}
-                          disabled={submittingMethod !== null}
-                          aria-label="Pay with Card or Paystack"
-                          className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-800 active:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {submittingMethod === "paystack" ? (
-                            <>
-                              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                              Redirecting…
-                            </>
-                          ) : (
-                            "Pay with Card"
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
+                </form>
               </div>
-            ) : null}
-              </article>
-            </div>
-
-          <CfmTicketsPosterCarousel />
-          </div>
-        </section>
-      </main>
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }
