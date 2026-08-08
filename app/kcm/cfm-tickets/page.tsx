@@ -12,9 +12,7 @@ import { normalizeKenyaPhone } from "@/lib/kenya-phone";
 import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
 import { cloudinaryLoader } from "@/lib/cloudinary";
-import { cfmTicketsFaqs, cfmTicketsJsonLd } from "./structured-data";
-
-const TICKET_URL = "https://cmfagency.co.ke/kcm/cfm-tickets";
+import { cfmTicketsJsonLd } from "./structured-data";
 
 type TicketPackage = {
   name: string;
@@ -553,44 +551,45 @@ export default function CfmTicketsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(cfmTicketsJsonLd) }}
       />
-      <main className="relative min-h-screen overflow-x-clip bg-gray-50 pb-8 pt-32 max-md:pt-36 md:pt-36 sm:pb-10 md:pb-16 max-md:pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <main className="relative min-h-screen overflow-x-clip bg-gray-50 pb-8 pt-28 max-md:pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-10 md:pb-16 md:pt-36">
         <section aria-labelledby="cfm-tickets-heading" className="relative z-10">
           {/* Full-bleed hero (white background, Changer Fusions accents) */}
           <div className="md:relative md:ml-[calc(50%-50vw)] md:w-screen bg-white border-b border-gray-200">
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="grid items-center gap-8 py-9 sm:py-11 md:grid-cols-2 md:gap-10 md:py-14">
+              <div className="grid items-center gap-5 py-5 sm:gap-8 sm:py-11 md:grid-cols-2 md:gap-10 md:py-14">
                 <div className="min-w-0 text-center md:text-left">
-                  <p className="text-xs font-bold uppercase tracking-wider text-primary-700 sm:text-sm">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-primary-700 sm:text-sm">
                     Official CFM Awards tickets
                   </p>
                   <h1
                     id="cfm-tickets-heading"
-                    className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl md:text-5xl text-center md:text-left"
+                    className="mt-1.5 text-[1.65rem] font-extrabold leading-[1.15] tracking-tight text-gray-900 sm:mt-2 sm:text-4xl md:text-5xl text-center md:text-left"
                   >
                     Buy CFM Tickets — Coast Fashion Awards 2026
                   </h1>
-                  <p className="mt-3 text-sm font-semibold text-gray-700 sm:text-base text-center md:text-left">
-                    Coast Fashion &amp; Modelling Awards (CFMA) · City Blue Creekside Hotel, Mombasa · 15 Aug 2026 ·
-                    7:00 PM
-                  </p>
-                  <p className="mt-4 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base mx-auto md:mx-0 text-center md:text-left">
-                    Official <strong>CFM Awards</strong> and <strong>Coast Fashion Awards</strong> tickets online.
-                    Select Regular, VIP or VVIP below and pay with M‑Pesa or card. Ticket link:{" "}
-                    <a href={TICKET_URL} className="font-semibold text-primary-700 underline break-all">
-                      {TICKET_URL}
-                    </a>
-                  </p>
-
-                  <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center md:justify-start">
+                  <div className="mt-3 text-sm font-semibold text-gray-700 sm:text-base text-center md:text-left">
+                    <p className="hidden sm:block">
+                      Coast Fashion &amp; Modelling Awards (CFMA) · City Blue Creekside Hotel, Mombasa · 15 Aug 2026 ·
+                      7:00 PM
+                    </p>
+                    <div className="space-y-1 sm:hidden">
+                      <p className="text-[13px] leading-snug">Coast Fashion &amp; Modelling Awards (CFMA)</p>
+                      <p className="text-[13px] font-medium leading-snug text-gray-600">
+                        City Blue Creekside Hotel, Mombasa
+                      </p>
+                      <p className="text-[13px] font-medium leading-snug text-gray-600">15 Aug 2026 · 7:00 PM</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:flex-row sm:items-center sm:justify-center sm:gap-3 md:justify-start">
                     <a
                       href="#packages"
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-200 active:scale-[0.99] sm:min-h-[44px] sm:rounded-lg"
                     >
                       Buy tickets
                     </a>
                     <a
                       href="#packages"
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-200 bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                      className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-primary-200 bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-100 max-md:hidden sm:rounded-lg"
                     >
                       View packages
                     </a>
@@ -598,14 +597,14 @@ export default function CfmTicketsPage() {
                 </div>
 
                 <div className="relative flex w-full justify-center md:justify-end">
-                  <div className="relative aspect-[4/5] w-full max-w-[520px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+                  <div className="relative aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg sm:max-w-[360px] sm:rounded-2xl sm:shadow-2xl md:max-w-[520px]">
                     <Image
                       loader={cloudinaryLoader}
                       src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1785146685/WhatsApp_Image_2026-07-23_at_15.55.25_2_nv8rm3.jpg"
                       alt="Coast Fashion & Modelling Awards 2026 ticket poster"
                       fill
                       className="object-contain object-center"
-                      sizes="(max-width: 768px) 92vw, 520px"
+                      sizes="(max-width: 640px) 220px, (max-width: 768px) 360px, 520px"
                       priority
                     />
                   </div>
@@ -614,16 +613,17 @@ export default function CfmTicketsPage() {
             </div>
           </div>
 
-          <div id="packages" className="scroll-mt-36" />
+          <div id="packages" className="scroll-mt-28 sm:scroll-mt-36" />
 
           {/* Desktop: full-viewport-width white panel for checkout */}
           <div className="min-w-0 md:relative md:ml-[calc(50%-50vw)] md:w-screen md:bg-white md:pb-12">
             <div className="mx-auto w-full max-w-7xl px-0 sm:px-6 lg:px-8">
               <article className="w-full min-w-0 overflow-hidden bg-white max-md:max-w-none max-md:rounded-none md:mt-8 md:mr-auto md:ml-0 md:max-w-5xl">
-            {/* Mobile: ≤320px single-column tiers; wider mobile keeps 3 cols with capped height */}
-            <div className="bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-0 max-md:py-2 max-md:pb-2">
-                <div className="max-md:flex max-md:flex-col max-md:min-h-0 max-md:max-h-[min(52dvh,26rem)] max-[320px]:max-h-none max-[320px]:overflow-visible min-[321px]:max-md:overflow-y-auto">
-                  <div className="grid grid-cols-1 gap-3 max-[360px]:gap-2.5 sm:gap-4 min-[321px]:max-md:grid-cols-3 md:grid-cols-3 min-[321px]:max-md:gap-2 max-md:px-2 max-md:min-h-0 max-md:flex-1 min-[321px]:max-md:auto-rows-fr max-[320px]:auto-rows-auto">
+            <div className="bg-white px-4 py-4 sm:p-5 md:p-7">
+                <h2 className="mb-3 text-base font-extrabold text-gray-900 sm:mb-4 sm:text-lg md:sr-only">
+                  Choose your package
+                </h2>
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
                     {packages.map((pkg) => {
                     const isSelected = checkoutOpen && selectedPackage.amount === pkg.amount;
                     return (
@@ -631,49 +631,61 @@ export default function CfmTicketsPage() {
                         key={pkg.amount}
                         type="button"
                         onClick={() => openCheckout(pkg.amount)}
-                        className={`touch-manipulation rounded-xl border bg-white p-3 max-[360px]:p-2.5 text-left shadow-sm transition sm:rounded-2xl sm:p-5 max-md:flex max-md:min-h-0 max-md:flex-col max-md:rounded-lg max-md:p-2.5 max-md:py-3 min-[321px]:max-md:h-full max-[320px]:h-auto ${
+                        className={`touch-manipulation rounded-2xl border bg-white p-4 text-left shadow-sm transition active:scale-[0.99] sm:rounded-2xl sm:p-5 ${
                           isSelected
-                            ? "border-primary-600 bg-primary-50 ring-2 ring-primary-400/80 shadow-md max-md:border-primary-600 max-md:bg-primary-600/15 max-md:ring-2 max-md:ring-primary-500"
-                            : "border-gray-200 hover:border-primary-300 hover:bg-amber-50/90 hover:shadow-md max-md:hover:bg-amber-50"
+                            ? "border-primary-600 bg-primary-50 ring-2 ring-primary-400/80 shadow-md"
+                            : "border-gray-200 hover:border-primary-300 hover:bg-amber-50/90 hover:shadow-md"
                         }`}
                       >
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-primary-700 max-[360px]:text-[10px] sm:text-xs max-md:text-[10px] max-md:leading-tight">
-                          {pkg.name}
-                        </p>
-                        <p className="mt-2 text-xl font-extrabold text-gray-900 max-[360px]:text-lg sm:text-3xl max-md:mt-1 max-md:text-base max-md:leading-none">
-                          KES {pkg.amount.toLocaleString()}
-                        </p>
-                        <ul className="mt-3 space-y-1.5 text-xs text-gray-700 max-[360px]:mt-2.5 max-[360px]:space-y-1 max-[360px]:text-[11px] sm:mt-4 sm:space-y-2 sm:text-sm max-md:hidden">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold uppercase tracking-wide text-primary-700 sm:text-xs">
+                              {pkg.name}
+                            </p>
+                            <p className="mt-1 text-2xl font-extrabold text-gray-900 sm:mt-2 sm:text-3xl">
+                              KES {pkg.amount.toLocaleString()}
+                            </p>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded-lg border px-3 py-2 text-center text-xs font-semibold md:hidden ${
+                              isSelected
+                                ? "border-primary-500 bg-primary-600 text-white"
+                                : "border-primary-200 bg-primary-50 text-primary-800"
+                            }`}
+                          >
+                            {isSelected ? "Open" : "Select"}
+                          </span>
+                        </div>
+                        <ul className="mt-3 space-y-1.5 text-xs text-gray-700 sm:mt-4 sm:space-y-2 sm:text-sm">
                           {pkg.perks.map((perk) => (
                             <li key={perk} className="flex items-start gap-2">
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600" />
-                              <span>{perk}</span>
+                              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600" />
+                              <span className="leading-snug">{perk}</span>
                             </li>
                           ))}
                         </ul>
                         <span
-                          className={`mt-4 block w-full min-h-[40px] rounded-lg border px-3 py-2 text-center text-xs font-semibold transition max-md:mt-auto max-md:flex max-md:items-center max-md:justify-center max-md:px-2 max-md:py-1.5 max-md:text-[11px] sm:mt-5 sm:min-h-0 sm:px-4 sm:text-sm ${
+                          className={`mt-4 hidden w-full min-h-[44px] items-center justify-center rounded-xl border px-3 py-2.5 text-center text-sm font-semibold transition md:flex ${
                             isSelected
-                              ? "border-primary-500 bg-primary-600 text-white max-md:border-primary-600"
-                              : "border-primary-200 bg-primary-50/80 text-primary-800 max-md:border-primary-200 max-md:bg-white"
+                              ? "border-primary-500 bg-primary-600 text-white"
+                              : "border-primary-200 bg-primary-50/80 text-primary-800"
                           }`}
                         >
-                          {isSelected ? "Checkout open" : "Select"}
+                          {isSelected ? "Checkout open" : "Select & pay"}
                         </span>
                       </button>
                     );
                   })}
                   </div>
-                </div>
 
                 {!checkoutOpen && pendingReference ? (
-                  <div className="mx-2 mt-3 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-xs text-primary-900 sm:mx-0 sm:text-sm">
+                  <div className="mt-4 rounded-xl border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
                     <p className="font-semibold">Payment in progress</p>
-                    <p className="mt-0.5 break-all">Ref: {pendingReference}</p>
+                    <p className="mt-0.5 break-all text-xs sm:text-sm">Ref: {pendingReference}</p>
                     <button
                       type="button"
                       onClick={() => setCheckoutOpen(true)}
-                      className="mt-2 inline-flex min-h-[36px] items-center rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                      className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-primary-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 sm:text-sm"
                     >
                       Reopen checkout
                     </button>
@@ -683,16 +695,19 @@ export default function CfmTicketsPage() {
 
             {checkoutOpen ? (
               <div
-                className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4"
+                className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 p-0 sm:items-center sm:bg-black/50 sm:p-4"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="cfm-tickets-checkout-title"
                 onClick={closeCheckout}
               >
                 <div
-                  className="flex max-h-[min(92dvh,900px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+                  className="flex max-h-[min(92dvh,100%)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-2xl sm:max-h-[min(92dvh,900px)] sm:rounded-2xl pb-[env(safe-area-inset-bottom)]"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <div className="flex shrink-0 justify-center pt-2 sm:hidden" aria-hidden>
+                    <span className="h-1 w-10 rounded-full bg-gray-300" />
+                  </div>
                   <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
                     <div className="min-w-0">
                       <h2
@@ -726,7 +741,7 @@ export default function CfmTicketsPage() {
                       type="button"
                       onClick={closeCheckout}
                       disabled={submittingMethod !== null || installmentPayLoading !== null}
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-gray-600 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50 sm:h-9 sm:w-9 sm:rounded-lg"
                       aria-label="Close checkout"
                     >
                       <X className="h-5 w-5" />
@@ -738,23 +753,24 @@ export default function CfmTicketsPage() {
                       e.preventDefault();
                       void onPay("daraja");
                     }}
-                    className="min-h-0 flex-1 overflow-y-auto p-4 text-sm sm:p-5"
+                    className="flex min-h-0 flex-1 flex-col overflow-hidden text-sm"
                   >
+                    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:p-5">
 
               {error ? (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 max-md:mb-2 max-md:px-2.5 max-md:py-1.5 max-md:text-xs max-md:leading-snug">
+                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm leading-snug text-red-700">
                   {error}
                 </div>
               ) : null}
               {notice ? (
-                <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 max-md:mb-2 max-md:px-2.5 max-md:py-1.5 max-md:text-xs max-md:leading-snug">
+                <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm leading-snug text-green-700">
                   {notice}
                 </div>
               ) : null}
               {pendingReference && paymentStatus ? (
-                <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900 max-md:mb-2 max-md:px-2.5 max-md:py-2 max-md:text-xs max-md:leading-snug">
-                  <p className="break-all font-semibold">Payment reference: {pendingReference}</p>
-                  <p className="mt-0.5 max-md:mt-0">
+                <div className="mb-3 rounded-lg border border-primary-200 bg-primary-50 px-3 py-3 text-sm text-primary-900">
+                  <p className="break-all font-semibold text-xs sm:text-sm">Payment reference: {pendingReference}</p>
+                  <p className="mt-0.5 text-xs sm:text-sm">
                     Status:{" "}
                     <span className="font-bold uppercase">
                       {paymentStatus.status === "success"
@@ -765,14 +781,14 @@ export default function CfmTicketsPage() {
                     </span>
                   </p>
                   {paymentStatus.amount != null ? (
-                    <p className="mt-0.5 max-md:mt-0">
+                    <p className="mt-0.5 text-xs sm:text-sm">
                       Amount: {paymentStatus.currency ?? "KES"} {paymentStatus.amount.toLocaleString()}
                     </p>
                   ) : null}
-                  <div className="mt-2 max-md:mt-1.5">
+                  <div className="mt-2">
                     <a
                       href={`/receipt?ref=${encodeURIComponent(pendingReference)}`}
-                      className="inline-flex min-h-[40px] items-center rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100 max-md:px-2.5 max-md:py-2 max-md:text-[11px]"
+                      className="inline-flex min-h-[44px] items-center rounded-lg border border-primary-300 bg-white px-3 py-2 text-xs font-semibold text-primary-700 hover:bg-primary-100 sm:text-sm"
                     >
                       Open receipt
                     </a>
@@ -780,13 +796,14 @@ export default function CfmTicketsPage() {
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 max-md:gap-2">
+              <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
+                  autoComplete="given-name"
+                  className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
                   required
                 />
                 <input
@@ -794,7 +811,8 @@ export default function CfmTicketsPage() {
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
+                  autoComplete="family-name"
+                  className="min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
                   required
                 />
                 <input
@@ -802,45 +820,50 @@ export default function CfmTicketsPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
+                  autoComplete="email"
+                  inputMode="email"
+                  className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
                   required
                 />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Your phone number (e.g. 0712… or 254712…)"
+                  placeholder="Phone (e.g. 0712… or 254712…)"
                   autoComplete="tel"
                   inputMode="tel"
-                  className="col-span-2 min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
+                  className="col-span-full min-w-0 w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
                   required
                   aria-describedby="cfm-tickets-phone-hint"
                 />
                 <p
                   id="cfm-tickets-phone-hint"
-                  className="col-span-2 text-xs text-gray-500 max-md:text-[11px] max-md:leading-snug"
+                  className="col-span-full text-xs leading-snug text-gray-500"
                 >
-                  Required for all payments. M-Pesa checkout uses this number for the STK prompt.
+                  Required for all payments. M-Pesa uses this number for the STK prompt.
                 </p>
-                <input
-                  type="number"
-                  min={1}
-                  max={10000}
-                  value={normalizedQuantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  placeholder="Quantity"
-                  inputMode="numeric"
-                  className="col-span-2 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
-                  required
-                />
+                <label className="col-span-full block">
+                  <span className="mb-1 block text-xs font-semibold text-gray-700">Quantity</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={normalizedQuantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    placeholder="Quantity"
+                    inputMode="numeric"
+                    className="w-full rounded-xl border border-gray-300 px-3 py-3 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:rounded-lg sm:py-2.5 sm:text-sm"
+                    required
+                  />
+                </label>
               </div>
 
-              <label className="mt-4 flex items-start gap-2.5 text-xs text-gray-700 sm:text-sm max-md:mt-3 max-md:gap-2 max-md:text-[11px] max-md:leading-snug">
+              <label className="mt-4 flex items-start gap-3 text-sm leading-snug text-gray-700">
                 <input
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 h-[18px] w-[18px] shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500 max-md:mt-0.5 sm:h-4 sm:w-4"
+                  className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span>
                   I agree to the{" "}
@@ -855,48 +878,6 @@ export default function CfmTicketsPage() {
                   .
                 </span>
               </label>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 max-md:mt-3 max-md:gap-2">
-                <button
-                  type="submit"
-                  disabled={submittingMethod !== null}
-                  aria-label="Pay with M-Pesa"
-                  className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-green-600 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-green-700 max-md:px-2 max-md:text-[11px] max-md:leading-tight sm:gap-2 sm:px-4 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {submittingMethod === "daraja" ? (
-                    <>
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3.5 max-md:w-3.5" />
-                      <span className="max-md:hidden">Processing M-Pesa...</span>
-                      <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="max-md:hidden">Pay with M-Pesa</span>
-                      <span className="hidden max-md:inline text-center leading-tight">M-Pesa</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onPay("paystack")}
-                  disabled={submittingMethod !== null}
-                  aria-label="Pay with Card or Paystack"
-                  className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1 rounded-lg bg-primary-700 px-2 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 max-md:px-2 max-md:text-[11px] max-md:leading-tight sm:gap-2 sm:px-4 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {submittingMethod === "paystack" ? (
-                    <>
-                      <Loader2 className="h-4 w-4 shrink-0 animate-spin max-md:h-3.5 max-md:w-3.5" />
-                      <span className="max-md:hidden">Redirecting...</span>
-                      <span className="hidden max-md:inline text-center leading-tight">Wait…</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="max-md:hidden">Pay with Card / Paystack</span>
-                      <span className="hidden max-md:inline text-center leading-tight">Card / Paystack</span>
-                    </>
-                  )}
-                </button>
-              </div>
 
               {SHOW_LIPA_POLE_POLE_UI ? (
                 <>
@@ -1010,50 +991,49 @@ export default function CfmTicketsPage() {
                   </div>
                 </>
               ) : null}
+                    </div>
+
+                    <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 sm:px-5 sm:py-4">
+                      <div className="grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2">
+                        <button
+                          type="submit"
+                          disabled={submittingMethod !== null}
+                          aria-label="Pay with M-Pesa"
+                          className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-700 active:bg-green-800 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {submittingMethod === "daraja" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                              Processing…
+                            </>
+                          ) : (
+                            "Pay with M-Pesa"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onPay("paystack")}
+                          disabled={submittingMethod !== null}
+                          aria-label="Pay with Card or Paystack"
+                          className="touch-manipulation inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-800 active:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {submittingMethod === "paystack" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                              Redirecting…
+                            </>
+                          ) : (
+                            "Pay with Card"
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </form>
                 </div>
               </div>
             ) : null}
               </article>
             </div>
-
-          <section
-            aria-labelledby="cfm-tickets-seo-heading"
-            className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8"
-          >
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2
-                id="cfm-tickets-seo-heading"
-                className="text-lg font-bold text-gray-900 sm:text-xl"
-              >
-                CFM Awards tickets &amp; Coast Fashion Awards — buy online
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
-                Looking for <strong>CFM tickets</strong>, <strong>CFM Awards</strong> tickets, or{" "}
-                <strong>Coast Fashion Awards</strong> tickets? This is the official checkout for the{" "}
-                <strong>Coast Fashion &amp; Modelling Awards 2026</strong> (CFMA) in Mombasa — your place to buy{" "}
-                CFM tickets for coast fashion. Choose Regular, VIP or VVIP and pay with M‑Pesa or card.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
-                Buy tickets here:{" "}
-                <a href={TICKET_URL} className="font-semibold text-primary-700 underline break-all">
-                  {TICKET_URL}
-                </a>
-              </p>
-
-              <h3 className="mt-8 text-base font-bold text-gray-900 sm:text-lg">
-                Frequently asked questions
-              </h3>
-              <dl className="mt-4 space-y-4">
-                {cfmTicketsFaqs.map((faq) => (
-                  <div key={faq.question}>
-                    <dt className="text-sm font-semibold text-gray-900 sm:text-base">{faq.question}</dt>
-                    <dd className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">{faq.answer}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </section>
 
           <CfmTicketsPosterCarousel />
           </div>
