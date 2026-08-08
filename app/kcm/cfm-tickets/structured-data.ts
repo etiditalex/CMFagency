@@ -32,88 +32,60 @@ export const cfmTicketsFaqs = [
   },
 ] as const;
 
-const ticketBrand = {
-  "@type": "Brand",
+const organizer = {
+  "@type": "Organization",
   name: "Changer Fusions",
+  url: SITE_URL,
 } as const;
 
-const ticketProducts = [
+/**
+ * Ticket tiers as Event offers (not Product).
+ * Product schema triggers optional review/aggregateRating warnings; inventing ratings violates Google guidelines.
+ */
+const ticketOffers = [
   {
-    "@type": "Product",
-    "@id": `${canonical}#product-regular`,
-    name: "CFM Regular Ticket — Coast Fashion Awards",
-    description: "Entry for one guest, general seating, event wristband.",
-    image: [posterImage],
-    sku: "cfm-regular-2026",
-    brand: ticketBrand,
-    category: "Event tickets",
-    offers: {
-      "@type": "Offer",
-      url: canonical,
-      price: "500",
-      priceCurrency: "KES",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      priceValidUntil: "2026-08-15",
-      seller: {
-        "@type": "Organization",
-        name: "Changer Fusions",
-        url: SITE_URL,
-      },
-    },
+    "@type": "Offer",
+    name: "CFM Regular Ticket",
+    category: "Primary",
+    price: "500",
+    priceCurrency: "KES",
+    availability: "https://schema.org/InStock",
+    url: canonical,
+    validFrom: "2025-01-01",
+    priceValidUntil: "2026-08-15",
+    image: posterImage,
+    seller: organizer,
   },
   {
-    "@type": "Product",
-    "@id": `${canonical}#product-vip`,
-    name: "CFM VIP Ticket — Coast Fashion Awards",
-    description: "Priority entry, reserved seating zone, complimentary refreshment.",
-    image: [posterImage],
-    sku: "cfm-vip-2026",
-    brand: ticketBrand,
-    category: "Event tickets",
-    offers: {
-      "@type": "Offer",
-      url: canonical,
-      price: "1500",
-      priceCurrency: "KES",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      priceValidUntil: "2026-08-15",
-      seller: {
-        "@type": "Organization",
-        name: "Changer Fusions",
-        url: SITE_URL,
-      },
-    },
+    "@type": "Offer",
+    name: "CFM VIP Ticket",
+    category: "Primary",
+    price: "1500",
+    priceCurrency: "KES",
+    availability: "https://schema.org/InStock",
+    url: canonical,
+    validFrom: "2025-01-01",
+    priceValidUntil: "2026-08-15",
+    image: posterImage,
+    seller: organizer,
   },
   {
-    "@type": "Product",
-    "@id": `${canonical}#product-vvip`,
-    name: "CFM VVIP Ticket — Coast Fashion Awards",
-    description: "Front-row experience, VIP lounge access, meet & greet opportunity.",
-    image: [posterImage],
-    sku: "cfm-vvip-2026",
-    brand: ticketBrand,
-    category: "Event tickets",
-    offers: {
-      "@type": "Offer",
-      url: canonical,
-      price: "3500",
-      priceCurrency: "KES",
-      availability: "https://schema.org/InStock",
-      itemCondition: "https://schema.org/NewCondition",
-      priceValidUntil: "2026-08-15",
-      seller: {
-        "@type": "Organization",
-        name: "Changer Fusions",
-        url: SITE_URL,
-      },
-    },
+    "@type": "Offer",
+    name: "CFM VVIP Ticket",
+    category: "Primary",
+    price: "3500",
+    priceCurrency: "KES",
+    availability: "https://schema.org/InStock",
+    url: canonical,
+    validFrom: "2025-01-01",
+    priceValidUntil: "2026-08-15",
+    image: posterImage,
+    seller: organizer,
   },
 ] as const;
 
 /**
- * JSON-LD graph for `/kcm/cfm-tickets`: WebPage, Event (+ offers), BreadcrumbList, FAQPage, Product offers.
+ * JSON-LD graph for `/kcm/cfm-tickets`: WebPage, Event (+ ticket offers), BreadcrumbList, FAQPage.
  */
 export const cfmTicketsJsonLd = {
   "@context": "https://schema.org",
@@ -175,47 +147,12 @@ export const cfmTicketsJsonLd = {
           longitude: 39.6682,
         },
       },
-      organizer: {
-        "@type": "Organization",
-        name: "Changer Fusions",
-        url: SITE_URL,
-      },
+      organizer,
       performer: {
         "@type": "Organization",
         name: "Coast Fashion & Modelling Awards",
       },
-      offers: [
-        {
-          "@type": "Offer",
-          name: "CFM Regular Ticket",
-          category: "Primary",
-          price: "500",
-          priceCurrency: "KES",
-          availability: "https://schema.org/InStock",
-          url: canonical,
-          validFrom: "2025-01-01",
-        },
-        {
-          "@type": "Offer",
-          name: "CFM VIP Ticket",
-          category: "Primary",
-          price: "1500",
-          priceCurrency: "KES",
-          availability: "https://schema.org/InStock",
-          url: canonical,
-          validFrom: "2025-01-01",
-        },
-        {
-          "@type": "Offer",
-          name: "CFM VVIP Ticket",
-          category: "Primary",
-          price: "3500",
-          priceCurrency: "KES",
-          availability: "https://schema.org/InStock",
-          url: canonical,
-          validFrom: "2025-01-01",
-        },
-      ],
+      offers: ticketOffers,
     },
     {
       "@type": "BreadcrumbList",
@@ -249,17 +186,6 @@ export const cfmTicketsJsonLd = {
           "@type": "Answer",
           text: faq.answer,
         },
-      })),
-    },
-    // Standalone Product nodes so Google Product rich results get required `image` / `brand`.
-    ...ticketProducts,
-    {
-      "@type": "ItemList",
-      name: "CFM ticket tiers — Coast Fashion Awards",
-      itemListElement: ticketProducts.map((product, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        item: { "@id": product["@id"] },
       })),
     },
   ],
