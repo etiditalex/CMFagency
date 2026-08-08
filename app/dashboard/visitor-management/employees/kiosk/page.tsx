@@ -22,6 +22,8 @@ import {
   defaultKioskCameraFacing,
   formatKioskCameraStartError,
   isDesktopScannerDevice,
+  reinforceLiveCameraTrack,
+  rememberSuccessfulCamera,
   useNativeBarcodeDetectorOnDevice,
   warmupCameraPermission,
   type KioskCameraFacing,
@@ -50,6 +52,9 @@ interface QrScanner {
   ): Promise<null>;
   stop(): Promise<void>;
   clear(): void;
+  applyVideoConstraints?: (constraints: MediaTrackConstraints) => Promise<void>;
+  getRunningTrackCapabilities?: () => MediaTrackCapabilities;
+  getRunningTrackSettings?: () => MediaTrackSettings;
 }
 
 const EMP_TOKEN_PATTERN = /FX-EMP-[A-Za-z0-9-]+/;
@@ -314,6 +319,8 @@ export default function EmployeeKioskPage() {
             (text) => void submitToken(text),
             () => {}
           );
+          rememberSuccessfulCamera(facing, cameraIdOrConstraints);
+          await reinforceLiveCameraTrack(scanner);
           started = true;
           setCameraFacing(facing);
           break;

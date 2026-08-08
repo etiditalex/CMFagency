@@ -2,32 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Script from "next/script";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import Image from "next/image";
 import {
   PaymentClientError,
   messageForPaymentFailure,
 } from "@/lib/payment-user-message";
-import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
-import { normalizeKenyaPhone, parseRequiredKenyaPhone } from "@/lib/kenya-phone";
+import { normalizeKenyaPhone } from "@/lib/kenya-phone";
 import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 import CfmTicketsPosterCarousel from "@/components/cfm-tickets/CfmTicketsPosterCarousel";
 import { cloudinaryLoader } from "@/lib/cloudinary";
-import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
-import { cfmTicketsJsonLd } from "./structured-data";
+import { cfmTicketsFaqs, cfmTicketsJsonLd } from "./structured-data";
 
-/** Payload fields for referral contact on checkout APIs. */
-function referralPayload(referredBy: string, referrerPhone: string) {
-  const name = referredBy.trim().slice(0, 240);
-  const phoneParsed = parseRequiredKenyaPhone(referrerPhone);
-  if (phoneParsed.error || !phoneParsed.phone) {
-    throw new PaymentClientError(phoneParsed.error ?? "Referrer phone number is required.");
-  }
-  return {
-    ...(name ? { referred_by: name } : {}),
-    referrer_phone: phoneParsed.phone,
-  };
-}
+const TICKET_URL = "https://cmfagency.co.ke/kcm/cfm-tickets";
 
 type TicketPackage = {
   name: string;
@@ -57,14 +44,16 @@ const packages: TicketPackage[] = [
   },
 ];
 
+/** Set true to show the Lipa Pole Pole installment block on checkout again. */
+const SHOW_LIPA_POLE_POLE_UI = false;
+
 export default function CfmTicketsPage() {
   const [selectedAmount, setSelectedAmount] = useState<number>(500);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [referredBy, setReferredBy] = useState("");
-  const [referrerPhone, setReferrerPhone] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submittingMethod, setSubmittingMethod] = useState<"daraja" | "paystack" | null>(null);
@@ -106,6 +95,33 @@ export default function CfmTicketsPage() {
     setBalanceLookupPhone("");
   }, [selectedAmount, normalizedQuantity]);
 
+  const openCheckout = (amount: number) => {
+    setSelectedAmount(amount);
+    setError(null);
+    setCheckoutOpen(true);
+  };
+
+  const closeCheckout = () => {
+    if (submittingMethod || installmentPayLoading) return;
+    setCheckoutOpen(false);
+  };
+
+  useEffect(() => {
+    if (!checkoutOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (submittingMethod || installmentPayLoading) return;
+      setCheckoutOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [checkoutOpen, submittingMethod, installmentPayLoading]);
+
   const validateCommon = () => {
     if (!firstName.trim() || !lastName.trim()) {
       throw new PaymentClientError("Enter first and last name.");
@@ -125,10 +141,6 @@ export default function CfmTicketsPage() {
     if (!agreedToTerms) {
       throw new PaymentClientError("Please agree to Terms and Conditions before payment.");
     }
-    const refErr = validateReferredByNameOnly(referredBy);
-    if (refErr) throw new PaymentClientError(refErr);
-    const refPhoneErr = parseRequiredKenyaPhone(referrerPhone).error;
-    if (refPhoneErr) throw new PaymentClientError(refPhoneErr);
   };
 
   const handlePaystack = async () => {
@@ -141,7 +153,6 @@ export default function CfmTicketsPage() {
         payer_name: payerName,
         payer_phone: normalizeKenyaPhone(phone),
         quantity: normalizedQuantity,
-        ...referralPayload(referredBy, referrerPhone),
       }),
     });
 
@@ -171,7 +182,6 @@ export default function CfmTicketsPage() {
         email: email.trim(),
         payer_name: payerName,
         quantity: normalizedQuantity,
-        ...referralPayload(referredBy, referrerPhone),
       }),
     });
 
@@ -277,7 +287,6 @@ export default function CfmTicketsPage() {
         phone: normalizeKenyaPhone(phone),
         payer_name: payerName,
         ticket_quantity: normalizedQuantity,
-        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const j = (await res.json().catch(() => ({}))) as {
@@ -337,7 +346,6 @@ export default function CfmTicketsPage() {
         quantity: normalizedQuantity,
         lipa_pole_pole_plan_id: planId,
         ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
-        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const json = (await res.json().catch(() => ({}))) as {
@@ -397,7 +405,6 @@ export default function CfmTicketsPage() {
         quantity: normalizedQuantity,
         lipa_pole_pole_plan_id: planId,
         ...(depositKes != null ? { lipa_pole_pole_deposit_kes: depositKes } : {}),
-        ...referralPayload(referredBy, referrerPhone),
       }),
     });
     const json = (await res.json().catch(() => ({}))) as {
@@ -553,17 +560,25 @@ export default function CfmTicketsPage() {
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="grid items-center gap-8 py-9 sm:py-11 md:grid-cols-2 md:gap-10 md:py-14">
                 <div className="min-w-0 text-center md:text-left">
+                  <p className="text-xs font-bold uppercase tracking-wider text-primary-700 sm:text-sm">
+                    Official CFM Awards tickets
+                  </p>
                   <h1
                     id="cfm-tickets-heading"
-                    className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl md:text-5xl text-center md:text-left"
+                    className="mt-2 text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl md:text-5xl text-center md:text-left"
                   >
-                    Coast Fashion &amp; Modelling Awards 2026
+                    Buy CFM Tickets — Coast Fashion Awards 2026
                   </h1>
                   <p className="mt-3 text-sm font-semibold text-gray-700 sm:text-base text-center md:text-left">
-                    City Blue Creekside Hotel, Mombasa · 15th Aug 2026 · 7:00 PM
+                    Coast Fashion &amp; Modelling Awards (CFMA) · City Blue Creekside Hotel, Mombasa · 15 Aug 2026 ·
+                    7:00 PM
                   </p>
                   <p className="mt-4 max-w-xl text-sm leading-relaxed text-gray-600 sm:text-base mx-auto md:mx-0 text-center md:text-left">
-                    Secure your seat early. Select your package below and checkout via M‑Pesa or card.
+                    Official <strong>CFM Awards</strong> and <strong>Coast Fashion Awards</strong> tickets online.
+                    Select Regular, VIP or VVIP below and pay with M‑Pesa or card. Ticket link:{" "}
+                    <a href={TICKET_URL} className="font-semibold text-primary-700 underline break-all">
+                      {TICKET_URL}
+                    </a>
                   </p>
 
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center md:justify-start">
@@ -610,12 +625,12 @@ export default function CfmTicketsPage() {
                 <div className="max-md:flex max-md:flex-col max-md:min-h-0 max-md:max-h-[min(52dvh,26rem)] max-[320px]:max-h-none max-[320px]:overflow-visible min-[321px]:max-md:overflow-y-auto">
                   <div className="grid grid-cols-1 gap-3 max-[360px]:gap-2.5 sm:gap-4 min-[321px]:max-md:grid-cols-3 md:grid-cols-3 min-[321px]:max-md:gap-2 max-md:px-2 max-md:min-h-0 max-md:flex-1 min-[321px]:max-md:auto-rows-fr max-[320px]:auto-rows-auto">
                     {packages.map((pkg) => {
-                    const isSelected = selectedPackage.amount === pkg.amount;
+                    const isSelected = checkoutOpen && selectedPackage.amount === pkg.amount;
                     return (
                       <button
                         key={pkg.amount}
                         type="button"
-                        onClick={() => setSelectedAmount(pkg.amount)}
+                        onClick={() => openCheckout(pkg.amount)}
                         className={`touch-manipulation rounded-xl border bg-white p-3 max-[360px]:p-2.5 text-left shadow-sm transition sm:rounded-2xl sm:p-5 max-md:flex max-md:min-h-0 max-md:flex-col max-md:rounded-lg max-md:p-2.5 max-md:py-3 min-[321px]:max-md:h-full max-[320px]:h-auto ${
                           isSelected
                             ? "border-primary-600 bg-primary-50 ring-2 ring-primary-400/80 shadow-md max-md:border-primary-600 max-md:bg-primary-600/15 max-md:ring-2 max-md:ring-primary-500"
@@ -643,7 +658,7 @@ export default function CfmTicketsPage() {
                               : "border-primary-200 bg-primary-50/80 text-primary-800 max-md:border-primary-200 max-md:bg-white"
                           }`}
                         >
-                          {isSelected ? "Selected" : `Select`}
+                          {isSelected ? "Checkout open" : "Select"}
                         </span>
                       </button>
                     );
@@ -651,54 +666,80 @@ export default function CfmTicketsPage() {
                   </div>
                 </div>
 
-                {/* Mobile: payment + inclusions for the active tier only */}
-                <div
-                  className="mt-2 hidden max-md:mx-2 max-md:block rounded-lg border border-primary-200 bg-gradient-to-b from-primary-50/90 to-white px-2.5 py-2 text-[10px] leading-snug text-gray-800"
-                  role="region"
-                  aria-live="polite"
-                  aria-label={`Payment details for ${selectedPackage.name}`}
-                >
-                  <p className="font-bold text-primary-800">
-                    {selectedPackage.name} · KES {selectedPackage.amount.toLocaleString()} / ticket
-                  </p>
-                  <ul className="mt-1.5 space-y-0.5 text-[10px] text-gray-700">
-                    {selectedPackage.perks.map((perk) => (
-                      <li key={perk} className="flex gap-1.5">
-                        <span className="text-primary-600">•</span>
-                        <span>{perk}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {!checkoutOpen && pendingReference ? (
+                  <div className="mx-2 mt-3 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2.5 text-xs text-primary-900 sm:mx-0 sm:text-sm">
+                    <p className="font-semibold">Payment in progress</p>
+                    <p className="mt-0.5 break-all">Ref: {pendingReference}</p>
+                    <button
+                      type="button"
+                      onClick={() => setCheckoutOpen(true)}
+                      className="mt-2 inline-flex min-h-[36px] items-center rounded-md border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-700 hover:bg-primary-100"
+                    >
+                      Reopen checkout
+                    </button>
+                  </div>
+                ) : null}
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void onPay("daraja");
-              }}
-              className="border-t border-gray-200 bg-white p-3 max-[360px]:p-2.5 sm:p-5 md:p-7 max-md:px-3 max-md:py-2 max-md:pt-2.5 text-sm max-md:text-sm"
-            >
-              <div className="mb-4 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2 max-md:mb-2 max-md:gap-0">
-                <h2 className="text-base font-extrabold text-gray-900 max-[360px]:text-sm sm:text-lg max-md:text-sm max-md:font-bold max-md:leading-tight">
-                  Checkout
-                </h2>
-                <p className="text-xs font-semibold text-primary-700 max-[360px]:text-[11px] sm:text-sm max-md:text-xs max-md:font-medium max-md:leading-snug max-md:break-words">
-                  {(() => {
-                    const total = selectedPackage.amount * normalizedQuantity;
-                    if (normalizedQuantity > 1) {
-                      return (
-                        <>
-                          Selected: {selectedPackage.name} - KES {total.toLocaleString()} <span className="text-[11px] text-gray-600">({selectedPackage.amount.toLocaleString()} / ticket)</span>
-                        </>
-                      );
-                    }
-                    return (
-                      <>Selected: {selectedPackage.name} - KES {selectedPackage.amount.toLocaleString()}</>
-                    );
-                  })()}
-                </p>
-              </div>
+            {checkoutOpen ? (
+              <div
+                className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cfm-tickets-checkout-title"
+                onClick={closeCheckout}
+              >
+                <div
+                  className="flex max-h-[min(92dvh,900px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-5 sm:py-4">
+                    <div className="min-w-0">
+                      <h2
+                        id="cfm-tickets-checkout-title"
+                        className="text-base font-extrabold text-gray-900 sm:text-lg"
+                      >
+                        Checkout
+                      </h2>
+                      <p className="mt-0.5 text-xs font-semibold text-primary-700 sm:text-sm">
+                        {(() => {
+                          const total = selectedPackage.amount * normalizedQuantity;
+                          if (normalizedQuantity > 1) {
+                            return (
+                              <>
+                                {selectedPackage.name} — KES {total.toLocaleString()}{" "}
+                                <span className="font-medium text-gray-600">
+                                  ({selectedPackage.amount.toLocaleString()} / ticket)
+                                </span>
+                              </>
+                            );
+                          }
+                          return (
+                            <>
+                              {selectedPackage.name} — KES {selectedPackage.amount.toLocaleString()}
+                            </>
+                          );
+                        })()}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={closeCheckout}
+                      disabled={submittingMethod !== null || installmentPayLoading !== null}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                      aria-label="Close checkout"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void onPay("daraja");
+                    }}
+                    className="min-h-0 flex-1 overflow-y-auto p-4 text-sm sm:p-5"
+                  >
 
               {error ? (
                 <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 max-md:mb-2 max-md:px-2.5 max-md:py-1.5 max-md:text-xs max-md:leading-snug">
@@ -764,31 +805,6 @@ export default function CfmTicketsPage() {
                   className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
                   required
                 />
-                <input
-                  type="text"
-                  value={referredBy}
-                  onChange={(e) => setReferredBy(e.target.value)}
-                  placeholder="Referrer's name (optional)"
-                  maxLength={240}
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
-                />
-                <input
-                  type="tel"
-                  value={referrerPhone}
-                  onChange={(e) => setReferrerPhone(e.target.value)}
-                  placeholder="Referrer's phone (e.g. 0712… or 254712…)"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  className="min-w-0 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 sm:text-sm max-md:px-2.5 max-md:py-2.5"
-                  required
-                  aria-describedby="cfm-tickets-referrer-phone-hint"
-                />
-                <p
-                  id="cfm-tickets-referrer-phone-hint"
-                  className="col-span-2 text-xs text-gray-500 max-md:text-[11px] max-md:leading-snug"
-                >
-                  Required — phone number of the person who referred you to buy tickets.
-                </p>
                 <input
                   type="tel"
                   value={phone}
@@ -882,147 +898,160 @@ export default function CfmTicketsPage() {
                 </button>
               </div>
 
-              <div
-                className="mt-4 flex items-center gap-3 max-md:mt-3"
-                role="separator"
-                aria-label="Alternative payment option"
-              >
-                <span className="h-px flex-1 bg-gray-300" />
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 max-md:text-[10px]">
-                  OR
-                </span>
-                <span className="h-px flex-1 bg-gray-300" />
-              </div>
+              {SHOW_LIPA_POLE_POLE_UI ? (
+                <>
+                  <div
+                    className="mt-4 flex items-center gap-3 max-md:mt-3"
+                    role="separator"
+                    aria-label="Alternative payment option"
+                  >
+                    <span className="h-px flex-1 bg-gray-300" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 max-md:text-[10px]">
+                      OR
+                    </span>
+                    <span className="h-px flex-1 bg-gray-300" />
+                  </div>
 
-              <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4 max-md:mt-3 max-md:p-3">
-                <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-white sm:text-base">Lipa Pole Pole</h3>
-                    <p className="mt-1 text-xs leading-snug text-white/90 sm:text-sm">
-                      Choose your package with the tiers above (KES 500–3,500).
-                    </p>
-                    <p className="mt-2 text-xs font-semibold text-white sm:text-sm">
-                      First payment
-                    </p>
-                    <input
-                      type="number"
-                      min={50}
-                      value={installmentDeposit}
-                      onChange={(e) => setInstallmentDeposit(e.target.value)}
-                      placeholder="First payment (KES), min 50 — required until you have paid before"
-                      inputMode="numeric"
-                      className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
-                    />
-                    <p className="mt-3 text-xs font-semibold text-white sm:text-sm">
-                      Returning / top-up — verify your balance
-                    </p>
-                    <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs max-md:text-[11px]">
-                      Use the phone you used when you started Lipa Pole Pole (optional if already filled in checkout).
-                    </p>
-                    <div className="mt-2 grid gap-2 sm:gap-3">
-                      <input
-                        type="tel"
-                        value={balanceLookupPhone}
-                        onChange={(e) => setBalanceLookupPhone(e.target.value)}
-                        placeholder="Phone for lookup (optional)"
-                        autoComplete="tel"
-                        inputMode="tel"
-                        className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={() => void lookupInstallmentBalance()}
-                        disabled={installmentLookupLoading}
-                        className="touch-manipulation w-full min-h-[44px] rounded-lg border border-white/70 bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:text-sm sm:max-w-xs disabled:opacity-60 max-md:flex max-md:items-center max-md:justify-center"
-                      >
-                        {installmentLookupLoading ? (
-                          <span className="inline-flex items-center justify-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Checking…
-                          </span>
-                        ) : (
-                          "Check my balance"
-                        )}
-                      </button>
-                    </div>
-                    {installmentLookup ? (
-                      <p className="mt-2 break-words rounded-md bg-white px-2 py-1.5 text-xs font-medium text-gray-800 shadow-sm ring-1 ring-white/50 sm:text-sm">
-                        Balance: <strong>KES {installmentLookup.balance_kes.toLocaleString()}</strong> of total{" "}
-                        <strong>KES {installmentLookup.total_due_kes.toLocaleString()}</strong> (paid KES{" "}
-                        {installmentLookup.amount_paid_kes.toLocaleString()} · {installmentLookup.ticket_quantity}{" "}
-                        ticket
-                        {installmentLookup.ticket_quantity === 1 ? "" : "s"})
+                  <div className="mt-4 rounded-xl border border-white/25 bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 p-3 sm:p-4 max-md:mt-3 max-md:p-3">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-white sm:text-base">Lipa Pole Pole</h3>
+                      <p className="mt-1 text-xs leading-snug text-white/90 sm:text-sm">
+                        Choose your package with the tiers above (KES 500–3,500).
                       </p>
-                    ) : null}
-                    {/* Intentionally minimal copy here (per UX request). */}
-                    <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-                      <button
-                        type="button"
-                        onClick={() => void onInstallmentPay("daraja")}
-                        disabled={installmentPayLoading !== null}
-                        aria-label="M-Pesa Lipa Pole Pole installment payment"
-                        className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {installmentPayLoading === "daraja" ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Starting…
-                          </>
-                        ) : (
-                          <span className="text-center leading-tight">M-Pesa · Lipa Pole Pole</span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void onInstallmentPay("paystack")}
-                        disabled={installmentPayLoading !== null}
-                        aria-label="Card or Paystack Lipa Pole Pole installment payment"
-                        className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-900 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {installmentPayLoading === "paystack" ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Redirecting…
-                          </>
-                        ) : (
-                          <span className="text-center leading-tight">Card / Paystack · Lipa Pole Pole</span>
-                        )}
-                      </button>
+                      <p className="mt-2 text-xs font-semibold text-white sm:text-sm">First payment</p>
+                      <input
+                        type="number"
+                        min={50}
+                        value={installmentDeposit}
+                        onChange={(e) => setInstallmentDeposit(e.target.value)}
+                        placeholder="First payment (KES), min 50 — required until you have paid before"
+                        inputMode="numeric"
+                        className="mt-1 w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
+                      />
+                      <p className="mt-3 text-xs font-semibold text-white sm:text-sm">
+                        Returning / top-up — verify your balance
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-white/85 sm:text-xs max-md:text-[11px]">
+                        Use the phone you used when you started Lipa Pole Pole (optional if already filled in
+                        checkout).
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:gap-3">
+                        <input
+                          type="tel"
+                          value={balanceLookupPhone}
+                          onChange={(e) => setBalanceLookupPhone(e.target.value)}
+                          placeholder="Phone for lookup (optional)"
+                          autoComplete="tel"
+                          inputMode="tel"
+                          className="w-full rounded-lg border border-white/40 bg-white px-3 py-2.5 text-base text-gray-900 outline-none placeholder:text-gray-500 focus:border-white focus:ring-2 focus:ring-white/40 sm:text-sm max-md:px-2.5"
+                        />
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => void lookupInstallmentBalance()}
+                          disabled={installmentLookupLoading}
+                          className="touch-manipulation w-full min-h-[44px] rounded-lg border border-white/70 bg-white/15 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/25 sm:text-sm sm:max-w-xs disabled:opacity-60 max-md:flex max-md:items-center max-md:justify-center"
+                        >
+                          {installmentLookupLoading ? (
+                            <span className="inline-flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Checking…
+                            </span>
+                          ) : (
+                            "Check my balance"
+                          )}
+                        </button>
+                      </div>
+                      {installmentLookup ? (
+                        <p className="mt-2 break-words rounded-md bg-white px-2 py-1.5 text-xs font-medium text-gray-800 shadow-sm ring-1 ring-white/50 sm:text-sm">
+                          Balance: <strong>KES {installmentLookup.balance_kes.toLocaleString()}</strong> of total{" "}
+                          <strong>KES {installmentLookup.total_due_kes.toLocaleString()}</strong> (paid KES{" "}
+                          {installmentLookup.amount_paid_kes.toLocaleString()} ·{" "}
+                          {installmentLookup.ticket_quantity} ticket
+                          {installmentLookup.ticket_quantity === 1 ? "" : "s"})
+                        </p>
+                      ) : null}
+                      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void onInstallmentPay("daraja")}
+                          disabled={installmentPayLoading !== null}
+                          aria-label="M-Pesa Lipa Pole Pole installment payment"
+                          className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-green-700 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-green-800 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {installmentPayLoading === "daraja" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Starting…
+                            </>
+                          ) : (
+                            <span className="text-center leading-tight">M-Pesa · Lipa Pole Pole</span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onInstallmentPay("paystack")}
+                          disabled={installmentPayLoading !== null}
+                          aria-label="Card or Paystack Lipa Pole Pole installment payment"
+                          className="touch-manipulation inline-flex min-h-[44px] min-w-0 w-full items-center justify-center gap-1.5 rounded-lg bg-teal-800 px-3 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-teal-900 sm:min-h-11 sm:px-3 sm:text-sm disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {installmentPayLoading === "paystack" ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Redirecting…
+                            </>
+                          ) : (
+                            <span className="text-center leading-tight">Card / Paystack · Lipa Pole Pole</span>
+                          )}
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                </>
+              ) : null}
+                  </form>
                 </div>
               </div>
-            </form>
+            ) : null}
               </article>
             </div>
 
           <section
-            aria-labelledby="cfm-tickets-locations"
+            aria-labelledby="cfm-tickets-seo-heading"
             className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8"
           >
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-              <h2 id="cfm-tickets-locations" className="text-lg font-bold text-gray-900 sm:text-xl">
-                CFM Awards tickets across Kenya — Mombasa, Kilifi, Kwale, Voi &amp; Nairobi
+              <h2
+                id="cfm-tickets-seo-heading"
+                className="text-lg font-bold text-gray-900 sm:text-xl"
+              >
+                CFM Awards tickets &amp; Coast Fashion Awards — buy online
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
-                Looking for <strong>CFM Awards tickets</strong>, <strong>coast fashion tickets</strong>, or{" "}
-                <strong>Changer Fusions tickets</strong>? You are on the official Coast Fashion &amp; Modelling Awards
-                (CFMA) 2026 checkout. Whether you are in Mombasa, travelling from Kilifi or Malindi, Diani in Kwale,
-                Voi in Taita-Taveta, or flying in from Nairobi — secure your seat online with M-Pesa, Paystack, or Lipa
-                Pole Pole.
+                Looking for <strong>CFM tickets</strong>, <strong>CFM Awards</strong> tickets, or{" "}
+                <strong>Coast Fashion Awards</strong> tickets? This is the official checkout for the{" "}
+                <strong>Coast Fashion &amp; Modelling Awards 2026</strong> (CFMA) in Mombasa — your place to buy{" "}
+                CFM tickets for coast fashion. Choose Regular, VIP or VVIP and pay with M‑Pesa or card.
               </p>
-              <ul className="mt-5 flex flex-wrap gap-2">
-                {CFMA_TICKET_LOCATIONS.map((loc) => (
-                  <li key={loc.slug}>
-                    <a
-                      href={`/events/tickets/${loc.slug}`}
-                      className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-800 transition hover:bg-primary-100 sm:text-sm"
-                    >
-                      CFM tickets {loc.name}
-                    </a>
-                  </li>
+              <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+                Buy tickets here:{" "}
+                <a href={TICKET_URL} className="font-semibold text-primary-700 underline break-all">
+                  {TICKET_URL}
+                </a>
+              </p>
+
+              <h3 className="mt-8 text-base font-bold text-gray-900 sm:text-lg">
+                Frequently asked questions
+              </h3>
+              <dl className="mt-4 space-y-4">
+                {cfmTicketsFaqs.map((faq) => (
+                  <div key={faq.question}>
+                    <dt className="text-sm font-semibold text-gray-900 sm:text-base">{faq.question}</dt>
+                    <dd className="mt-1 text-sm leading-relaxed text-gray-600 sm:text-base">{faq.answer}</dd>
+                  </div>
                 ))}
-              </ul>
+              </dl>
             </div>
           </section>
 

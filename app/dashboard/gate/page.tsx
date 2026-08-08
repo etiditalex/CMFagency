@@ -8,6 +8,13 @@ import { CheckCircle2, ScanLine, XCircle, Loader2, Camera, Keyboard, Download, L
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
+import {
+  buildHandheldScannerRuntimeConfig,
+  buildKioskCameraStartAttempts,
+  reinforceLiveCameraTrack,
+  rememberSuccessfulCamera,
+  useNativeBarcodeDetectorOnDevice,
+} from "@/lib/qr-scanner/kiosk-scanner-config";
 
 type ScanResult = {
   valid: boolean;
@@ -29,7 +36,13 @@ interface QrScanner {
     cameraIdOrConfig: string | MediaTrackConstraints,
     config: {
       fps: number;
-      qrbox?: number | { width: number; height: number };
+      qrbox?:
+        | number
+        | { width: number; height: number }
+        | ((viewfinderWidth: number, viewfinderHeight: number) => {
+            width: number;
+            height: number;
+          });
       aspectRatio?: number;
       disableFlip?: boolean;
       videoConstraints?: MediaTrackConstraints;
@@ -39,6 +52,9 @@ interface QrScanner {
   ): Promise<null>;
   stop(): Promise<void>;
   clear(): void;
+  applyVideoConstraints?: (constraints: MediaTrackConstraints) => Promise<void>;
+  getRunningTrackCapabilities?: () => MediaTrackCapabilities;
+  getRunningTrackSettings?: () => MediaTrackSettings;
 }
 
 /** Transaction ref pattern (e.g. cmf_xxx from Paystack or cmf-xxx from merchandise). */
@@ -195,29 +211,9 @@ export default function DashboardGatePage() {
 
     try {
       const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      const viewH = element.clientHeight || Math.floor(vh * 0.75);
-      const scanSize = Math.floor(Math.min(vw, viewH) * 0.78);
-      const qrbox = Math.max(240, Math.min(scanSize, 400));
-      const config = {
-        fps: 20,
-        qrbox: { width: qrbox, height: qrbox },
-        aspectRatio: 1,
-        disableFlip: false,
-        videoConstraints: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        } as MediaTrackConstraints,
-      };
-
-      const constraintsToTry: MediaTrackConstraints[] = [
-        { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-        { facingMode: "environment" },
-        { facingMode: "user" },
-        {},
-      ];
+      const { config } = buildHandheldScannerRuntimeConfig(element);
+      const constraintsToTry = await buildKioskCameraStartAttempts("environment");
+      const useNativeBarcodeDetector = useNativeBarcodeDetectorOnDevice();
 
       let started = false;
       let scanner: QrScanner | null = null;
@@ -226,7 +222,7 @@ export default function DashboardGatePage() {
         scanner = new Html5Qrcode(SCANNER_DIV_ID, {
           verbose: false,
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: useNativeBarcodeDetector,
         }) as unknown as QrScanner;
         scannerRef.current = scanner;
 
@@ -253,10 +249,21 @@ export default function DashboardGatePage() {
 
         try {
           await scanner.start(constraints, config, onSuccess, () => {});
+          rememberSuccessfulCamera("environment", constraints);
+          await reinforceLiveCameraTrack(scanner);
           started = true;
           break;
         } catch (_) {
-          scanner.clear();
+          try {
+            await scanner.stop();
+          } catch {
+            /* ignore */
+          }
+          try {
+            scanner.clear();
+          } catch {
+            /* ignore */
+          }
           scannerRef.current = null;
         }
       }

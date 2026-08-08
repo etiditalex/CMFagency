@@ -5,7 +5,7 @@ import { ensureCfmaCampaign } from "@/lib/ensure-cfma-campaigns";
 import { ensureCampaignFromEvent, normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { normalizeInstallmentEmail } from "@/lib/lipa-pole-pole";
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
-import { normalizeKenyaPhone, parseRequiredKenyaPhone } from "@/lib/kenya-phone";
+import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 
 type CampaignRow = {
   id: string;
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     const referredByErr = validateReferredByNameOnly(referredByRaw);
     if (referredByErr) return NextResponse.json({ error: referredByErr }, { status: 400 });
     const referredBy = referredByRaw || null;
-    const referrerPhoneParsed = parseRequiredKenyaPhone(body.referrer_phone ?? "");
+    const referrerPhoneParsed = parseOptionalKenyaPhone(body.referrer_phone ?? "");
     if (referrerPhoneParsed.error) return NextResponse.json({ error: referrerPhoneParsed.error }, { status: 400 });
     const referrerPhone = referrerPhoneParsed.phone;
     const ticketQty = Math.trunc(Number(body.ticket_quantity ?? 0));

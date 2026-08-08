@@ -1,11 +1,39 @@
 import { SITE_URL } from "@/lib/site-url";
-import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 
 const canonical = `${SITE_URL}/kcm/cfm-tickets`;
+const posterImage = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768551251/CFMA_qxfe0m.jpg";
+
+/** Shared FAQ copy — keep in sync with the visible FAQ on the page (Google FAQ rich results). */
+export const cfmTicketsFaqs = [
+  {
+    question: "Where can I buy CFM Awards / Coast Fashion Awards tickets?",
+    answer:
+      "Buy official CFM Awards and Coast Fashion Awards tickets online at https://cmfagency.co.ke/kcm/cfm-tickets. This is the official CFM tickets checkout for the Coast Fashion & Modelling Awards 2026.",
+  },
+  {
+    question: "What are CFM tickets for Coast Fashion Awards?",
+    answer:
+      "CFM tickets are official entry packages for the Coast Fashion & Modelling Awards (CFM Awards / CFMA) 2026 in Mombasa. Choose Regular (KES 500), VIP (KES 1,500), or VVIP (KES 3,500) and pay with M-Pesa or card.",
+  },
+  {
+    question: "What are the CFM ticket prices for Coast Fashion & Modelling Awards?",
+    answer:
+      "CFM ticket packages are KES 500 (Regular), KES 1,500 (VIP), and KES 3,500 (VVIP). Buy at https://cmfagency.co.ke/kcm/cfm-tickets.",
+  },
+  {
+    question: "How do I pay for CFM tickets in Kenya?",
+    answer:
+      "Pay with M-Pesa (STK push to your Safaricom number) or with Visa, Mastercard and mobile money via Paystack on https://cmfagency.co.ke/kcm/cfm-tickets.",
+  },
+  {
+    question: "When and where is the Coast Fashion Awards / CFM Awards 2026?",
+    answer:
+      "Coast Fashion & Modelling Awards 2026 (CFM Awards) is at City Blue Creekside Hotel, Mombasa on 15 August 2026 from 7:00 PM. Get tickets at https://cmfagency.co.ke/kcm/cfm-tickets.",
+  },
+] as const;
 
 /**
- * JSON-LD graph for `/kcm/cfm-tickets`: WebPage, BreadcrumbList, FAQPage, ItemList (ticket offers).
- * Keeps FAQ content aligned with on-page trust signals for organic search.
+ * JSON-LD graph for `/kcm/cfm-tickets`: WebPage, Event (+ offers), BreadcrumbList, FAQPage, Product offers.
  */
 export const cfmTicketsJsonLd = {
   "@context": "https://schema.org",
@@ -14,16 +42,100 @@ export const cfmTicketsJsonLd = {
       "@type": "WebPage",
       "@id": `${canonical}#webpage`,
       url: canonical,
-      name: "Buy CFM Tickets Kenya | Coast Fashion & Modelling Awards (CFMA) 2026",
+      name: "CFM Awards Tickets | Coast Fashion Awards 2026",
       description:
-        "Official CFM / CFMA tickets for the Coast Fashion & Modelling Awards in Kenya: Regular, VIP and VVIP tiers. Pay with M-Pesa STK, Paystack (card), or Lipa Pole Pole installments. Serving fans in Mombasa, Kilifi, Kwale, Voi and Nairobi.",
+        "Buy official CFM Awards and Coast Fashion Awards tickets online. CFM tickets for Coast Fashion & Modelling Awards 2026 — Regular, VIP and VVIP. Pay with M-Pesa or card at https://cmfagency.co.ke/kcm/cfm-tickets.",
       inLanguage: "en-KE",
+      primaryImageOfPage: {
+        "@type": "ImageObject",
+        url: posterImage,
+      },
       isPartOf: {
         "@type": "WebSite",
         "@id": `${SITE_URL}/#website`,
         name: "Changer Fusions",
         url: SITE_URL,
       },
+      about: {
+        "@id": `${canonical}#event`,
+      },
+    },
+    {
+      "@type": "Event",
+      "@id": `${canonical}#event`,
+      name: "Coast Fashion & Modelling Awards 2026",
+      alternateName: [
+        "CFM Awards",
+        "CFM Awards 2026",
+        "Coast Fashion Awards",
+        "Coast Fashion Awards 2026",
+        "CFMA 2026",
+      ],
+      description:
+        "Official CFM Awards / Coast Fashion Awards 2026 in Mombasa. Buy CFM tickets for Coast Fashion & Modelling Awards online — Regular, VIP and VVIP packages.",
+      startDate: "2026-08-15T19:00:00+03:00",
+      endDate: "2026-08-16T02:00:00+03:00",
+      eventStatus: "https://schema.org/EventScheduled",
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      image: [posterImage],
+      url: canonical,
+      location: {
+        "@type": "Place",
+        name: "City Blue Creekside Hotel, Mombasa",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "City Blue Creekside Hotel",
+          addressLocality: "Mombasa",
+          addressRegion: "Mombasa County",
+          addressCountry: "KE",
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: -4.0435,
+          longitude: 39.6682,
+        },
+      },
+      organizer: {
+        "@type": "Organization",
+        name: "Changer Fusions",
+        url: SITE_URL,
+      },
+      performer: {
+        "@type": "Organization",
+        name: "Coast Fashion & Modelling Awards",
+      },
+      offers: [
+        {
+          "@type": "Offer",
+          name: "CFM Regular Ticket",
+          category: "Primary",
+          price: "500",
+          priceCurrency: "KES",
+          availability: "https://schema.org/InStock",
+          url: canonical,
+          validFrom: "2025-01-01",
+        },
+        {
+          "@type": "Offer",
+          name: "CFM VIP Ticket",
+          category: "Primary",
+          price: "1500",
+          priceCurrency: "KES",
+          availability: "https://schema.org/InStock",
+          url: canonical,
+          validFrom: "2025-01-01",
+        },
+        {
+          "@type": "Offer",
+          name: "CFM VVIP Ticket",
+          category: "Primary",
+          price: "3500",
+          priceCurrency: "KES",
+          availability: "https://schema.org/InStock",
+          url: canonical,
+          validFrom: "2025-01-01",
+        },
+      ],
     },
     {
       "@type": "BreadcrumbList",
@@ -43,95 +155,32 @@ export const cfmTicketsJsonLd = {
         {
           "@type": "ListItem",
           position: 3,
-          name: "CFM Tickets",
+          name: "CFM Awards Tickets",
           item: canonical,
         },
       ],
     },
     {
       "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "Can I buy CFM tickets from Kilifi, Kwale, Voi or Nairobi?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes. Changer Fusions sells official CFM Awards and coast fashion tickets online for fans across Kenya — including Mombasa, Kilifi, Kwale, Voi and Nairobi. Checkout at https://cmfagency.co.ke/kcm/cfm-tickets with M-Pesa, Paystack or Lipa Pole Pole.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What are the CFM ticket prices for Coast Fashion & Modelling Awards?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "CFM Tickets packages are KES 500 (Regular), KES 1,500 (VIP), and KES 3,500 (VVIP) on the official checkout.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How do I pay for CFM tickets in Kenya?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "You can pay with M-Pesa (STK push to your Safaricom number), or with Visa, Mastercard and mobile money via Paystack. Lipa Pole Pole lets you pay in installments until your tickets are fully paid.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What is Lipa Pole Pole for CFM tickets?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Lipa Pole Pole is an installment option: you choose your ticket tier, make a first payment, then top up until the total for your package is paid. Tickets are fulfilled when the plan is fully paid.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What is included in the KES 500 Regular CFM ticket?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "The KES 500 Regular package includes entry for one guest, general seating, and an event wristband.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What is included in the KES 1,500 VIP CFM ticket?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "The KES 1,500 VIP package includes priority entry, a reserved seating zone, and a complimentary refreshment.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "What is included in the KES 3,500 VVIP CFM ticket?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "The KES 3,500 VVIP package includes a front-row experience, VIP lounge access, and a meet and greet opportunity.",
-          },
-        },
-      ],
-    },
-    {
-      "@type": "ItemList",
-      name: "CFM ticket pages by location",
-      itemListElement: CFMA_TICKET_LOCATIONS.map((loc, i) => ({
-        "@type": "ListItem",
-        position: i + 1,
-        item: {
-          "@type": "WebPage",
-          name: `CFM tickets ${loc.name}`,
-          url: `${SITE_URL}/events/tickets/${loc.slug}`,
+      mainEntity: cfmTicketsFaqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
         },
       })),
     },
     {
       "@type": "ItemList",
-      name: "CFM ticket tiers",
+      name: "CFM ticket tiers — Coast Fashion Awards",
       itemListElement: [
         {
           "@type": "ListItem",
           position: 1,
           item: {
             "@type": "Product",
-            name: "CFM Regular Ticket — Coast Fashion & Modelling Awards",
+            name: "CFM Regular Ticket — Coast Fashion Awards",
             description: "Entry for one guest, general seating, event wristband.",
             offers: {
               "@type": "Offer",
@@ -147,7 +196,7 @@ export const cfmTicketsJsonLd = {
           position: 2,
           item: {
             "@type": "Product",
-            name: "CFM VIP Ticket — Coast Fashion & Modelling Awards",
+            name: "CFM VIP Ticket — Coast Fashion Awards",
             description: "Priority entry, reserved seating zone, complimentary refreshment.",
             offers: {
               "@type": "Offer",
@@ -163,7 +212,7 @@ export const cfmTicketsJsonLd = {
           position: 3,
           item: {
             "@type": "Product",
-            name: "CFM VVIP Ticket — Coast Fashion & Modelling Awards",
+            name: "CFM VVIP Ticket — Coast Fashion Awards",
             description: "Front-row experience, VIP lounge access, meet & greet opportunity.",
             offers: {
               "@type": "Offer",

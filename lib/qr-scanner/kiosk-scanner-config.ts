@@ -1,22 +1,40 @@
-/** Laptop/desktop webcam kiosks vs phones/tablets (touch-first). */
-export function isDesktopScannerDevice(): boolean {
-  if (typeof window === "undefined") return false;
+/** Phone / tablet / laptop-desktop webcam kiosks. */
+export type ScannerDeviceClass = "phone" | "tablet" | "desktop";
+
+/**
+ * Classify the device for camera + decode tuning.
+ * Android tablets must not be treated as desktop webcams (rear camera + native detector).
+ */
+export function getScannerDeviceClass(): ScannerDeviceClass {
+  if (typeof window === "undefined") return "desktop";
 
   const ua = navigator.userAgent;
 
-  if (/iPhone|iPod/i.test(ua)) return false;
-  if (/iPad/i.test(ua)) return false;
+  if (/iPhone|iPod/i.test(ua)) return "phone";
+  if (/iPad/i.test(ua)) return "tablet";
   // iPadOS 13+ reports as Macintosh with touch.
-  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return false;
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return "tablet";
 
   if (/Android/i.test(ua)) {
     // Android phones include "Mobile"; tablets usually do not.
-    return !/Mobile/i.test(ua);
+    return /Mobile/i.test(ua) ? "phone" : "tablet";
   }
 
-  if (/webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return false;
+  if (/webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return "phone";
 
-  return true;
+  // Touch-first large screens that report a desktop UA (many Android kiosk tablets).
+  if (navigator.maxTouchPoints > 1) {
+    const coarse = window.matchMedia?.("(pointer: coarse)")?.matches;
+    const noHover = window.matchMedia?.("(hover: none)")?.matches;
+    if (coarse || noHover) return "tablet";
+  }
+
+  return "desktop";
+}
+
+/** Laptop/desktop webcam kiosks vs phones/tablets (touch-first). */
+export function isDesktopScannerDevice(): boolean {
+  return getScannerDeviceClass() === "desktop";
 }
 
 export type KioskCameraFacing = "environment" | "user";
@@ -36,97 +54,196 @@ export type KioskScannerRuntimeConfig = {
   videoConstraints?: MediaTrackConstraints;
 };
 
+const LAST_CAMERA_KEY = "cmf-qr-last-camera-v1";
+
+type LastCameraMemory = {
+  facing: KioskCameraFacing;
+  deviceId?: string;
+  constraints?: MediaTrackConstraints;
+};
+
+function readLastCamera(facing: KioskCameraFacing): LastCameraMemory | null {
+  try {
+    const raw = sessionStorage.getItem(LAST_CAMERA_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LastCameraMemory;
+    if (parsed?.facing !== facing) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the working camera so the next Start skips failed constraint cascades. */
+export function rememberSuccessfulCamera(
+  facing: KioskCameraFacing,
+  cameraIdOrConstraints: string | MediaTrackConstraints
+): void {
+  try {
+    const payload: LastCameraMemory =
+      typeof cameraIdOrConstraints === "string"
+        ? { facing, deviceId: cameraIdOrConstraints }
+        : { facing, constraints: cameraIdOrConstraints };
+    sessionStorage.setItem(LAST_CAMERA_KEY, JSON.stringify(payload));
+  } catch {
+    /* private mode / storage blocked */
+  }
+}
+
 function kioskQrboxSize(
   viewfinderWidth: number,
   viewfinderHeight: number,
-  isDesktop: boolean
+  deviceClass: ScannerDeviceClass
 ): { width: number; height: number } {
   const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-  const ratio = isDesktop ? 0.82 : 0.78;
-  const size = Math.max(isDesktop ? 200 : 240, Math.floor(minEdge * ratio));
+  // Larger crop = more QR pixels for the decoder (faster lock at typical hold distance).
+  const ratio = deviceClass === "desktop" ? 0.88 : deviceClass === "tablet" ? 0.84 : 0.8;
+  const minSize = deviceClass === "desktop" ? 220 : deviceClass === "tablet" ? 260 : 240;
+  const maxSize = deviceClass === "phone" ? 420 : deviceClass === "tablet" ? 520 : 640;
+  const size = Math.min(maxSize, Math.max(minSize, Math.floor(minEdge * ratio)));
   return { width: size, height: size };
 }
 
+/** Target decode cadence — higher FPS shortens time-to-first-lock. */
+function targetFps(deviceClass: ScannerDeviceClass): number {
+  if (deviceClass === "desktop") return 24;
+  if (deviceClass === "tablet") return 30;
+  return 30;
+}
+
+function idealCaptureSize(deviceClass: ScannerDeviceClass): {
+  width: number;
+  height: number;
+} {
+  // 720p keeps QR detail high enough for handheld codes without the CPU cost of 1080p.
+  if (deviceClass === "phone") return { width: 1280, height: 720 };
+  if (deviceClass === "tablet") return { width: 1280, height: 720 };
+  return { width: 1280, height: 720 };
+}
+
+/**
+ * Prefer native BarcodeDetector (~2× faster than ZXing).
+ * html5-qrcode falls back to JS decode automatically when unsupported.
+ */
 export function useNativeBarcodeDetectorOnDevice(): boolean {
-  return !isDesktopScannerDevice();
+  return true;
+}
+
+function baseVideoConstraints(
+  facing: KioskCameraFacing,
+  deviceClass: ScannerDeviceClass
+): MediaTrackConstraints {
+  const size = idealCaptureSize(deviceClass);
+  const constraints: MediaTrackConstraints = {
+    facingMode: { ideal: facing },
+    width: { ideal: size.width },
+    height: { ideal: size.height },
+    frameRate: { ideal: deviceClass === "desktop" ? 24 : 30, max: 30 },
+  };
+
+  // Continuous autofocus dramatically speeds lock on phones/tablets when supported.
+  if (deviceClass !== "desktop") {
+    Object.assign(constraints, {
+      // Non-standard but widely honored on Chromium Android / some WebKit builds.
+      focusMode: "continuous",
+    } as MediaTrackConstraints);
+  }
+
+  return constraints;
 }
 
 export function buildKioskScannerRuntimeConfig(
   element: HTMLElement,
   options?: { facing?: KioskCameraFacing }
-): { config: KioskScannerRuntimeConfig; isDesktop: boolean } {
-  const isDesktop = isDesktopScannerDevice();
+): { config: KioskScannerRuntimeConfig; isDesktop: boolean; deviceClass: ScannerDeviceClass } {
+  const deviceClass = getScannerDeviceClass();
+  const isDesktop = deviceClass === "desktop";
+  const facing = options?.facing ?? defaultKioskCameraFacing();
+  const fps = targetFps(deviceClass);
 
   if (isDesktop) {
     return {
       isDesktop,
+      deviceClass,
       config: {
-        fps: 15,
+        fps,
         qrbox: (viewfinderWidth, viewfinderHeight) =>
-          kioskQrboxSize(viewfinderWidth, viewfinderHeight, true),
-        disableFlip: false,
-        videoConstraints: {
-          facingMode: { ideal: "user" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+          kioskQrboxSize(viewfinderWidth, viewfinderHeight, "desktop"),
+        // Webcam feed is not mirrored for kiosk hold-up scans — skip flip decode pass.
+        disableFlip: true,
+        videoConstraints: baseVideoConstraints("user", "desktop"),
       },
     };
   }
 
-  const facing = options?.facing ?? defaultKioskCameraFacing();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const viewH = element.clientHeight || Math.floor(vh * 0.75);
-  const scanSize = Math.floor(Math.min(vw, Math.max(viewH, 280)) * 0.78);
-  const qrbox = Math.max(240, Math.min(scanSize, 400));
+  const scanSize = Math.floor(Math.min(vw, Math.max(viewH, 280)) * (deviceClass === "tablet" ? 0.84 : 0.8));
+  const qrbox = Math.max(deviceClass === "tablet" ? 260 : 240, Math.min(scanSize, deviceClass === "tablet" ? 520 : 420));
 
   return {
     isDesktop,
+    deviceClass,
     config: {
-      fps: 20,
+      fps,
       qrbox: (viewfinderWidth, viewfinderHeight) => {
-        const dynamic = kioskQrboxSize(viewfinderWidth, viewfinderHeight, false);
+        const dynamic = kioskQrboxSize(viewfinderWidth, viewfinderHeight, deviceClass);
         const fallback = { width: qrbox, height: qrbox };
         return dynamic.width >= 200 ? dynamic : fallback;
       },
       aspectRatio: 1,
       disableFlip: false,
-      videoConstraints: {
-        facingMode: { ideal: facing },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-      },
+      videoConstraints: baseVideoConstraints(facing, deviceClass),
     },
   };
 }
 
-/** Camera inputs to try with html5-qrcode — loose constraints first, then enumerated device ids. */
+/** Shared Gate / handheld scanner config (rear camera preferred). */
+export function buildHandheldScannerRuntimeConfig(element: HTMLElement): {
+  config: KioskScannerRuntimeConfig;
+  deviceClass: ScannerDeviceClass;
+} {
+  const { config, deviceClass } = buildKioskScannerRuntimeConfig(element, {
+    facing: "environment",
+  });
+  return { config, deviceClass };
+}
+
+/** Camera inputs to try with html5-qrcode — remembered device first, then best constraints. */
 export async function buildKioskCameraStartAttempts(
   facing: KioskCameraFacing
 ): Promise<Array<string | MediaTrackConstraints>> {
-  const isDesktop = isDesktopScannerDevice();
+  const deviceClass = getScannerDeviceClass();
+  const size = idealCaptureSize(deviceClass);
   const attempts: Array<string | MediaTrackConstraints> = [];
 
-  if (isDesktop) {
+  const remembered = readLastCamera(facing);
+  if (remembered?.deviceId) attempts.push(remembered.deviceId);
+  if (remembered?.constraints) attempts.push(remembered.constraints);
+
+  if (deviceClass === "desktop") {
+    // Loose-first: desktop browsers often reject tight facingMode + resolution combos.
     attempts.push(
       {},
       { facingMode: "user" },
-      { facingMode: { ideal: "user" } },
-      { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-    );
-  } else if (facing === "environment") {
-    attempts.push(
-      { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
-      { facingMode: "environment" },
-      { facingMode: "user" },
-      {}
+      { facingMode: { ideal: "user" }, frameRate: { ideal: 24 } },
+      {
+        facingMode: "user",
+        width: { ideal: size.width },
+        height: { ideal: size.height },
+        frameRate: { ideal: 24 },
+      }
     );
   } else {
+    const preferred = baseVideoConstraints(facing, deviceClass);
+    const alternate: KioskCameraFacing = facing === "environment" ? "user" : "environment";
     attempts.push(
-      { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-      { facingMode: "user" },
-      { facingMode: "environment" },
+      preferred,
+      { facingMode: facing, width: { ideal: size.width }, height: { ideal: size.height } },
+      { facingMode: facing },
+      { facingMode: { ideal: facing } },
+      { facingMode: alternate },
       {}
     );
   }
@@ -134,7 +251,8 @@ export async function buildKioskCameraStartAttempts(
   try {
     const { Html5Qrcode } = await import("html5-qrcode");
     const cameras = await Html5Qrcode.getCameras();
-    for (const camera of cameras) {
+    const ranked = rankCamerasForFacing(cameras, facing);
+    for (const camera of ranked) {
       if (camera.id) attempts.push(camera.id);
     }
   } catch {
@@ -142,6 +260,31 @@ export async function buildKioskCameraStartAttempts(
   }
 
   return dedupeAttempts(attempts);
+}
+
+type CameraDevice = { id: string; label: string };
+
+/** Prefer rear/front cameras that match the requested facing when labels are available. */
+function rankCamerasForFacing(
+  cameras: CameraDevice[],
+  facing: KioskCameraFacing
+): CameraDevice[] {
+  const rearHint = /back|rear|environment|world/i;
+  const frontHint = /front|user|face|selfie/i;
+
+  return [...cameras].sort((a, b) => {
+    const aLabel = a.label || "";
+    const bLabel = b.label || "";
+    const aScore =
+      facing === "environment"
+        ? (rearHint.test(aLabel) ? 2 : 0) - (frontHint.test(aLabel) ? 1 : 0)
+        : (frontHint.test(aLabel) ? 2 : 0) - (rearHint.test(aLabel) ? 1 : 0);
+    const bScore =
+      facing === "environment"
+        ? (rearHint.test(bLabel) ? 2 : 0) - (frontHint.test(bLabel) ? 1 : 0)
+        : (frontHint.test(bLabel) ? 2 : 0) - (rearHint.test(bLabel) ? 1 : 0);
+    return bScore - aScore;
+  });
 }
 
 function dedupeAttempts(attempts: Array<string | MediaTrackConstraints>) {
@@ -193,7 +336,7 @@ export function formatKioskCameraStartError(
       : "Could not open front camera. Try Flip to switch cameras.";
 }
 
-const WARMUP_RELEASE_DELAY_MS = 350;
+const WARMUP_RELEASE_DELAY_MS = 120;
 
 /** Optional warm-up permission request — helps getCameras() return device ids on desktop. */
 export async function warmupCameraPermission(): Promise<void> {
@@ -215,5 +358,43 @@ export async function warmupCameraPermission(): Promise<void> {
     if (isDesktopScannerDevice()) {
       await new Promise((r) => setTimeout(r, WARMUP_RELEASE_DELAY_MS));
     }
+  }
+}
+
+type FocusCapableScanner = {
+  applyVideoConstraints?: (constraints: MediaTrackConstraints) => Promise<void>;
+  getRunningTrackCapabilities?: () => MediaTrackCapabilities;
+  getRunningTrackSettings?: () => MediaTrackSettings;
+};
+
+/**
+ * After the stream is live, push continuous autofocus + frame rate when the track allows it.
+ * This is the biggest real-world speed win on phone/tablet rear cameras.
+ */
+export async function reinforceLiveCameraTrack(scanner: FocusCapableScanner | null | undefined): Promise<void> {
+  if (!scanner?.applyVideoConstraints) return;
+
+  const deviceClass = getScannerDeviceClass();
+  const desiredFps = deviceClass === "desktop" ? 24 : 30;
+
+  try {
+    const caps = scanner.getRunningTrackCapabilities?.() as
+      | (MediaTrackCapabilities & { focusMode?: string[]; torch?: boolean })
+      | undefined;
+
+    const next: MediaTrackConstraints = {
+      frameRate: { ideal: desiredFps },
+    };
+
+    if (caps && Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+      Object.assign(next, { focusMode: "continuous" } as MediaTrackConstraints);
+    } else if (deviceClass !== "desktop") {
+      // Still request; browsers that ignore unknown keys keep the current track.
+      Object.assign(next, { focusMode: "continuous" } as MediaTrackConstraints);
+    }
+
+    await scanner.applyVideoConstraints(next);
+  } catch {
+    /* capability not supported — scanning still works with defaults */
   }
 }
