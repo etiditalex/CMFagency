@@ -157,8 +157,11 @@ export default function CfmTicketsPage() {
     const json = (await res.json().catch(() => ({}))) as {
       authorization_url?: string;
       reference?: string;
+      error?: string;
     };
-    if (!res.ok) throw new Error("Paystack initialize failed");
+    if (!res.ok) {
+      throw new PaymentClientError(json.error ?? "Card payment could not be started.");
+    }
     if (json.authorization_url) {
       window.location.href = json.authorization_url;
       return;
@@ -167,7 +170,7 @@ export default function CfmTicketsPage() {
       window.location.href = `/receipt?ref=${encodeURIComponent(json.reference)}`;
       return;
     }
-    throw new Error("Missing Paystack authorization URL");
+    throw new PaymentClientError("Card checkout did not return a payment link. Please try again.");
   };
 
   const handleDaraja = async () => {
@@ -186,8 +189,11 @@ export default function CfmTicketsPage() {
     const json = (await res.json().catch(() => ({}))) as {
       reference?: string;
       message?: string;
+      error?: string;
     };
-    if (!res.ok) throw new Error("Daraja STK push failed");
+    if (!res.ok) {
+      throw new PaymentClientError(json.error ?? "M-Pesa payment could not be started.");
+    }
     if (json.reference) {
       setPendingReference(json.reference);
       setPaymentStatus({
