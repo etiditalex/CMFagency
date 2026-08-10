@@ -75,7 +75,17 @@
   .smart-visitor-hero h1,
   .smart-visitor-hero h2,
   .smart-visitor-hero h3,
-  .smart-visitor-hero p {
+  .smart-visitor-hero p,
+  .careers-hero h1,
+  .careers-hero h2,
+  .careers-hero h3,
+  .careers-hero p,
+  .careers-about h2,
+  .careers-about h3,
+  .careers-about p,
+  .careers-contact h2,
+  .careers-contact h3,
+  .careers-contact p {
     text-align: left !important;
   }
   
