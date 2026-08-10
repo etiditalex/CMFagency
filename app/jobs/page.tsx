@@ -3,9 +3,13 @@ import { SITE_URL } from "@/lib/site-url";
 import { JOBS_BOARD_OG_IMAGE } from "./metadata";
 import { getUnifiedJobBoardFeed } from "@/lib/job-board-feed";
 import { JobsStructuredData } from "@/components/jobs/JobsStructuredData";
+import { JobsEditorialIntro } from "@/components/jobs/JobsEditorialIntro";
 import { JobsBoardClient } from "./JobsBoardClient";
 
-/** Job feed aggregates DB + external sources — too slow/heavy for reliable build-time prerender on Vercel. */
+/**
+ * Default board uses unstable_cache in getUnifiedJobBoardFeed; keep dynamic for search (`?q=`).
+ * Cache headers still help the uncached path via the feed helper.
+ */
 export const dynamic = "force-dynamic";
 
 type PageProps = {
@@ -19,7 +23,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   if (query.length > 0) {
     const short = query.length > 48 ? `${query.slice(0, 45)}…` : query;
     return {
-      title: `${short} — job search | Changer Fusions`,
+      title: { absolute: `${short} — job search | Changer Fusions` },
       description: `Job search results for “${short}” on the Changer Fusions board — Kenya roles, remote work, and partner listings.`,
       robots: { index: false, follow: true },
       alternates: { canonical: `${SITE_URL}/jobs` },
@@ -51,6 +55,7 @@ export default async function JobsPage({ searchParams }: PageProps) {
         initialJobs={jobs}
         initialError={error}
         initialQuery={query}
+        intro={<JobsEditorialIntro />}
       />
     </>
   );

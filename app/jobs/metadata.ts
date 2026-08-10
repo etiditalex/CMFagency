@@ -11,7 +11,8 @@ const description =
   "Browse jobs in Kenya, remote Africa roles, and global listings in one place. Employers post vacancies; job seekers search tech, marketing, events, and creative roles. Changer Fusions (CMF Agency) job board—Nairobi, Mombasa, and work-from-home opportunities updated regularly.";
 
 export const metadata: Metadata = {
-  title,
+  /** absolute skips root layout title template (avoids duplicated brand suffix). */
+  title: { absolute: title },
   description,
   applicationName: "Changer Fusions",
   authors: [{ name: "Changer Fusions", url: SITE_URL }],

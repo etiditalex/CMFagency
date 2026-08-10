@@ -1,7 +1,8 @@
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { listingRequiresPaidMembership } from "@/lib/job-board-access";
-import { runAllCollectors } from "@/lib/job-aggregators/collect-all";
+import { getLiveCollectedJobsCached } from "@/lib/job-board-feed-live";
+import { externalJobDetailPath } from "@/lib/job-board-paths";
 import type { AggregatorSource, CollectedJob } from "@/lib/job-aggregators/types";
 
 export type UnifiedJobSource = "employer" | AggregatorSource;
@@ -55,16 +56,6 @@ function parseTs(row: Record<string, unknown>, keys: string[]): string | null {
   return null;
 }
 
-/** Shown when DB has no aggregated rows yet; cached to avoid hammering partner APIs on every request. */
-const getLiveCollectedJobsCached = unstable_cache(
-  async (): Promise<CollectedJob[]> => {
-    const results = await runAllCollectors();
-    return results.flatMap((r) => r.jobs);
-  },
-  ["job-board-live-collected-v1"],
-  { revalidate: 900 }
-);
-
 function collectedToUnified(j: CollectedJob): UnifiedJobListing {
   return {
     source: j.source,
@@ -82,7 +73,8 @@ function collectedToUnified(j: CollectedJob): UnifiedJobListing {
     requires_paid_membership: false,
     apply_url: j.apply_url,
     attribution: attributionLabel(j.source),
-    detail_path: j.apply_url,
+    /** Always on-site so crawlers index our detail pages (live cache fallback resolves source--id). */
+    detail_path: externalJobDetailPath(j.source, j.external_id),
   };
 }
 

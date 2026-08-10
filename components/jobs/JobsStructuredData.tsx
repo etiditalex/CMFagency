@@ -70,14 +70,19 @@ export function JobsStructuredData({ jobs, includeJobList }: Props) {
     },
   ];
 
-  if (top.length > 0) {
+  const onSite = top.filter((job) => {
+    const u = absoluteJobUrl(job);
+    return u.startsWith(SITE_URL) || u.startsWith("/");
+  });
+
+  if (onSite.length > 0) {
     graph.push({
       "@context": "https://schema.org",
       "@type": "ItemList",
       "@id": `${pageUrl}#itemlist`,
       name: "Featured job listings",
-      numberOfItems: top.length,
-      itemListElement: top.map((job, i) => ({
+      numberOfItems: onSite.length,
+      itemListElement: onSite.map((job, i) => ({
         "@type": "ListItem",
         position: i + 1,
         name: `${job.title} — ${job.company_name}`,

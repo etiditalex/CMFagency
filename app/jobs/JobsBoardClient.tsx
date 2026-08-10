@@ -12,6 +12,8 @@ import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 type JobTab = "find" | "saved" | "applications" | "preferences" | "seekers" | "employers";
 
 const JOB_TABS: JobTab[] = ["find", "saved", "applications", "preferences", "seekers", "employers"];
+/** Initial visible cards — keeps first paint lighter for Core Web Vitals. */
+const PAGE_SIZE = 24;
 
 type Props = {
   initialJobs: UnifiedJobListing[];
@@ -32,7 +34,7 @@ function displaySeniority(seniority: string | null) {
 }
 
 /** Poster / company logo with CSP-safe loading and fallback if URL fails or hotlink blocks. */
-function JobCardPoster({ posterUrl }: { posterUrl: string | null }) {
+function JobCardPoster({ posterUrl, alt }: { posterUrl: string | null; alt: string }) {
   const [broken, setBroken] = useState(false);
   if (!posterUrl?.trim() || broken) {
     return (
@@ -45,7 +47,7 @@ function JobCardPoster({ posterUrl }: { posterUrl: string | null }) {
     // eslint-disable-next-line @next/next/no-img-element -- remote employer data URLs + partner logos
     <img
       src={posterUrl.trim()}
-      alt=""
+      alt={alt}
       className="absolute inset-0 h-full w-full object-cover"
       loading="lazy"
       referrerPolicy="no-referrer"
@@ -74,6 +76,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
   const [matchError, setMatchError] = useState<string | null>(null);
   const [matchOrder, setMatchOrder] = useState<string[] | null>(null);
   const [matchReasons, setMatchReasons] = useState<Record<string, string>>({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [empCompany, setEmpCompany] = useState("");
   const [empContact, setEmpContact] = useState("");
@@ -84,7 +87,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
   const [empError, setEmpError] = useState<string | null>(null);
   const [empSuccess, setEmpSuccess] = useState<string | null>(null);
 
-  const displayJobs = useMemo(() => {
+  const rankedJobs = useMemo(() => {
     if (!matchOrder?.length) return jobs;
     const set = new Set(matchOrder);
     const first: UnifiedJobListing[] = [];
@@ -95,6 +98,12 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
     const rest = jobs.filter((j) => !set.has(j.id));
     return [...first, ...rest];
   }, [jobs, matchOrder]);
+
+  const displayJobs = useMemo(
+    () => rankedJobs.slice(0, visibleCount),
+    [rankedJobs, visibleCount]
+  );
+  const hasMoreJobs = rankedJobs.length > visibleCount;
 
   const submitEmployerRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,6 +187,7 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
       }
       setMatchOrder(order.length ? order : null);
       setMatchReasons(reasons);
+      setVisibleCount(PAGE_SIZE);
     } catch {
       setMatchError("Network error.");
       setMatchOrder(null);
@@ -191,20 +201,22 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
     setMatchOrder(null);
     setMatchReasons({});
     setMatchError(null);
+    setVisibleCount(PAGE_SIZE);
   };
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
       <section className="section-padding">
         <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
-          {intro ? <div className="mb-8">{intro}</div> : null}
-          <header className="mb-6 text-left">
-            <h1 className="text-2xl font-bold text-gray-900 md:text-3xl text-left">Jobs in Kenya &amp; remote</h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Changer Fusions job board — employer vacancies, Nairobi &amp; Mombasa roles, work-from-home and international
-              remote listings in one search.
-            </p>
-          </header>
+          {intro ? <div className="mb-8">{intro}</div> : (
+            <header className="mb-6 text-left">
+              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl text-left">Jobs in Kenya &amp; remote</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Changer Fusions job board — employer vacancies, Nairobi &amp; Mombasa roles, work-from-home and international
+                remote listings in one search.
+              </p>
+            </header>
+          )}
           <div className="mb-6 border-b border-gray-200">
             <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8" role="tablist" aria-label="Job board sections">
               {(
@@ -469,69 +481,96 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
           )}
 
           {activeTab === "find" && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
-              {displayJobs.map((job) => (
-                <article
-                  key={`${job.source}-${job.id}`}
-                  className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
-                >
-                  <div className="relative aspect-[4/3] w-full shrink-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50">
-                    <JobCardPoster posterUrl={job.poster_url} />
-                    <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-800 shadow-sm border border-gray-200">
-                      {job.attribution}
-                    </span>
-                    {job.requires_paid_membership && (
-                      <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-100/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 shadow-sm">
-                        <Lock className="h-3 w-3" /> Member
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex min-h-0 flex-1 flex-col p-4">
-                    {matchReasons[job.id] && (
-                      <p className="mb-2 rounded-md bg-primary-50 px-2 py-1.5 text-[11px] leading-snug text-primary-950 border border-primary-100">
-                        <span className="font-semibold">Match: </span>
-                        {matchReasons[job.id]}
-                      </p>
-                    )}
-                    <h2 className="mb-1 line-clamp-2 text-base font-bold leading-snug text-gray-900">{job.title}</h2>
-                    <p className="mb-2 line-clamp-1 text-sm font-medium text-gray-600">{job.company_name}</p>
-                    <div className="mb-3 flex-1 space-y-1 text-xs text-gray-500">
-                      {job.location && (
-                        <p className="line-clamp-1">
-                          <span className="font-medium text-gray-700">Loc:</span> {job.location}
-                        </p>
-                      )}
-                      <p>
-                        <span className="font-medium text-gray-700">Type:</span>{" "}
-                        {formatEmploymentType(job.employment_type)}
-                      </p>
-                      {displayIndustry(job.industry) && (
-                        <p className="line-clamp-2">
-                          <span className="font-medium text-gray-700">Industry:</span> {displayIndustry(job.industry)}
-                        </p>
-                      )}
-                      {displaySeniority(job.seniority) && (
-                        <p className="line-clamp-1">
-                          <span className="font-medium text-gray-700">Level:</span> {displaySeniority(job.seniority)}
-                        </p>
-                      )}
-                      {job.salary_text && (
-                        <p className="line-clamp-2">
-                          <span className="font-medium text-gray-700">Pay:</span> {job.salary_text}
-                        </p>
-                      )}
-                      {job.summary && <p className="line-clamp-2 pt-0.5 text-gray-600">{job.summary}</p>}
-                    </div>
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
+                {displayJobs.map((job) => (
+                  <article
+                    key={`${job.source}-${job.id}`}
+                    className="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  >
                     <Link
                       href={job.detail_path}
-                      className="mt-auto inline-flex w-full items-center justify-center rounded-lg bg-gray-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+                      className="relative aspect-[4/3] w-full shrink-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 block"
+                      aria-label={`${job.title} at ${job.company_name}`}
                     >
-                      {job.source === "employer" ? "View details" : "View & apply"}
+                      <JobCardPoster
+                        posterUrl={job.poster_url}
+                        alt={`${job.title} at ${job.company_name}`}
+                      />
+                      <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-800 shadow-sm border border-gray-200">
+                        {job.attribution}
+                      </span>
+                      {job.requires_paid_membership && (
+                        <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-100/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900 shadow-sm">
+                          <Lock className="h-3 w-3" /> Member
+                        </span>
+                      )}
                     </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <div className="flex min-h-0 flex-1 flex-col p-4">
+                      {matchReasons[job.id] && (
+                        <p className="mb-2 rounded-md bg-primary-50 px-2 py-1.5 text-[11px] leading-snug text-primary-950 border border-primary-100">
+                          <span className="font-semibold">Match: </span>
+                          {matchReasons[job.id]}
+                        </p>
+                      )}
+                      <h2 className="mb-1 line-clamp-2 text-base font-bold leading-snug text-gray-900">
+                        <Link
+                          href={job.detail_path}
+                          className="hover:text-primary-700 focus:outline-none focus-visible:underline"
+                        >
+                          {job.title}
+                        </Link>
+                      </h2>
+                      <p className="mb-2 line-clamp-1 text-sm font-medium text-gray-600">{job.company_name}</p>
+                      <div className="mb-3 flex-1 space-y-1 text-xs text-gray-500">
+                        {job.location && (
+                          <p className="line-clamp-1">
+                            <span className="font-medium text-gray-700">Loc:</span> {job.location}
+                          </p>
+                        )}
+                        <p>
+                          <span className="font-medium text-gray-700">Type:</span>{" "}
+                          {formatEmploymentType(job.employment_type)}
+                        </p>
+                        {displayIndustry(job.industry) && (
+                          <p className="line-clamp-2">
+                            <span className="font-medium text-gray-700">Industry:</span> {displayIndustry(job.industry)}
+                          </p>
+                        )}
+                        {displaySeniority(job.seniority) && (
+                          <p className="line-clamp-1">
+                            <span className="font-medium text-gray-700">Level:</span> {displaySeniority(job.seniority)}
+                          </p>
+                        )}
+                        {job.salary_text && (
+                          <p className="line-clamp-2">
+                            <span className="font-medium text-gray-700">Pay:</span> {job.salary_text}
+                          </p>
+                        )}
+                        {job.summary && <p className="line-clamp-2 pt-0.5 text-gray-600">{job.summary}</p>}
+                      </div>
+                      <Link
+                        href={job.detail_path}
+                        className="mt-auto inline-flex w-full items-center justify-center rounded-lg bg-gray-900 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black"
+                      >
+                        {job.source === "employer" ? "View details" : "View & apply"}
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {hasMoreJobs && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                    className="rounded-lg border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50"
+                  >
+                    Show more jobs ({rankedJobs.length - visibleCount} remaining)
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           {activeTab === "find" && !loadError && jobs.length === 0 && (
