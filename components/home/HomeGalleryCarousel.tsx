@@ -105,7 +105,7 @@ export default function HomeGalleryCarousel() {
   }, []);
 
   return (
-    <section className="section-padding bg-white">
+    <section className="bg-white py-10 sm:py-14 md:py-20">
       {/* Keep heading aligned to site container */}
       <div className="container-custom">
         <motion.div
@@ -113,57 +113,59 @@ export default function HomeGalleryCarousel() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-10"
+          className="mb-6 text-center sm:mb-8 md:mb-10"
         >
           <div className="flex items-center justify-center gap-4">
-            <div className="hidden sm:block h-px w-24 bg-gray-200" />
-            <h2 className="text-xl md:text-2xl font-extrabold tracking-widest text-secondary-600 uppercase">
+            <div className="hidden h-px w-24 bg-gray-200 sm:block" />
+            <h2 className="text-lg font-extrabold uppercase tracking-widest text-secondary-600 sm:text-xl md:text-2xl">
               Gallery
             </h2>
-            <div className="hidden sm:block h-px w-24 bg-gray-200" />
+            <div className="hidden h-px w-24 bg-gray-200 sm:block" />
           </div>
         </motion.div>
       </div>
 
       {/* Full-bleed carousel strip */}
-      <div className="relative w-screen left-1/2 -translate-x-1/2">
+      <div className="relative left-1/2 w-screen -translate-x-1/2">
         {/* Arrows */}
         <button
+          type="button"
           onClick={() => scrollByAmount("left")}
-          className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 bg-white/85 hover:bg-white border border-gray-200 shadow-md rounded-full p-3"
+          className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/85 p-2.5 shadow-md hover:bg-white sm:left-3 sm:p-3 md:left-6"
           aria-label="Previous"
         >
-          <ChevronLeft className="w-5 h-5 text-primary-700" />
+          <ChevronLeft className="h-5 w-5 text-primary-700" />
         </button>
         <button
+          type="button"
           onClick={() => scrollByAmount("right")}
-          className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 bg-white/85 hover:bg-white border border-gray-200 shadow-md rounded-full p-3"
+          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/85 p-2.5 shadow-md hover:bg-white sm:right-3 sm:p-3 md:right-6"
           aria-label="Next"
         >
-          <ChevronRight className="w-5 h-5 text-primary-700" />
+          <ChevronRight className="h-5 w-5 text-primary-700" />
         </button>
 
         {/* Carousel */}
         <div
           ref={scrollerRef}
-          className="flex gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-4 md:px-10"
-          style={{ scrollbarWidth: "none" as any }}
+          className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 pb-3 sm:gap-5 sm:px-6 sm:pb-4 md:px-10"
+          style={{ scrollbarWidth: "none" }}
         >
           {images.map((src) => (
             <div
               key={src}
-              className="snap-center min-w-[260px] sm:min-w-[320px] md:min-w-[380px] lg:min-w-[420px]"
+              className="min-w-[220px] snap-center sm:min-w-[300px] md:min-w-[360px] lg:min-w-[400px]"
             >
-              <div className="relative overflow-hidden rounded-md border border-gray-200 bg-gray-50 shadow-sm aspect-[4/3] group">
+              <div className="group relative aspect-[4/3] overflow-hidden rounded-md border border-gray-200 bg-gray-50 shadow-sm">
                 <Image
                   loader={cloudinaryLoader}
                   src={src}
-                  alt="Gallery image"
+                  alt="Changer Fusions gallery — events, fashion, and marketing moments"
                   fill
                   className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
-                  sizes="(max-width: 768px) 85vw, 420px"
+                  sizes="(max-width: 640px) 70vw, (max-width: 768px) 50vw, 400px"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
               </div>
             </div>
           ))}

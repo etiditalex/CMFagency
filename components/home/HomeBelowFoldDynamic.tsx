@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const galleryPlaceholder = () => (
-  <div className="min-h-[280px] bg-gray-50/80 md:min-h-[360px]" aria-hidden />
+  <div className="min-h-[200px] bg-gray-50/80 sm:min-h-[240px] md:min-h-[320px]" aria-hidden />
 );
 
 const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), {
@@ -16,12 +16,15 @@ const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarouse
   loading: galleryPlaceholder,
 });
 
-const CTABanner = dynamic(() => import("@/components/home/CTABanner"), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[200px] bg-primary-600/20 md:min-h-[240px]" aria-hidden />
-  ),
-});
+const CareersContactSection = dynamic(
+  () => import("@/components/careers/CareersContactSection"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[280px] bg-primary-900/30 sm:min-h-[320px]" aria-hidden />
+    ),
+  }
+);
 
 /**
  * Client-only lazy chunks for below-the-fold home sections.
@@ -35,7 +38,7 @@ export function HomeDeferredPartnersCTA() {
   return (
     <>
       <PartnersCarousel />
-      <CTABanner />
+      <CareersContactSection />
     </>
   );
 }

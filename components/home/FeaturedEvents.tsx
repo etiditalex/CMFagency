@@ -71,7 +71,7 @@ function SectionWave() {
 
 export default function FeaturedEvents() {
   return (
-    <section className="relative bg-gray-50 pb-16 md:pb-24">
+    <section className="relative bg-gray-50 pb-10 sm:pb-14 md:pb-20">
       <SectionWave />
 
       <div className="container-custom pt-2 md:pt-4">
@@ -80,16 +80,16 @@ export default function FeaturedEvents() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mb-10 text-center md:mb-12"
+          className="mb-7 text-center sm:mb-10 md:mb-12"
         >
           <h2
-            className={`${montserrat.className} text-3xl font-semibold tracking-tight text-gray-900 md:text-4xl lg:text-[2.35rem]`}
+            className={`${montserrat.className} text-2xl font-semibold tracking-tight text-gray-900 sm:text-3xl md:text-4xl lg:text-[2.35rem]`}
           >
             Featured events
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4 lg:gap-6">
           {featuredEvents.map((event, index) => {
             const href = getEventPathById(event.id) ?? "/events";
 
@@ -116,13 +116,13 @@ export default function FeaturedEvents() {
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     />
                   </div>
-                  <div className="flex flex-1 flex-col px-5 py-6 text-center">
+                  <div className="flex flex-1 flex-col px-4 py-4 text-center sm:px-5 sm:py-6">
                     <h3
-                      className={`${montserrat.className} text-lg font-semibold leading-snug text-gray-900 transition-colors group-hover:text-primary-700 md:text-[1.05rem]`}
+                      className={`${montserrat.className} text-base font-semibold leading-snug text-gray-900 transition-colors group-hover:text-primary-700 sm:text-lg md:text-[1.05rem]`}
                     >
                       {event.title}
                     </h3>
-                    <p className="mt-3 flex-1 text-center text-sm leading-relaxed text-gray-600">
+                    <p className="mt-2 flex-1 text-center text-sm leading-relaxed text-gray-600 sm:mt-3">
                       {event.description}
                     </p>
                   </div>

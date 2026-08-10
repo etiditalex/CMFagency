@@ -16,6 +16,7 @@ const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShe
 const Navbar = dynamic(() => import("@/components/Navbar"), { ssr: true });
 const Footer = dynamic(() => import("@/components/Footer"), { ssr: true });
 const ScrollToTopButton = dynamic(() => import("@/components/ScrollToTopButton"), { ssr: false });
+const SiteViewTracker = dynamic(() => import("@/components/SiteViewTracker"), { ssr: false });
 
 export default function ConditionalLayout({
   children,
@@ -108,6 +109,7 @@ export default function ConditionalLayout({
       <Navbar />
       <main className="min-h-screen">{children}</main>
       <Footer />
+      <SiteViewTracker />
       <CookieBanner />
       <ScrollToTopButton />
     </>

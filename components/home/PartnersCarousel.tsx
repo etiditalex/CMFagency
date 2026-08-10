@@ -47,16 +47,16 @@ const duplicatedLogos = [...partnerLogos, ...partnerLogos, ...partnerLogos];
 
 export default function PartnersCarousel() {
   return (
-    <section className="section-padding bg-gradient-to-br from-gray-50 to-white">
+    <section className="bg-gradient-to-br from-gray-50 to-white py-10 sm:py-14 md:py-20">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="mb-8 text-center sm:mb-10 md:mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+          <h2 className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-2xl font-bold text-transparent sm:text-4xl md:text-5xl">
             Our Partners
           </h2>
         </motion.div>

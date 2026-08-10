@@ -125,7 +125,7 @@ export default function QuickLinks() {
 
   return (
     <section
-      className="bg-gray-50 py-7 md:py-10 lg:py-12"
+      className="bg-gray-50 py-6 sm:py-8 md:py-10 lg:py-12"
       aria-labelledby="quick-links-heading"
     >
       <div className="container-custom">

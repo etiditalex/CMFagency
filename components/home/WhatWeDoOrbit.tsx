@@ -62,7 +62,7 @@ const services: Service[] = [
 function HumanBuildingHub({ reduceMotion }: { reduceMotion: boolean | null }) {
   return (
     <motion.div
-      className="relative z-10 flex h-36 w-36 items-center justify-center sm:h-44 sm:w-44"
+      className="relative z-10 flex h-28 w-28 items-center justify-center sm:h-40 sm:w-40 md:h-44 md:w-44"
       initial={false}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -142,7 +142,7 @@ export default function WhatWeDoOrbit() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative z-0 bg-primary-600 py-16 text-white md:py-20">
+    <section className="relative z-0 bg-primary-600 py-10 text-white sm:py-14 md:py-16 lg:py-20">
       {/* Soft radial highlight behind the hub (matches reference) */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_48%,rgba(255,255,255,0.14),transparent_72%)]"
@@ -150,18 +150,18 @@ export default function WhatWeDoOrbit() {
       />
 
       <div className="container-custom relative z-10">
-        <div className="mx-auto mb-10 max-w-3xl text-center md:mb-12">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-white/90">
+        <div className="mx-auto mb-7 max-w-3xl text-center sm:mb-10 md:mb-12">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
             What we&apos;re building
           </p>
-          <h2 className="text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl lg:text-5xl">
             People, platforms &amp; experiences — together
           </h2>
         </div>
 
         {/* Flat 2D orbit (no rotateX / perspective) so nothing paints into the stats section below */}
-        <div className="mx-auto max-w-xl px-3 sm:max-w-2xl md:max-w-3xl">
-          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(92vw,520px)] md:max-w-[580px]">
+        <div className="mx-auto max-w-xl px-2 sm:max-w-2xl sm:px-3 md:max-w-3xl">
+          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(94vw,440px)] sm:max-w-[min(92vw,520px)] md:max-w-[580px]">
             {/* Rotate only the dashed ring — cards stay static to avoid nested-transform ghosting in production */}
             <div className="pointer-events-none absolute inset-[5%] z-[1]">
               <motion.div

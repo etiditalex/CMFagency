@@ -55,17 +55,17 @@ function InfoCard({
   buttonClassName: string;
 }) {
   return (
-    <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-6">
-      <div className="mb-5 flex items-center gap-3">
-        <h3 className={`shrink-0 text-sm font-extrabold uppercase tracking-[0.14em] ${titleClassName}`}>
+    <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-4 sm:p-5 md:p-6">
+      <div className="mb-3 flex items-center gap-3 sm:mb-5">
+        <h3 className={`shrink-0 text-xs font-extrabold uppercase tracking-[0.12em] sm:text-sm sm:tracking-[0.14em] ${titleClassName}`}>
           {title}
         </h3>
         <span className={`h-0.5 w-full ${lineClassName}`} aria-hidden />
       </div>
-      <p className="mb-7 flex-1 text-sm leading-7 text-gray-700">{content}</p>
+      <p className="mb-5 flex-1 text-sm leading-6 text-gray-700 sm:mb-7 sm:leading-7">{content}</p>
       <Link
         href={buttonHref}
-        className={`mt-auto inline-flex items-center self-start rounded-md px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white transition-colors ${buttonClassName}`}
+        className={`mt-auto inline-flex min-h-[44px] items-center self-start rounded-md px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors sm:px-6 sm:py-3 ${buttonClassName}`}
       >
         {buttonText}
       </Link>
@@ -75,12 +75,12 @@ function InfoCard({
 
 export default function HeroSupportSection() {
   return (
-    <section className="w-full bg-white py-12 md:py-16" aria-labelledby="home-highlights-heading">
+    <section className="w-full bg-white py-8 sm:py-10 md:py-14" aria-labelledby="home-highlights-heading">
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
         <h2 id="home-highlights-heading" className="sr-only">
           Smart management, Fusion Xpress, and upcoming events
         </h2>
-        <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 lg:grid-cols-3">
           <InfoCard
             title="Smart Management System"
             titleClassName="text-primary-700"
@@ -101,9 +101,9 @@ export default function HeroSupportSection() {
             buttonClassName="bg-secondary-700 hover:bg-secondary-800"
           />
 
-          <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-6">
-            <div className="mb-5 flex items-center gap-3">
-              <h3 className="shrink-0 text-sm font-extrabold uppercase tracking-[0.14em] text-primary-700">
+          <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-4 sm:p-5 md:p-6">
+            <div className="mb-3 flex items-center gap-3 sm:mb-5">
+              <h3 className="shrink-0 text-xs font-extrabold uppercase tracking-[0.12em] text-primary-700 sm:text-sm sm:tracking-[0.14em]">
                 Upcoming Events
               </h3>
               <span className="h-0.5 w-full bg-primary-500" aria-hidden />
@@ -113,10 +113,10 @@ export default function HeroSupportSection() {
               <UpcomingEventsList />
             </div>
 
-            <div className="mt-auto pt-5">
+            <div className="mt-auto pt-4 sm:pt-5">
               <Link
                 href="/events/upcoming"
-                className="inline-flex items-center text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
+                className="inline-flex min-h-[44px] items-center text-sm font-semibold text-primary-600 transition-colors hover:text-primary-700"
               >
                 View all upcoming events
               </Link>

@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Phone } from "lucide-react";
+import { Eye, Phone } from "lucide-react";
 
 const PHONE_DISPLAY = "+254 797 777347";
 const PHONE_HREF = "tel:+254797777347";
@@ -63,6 +63,26 @@ export default function CareersContactSection() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [siteViews, setSiteViews] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/site-views", { method: "GET", credentials: "same-origin" });
+        const data = (await res.json().catch(() => ({}))) as { total?: number | null };
+        if (!cancelled && typeof data.total === "number" && Number.isFinite(data.total)) {
+          setSiteViews(data.total);
+        }
+      } catch {
+        // Leave views unset if the counter is not configured yet.
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -153,6 +173,28 @@ ${formData.message}`;
           />
         </div>
       </div>
+
+      {/* Site views — bottom-left over dotted coast area (outside the white card) */}
+      {siteViews != null ? (
+        <div className="pointer-events-none absolute bottom-4 left-3 z-20 sm:bottom-6 sm:left-5 md:bottom-8 md:left-8 lg:bottom-10 lg:left-10">
+          <div
+            className="inline-flex items-center gap-2.5 rounded-lg bg-black/25 px-3 py-2 backdrop-blur-[2px] sm:gap-3 sm:px-3.5 sm:py-2.5"
+            aria-label={`${siteViews.toLocaleString("en-KE")} total site views`}
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/35 sm:h-10 sm:w-10">
+              <Eye className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+            </span>
+            <span className="!text-left text-white">
+              <span className="block text-base font-bold tabular-nums leading-none sm:text-lg">
+                {siteViews.toLocaleString("en-KE")}
+              </span>
+              <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85 sm:text-xs">
+                Site views
+              </span>
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="relative w-full px-3 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <motion.div

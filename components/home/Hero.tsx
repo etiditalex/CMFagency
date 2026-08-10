@@ -47,21 +47,17 @@ export default function Hero() {
   }, []);
 
   const slideVariants = {
-    enter: {
-      opacity: 0,
-    },
-    center: {
-      opacity: 1,
-    },
-    exit: {
-      opacity: 0,
-    },
+    enter: { opacity: 0 },
+    center: { opacity: 1 },
+    exit: { opacity: 0 },
   };
 
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
-      {/* Carousel Container */}
-      <div className="relative h-screen w-full">
+    <section
+      className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-28 sm:pt-32 md:pt-36"
+      aria-labelledby="home-hero-heading"
+    >
+      <div className="relative min-h-[100svh] w-full">
         <AnimatePresence initial={false} mode="sync">
           <motion.div
             key={currentIndex}
@@ -69,12 +65,9 @@ export default function Hero() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{
-              opacity: { duration: 0.22, ease: "linear" },
-            }}
+            transition={{ opacity: { duration: 0.22, ease: "linear" } }}
             className="absolute inset-0"
           >
-            {/* Background Image */}
             <div className="absolute inset-0">
               <Image
                 loader={cloudinaryLoader}
@@ -86,55 +79,51 @@ export default function Hero() {
                 fetchPriority={currentIndex === 0 ? "high" : undefined}
                 sizes="100vw"
               />
-              {/* Dark overlay for better text readability */}
-              <div className="absolute inset-0 bg-black/60"></div>
+              <div className="absolute inset-0 bg-black/60" />
             </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Static Content Overlay - Always visible */}
-        <div className="relative z-10 flex h-full items-center">
+        <div className="relative z-10 flex h-full min-h-[100svh] items-center py-10 sm:py-12">
           <div className="container-custom w-full">
-            <div className="max-w-3xl">
-              {/* Title */}
+            <div className="max-w-3xl min-w-0">
               <motion.h1
-                initial={{ opacity: 0, y: 30 }}
+                id="home-hero-heading"
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="mb-5 max-w-2xl text-left text-4xl font-bold leading-[1.04] tracking-tight text-white drop-shadow-2xl md:text-6xl lg:text-7xl"
+                transition={{ duration: 0.55, delay: 0.15 }}
+                className="mb-3 max-w-2xl text-left text-[1.65rem] font-bold leading-[1.12] tracking-tight text-white drop-shadow-2xl sm:mb-5 sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
               >
                 Strategic Marketing That Powers Growth and Relevance
               </motion.h1>
 
-              {/* Description */}
               <motion.p
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="mb-8 max-w-xl text-lg leading-relaxed text-white/95 drop-shadow-lg md:text-2xl"
+                transition={{ duration: 0.55, delay: 0.28 }}
+                className="mb-6 max-w-xl text-base leading-relaxed text-white/95 drop-shadow-lg sm:mb-8 sm:text-lg md:text-2xl"
               >
-                Market to thrive, Market to exit
+                Market to thrive, Market to exist
               </motion.p>
 
-              {/* Action Buttons */}
               <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.6 }}
-                className="flex flex-row gap-3 sm:gap-4"
+                transition={{ duration: 0.55, delay: 0.4 }}
+                className="flex flex-col gap-3 min-[400px]:flex-row sm:gap-4"
               >
                 <Link
                   href="/events"
-                  className="group inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:flex-none sm:px-8 sm:py-4 sm:text-base"
+                  className="group inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
                 >
-                  <Calendar className="w-5 h-5 text-primary-600" />
+                  <Calendar className="h-5 w-5 shrink-0 text-primary-600" aria-hidden />
                   <span>Planning an event?</span>
                 </Link>
                 <Link
                   href="/contact"
-                  className="group inline-flex flex-1 items-center justify-center whitespace-nowrap space-x-2 rounded-lg border border-white/45 bg-white/10 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:flex-none sm:px-8 sm:py-4 sm:text-base"
+                  className="group inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/45 bg-white/10 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
                 >
-                  <Handshake className="h-5 w-5 text-white" />
+                  <Handshake className="h-5 w-5 shrink-0 text-white" aria-hidden />
                   <span>Partner with Us</span>
                 </Link>
               </motion.div>
@@ -142,18 +131,14 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Carousel Indicators */}
-        <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 space-x-2">
+        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 space-x-2 sm:bottom-8">
           {carouselItems.map((_, index) => (
             <button
               key={index}
-              onClick={() => {
-                setCurrentIndex(index);
-              }}
+              type="button"
+              onClick={() => setCurrentIndex(index)}
               className={`h-2.5 rounded-full transition-all duration-300 ${
-                index === currentIndex
-                  ? "w-8 bg-white"
-                  : "w-2.5 bg-white/45 hover:bg-white/70"
+                index === currentIndex ? "w-8 bg-white" : "w-2.5 bg-white/45 hover:bg-white/70"
               }`}
               aria-current={index === currentIndex ? "true" : "false"}
               aria-label={`Go to slide ${index + 1}`}
