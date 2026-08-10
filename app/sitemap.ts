@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/events", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events/upcoming", priority: 0.95, changeFrequency: "weekly" as const },
     { path: "/events/upcoming/coast-fashion-modelling-awards-2026", priority: 0.95, changeFrequency: "weekly" as const },
+    { path: "/events/upcoming/coast-fashion-and-modelling-awards-2026-flash-sale", priority: 1.0, changeFrequency: "daily" as const },
     { path: "/events/past", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/events/register-as-model", priority: 0.93, changeFrequency: "weekly" as const },
     { path: "/events/nominate-model", priority: 0.96, changeFrequency: "daily" as const },

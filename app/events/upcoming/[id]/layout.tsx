@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import CoastFlashSaleStructuredData from "@/components/CoastFlashSaleStructuredData";
 import { resolveEventShareImageUrl } from "@/lib/event-share-image";
 import { getFusionEventShareFieldsBySlug, getUpcomingEventBySlug } from "@/lib/events-server";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const CFMA_SLUG = "coast-fashion-modelling-awards-2026";
+const FLASH_SALE_SLUG = "coast-fashion-and-modelling-awards-2026-flash-sale";
 const SITE_URL = "https://cmfagency.co.ke";
+const FLASH_SALE_URL = `${SITE_URL}/events/upcoming/${FLASH_SALE_SLUG}`;
 export const dynamic = "force-dynamic";
 
 const CFMA_META = {
@@ -15,7 +18,29 @@ const CFMA_META = {
   imageAlt: EVENTS_BANNER_OG.alt,
 };
 
-type Props = { params: Promise<{ id?: string }> };
+/** SEO-only metadata — not shown in page UI. Targets flash-sale search queries. */
+const FLASH_SALE_META = {
+  title:
+    "Coast Fashion Flash Sale Tickets | Group of 5 at 1500 & Group of 10 at 3000 | Changer Fusions",
+  description:
+    "Coast fashion flash sale tickets for Coast Fashion and Modelling Awards 2026. Coast tickets flash sale and coast event flash sale now on — group of 5 at 1500, group of 10 at 3000. Buy flash sale tickets online at CMF Agency.",
+  keywords: [
+    "coast fashion flash sale tickets",
+    "coast tickets flash sale",
+    "coast event flash sale",
+    "group of 5 at 1500",
+    "group of 10 at 3000",
+    "coast fashion flash sale",
+    "CFMA flash sale tickets",
+    "Coast Fashion and Modelling Awards flash sale",
+    "Mombasa fashion event tickets flash sale",
+  ],
+  image: EVENTS_BANNER_OG.url,
+  imageAlt:
+    "Coast fashion flash sale tickets — coast tickets flash sale, group of 5 at 1500, group of 10 at 3000",
+};
+
+type Props = { params: Promise<{ id?: string }>; children: React.ReactNode };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id: slug } = await params;
@@ -24,6 +49,60 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: "Event | Changer Fusions",
       openGraph: { images: [EVENTS_BANNER_OG] },
       twitter: { card: "summary_large_image", images: [EVENTS_BANNER_OG.url] },
+    };
+  }
+
+  if (slug === FLASH_SALE_SLUG) {
+    return {
+      title: FLASH_SALE_META.title,
+      description: FLASH_SALE_META.description,
+      keywords: FLASH_SALE_META.keywords,
+      authors: [{ name: "Changer Fusions", url: SITE_URL }],
+      creator: "Changer Fusions",
+      publisher: "CMF Agency",
+      category: "Events",
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+          "max-video-preview": -1,
+        },
+      },
+      openGraph: {
+        type: "website",
+        locale: "en_KE",
+        title: FLASH_SALE_META.title,
+        description: FLASH_SALE_META.description,
+        url: FLASH_SALE_URL,
+        siteName: "Changer Fusions | CMF Agency",
+        images: [
+          {
+            url: FLASH_SALE_META.image,
+            width: EVENTS_BANNER_OG.width,
+            height: EVENTS_BANNER_OG.height,
+            alt: FLASH_SALE_META.imageAlt,
+            type: EVENTS_BANNER_OG.type,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Coast Fashion Flash Sale Tickets | Group of 5 at 1500",
+        description:
+          "Coast tickets flash sale & coast event flash sale — group of 5 at 1500, group of 10 at 3000. Buy online.",
+        images: [FLASH_SALE_META.image],
+      },
+      alternates: {
+        canonical: FLASH_SALE_URL,
+        languages: {
+          "en-KE": FLASH_SALE_URL,
+          en: FLASH_SALE_URL,
+        },
+      },
     };
   }
 
@@ -107,10 +186,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function UpcomingEventIdLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <>{children}</>;
+export default async function UpcomingEventIdLayout({ children, params }: Props) {
+  const { id: slug } = await params;
+
+  return (
+    <>
+      {slug === FLASH_SALE_SLUG ? <CoastFlashSaleStructuredData /> : null}
+      {children}
+    </>
+  );
 }
