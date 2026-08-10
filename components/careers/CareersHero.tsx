@@ -26,11 +26,12 @@ const DIAMOND_IMAGES = [
   },
 ] as const;
 
+/** Inset enough that rotated diamonds stay inside the stage on small screens. */
 const POSITION_CLASS: Record<(typeof DIAMOND_IMAGES)[number]["position"], string> = {
-  top: "left-1/2 top-[18%] -translate-x-1/2 -translate-y-1/2",
-  left: "left-[18%] top-1/2 -translate-x-1/2 -translate-y-1/2",
-  right: "left-[82%] top-1/2 -translate-x-1/2 -translate-y-1/2",
-  bottom: "left-1/2 top-[82%] -translate-x-1/2 -translate-y-1/2",
+  top: "left-1/2 top-[22%] -translate-x-1/2 -translate-y-1/2 sm:top-[20%] lg:top-[18%]",
+  left: "left-[22%] top-1/2 -translate-x-1/2 -translate-y-1/2 sm:left-[20%] lg:left-[18%]",
+  right: "left-[78%] top-1/2 -translate-x-1/2 -translate-y-1/2 sm:left-[80%] lg:left-[82%]",
+  bottom: "left-1/2 top-[78%] -translate-x-1/2 -translate-y-1/2 sm:top-[80%] lg:top-[82%]",
 };
 
 function DiamondTile({
@@ -49,7 +50,7 @@ function DiamondTile({
       initial={{ opacity: 0, scale: 0.85 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={`absolute ${POSITION_CLASS[position]} h-[42%] w-[42%] rotate-45 overflow-hidden border-2 border-white shadow-[0_8px_24px_rgba(10,31,66,0.35)] sm:border-[2.5px]`}
+      className={`absolute ${POSITION_CLASS[position]} h-[36%] w-[36%] rotate-45 overflow-hidden border-2 border-white shadow-[0_6px_18px_rgba(10,31,66,0.35)] sm:h-[38%] sm:w-[38%] sm:border-[2.5px] lg:h-[42%] lg:w-[42%]`}
     >
       <div className="absolute left-1/2 top-1/2 h-[145%] w-[145%] -translate-x-1/2 -translate-y-1/2 -rotate-45">
         <Image
@@ -57,7 +58,7 @@ function DiamondTile({
           alt={alt}
           fill
           className="object-cover"
-          sizes="(max-width: 640px) 140px, 220px"
+          sizes="(max-width: 640px) 110px, 220px"
           priority={position === "top"}
         />
       </div>
@@ -68,7 +69,7 @@ function DiamondTile({
 export default function CareersHero() {
   return (
     <section
-      className="careers-hero relative mt-16 w-full overflow-hidden sm:mt-20 md:mt-24"
+      className="careers-hero relative w-full overflow-x-hidden pt-32 sm:pt-36 md:pt-40"
       aria-labelledby="careers-hero-heading"
     >
       <div
@@ -83,7 +84,7 @@ export default function CareersHero() {
       <div className="pointer-events-none absolute -right-16 bottom-0 hidden h-80 w-80 rounded-full bg-secondary-400/25 blur-3xl sm:block" />
 
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] opacity-[0.22] sm:block"
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] opacity-[0.22] lg:block"
         style={{
           backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.85) 1px, transparent 1px)",
           backgroundSize: "14px 14px",
@@ -92,17 +93,17 @@ export default function CareersHero() {
         }}
       />
 
-      <div className="relative w-full px-4 sm:px-6 lg:px-8 xl:px-10">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-6 py-10 sm:gap-8 sm:py-14 md:min-h-[400px] md:gap-10 md:py-16 lg:grid-cols-2 lg:gap-8 lg:py-0 lg:min-h-[460px]">
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 xl:px-10">
+        <div className="grid grid-cols-1 items-center gap-5 py-8 sm:gap-8 sm:py-12 md:gap-10 md:py-14 lg:grid-cols-2 lg:gap-8 lg:py-16 lg:min-h-[460px]">
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 order-1 w-full max-w-xl text-white lg:pr-4"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 w-full min-w-0 text-white lg:pr-4"
           >
             <h1
               id="careers-hero-heading"
-              className="!text-left font-montserrat text-[1.75rem] font-bold leading-tight tracking-tight sm:text-4xl md:text-[2.75rem] lg:text-5xl"
+              className="!text-left font-montserrat text-[1.65rem] font-bold leading-[1.15] tracking-tight sm:text-4xl md:text-[2.75rem] lg:text-5xl"
             >
               Careers at Changer Fusions
             </h1>
@@ -112,17 +113,20 @@ export default function CareersHero() {
             </p>
           </motion.div>
 
-          <div className="relative order-2 mx-auto flex w-full max-w-[280px] items-center justify-center sm:max-w-[360px] md:max-w-[400px] lg:max-w-none lg:justify-end">
-            <div className="relative aspect-square w-full max-w-[280px] sm:max-w-[360px] lg:max-w-[440px] lg:translate-x-4 xl:translate-x-10">
-              {DIAMOND_IMAGES.map((tile, index) => (
-                <DiamondTile
-                  key={tile.position}
-                  src={tile.src}
-                  alt={tile.alt}
-                  position={tile.position}
-                  delay={0.15 + index * 0.08}
-                />
-              ))}
+          {/* Contained collage — clipped on mobile so diamonds do not spread the layout */}
+          <div className="relative mx-auto w-full max-w-[220px] sm:max-w-[300px] md:max-w-[360px] lg:mx-0 lg:ml-auto lg:max-w-[420px] xl:max-w-[440px]">
+            <div className="relative aspect-square w-full overflow-hidden lg:overflow-visible">
+              <div className="absolute inset-0 lg:translate-x-4 xl:translate-x-8">
+                {DIAMOND_IMAGES.map((tile, index) => (
+                  <DiamondTile
+                    key={tile.position}
+                    src={tile.src}
+                    alt={tile.alt}
+                    position={tile.position}
+                    delay={0.12 + index * 0.07}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
