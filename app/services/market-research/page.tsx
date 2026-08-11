@@ -2,70 +2,44 @@
 
 import { BarChart } from "lucide-react";
 import ServiceDetailTemplate from "@/components/services/ServiceDetailTemplate";
+import ServiceShowcasePage from "@/components/services/showcase/ServiceShowcasePage";
+import { marketResearchShowcase } from "@/components/services/showcase/content/market-research";
 import { useManagedPublicPage } from "@/components/pages/useManagedPublicPage";
-
-const features = [
-  "Consumer Behavior Analysis",
-  "Competitor Analysis",
-  "Marketing Trend Research",
-  "Data Analytics & Reporting",
-  "Marketing Strategy Development",
-  "Market Entry & Expansion Strategies",
-  "Customer Segmentation",
-  "Market Opportunity Assessment",
-];
-
-const benefits = [
-  "Data-driven marketing decisions",
-  "Better understanding of your target audience",
-  "Competitive advantage through insights",
-  "Reduced marketing risks",
-  "Optimized marketing spend and ROI",
-];
 
 export default function MarketResearchPage() {
   const route = "/services/market-research";
   const { loading, page } = useManagedPublicPage(route);
   const isManaged = !!page;
 
-  const featuresFinal = isManaged
-    ? Array.isArray(page?.features)
-      ? (page!.features as any[]).map((x) => String(x))
-      : []
-    : features;
-  const benefitsFinal = isManaged
-    ? Array.isArray(page?.benefits)
-      ? (page!.benefits as any[]).map((x) => String(x))
-      : []
-    : benefits;
+  if (loading && !page) {
+    return <div className="pt-28 min-h-screen bg-gray-50" />;
+  }
+
+  if (!isManaged) {
+    return <ServiceShowcasePage config={marketResearchShowcase} />;
+  }
+
+  const featuresFinal = Array.isArray(page?.features)
+    ? (page!.features as any[]).map((x) => String(x))
+    : [];
+  const benefitsFinal = Array.isArray(page?.benefits)
+    ? (page!.benefits as any[]).map((x) => String(x))
+    : [];
 
   return (
-    loading && !page ? (
-      <div className="pt-28 min-h-screen bg-gray-50" />
-    ) : (
-      <ServiceDetailTemplate
-        activeHref={route}
-        title={isManaged ? page?.title ?? "" : "Market Research & Analysis"}
-        heroLabel={isManaged ? page?.hero_label ?? "" : "MARKET RESEARCH"}
-        description={
-          isManaged
-            ? page?.description ?? ""
-            : "Conduct in-depth research to understand your target audience, competitors, and trends so your marketing strategy is based on evidence."
-        }
-        featuresTitle={isManaged ? page?.features_title ?? "" : "OUR MARKET RESEARCH SERVICES"}
-        features={featuresFinal}
-        benefitsTitle={isManaged ? page?.benefits_title ?? "" : "WHY CHOOSE OUR MARKET RESEARCH SERVICES?"}
-        benefits={benefitsFinal}
-        ctaTitle={isManaged ? page?.cta_title ?? "" : "Ready to Make Data-Driven Decisions?"}
-        ctaDescription={
-          isManaged
-            ? page?.cta_description ?? ""
-            : "Let's uncover insights that will drive your marketing strategy and business growth."
-        }
-        backgroundImageUrl={isManaged ? (page?.background_image_url ?? undefined) ?? undefined : undefined}
-        icon={BarChart}
-      />
-    )
+    <ServiceDetailTemplate
+      activeHref={route}
+      title={page?.title ?? ""}
+      heroLabel={page?.hero_label ?? ""}
+      description={page?.description ?? ""}
+      featuresTitle={page?.features_title ?? ""}
+      features={featuresFinal}
+      benefitsTitle={page?.benefits_title ?? ""}
+      benefits={benefitsFinal}
+      ctaTitle={page?.cta_title ?? ""}
+      ctaDescription={page?.cta_description ?? ""}
+      backgroundImageUrl={page.background_image_url ?? undefined}
+      icon={BarChart}
+    />
   );
 }
-
