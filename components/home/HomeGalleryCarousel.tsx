@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import GalleryLightbox from "@/components/GalleryLightbox";
 
 export default function HomeGalleryCarousel() {
   // Curated from images already used across the site (Cloudinary). Add more URLs here as new images are uploaded.
@@ -56,6 +57,7 @@ export default function HomeGalleryCarousel() {
   );
 
   const [images, setImages] = useState<string[]>(fallbackImages);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +85,15 @@ export default function HomeGalleryCarousel() {
     };
   }, [fallbackImages]);
 
+  const lightboxImages = useMemo(
+    () =>
+      images.map((src) => ({
+        src,
+        alt: "Changer Fusions gallery — events, fashion, and marketing moments",
+      })),
+    [images]
+  );
+
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   const scrollByAmount = (dir: "left" | "right") => {
@@ -96,13 +107,15 @@ export default function HomeGalleryCarousel() {
     const el = scrollerRef.current;
     if (!el) return;
     const t = window.setInterval(() => {
+      // Pause auto-scroll while lightbox is open
+      if (lightboxIndex != null) return;
       // If user is at end, loop back to start
       const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 10;
       if (atEnd) el.scrollTo({ left: 0, behavior: "smooth" });
       else el.scrollBy({ left: Math.round(el.clientWidth * 0.6), behavior: "smooth" });
     }, 5500);
     return () => window.clearInterval(t);
-  }, []);
+  }, [lightboxIndex]);
 
   return (
     <section className="bg-white py-10 sm:py-14 md:py-20">
@@ -151,12 +164,17 @@ export default function HomeGalleryCarousel() {
           className="flex gap-3 overflow-x-auto scroll-smooth snap-x snap-mandatory px-4 pb-3 sm:gap-5 sm:px-6 sm:pb-4 md:px-10"
           style={{ scrollbarWidth: "none" }}
         >
-          {images.map((src) => (
+          {images.map((src, index) => (
             <div
               key={src}
               className="min-w-[220px] snap-center sm:min-w-[300px] md:min-w-[360px] lg:min-w-[400px]"
             >
-              <div className="group relative aspect-[4/3] overflow-hidden rounded-md border border-gray-200 bg-gray-50 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(index)}
+                className="group relative aspect-[4/3] w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50 text-left shadow-sm"
+                aria-label={`Expand gallery image ${index + 1}`}
+              >
                 <Image
                   loader={cloudinaryLoader}
                   src={src}
@@ -166,7 +184,7 @@ export default function HomeGalleryCarousel() {
                   sizes="(max-width: 640px) 70vw, (max-width: 768px) 50vw, 400px"
                 />
                 <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
-              </div>
+              </button>
             </div>
           ))}
         </div>
@@ -178,7 +196,14 @@ export default function HomeGalleryCarousel() {
           }
         `}</style>
       </div>
+
+      <GalleryLightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onChangeIndex={setLightboxIndex}
+        label="Homepage gallery image preview"
+      />
     </section>
   );
 }
-

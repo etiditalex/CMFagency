@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import GalleryHero from "@/components/portfolios/GalleryHero";
+import GalleryLightbox from "@/components/GalleryLightbox";
 
 // Gallery images using real Cloudinary images
 const galleryImages = [
@@ -256,6 +258,7 @@ export default function PortfoliosPage() {
   const [images, setImages] = useState<Array<{ id: number; src: string; alt: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -303,62 +306,65 @@ export default function PortfoliosPage() {
     return galleryImages.map((g) => ({ id: g.id, src: g.src, alt: g.alt }));
   }, [images]);
 
+  const lightboxImages = useMemo(
+    () => displayImages.map((image) => ({ src: image.src, alt: image.alt })),
+    [displayImages]
+  );
+
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
-      <section className="section-padding">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Gallery
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Visual showcase of our events, projects, and memorable moments
-            </p>
-          </motion.div>
+    <div className="min-h-screen bg-gray-50">
+      <GalleryHero />
 
-          {loadError && images.length === 0 && (
-            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
-              Gallery is using fallback images. To manage this from Fusion Xpress, apply{" "}
-              <code className="rounded bg-white/80 px-1">ticketing_voting_mvp_patch_66_gallery_images.sql</code> in Supabase.
-            </div>
-          )}
-
-          {/* Image Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {loading &&
-              [1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div
-                  key={`sk-${i}`}
-                  className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 animate-pulse"
-                />
-              ))}
-            {!loading &&
-              displayImages.map((image, index) => (
-              <motion.div
-                key={image.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                className="relative aspect-square overflow-hidden rounded-lg group cursor-pointer"
-              >
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  fill
-                  unoptimized
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
-              </motion.div>
-            ))}
+      <section className="w-full py-6 sm:py-8 md:py-10">
+        {loadError && images.length === 0 && (
+          <div className="mx-4 mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm sm:mx-6 lg:mx-8">
+            Gallery is using fallback images. To manage this from Fusion Xpress, apply{" "}
+            <code className="rounded bg-white/80 px-1">ticketing_voting_mvp_patch_66_gallery_images.sql</code> in Supabase.
           </div>
+        )}
+
+        {/* Full-width image grid */}
+        <div className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 sm:gap-1.5 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {loading &&
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+              <div
+                key={`sk-${i}`}
+                className="relative aspect-square overflow-hidden bg-gray-200 animate-pulse"
+              />
+            ))}
+          {!loading &&
+            displayImages.map((image, index) => (
+            <motion.button
+              key={image.id}
+              type="button"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.45, delay: Math.min(index, 16) * 0.03 }}
+              onClick={() => setLightboxIndex(index)}
+              className="relative aspect-square overflow-hidden group cursor-pointer text-left"
+              aria-label={`Expand ${image.alt}`}
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                unoptimized
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
+            </motion.button>
+          ))}
         </div>
       </section>
+
+      <GalleryLightbox
+        images={lightboxImages}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onChangeIndex={setLightboxIndex}
+        label="Gallery image preview"
+      />
     </div>
   );
 }

@@ -19,7 +19,7 @@ export default function HowCareerProfessionalCanHelp() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full lg:col-span-5"
+            className="order-2 w-full lg:order-1 lg:col-span-5"
           >
             <div className="relative aspect-[16/11] w-full overflow-hidden rounded-xl bg-primary-100 sm:aspect-[4/3] sm:rounded-2xl lg:rounded-3xl">
               <Image
@@ -37,7 +37,7 @@ export default function HowCareerProfessionalCanHelp() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full lg:col-span-7"
+            className="order-1 w-full lg:order-2 lg:col-span-7"
           >
             <h2
               id="how-career-professional-can-help"

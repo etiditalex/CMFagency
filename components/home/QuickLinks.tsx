@@ -72,13 +72,12 @@ const quickLinks: QuickLinkItem[] = [
     body: (
       <>
         <p className="mb-2.5 text-[0.95rem] leading-relaxed text-gray-700">
-          People we&apos;ve worked with in front of the room and on the runway—<strong>models, hosts, and creatives</strong>{" "}
-          we&apos;re comfortable putting forward by name. Casting teams and brands use it to get a first pass on faces and
-          bios before a call, not to replace a proper brief.
+          How we connect <strong>models, MCs, stylists, and creatives</strong> with brands, events, and campaigns—from
+          casting coordination to on-site delivery. Use it to understand the process before you apply or book.
         </p>
         <p className="text-[0.95rem] leading-relaxed text-gray-700">
-          If you&apos;re talent, it&apos;s a window into how we present the community we build with—not a guarantee of every
-          gig, but a serious shop window.
+          Talent applications and awards registrations stay in their dedicated flows, so data stays accurate and every
+          booking has a clear next step.
         </p>
       </>
     ),

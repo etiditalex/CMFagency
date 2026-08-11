@@ -35,7 +35,7 @@ export default function EmployingWithChangerFusions() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="order-2 w-full lg:order-1 lg:col-span-6"
+            className="order-1 w-full lg:order-1 lg:col-span-6"
           >
             <h2
               id="building-careers-changer-fusions"
@@ -76,7 +76,7 @@ export default function EmployingWithChangerFusions() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className="order-1 w-full lg:order-2 lg:col-span-6"
+            className="order-2 w-full lg:order-2 lg:col-span-6"
           >
             <div className="mx-auto grid aspect-square w-full max-w-md grid-cols-2 grid-rows-2 gap-1 overflow-hidden rounded-xl bg-white sm:max-w-none sm:gap-1.5 sm:rounded-2xl md:aspect-[5/4] lg:rounded-3xl">
               {COLLAGE_IMAGES.map((image) => (

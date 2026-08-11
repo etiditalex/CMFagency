@@ -85,7 +85,18 @@
   .careers-about p,
   .careers-contact h2,
   .careers-contact h3,
-  .careers-contact p {
+  .careers-contact p,
+  .talent-hero h1,
+  .talent-hero h2,
+  .talent-hero h3,
+  .talent-hero p,
+  .talent-about h2,
+  .talent-about h3,
+  .talent-about p,
+  .gallery-hero h1,
+  .gallery-hero h2,
+  .gallery-hero h3,
+  .gallery-hero p {
     text-align: left !important;
   }
   
