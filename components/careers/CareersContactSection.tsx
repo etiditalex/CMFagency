@@ -174,21 +174,21 @@ ${formData.message}`;
         </div>
       </div>
 
-      {/* Site views — bottom-left over dotted coast area (outside the white card) */}
+      {/* Site views — desktop/tablet: bottom-left over dotted coast (beside the card) */}
       {siteViews != null ? (
-        <div className="pointer-events-none absolute bottom-4 left-3 z-20 sm:bottom-6 sm:left-5 md:bottom-8 md:left-8 lg:bottom-10 lg:left-10">
+        <div className="pointer-events-none absolute bottom-6 left-5 z-20 hidden sm:block md:bottom-8 md:left-8 lg:bottom-10 lg:left-10">
           <div
-            className="inline-flex items-center gap-2.5 rounded-lg bg-black/25 px-3 py-2 backdrop-blur-[2px] sm:gap-3 sm:px-3.5 sm:py-2.5"
+            className="inline-flex items-center gap-3 rounded-lg bg-black/25 px-3.5 py-2.5 backdrop-blur-[2px]"
             aria-label={`${siteViews.toLocaleString("en-KE")} total site views`}
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/35 sm:h-10 sm:w-10">
-              <Eye className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/35">
+              <Eye className="h-5 w-5" aria-hidden />
             </span>
             <span className="!text-left text-white">
-              <span className="block text-base font-bold tabular-nums leading-none sm:text-lg">
+              <span className="block text-lg font-bold tabular-nums leading-none">
                 {siteViews.toLocaleString("en-KE")}
               </span>
-              <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-white/85 sm:text-xs">
+              <span className="mt-1 block text-xs font-semibold uppercase tracking-[0.12em] text-white/85">
                 Site views
               </span>
             </span>
@@ -319,6 +319,24 @@ ${formData.message}`;
             </div>
           </div>
         </motion.div>
+
+        {/* Site views — mobile: compact row under the card (avoids overlapping the form) */}
+        {siteViews != null ? (
+          <div className="relative z-20 mt-4 flex justify-start sm:hidden">
+            <div
+              className="inline-flex max-w-full items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-white shadow-sm ring-1 ring-white/25 backdrop-blur-sm"
+              aria-label={`${siteViews.toLocaleString("en-KE")} total site views`}
+            >
+              <Eye className="h-3.5 w-3.5 shrink-0 opacity-90" aria-hidden />
+              <span className="text-sm font-bold tabular-nums leading-none">
+                {siteViews.toLocaleString("en-KE")}
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/85">
+                views
+              </span>
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );
