@@ -8,6 +8,7 @@ import { formatEmploymentType } from "@/lib/job-board-access";
 import type { UnifiedJobListing } from "@/lib/job-board-feed";
 import { industryLabel, seniorityLabel } from "@/lib/job-listing-taxonomy";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
+import JobsHero from "@/components/jobs/JobsHero";
 
 type JobTab = "find" | "saved" | "applications" | "preferences" | "seekers" | "employers";
 
@@ -205,12 +206,13 @@ export function JobsBoardClient({ initialJobs, initialError, initialQuery, intro
   };
 
   return (
-    <div className="pt-20 min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
+      <JobsHero />
       <section className="section-padding">
         <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           {intro ? <div className="mb-8">{intro}</div> : (
             <header className="mb-6 text-left">
-              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl text-left">Jobs in Kenya &amp; remote</h1>
+              <h2 className="text-2xl font-bold text-gray-900 md:text-3xl text-left">Browse open roles</h2>
               <p className="mt-1 text-sm text-gray-600">
                 Changer Fusions job board — employer vacancies, Nairobi &amp; Mombasa roles, work-from-home and international
                 remote listings in one search.

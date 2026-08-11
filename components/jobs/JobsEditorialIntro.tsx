@@ -2,13 +2,14 @@ import Link from "next/link";
 
 /**
  * Original, crawlable copy for /jobs so the job board is not only syndicated listings.
+ * Page H1 lives in JobsHero; this block continues with supporting guidance.
  */
 export function JobsEditorialIntro() {
   return (
     <article className="rounded-2xl border border-gray-200/80 bg-white/95 p-6 shadow-sm md:p-8">
-      <h1 className="text-left text-2xl font-bold text-gray-900 md:text-3xl">
-        Jobs in Kenya &amp; remote
-      </h1>
+      <h2 className="text-left text-xl font-bold text-gray-900 md:text-2xl">
+        How to use the board
+      </h2>
       <div className="mt-4 space-y-4 text-sm leading-relaxed text-gray-700 md:text-base">
         <p>
           Browse employer vacancies on the Changer Fusions job board alongside curated remote and partner listings.
