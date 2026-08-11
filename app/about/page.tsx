@@ -177,10 +177,10 @@ export default function AboutPage() {
                       Looking to advance your skills?
                     </div>
                     <Link
-                      href="/training"
+                      href="/careers"
                       className="inline-flex items-center justify-center bg-white text-gray-900 font-bold px-10 py-4 rounded-md shadow-md hover:bg-gray-100 transition-colors"
                     >
-                      Register Now
+                      Explore Careers
                     </Link>
                   </div>
                 </div>

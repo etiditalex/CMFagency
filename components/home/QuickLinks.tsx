@@ -84,23 +84,6 @@ const quickLinks: QuickLinkItem[] = [
     ),
   },
   {
-    id: "training",
-    title: "Training programmes",
-    href: "/training",
-    body: (
-      <>
-        <p className="mb-2.5 text-[0.95rem] leading-relaxed text-gray-700">
-          Workshops and <strong>skills blocks</strong> we run or stand behind—what the day covers, who it&apos;s for, and how
-          to get on the list when a cohort opens. We avoid stuffing this with generic “leadership 101” fluff; if it&apos;s
-          listed, we intend to run it properly.
-        </p>
-        <p className="text-[0.95rem] leading-relaxed text-gray-700">
-          Read the outline first, then reach out if you need a version for your team or organisation.
-        </p>
-      </>
-    ),
-  },
-  {
     id: "careers",
     title: "Career development",
     href: "/careers",
