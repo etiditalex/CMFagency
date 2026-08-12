@@ -49,6 +49,7 @@ export default function EventRegisterPage() {
         .from("fusion_events")
         .select("id,slug,title,event_date,time,location,venue,description,free_registration")
         .eq("slug", slug)
+        .eq("is_live", true)
         .eq("free_registration", true)
         .gte("event_date", today)
         .maybeSingle();

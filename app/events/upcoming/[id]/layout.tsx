@@ -53,6 +53,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   if (slug === FLASH_SALE_SLUG) {
+    const flashLive = await getUpcomingEventBySlug(FLASH_SALE_SLUG);
+    if (!flashLive) {
+      return {
+        title: "Event unavailable | Changer Fusions",
+        robots: { index: false, follow: false },
+        openGraph: { images: [EVENTS_BANNER_OG] },
+        twitter: { card: "summary_large_image", images: [EVENTS_BANNER_OG.url] },
+      };
+    }
     return {
       title: FLASH_SALE_META.title,
       description: FLASH_SALE_META.description,
@@ -188,10 +197,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UpcomingEventIdLayout({ children, params }: Props) {
   const { id: slug } = await params;
+  const showFlashSeo =
+    slug === FLASH_SALE_SLUG ? Boolean(await getUpcomingEventBySlug(FLASH_SALE_SLUG)) : false;
 
   return (
     <>
-      {slug === FLASH_SALE_SLUG ? <CoastFlashSaleStructuredData /> : null}
+      {showFlashSeo ? <CoastFlashSaleStructuredData /> : null}
       {children}
     </>
   );

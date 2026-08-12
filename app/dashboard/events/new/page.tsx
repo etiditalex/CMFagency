@@ -52,6 +52,7 @@ export default function NewEventPage() {
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("12000");
   const [freeRegistration, setFreeRegistration] = useState(false);
   const [lipaPolePole, setLipaPolePole] = useState(false);
+  const [isLive, setIsLive] = useState(true);
   const [useTieredTickets, setUseTieredTickets] = useState(false);
   const [ticketTiers, setTicketTiers] = useState<FusionTicketTier[]>([]);
   const [imageFocus, setImageFocus] = useState<string>("center center");
@@ -129,6 +130,7 @@ export default function NewEventPage() {
         free_registration: freeRegistration,
         free_registration_ask_party_size: freeRegistration,
         lipa_pole_pole: freeRegistration ? false : lipaPolePole,
+        is_live: isLive,
         ticket_tiers:
           useTieredTickets && ticketTiers.length > 0
             ? ticketTiers.map((t) => tierToStoredJson(t))
@@ -361,6 +363,18 @@ export default function NewEventPage() {
           </p>
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="is-live"
+            type="checkbox"
+            checked={isLive}
+            onChange={(e) => setIsLive(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="is-live" className="text-sm font-medium text-gray-700">
+            Live on public site (uncheck to keep hidden until you turn it on — useful for flash sales).
+          </label>
+        </div>
         <div className="flex items-start gap-2">
           <input
             id="free-reg"

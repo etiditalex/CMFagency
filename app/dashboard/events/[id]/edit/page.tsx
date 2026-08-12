@@ -60,6 +60,7 @@ export default function EditEventPage() {
   const [ticketPriceKes, setTicketPriceKes] = useState<string>("");
   const [freeRegistration, setFreeRegistration] = useState(false);
   const [lipaPolePole, setLipaPolePole] = useState(false);
+  const [isLive, setIsLive] = useState(true);
   const [registrations, setRegistrations] = useState<
     Array<{
       id: string;
@@ -141,6 +142,7 @@ export default function EditEventPage() {
         );
         setFreeRegistration(Boolean((ev as { free_registration?: boolean }).free_registration));
         setLipaPolePole(Boolean((ev as { lipa_pole_pole?: boolean }).lipa_pole_pole));
+        setIsLive((ev as { is_live?: boolean | null }).is_live !== false);
         const rawTiers = (ev as { ticket_tiers?: unknown[] | null }).ticket_tiers;
         const tiers =
           Array.isArray(rawTiers) && rawTiers.length > 0
@@ -273,6 +275,7 @@ export default function EditEventPage() {
           free_registration: freeRegistration,
           free_registration_ask_party_size: freeRegistration,
           lipa_pole_pole: freeRegistration ? false : lipaPolePole,
+          is_live: isLive,
           ticket_tiers: useTieredTickets && ticketTiers.length > 0 ? ticketTiers.map((t) => tierToStoredJson(t)) : null,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
@@ -492,6 +495,18 @@ export default function EditEventPage() {
           </select>
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="is-live-edit"
+            type="checkbox"
+            checked={isLive}
+            onChange={(e) => setIsLive(e.target.checked)}
+            className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+          />
+          <label htmlFor="is-live-edit" className="text-sm font-medium text-gray-700">
+            Live on public site (uncheck to hide — e.g. turn flash sale off after it ends). You can also toggle this from the Events list.
+          </label>
+        </div>
         <div className="flex items-start gap-2">
           <input
             id="free-reg-edit"

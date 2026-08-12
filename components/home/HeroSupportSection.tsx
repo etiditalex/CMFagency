@@ -141,6 +141,7 @@ function UpcomingEventsList() {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,ticket_price_kes,image_url,default_image_url")
+        .eq("is_live", true)
         .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(20);

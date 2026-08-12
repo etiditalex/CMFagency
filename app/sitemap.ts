@@ -29,7 +29,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/events", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/events/upcoming", priority: 0.95, changeFrequency: "weekly" as const },
     { path: "/events/upcoming/coast-fashion-modelling-awards-2026", priority: 0.95, changeFrequency: "weekly" as const },
-    { path: "/events/upcoming/coast-fashion-and-modelling-awards-2026-flash-sale", priority: 1.0, changeFrequency: "daily" as const },
     { path: "/events/past", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/events/register-as-model", priority: 0.93, changeFrequency: "weekly" as const },
     { path: "/events/nominate-model", priority: 0.96, changeFrequency: "daily" as const },
@@ -125,6 +124,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Supabase unavailable during build
   }
 
-  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries];
+  const liveEventEntries: MetadataRoute.Sitemap = [];
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseAnonKey) {
+      const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const flashSlug = "coast-fashion-and-modelling-awards-2026-flash-sale";
+      const { data: flashLive } = await supabase
+        .from("fusion_events")
+        .select("slug, updated_at")
+        .eq("slug", flashSlug)
+        .eq("is_live", true)
+        .maybeSingle();
+      if (flashLive) {
+        liveEventEntries.push({
+          url: `${baseUrl}/events/upcoming/${flashSlug}`,
+          lastModified: (flashLive as { updated_at?: string | null }).updated_at
+            ? new Date(String((flashLive as { updated_at?: string | null }).updated_at))
+            : now,
+          changeFrequency: "daily" as const,
+          priority: 1.0,
+        });
+      }
+    }
+  } catch {
+    // fusion_events / is_live may be unavailable
+  }
+
+  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries];
 }
 

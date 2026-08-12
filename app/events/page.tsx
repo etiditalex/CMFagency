@@ -73,6 +73,7 @@ function EventsPageContent() {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,location,time,description,image_url,category")
+        .eq("is_live", true)
         .order("event_date", { ascending: false });
       if (!cancelled) {
         if (!error && data) {

@@ -76,6 +76,7 @@ export default function EventsCalendar() {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date")
+        .eq("is_live", true)
         .order("event_date", { ascending: true });
       if (cancelled) return;
       const rows = (error ? [] : (data ?? [])) as EventRow[];

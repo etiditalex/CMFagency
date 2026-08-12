@@ -29,6 +29,7 @@ export const getUpcomingEventBySlug = cache(
       .from("fusion_events")
       .select("id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url")
       .eq("slug", slug)
+      .eq("is_live", true)
       .gte("event_date", today)
       .maybeSingle();
     if (error) return null;
@@ -63,6 +64,7 @@ export const getFusionEventShareFieldsBySlug = cache(
       .from("fusion_events")
       .select("image_url, default_image_url, gallery")
       .eq("slug", slug)
+      .eq("is_live", true)
       .maybeSingle();
     if (error) return null;
     return data as {
@@ -84,6 +86,7 @@ export const getPastEventBySlug = cache(
         "id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url, gallery"
       )
       .eq("slug", slug)
+      .eq("is_live", true)
       .lt("event_date", today)
       .maybeSingle();
     if (error) return null;

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, ExternalLink, Pencil, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Radio, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,7 @@ type EventRow = {
   created_by?: string | null;
   ticket_price_kes?: number | null;
   lipa_pole_pole?: boolean | null;
+  is_live?: boolean | null;
 };
 
 export default function DashboardEventsPage() {
@@ -34,6 +35,7 @@ export default function DashboardEventsPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -56,7 +58,9 @@ export default function DashboardEventsPage() {
       try {
         let query = supabase
           .from("fusion_events")
-          .select("id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes,lipa_pole_pole")
+          .select(
+            "id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes,lipa_pole_pole,is_live"
+          )
           .order("event_date", { ascending: false });
 
         if (!isFullAdmin && user?.id) {
@@ -86,6 +90,25 @@ export default function DashboardEventsPage() {
     if (filter === "past") return e.event_date < today;
     return true;
   });
+
+  const handleToggleLive = async (eventId: string, current: boolean) => {
+    setTogglingId(eventId);
+    setError(null);
+    try {
+      const { error: err } = await supabase
+        .from("fusion_events")
+        .update({ is_live: !current })
+        .eq("id", eventId);
+      if (err) throw err;
+      setEvents((prev) =>
+        prev.map((e) => (e.id === eventId ? { ...e, is_live: !current } : e))
+      );
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to update live status");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleDelete = async (eventId: string, title: string) => {
     if (!confirm(`Delete event "${title}"? This cannot be undone.`)) return;
@@ -123,7 +146,9 @@ export default function DashboardEventsPage() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Events</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
-            Manage events shown on the upcoming events, past events, and all events pages.
+            Manage events shown on the upcoming events, past events, and all events pages. Use{" "}
+            <span className="font-semibold text-gray-800">Live / Off</span> to show or hide an event
+            publicly (e.g. turn flash sale tickets on at the start, off when the sale ends).
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -169,14 +194,15 @@ export default function DashboardEventsPage() {
                 <th className="px-6 py-3 font-bold text-gray-600">Location</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Price (KES)</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Lipa Pole Pole</th>
-                <th className="px-6 py-3 font-bold text-gray-600">Status</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Schedule</th>
+                <th className="px-6 py-3 font-bold text-gray-600">Public</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-8 text-gray-600" colSpan={7}>
+                  <td className="px-6 py-8 text-gray-600" colSpan={8}>
                     No events yet.{" "}
                     <Link href="/dashboard/events/new" className="text-primary-600 font-semibold hover:underline">
                       Create your first event
@@ -186,6 +212,7 @@ export default function DashboardEventsPage() {
               ) : (
                 filtered.map((e) => {
                   const isUpcoming = e.event_date >= today;
+                  const isLive = e.is_live !== false;
                   return (
                     <tr key={e.id} className="border-b border-gray-100">
                       <td className="px-6 py-4">
@@ -228,7 +255,30 @@ export default function DashboardEventsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
+                            isLive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {isLive ? "Live" : "Off"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleLive(e.id, isLive)}
+                            disabled={togglingId === e.id}
+                            title={isLive ? "Turn off public page" : "Make live on public site"}
+                            className={`inline-flex items-center gap-1 font-semibold disabled:opacity-50 ${
+                              isLive
+                                ? "text-amber-700 hover:text-amber-800"
+                                : "text-green-700 hover:text-green-800"
+                            }`}
+                          >
+                            <Radio className="w-4 h-4" />
+                            {togglingId === e.id ? "…" : isLive ? "Turn off" : "Go live"}
+                          </button>
                           <Link
                             href={`${isUpcoming ? "/events/upcoming" : "/events/past"}/${e.slug}`}
                             target="_blank"

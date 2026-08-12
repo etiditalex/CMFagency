@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     .from("fusion_events")
     .select("id, slug, title, event_date, time, location, venue, map_url")
     .eq("slug", slug)
+    .eq("is_live", true)
     .eq("free_registration", true)
     .gte("event_date", today)
     .maybeSingle();

@@ -19,7 +19,11 @@ type FusionEventRow = {
   ticket_price_kes: number | null;
   ticket_tiers: Array<{ slug?: string; label?: string; unit_amount_kes?: number }> | null;
   created_by: string | null;
+  is_live?: boolean | null;
 };
+
+const EVENT_SELECT =
+  "id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by,is_live";
 
 /** Normalize to URL-safe campaign slug: lowercase, hyphens only, no leading/trailing hyphens. */
 export function normalizeSlug(s: string): string {
@@ -51,8 +55,9 @@ export async function ensureCampaignFromEvent(
 
   const { data: byCampaignSlug } = await supabaseAdmin
     .from("fusion_events")
-    .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
+    .select(EVENT_SELECT)
     .eq("ticket_campaign_slug", slugNorm)
+    .eq("is_live", true)
     .maybeSingle();
   if (byCampaignSlug) {
     event = byCampaignSlug as FusionEventRow;
@@ -61,7 +66,8 @@ export async function ensureCampaignFromEvent(
   if (!event) {
     const { data: withCampaignSlug } = await supabaseAdmin
       .from("fusion_events")
-      .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
+      .select(EVENT_SELECT)
+      .eq("is_live", true)
       .not("ticket_campaign_slug", "is", null);
     const rawList = (withCampaignSlug ?? []) as FusionEventRow[];
     const byRaw = rawList.find((e) => normalizeSlug(e.ticket_campaign_slug ?? "") === slugNorm);
@@ -75,7 +81,8 @@ export async function ensureCampaignFromEvent(
     // 2) Event with slug in ticket_tiers (match normalized so "old is gold" = "old-is-gold")
     const { data: eventsWithTiers } = await supabaseAdmin
       .from("fusion_events")
-      .select("id,slug,title,ticket_campaign_slug,ticket_price_kes,ticket_tiers,created_by")
+      .select(EVENT_SELECT)
+      .eq("is_live", true)
       .not("ticket_tiers", "is", null);
 
     const list = (eventsWithTiers ?? []) as FusionEventRow[];
@@ -93,7 +100,7 @@ export async function ensureCampaignFromEvent(
     unitAmountKes = Number(event.ticket_price_kes) || 0;
   }
 
-  if (!event) return null;
+  if (!event || event.is_live === false) return null;
 
   let ownerId = event.created_by;
   if (!ownerId) {

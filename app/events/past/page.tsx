@@ -35,6 +35,7 @@ export default function PastEventsPage() {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,venue,description,image_url,default_image_url")
+        .eq("is_live", true)
         .lt("event_date", today)
         .order("event_date", { ascending: false });
       if (!cancelled) {

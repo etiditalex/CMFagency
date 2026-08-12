@@ -74,6 +74,7 @@ export default function UpcomingEventsPage() {
       const { data, error: queryError } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration,lipa_pole_pole")
+        .eq("is_live", true)
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
