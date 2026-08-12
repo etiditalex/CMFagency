@@ -17,6 +17,7 @@ type EventInfo = {
   venue: string | null;
   description: string | null;
   free_registration: boolean;
+  is_live?: boolean | null;
 };
 
 export default function EventRegisterPage() {
@@ -47,9 +48,8 @@ export default function EventRegisterPage() {
       setError(null);
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,time,location,venue,description,free_registration")
+        .select("id,slug,title,event_date,time,location,venue,description,free_registration,is_live")
         .eq("slug", slug)
-        .eq("is_live", true)
         .eq("free_registration", true)
         .gte("event_date", today)
         .maybeSingle();
@@ -66,9 +66,11 @@ export default function EventRegisterPage() {
     return () => { cancelled = true; };
   }, [slug]);
 
+  const salesOpen = event?.is_live !== false;
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slug || !name.trim() || !email.trim()) return;
+    if (!slug || !name.trim() || !email.trim() || !salesOpen) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -163,6 +165,19 @@ export default function EventRegisterPage() {
                 <p className="text-green-700 text-sm mt-1">
                   Check your email for an invitation with a QR code. Show it at the entrance on the day.
                 </p>
+              </div>
+            ) : !salesOpen ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center">
+                <p className="font-extrabold text-amber-950">Registration closed for now</p>
+                <p className="text-amber-900/90 text-sm mt-1">
+                  This event page is still available. Free registration will open again when the organiser turns sales back on.
+                </p>
+                <Link
+                  href={`/events/upcoming/${event.slug}`}
+                  className="inline-flex mt-4 text-primary-700 font-semibold hover:underline"
+                >
+                  View event page
+                </Link>
               </div>
             ) : (
               <form onSubmit={onSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">

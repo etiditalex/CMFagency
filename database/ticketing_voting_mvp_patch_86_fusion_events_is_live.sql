@@ -1,23 +1,23 @@
--- Fusion Xpress events: public Live / Off toggle (e.g. flash sale tickets).
+-- Fusion Xpress events: Live / Off toggle for sales (e.g. flash sale tickets).
 -- Apply in Supabase SQL editor.
--- When is_live is false, the event is hidden from public pages (RLS + app filters).
--- Dashboard portal members can still see and edit offline events.
+-- Prefer also applying patch_87: is_live gates checkout only; the public page stays up.
+-- (Early drafts of this patch hid offline rows via RLS; patch_87 restores public read.)
 
 alter table public.fusion_events
   add column if not exists is_live boolean not null default true;
 
 comment on column public.fusion_events.is_live is
-  'When true, event is visible on public upcoming/past/all event pages. Toggle from Fusion Xpress Events dashboard (e.g. turn flash sale on at start, off when it ends).';
+  'When true, ticket sales / free registration are open. When false, the public page stays up with a closed message and checkout is disabled.';
 
 create index if not exists fusion_events_is_live_idx on public.fusion_events (is_live);
 
--- Public (anon / anyone): only live events
+-- Public can read all events (page remains reachable when sales are off)
 drop policy if exists "fusion_events_public_read" on public.fusion_events;
 create policy "fusion_events_public_read"
 on public.fusion_events for select
-using (is_live = true);
+using (true);
 
--- Portal members with Events access: see all rows (including offline) for admin UI
+-- Portal members with Events access: see all rows for admin UI
 drop policy if exists "fusion_events_portal_select" on public.fusion_events;
 create policy "fusion_events_portal_select"
 on public.fusion_events for select

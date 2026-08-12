@@ -205,7 +205,6 @@ export default function PastEventDetailPage() {
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,venue,hosted_by,gallery,ticket_campaign_slug,payment_link,document_url,document_label,map_url")
         .eq("slug", slugParam)
-        .eq("is_live", true)
         .lt("event_date", format(new Date(), "yyyy-MM-dd"))
         .maybeSingle();
       if (!cancelled) {

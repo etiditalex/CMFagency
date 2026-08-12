@@ -147,8 +147,8 @@ export default function DashboardEventsPage() {
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Events</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Manage events shown on the upcoming events, past events, and all events pages. Use{" "}
-            <span className="font-semibold text-gray-800">Live / Off</span> to show or hide an event
-            publicly (e.g. turn flash sale tickets on at the start, off when the sale ends).
+            <span className="font-semibold text-gray-800">Live / Off</span> to open or close ticket
+            sales — the public page stays up (e.g. flash sale shows &quot;closed for now&quot; when off).
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -260,7 +260,7 @@ export default function DashboardEventsPage() {
                             isLive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {isLive ? "Live" : "Off"}
+                          {isLive ? "Sales open" : "Sales closed"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -269,7 +269,7 @@ export default function DashboardEventsPage() {
                             type="button"
                             onClick={() => handleToggleLive(e.id, isLive)}
                             disabled={togglingId === e.id}
-                            title={isLive ? "Turn off public page" : "Make live on public site"}
+                            title={isLive ? "Close ticket sales (page stays up)" : "Open ticket sales"}
                             className={`inline-flex items-center gap-1 font-semibold disabled:opacity-50 ${
                               isLive
                                 ? "text-amber-700 hover:text-amber-800"
@@ -277,7 +277,7 @@ export default function DashboardEventsPage() {
                             }`}
                           >
                             <Radio className="w-4 h-4" />
-                            {togglingId === e.id ? "…" : isLive ? "Turn off" : "Go live"}
+                            {togglingId === e.id ? "…" : isLive ? "Close sales" : "Open sales"}
                           </button>
                           <Link
                             href={`${isUpcoming ? "/events/upcoming" : "/events/past"}/${e.slug}`}

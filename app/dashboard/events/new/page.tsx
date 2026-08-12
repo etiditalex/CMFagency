@@ -372,7 +372,7 @@ export default function NewEventPage() {
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="is-live" className="text-sm font-medium text-gray-700">
-            Live on public site (uncheck to keep hidden until you turn it on — useful for flash sales).
+            Sales open (uncheck to leave the page up but show &quot;closed for now&quot; — useful for flash sales).
           </label>
         </div>
         <div className="flex items-start gap-2">

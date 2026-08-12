@@ -504,7 +504,7 @@ export default function EditEventPage() {
             className="mt-1 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
           />
           <label htmlFor="is-live-edit" className="text-sm font-medium text-gray-700">
-            Live on public site (uncheck to hide — e.g. turn flash sale off after it ends). You can also toggle this from the Events list.
+            Sales open (uncheck to keep the page up with &quot;closed for now&quot; — e.g. after a flash sale). You can also toggle this from the Events list.
           </label>
         </div>
         <div className="flex items-start gap-2">

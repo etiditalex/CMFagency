@@ -59,7 +59,15 @@ type DbEvent = {
   image_focus?: string | null;
   free_registration?: boolean | null;
   lipa_pole_pole?: boolean | null;
+  is_live?: boolean | null;
 };
+
+const FLASH_SALE_SLUG = "coast-fashion-and-modelling-awards-2026-flash-sale";
+
+function salesClosedMessage(slug: string): string {
+  if (slug === FLASH_SALE_SLUG) return "Flash sale closed for now";
+  return "Ticket sales closed for now";
+}
 
 function buildGoogleCalendarUrl(event: Pick<DbEvent, "title" | "event_date" | "end_date" | "time" | "location" | "description">): string {
   const d = event.event_date.replace(/-/g, "");
@@ -604,6 +612,8 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const objectPosition = (event.image_focus as string | null) || "center center";
   const eventDate = new Date(event.event_date);
   const endDate = event.end_date ? new Date(event.end_date) : null;
+  const salesOpen = event.is_live !== false;
+  const closedMsg = salesClosedMessage(event.slug);
   const hasTicket = !!event.ticket_campaign_slug?.trim();
   const hasTieredTickets = (event.ticket_tiers?.length ?? 0) > 0;
   const hasPayment = !!event.payment_link;
@@ -632,11 +642,13 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   };
 
   const openTieredCheckout = () => {
+    if (!salesOpen) return;
     setModalTiersOverride(null);
     setTicketModalOpen(true);
   };
 
   const openGeneralCheckout = async () => {
+    if (!salesOpen) return;
     if (inlineGeneralTiers) {
       setTicketModalOpen(true);
       return;
@@ -666,9 +678,10 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   }, [modalTiersOverride, hasTieredTickets, event.ticket_tiers, inlineGeneralTiers]);
 
   const shouldMountTicketModal =
-    (hasTieredTickets && tiersForModal.length > 0) ||
-    inlineGeneralTiers != null ||
-    modalTiersOverride != null;
+    salesOpen &&
+    ((hasTieredTickets && tiersForModal.length > 0) ||
+      inlineGeneralTiers != null ||
+      modalTiersOverride != null);
 
   return (
     <div className="pt-16 sm:pt-20 min-h-screen bg-gray-50">
@@ -712,6 +725,18 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
             <div className="lg:col-span-5">
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-8 lg:sticky lg:top-24">
                 <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900">{event.title}</h1>
+
+                {!salesOpen && (
+                  <div
+                    className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950"
+                    role="status"
+                  >
+                    <p className="font-extrabold text-sm sm:text-base">{closedMsg}</p>
+                    <p className="mt-1 text-xs sm:text-sm text-amber-900/90">
+                      This page is still available. Online checkout will open again when sales resume.
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-3 space-y-2 text-gray-700 text-sm sm:text-base">
                   <div className="flex items-center gap-2">
@@ -760,7 +785,8 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                         key={t.id || t.slug}
                         type="button"
                         onClick={() => openTieredCheckout()}
-                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 p-3 sm:p-4 shadow-sm"
+                        disabled={!salesOpen}
+                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white disabled:cursor-not-allowed p-3 sm:p-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="font-extrabold text-gray-900 text-sm sm:text-base">{t.label}</div>
@@ -779,8 +805,8 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                       <button
                         type="button"
                         onClick={() => void openGeneralCheckout()}
-                        disabled={buyLoading}
-                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-70 p-3 sm:p-4 shadow-sm"
+                        disabled={!salesOpen || buyLoading}
+                        className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white disabled:cursor-not-allowed p-3 sm:p-4 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="font-extrabold text-gray-900 text-sm sm:text-base">Ticket</div>
@@ -797,7 +823,11 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                             )}
                           </div>
                         </div>
-                        <div className="mt-2 text-sm text-gray-600">Pay in full or use Lipa Pole Pole in checkout.</div>
+                        <div className="mt-2 text-sm text-gray-600">
+                          {salesOpen
+                            ? "Pay in full or use Lipa Pole Pole in checkout."
+                            : closedMsg}
+                        </div>
                       </button>
                     )}
                   </div>
@@ -805,41 +835,51 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
 
                 {/* Action buttons */}
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm sm:text-base">
-                  {hasFreeReg && (
-                    <Link
-                      href={`/events/register/${event.slug}`}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
-                    >
-                      <Ticket className="w-5 h-5" />
-                      Register
-                    </Link>
-                  )}
+                  {hasFreeReg &&
+                    (salesOpen ? (
+                      <Link
+                        href={`/events/register/${event.slug}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 transition-colors"
+                      >
+                        <Ticket className="w-5 h-5" />
+                        Register
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-200 text-gray-600 font-semibold py-3 px-4 cursor-not-allowed sm:col-span-2">
+                        {closedMsg}
+                      </span>
+                    ))}
                   {hasTieredTickets && !hasFreeReg && (
                     <button
                       type="button"
                       onClick={() => openTieredCheckout()}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-3 px-4 transition-colors"
+                      disabled={!salesOpen}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 transition-colors"
                     >
                       <Ticket className="w-5 h-5" />
-                      Buy Ticket Online
+                      {salesOpen ? "Buy Ticket Online" : closedMsg}
                     </button>
                   )}
                   {hasTicket && !hasFreeReg && !hasTieredTickets && (
                     <button
                       type="button"
-                      disabled={buyLoading}
+                      disabled={!salesOpen || buyLoading}
                       onClick={() => void openGeneralCheckout()}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black disabled:opacity-70 text-white font-semibold py-3 px-4 transition-colors"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:opacity-100 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 transition-colors"
                     >
                       {buyLoading ? (
                         <Loader2 className="w-5 h-5 animate-spin shrink-0" aria-hidden />
                       ) : (
                         <Ticket className="w-5 h-5 shrink-0" />
                       )}
-                      {buyLoading ? "Opening checkout…" : "Buy Ticket Online"}
+                      {!salesOpen
+                        ? closedMsg
+                        : buyLoading
+                          ? "Opening checkout…"
+                          : "Buy Ticket Online"}
                     </button>
                   )}
-                  {hasPayment && !hasFreeReg && (
+                  {hasPayment && !hasFreeReg && salesOpen && (
                     <a
                       href={event.payment_link!}
                       target="_blank"
@@ -991,9 +1031,8 @@ export default function UpcomingEventDetailPage() {
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole")
+        .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole,is_live")
         .eq("slug", slugParam)
-        .eq("is_live", true)
         .gte("event_date", today)
         .maybeSingle();
       if (!cancelled) {

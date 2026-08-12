@@ -133,17 +133,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         auth: { autoRefreshToken: false, persistSession: false },
       });
       const flashSlug = "coast-fashion-and-modelling-awards-2026-flash-sale";
-      const { data: flashLive } = await supabase
+      const { data: flashRow } = await supabase
         .from("fusion_events")
         .select("slug, updated_at")
         .eq("slug", flashSlug)
-        .eq("is_live", true)
         .maybeSingle();
-      if (flashLive) {
+      if (flashRow) {
         liveEventEntries.push({
           url: `${baseUrl}/events/upcoming/${flashSlug}`,
-          lastModified: (flashLive as { updated_at?: string | null }).updated_at
-            ? new Date(String((flashLive as { updated_at?: string | null }).updated_at))
+          lastModified: (flashRow as { updated_at?: string | null }).updated_at
+            ? new Date(String((flashRow as { updated_at?: string | null }).updated_at))
             : now,
           changeFrequency: "daily" as const,
           priority: 1.0,

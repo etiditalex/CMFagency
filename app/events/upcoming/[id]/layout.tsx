@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   if (slug === FLASH_SALE_SLUG) {
-    const flashLive = await getUpcomingEventBySlug(FLASH_SALE_SLUG);
-    if (!flashLive) {
+    const flashEvent = await getUpcomingEventBySlug(FLASH_SALE_SLUG);
+    if (!flashEvent) {
       return {
         title: "Event unavailable | Changer Fusions",
         robots: { index: false, follow: false },
@@ -62,9 +62,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         twitter: { card: "summary_large_image", images: [EVENTS_BANNER_OG.url] },
       };
     }
+    const salesOpen = flashEvent.is_live !== false;
+    const closedTitle = "Coast Fashion Flash Sale Closed for Now | Changer Fusions";
+    const closedDescription =
+      "Coast fashion flash sale is closed for now. Check back later for Coast Fashion and Modelling Awards 2026 flash sale ticket offers.";
+    const pageTitle = salesOpen ? FLASH_SALE_META.title : closedTitle;
+    const pageDescription = salesOpen ? FLASH_SALE_META.description : closedDescription;
     return {
-      title: FLASH_SALE_META.title,
-      description: FLASH_SALE_META.description,
+      title: pageTitle,
+      description: pageDescription,
       keywords: FLASH_SALE_META.keywords,
       authors: [{ name: "Changer Fusions", url: SITE_URL }],
       creator: "Changer Fusions",
@@ -84,8 +90,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         type: "website",
         locale: "en_KE",
-        title: FLASH_SALE_META.title,
-        description: FLASH_SALE_META.description,
+        title: pageTitle,
+        description: pageDescription,
         url: FLASH_SALE_URL,
         siteName: "Changer Fusions | CMF Agency",
         images: [
@@ -100,9 +106,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: "summary_large_image",
-        title: "Coast Fashion Flash Sale Tickets | Group of 5 at 1500",
-        description:
-          "Coast tickets flash sale & coast event flash sale — group of 5 at 1500, group of 10 at 3000. Buy online.",
+        title: salesOpen
+          ? "Coast Fashion Flash Sale Tickets | Group of 5 at 1500"
+          : "Coast Fashion Flash Sale Closed for Now",
+        description: pageDescription,
         images: [FLASH_SALE_META.image],
       },
       alternates: {
@@ -197,8 +204,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UpcomingEventIdLayout({ children, params }: Props) {
   const { id: slug } = await params;
-  const showFlashSeo =
-    slug === FLASH_SALE_SLUG ? Boolean(await getUpcomingEventBySlug(FLASH_SALE_SLUG)) : false;
+  const flashEvent =
+    slug === FLASH_SALE_SLUG ? await getUpcomingEventBySlug(FLASH_SALE_SLUG) : null;
+  const showFlashSeo = Boolean(flashEvent && flashEvent.is_live !== false);
 
   return (
     <>

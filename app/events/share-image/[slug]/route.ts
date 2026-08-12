@@ -47,7 +47,6 @@ export async function GET(
     .from("fusion_events")
     .select("image_url, default_image_url, gallery")
     .eq("slug", slug)
-    .eq("is_live", true)
     .maybeSingle();
 
   if (error || !data) {

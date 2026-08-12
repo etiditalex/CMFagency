@@ -38,7 +38,14 @@ type EventRow = {
   image_focus?: string | null;
   free_registration?: boolean | null;
   lipa_pole_pole?: boolean | null;
+  is_live?: boolean | null;
 };
+
+const FLASH_SALE_SLUG = "coast-fashion-and-modelling-awards-2026-flash-sale";
+
+function listClosedLabel(slug: string): string {
+  return slug === FLASH_SALE_SLUG ? "Flash sale closed for now" : "Sales closed for now";
+}
 
 // CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
 const CFMA_2026_EVENT: EventRow = {
@@ -73,8 +80,7 @@ export default function UpcomingEventsPage() {
     const load = async () => {
       const { data, error: queryError } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration,lipa_pole_pole")
-        .eq("is_live", true)
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration,lipa_pole_pole,is_live")
         .gte("event_date", today)
         .order("event_date", { ascending: true });
       if (!cancelled) {
@@ -122,6 +128,8 @@ export default function UpcomingEventsPage() {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_HERO;
               const objectPosition = (event.image_focus as string | null) || "center center";
+              const salesOpen = event.is_live !== false;
+              const closedLabel = listClosedLabel(event.slug);
               return (
               <motion.div
                 key={event.id}
@@ -178,7 +186,15 @@ export default function UpcomingEventsPage() {
                   </Link>
                   {(event.free_registration || event.ticket_campaign_slug || event.ticket_tiers?.length || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
-                      {event.free_registration ? (
+                      {!salesOpen ? (
+                        <Link
+                          href={`/events/upcoming/${event.slug}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-amber-100 text-amber-950 border border-amber-200 font-semibold py-2.5 px-4 text-sm"
+                        >
+                          {closedLabel}
+                        </Link>
+                      ) : event.free_registration ? (
                         <Link
                           href={`/events/register/${event.slug}`}
                           onClick={(e) => e.stopPropagation()}

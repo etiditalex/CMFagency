@@ -18,6 +18,7 @@ export type UpcomingEventRow = {
   full_description: string | null;
   image_url: string | null;
   default_image_url: string | null;
+  is_live?: boolean | null;
 };
 
 /** Cached server-side fetch for an upcoming event by slug (for metadata / JSON-LD). */
@@ -27,9 +28,8 @@ export const getUpcomingEventBySlug = cache(
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("fusion_events")
-      .select("id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url")
+      .select("id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url, is_live")
       .eq("slug", slug)
-      .eq("is_live", true)
       .gte("event_date", today)
       .maybeSingle();
     if (error) return null;
@@ -64,7 +64,6 @@ export const getFusionEventShareFieldsBySlug = cache(
       .from("fusion_events")
       .select("image_url, default_image_url, gallery")
       .eq("slug", slug)
-      .eq("is_live", true)
       .maybeSingle();
     if (error) return null;
     return data as {
@@ -86,7 +85,6 @@ export const getPastEventBySlug = cache(
         "id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url, gallery"
       )
       .eq("slug", slug)
-      .eq("is_live", true)
       .lt("event_date", today)
       .maybeSingle();
     if (error) return null;
