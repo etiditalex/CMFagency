@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Ban, Loader2, Send, Ticket, Trash2 } from "lucide-react";
+import { ArrowLeft, Ban, FileSpreadsheet, FileText, Loader2, Send, Ticket, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -40,6 +40,7 @@ export default function GateTicketPurchasesPage() {
   const [revokingRef, setRevokingRef] = useState<string | null>(null);
   const [deletingRef, setDeletingRef] = useState<string | null>(null);
   const [sendingRef, setSendingRef] = useState<string | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<"xlsx" | "pdf" | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -204,6 +205,50 @@ export default function GateTicketPurchasesPage() {
     }
   };
 
+  const downloadPurchases = async (format: "xlsx" | "pdf") => {
+    setDownloadingFormat(format);
+    setError(null);
+    setNotice(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not logged in");
+
+      const params = new URLSearchParams({ format });
+      if (eventSlug) params.set("event_slug", eventSlug);
+      const res = await fetch(`/api/gate/ticket-purchases-export?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error ?? `Download failed (${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const cd = res.headers.get("Content-Disposition") ?? "";
+      const match = /filename="([^"]+)"/i.exec(cd);
+      const filename =
+        match?.[1] ??
+        `gate-ticket-purchases.${format === "pdf" ? "pdf" : "xlsx"}`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setNotice(format === "pdf" ? "PDF download started." : "Excel download started.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setDownloadingFormat(null);
+    }
+  };
+
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember) return null;
   if (!hasFeature("reports")) return null;
@@ -242,6 +287,34 @@ export default function GateTicketPurchasesPage() {
               ))}
             </select>
           )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void downloadPurchases("xlsx")}
+            disabled={!!downloadingFormat || loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {downloadingFormat === "xlsx" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+            )}
+            {downloadingFormat === "xlsx" ? "Preparing…" : "Download Excel"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void downloadPurchases("pdf")}
+            disabled={!!downloadingFormat || loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {downloadingFormat === "pdf" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileText className="w-4 h-4 text-red-700" />
+            )}
+            {downloadingFormat === "pdf" ? "Preparing…" : "Download PDF"}
+          </button>
         </div>
       </div>
 
