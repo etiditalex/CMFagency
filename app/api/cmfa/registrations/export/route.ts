@@ -31,27 +31,29 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get("status")?.trim() || "approved";
   const eventSlug = url.searchParams.get("event_slug")?.trim() || CMFA_EVENT_SLUG;
 
-  const SELECT_WITH_TIER =
-    "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at, ticket_tier";
-  const SELECT_LEGACY =
-    "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at";
+  let query = admin
+    .from("cmfa_registrations")
+    .select(
+      "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at, ticket_tier"
+    )
+    .eq("event_slug", eventSlug)
+    .order("approved_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(10000);
+  if (status !== "all") query = query.eq("status", status);
 
-  const run = (columns: string) => {
-    let query = admin
+  let { data, error } = await query;
+  if (error && /ticket_tier/i.test(error.message)) {
+    let retryQuery = admin
       .from("cmfa_registrations")
-      .select(columns)
+      .select("reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at")
       .eq("event_slug", eventSlug)
       .order("approved_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .limit(10000);
-    if (status !== "all") query = query.eq("status", status);
-    return query;
-  };
-
-  let { data, error } = await run(SELECT_WITH_TIER);
-  if (error && /ticket_tier/i.test(error.message)) {
-    const retry = await run(SELECT_LEGACY);
-    data = retry.data;
+    if (status !== "all") retryQuery = retryQuery.eq("status", status);
+    const retry = await retryQuery;
+    data = retry.data as typeof data;
     error = retry.error;
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -70,7 +72,7 @@ export async function GET(req: NextRequest) {
     ticket_tier?: string | null;
   };
 
-  const rows = (data ?? []) as Row[];
+  const rows = (data ?? []) as unknown as Row[];
 
   const headers = [
     "Registered",

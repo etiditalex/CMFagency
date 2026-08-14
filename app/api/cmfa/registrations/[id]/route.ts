@@ -153,7 +153,9 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       .eq("id", id)
       .select(REGISTRATION_SELECT_LEGACY)
       .maybeSingle();
-    data = retry.data ? { ...retry.data, ticket_tier: ticketTier } : retry.data;
+    data = retry.data
+      ? ({ ...(retry.data as object), ticket_tier: ticketTier } as typeof data)
+      : retry.data;
     error = retry.error;
   }
 
