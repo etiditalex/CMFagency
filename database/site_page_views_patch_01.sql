@@ -16,10 +16,12 @@ alter table public.site_page_views enable row level security;
 revoke all on public.site_page_views from anon, authenticated;
 grant select, update, insert on public.site_page_views to service_role;
 
+-- SECURITY INVOKER: only service_role has table grants, so RPC stays
+-- server-only without elevated DEFINER privileges (clears Advisor lints).
 create or replace function public.increment_site_page_views()
 returns bigint
 language plpgsql
-security definer
+security invoker
 set search_path = public
 as $$
 declare
@@ -36,7 +38,11 @@ begin
 end;
 $$;
 
-revoke all on function public.increment_site_page_views() from public;
+-- PUBLIC revoke alone is not enough: Supabase also grants EXECUTE to anon /
+-- authenticated directly. Revoke all three, then grant service_role only.
+revoke execute on function public.increment_site_page_views() from public;
+revoke execute on function public.increment_site_page_views() from anon;
+revoke execute on function public.increment_site_page_views() from authenticated;
 grant execute on function public.increment_site_page_views() to service_role;
 
 comment on table public.site_page_views is
