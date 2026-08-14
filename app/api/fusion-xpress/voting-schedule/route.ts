@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { eatNextDayKey } from "@/lib/time/eat";
 import {
   invalidateVotingSettingsCache,
   readVotingSettings,
@@ -88,7 +89,7 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 /**
  * Update global voting settings (Fusion Xpress admin or manager).
  * Body accepts any of: `{ "date": "YYYY-MM-DD" }` (opens midnight East Africa Time),
- * `{ "end_date": "YYYY-MM-DD" }` (closes 23:59:59 East Africa Time on that day),
+ * `{ "end_date": "YYYY-MM-DD" }` (closes at midnight 00:00 East Africa Time after that day),
  * `{ "voting_starts_at": "<ISO>" }`, `{ "voting_ends_at": "<ISO>" }`, `{ "show_vote_totals": boolean }`.
  */
 export async function PATCH(req: NextRequest) {
@@ -112,10 +113,11 @@ export async function PATCH(req: NextRequest) {
     if (!Number.isNaN(t)) votingStartsAt = new Date(t).toISOString();
   }
 
-  /** A closing date means "voting runs through the end of that day" in East Africa Time. */
+  /** A closing date means "voting runs through that calendar day" and stops at the following midnight EAT. */
   let votingEndsAt: string | null = null;
   if (body.end_date && DATE_ONLY.test(body.end_date.trim())) {
-    votingEndsAt = `${body.end_date.trim()}T23:59:59+03:00`;
+    const nextDay = eatNextDayKey(body.end_date.trim());
+    votingEndsAt = nextDay ? `${nextDay}T00:00:00+03:00` : null;
   } else if (body.voting_ends_at?.trim()) {
     const t = Date.parse(body.voting_ends_at.trim());
     if (!Number.isNaN(t)) votingEndsAt = new Date(t).toISOString();

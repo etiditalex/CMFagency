@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/attendance-digests",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/voting-results",
+      "schedule": "5 * * * *"
     }
   ]
 }

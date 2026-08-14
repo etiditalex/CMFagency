@@ -22,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
-import { FALLBACK_VOTING_END_MS } from "@/lib/voting-schedule-public";
+import { FALLBACK_VOTING_END_MS, lastVotingDayYmdFromEndIso } from "@/lib/voting-schedule-public";
 
 type TrendingItem = {
   rank: number;
@@ -163,13 +163,15 @@ export default function DashboardHomePage() {
         const effectiveStart = j?.voting_starts_at || VOTING_START_FALLBACK_ISO;
         const effectiveEnd = j?.voting_ends_at || VOTING_END_FALLBACK_ISO;
         setVotingScheduleDate(isoToNairobiDateInput(effectiveStart) || "2026-04-01");
-        setVotingScheduleEndDate(isoToNairobiDateInput(effectiveEnd));
+        setVotingScheduleEndDate(lastVotingDayYmdFromEndIso(effectiveEnd) || isoToNairobiDateInput(effectiveEnd));
         setVotingScheduleDisplay(formatVotingDateInNairobi(effectiveStart));
         setVotingScheduleEndDisplay(formatVotingDateInNairobi(effectiveEnd));
       } catch {
         if (!cancelled) {
           setVotingScheduleDate("2026-04-01");
-          setVotingScheduleEndDate(isoToNairobiDateInput(VOTING_END_FALLBACK_ISO));
+          setVotingScheduleEndDate(
+            lastVotingDayYmdFromEndIso(VOTING_END_FALLBACK_ISO) || isoToNairobiDateInput(VOTING_END_FALLBACK_ISO)
+          );
           setVotingScheduleDisplay(formatVotingDateInNairobi(VOTING_START_FALLBACK_ISO));
           setVotingScheduleEndDisplay(formatVotingDateInNairobi(VOTING_END_FALLBACK_ISO));
         }
@@ -449,7 +451,7 @@ export default function DashboardHomePage() {
       if (j.voting_starts_at) setVotingScheduleDisplay(formatVotingDateInNairobi(j.voting_starts_at));
       if (j.voting_ends_at) setVotingScheduleEndDisplay(formatVotingDateInNairobi(j.voting_ends_at));
       setVotingScheduleMessage(
-        "Saved. Voting opens at 00:00 and the countdown runs out at 23:59 East Africa Time on the end date."
+        "Saved. Voting opens at 00:00 and closes at midnight (12:00 AM) East Africa Time after the end date."
       );
     } catch (e: any) {
       setVotingScheduleMessage(e?.message ?? "Save failed");
@@ -629,7 +631,7 @@ export default function DashboardHomePage() {
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              Voting is open all of the end date; the public countdown hits zero at 23:59 East Africa Time.
+              Voting is open all of the end date and stops at midnight (12:00 AM) East Africa Time. Official winner and contestant PDFs are emailed to the admin at close.
             </p>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button

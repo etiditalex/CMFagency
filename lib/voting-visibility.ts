@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type VotingSettings = {
   voting_starts_at: string | null;
-  /** Last moment votes are counted down to (23:59:59 East Africa Time on the closing day). */
+  /** Instant votes stop (midnight 00:00 East Africa Time after the last voting day). */
   voting_ends_at: string | null;
   /** When false, public pages/APIs must not expose per-contestant tallies or vote-based ranking. */
   show_vote_totals: boolean;

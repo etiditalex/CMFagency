@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Download, ExternalLink, FileCheck, Trash2, UserPlus } from "lucide-react";
+import { Bell, Crown, Download, ExternalLink, FileCheck, Mail, Trash2, UserPlus, Users } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -179,7 +179,7 @@ const SELECT_EMBEDDED_MIN = `
 export default function DashboardContestantsPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isFullAdmin, isManager } = usePortal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -194,6 +194,8 @@ export default function DashboardContestantsPage() {
     Array<{ id: string; name: string; requested_at: string; campaign_title: string }>
   >([]);
   const [downloadingAllVotes, setDownloadingAllVotes] = useState(false);
+  const [downloadingResults, setDownloadingResults] = useState<"winners" | "contestants" | "email" | null>(null);
+  const [resultsMessage, setResultsMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -506,6 +508,59 @@ export default function DashboardContestantsPage() {
     }
   };
 
+  const downloadOfficialPdf = async (kind: "winners" | "contestants") => {
+    setDownloadingResults(kind);
+    setError(null);
+    setResultsMessage(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session expired. Sign in again.");
+      const res = await fetch(`/api/fusion-xpress/voting-results/pdf?kind=${kind}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Could not download PDF (HTTP ${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const fallback = kind === "winners" ? "CFMA-2026-category-winners.pdf" : "CFMA-2026-all-contestants.pdf";
+      const match = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "");
+      a.download = match?.[1] ?? fallback;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error)?.message ?? "Failed to download PDF.");
+    } finally {
+      setDownloadingResults(null);
+    }
+  };
+
+  const emailOfficialResults = async () => {
+    setDownloadingResults("email");
+    setError(null);
+    setResultsMessage(null);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session expired. Sign in again.");
+      const res = await fetch("/api/fusion-xpress/voting-results/email", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; to?: string };
+      if (!res.ok) throw new Error(body.error ?? `Could not send email (HTTP ${res.status})`);
+      setResultsMessage(`Official PDFs emailed to ${body.to ?? "the admin"}.`);
+    } catch (e) {
+      setError((e as Error)?.message ?? "Failed to email results.");
+    } finally {
+      setDownloadingResults(null);
+    }
+  };
+
   if (authLoading || portalLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -519,6 +574,9 @@ export default function DashboardContestantsPage() {
 
   if (!isAuthenticated || !user || !isPortalMember || !hasFeature("voting")) return null;
 
+  const canManageResults = isFullAdmin || isManager;
+  const resultsBusy = downloadingResults !== null;
+
   return (
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
@@ -526,6 +584,7 @@ export default function DashboardContestantsPage() {
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Contestants</h2>
           <p className="text-gray-600 mt-1">
             View contestants by category and download one Excel report for all categories with live vote performance.
+            At midnight close, gold winner and contestant PDFs are emailed to the voting admin automatically.
           </p>
         </div>
         <button
@@ -538,6 +597,44 @@ export default function DashboardContestantsPage() {
           {downloadingAllVotes ? "Preparing Excel..." : "Download Excel (all categories)"}
         </button>
       </div>
+
+      {canManageResults && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void downloadOfficialPdf("winners")}
+            disabled={loading || resultsBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#b8860b] text-white font-semibold hover:bg-[#9a7209] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Crown className="w-4 h-4" />
+            {downloadingResults === "winners" ? "Preparing winners PDF..." : "Download winners PDF"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void downloadOfficialPdf("contestants")}
+            disabled={loading || resultsBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[#b8860b] text-[#7a5a08] bg-[#faf6e8] font-semibold hover:bg-[#f3ead0] disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Users className="w-4 h-4" />
+            {downloadingResults === "contestants" ? "Preparing contestants PDF..." : "Download contestants PDF"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void emailOfficialResults()}
+            disabled={loading || resultsBusy}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 font-semibold hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Mail className="w-4 h-4" />
+            {downloadingResults === "email" ? "Sending..." : "Email PDFs to admin"}
+          </button>
+        </div>
+      )}
+
+      {resultsMessage && (
+        <p className="mt-4 text-sm font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-md p-3">
+          {resultsMessage}
+        </p>
+      )}
 
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>

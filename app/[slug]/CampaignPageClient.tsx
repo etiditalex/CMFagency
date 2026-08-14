@@ -898,7 +898,7 @@ export default function CampaignPageClient({
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Voting closed on {votingClosedLabel}</h1>
                 <p className="text-gray-600 mt-2">
-                  Voting for {campaign.title} ended at 23:59 East Africa Time, and no further votes can be recorded.
+                  Voting for {campaign.title} ended at midnight (12:00 AM) East Africa Time, and no further votes can be recorded.
                   Thank you to everyone who took part.
                 </p>
                 <p className="text-sm text-gray-500 mt-3">
