@@ -198,7 +198,9 @@ export default function CmfaRegistrationPage() {
             <p className="text-xs text-gray-500 mt-1">
               {designation === "kpc_student"
                 ? "Only the first 10 KPC student registrations are complimentary. After that, students pay KES 300 for a regular ticket."
-                : "All roles receive a complimentary ticket after approval."}
+                : designation === "guest"
+                  ? "Guests receive a complimentary VIP-color (blue) ticket after approval."
+                  : "All roles receive a complimentary ticket after approval."}
             </p>
           </div>
 

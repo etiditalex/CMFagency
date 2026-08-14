@@ -1,6 +1,7 @@
 /**
  * Ticket email header colors by tier:
  * Complimentary → red, Regular (incl. group) → green, VIP → blue, VVIP → gold.
+ * CMFA in-house registrations are complimentary (red) except Guests, who receive VIP blue.
  */
 export type TicketEmailTier = "complimentary" | "regular" | "vip" | "vvip";
 
@@ -22,7 +23,12 @@ export function resolveTicketEmailTier(input: {
   reference?: string;
   campaignSlug?: string;
   campaignTitle?: string;
+  /** CMFA registration role; "guest" uses VIP blue instead of complimentary red. */
+  designation?: string;
 }): TicketEmailTier {
+  const designation = (input.designation ?? "").trim().toLowerCase();
+  if (designation === "guest") return "vip";
+
   if (input.reference?.startsWith("cmfa_reg_")) return "complimentary";
 
   const haystack = `${input.campaignSlug ?? ""} ${input.campaignTitle ?? ""}`.toLowerCase();

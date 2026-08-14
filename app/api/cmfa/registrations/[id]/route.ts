@@ -150,6 +150,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       eventLocation: eventDetails.location,
       calendarUrl: buildCalendarUrl(eventDetails.title, eventDetails.eventDate, eventDetails.location),
       mapUrl: eventDetails.mapUrl,
+      designation: String((data as { designation?: string }).designation ?? ""),
     });
 
     if (!emailResult.ok) {

@@ -29,13 +29,13 @@ export type EventInviteEmailProps = {
   organizerEmail?: string;
   calendarUrl?: string;
   mapUrl?: string;
+  /** CMFA designation; guests receive the VIP (blue) ticket color. */
+  designation?: string;
 };
 
 function qrCodeUrl(data: string, size = 150): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }
-
-const DEFAULT_HEADER = { background: "linear-gradient(135deg, #059669 0%, #047857 100%)" };
 
 export function EventInviteEmail({
   eventTitle,
@@ -48,19 +48,21 @@ export function EventInviteEmail({
   organizerEmail = "info@cmfagency.co.ke",
   calendarUrl,
   mapUrl,
+  designation,
 }: EventInviteEmailProps) {
   const ticketId = reference.startsWith("cmfa_reg_")
     ? `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`
     : `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
   const qrData = reference;
-  const ticketTier = resolveTicketEmailTier({ reference, campaignTitle: eventTitle });
-  const isComplimentary = ticketTier === "complimentary";
-  const headerStyle = isComplimentary ? ticketEmailHeaderStyle(ticketTier) : DEFAULT_HEADER;
-  const accentColor = isComplimentary ? ticketEmailAccentColor(ticketTier) : "#059669";
-  const locationStyle = isComplimentary
-    ? { ...locationHighlight, backgroundColor: "#fef2f2", borderLeftColor: accentColor }
-    : locationHighlight;
+  const ticketTier = resolveTicketEmailTier({ reference, campaignTitle: eventTitle, designation });
+  const isVip = ticketTier === "vip";
+  const headerStyle = ticketEmailHeaderStyle(ticketTier);
+  const accentColor = ticketEmailAccentColor(ticketTier);
+  const locationBg =
+    ticketTier === "vip" ? "#eff6ff" : ticketTier === "complimentary" ? "#fef2f2" : ticketTier === "vvip" ? "#fffbeb" : "#ecfdf5";
+  const locationStyle = { ...locationHighlight, backgroundColor: locationBg, borderLeftColor: accentColor };
   const linkStyle = { color: accentColor, textDecoration: "none" as const };
+  const headerCaption = isVip ? "VIP guest ticket" : "You're invited";
 
   return (
     <Html>
@@ -70,7 +72,7 @@ export function EventInviteEmail({
         <Container style={container}>
           <Section style={{ ...header, ...headerStyle }}>
             <Heading style={headerTitle}>{eventTitle}</Heading>
-            <Text style={headerSubtitle}>You&apos;re invited</Text>
+            <Text style={headerSubtitle}>{headerCaption}</Text>
           </Section>
 
           <Section style={content}>
