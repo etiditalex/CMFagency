@@ -11,13 +11,14 @@ import { DARAJA_CLIENT_VERIFY_MIN_AGE_MS } from "@/lib/daraja-stk-result";
 export default function ReceiptConfirmingPoller({ paymentRef }: { paymentRef: string }) {
   const router = useRouter();
   const startedAtRef = useRef(Date.now());
+  const receiptRequestedRef = useRef(false);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
 
     const tick = async () => {
       try {
-        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}`);
+        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}&lite=1`);
         if (!res.ok) return;
         let json = (await res.json()) as { status?: string; provider?: string };
 
@@ -30,7 +31,7 @@ export default function ReceiptConfirmingPoller({ paymentRef }: { paymentRef: st
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ref: paymentRef }),
           }).catch(() => {});
-          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}`);
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}&lite=1`);
           if (!res.ok) return;
           json = (await res.json()) as { status?: string; provider?: string };
         }
@@ -45,13 +46,20 @@ export default function ReceiptConfirmingPoller({ paymentRef }: { paymentRef: st
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ref: paymentRef }),
           }).catch(() => {});
-          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}`);
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(paymentRef)}&lite=1`);
           if (!res.ok) return;
           json = (await res.json()) as { status?: string };
         }
 
         const st = String(json.status ?? "pending");
-        if (st === "success" || st === "failed" || st === "abandoned") {
+        if (st === "success") {
+          if (!receiptRequestedRef.current) {
+            receiptRequestedRef.current = true;
+            fetch(`/api/send-receipt?ref=${encodeURIComponent(paymentRef)}`, { method: "POST" }).catch(() => {});
+          }
+          router.refresh();
+          clearInterval(interval);
+        } else if (st === "failed" || st === "abandoned") {
           router.refresh();
           clearInterval(interval);
         }

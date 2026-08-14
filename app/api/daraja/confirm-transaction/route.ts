@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendReceiptEmail } from "@/lib/send-receipt-email";
-import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
+import { deliverPaymentEmailsOnce } from "@/lib/deliver-payment-emails";
 
 /**
  * POST: Admin-only. Mark a pending M-Pesa transaction as success and fulfill (tickets/votes + receipt email).
@@ -164,60 +163,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const toEmail = (tx as { email?: string | null }).email?.trim?.();
-    if (toEmail && !fulfillmentError) {
-      const holderName = (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail;
-      const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
-      const slug = String(meta.slug || meta.campaign_slug || "event");
-      const prefix = slug.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-      const typeCode = tx.campaign_type === "vote" ? "VOT" : (meta as { merchandise_cart?: boolean }).merchandise_cart ? "ORD" : "TKT";
-      const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
-      const campaignTitle = String(meta.campaign_title || meta.slug || "Event");
-      const typeLabel = (tx.campaign_type === "vote" ? "Vote" : (meta as { merchandise_cart?: boolean }).merchandise_cart ? "Order" : "Ticket") as "Ticket" | "Vote" | "Order";
-      const quantityLabel = tx.campaign_type === "vote" ? "votes" : (meta as { merchandise_cart?: boolean }).merchandise_cart ? "items" : "tickets";
-      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
-      const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(reference)}` : undefined;
-      const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(reference)}`;
-
-      let eventLocation: string | undefined;
-      let eventDate: string | undefined;
-      let eventTime: string | undefined;
-      if (slug && slug !== "event") {
-        const { data: eventRow } = await admin
-          .from("fusion_events")
-          .select("location, venue, event_date, time")
-          .eq("ticket_campaign_slug", slug)
-          .maybeSingle();
-        if (eventRow) {
-          const loc = (eventRow as { location?: string | null }).location;
-          const venue = (eventRow as { venue?: string | null }).venue;
-          eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
-          const ed = (eventRow as { event_date?: string | null }).event_date;
-          if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-          eventTime = (eventRow as { time?: string | null }).time ?? undefined;
-        }
-      }
-
-      const votedForName =
-        tx.campaign_type === "vote" ? await fetchContestantNameById(admin, tx.contestant_id) : undefined;
-
-      await sendReceiptEmail({
-        to: toEmail,
-        campaignTitle,
-        campaignSlug: slug !== "event" ? slug : undefined,
-        typeLabel,
-        ticketNumber,
-        holderName,
-        amount: `KES ${Number(tx.amount || 0).toLocaleString()}`,
-        quantity: `${tx.quantity} ${quantityLabel}`,
-        reference,
-        variant: "mpesa",
-        votedForName,
-        viewTicketsUrl,
-        downloadReceiptUrl,
-        eventLocation,
-        eventDate,
-        eventTime,
+    if (!fulfillmentError) {
+      await deliverPaymentEmailsOnce(admin, {
+        transactionId: String(tx.id),
+        logPrefix: "[daraja/confirm-transaction]",
       });
     }
 

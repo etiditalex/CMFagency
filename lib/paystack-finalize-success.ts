@@ -4,6 +4,7 @@ import { markServiceInvoicePaid } from "@/lib/service-invoice-paid";
 import { fulfillVisitorManagementSubscriptionPayment } from "@/lib/visitors/activate-subscription-payment";
 import { isVisitorSubscriptionPaymentMetadata } from "@/lib/visitors/subscription-pricing";
 import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
+import { schedulePaymentEmailsAfterResponse } from "@/lib/deliver-payment-emails";
 
 /** Row shape needed to record Paystack success + fulfill (votes/tickets). */
 export type PaystackFulfillmentRow = {
@@ -79,6 +80,7 @@ export async function finalizePaystackTransactionSuccess(
         .eq("id", tx.id);
       return { fulfillErr: result.error ?? "subscription_failed" };
     }
+    schedulePaymentEmailsAfterResponse(supabase, tx.id, "[finalizePaystack]");
     return { fulfillErr: null };
   }
 
@@ -98,6 +100,7 @@ export async function finalizePaystackTransactionSuccess(
         }
       }
     }
+    schedulePaymentEmailsAfterResponse(supabase, tx.id, "[finalizePaystack]");
     return { fulfillErr: null };
   }
 
@@ -130,6 +133,7 @@ export async function finalizePaystackTransactionSuccess(
         .eq("id", tx.id)
         .is("fulfilled_at", null);
     }
+    schedulePaymentEmailsAfterResponse(supabase, tx.id, "[finalizePaystack]");
     return { fulfillErr: null };
   }
 
@@ -145,6 +149,7 @@ export async function finalizePaystackTransactionSuccess(
         .eq("id", tx.id)
         .is("fulfilled_at", null);
     }
+    schedulePaymentEmailsAfterResponse(supabase, tx.id, "[finalizePaystack]");
     return { fulfillErr: null };
   }
 
@@ -187,5 +192,6 @@ export async function finalizePaystackTransactionSuccess(
     }
   }
 
+  schedulePaymentEmailsAfterResponse(supabase, tx.id, "[finalizePaystack]");
   return { fulfillErr: null };
 }

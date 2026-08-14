@@ -26,6 +26,9 @@ function createTransport(): nodemailer.Transporter | null {
       user: "resend",
       pass: apiKey.trim(),
     },
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 15_000,
   });
 }
 
@@ -63,17 +66,22 @@ export async function sendEmailViaSmtp(
     return { ok: false, error: "Resend SMTP not configured (RESEND_USE_SMTP and RESEND_API_KEY)" };
   }
   try {
-    await transport.sendMail({
-      from: options.from,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      attachments: options.attachments?.map((a) => ({
-        filename: a.filename,
-        content: a.content,
-        cid: a.cid,
-      })),
-    });
+    await Promise.race([
+      transport.sendMail({
+        from: options.from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        attachments: options.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          cid: a.cid,
+        })),
+      }),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("SMTP send timed out")), 18_000);
+      }),
+    ]);
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";

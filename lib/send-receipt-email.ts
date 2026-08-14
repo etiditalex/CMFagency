@@ -29,6 +29,26 @@ export type ReceiptParams = {
   campaignSlug?: string;
 };
 
+let cachedLogo: { buf: Buffer; at: number } | null = null;
+const LOGO_TTL_MS = 60 * 60 * 1000;
+
+async function getCachedLogoBuffer(): Promise<Buffer | null> {
+  if (cachedLogo && Date.now() - cachedLogo.at < LOGO_TTL_MS) return cachedLogo.buf;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  try {
+    const res = await fetch(DEFAULT_LOGO_URL, { signal: ctrl.signal });
+    if (!res.ok) return cachedLogo?.buf ?? null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    cachedLogo = { buf, at: Date.now() };
+    return buf;
+  } catch {
+    return cachedLogo?.buf ?? null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const receiptProps = (
   params: ReceiptParams
 ): React.ComponentProps<typeof ReceiptEmail> => ({
@@ -55,18 +75,7 @@ const receiptProps = (
 });
 
 export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {
-  const {
-    to,
-    campaignTitle,
-    typeLabel,
-    ticketNumber,
-    holderName,
-    amount,
-    quantity,
-    reference,
-    mpesaReceipt,
-    variant = "paystack",
-  } = params;
+  const { to, campaignTitle, typeLabel, variant = "paystack" } = params;
 
   const subject =
     typeLabel === "Ticket"
@@ -82,9 +91,11 @@ export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boo
       const html = await render(
         React.createElement(ReceiptEmail, receiptProps(params))
       );
-      const logoBuf = await fetch(DEFAULT_LOGO_URL).then((r) => r.arrayBuffer()).then((ab) => Buffer.from(ab));
-      const smtpLogoAttachment = { filename: "changer-logo.png", content: logoBuf, cid: CHANGER_LOGO_CID };
-      return sendEmailViaSmtp({ to, subject, html, from, attachments: [smtpLogoAttachment] });
+      const logoBuf = await getCachedLogoBuffer();
+      const smtpLogoAttachment = logoBuf
+        ? [{ filename: "changer-logo.png", content: logoBuf, cid: CHANGER_LOGO_CID }]
+        : undefined;
+      return sendEmailViaSmtp({ to, subject, html, from, attachments: smtpLogoAttachment });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       return { ok: false, error: msg };

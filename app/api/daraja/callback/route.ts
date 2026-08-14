@@ -5,6 +5,7 @@ import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 import { finalizeDarajaStkFromMetadataItems } from "@/lib/daraja-finalize-stk-from-items";
 import { findDarajaTransactionForStkCallback } from "@/lib/daraja-callback-lookup";
 import { isStkCallbackSuccess } from "@/lib/daraja-stk-result";
+import { schedulePaymentEmailsAfterResponse } from "@/lib/deliver-payment-emails";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
     }
 
     if (String((tx as { status?: string }).status ?? "") === "success") {
+      schedulePaymentEmailsAfterResponse(supabase, String(tx.id), "[Daraja callback]");
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 

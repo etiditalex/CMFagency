@@ -8,6 +8,7 @@ import {
   paystackStatusIsTerminalNonSuccess,
 } from "@/lib/paystack-verify-status";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
+import { schedulePaymentEmailsAfterResponse } from "@/lib/deliver-payment-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,9 @@ export async function POST(req: Request) {
 
   const status = String((tx as { status?: string }).status ?? "pending");
   if (status !== "pending") {
+    if (status === "success") {
+      schedulePaymentEmailsAfterResponse(supabase, String((tx as { id: string }).id), "[paystack/verify-ref]");
+    }
     return NextResponse.json({ ok: true, status, completed: status === "success" });
   }
 

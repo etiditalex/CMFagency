@@ -27,6 +27,8 @@ export async function GET(req: Request) {
     auth: { persistSession: false },
   });
 
+  const lite = url.searchParams.get("lite") === "1";
+
   const { data: tx, error } = await supabase
     .from("transactions")
     .select(
@@ -38,31 +40,31 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!tx) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Fetch campaign for receipt display (title, dates)
-  const campaignId = (tx as { campaign_id?: string }).campaign_id;
-  let campaign_title: string | null = null;
-  let campaign_slug: string | null = null;
+  const meta =
+    tx && typeof (tx as unknown as { metadata?: unknown }).metadata === "object" && (tx as unknown as { metadata?: unknown }).metadata
+      ? ((tx as unknown as { metadata?: unknown }).metadata as Record<string, unknown>)
+      : {};
+
+  let campaign_title: string | null = typeof meta.campaign_title === "string" ? meta.campaign_title : null;
+  let campaign_slug: string | null =
+    typeof meta.slug === "string" ? meta.slug : typeof meta.campaign_slug === "string" ? meta.campaign_slug : null;
   let starts_at: string | null = null;
   let ends_at: string | null = null;
 
-  if (campaignId) {
+  const campaignId = (tx as { campaign_id?: string }).campaign_id;
+  if (!lite && campaignId) {
     const { data: camp } = await supabase
       .from("campaigns")
       .select("title,slug,starts_at,ends_at")
       .eq("id", campaignId)
       .maybeSingle();
     if (camp) {
-      campaign_title = (camp as { title?: string }).title ?? null;
-      campaign_slug = (camp as { slug?: string }).slug ?? null;
+      campaign_title = (camp as { title?: string }).title ?? campaign_title;
+      campaign_slug = (camp as { slug?: string }).slug ?? campaign_slug;
       starts_at = (camp as { starts_at?: string | null }).starts_at ?? null;
       ends_at = (camp as { ends_at?: string | null }).ends_at ?? null;
     }
   }
-
-  const meta =
-    tx && typeof (tx as unknown as { metadata?: unknown }).metadata === "object" && (tx as unknown as { metadata?: unknown }).metadata
-      ? ((tx as unknown as { metadata?: unknown }).metadata as Record<string, unknown>)
-      : {};
 
   const res = NextResponse.json(
     {

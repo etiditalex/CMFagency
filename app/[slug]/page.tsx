@@ -3,8 +3,8 @@ import { GENERIC_CAMPAIGN_LOAD_FAILURE } from "@/lib/payment-user-message";
 
 import CampaignPageClient from "./CampaignPageClient";
 
-/** Tallies and campaign windows are request-time state; never prerender them at build. */
-export const dynamic = "force-dynamic";
+/** Ticket campaigns can be briefly cached; vote pages call noStore() in getCampaignPageData. */
+export const revalidate = 30;
 
 export default async function CampaignPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

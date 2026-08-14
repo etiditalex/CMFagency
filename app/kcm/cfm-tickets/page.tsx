@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Script from "next/script";
 import { Loader2, X } from "lucide-react";
@@ -59,6 +59,7 @@ export default function CfmTicketsPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pendingReference, setPendingReference] = useState<string | null>(null);
+  const receiptRequestedRef = useRef(false);
   const [paymentStatus, setPaymentStatus] = useState<
     null | { status: string; provider: string | null; amount: number | null; currency: string | null; quantity: number | null }
   >(null);
@@ -470,11 +471,12 @@ export default function CfmTicketsPage() {
     if (!pendingReference) return;
 
     let cancelled = false;
+    receiptRequestedRef.current = false;
     const darajaVerifyEligibleAt = Date.now() + DARAJA_CLIENT_VERIFY_MIN_AGE_MS;
 
     const pollStatus = async () => {
       try {
-        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(pendingReference)}`, {
+        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(pendingReference)}&lite=1`, {
           cache: "no-store",
         });
         let json = (await res.json().catch(() => ({}))) as {
@@ -488,6 +490,22 @@ export default function CfmTicketsPage() {
 
         if (
           String(json.status ?? "pending") === "pending" &&
+          String(json.provider ?? "").toLowerCase() === "paystack"
+        ) {
+          await fetch("/api/paystack/verify-ref", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ref: pendingReference }),
+          }).catch(() => {});
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(pendingReference)}&lite=1`, {
+            cache: "no-store",
+          });
+          json = (await res.json().catch(() => ({}))) as typeof json;
+          if (!res.ok) return;
+        }
+
+        if (
+          String(json.status ?? "pending") === "pending" &&
           String(json.provider ?? "").toLowerCase() === "daraja" &&
           Date.now() >= darajaVerifyEligibleAt
         ) {
@@ -497,7 +515,7 @@ export default function CfmTicketsPage() {
             body: JSON.stringify({ ref: pendingReference }),
           }).catch(() => {});
 
-          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(pendingReference)}`, {
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(pendingReference)}&lite=1`, {
             cache: "no-store",
           });
           json = (await res.json().catch(() => ({}))) as typeof json;
@@ -515,6 +533,10 @@ export default function CfmTicketsPage() {
         });
 
         if (status === "success") {
+          if (!receiptRequestedRef.current) {
+            receiptRequestedRef.current = true;
+            fetch(`/api/send-receipt?ref=${encodeURIComponent(pendingReference)}`, { method: "POST" }).catch(() => {});
+          }
           setNotice("Payment confirmed successfully. You can open your receipt now.");
           if (intervalId) window.clearInterval(intervalId);
         } else if (status === "failed" || status === "abandoned") {

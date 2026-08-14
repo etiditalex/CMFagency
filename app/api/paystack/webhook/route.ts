@@ -4,11 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 import { paystackChargeMatchesTransaction } from "@/lib/paystack-charge-matches-transaction";
 import { finalizePaystackTransactionSuccess, type PaystackFulfillmentRow } from "@/lib/paystack-finalize-success";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
-import { sendReceiptEmail } from "@/lib/send-receipt-email";
-import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
+import {
+  isPaymentEmailAlreadySent,
+  asTransactionMeta,
+  schedulePaymentEmailsAfterResponse,
+} from "@/lib/deliver-payment-emails";
 import { isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
-import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
-import { sendServiceInvoicePaidEmail } from "@/lib/send-service-invoice-email";
+import { isVisitorSubscriptionPaymentMetadata } from "@/lib/visitors/subscription-pricing";
+import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +41,9 @@ function verifySignature(rawBody: string, signature: string | null, secret: stri
  *
  * Verifies `x-paystack-signature` with `PAYSTACK_SECRET_KEY`, then mirrors the
  * Supabase `paystack-webhook` Edge Function behavior.
+ *
+ * ACK is returned as soon as votes/tickets are recorded; receipt email continues
+ * after the response so Paystack does not retry on slow SMTP.
  */
 export async function POST(req: Request) {
   const paystackSecret = process.env.PAYSTACK_SECRET_KEY;
@@ -85,6 +91,32 @@ export async function POST(req: Request) {
     return new Response("ok", { status: 200 });
   }
 
+  const meta = asTransactionMeta((tx as { metadata?: unknown }).metadata);
+  if (String((tx as { status?: string }).status ?? "") === "success") {
+    const skipVoteTicketRepair =
+      meta.merchandise_cart === true ||
+      isLipaPolePoleMetadata(meta) ||
+      Boolean(meta.service_invoice_id) ||
+      isVisitorSubscriptionPaymentMetadata(meta);
+    if (!skipVoteTicketRepair) {
+      await upsertVoteOrTicketForSuccessfulTx(
+        supabase,
+        {
+          id: String(tx.id),
+          campaign_id: String(tx.campaign_id),
+          campaign_type: String(tx.campaign_type),
+          contestant_id: (tx as { contestant_id?: string | null }).contestant_id ?? null,
+          quantity: Number(tx.quantity),
+        },
+        "[paystack/webhook]"
+      );
+    }
+    if (!isPaymentEmailAlreadySent(meta)) {
+      schedulePaymentEmailsAfterResponse(supabase, String(tx.id), "[paystack/webhook]");
+    }
+    return new Response("ok", { status: 200 });
+  }
+
   const paidAmountSubunit = Number(payload.data?.amount ?? 0);
   const paidCurrency = (payload.data?.currency ?? "").toUpperCase();
   const match = paystackChargeMatchesTransaction(paidAmountSubunit, paidCurrency, tx as PaystackFulfillmentRow);
@@ -96,7 +128,7 @@ export async function POST(req: Request) {
         status: "failed",
         verified_at: new Date().toISOString(),
         metadata: {
-          ...(typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {}),
+          ...meta,
           webhook_error: match.code === "amount" ? "amount_mismatch" : "currency_mismatch",
           paystack_amount: paidAmountSubunit,
           paystack_currency: paidCurrency,
@@ -129,128 +161,6 @@ export async function POST(req: Request) {
 
   if (fulfillErr) {
     console.error("[paystack/webhook] fulfillment failed:", fulfillErr);
-  }
-
-  const toEmail = (tx as { email?: string | null }).email?.trim?.();
-  if (toEmail && !fulfillErr) {
-    const { data: txFresh } = await supabase.from("transactions").select("metadata").eq("id", tx.id).maybeSingle();
-    const metaFresh =
-      typeof txFresh?.metadata === "object" && txFresh.metadata
-        ? (txFresh.metadata as Record<string, unknown>)
-        : {};
-    if (isLipaPolePoleMetadata(metaFresh)) {
-      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
-      try {
-        await sendLipaPolePoleEmail({
-          to: toEmail,
-          holderName: (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail,
-          campaignTitle: String(metaFresh.campaign_title ?? metaFresh.slug ?? "CFM Tickets"),
-          totalDueKes: Number(metaFresh.lipa_pole_pole_total_due_kes ?? 0),
-          paidKes: Number(metaFresh.lipa_pole_pole_amount_paid_kes ?? 0),
-          balanceKes: Number(metaFresh.lipa_pole_pole_balance_remaining_kes ?? 0),
-          continueUrl: `${baseUrl}/kcm/cfm-tickets`,
-          variant: "partial_paid",
-        });
-      } catch (e) {
-        console.warn("[paystack/webhook] Lipa Pole Pole email error:", e instanceof Error ? e.message : e);
-      }
-      return new Response("ok", { status: 200 });
-    }
-
-    if (metaFresh.service_invoice_id) {
-      const invId = String(metaFresh.service_invoice_id);
-      const { data: invRow } = await supabase
-        .from("service_invoices")
-        .select("invoice_number,package_title,amount_kes,customer_name")
-        .eq("id", invId)
-        .maybeSingle();
-      const ir = invRow as { invoice_number?: number; package_title?: string; amount_kes?: number; customer_name?: string } | null;
-      const label =
-        ir?.invoice_number != null
-          ? `CF-${new Date().getFullYear()}-${String(ir.invoice_number).padStart(6, "0")}`
-          : invId.slice(0, 8);
-      try {
-        await sendServiceInvoicePaidEmail({
-          to: toEmail,
-          customerName: ir?.customer_name ?? (tx as { payer_name?: string | null }).payer_name?.trim?.() ?? toEmail,
-          invoiceLabel: label,
-          packageTitle: ir?.package_title ?? "Service package",
-          amountKes: Number(ir?.amount_kes ?? tx.amount ?? 0),
-          reference: String(tx.reference),
-        });
-      } catch (e) {
-        console.warn("[paystack/webhook] service invoice email:", e instanceof Error ? e.message : e);
-      }
-      return new Response("ok", { status: 200 });
-    }
-
-    const meta =
-      typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {};
-    const referenceStr = String(tx.reference);
-    const holderName = (tx as { payer_name?: string | null }).payer_name?.trim?.() || toEmail;
-    const ticketSuffix = referenceStr.replace(/^cmf_/, "").slice(-8).toUpperCase();
-    const slug = String(meta.slug || meta.campaign_slug || "event");
-    const prefix = slug.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-    const typeCode = tx.campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
-    const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
-    const campaignTitle = String(meta.campaign_title || meta.slug || "Event");
-    const typeLabel = (tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as
-      | "Ticket"
-      | "Vote"
-      | "Order";
-    const quantityLabel =
-      tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
-    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
-    const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(referenceStr)}` : undefined;
-    const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(referenceStr)}`;
-
-    let eventLocation: string | undefined;
-    let eventDate: string | undefined;
-    let eventTime: string | undefined;
-    if (slug && slug !== "event") {
-      const { data: eventRow } = await supabase
-        .from("fusion_events")
-        .select("location, venue, event_date, time")
-        .eq("ticket_campaign_slug", slug)
-        .maybeSingle();
-      if (eventRow) {
-        const loc = (eventRow as { location?: string | null }).location;
-        const venue = (eventRow as { venue?: string | null }).venue;
-        eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
-        const ed = (eventRow as { event_date?: string | null }).event_date;
-        if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-        eventTime = (eventRow as { time?: string | null }).time ?? undefined;
-      }
-    }
-
-    const votedForName =
-      tx.campaign_type === "vote" ? await fetchContestantNameById(supabase, tx.contestant_id) : undefined;
-
-    try {
-      const emailResult = await sendReceiptEmail({
-        to: toEmail,
-        campaignTitle,
-        campaignSlug: slug !== "event" ? slug : undefined,
-        typeLabel,
-        ticketNumber,
-        holderName,
-        amount: `${String(tx.currency || "KES").toUpperCase()} ${Number(tx.amount || 0).toLocaleString()}`,
-        quantity: `${tx.quantity} ${quantityLabel}`,
-        reference: referenceStr,
-        variant: "paystack",
-        votedForName,
-        viewTicketsUrl,
-        downloadReceiptUrl,
-        eventLocation,
-        eventDate,
-        eventTime,
-      });
-      if (!emailResult.ok) {
-        console.warn("[paystack/webhook] Receipt email failed:", emailResult.error);
-      }
-    } catch (e) {
-      console.warn("[paystack/webhook] Receipt email error:", e instanceof Error ? e.message : e);
-    }
   }
 
   return new Response("ok", { status: 200 });

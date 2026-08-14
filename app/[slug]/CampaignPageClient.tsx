@@ -334,10 +334,10 @@ export default function CampaignPageClient({
       interval = undefined;
     };
 
-    /** Backgrounded tabs kept re-running a full tally aggregation every 12s for nothing. */
+    /** Backgrounded tabs kept re-running a full tally aggregation for nothing. */
     const start = () => {
       if (interval !== undefined) return;
-      interval = window.setInterval(fetchVoteCounts, 12_000);
+      interval = window.setInterval(fetchVoteCounts, 20_000);
     };
 
     const onVisibilityChange = () => {
@@ -392,7 +392,7 @@ export default function CampaignPageClient({
 
     const fetchStatus = async () => {
       try {
-        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
+        let res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}&lite=1`);
         let raw = await res.text();
         let json: any = {};
         if (raw) {
@@ -413,7 +413,7 @@ export default function CampaignPageClient({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ref }),
           }).catch(() => {});
-          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}&lite=1`);
           raw = await res.text();
           if (raw) {
             try {
@@ -435,7 +435,7 @@ export default function CampaignPageClient({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ref }),
           }).catch(() => {});
-          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}`);
+          res = await fetch(`/api/transactions/status?ref=${encodeURIComponent(ref)}&lite=1`);
           raw = await res.text();
           if (raw) {
             try {

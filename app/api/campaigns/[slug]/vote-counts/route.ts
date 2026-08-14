@@ -44,7 +44,7 @@ export async function GET(
   if (!votingSettings.show_vote_totals) {
     return NextResponse.json(
       { counts: {} as Record<string, number>, show_vote_totals: false },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
+      { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } }
     );
   }
 
@@ -60,6 +60,6 @@ export async function GET(
 
   return NextResponse.json(
     { counts: byContestant, show_vote_totals: true },
-    { headers: { "Cache-Control": "no-store, max-age=0" } }
+    { headers: { "Cache-Control": "public, s-maxage=8, stale-while-revalidate=20" } }
   );
 }

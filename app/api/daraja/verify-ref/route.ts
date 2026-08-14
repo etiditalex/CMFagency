@@ -17,6 +17,7 @@ import {
 import { parseDarajaStkQueryResponse } from "@/lib/daraja-stk-query-parse";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
+import { schedulePaymentEmailsAfterResponse } from "@/lib/deliver-payment-emails";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,9 @@ export async function POST(req: Request) {
   const canReconcile =
     status === "pending" || (status === "failed" && wasPrematureDarajaVerifyRefFailure(meta));
   if (!canReconcile) {
+    if (status === "success") {
+      schedulePaymentEmailsAfterResponse(supabase, String((tx as { id: string }).id), "[Daraja verify-ref]");
+    }
     return NextResponse.json({ ok: true, status, completed: status === "success" });
   }
   const checkoutRequestId = String(meta.checkout_request_id ?? "").trim();
@@ -227,6 +231,9 @@ export async function POST(req: Request) {
   const canFinalize =
     st2 === "pending" || (st2 === "failed" && wasPrematureDarajaVerifyRefFailure(meta2));
   if (!canFinalize) {
+    if (st2 === "success") {
+      schedulePaymentEmailsAfterResponse(supabase, String((tx2 as { id: string }).id), "[Daraja verify-ref]");
+    }
     return NextResponse.json({ ok: true, status: st2, completed: st2 === "success" });
   }
 

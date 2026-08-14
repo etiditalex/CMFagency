@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 
 import { normalizeKenyaCurrencyForPayments } from "@/lib/lipa-pole-pole";
@@ -131,6 +132,8 @@ export async function getCampaignPageData(rawSlug: string): Promise<CampaignPage
       },
     };
   }
+
+  noStore();
 
   let contestantsResult: { data: unknown; error: { message?: string } | null };
   let vote_counts: Record<string, number>;

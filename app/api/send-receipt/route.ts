@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendReceiptEmail } from "@/lib/send-receipt-email";
-import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
+import { deliverPaymentEmailsOnce } from "@/lib/deliver-payment-emails";
 
 /**
- * Sends the receipt email to the customer (voter/ticket buyer) with
- * vote/ticket number, holder name, and amount. Uses Resend SDK + React template.
- * Called when customer lands on success page - ensures they get the receipt
- * even if webhook Resend isn't configured in Supabase.
+ * Sends the receipt email to the customer (voter/ticket buyer).
+ * Idempotent: webhooks also send; this is the instant fallback when the buyer
+ * lands on the success page. Duplicate calls are skipped.
  */
 export async function POST(req: Request) {
   const url = new URL(req.url);
@@ -22,87 +20,24 @@ export async function POST(req: Request) {
 
   const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
-  const { data: tx, error } = await supabase
-    .from("transactions")
-    .select("id,reference,email,payer_name,amount,currency,quantity,campaign_type,metadata,provider,contestant_id")
-    .eq("reference", ref)
-    .eq("status", "success")
-    .maybeSingle();
-
-  if (error || !tx) return NextResponse.json({ error: "Not found or not successful" }, { status: 404 });
-
-  const toEmail = (tx as { email?: string }).email?.trim?.();
-  if (!toEmail) return NextResponse.json({ error: "No email" }, { status: 400 });
-
-  const meta = (typeof (tx as { metadata?: unknown }).metadata === "object" && (tx as { metadata?: Record<string, unknown> }).metadata) || {};
-  const provider = (tx as { provider?: string }).provider ?? "paystack";
-  const isMpesa = provider === "daraja";
-  const mpesaReceipt = (meta.mpesa_receipt as string)?.trim() || undefined;
-
-  const holderName = (tx as { payer_name?: string }).payer_name?.trim?.() || toEmail;
-  const ticketSuffix = ref.replace(/^cmf_/, "").slice(-8).toUpperCase();
-  const slug = (meta.slug as string) || "event";
-  const prefix = String(slug).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  const typeCode = (tx as { campaign_type?: string }).campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
-  const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
-  const campaignTitle = (meta.campaign_title as string) || slug;
-  const typeLabel = ((tx as { campaign_type?: string }).campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as "Ticket" | "Vote" | "Order";
-  const quantityLabel = (tx as { campaign_type?: string }).campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
-  const currency = String((tx as { currency?: string }).currency || "KES").toUpperCase();
-  const amount = Number((tx as { amount?: number }).amount || 0);
-  const quantity = (tx as { quantity?: number }).quantity ?? 0;
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
-  const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(ref)}` : undefined;
-  const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(ref)}`;
-  const rsvpUrl = `${baseUrl}/invite?ref=${encodeURIComponent(ref)}`;
-
-  let eventLocation: string | undefined;
-  let eventDate: string | undefined;
-  let eventTime: string | undefined;
-  if (slug && slug !== "event") {
-    const { data: eventRow } = await supabase
-      .from("fusion_events")
-      .select("location, venue, event_date, time")
-      .eq("ticket_campaign_slug", slug)
-      .maybeSingle();
-    if (eventRow) {
-      const loc = (eventRow as { location?: string | null }).location;
-      const venue = (eventRow as { venue?: string | null }).venue;
-      eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
-      const ed = (eventRow as { event_date?: string | null }).event_date;
-      if (ed) eventDate = new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-      eventTime = (eventRow as { time?: string | null }).time ?? undefined;
-    }
-  }
-
-  const votedForName =
-    (tx as { campaign_type?: string }).campaign_type === "vote"
-      ? await fetchContestantNameById(supabase, (tx as { contestant_id?: string | null }).contestant_id)
-      : undefined;
-
-  const result = await sendReceiptEmail({
-    to: toEmail,
-    campaignTitle,
-    campaignSlug: slug !== "event" ? slug : undefined,
-    typeLabel,
-    ticketNumber,
-    holderName,
-    amount: `${currency} ${amount.toLocaleString()}`,
-    quantity: `${quantity} ${quantityLabel}`,
+  const result = await deliverPaymentEmailsOnce(supabase, {
     reference: ref,
-    variant: isMpesa ? "mpesa" : "paystack",
-    mpesaReceipt: isMpesa ? mpesaReceipt : undefined,
-    votedForName,
-    viewTicketsUrl,
-    downloadReceiptUrl,
-    eventLocation,
-    eventDate,
-    eventTime,
-    rsvpUrl: typeLabel === "Ticket" ? rsvpUrl : undefined,
+    logPrefix: "[send-receipt]",
   });
 
+  if (result.skipped && result.ok) {
+    return NextResponse.json({ sent: true, skipped: true });
+  }
+  if (result.skipped && result.error === "No email") {
+    return NextResponse.json({ error: "No email" }, { status: 400 });
+  }
   if (!result.ok) {
-    return NextResponse.json({ error: result.error ?? "Email not configured" }, { status: result.error?.includes("not configured") ? 503 : 502 });
+    const notFound = result.error === "Not found" || result.error === "Not successful";
+    if (notFound) return NextResponse.json({ error: "Not found or not successful" }, { status: 404 });
+    return NextResponse.json(
+      { error: result.error ?? "Email not configured" },
+      { status: result.error?.includes("not configured") ? 503 : 502 }
+    );
   }
 
   return NextResponse.json({ sent: true });
