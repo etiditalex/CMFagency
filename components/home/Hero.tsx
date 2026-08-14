@@ -54,10 +54,10 @@ export default function Hero() {
 
   return (
     <section
-      className="relative flex min-h-[100svh] items-center justify-center overflow-hidden pt-28 sm:pt-32 md:pt-36"
+      className="relative flex min-h-[70svh] items-center justify-center overflow-hidden pt-28 sm:pt-32 md:pt-36"
       aria-labelledby="home-hero-heading"
     >
-      <div className="relative min-h-[100svh] w-full">
+      <div className="relative min-h-[70svh] w-full">
         <AnimatePresence initial={false} mode="sync">
           <motion.div
             key={currentIndex}
@@ -84,7 +84,7 @@ export default function Hero() {
           </motion.div>
         </AnimatePresence>
 
-        <div className="relative z-10 flex h-full min-h-[100svh] items-center py-10 sm:py-12">
+        <div className="relative z-10 flex h-full min-h-[70svh] items-center py-10 sm:py-12">
           <div className="container-custom w-full">
             <div className="max-w-3xl min-w-0">
               <motion.h1
@@ -110,20 +110,20 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.4 }}
-                className="flex flex-col gap-3 min-[400px]:flex-row sm:gap-4"
+                className="flex w-full flex-row gap-3 sm:w-auto sm:gap-4"
               >
                 <Link
                   href="/events"
-                  className="group inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-white px-4 py-3 text-sm font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
+                  className="group inline-flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white px-2 py-3 text-center text-xs font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:w-auto sm:flex-none sm:gap-2 sm:px-8 sm:py-3.5 sm:text-base sm:whitespace-nowrap"
                 >
-                  <Calendar className="h-5 w-5 shrink-0 text-primary-600" aria-hidden />
+                  <Calendar className="h-4 w-4 shrink-0 text-primary-600 sm:h-5 sm:w-5" aria-hidden />
                   <span>Planning an event?</span>
                 </Link>
                 <Link
                   href="/contact"
-                  className="group inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-white/45 bg-white/10 px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:flex-none sm:px-8 sm:py-3.5 sm:text-base"
+                  className="group inline-flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/45 bg-white/10 px-2 py-3 text-center text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:w-auto sm:flex-none sm:gap-2 sm:px-8 sm:py-3.5 sm:text-base sm:whitespace-nowrap"
                 >
-                  <Handshake className="h-5 w-5 shrink-0 text-white" aria-hidden />
+                  <Handshake className="h-4 w-4 shrink-0 text-white sm:h-5 sm:w-5" aria-hidden />
                   <span>Partner with Us</span>
                 </Link>
               </motion.div>

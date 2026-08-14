@@ -54,9 +54,7 @@ type FormDetails = {
   firstName: string;
   lastName: string;
   email: string;
-  repeatEmail: string;
   phone: string;
-  address: string;
 };
 
 export type CmfAwardsTicketModalProps = {
@@ -107,9 +105,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
     firstName: "",
     lastName: "",
     email: "",
-    repeatEmail: "",
     phone: "",
-    address: "",
   });
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "mpesa">("mpesa");
   const [error, setError] = useState<string | null>(null);
@@ -168,23 +164,22 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
     return p;
   })();
   const phoneValid = /^254[17]\d{8}$/.test(phoneNorm);
+  const emailValue = details.email.trim();
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
   const canProceedFromStep2 = useMemo(() => {
     if (!details.firstName.trim() || !details.lastName.trim()) return false;
-    if (!details.email.trim()) return false;
-    if (details.email !== details.repeatEmail) return false;
-    const e = details.email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
     if (paymentMethod === "mpesa" && showMpesaOption) {
+      if (emailValue && !emailValid) return false;
       return phoneValid;
     }
-    return true;
-  }, [details, paymentMethod, showMpesaOption, phoneValid]);
+    return emailValid;
+  }, [details, paymentMethod, showMpesaOption, phoneValid, emailValue, emailValid]);
   const canPay =
     isSingleTier &&
     totalTickets > 0 &&
     (paymentMethod === "mpesa"
-      ? showMpesaOption && phoneValid && details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim())
-      : details.email.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(details.email.trim()));
+      ? showMpesaOption && phoneValid && (!emailValue || emailValid)
+      : emailValid);
 
   const reset = useCallback(() => {
     setStep(1);
@@ -194,9 +189,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
       firstName: "",
       lastName: "",
       email: "",
-      repeatEmail: "",
       phone: "",
-      address: "",
     });
     setPaymentMethod("mpesa");
     setError(null);
@@ -270,7 +263,7 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
       return;
     }
     if (step === 2 && !canProceedFromStep2) {
-      setError("Please fill in all required fields and ensure emails match.");
+      setError("Please fill in all required fields.");
       return;
     }
     if (step < 4) setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
@@ -670,35 +663,15 @@ export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, 
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Your email address {paymentMethod === "mpesa" ? "(optional, for receipt)" : ""}
+                          Your email address {paymentMethod === "mpesa" ? "(recommended, for receipt)" : ""}
                         </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="email"
-                            placeholder="Email address"
-                            value={details.email}
-                            onChange={(e) => setDetails((d) => ({ ...d, email: e.target.value }))}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            required={paymentMethod !== "mpesa"}
-                          />
-                          <input
-                            type="email"
-                            placeholder="Repeat email address"
-                            value={details.repeatEmail}
-                            onChange={(e) => setDetails((d) => ({ ...d, repeatEmail: e.target.value }))}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                            required={paymentMethod !== "mpesa"}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Your address</label>
                         <input
-                          type="text"
-                          placeholder="Address"
-                          value={details.address}
-                          onChange={(e) => setDetails((d) => ({ ...d, address: e.target.value }))}
+                          type="email"
+                          placeholder="Email address"
+                          value={details.email}
+                          onChange={(e) => setDetails((d) => ({ ...d, email: e.target.value }))}
                           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          required={paymentMethod !== "mpesa"}
                         />
                       </div>
                     </div>
