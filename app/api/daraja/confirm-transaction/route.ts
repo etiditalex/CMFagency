@@ -6,8 +6,11 @@ import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment
 /**
  * POST: Admin-only. Mark a pending or failed M-Pesa transaction as success and
  * fulfill (tickets/votes + receipt email).
- * Use when the Daraja callback did not run, or the customer paid via paybill
- * after STK timed out.
+ *
+ * Paybill (manual Lipa na M-Pesa after STK failed) is never auto-verified.
+ * Only this admin action may mark those rows paid.
+ * Pending STK Push still confirms automatically via Safaricom callback / STK query.
+ *
  * Body: { reference: "cmf_xxx" }
  */
 export async function POST(req: NextRequest) {

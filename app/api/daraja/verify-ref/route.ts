@@ -4,10 +4,7 @@ import {
   finalizeDarajaStkFromMetadataItems,
   type CallbackMetadataItem,
 } from "@/lib/daraja-finalize-stk-from-items";
-import {
-  isStkQueryStillPending,
-  wasPrematureDarajaVerifyRefFailure,
-} from "@/lib/daraja-stk-result";
+import { canAutoReconcileDarajaStkQuery, isStkQueryStillPending } from "@/lib/daraja-stk-result";
 import { fetchDarajaAccessToken } from "@/lib/daraja-oauth";
 import {
   buildDarajaStkPassword,
@@ -82,8 +79,7 @@ export async function POST(req: Request) {
     (typeof (tx as { metadata?: unknown }).metadata === "object" &&
       (tx as { metadata?: Record<string, unknown> }).metadata) ||
     {};
-  const canReconcile =
-    status === "pending" || (status === "failed" && wasPrematureDarajaVerifyRefFailure(meta));
+  const canReconcile = canAutoReconcileDarajaStkQuery(status);
   if (!canReconcile) {
     if (status === "success") {
       schedulePaymentEmailsAfterResponse(supabase, String((tx as { id: string }).id), "[Daraja verify-ref]");
@@ -222,14 +218,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Transaction disappeared" }, { status: 500 });
   }
   const st2 = String((tx2 as { status?: string }).status ?? "pending");
-  const meta2 =
-    typeof (tx2 as { metadata?: unknown }).metadata === "object" &&
-    (tx2 as { metadata?: unknown }).metadata !== null &&
-    !Array.isArray((tx2 as { metadata?: unknown }).metadata)
-      ? ((tx2 as { metadata: Record<string, unknown> }).metadata as Record<string, unknown>)
-      : {};
-  const canFinalize =
-    st2 === "pending" || (st2 === "failed" && wasPrematureDarajaVerifyRefFailure(meta2));
+  const canFinalize = canAutoReconcileDarajaStkQuery(st2);
   if (!canFinalize) {
     if (st2 === "success") {
       schedulePaymentEmailsAfterResponse(supabase, String((tx2 as { id: string }).id), "[Daraja verify-ref]");

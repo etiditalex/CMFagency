@@ -1003,8 +1003,9 @@ export default function CampaignReportPage() {
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
             <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
-              Latest transactions in the selected range. Pending M-Pesa payments may take a few minutes to confirm; admins can{" "}
-              <span className="font-semibold">Confirm payment</span> if the customer has paid (including via paybill after STK failed) but the ticket was not issued.
+              Latest transactions in the selected range. STK Push confirms automatically. If the customer paid via{" "}
+              <span className="font-semibold">paybill</span> after STK failed, an admin must{" "}
+              <span className="font-semibold">Confirm paybill</span> — that is never applied automatically.
               {!isAdmin && (
                 <>
                   {" "}
@@ -1106,7 +1107,7 @@ export default function CampaignReportPage() {
                                 }}
                                 className="text-xs font-semibold text-primary-600 hover:text-primary-700 hover:underline disabled:opacity-50"
                               >
-                                {isConfirming ? "Confirming…" : "Confirm payment"}
+                                {isConfirming ? "Confirming…" : status === "failed" ? "Confirm paybill" : "Confirm payment"}
                               </button>
                             ) : null}
                           </td>

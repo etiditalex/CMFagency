@@ -22,6 +22,7 @@ type DarajaCallbackBody = { Body?: { stkCallback?: StkCallback } };
  *
  * ResultCode 0 (or MpesaReceiptNumber in metadata) = success.
  * On success: update transaction, fulfill tickets/votes, send receipt.
+ * Manual paybill payments are not confirmed here — only admin Confirm paybill.
  */
 export async function POST(req: Request) {
   try {

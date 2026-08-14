@@ -11,10 +11,7 @@ import {
   parseMpesaBusinessShortCode,
 } from "@/lib/daraja-stk-config";
 import { parseDarajaStkQueryResponse } from "@/lib/daraja-stk-query-parse";
-import {
-  isStkQueryStillPending,
-  wasPrematureDarajaVerifyRefFailure,
-} from "@/lib/daraja-stk-result";
+import { canAutoReconcileDarajaStkQuery, isStkQueryStillPending } from "@/lib/daraja-stk-result";
 import { notifyCampaignOwnerPaymentIncomplete } from "@/lib/notify-campaign-owner-payment-incomplete";
 import { sendPurchaseReminderByRef } from "@/lib/send-purchase-reminder";
 
@@ -127,8 +124,7 @@ export async function reconcileDarajaPendingTransaction(
 
   const status = String(tx.status ?? "pending");
   const meta = txMeta(tx);
-  const canReconcile =
-    status === "pending" || (status === "failed" && wasPrematureDarajaVerifyRefFailure(meta));
+  const canReconcile = canAutoReconcileDarajaStkQuery(status);
   if (!canReconcile) {
     return { result: "skipped", reason: `already ${status}` };
   }
@@ -273,9 +269,7 @@ export async function reconcileDarajaPendingTransaction(
   if (!tx2) return { result: "error", message: "Transaction disappeared" };
 
   const st2 = String((tx2 as DarajaTxRow).status ?? "pending");
-  const meta2 = txMeta(tx2 as DarajaTxRow);
-  const canFinalize =
-    st2 === "pending" || (st2 === "failed" && wasPrematureDarajaVerifyRefFailure(meta2));
+  const canFinalize = canAutoReconcileDarajaStkQuery(st2);
   if (!canFinalize) {
     return st2 === "success" ? { result: "success" } : { result: "skipped", reason: `now ${st2}` };
   }

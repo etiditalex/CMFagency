@@ -34,9 +34,14 @@ export function isStkQueryStillPending(
   return desc.includes("still under processing") || desc.includes("being processed");
 }
 
-/** Row was marked failed by verify-ref before M-Pesa finished settling. */
-export function wasPrematureDarajaVerifyRefFailure(meta: Record<string, unknown>): boolean {
-  return meta.reconciled_via === "daraja_verify_ref_stk_query";
+/**
+ * STK Query / verify-ref may only auto-finalize **pending** STK Push rows.
+ * Failed rows (timeout, cancelled, no PIN) are never auto-marked paid — the
+ * customer may have paid separately via paybill, which only an admin can confirm.
+ * A late Safaricom STK **callback** with a receipt can still succeed a failed row.
+ */
+export function canAutoReconcileDarajaStkQuery(status: string): boolean {
+  return String(status ?? "").toLowerCase() === "pending";
 }
 
 /** Minimum age before client-side Daraja verify-ref runs (avoids false failures). */
