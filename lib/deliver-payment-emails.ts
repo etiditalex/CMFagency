@@ -311,8 +311,7 @@ export function schedulePaymentEmailsAfterResponse(
   transactionId: string,
   logPrefix?: string
 ): void {
-  runAfterResponse(
-    () => deliverPaymentEmailsOnce(supabase, { transactionId, logPrefix }),
-    logPrefix ?? "[payment-email]"
-  );
+  runAfterResponse(async () => {
+    await deliverPaymentEmailsOnce(supabase, { transactionId, logPrefix });
+  }, logPrefix ?? "[payment-email]");
 }
