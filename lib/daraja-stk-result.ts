@@ -40,4 +40,4 @@ export function wasPrematureDarajaVerifyRefFailure(meta: Record<string, unknown>
 }
 
 /** Minimum age before client-side Daraja verify-ref runs (avoids false failures). */
-export const DARAJA_CLIENT_VERIFY_MIN_AGE_MS = 8_000;
+export const DARAJA_CLIENT_VERIFY_MIN_AGE_MS = 20_000;

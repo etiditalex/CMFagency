@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { deliverPaymentEmailsOnce } from "@/lib/deliver-payment-emails";
+import { upsertVoteOrTicketForSuccessfulTx } from "@/lib/vote-ticket-fulfillment";
 
 /**
- * POST: Admin-only. Mark a pending M-Pesa transaction as success and fulfill (tickets/votes + receipt email).
- * Use when the Daraja callback did not run (e.g. URL unreachable) but the customer has paid.
+ * POST: Admin-only. Mark a pending or failed M-Pesa transaction as success and
+ * fulfill (tickets/votes + receipt email).
+ * Use when the Daraja callback did not run, or the customer paid via paybill
+ * after STK timed out.
  * Body: { reference: "cmf_xxx" }
  */
 export async function POST(req: NextRequest) {
@@ -48,65 +51,95 @@ export async function POST(req: NextRequest) {
 
     const { data: tx, error: txErr } = await admin
       .from("transactions")
-      .select("id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id")
+      .select(
+        "id,campaign_id,campaign_type,contestant_id,quantity,amount,currency,reference,status,fulfilled_at,metadata,email,payer_name,coupon_id,provider"
+      )
       .eq("reference", reference)
       .single();
 
     if (txErr || !tx) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
-    if (tx.status !== "pending") {
-      return NextResponse.json({ error: "Transaction is not pending", status: tx.status }, { status: 400 });
+
+    const status = String(tx.status ?? "");
+    const meta =
+      typeof tx.metadata === "object" && tx.metadata !== null && !Array.isArray(tx.metadata)
+        ? { ...(tx.metadata as Record<string, unknown>) }
+        : {};
+    const provider = String((tx as { provider?: string | null }).provider ?? "").toLowerCase();
+    const isDaraja = provider === "daraja" || Boolean(String(meta.checkout_request_id ?? "").trim());
+
+    if (status === "success") {
+      if (!tx.fulfilled_at) {
+        const { fulfillErr } = await upsertVoteOrTicketForSuccessfulTx(
+          admin,
+          {
+            id: String(tx.id),
+            campaign_id: String(tx.campaign_id),
+            campaign_type: String(tx.campaign_type ?? ""),
+            contestant_id: (tx.contestant_id as string | null) ?? null,
+            quantity: Number(tx.quantity ?? 0),
+          },
+          "[daraja/confirm-transaction]"
+        );
+        if (!fulfillErr) {
+          await admin
+            .from("transactions")
+            .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+            .eq("id", tx.id)
+            .is("fulfilled_at", null);
+        }
+      }
+      await deliverPaymentEmailsOnce(admin, {
+        transactionId: String(tx.id),
+        logPrefix: "[daraja/confirm-transaction]",
+      });
+      return NextResponse.json({ ok: true, message: "Transaction already successful; ticket/receipt sent." });
     }
-    if (String((tx as { provider?: string }).provider ?? "") !== "daraja") {
+
+    if (status !== "pending" && status !== "failed") {
+      return NextResponse.json({ error: "Transaction cannot be confirmed", status }, { status: 400 });
+    }
+    if (!isDaraja) {
       return NextResponse.json({ error: "Only M-Pesa (daraja) transactions can be confirmed here" }, { status: 400 });
     }
 
-    const meta = typeof tx.metadata === "object" && tx.metadata ? (tx.metadata as Record<string, unknown>) : {};
+    const paidAt = new Date().toISOString();
+    delete meta.daraja_result_code;
+    delete meta.daraja_result_desc;
+    delete meta.daraja_error;
+    meta.reconciled_via = "admin_confirm_transaction";
+    meta.reconciled_note = "Admin confirmed after STK callback miss or paybill payment.";
 
     await admin
       .from("transactions")
       .update({
         status: "success",
-        verified_at: new Date().toISOString(),
-        paid_at: new Date().toISOString(),
+        verified_at: paidAt,
+        paid_at: paidAt,
+        metadata: meta,
       } as Record<string, unknown>)
       .eq("id", tx.id);
 
     let fulfillmentError: string | null = null;
     if (!tx.fulfilled_at) {
-      let fulfillErr: string | null = null;
-      if (tx.campaign_type === "vote") {
-        if (!tx.contestant_id) {
-          fulfillErr = "vote_missing_contestant_id";
-        } else {
-          const { error: voteErr } = await admin.from("votes").upsert(
-            {
-              transaction_id: tx.id,
-              campaign_id: tx.campaign_id,
-              contestant_id: tx.contestant_id,
-              votes: tx.quantity,
-            },
-            { onConflict: "transaction_id" }
-          );
-          if (voteErr) fulfillErr = voteErr.message;
-        }
-      } else {
-        const { error: ticketErr } = await admin.from("ticket_issues").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            quantity: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
-        if (ticketErr) fulfillErr = ticketErr.message;
-      }
+      const { fulfillErr } = await upsertVoteOrTicketForSuccessfulTx(
+        admin,
+        {
+          id: String(tx.id),
+          campaign_id: String(tx.campaign_id),
+          campaign_type: String(tx.campaign_type ?? ""),
+          contestant_id: (tx.contestant_id as string | null) ?? null,
+          quantity: Number(tx.quantity ?? 0),
+        },
+        "[daraja/confirm-transaction]"
+      );
+      fulfillmentError = fulfillErr;
 
       if (!fulfillErr) {
         await admin
           .from("transactions")
-          .update({ fulfilled_at: new Date().toISOString() } as Record<string, unknown>)
+          .update({ fulfilled_at: paidAt } as Record<string, unknown>)
           .eq("id", tx.id)
           .is("fulfilled_at", null);
 
@@ -128,38 +161,6 @@ export async function POST(req: NextRequest) {
             },
           } as Record<string, unknown>)
           .eq("id", tx.id);
-      }
-      fulfillmentError = fulfillErr;
-    } else if (
-      !(meta as { merchandise_cart?: boolean }).merchandise_cart &&
-      tx.campaign_type === "vote" &&
-      tx.contestant_id
-    ) {
-      const { data: vRow } = await admin.from("votes").select("id").eq("transaction_id", tx.id).maybeSingle();
-      if (!vRow) {
-        const { error: repairErr } = await admin.from("votes").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            contestant_id: tx.contestant_id,
-            votes: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
-        if (repairErr) fulfillmentError = repairErr.message;
-      }
-    } else if (!(meta as { merchandise_cart?: boolean }).merchandise_cart && tx.campaign_type === "ticket") {
-      const { data: tRow } = await admin.from("ticket_issues").select("id").eq("transaction_id", tx.id).maybeSingle();
-      if (!tRow) {
-        const { error: repairErr } = await admin.from("ticket_issues").upsert(
-          {
-            transaction_id: tx.id,
-            campaign_id: tx.campaign_id,
-            quantity: tx.quantity,
-          },
-          { onConflict: "transaction_id" }
-        );
-        if (repairErr) fulfillmentError = repairErr.message;
       }
     }
 

@@ -56,6 +56,7 @@ type TxRow = {
   currency: string;
   quantity: number;
   created_at: string;
+  fulfilled_at?: string | null;
 };
 
 type VoteRow = {
@@ -393,7 +394,7 @@ export default function CampaignReportPage() {
       const buildRecentTxQuery = () => {
         let txQuery = supabase
           .from("transactions")
-          .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name")
+          .select("id,reference,status,provider,amount,currency,quantity,created_at,email,payer_name,fulfilled_at")
           .eq("campaign_id", campaignId);
         if (rangeBounds.start) txQuery = txQuery.gte("created_at", rangeBounds.start);
         if (rangeBounds.end) txQuery = txQuery.lte("created_at", rangeBounds.end);
@@ -1003,7 +1004,7 @@ export default function CampaignReportPage() {
             <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
               Latest transactions in the selected range. Pending M-Pesa payments may take a few minutes to confirm; admins can{" "}
-              <span className="font-semibold">Confirm payment</span> if the customer has paid but the callback did not run.
+              <span className="font-semibold">Confirm payment</span> if the customer has paid (including via paybill after STK failed) but the ticket was not issued.
               {!isAdmin && (
                 <>
                   {" "}
@@ -1049,7 +1050,10 @@ export default function CampaignReportPage() {
                         ? String(t.email)
                         : "—";
 
-                    const canConfirm = isFullAdmin && status === "pending" && String(t.provider ?? "") === "daraja";
+                    const canConfirm =
+                      isFullAdmin &&
+                      String(t.provider ?? "") === "daraja" &&
+                      (status === "pending" || (status === "failed" && !t.fulfilled_at));
                     const isConfirming = confirmingRef === t.reference;
 
                     return (
