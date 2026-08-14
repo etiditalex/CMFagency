@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { CMFA_EVENT_SLUG } from "@/lib/cmfa-registration";
+import { CMFA_EVENT_SLUG, isCmfaComplimentaryTicketTier } from "@/lib/cmfa-registration";
 import { requireGateAccess } from "@/lib/require-gate-access";
 import { sendEventInviteEmail } from "@/lib/send-event-invite-email";
 
 export const runtime = "nodejs";
+
+const REGISTRATION_SELECT =
+  "id, reference, event_slug, name, email, phone, designation, status, is_guest, parent_registration_id, checked_in_at, approved_at, rejection_reason, created_at, ticket_tier";
+const REGISTRATION_SELECT_LEGACY =
+  "id, reference, event_slug, name, email, phone, designation, status, is_guest, parent_registration_id, checked_in_at, approved_at, rejection_reason, created_at";
 
 const ALLOWED_STATUSES = new Set(["pending", "approved", "rejected"]);
 
@@ -77,10 +82,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const body = (await req.json().catch(() => ({}))) as {
     status?: string;
     rejection_reason?: string;
+    ticket_tier?: string;
   };
 
   const nextStatus = String(body.status ?? "").trim();
   const rejectionReason = String(body.rejection_reason ?? "").trim() || null;
+  const requestedTier = String(body.ticket_tier ?? "").trim().toLowerCase();
 
   if (!ALLOWED_STATUSES.has(nextStatus)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
@@ -98,6 +105,17 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   const prevStatus = String((beforeRow as { status?: string }).status ?? "");
   const becameApproved = nextStatus === "approved" && prevStatus !== "approved";
 
+  let ticketTier: string | null = null;
+  if (becameApproved) {
+    if (!isCmfaComplimentaryTicketTier(requestedTier)) {
+      return NextResponse.json(
+        { error: "Choose Complimentary Regular, VIP, or VVIP before approving." },
+        { status: 400 }
+      );
+    }
+    ticketTier = requestedTier;
+  }
+
   const updatePayload: Record<string, unknown> = {
     status: nextStatus,
     updated_at: new Date().toISOString(),
@@ -107,6 +125,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     updatePayload.approved_at = new Date().toISOString();
     updatePayload.approved_by = userId;
     updatePayload.rejection_reason = null;
+    if (ticketTier) updatePayload.ticket_tier = ticketTier;
   } else if (nextStatus === "rejected") {
     updatePayload.rejection_reason = rejectionReason;
     updatePayload.approved_at = null;
@@ -118,14 +137,25 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     updatePayload.rejection_reason = null;
   }
 
-  const { data, error } = await admin
+  let { data, error } = await admin
     .from("cmfa_registrations")
     .update(updatePayload)
     .eq("id", id)
-    .select(
-      "id, reference, event_slug, name, email, phone, designation, status, is_guest, parent_registration_id, checked_in_at, approved_at, rejection_reason, created_at"
-    )
+    .select(REGISTRATION_SELECT)
     .maybeSingle();
+
+  if (error && /ticket_tier/i.test(error.message) && ticketTier) {
+    const withoutTier = { ...updatePayload };
+    delete withoutTier.ticket_tier;
+    const retry = await admin
+      .from("cmfa_registrations")
+      .update(withoutTier)
+      .eq("id", id)
+      .select(REGISTRATION_SELECT_LEGACY)
+      .maybeSingle();
+    data = retry.data ? { ...retry.data, ticket_tier: ticketTier } : retry.data;
+    error = retry.error;
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Registration not found." }, { status: 404 });
@@ -151,6 +181,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       calendarUrl: buildCalendarUrl(eventDetails.title, eventDetails.eventDate, eventDetails.location),
       mapUrl: eventDetails.mapUrl,
       designation: String((data as { designation?: string }).designation ?? ""),
+      ticketTier: ticketTier ?? undefined,
     });
 
     if (!emailResult.ok) {

@@ -38,3 +38,25 @@ export function cmfaStatusLabel(status: string): string {
 export function cmfaTicketId(reference: string): string {
   return `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
 }
+
+/** Complimentary ticket color chosen at gate approval. Does not change already-sent tickets. */
+export const CMFA_COMPLIMENTARY_TICKET_TIERS = [
+  { value: "regular", label: "Complimentary Regular", shortLabel: "Regular", color: "#059669" },
+  { value: "vip", label: "VIP", shortLabel: "VIP", color: "#2563eb" },
+  { value: "vvip", label: "VVIP", shortLabel: "VVIP", color: "#B8860B" },
+] as const;
+
+export type CmfaComplimentaryTicketTier = (typeof CMFA_COMPLIMENTARY_TICKET_TIERS)[number]["value"];
+
+export function isCmfaComplimentaryTicketTier(value: string): value is CmfaComplimentaryTicketTier {
+  return CMFA_COMPLIMENTARY_TICKET_TIERS.some((t) => t.value === value);
+}
+
+export function cmfaComplimentaryTicketTierLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  return CMFA_COMPLIMENTARY_TICKET_TIERS.find((t) => t.value === value)?.label ?? value;
+}
+
+export function defaultCmfaTicketTier(designation: string): CmfaComplimentaryTicketTier {
+  return designation.trim().toLowerCase() === "guest" ? "vip" : "regular";
+}

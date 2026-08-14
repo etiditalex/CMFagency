@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   CMFA_EVENT_SLUG,
+  cmfaComplimentaryTicketTierLabel,
   cmfaDesignationLabel,
   cmfaTicketId,
 } from "@/lib/cmfa-registration";
@@ -30,21 +31,29 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get("status")?.trim() || "approved";
   const eventSlug = url.searchParams.get("event_slug")?.trim() || CMFA_EVENT_SLUG;
 
-  let query = admin
-    .from("cmfa_registrations")
-    .select(
-      "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at"
-    )
-    .eq("event_slug", eventSlug)
-    .order("approved_at", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false })
-    .limit(10000);
+  const SELECT_WITH_TIER =
+    "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at, ticket_tier";
+  const SELECT_LEGACY =
+    "reference, name, email, phone, designation, status, is_guest, approved_at, checked_in_at, created_at";
 
-  if (status !== "all") {
-    query = query.eq("status", status);
+  const run = (columns: string) => {
+    let query = admin
+      .from("cmfa_registrations")
+      .select(columns)
+      .eq("event_slug", eventSlug)
+      .order("approved_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(10000);
+    if (status !== "all") query = query.eq("status", status);
+    return query;
+  };
+
+  let { data, error } = await run(SELECT_WITH_TIER);
+  if (error && /ticket_tier/i.test(error.message)) {
+    const retry = await run(SELECT_LEGACY);
+    data = retry.data;
+    error = retry.error;
   }
-
-  const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   type Row = {
@@ -58,6 +67,7 @@ export async function GET(req: NextRequest) {
     approved_at: string | null;
     checked_in_at: string | null;
     created_at: string;
+    ticket_tier?: string | null;
   };
 
   const rows = (data ?? []) as Row[];
@@ -67,6 +77,7 @@ export async function GET(req: NextRequest) {
     "Approved",
     "Gate check-in",
     "Ticket ID",
+    "Ticket type",
     "Name",
     "Email",
     "Phone",
@@ -84,6 +95,7 @@ export async function GET(req: NextRequest) {
         escapeCsv(fmt(r.approved_at)),
         escapeCsv(fmt(r.checked_in_at)),
         escapeCsv(cmfaTicketId(r.reference)),
+        escapeCsv(cmfaComplimentaryTicketTierLabel(r.ticket_tier)),
         escapeCsv(r.name),
         escapeCsv(r.email),
         escapeCsv(r.phone ?? ""),

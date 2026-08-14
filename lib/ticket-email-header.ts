@@ -25,7 +25,14 @@ export function resolveTicketEmailTier(input: {
   campaignTitle?: string;
   /** CMFA registration role; "guest" uses VIP blue instead of complimentary red. */
   designation?: string;
+  /** Explicit complimentary ticket color from gate approval. */
+  ticketTier?: string;
 }): TicketEmailTier {
+  const override = (input.ticketTier ?? "").trim().toLowerCase();
+  if (override === "regular" || override === "vip" || override === "vvip" || override === "complimentary") {
+    return override;
+  }
+
   const designation = (input.designation ?? "").trim().toLowerCase();
   if (designation === "guest") return "vip";
 

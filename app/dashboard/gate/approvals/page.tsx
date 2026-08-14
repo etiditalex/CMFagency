@@ -11,10 +11,19 @@ import {
   Loader2,
   RefreshCw,
   Trash2,
+  X,
   XCircle,
 } from "lucide-react";
 
-import { cmfaDesignationLabel, cmfaStatusLabel, cmfaTicketId } from "@/lib/cmfa-registration";
+import {
+  CMFA_COMPLIMENTARY_TICKET_TIERS,
+  cmfaComplimentaryTicketTierLabel,
+  cmfaDesignationLabel,
+  cmfaStatusLabel,
+  cmfaTicketId,
+  defaultCmfaTicketTier,
+  type CmfaComplimentaryTicketTier,
+} from "@/lib/cmfa-registration";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
@@ -34,6 +43,7 @@ type RegistrationRow = {
   approved_at: string | null;
   rejection_reason: string | null;
   created_at: string;
+  ticket_tier?: string | null;
 };
 
 type StatusFilter = "pending" | "approved" | "rejected" | "all";
@@ -62,6 +72,8 @@ export default function GateCmfaApprovalsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [approveRow, setApproveRow] = useState<RegistrationRow | null>(null);
+  const [approveTier, setApproveTier] = useState<CmfaComplimentaryTicketTier>("regular");
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -101,7 +113,12 @@ export default function GateCmfaApprovalsPage() {
     loadRows();
   }, [authLoading, portalLoading, isAuthenticated, user, isPortalMember, hasFeature, loadRows]);
 
-  const patchStatus = async (id: string, status: "approved" | "rejected", row?: RegistrationRow) => {
+  const patchStatus = async (
+    id: string,
+    status: "approved" | "rejected",
+    row?: RegistrationRow,
+    ticketTier?: CmfaComplimentaryTicketTier
+  ) => {
     if (status === "rejected" && row?.status === "approved") {
       const ok = window.confirm(
         `Reject ${row.name}? Their complimentary ticket will no longer be valid at the gate.`
@@ -120,7 +137,10 @@ export default function GateCmfaApprovalsPage() {
       const res = await fetch(`/api/cmfa/registrations/${id}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status,
+          ...(status === "approved" && ticketTier ? { ticket_tier: ticketTier } : {}),
+        }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -145,15 +165,17 @@ export default function GateCmfaApprovalsPage() {
       }
 
       if (status === "approved") {
+        const tierLabel = ticketTier ? cmfaComplimentaryTicketTierLabel(ticketTier) : "complimentary";
         if (json.email_sent) {
-          setNotice(`Approved — complimentary ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
+          setNotice(`Approved — ${tierLabel} ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
         } else if (json.email_error) {
           setNotice(`Approved, but email could not be sent: ${json.email_error}.`);
         } else if (!res.ok) {
           setNotice(json.error ?? "Approved with warnings.");
         } else {
-          setNotice(`Approved — complimentary ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
+          setNotice(`Approved — ${tierLabel} ticket emailed to ${updatedRow?.email ?? "registrant"}.`);
         }
+        setApproveRow(null);
       } else {
         setNotice(
           row?.status === "approved"
@@ -253,8 +275,8 @@ export default function GateCmfaApprovalsPage() {
           </Link>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">CMFA Registration Approvals</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Review in-house CMFA registrations. Approve to email a complimentary QR ticket. You can reject
-            after approval or remove a registration entirely.
+            Review in-house CMFA registrations. Approve to choose Regular, VIP, or VVIP and email a complimentary QR
+            ticket. Already-approved tickets are not changed.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -362,14 +384,24 @@ export default function GateCmfaApprovalsPage() {
                         <div className="text-xs text-red-600 mt-1 max-w-[12rem]">{row.rejection_reason}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs">{cmfaTicketId(row.reference)}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-mono text-xs">{cmfaTicketId(row.reference)}</div>
+                      {row.ticket_tier ? (
+                        <div className="text-xs text-gray-600 mt-0.5">
+                          {cmfaComplimentaryTicketTierLabel(row.ticket_tier)}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="inline-flex flex-wrap justify-end gap-2">
                         {(row.status === "pending" || row.status === "rejected") && (
                           <button
                             type="button"
                             disabled={patchingId === row.id || deletingId === row.id}
-                            onClick={() => patchStatus(row.id, "approved", row)}
+                            onClick={() => {
+                              setApproveRow(row);
+                              setApproveTier(defaultCmfaTicketTier(row.designation));
+                            }}
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-semibold disabled:opacity-60"
                           >
                             {patchingId === row.id ? (
@@ -417,6 +449,95 @@ export default function GateCmfaApprovalsPage() {
           </div>
         )}
       </div>
+
+      {approveRow ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cmfa-approve-title"
+        >
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 id="cmfa-approve-title" className="text-lg font-extrabold text-gray-900">
+                  Approve complimentary ticket
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Choose the ticket to email <span className="font-semibold text-gray-900">{approveRow.name}</span>.
+                  This only applies to this new approval.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setApproveRow(null)}
+                disabled={patchingId === approveRow.id}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 disabled:opacity-60"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500 mb-1">
+              Ticket type
+            </label>
+            <select
+              value={approveTier}
+              onChange={(e) => setApproveTier(e.target.value as CmfaComplimentaryTicketTier)}
+              disabled={patchingId === approveRow.id}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm bg-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              {CMFA_COMPLIMENTARY_TICKET_TIERS.map((tier) => (
+                <option key={tier.value} value={tier.value}>
+                  {tier.label}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-gray-500">
+              Regular is green, VIP is blue, VVIP is gold. Already-sent tickets are not changed.
+            </p>
+
+            <div
+              className="mt-4 rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-semibold text-white"
+              style={{
+                background:
+                  approveTier === "regular"
+                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                    : approveTier === "vip"
+                      ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+                      : "linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)",
+              }}
+            >
+              {cmfaComplimentaryTicketTierLabel(approveTier)} ticket preview
+            </div>
+
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setApproveRow(null)}
+                disabled={patchingId === approveRow.id}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={patchingId === approveRow.id}
+                onClick={() => void patchStatus(approveRow.id, "approved", approveRow, approveTier)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-semibold disabled:opacity-60"
+              >
+                {patchingId === approveRow.id ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4" />
+                )}
+                Approve &amp; send ticket
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

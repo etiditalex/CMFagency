@@ -31,6 +31,8 @@ export type EventInviteEmailProps = {
   mapUrl?: string;
   /** CMFA designation; guests receive the VIP (blue) ticket color. */
   designation?: string;
+  /** Explicit complimentary ticket color from gate approval (regular / vip / vvip). */
+  ticketTier?: string;
 };
 
 function qrCodeUrl(data: string, size = 150): string {
@@ -49,20 +51,32 @@ export function EventInviteEmail({
   calendarUrl,
   mapUrl,
   designation,
+  ticketTier: ticketTierOverride,
 }: EventInviteEmailProps) {
   const ticketId = reference.startsWith("cmfa_reg_")
     ? `CMFA-${reference.replace(/^cmfa_reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`
     : `REG-${reference.replace(/^reg_/, "").replace(/-/g, "").slice(-10).toUpperCase()}`;
   const qrData = reference;
-  const ticketTier = resolveTicketEmailTier({ reference, campaignTitle: eventTitle, designation });
-  const isVip = ticketTier === "vip";
+  const ticketTier = resolveTicketEmailTier({
+    reference,
+    campaignTitle: eventTitle,
+    designation,
+    ticketTier: ticketTierOverride,
+  });
   const headerStyle = ticketEmailHeaderStyle(ticketTier);
   const accentColor = ticketEmailAccentColor(ticketTier);
   const locationBg =
     ticketTier === "vip" ? "#eff6ff" : ticketTier === "complimentary" ? "#fef2f2" : ticketTier === "vvip" ? "#fffbeb" : "#ecfdf5";
   const locationStyle = { ...locationHighlight, backgroundColor: locationBg, borderLeftColor: accentColor };
   const linkStyle = { color: accentColor, textDecoration: "none" as const };
-  const headerCaption = isVip ? "VIP guest ticket" : "You're invited";
+  const headerCaption =
+    ticketTier === "regular"
+      ? "Complimentary Regular ticket"
+      : ticketTier === "vip"
+        ? "VIP ticket"
+        : ticketTier === "vvip"
+          ? "VVIP ticket"
+          : "You're invited";
 
   return (
     <Html>
