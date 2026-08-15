@@ -9,13 +9,30 @@ export const VOTING_RESULTS_XLSX_MIME =
 
 export type VotingResultsExcelKind = "all" | "winners" | "contestants";
 
-function winnerRows(snapshot: VotingResultsSnapshot) {
-  return snapshot.categories.flatMap((cat) => {
+type WinnerExcelRow = {
+  Category: string;
+  Rank: number | string;
+  Winner: string;
+  Votes: number | string;
+  Result: string;
+};
+
+type ContestantExcelRow = {
+  Category: string;
+  Rank: number | string;
+  Contestant: string;
+  Votes: number | string;
+  Result: string;
+  Email: string;
+};
+
+function winnerRows(snapshot: VotingResultsSnapshot): WinnerExcelRow[] {
+  return snapshot.categories.flatMap((cat): WinnerExcelRow[] => {
     if (cat.winners.length === 0) {
       return [
         {
           Category: cat.title,
-          Rank: "" as const,
+          Rank: "",
           Winner: "No votes recorded",
           Votes: 0,
           Result: "Undeclared",
@@ -32,7 +49,7 @@ function winnerRows(snapshot: VotingResultsSnapshot) {
   });
 }
 
-function contestantRows(snapshot: VotingResultsSnapshot) {
+function contestantRows(snapshot: VotingResultsSnapshot): ContestantExcelRow[] {
   return snapshot.categories.flatMap((cat) =>
     cat.contestants.map((c) => ({
       Category: cat.title,
