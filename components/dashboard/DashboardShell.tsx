@@ -84,6 +84,12 @@ import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-acces
 
 type PortalTier = "basic" | "pro" | "enterprise";
 
+type NestedNavLink = {
+  label: string;
+  href: string;
+  adminOnly?: boolean;
+};
+
 type NavItem = {
   label: string;
   href: string;
@@ -109,6 +115,8 @@ type NavItem = {
   minTier?: PortalTier; // Fallback for clients if featureKey not used. Admins ignore both.
   /** Expandable links under Visitor Management (industry filters + admin tools). */
   children?: VisitorManagementNavChild[];
+  /** Simple expandable links under a parent item (e.g. Contestants). */
+  nestedLinks?: NestedNavLink[];
 };
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
@@ -149,7 +157,17 @@ const NAV: NavItem[] = [
   { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
   { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "main", featureKey: "voting" },
-  { label: "Contestants", href: "/dashboard/contestants", icon: UserPlus, section: "main", featureKey: "voting" },
+  {
+    label: "Contestants",
+    href: "/dashboard/contestants",
+    icon: UserPlus,
+    section: "main",
+    featureKey: "voting",
+    nestedLinks: [
+      { label: "All contestants", href: "/dashboard/contestants" },
+      { label: "Download results", href: "/dashboard/contestants/results", adminOnly: true },
+    ],
+  },
   { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "main", featureKey: "teams_work" },
   { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "main", featureKey: "kcm_membership" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
@@ -191,6 +209,15 @@ function isActivePath(pathname: string, currentType: string | null, href: string
 
 function isVisitorSection(pathname: string) {
   return pathname === VISITOR_MANAGEMENT_PATH || pathname.startsWith(`${VISITOR_MANAGEMENT_PATH}/`);
+}
+
+function isContestantsSection(pathname: string) {
+  return pathname === "/dashboard/contestants" || pathname.startsWith("/dashboard/contestants/");
+}
+
+function isNestedLinkActive(pathname: string, href: string) {
+  if (href === "/dashboard/contestants") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function isVisitorIndustryChildActive(
@@ -238,6 +265,8 @@ function DashboardNavItem({
   visitorIndustry,
   visitorNavOpen,
   setVisitorNavOpen,
+  nestedNavOpen,
+  setNestedNavOpen,
   showLabels,
   onNavigate,
   pendingApplicationsCount,
@@ -251,6 +280,8 @@ function DashboardNavItem({
   visitorIndustry: string | null;
   visitorNavOpen: boolean;
   setVisitorNavOpen: (open: boolean) => void;
+  nestedNavOpen: boolean;
+  setNestedNavOpen: (open: boolean) => void;
   showLabels: boolean;
   onNavigate?: () => void;
   pendingApplicationsCount: number;
@@ -259,6 +290,59 @@ function DashboardNavItem({
   adminOwnerId: string | null;
 }) {
   const Icon = item.icon;
+
+  if (item.nestedLinks?.length) {
+    const visibleLinks = item.nestedLinks.filter((link) => !link.adminOnly || isAdmin);
+    const extraLinks = visibleLinks.filter((link) => link.href !== item.href);
+    const parentActive = isContestantsSection(pathname);
+    const isOpen = showLabels && (nestedNavOpen || parentActive);
+
+    if (showLabels && extraLinks.length > 0) {
+      return (
+        <div className="space-y-0.5">
+          <button
+            type="button"
+            onClick={() => setNestedNavOpen(!nestedNavOpen)}
+            className={`group flex w-full items-center rounded-md transition-colors ${
+              parentActive
+                ? "bg-primary-600/20 border border-primary-500/30 text-white"
+                : "text-white/80 hover:bg-white/5 hover:text-white"
+            } gap-3 px-3 py-2.5`}
+          >
+            <Icon
+              className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+            />
+            <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
+            <ChevronDown
+              className={`w-4 h-4 flex-shrink-0 text-white/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {isOpen ? (
+            <div className="ml-3 space-y-0.5 border-l border-white/10 pl-2">
+              {visibleLinks.map((link) => {
+                const childActive = isNestedLinkActive(pathname, link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    prefetch={false}
+                    onClick={onNavigate}
+                    className={`block rounded-md py-2 px-3 text-sm font-medium transition-colors ${
+                      childActive
+                        ? "bg-primary-600/25 text-white border border-primary-500/20"
+                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+  }
 
   if (item.children?.length) {
     const parentActive = isVisitorSection(pathname);
@@ -548,10 +632,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   };
 
   const [visitorNavOpen, setVisitorNavOpen] = useState(() => isVisitorSection(pathname));
-
-  useEffect(() => {
-    if (isVisitorSection(pathname)) setVisitorNavOpen(true);
-  }, [pathname]);
+  const [contestantsNavOpen, setContestantsNavOpen] = useState(() => isContestantsSection(pathname));
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -754,6 +835,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                     visitorIndustry={visitorIndustry}
                     visitorNavOpen={visitorNavOpen}
                     setVisitorNavOpen={setVisitorNavOpen}
+                    nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
+                    setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
                     showLabels={showDesktopSidebarFull}
                     pendingApplicationsCount={pendingApplicationsCount}
                     pendingCmfaCount={pendingCmfaCount}
@@ -829,6 +912,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                         visitorIndustry={visitorIndustry}
                         visitorNavOpen={visitorNavOpen}
                         setVisitorNavOpen={setVisitorNavOpen}
+                        nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
+                        setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
                         showLabels
                         onNavigate={() => setMobileOpen(false)}
                         pendingApplicationsCount={pendingApplicationsCount}

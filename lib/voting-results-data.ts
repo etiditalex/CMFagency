@@ -10,6 +10,7 @@ export const VOTING_RESULTS_PATCH_FILE = "database/ticketing_voting_mvp_patch_90
 export type VotingResultsContestant = {
   id: string;
   name: string;
+  email?: string | null;
   image_url: string | null;
   votes: number;
   rank: number;
@@ -31,6 +32,12 @@ export type VotingResultsSnapshot = {
   categoryCount: number;
   totalVotes: number;
 };
+
+function isMissingContestantEmailColumn(err: { message?: string; code?: string } | null): boolean {
+  if (!err) return false;
+  const msg = String(err.message ?? "").toLowerCase();
+  return msg.includes("contestants.email") || (msg.includes("email") && (msg.includes("does not exist") || msg.includes("column")));
+}
 
 function rankByVotes(list: VotingResultsContestant[]): VotingResultsContestant[] {
   let previousVotes: number | null = null;
@@ -63,21 +70,31 @@ export async function loadVotingResultsSnapshot(client: SupabaseClient): Promise
   const visible = campaigns ?? [];
   const ids = visible.map((c) => String(c.id));
 
-  type ContestantRow = { id: string; campaign_id: string; name: string; image_url: string | null; sort_order: number };
+  type ContestantRow = {
+    id: string;
+    campaign_id: string;
+    name: string;
+    email?: string | null;
+    image_url: string | null;
+    sort_order: number;
+  };
   const allContestants: ContestantRow[] = [];
 
   if (ids.length > 0) {
     const chunks = Array.from({ length: Math.ceil(ids.length / CAMPAIGN_ID_CHUNK) }, (_, k) =>
       ids.slice(k * CAMPAIGN_ID_CHUNK, k * CAMPAIGN_ID_CHUNK + CAMPAIGN_ID_CHUNK)
     );
-    const [contestantResults, voteTotals] = await Promise.all([
-      Promise.all(
-        chunks.map((chunk) =>
-          client.from("contestants").select("id, campaign_id, name, image_url, sort_order").in("campaign_id", chunk)
-        )
-      ),
+    const SELECT_WITH_EMAIL = "id, campaign_id, name, email, image_url, sort_order";
+    const SELECT_MIN = "id, campaign_id, name, image_url, sort_order";
+    const [firstContestantResults, voteTotals] = await Promise.all([
+      Promise.all(chunks.map((chunk) => client.from("contestants").select(SELECT_WITH_EMAIL).in("campaign_id", chunk))),
       getVoteTransactionTotalsForCampaignsFlat(client, ids),
     ]);
+
+    const emailMissing = firstContestantResults.some((r) => isMissingContestantEmailColumn(r.error));
+    const contestantResults = emailMissing
+      ? await Promise.all(chunks.map((chunk) => client.from("contestants").select(SELECT_MIN).in("campaign_id", chunk)))
+      : firstContestantResults;
 
     for (const { data: rows, error: conErr } of contestantResults) {
       if (conErr) throw new Error(conErr.message ?? "Failed to load contestants");
@@ -103,6 +120,7 @@ export async function loadVotingResultsSnapshot(client: SupabaseClient): Promise
         sorted.map((r) => ({
           id: r.id,
           name: r.name,
+          email: r.email ?? null,
           image_url: r.image_url,
           votes: voteTotals.get(r.id) ?? 0,
           rank: 0,
@@ -135,6 +153,55 @@ export async function loadVotingResultsSnapshot(client: SupabaseClient): Promise
     contestantCount: 0,
     categoryCount: 0,
     totalVotes: 0,
+  };
+}
+
+export function votingResultsResultLabel(
+  contestant: Pick<VotingResultsContestant, "rank" | "votes">,
+  winnerCount: number
+): string {
+  if (contestant.votes <= 0 || contestant.rank !== 1) return "";
+  return winnerCount > 1 ? "Joint winner" : "Winner";
+}
+
+export function votingResultsFileStamp(iso: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Nairobi",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(iso));
+    const y = parts.find((p) => p.type === "year")?.value ?? "2026";
+    const m = parts.find((p) => p.type === "month")?.value ?? "08";
+    const d = parts.find((p) => p.type === "day")?.value ?? "15";
+    return `${y}-${m}-${d}`;
+  } catch {
+    return "results";
+  }
+}
+
+export function toVotingResultsPreview(snapshot: VotingResultsSnapshot) {
+  return {
+    generatedAtIso: snapshot.generatedAtIso,
+    categoryCount: snapshot.categoryCount,
+    contestantCount: snapshot.contestantCount,
+    totalVotes: snapshot.totalVotes,
+    categories: snapshot.categories.map((cat) => ({
+      id: cat.id,
+      slug: cat.slug,
+      title: cat.title,
+      totalVotes: cat.totalVotes,
+      winners: cat.winners.map((w) => ({ id: w.id, name: w.name, votes: w.votes, rank: w.rank })),
+      contestants: cat.contestants.map((c) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email ?? null,
+        votes: c.votes,
+        rank: c.rank,
+        result: votingResultsResultLabel(c, cat.winners.length),
+      })),
+    })),
   };
 }
 

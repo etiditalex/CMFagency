@@ -469,36 +469,22 @@ export default function DashboardContestantsPage() {
     setDownloadingAllVotes(true);
     setError(null);
     try {
-      const campaignIds = categories.map((c) => c.id);
-      if (campaignIds.length === 0) return;
-      // Pull latest totals across all visible voting categories before export.
-      const liveVoteTotals = await aggregateVoteTotalsByContestant(campaignIds);
-      const rows = categories
-        .flatMap((category) =>
-          category.contestants.map((contestant) => ({
-            name: contestant.name,
-            category: category.title,
-            votes: liveVoteTotals.get(contestant.id) ?? 0,
-            email: contestant.email ?? "",
-            registeredAt: new Date(contestant.created_at).toLocaleString(),
-          }))
-        )
-        .sort((a, b) => b.votes - a.votes || a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
-
-      const headers = ["Contestant", "Category", "Votes", "Email", "Registered"];
-      const csvRows = rows.map((r) => [
-        r.name.replace(/"/g, '""'),
-        r.category.replace(/"/g, '""'),
-        String(r.votes),
-        r.email.replace(/"/g, '""'),
-        r.registeredAt.replace(/"/g, '""'),
-      ]);
-      const csv = [headers.join(","), ...csvRows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
-      const blob = new Blob(["\uFEFF", csv], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Your session expired. Sign in again.");
+      const res = await fetch("/api/fusion-xpress/voting-results/excel?kind=all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Could not download Excel (HTTP ${res.status})`);
+      }
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `contestants-performance-all-categories-${new Date().toISOString().slice(0, 10)}.xls`;
+      const match = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "");
+      a.download = match?.[1] ?? `CFMA-2026-voting-results-${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -583,19 +569,31 @@ export default function DashboardContestantsPage() {
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Contestants</h2>
           <p className="text-gray-600 mt-1">
-            View contestants by category and download one Excel report for all categories with live vote performance.
-            At midnight close, gold winner and contestant PDFs are emailed to the voting admin automatically.
+            View contestants by category
+            {canManageResults ? (
+              <>
+                . Download official results (PDF and Excel, winner first in every category) from{" "}
+                <Link href="/dashboard/contestants/results" className="text-primary-600 hover:underline font-medium">
+                  Download results
+                </Link>
+                .
+              </>
+            ) : (
+              "."
+            )}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void downloadAllContestantsWithVotesExcel()}
-          disabled={loading || categories.length === 0 || downloadingAllVotes}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          {downloadingAllVotes ? "Preparing Excel..." : "Download Excel (all categories)"}
-        </button>
+        {canManageResults && (
+          <button
+            type="button"
+            onClick={() => void downloadAllContestantsWithVotesExcel()}
+            disabled={loading || downloadingAllVotes}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            {downloadingAllVotes ? "Preparing Excel..." : "Download Excel"}
+          </button>
+        )}
       </div>
 
       {canManageResults && (
