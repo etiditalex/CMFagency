@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  FileSpreadsheet,
+  FileText,
   Mail,
   Phone,
   RefreshCw,
@@ -23,6 +25,12 @@ import {
   type ModelNominationCategory,
   type ModelNominationStatus,
 } from "@/lib/model-nominations";
+import {
+  buildTop10NomineesPdf,
+  buildTop10NomineesXlsx,
+  saveExportBytes,
+  type TopNomineeExportRow,
+} from "@/lib/nomination-top10-export";
 
 const STATUS_OPTIONS: ModelNominationStatus[] = [
   "new",
@@ -38,6 +46,8 @@ type RankedNominee = {
   name: string;
   count: number;
   instagram: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 function rankNomineesByCategory(
@@ -46,7 +56,7 @@ function rankNomineesByCategory(
 ): RankedNominee[] {
   const map = new Map<
     string,
-    { name: string; count: number; instagram: string | null }
+    { name: string; count: number; instagram: string | null; email: string | null; phone: string | null }
   >();
 
   for (const n of nominations) {
@@ -64,12 +74,16 @@ function rankNomineesByCategory(
       if (!existing.instagram && n.nominee_instagram) {
         existing.instagram = n.nominee_instagram;
       }
+      if (!existing.email && n.nominee_email) existing.email = n.nominee_email;
+      if (!existing.phone && n.nominee_phone) existing.phone = n.nominee_phone;
       existing.name = n.nominee_name;
     } else {
       map.set(key, {
         name: n.nominee_name,
         count: 1,
         instagram: n.nominee_instagram,
+        email: n.nominee_email,
+        phone: n.nominee_phone,
       });
     }
   }
@@ -79,26 +93,72 @@ function rankNomineesByCategory(
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
+function toExportRows(items: RankedNominee[]): TopNomineeExportRow[] {
+  return items.slice(0, 10).map((item, index) => ({
+    rank: index + 1,
+    name: item.name,
+    instagram: item.instagram,
+    nominations: item.count,
+    email: item.email,
+    phone: item.phone,
+  }));
+}
+
 function MostNominatedPanel({
   title,
+  category,
   items,
+  downloading,
+  onDownload,
 }: {
   title: string;
+  category: ModelNominationCategory;
   items: RankedNominee[];
+  downloading: "xlsx" | "pdf" | null;
+  onDownload: (category: ModelNominationCategory, format: "xlsx" | "pdf") => void;
 }) {
   const top = items.slice(0, 10);
   const max = top[0]?.count ?? 0;
+  const busy = downloading !== null;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
         <Trophy className="w-4 h-4 text-secondary-600" aria-hidden />
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
           {title}
         </h3>
-        <span className="ml-auto text-xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-gray-500">
           {items.length} nominee{items.length === 1 ? "" : "s"}
         </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onDownload(category, "xlsx")}
+            disabled={top.length === 0 || busy}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading === "xlsx" ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+            )}
+            {downloading === "xlsx" ? "Preparing…" : "Excel"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDownload(category, "pdf")}
+            disabled={top.length === 0 || busy}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading === "pdf" ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <FileText className="w-3.5 h-3.5" />
+            )}
+            {downloading === "pdf" ? "Preparing…" : "PDF"}
+          </button>
+        </div>
       </div>
       {top.length === 0 ? (
         <p className="px-4 py-8 text-sm text-gray-500 text-center">
@@ -173,6 +233,10 @@ export default function DashboardNominatePage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(10);
   const [page, setPage] = useState(0);
+  const [downloadingTop, setDownloadingTop] = useState<{
+    category: ModelNominationCategory;
+    format: "xlsx" | "pdf";
+  } | null>(null);
 
   const loadNominations = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setLoading(true);
@@ -331,6 +395,29 @@ export default function DashboardNominatePage() {
     [nominations]
   );
 
+  const downloadTopTen = async (category: ModelNominationCategory, format: "xlsx" | "pdf") => {
+    const items = category === "top_10_male" ? topMale : topFemale;
+    const rows = toExportRows(items);
+    if (rows.length === 0) return;
+    setDownloadingTop({ category, format });
+    setError(null);
+    try {
+      const file =
+        format === "xlsx"
+          ? await buildTop10NomineesXlsx(category, rows)
+          : await buildTop10NomineesPdf(category, rows);
+      const mime =
+        format === "xlsx"
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "application/pdf";
+      saveExportBytes(file.bytes, file.filename, mime);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to download top 10 list");
+    } finally {
+      setDownloadingTop(null);
+    }
+  };
+
   const formatDate = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleString("en-KE", {
@@ -460,12 +547,24 @@ export default function DashboardNominatePage() {
           </h3>
         </div>
         <p className="mb-4 text-sm text-gray-600">
-          Ranked by nomination count (rejected entries excluded). Updates live
-          with new submissions.
+          Ranked by nomination count (rejected entries excluded). Download the current
+          top ten for each category as Excel or PDF.
         </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          <MostNominatedPanel title="Top Male Models" items={topMale} />
-          <MostNominatedPanel title="Top Female Models" items={topFemale} />
+          <MostNominatedPanel
+            title="Top Male Models"
+            category="top_10_male"
+            items={topMale}
+            downloading={downloadingTop?.category === "top_10_male" ? downloadingTop.format : null}
+            onDownload={downloadTopTen}
+          />
+          <MostNominatedPanel
+            title="Top Female Models"
+            category="top_10_female"
+            items={topFemale}
+            downloading={downloadingTop?.category === "top_10_female" ? downloadingTop.format : null}
+            onDownload={downloadTopTen}
+          />
         </div>
       </div>
 
