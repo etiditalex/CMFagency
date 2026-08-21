@@ -81,7 +81,7 @@ function MemberCard({ member, index }: MemberCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 border border-gray-100"
+      className="bg-white overflow-hidden border border-[#e5e5e5]"
     >
       <div className="relative w-full aspect-[3/4]">
         <Image
@@ -92,8 +92,8 @@ function MemberCard({ member, index }: MemberCardProps) {
         />
       </div>
       <div className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-        <p className="text-secondary-600 font-semibold mb-4">{member.position}</p>
+        <h3 className="text-xl font-bold text-[#1a2332] mb-2">{member.name}</h3>
+        <p className="text-[#555] font-normal mb-4">{member.position}</p>
         
         {isExpanded ? (
           <motion.div
@@ -103,7 +103,7 @@ function MemberCard({ member, index }: MemberCardProps) {
             className="space-y-4"
           >
             <p className="text-gray-700 text-sm leading-relaxed">{member.description}</p>
-            <div className="space-y-2 pt-2 border-t border-gray-200">
+            <div className="space-y-2 pt-2 border-t border-[#e5e5e5]">
               {member.achievements.map((achievement, idx) => (
                 <div key={idx} className="flex items-start space-x-2">
                   <div className="flex-shrink-0 mt-1.5">
@@ -115,16 +115,15 @@ function MemberCard({ member, index }: MemberCardProps) {
             </div>
             <button
               onClick={() => setIsExpanded(false)}
-              className="text-secondary-600 hover:text-secondary-700 font-semibold text-sm flex items-center space-x-1 mt-4"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2 mt-4"
             >
-              <span>View less</span>
-              <ChevronRight className="w-4 h-4 rotate-90" />
+              View less
             </button>
           </motion.div>
         ) : (
           <button
             onClick={() => setIsExpanded(true)}
-            className="bg-secondary-600 hover:bg-secondary-700 text-white font-semibold py-2.5 px-6 rounded-md transition-colors duration-300 text-sm w-full"
+            className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
           >
             View more
           </button>
@@ -283,7 +282,7 @@ export default function OurTeamPage() {
   }, []);
 
   return (
-    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
+    <div className="pt-28 md:pt-32 min-h-screen bg-white">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-4">
@@ -395,7 +394,7 @@ export default function OurTeamPage() {
             
             {/* Executive Section */}
             <section className="mb-12">
-              <h2 className="text-3xl font-bold text-secondary-600 mb-8">EXECUTIVE</h2>
+              <h2 className="text-3xl font-bold text-secondary-600 pb-3 mb-8 border-b border-[#e5e5e5]">EXECUTIVE</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {executiveMembers.map((member, index) => (
                   <MemberCard key={member.name} member={member} index={index} />
@@ -406,7 +405,7 @@ export default function OurTeamPage() {
             {/* Team Section */}
             {teamMembers.length > 0 && (
               <section>
-                <h2 className="text-3xl font-bold text-secondary-600 mb-8">TEAM</h2>
+                <h2 className="text-3xl font-bold text-secondary-600 pb-3 mb-8 border-b border-[#e5e5e5]">TEAM</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {teamMembers.map((member, index) => (
                     <MemberCard key={member.name} member={member} index={index} />

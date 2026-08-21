@@ -528,7 +528,7 @@ export default function DashboardHomePage() {
   if (isEmployer) {
     return (
       <div className="text-left max-w-2xl">
-        <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Employer hub</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">Employer hub</h2>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/dashboard/job-listings"
@@ -556,10 +556,10 @@ export default function DashboardHomePage() {
   return (
     <div className="text-left">
       <div className={`grid grid-cols-1 gap-6 ${showVotingCard ? "xl:grid-cols-3" : ""}`}>
-        <div className={`rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_6px_24px_rgba(2,6,23,0.06)] ${showVotingCard ? "xl:col-span-2" : ""}`}>
+        <div className={`border border-[#e5e5e5] bg-white p-6 ${showVotingCard ? "xl:col-span-2" : ""}`}>
           <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
             <div className="min-w-0">
-              <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Recent Activity</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Recent Activity</h2>
               <div className="mt-3 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div className="text-left">
                   <span className="font-semibold">Last updated:</span> {updatedLabel}
@@ -584,13 +584,13 @@ export default function DashboardHomePage() {
         </div>
 
         {showVotingCard && (
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_6px_24px_rgba(2,6,23,0.06)]">
-            <div className="flex items-center gap-3">
+          <div className="border border-[#e5e5e5] bg-white p-6">
+            <div className="flex items-center gap-3 pb-3 border-b border-[#e5e5e5]">
               <span className="inline-flex w-11 h-11 rounded-full bg-violet-100 items-center justify-center flex-shrink-0">
                 <Calendar className="w-5 h-5 text-violet-700" />
               </span>
               <div>
-                <div className="font-extrabold text-gray-900 inline-flex items-center gap-2">
+                <div className="font-bold text-[#1a2332] inline-flex items-center gap-2">
                   <Vote className="w-4 h-4 text-gray-600" />
                   Voting dates
                 </div>
@@ -679,13 +679,13 @@ export default function DashboardHomePage() {
 
       {showTrending && (
         <div
-          className={`mt-6 bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] border border-slate-100 overflow-hidden ${
+          className={`mt-6 bg-white border border-[#e5e5e5] overflow-hidden ${
             trendingLoading ? "animate-pulse opacity-[0.85]" : ""
           }`}
         >
-          <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
+          <div className="p-6 border-b border-[#e5e5e5] flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
-              <div className="font-extrabold text-gray-900 inline-flex items-center gap-2">
+              <div className="font-bold text-[#1a2332] inline-flex items-center gap-2">
                 <Crown className="w-4 h-4 text-amber-700" />
                 Trending (this week)
               </div>
@@ -706,7 +706,7 @@ export default function DashboardHomePage() {
 
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-white border-b border-[#e5e5e5]">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600 w-16">Rank</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
@@ -816,24 +816,23 @@ export default function DashboardHomePage() {
 
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
-      {/* KPI cards (styled like screenshot tiles) */}
+      {/* KPI cards */}
       <div
         className={`mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
       >
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenue}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenue}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-violet-100 items-center justify-center">
                 <Wallet className="w-5 h-5 text-gray-600" />
@@ -841,20 +840,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns?type=ticket"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (tickets)</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueTickets}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (tickets)</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueTickets}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-emerald-100 items-center justify-center">
                 <Ticket className="w-5 h-5 text-primary-700" />
@@ -862,20 +860,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns?type=vote"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (votes)</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueVotes}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (votes)</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueVotes}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-rose-100 items-center justify-center">
                 <Vote className="w-5 h-5 text-secondary-700" />
@@ -883,20 +880,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/merchandise"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Revenue (merchandise)</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{formatRevenueMerchandise}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (merchandise)</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueMerchandise}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-amber-100 items-center justify-center">
                 <ShoppingBag className="w-5 h-5 text-amber-700" />
@@ -904,20 +900,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Successful payments</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{successfulPayments.toLocaleString()}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Successful payments</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{successfulPayments.toLocaleString()}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-indigo-100 items-center justify-center">
                 <Shield className="w-5 h-5 text-gray-600" />
@@ -925,20 +920,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Tickets issued</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalTicketsIssued.toLocaleString()}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Tickets issued</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{totalTicketsIssued.toLocaleString()}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-cyan-100 items-center justify-center">
                 <Ticket className="w-5 h-5 text-gray-600" />
@@ -946,20 +940,19 @@ export default function DashboardHomePage() {
             </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-center justify-end">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+              className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              View More
+              View more
             </Link>
           </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">Votes counted</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{totalVotes.toLocaleString()}</div>
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">Votes counted</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{totalVotes.toLocaleString()}</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded-full bg-fuchsia-100 items-center justify-center">
                 <Vote className="w-5 h-5 text-gray-600" />
@@ -968,20 +961,19 @@ export default function DashboardHomePage() {
         </div>
 
         {hasFeature("kcm_membership") && (
-          <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+          <div className="bg-white p-6 border border-[#e5e5e5]">
             <div className="flex items-center justify-end">
               <Link
                 href="/dashboard/kcm-membership"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-800 text-sm font-semibold"
+                className="text-[#555] hover:text-[#1a2332] text-sm underline underline-offset-2"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
-                View More
+                View more
               </Link>
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="mt-4 text-sm font-extrabold text-gray-700 text-left">KCM membership paid</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">
+                <div className="mt-4 text-sm font-normal text-[#555] text-left">KCM membership paid</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">
                   KES {kcmMembershipPaidKes.toLocaleString()}
                 </div>
                 <div className="mt-2 text-sm text-gray-600 text-left">
@@ -1001,11 +993,11 @@ export default function DashboardHomePage() {
 
       {/* Summary tiles */}
       <div className={`mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}>
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-sm font-extrabold text-gray-700 text-left">Total campaigns</div>
-              <div className="mt-2 text-2xl font-extrabold text-gray-900 text-left">{campaignsCount.toLocaleString()}</div>
+              <div className="text-sm font-normal text-[#555] text-left">Total campaigns</div>
+              <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{campaignsCount.toLocaleString()}</div>
               <div className="mt-2 text-sm text-gray-600 text-left">
                 Active: <span className="font-semibold text-secondary-700">{activeCampaignsCount}</span> · Inactive:{" "}
                 <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
@@ -1017,7 +1009,7 @@ export default function DashboardHomePage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] p-6 border border-slate-100 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(2,6,23,0.10)]">
+        <div className="bg-white p-6 border border-[#e5e5e5]">
           <div className="flex flex-wrap gap-3">
             <Link
               href="/dashboard/campaigns"
@@ -1039,11 +1031,11 @@ export default function DashboardHomePage() {
 
       {/* Money report: recent transactions */}
       <div
-        className={`mt-8 bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] border border-slate-100 overflow-hidden ${dataLoading ? "animate-pulse opacity-[0.65]" : ""}`}
+        className={`mt-8 bg-white border border-[#e5e5e5] overflow-hidden ${dataLoading ? "animate-pulse opacity-[0.65]" : ""}`}
       >
-        <div className="p-6 border-b border-gray-200 flex items-start justify-between gap-4 flex-wrap">
+        <div className="p-6 border-b border-[#e5e5e5] flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-sm font-extrabold text-gray-700 text-left">Recent Payments</div>
+            <div className="text-xl font-bold text-[#1a2332] text-left">Recent Payments</div>
             {!isAdmin && (
               <p className="mt-2 text-xs text-gray-500 max-w-xl text-left">
                 Incomplete checkouts are hidden here. You&apos;ll get an email when a payer doesn&apos;t finish — successful
@@ -1080,7 +1072,7 @@ export default function DashboardHomePage() {
 
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-[#e5e5e5]">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Time</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Payer</th>

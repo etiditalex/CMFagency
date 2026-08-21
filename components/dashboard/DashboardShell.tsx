@@ -762,7 +762,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-white flex">
       {/* Sidebar (desktop): icon rail when collapsed; expands on hover or stays open when pinned */}
       <aside
         className={`hidden lg:flex flex-col flex-shrink-0 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5 overflow-hidden transition-[width] duration-300 ease-out ${
@@ -1009,7 +1009,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               isEmployeesPage ||
               isVisitorManagementPage
                   ? "p-0"
-                  : "rounded-md border border-gray-200 bg-white p-4 shadow-sm sm:p-6 md:p-8"
+                  : "border border-[#e5e5e5] bg-white p-4 sm:p-6 md:p-8"
               }
             >
               {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
