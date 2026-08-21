@@ -26,6 +26,9 @@ export type VisitorRecord = {
   industrySlug?: string | null;
   source?: string;
   formExtra?: Record<string, unknown>;
+  /** Device id captured at public pre-registration (arrival QR verification). */
+  registeredDeviceId?: string | null;
+  deviceLabel?: string | null;
   createdAt: string;
   updatedAt: string;
 };

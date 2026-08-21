@@ -10,7 +10,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import type { IndustryDemo } from "@/lib/visitors/industry-demos";
 
-export default function IndustryDemoFormClient({ demo }: { demo: IndustryDemo }) {
+export default function IndustryDemoFormClient({
+  demo,
+  mode = "checkin",
+}: {
+  demo: IndustryDemo;
+  mode?: "checkin" | "preregister";
+}) {
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const { hasFeature, loading: portalLoading } = usePortal();
@@ -50,9 +56,13 @@ export default function IndustryDemoFormClient({ demo }: { demo: IndustryDemo })
 
               <header className="text-center">
                 <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-gray-900 md:text-3xl">
-                  {demo.title}
+                  {mode === "preregister"
+                    ? demo.title.replace(/Demo\s*$/i, "Pre-registration")
+                    : demo.title}
                 </h1>
-                <p className="mt-2 text-base leading-relaxed text-gray-500">{demo.subtitle}</p>
+                <p className="mt-2 text-base leading-relaxed text-gray-500">
+                  {mode === "preregister" ? "Guest pre-registration" : demo.subtitle}
+                </p>
               </header>
             </>
           ) : null}
@@ -61,6 +71,7 @@ export default function IndustryDemoFormClient({ demo }: { demo: IndustryDemo })
             <IndustryDemoForm
               demo={demo}
               ownerId={ownerId}
+              mode={mode}
               onCheckInScreen={setCheckInScreen}
             />
           </div>

@@ -7,10 +7,14 @@ import { CheckCircle2 } from "lucide-react";
 import VisitorCheckInConfirmation, {
   type CheckInSession,
 } from "@/components/fusion-xpress/visitor-management/VisitorCheckInConfirmation";
+import VisitorPreRegisterConfirmation, {
+  type PreRegisterSession,
+} from "@/components/fusion-xpress/visitor-management/VisitorPreRegisterConfirmation";
 import {
   buildCheckInSessionFromForm,
   defaultVenueNameForDemo,
 } from "@/lib/visitors/build-check-in-session";
+import { visitorDevicePayload } from "@/lib/visitors/device";
 import type { IndustryDemo } from "@/lib/visitors/industry-demos";
 import type { DemoField } from "@/lib/visitors/industry-demos";
 
@@ -20,11 +24,64 @@ type IndustryDemoFormProps = {
   ownerId?: string;
   /** Public marketing page vs Fusion Xpress dashboard */
   variant?: "public" | "dashboard";
+  /** Shareable early registration vs walk-in check-in */
+  mode?: "checkin" | "preregister";
   /** Dashboard: persist via authenticated visitors API */
   onDashboardSubmit?: (values: Record<string, string | string[]>) => Promise<void>;
   /** Hide page chrome when showing check-in confirmation */
   onCheckInScreen?: (active: boolean) => void;
 };
+
+const DATE_FIELD_NAMES = new Set(["visitDate", "viewingDate", "checkInDate"]);
+const ID_FIELD_NAMES = new Set(["idNumber", "idPassport", "idPassportNumber"]);
+const CONTACT_FIELD_NAMES = new Set(["fullName", "phone", "email"]);
+
+function fieldLabelSuffix(field: DemoField): string {
+  if (field.required) return " *";
+  if (field.recommended) return " (recommended)";
+  return "";
+}
+
+function insertAfterContactFields(fields: DemoField[], field: DemoField): DemoField[] {
+  let lastContact = -1;
+  fields.forEach((f, i) => {
+    if (CONTACT_FIELD_NAMES.has(f.name)) lastContact = i;
+  });
+  if (lastContact < 0) return [field, ...fields];
+  return [...fields.slice(0, lastContact + 1), field, ...fields.slice(lastContact + 1)];
+}
+
+function withPreregisterFields(demo: IndustryDemo): IndustryDemo {
+  const hasVisitDate = demo.sections.some((s) =>
+    s.fields.some((f) => f.type === "date" && DATE_FIELD_NAMES.has(f.name))
+  );
+  const hasIdNumber = demo.sections.some((s) =>
+    s.fields.some((f) => ID_FIELD_NAMES.has(f.name))
+  );
+  const visitDateField: DemoField = {
+    name: "visitDate",
+    label: "Expected visit date",
+    type: "date",
+    required: true,
+  };
+  const idNumberField: DemoField = {
+    name: "idNumber",
+    label: "ID / Passport Number",
+    type: "text",
+    recommended: true,
+    placeholder: "National ID or passport",
+  };
+
+  let firstFields = [...(demo.sections[0]?.fields ?? [])];
+  if (!hasVisitDate) firstFields = [visitDateField, ...firstFields];
+  if (!hasIdNumber) firstFields = insertAfterContactFields(firstFields, idNumberField);
+
+  return {
+    ...demo,
+    subtitle: "Guest pre-registration",
+    sections: [{ ...demo.sections[0], fields: firstFields }, ...demo.sections.slice(1)],
+  };
+}
 
 function demoHasEmailField(demo: IndustryDemo) {
   return demo.sections.some((s) => s.fields.some((f) => f.name === "email" || f.type === "email"));
@@ -48,7 +105,7 @@ function FieldControl({
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium text-gray-700">
           {field.label}
-          {field.required ? " *" : ""}
+          {fieldLabelSuffix(field)}
         </span>
         <select
           name={field.name}
@@ -118,7 +175,7 @@ function FieldControl({
       <label className="block text-sm">
         <span className="mb-1.5 block font-medium text-gray-700">
           {field.label}
-          {field.required ? " *" : ""}
+          {fieldLabelSuffix(field)}
         </span>
         <div className="flex overflow-hidden rounded-lg border border-gray-300 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
           <span className="flex items-center gap-1 border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-600">
@@ -145,8 +202,13 @@ function FieldControl({
     <label className="block text-sm">
       <span className="mb-1.5 block font-medium text-gray-700">
         {field.label}
-        {field.required ? " *" : ""}
+        {fieldLabelSuffix(field)}
       </span>
+      {field.recommended && !field.required ? (
+        <span className="mb-1.5 block text-xs text-gray-500">
+          Recommended for faster verification when you arrive.
+        </span>
+      ) : null}
       <input
         type={inputType}
         name={field.name}
@@ -160,12 +222,18 @@ function FieldControl({
   );
 }
 
+function todayYmd() {
+  const t = new Date();
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
+}
+
 function initialValues(demo: IndustryDemo): Record<string, string | string[]> {
   const values: Record<string, string | string[]> = {};
   for (const section of demo.sections) {
     for (const field of section.fields) {
       if (field.type === "checkbox-group") values[field.name] = [];
       else if (field.type === "number-visitors") values[field.name] = "1";
+      else if (field.type === "date" && DATE_FIELD_NAMES.has(field.name)) values[field.name] = todayYmd();
       else values[field.name] = "";
     }
   }
@@ -173,25 +241,30 @@ function initialValues(demo: IndustryDemo): Record<string, string | string[]> {
 }
 
 export default function IndustryDemoForm({
-  demo,
+  demo: demoProp,
   ownerId,
   variant = "public",
+  mode = "checkin",
   onDashboardSubmit,
   onCheckInScreen,
 }: IndustryDemoFormProps) {
+  const isPreRegister = mode === "preregister";
+  const demo = isPreRegister ? withPreregisterFields(demoProp) : demoProp;
   const isDashboard = variant === "dashboard";
-  const isLiveCheckIn = Boolean(ownerId?.trim()) && !isDashboard;
-  const showEmailOptIn = isLiveCheckIn && demoHasEmailField(demo);
+  const isLiveCheckIn = Boolean(ownerId?.trim()) && !isDashboard && !isPreRegister;
+  const isLivePreRegister = Boolean(ownerId?.trim()) && !isDashboard && isPreRegister;
+  const showEmailOptIn = (isLiveCheckIn || isLivePreRegister) && demoHasEmailField(demo);
   const [values, setValues] = useState(() => initialValues(demo));
   const [submitted, setSubmitted] = useState(false);
   const [checkInSession, setCheckInSession] = useState<CheckInSession | null>(null);
+  const [preRegisterSession, setPreRegisterSession] = useState<PreRegisterSession | null>(null);
   const [sendConfirmationEmail, setSendConfirmationEmail] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    onCheckInScreen?.(Boolean(submitted && checkInSession));
-  }, [submitted, checkInSession, onCheckInScreen]);
+    onCheckInScreen?.(Boolean(submitted && (checkInSession || preRegisterSession)));
+  }, [submitted, checkInSession, preRegisterSession, onCheckInScreen]);
 
   const handleChange = (name: string, value: string | string[]) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -204,6 +277,30 @@ export default function IndustryDemoForm({
     try {
       if (isDashboard && onDashboardSubmit) {
         await onDashboardSubmit(values);
+        setSubmitted(true);
+        return;
+      }
+
+      if (isLivePreRegister) {
+        const device = visitorDevicePayload();
+        const res = await fetch("/api/visitors/pre-register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            industrySlug: demo.slug,
+            ownerId: ownerId!.trim(),
+            values,
+            sendConfirmationEmail: showEmailOptIn ? sendConfirmationEmail : false,
+            ...device,
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          preRegister?: PreRegisterSession;
+        };
+        if (!res.ok) throw new Error(json.error ?? "Pre-registration failed.");
+        if (!json.preRegister) throw new Error("Pre-registration response incomplete.");
+        setPreRegisterSession(json.preRegister);
         setSubmitted(true);
         return;
       }
@@ -252,6 +349,19 @@ export default function IndustryDemoForm({
       setSubmitting(false);
     }
   };
+
+  if (submitted && preRegisterSession) {
+    return (
+      <VisitorPreRegisterConfirmation
+        session={preRegisterSession}
+        onRegisterAnother={() => {
+          setSubmitted(false);
+          setPreRegisterSession(null);
+          setValues(initialValues(demo));
+        }}
+      />
+    );
+  }
 
   if (submitted && checkInSession) {
     return (
@@ -352,9 +462,17 @@ export default function IndustryDemoForm({
         </label>
       ) : null}
 
-      {!isLiveCheckIn && !ownerId && !isDashboard ? (
+      {!isLiveCheckIn && !isLivePreRegister && !ownerId && !isDashboard ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          Use your business check-in link from the dashboard to save visitors and enable check-out.
+          Use your business pre-registration link from the dashboard to save visitors and verify them
+          with a QR scan on arrival.
+        </p>
+      ) : null}
+
+      {isLivePreRegister ? (
+        <p className="rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-xs text-primary-900">
+          This phone and the contact number you enter will be used to verify your QR scan when you
+          arrive.
         </p>
       ) : null}
 
@@ -364,7 +482,13 @@ export default function IndustryDemoForm({
           disabled={submitting}
           className="btn-primary w-full py-3 text-sm font-bold disabled:opacity-60"
         >
-          {submitting ? "Please wait…" : isDashboard ? "Save visitor" : "Check In"}
+          {submitting
+            ? "Please wait…"
+            : isDashboard
+              ? "Save visitor"
+              : isPreRegister
+                ? "Pre-register"
+                : "Check In"}
         </button>
       </div>
       {!isDashboard ? (

@@ -29,11 +29,12 @@ import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
 import {
-  industryCheckInUrl,
   industryLabel,
   isVisitorIndustrySlug,
   VISITOR_MANAGEMENT_PATH,
+  VISITOR_MANAGEMENT_VERIFICATION_PATH,
 } from "@/lib/visitors/industry-options";
+import { industryPreRegisterUrl } from "@/lib/visitors/preregistration";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
 import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
@@ -104,7 +105,7 @@ export default function DashboardVisitorManagementPage() {
 
   const publicCheckInUrl = useMemo(() => {
     if (!activityOwnerId) return "";
-    return industryCheckInUrl(
+    return industryPreRegisterUrl(
       registerIndustrySlug,
       activityOwnerId,
       typeof window !== "undefined" ? window.location.origin : undefined
@@ -243,7 +244,7 @@ export default function DashboardVisitorManagementPage() {
         v.purposeOfVisit,
         v.idPassportNumber ?? "",
         industryLabel(v.industrySlug),
-        statusLabel(v.status),
+        statusLabel(v.status, v.source),
       ]
         .join(" ")
         .toLowerCase();
@@ -478,7 +479,14 @@ export default function DashboardVisitorManagementPage() {
                 {industryLabel(registerIndustrySlug)} pre-registration link
               </p>
               <p className="mt-1 text-xs text-primary-800/80">
-                Uses your account industry automatically — no manual industry selection needed.
+                Share this industry form. Guests pre-register on their phone; on arrival they scan
+                the reception QR. Device and contact number from registration verify the scan.{" "}
+                <Link
+                  href={VISITOR_MANAGEMENT_VERIFICATION_PATH}
+                  className="font-semibold underline-offset-2 hover:underline"
+                >
+                  Open verification
+                </Link>
               </p>
               <p className="mt-2 break-all font-mono text-xs text-gray-800 bg-white/80 rounded-lg border border-primary-100 px-3 py-2">
                 {publicCheckInUrl || "…"}
@@ -574,13 +582,15 @@ export default function DashboardVisitorManagementPage() {
                     </span>
                     {v.source === "demo_form" ? (
                       <span className="mt-0.5 block text-xs text-primary-700">Industry form</span>
+                    ) : v.source === "preregister" ? (
+                      <span className="mt-0.5 block text-xs text-primary-700">Pre-registered</span>
                     ) : null}
                   </td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${statusBadgeClass(v.status)}`}
                     >
-                      {statusLabel(v.status)}
+                      {statusLabel(v.status, v.source)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -740,7 +750,7 @@ function DetailModal({ visitor, onClose }: { visitor: VisitorRecord; onClose: ()
             ["Purpose", visitor.purposeOfVisit],
             ["Scheduled visit", formatVisitDateTime(visitor.visitDate, visitor.visitTime)],
             ["Actual check-in / out", formatActualCheckDetail(visitor)],
-            ["Status", statusLabel(visitor.status)],
+            ["Status", statusLabel(visitor.status, visitor.source)],
             ["Industry", industryLabel(visitor.industrySlug)],
           ].map(([k, val]) => (
             <div key={k} className="flex gap-2">

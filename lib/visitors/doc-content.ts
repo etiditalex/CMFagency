@@ -11,6 +11,7 @@ import {
   VISITOR_MANAGEMENT_LEAVE_PATH,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
+  VISITOR_MANAGEMENT_VERIFICATION_PATH,
 } from "@/lib/visitors/industry-options";
 
 export type DocLink = {
@@ -66,8 +67,8 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
         body: "After sign-in, open Visitor Management in the sidebar. Trial accounts get 7 days of access before subscribing.",
       },
       {
-        title: "Share your visitor check-in link",
-        body: "On the main Visitor Management page, copy the public check-in URL for your industry and display it at reception or on signage.",
+        title: "Share your visitor pre-registration link",
+        body: "On the main Visitor Management page or Verification, copy the public industry form URL and send it to guests before they arrive. Print the reception QR so they can scan on arrival.",
       },
       {
         title: "Add employees",
@@ -85,27 +86,34 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
     summary:
       "Track guests from pre-registration through check-in and check-out. Managers see today's visitors, pending approvals, and full history on the main Visitor Management page.",
     bullets: [
-      "Register a guest manually from the dashboard or let visitors self-check-in via your public industry form link.",
-      "Workflow: Pending → Approved → Checked in → Checked out.",
-      "Each approved visitor can receive a QR pass for quick entry.",
+      "Register a guest manually from the dashboard or share your industry pre-registration link (retail, health, real estate, education, sports, tourism).",
+      "Workflow: Pre-register → Arrive and scan QR → Checked in → Checked out.",
+      "Pre-registration stores the guest's phone and the device they used. The arrival QR scan is verified against that device and contact number.",
+      "Each pre-registered visitor receives a personal QR pass; print the reception QR from Verification for the front desk.",
       "Filter the dashboard by industry when your organisation serves multiple visitor types.",
-      "Demo form submissions from industry preview links appear in your visitor list.",
     ],
     steps: [
       {
-        title: "Pre-register a guest",
-        body: "Click Register guest, enter name, phone, host, and visit purpose. The record starts as Pending until you approve it.",
+        title: "Share the pre-registration link",
+        body: "Copy the industry form URL from Visitor Management or Verification. Send it to guests before they arrive so they complete the same public demo form for your industry.",
       },
       {
-        title: "Approve and check in",
-        body: "Approve the visit, then mark the guest checked in when they arrive. Check them out when they leave.",
+        title: "Guest pre-registers on their phone",
+        body: "The form captures their details, contact number, and a device id for that phone. They keep the confirmation pass until they arrive.",
       },
       {
-        title: "Public self check-in",
-        body: "Share your industry check-in URL. Visitors complete the form on their phone; new submissions appear in your dashboard for review.",
+        title: "Scan at the premise",
+        body: "The guest scans the reception QR with the same phone. If the device is recognised they are checked in immediately; otherwise they enter the contact number used at pre-registration.",
+      },
+      {
+        title: "Verify from the dashboard",
+        body: "Reception can also look up the contact number on the Verification page (same layout as Leave) and check the guest in.",
       },
     ],
-    links: [{ label: "Visitor dashboard", href: VISITOR_MANAGEMENT_PATH }],
+    links: [
+      { label: "Visitor dashboard", href: VISITOR_MANAGEMENT_PATH },
+      { label: "Verification", href: VISITOR_MANAGEMENT_VERIFICATION_PATH },
+    ],
   },
   {
     id: "employees",

@@ -30,6 +30,7 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH = `${VISITOR_MANAGEMENT_EMP
 export const VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH = `${VISITOR_MANAGEMENT_EMPLOYEES_PATH}/biometric`;
 export const VISITOR_MANAGEMENT_LEAVE_PATH = `${VISITOR_MANAGEMENT_PATH}/leave`;
 export const VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH = `${VISITOR_MANAGEMENT_LEAVE_PATH}/settings`;
+export const VISITOR_MANAGEMENT_VERIFICATION_PATH = `${VISITOR_MANAGEMENT_PATH}/verification`;
 export const VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH = `${VISITOR_MANAGEMENT_PATH}/hr-payroll-api`;
 export const VISITOR_MANAGEMENT_DOCS_PATH = `${VISITOR_MANAGEMENT_PATH}/docs`;
 export const CRM_SITE_CHECK_PATH = "/fusion-xpress/smart-visitor-management/crm-site-check";
@@ -152,6 +153,12 @@ export const VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_NAV_CHILD: VisitorManagement
 export const VISITOR_MANAGEMENT_LEAVE_NAV_CHILD: VisitorManagementLinkNavChild = {
   label: "Leave",
   href: VISITOR_MANAGEMENT_LEAVE_PATH,
+  businessAccountOnly: true,
+};
+
+export const VISITOR_MANAGEMENT_VERIFICATION_NAV_CHILD: VisitorManagementLinkNavChild = {
+  label: "Verification",
+  href: VISITOR_MANAGEMENT_VERIFICATION_PATH,
   businessAccountOnly: true,
 };
 

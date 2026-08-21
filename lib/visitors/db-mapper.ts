@@ -19,9 +19,26 @@ export type VisitorRow = {
   form_extra: Record<string, unknown> | null;
   checked_in_at: string | null;
   checked_out_at: string | null;
+  registered_device_id?: string | null;
+  device_label?: string | null;
   created_at: string;
   updated_at: string;
 };
+
+export const VISITOR_SELECT =
+  "id,owner_id,site_id,full_name,phone_number,id_passport_number,vehicle_plate_number,host,purpose_of_visit,visit_date,visit_time,status,qr_code_token,industry_slug,source,form_extra,checked_in_at,checked_out_at,registered_device_id,device_label,created_at,updated_at";
+
+export const VISITOR_SELECT_BASE =
+  "id,owner_id,site_id,full_name,phone_number,id_passport_number,vehicle_plate_number,host,purpose_of_visit,visit_date,visit_time,status,qr_code_token,industry_slug,source,form_extra,checked_in_at,checked_out_at,created_at,updated_at";
+
+export function isMissingPreregistrationColumns(err: unknown): boolean {
+  const msg = String((err as { message?: string })?.message ?? "").toLowerCase();
+  return (
+    msg.includes("registered_device_id") ||
+    msg.includes("device_label") ||
+    msg.includes("preregister")
+  );
+}
 
 /** DB time may be `14:30:00` — normalize to HH:mm for UI. */
 export function normalizeVisitTime(t: string): string {
@@ -32,6 +49,14 @@ export function normalizeVisitTime(t: string): string {
 }
 
 export function mapVisitorRow(row: VisitorRow): VisitorRecord {
+  const formExtra =
+    row.form_extra && typeof row.form_extra === "object" && !Array.isArray(row.form_extra)
+      ? (row.form_extra as Record<string, unknown>)
+      : {};
+  const extraDeviceId =
+    typeof formExtra.device_id === "string" ? formExtra.device_id.trim() : "";
+  const extraDeviceLabel =
+    typeof formExtra.device_label === "string" ? formExtra.device_label.trim() : "";
   return {
     id: row.id,
     fullName: row.full_name,
@@ -48,10 +73,9 @@ export function mapVisitorRow(row: VisitorRow): VisitorRecord {
     qrCodeToken: row.qr_code_token,
     industrySlug: row.industry_slug,
     source: row.source,
-    formExtra:
-      row.form_extra && typeof row.form_extra === "object" && !Array.isArray(row.form_extra)
-        ? (row.form_extra as Record<string, unknown>)
-        : {},
+    formExtra,
+    registeredDeviceId: row.registered_device_id || extraDeviceId || null,
+    deviceLabel: row.device_label || extraDeviceLabel || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

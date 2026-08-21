@@ -61,7 +61,11 @@ export function visitorStats(visitors: VisitorRecord[]) {
   };
 }
 
-export function statusLabel(status: VisitorStatus): string {
+export function statusLabel(status: VisitorStatus, source?: string | null): string {
+  if (source === "preregister") {
+    if (status === "pending") return "Pre-registered";
+    if (status === "approved") return "Verified";
+  }
   const labels: Record<VisitorStatus, string> = {
     pending: "Pending",
     approved: "Approved",

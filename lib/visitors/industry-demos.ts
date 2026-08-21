@@ -13,6 +13,8 @@ export type DemoField = {
   label: string;
   type: DemoFieldType;
   required?: boolean;
+  /** Shown as optional but encouraged (e.g. ID number on pre-registration). */
+  recommended?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
   /** For checkbox-group */

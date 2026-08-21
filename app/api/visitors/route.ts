@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { mapVisitorRow, isMissingVisitorsTable, type VisitorRow } from "@/lib/visitors/db-mapper";
+import {
+  mapVisitorRow,
+  isMissingVisitorsTable,
+  isMissingPreregistrationColumns,
+  VISITOR_SELECT,
+  VISITOR_SELECT_BASE,
+  type VisitorRow,
+} from "@/lib/visitors/db-mapper";
 import { getIndustryDemo } from "@/lib/visitors/industry-demos";
 import { mapIndustryFormToVisitor } from "@/lib/visitors/industry-form-mapper";
 import { isVisitorIndustrySlug } from "@/lib/visitors/industry-options";
@@ -45,22 +52,29 @@ export async function GET(req: NextRequest) {
     }
     const ownerId = scope.ownerId;
 
-    let q = admin
-      .from("visitors")
-      .select(
-        "id,owner_id,site_id,full_name,phone_number,id_passport_number,vehicle_plate_number,host,purpose_of_visit,visit_date,visit_time,status,qr_code_token,industry_slug,source,form_extra,checked_in_at,checked_out_at,created_at,updated_at"
-      )
-      .eq("owner_id", ownerId)
-      .order("visit_date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const applyFilters = (select: string) => {
+      let q = admin
+        .from("visitors")
+        .select(select)
+        .eq("owner_id", ownerId)
+        .order("visit_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(500);
 
-    const industrySlug = req.nextUrl.searchParams.get("industrySlug")?.trim() ?? "";
-    if (industrySlug && isVisitorIndustrySlug(industrySlug)) {
-      q = q.eq("industry_slug", industrySlug);
+      const industrySlug = req.nextUrl.searchParams.get("industrySlug")?.trim() ?? "";
+      if (industrySlug && isVisitorIndustrySlug(industrySlug)) {
+        q = q.eq("industry_slug", industrySlug);
+      }
+      return q;
+    };
+
+    let { data, error } = await applyFilters(VISITOR_SELECT);
+    if (error && isMissingPreregistrationColumns(error)) {
+      const retry = await applyFilters(VISITOR_SELECT_BASE);
+      data = retry.data;
+      error = retry.error;
     }
 
-    const { data, error } = await q;
     if (error) {
       if (isMissingVisitorsTable(error)) {
         return NextResponse.json({
