@@ -20,8 +20,8 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
-/** Article HTML is request-rendered (root CSP nonce). Post body and sidebars are cached 120s. */
-export const revalidate = 120;
+/** Skip build-time prerender of every post (Vercel 60s limit). Article data is still cached for 120s. */
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;

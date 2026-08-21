@@ -5,8 +5,8 @@ import { getBlogIndexData } from "@/lib/blog-server";
 
 export { metadata };
 
-/** HTML still renders per request (root layout CSP nonce). Listing data is cached for 120s. */
-export const revalidate = 120;
+/** Skip build-time prerender (Vercel 60s limit). Listing data is still cached for 120s. */
+export const dynamic = "force-dynamic";
 
 export default async function BlogsPage() {
   const { posts, sidebarAds, trending, columnPosts, listingTruncated } = await getBlogIndexData();

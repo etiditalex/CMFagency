@@ -1,8 +1,8 @@
-import dynamic from "next/dynamic";
 import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
+import BlogNewsletterLazy from "@/components/blogs/BlogNewsletterLazy";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
 import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
@@ -13,11 +13,6 @@ import type {
   BlogSidebarAdRow,
   BlogTrendingRow,
 } from "@/lib/blog-server";
-
-const BlogNewsletterBannerPopup = dynamic(
-  () => import("@/components/blogs/BlogNewsletterBannerPopup"),
-  { ssr: false }
-);
 
 function formatBlogCardDate(iso: string): string {
   try {
@@ -44,7 +39,7 @@ export default function BlogsPageClient({
 }: Props) {
   return (
     <div className="min-h-0 w-full max-w-[100vw] overflow-x-hidden bg-transparent">
-      <BlogNewsletterBannerPopup />
+      <BlogNewsletterLazy />
       <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
         <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 xl:gap-10">
           <div className="min-w-0 space-y-6 sm:space-y-8">
