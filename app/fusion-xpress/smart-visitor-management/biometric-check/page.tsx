@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, MapPin, XCircle } from "lucide-react";
+import { CheckCircle2, Loader2, MapPin, Search, XCircle } from "lucide-react";
 
 import FingerprintPad from "@/components/fusion-xpress/visitor-management/employees/FingerprintPad";
 import {
@@ -14,9 +14,8 @@ import {
 import type { BrowserPosition } from "@/lib/employees/browser-geolocation";
 import { browserDeviceLabel } from "@/lib/employees/device-fingerprint";
 import {
-  assertEmployeeWebAuthnCredential,
+  authenticateEmployeeWebAuthn,
   isPlatformWebAuthnAvailable,
-  listLocalWebAuthnCredentialIds,
 } from "@/lib/employees/webauthn-browser";
 
 type Feedback = {
@@ -24,6 +23,13 @@ type Feedback = {
   title: string;
   detail: string;
   eventType?: "sign_in" | "sign_out";
+};
+
+type DirectoryHit = {
+  id: string;
+  fullName: string;
+  employeeCode: string | null;
+  department: string;
 };
 
 const FEEDBACK_CLEAR_MS = 4500;
@@ -45,7 +51,11 @@ function BiometricCheckInner() {
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [webauthnSupported, setWebauthnSupported] = useState(false);
-  const [hasLocalCreds, setHasLocalCreds] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searchBusy, setSearchBusy] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hits, setHits] = useState<DirectoryHit[]>([]);
+  const [selected, setSelected] = useState<DirectoryHit | null>(null);
   const positionRef = useRef<BrowserPosition | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,7 +94,6 @@ function BiometricCheckInner() {
 
   useEffect(() => {
     setWebauthnSupported(isPlatformWebAuthnAvailable());
-    setHasLocalCreds(listLocalWebAuthnCredentialIds().length > 0);
   }, []);
 
   useEffect(() => {
@@ -129,15 +138,96 @@ function BiometricCheckInner() {
     void ensureTerminalLocation().catch(() => {});
   }, [loadingTerminal, terminalError, terminalToken, ensureTerminalLocation]);
 
-  const postBiometricScan = useCallback(
-    async (body: Record<string, unknown>) => {
+  const searchEmployees = useCallback(async () => {
+    if (!terminalToken) return;
+    const q = query.trim();
+    if (q.length < 2) {
+      setSearchError("Enter at least two characters of the member ID or name.");
+      setHits([]);
+      return;
+    }
+    setSearchBusy(true);
+    setSearchError(null);
+    setSelected(null);
+    try {
+      const res = await fetch(
+        `/api/visitor-employees/biometric/directory?terminal=${encodeURIComponent(terminalToken)}&q=${encodeURIComponent(q)}`,
+        { cache: "no-store" }
+      );
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        employees?: DirectoryHit[];
+      };
+      if (!res.ok) throw new Error(json.error ?? "Could not search employees");
+      const next = json.employees ?? [];
+      setHits(next);
+      if (next.length === 0) {
+        setSearchError("No matching employee. Check the member ID or name, or ask an administrator to enroll you.");
+      }
+    } catch (e: unknown) {
+      setHits([]);
+      setSearchError(e instanceof Error ? e.message : "Could not search employees");
+    } finally {
+      setSearchBusy(false);
+    }
+  }, [query, terminalToken]);
+
+  const applyScanFeedback = useCallback(
+    (json: {
+      eventType?: string;
+      employee?: { fullName?: string; attendanceStatus?: string };
+      fingerLabel?: string;
+      occurredAt?: string;
+    }) => {
+      const signedIn = json.eventType === "sign_in";
+      const signedOut = json.eventType === "sign_out";
+      const timeLabel = json.occurredAt
+        ? new Date(json.occurredAt).toLocaleTimeString()
+        : "now";
+      setFeedback({
+        ok: true,
+        title: signedOut ? "Signed out" : signedIn ? "Signed in" : "Attendance recorded",
+        detail: `${json.employee?.fullName ?? "Employee"} · ${
+          signedOut ? "Sign out" : signedIn ? "Sign in" : "Scan"
+        } · ${json.fingerLabel ?? DEFAULT_BIOMETRIC_FINGER_LABEL} · ${timeLabel}`,
+        eventType: signedOut ? "sign_out" : signedIn ? "sign_in" : undefined,
+      });
+      clearFeedbackSoon();
+    },
+    [clearFeedbackSoon]
+  );
+
+  const runThumbScan = useCallback(async () => {
+    if (!terminalToken || busy || !locationReady || !selected) return;
+    setBusy(true);
+    setFeedback(null);
+    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+    try {
       const pos = await ensureTerminalLocation();
-      const res = await fetch("/api/visitor-employees/biometric/scan", {
+      const optRes = await fetch("/api/visitor-employees/biometric/webauthn/authenticate/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...body,
           terminal: terminalToken,
+          employeeId: selected.id,
+        }),
+      });
+      const optJson = (await optRes.json().catch(() => ({}))) as {
+        error?: string;
+        options?: Parameters<typeof authenticateEmployeeWebAuthn>[0];
+      };
+      if (!optRes.ok || !optJson.options) {
+        throw new Error(optJson.error ?? BIOMETRIC_NOT_REGISTERED_MESSAGE);
+      }
+
+      const assertion = await authenticateEmployeeWebAuthn(optJson.options);
+      const res = await fetch("/api/visitor-employees/biometric/webauthn/authenticate/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          terminal: terminalToken,
+          employeeId: selected.id,
+          assertion,
           action: "toggle",
           deviceId: getOrCreateBiometricDeviceId(),
           deviceLabel: `${browserDeviceLabel()} · biometric terminal`,
@@ -155,61 +245,8 @@ function BiometricCheckInner() {
         employee?: { fullName?: string; attendanceStatus?: string };
         fingerLabel?: string;
         occurredAt?: string;
-        firstEnrollment?: boolean;
       };
       if (!res.ok) throw new Error(json.error ?? "Fingerprint scan failed");
-      return json;
-    },
-    [ensureTerminalLocation, terminalToken]
-  );
-
-  const applyScanFeedback = useCallback(
-    (json: {
-      eventType?: string;
-      employee?: { fullName?: string; attendanceStatus?: string };
-      fingerLabel?: string;
-      occurredAt?: string;
-      firstEnrollment?: boolean;
-    }) => {
-      const signedIn = json.eventType === "sign_in";
-      const signedOut = json.eventType === "sign_out";
-      const enrolledNote = json.firstEnrollment
-        ? " · Right thumb registered on this terminal"
-        : "";
-      const timeLabel = json.occurredAt
-        ? new Date(json.occurredAt).toLocaleTimeString()
-        : "now";
-      setFeedback({
-        ok: true,
-        title: json.firstEnrollment
-          ? signedIn
-            ? "Registered · Signed in"
-            : "Registered · Signed out"
-          : signedOut
-            ? "Signed out"
-            : signedIn
-              ? "Signed in"
-              : "Attendance recorded",
-        detail: `${json.employee?.fullName ?? "Employee"} · ${
-          signedOut ? "Sign out" : signedIn ? "Sign in" : "Scan"
-        } · ${json.fingerLabel ?? DEFAULT_BIOMETRIC_FINGER_LABEL} · ${timeLabel}${enrolledNote}`,
-        eventType: signedOut ? "sign_out" : signedIn ? "sign_in" : undefined,
-      });
-      clearFeedbackSoon();
-    },
-    [clearFeedbackSoon]
-  );
-
-  /** Shared terminal: one pad only → identify → sign in/out. */
-  const runThumbScan = useCallback(async () => {
-    if (!terminalToken || busy || !locationReady) return;
-    setBusy(true);
-    setFeedback(null);
-    if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-    try {
-      const externalId = await assertEmployeeWebAuthnCredential();
-      setHasLocalCreds(true);
-      const json = await postBiometricScan({ externalId });
       applyScanFeedback(json);
     } catch (e: unknown) {
       const detail =
@@ -233,7 +270,8 @@ function BiometricCheckInner() {
     terminalToken,
     busy,
     locationReady,
-    postBiometricScan,
+    selected,
+    ensureTerminalLocation,
     applyScanFeedback,
     clearFeedbackSoon,
   ]);
@@ -259,7 +297,7 @@ function BiometricCheckInner() {
     );
   }
 
-  const thumbReady = locationReady && webauthnSupported && !busy;
+  const thumbReady = locationReady && webauthnSupported && !!selected && !busy;
 
   return (
     <div className="min-h-[100dvh] bg-slate-950 text-white">
@@ -272,8 +310,8 @@ function BiometricCheckInner() {
             {terminalName}
           </h1>
           <p className="mt-2 text-sm text-slate-300">
-            Shared terminal on site — place your <span className="font-semibold text-white">right thumb</span>{" "}
-            to sign in or sign out.
+            Search your member ID or name, confirm it is you, then place your{" "}
+            <span className="font-semibold text-white">right thumb</span> to sign in or sign out.
           </p>
         </header>
 
@@ -307,9 +345,94 @@ function BiometricCheckInner() {
           <p className="mt-3 text-center text-xs text-amber-200/90">{locationError}</p>
         ) : null}
 
+        <form
+          className="mt-5 space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void searchEmployees();
+          }}
+        >
+          <label className="block text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Member ID or name
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSearchError(null);
+              }}
+              placeholder="e.g. FX-001 or Jane"
+              autoComplete="off"
+              className="min-h-[44px] flex-1 rounded-xl border border-white/15 bg-slate-900 px-3 text-sm text-white placeholder:text-slate-500"
+            />
+            <button
+              type="submit"
+              disabled={searchBusy || !terminalToken}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-sky-700 px-4 text-sm font-bold text-white hover:bg-sky-600 disabled:opacity-50"
+            >
+              {searchBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Find
+            </button>
+          </div>
+        </form>
+
+        {searchError ? (
+          <p className="mt-2 text-center text-xs text-amber-200/90">{searchError}</p>
+        ) : null}
+
+        {hits.length > 0 && !selected ? (
+          <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-slate-900/80 p-2">
+            {hits.map((hit) => (
+              <li key={hit.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected(hit);
+                    setFeedback(null);
+                  }}
+                  className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-white/10"
+                >
+                  <span className="font-semibold text-white">{hit.fullName}</span>
+                  <span className="mt-0.5 block text-xs text-slate-400">
+                    {[hit.employeeCode, hit.department].filter(Boolean).join(" · ") || "Staff"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        {selected ? (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-emerald-400/30 bg-emerald-950/40 px-3 py-2.5">
+            <div>
+              <p className="text-sm font-bold text-emerald-50">{selected.fullName}</p>
+              <p className="text-xs text-emerald-200/80">
+                {[selected.employeeCode, selected.department].filter(Boolean).join(" · ") || "Confirmed"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelected(null);
+                setPadKey((k) => k + 1);
+              }}
+              className="text-xs font-semibold text-emerald-100 underline"
+            >
+              Change
+            </button>
+          </div>
+        ) : null}
+
         <section className="mt-6 flex flex-1 flex-col items-center justify-center rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 px-4 py-8 shadow-2xl">
           <p className="mb-4 text-center text-sm font-semibold uppercase tracking-wide text-sky-300">
-            {busy ? "Reading thumb…" : thumbReady ? "Right thumb ready" : "Waiting for GPS…"}
+            {busy
+              ? "Reading thumb…"
+              : !selected
+                ? "Confirm who you are"
+                : thumbReady
+                  ? "Right thumb ready"
+                  : "Waiting for GPS…"}
           </p>
 
           <FingerprintPad
@@ -322,7 +445,7 @@ function BiometricCheckInner() {
           />
 
           <p className="mt-5 max-w-sm text-center text-sm text-slate-300">
-            {hasLocalCreds
+            {selected
               ? "Hold your right thumb on the sensor. If the phone offers PIN or password, cancel and use fingerprint only."
               : "Not registered yet? Contact your administrator to add you to the attendance register on this terminal."}
           </p>

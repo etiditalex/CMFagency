@@ -6,6 +6,7 @@ import {
   mapBiometricEnrollmentRow,
 } from "@/lib/employees/biometric";
 import { requireEmployeeAccess } from "@/lib/employees/require-employee-access";
+import { revokeWebAuthnCredentialsForEmployee } from "@/lib/employees/webauthn-server";
 import { resolveAdminOwnerScope } from "@/lib/visitors/admin-business-scope";
 import { adminOwnerScopeErrorResponse } from "@/lib/visitors/admin-business-scope-api";
 import { assertVisitorSubscriptionAllows } from "@/lib/visitors/require-visitor-subscription";
@@ -65,6 +66,8 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     if (!data) {
       return NextResponse.json({ error: "Enrollment not found or already revoked." }, { status: 404 });
     }
+
+    await revokeWebAuthnCredentialsForEmployee(admin, scope.ownerId, String(data.employee_id));
 
     return NextResponse.json({
       success: true,

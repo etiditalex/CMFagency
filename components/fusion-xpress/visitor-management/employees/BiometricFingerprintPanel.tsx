@@ -9,11 +9,13 @@ import {
   DEFAULT_BIOMETRIC_FINGER_INDEX,
   DEFAULT_BIOMETRIC_FINGER_LABEL,
   BIOMETRIC_SETUP_MESSAGE,
+  getOrCreateBiometricDeviceId,
   type BiometricEnrollmentRecord,
 } from "@/lib/employees/biometric";
+import { browserDeviceLabel } from "@/lib/employees/device-fingerprint";
 import {
-  createEmployeeWebAuthnCredential,
   isPlatformWebAuthnAvailable,
+  registerEmployeeWebAuthn,
 } from "@/lib/employees/webauthn-browser";
 import { supabase } from "@/lib/supabase";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
@@ -158,52 +160,101 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
       if (!token) throw new Error("Not signed in");
 
       const selected = employees.find((e) => e.id === employeeId);
-      let boundExternalId = externalId.trim();
-      let vendor = boundExternalId ? "hardware" : "fusion_pad";
+      let vendor = "webauthn";
 
-      // Bind this device's fingerprint sensor so the reception terminal can identify
-      // without member ID. Do this on the shared reception tablet/phone.
-      if (!boundExternalId && isPlatformWebAuthnAvailable()) {
-        boundExternalId = await createEmployeeWebAuthnCredential({
-          employeeId,
-          memberCode: selected?.employeeCode || employeeId,
-          displayName: selected?.fullName || "Employee",
+      if (externalId.trim()) {
+        vendor = "hardware";
+        const res = await fetch(`/api/visitor-employees/biometric/enrollments${ownerQs}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            employeeId,
+            fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
+            externalId: externalId.trim(),
+            vendor,
+          }),
         });
-        vendor = "webauthn";
-      }
-
-      const res = await fetch(`/api/visitor-employees/biometric/enrollments${ownerQs}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          employeeId,
-          fingerIndex: DEFAULT_BIOMETRIC_FINGER_INDEX,
-          externalId: boundExternalId || undefined,
-          vendor,
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        employeeName?: string;
-        setupRequired?: boolean;
-        message?: string;
-      };
-      if (!res.ok) {
-        if (json.setupRequired) {
-          setSetupRequired(true);
-          setError(json.message ?? BIOMETRIC_SETUP_MESSAGE);
-          return;
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          employeeName?: string;
+          setupRequired?: boolean;
+          message?: string;
+        };
+        if (!res.ok) {
+          if (json.setupRequired) {
+            setSetupRequired(true);
+            setError(json.message ?? BIOMETRIC_SETUP_MESSAGE);
+            return;
+          }
+          throw new Error(json.error ?? "Enrollment failed");
         }
-        throw new Error(json.error ?? "Enrollment failed");
+        setMessage(
+          `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"} with hardware scanner id.`
+        );
+      } else {
+        if (!isPlatformWebAuthnAvailable()) {
+          throw new Error(
+            "This device does not support fingerprint sign-in. Use the reception tablet or a phone with a fingerprint sensor."
+          );
+        }
+
+        const optRes = await fetch(
+          `/api/visitor-employees/biometric/webauthn/register/options${ownerQs}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ employeeId }),
+          }
+        );
+        const optJson = (await optRes.json().catch(() => ({}))) as {
+          error?: string;
+          options?: Parameters<typeof registerEmployeeWebAuthn>[0];
+        };
+        if (!optRes.ok || !optJson.options) {
+          throw new Error(optJson.error ?? "Could not start fingerprint registration.");
+        }
+
+        const attestation = await registerEmployeeWebAuthn(optJson.options);
+        const verifyRes = await fetch(
+          `/api/visitor-employees/biometric/webauthn/register/verify${ownerQs}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              employeeId,
+              attestation,
+              deviceId: getOrCreateBiometricDeviceId(),
+              deviceLabel: `${browserDeviceLabel()} · biometric terminal`,
+            }),
+          }
+        );
+        const json = (await verifyRes.json().catch(() => ({}))) as {
+          error?: string;
+          employeeName?: string;
+          setupRequired?: boolean;
+          message?: string;
+        };
+        if (!verifyRes.ok) {
+          if (json.setupRequired) {
+            setSetupRequired(true);
+            setError(json.message ?? BIOMETRIC_SETUP_MESSAGE);
+            return;
+          }
+          throw new Error(json.error ?? "Enrollment failed");
+        }
+        setMessage(
+          `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? selected?.fullName ?? "employee"} on this kiosk. They can check in by searching their member ID or name, then using this fingerprint sensor.`
+        );
       }
-      setMessage(
-        vendor === "webauthn"
-          ? `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"} on this device. They can use the terminal pad only.`
-          : `Enrolled ${DEFAULT_BIOMETRIC_FINGER_LABEL} for ${json.employeeName ?? "employee"}.`
-      );
       setPadReady(false);
       setExternalId("");
       await load();
@@ -291,10 +342,10 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                 </h2>
                 <p className="mt-1 text-sm text-gray-600">
                   Keep <strong>one tablet/gadget</strong> at reception on your business premise. Open
-                  this link and leave it on the thumb-ready screen. Every employee uses the{" "}
-                  <strong>right thumb</strong> on that same terminal (GPS must stay on). First time
-                  per person: register with member ID once; after that thumb only. QR stays on
-                  Employees → Kiosk.
+                  this link and leave it on the search screen. Employees look up their member ID or
+                  name, then use the <strong>right thumb</strong> on that same terminal (GPS must
+                  stay on). Enroll each person here on this kiosk first. QR stays on Employees →
+                  Kiosk.
                 </p>
               </div>
               <button
@@ -336,9 +387,10 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
               <h2 className="text-lg font-bold text-gray-900">Enroll a fingerprint</h2>
               <p className="mt-1 text-sm text-gray-600">
                 Enroll on the <strong>shared reception tablet/phone</strong> using the right thumb.
-                That binds the device fingerprint sensor so staff only use the terminal pad (no
-                self-register, no member ID). Unregistered staff must be added here first. QR stays
-                on the Kiosk page. Optional hardware scanner id is for USB/Ethernet readers.
+                That registers a fingerprint credential on this kiosk. At check-in, staff search
+                their member ID or name, then confirm on this sensor. Unregistered staff must be
+                added here first. QR stays on the Kiosk page. Optional hardware scanner id is for
+                USB/Ethernet readers.
               </p>
             </div>
 
@@ -423,7 +475,11 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
                         </td>
                         <td className="py-2.5 pr-3 text-gray-700">{row.fingerLabel}</td>
                         <td className="py-2.5 pr-3 text-gray-700">
-                          {row.vendor === "hardware" ? "Hardware" : "Fusion pad"}
+                          {row.vendor === "hardware"
+                            ? "Hardware"
+                            : row.vendor === "webauthn"
+                              ? "Kiosk fingerprint"
+                              : "Fusion pad"}
                           {row.externalId ? (
                             <span className="block text-xs text-gray-500">{row.externalId}</span>
                           ) : null}

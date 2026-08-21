@@ -392,3 +392,150 @@ export async function processEmployeeBiometricScan(
 
   return { ...result, fingerLabel, firstEnrollment };
 }
+
+export type BiometricDirectoryHit = {
+  id: string;
+  fullName: string;
+  employeeCode: string | null;
+  department: string;
+};
+
+const DIRECTORY_QUERY_MIN = 2;
+const DIRECTORY_RESULT_LIMIT = 8;
+
+export function sanitizeBiometricDirectoryQuery(raw: unknown): string {
+  return String(raw ?? "")
+    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+}
+
+export async function searchEmployeesForBiometricDirectory(
+  admin: SupabaseClient,
+  ownerId: string,
+  queryRaw: unknown
+): Promise<
+  | { ok: true; employees: BiometricDirectoryHit[] }
+  | { ok: false; error: string; status: number }
+> {
+  const q = sanitizeBiometricDirectoryQuery(queryRaw);
+  if (q.length < DIRECTORY_QUERY_MIN) {
+    return {
+      ok: false,
+      error: "Enter at least two characters of the member ID or name.",
+      status: 400,
+    };
+  }
+
+  const like = `%${q}%`;
+  const [byName, byCode] = await Promise.all([
+    admin
+      .from("visitor_employees")
+      .select("id,full_name,employee_code,department")
+      .eq("owner_id", ownerId)
+      .eq("status", "active")
+      .ilike("full_name", like)
+      .order("full_name", { ascending: true })
+      .limit(DIRECTORY_RESULT_LIMIT),
+    admin
+      .from("visitor_employees")
+      .select("id,full_name,employee_code,department")
+      .eq("owner_id", ownerId)
+      .eq("status", "active")
+      .ilike("employee_code", like)
+      .order("full_name", { ascending: true })
+      .limit(DIRECTORY_RESULT_LIMIT),
+  ]);
+
+  const error = byName.error ?? byCode.error;
+  if (error) {
+    if (isMissingEmployeesTable(error) || isMissingBiometricTable(error)) {
+      return { ok: false, error: EMPLOYEES_SETUP_MESSAGE, status: 503 };
+    }
+    return { ok: false, error: error.message, status: 500 };
+  }
+
+  const seen = new Set<string>();
+  const employees: BiometricDirectoryHit[] = [];
+  for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) {
+    const id = String(row.id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    employees.push({
+      id,
+      fullName: String(row.full_name ?? "").trim() || "Employee",
+      employeeCode: row.employee_code ? String(row.employee_code) : null,
+      department: String(row.department ?? "").trim(),
+    });
+    if (employees.length >= DIRECTORY_RESULT_LIMIT) break;
+  }
+
+  return { ok: true, employees };
+}
+
+export async function recordVerifiedBiometricAttendance(
+  admin: SupabaseClient,
+  input: DeviceFingerprintInput & {
+    terminal?: unknown;
+    terminalToken?: unknown;
+    employeeId: string;
+    action?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    accuracyMeters?: unknown;
+    accuracy?: unknown;
+  }
+): Promise<EmployeeScanResult & { fingerLabel?: string }> {
+  const terminalLookup = await lookupBiometricTerminal(
+    admin,
+    input.terminal ?? input.terminalToken
+  );
+  if (!terminalLookup.ok) {
+    return {
+      ok: false,
+      error: terminalLookup.error,
+      status: terminalLookup.status,
+    };
+  }
+
+  const { data: emp, error: empErr } = await admin
+    .from("visitor_employees")
+    .select(EMPLOYEE_SELECT)
+    .eq("id", input.employeeId)
+    .eq("owner_id", terminalLookup.terminal.ownerId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (empErr) {
+    if (isMissingEmployeesTable(empErr)) {
+      return { ok: false, error: EMPLOYEES_SETUP_MESSAGE, status: 503 };
+    }
+    return { ok: false, error: empErr.message, status: 500 };
+  }
+  if (!emp) {
+    return { ok: false, error: BIOMETRIC_NOT_REGISTERED_MESSAGE, status: 404 };
+  }
+
+  const employee = mapEmployeeRow(emp as EmployeeRow);
+  if (!employee.qrCodeToken) {
+    return { ok: false, error: "Employee QR token missing. Re-save the employee record.", status: 500 };
+  }
+
+  const result = await processEmployeeQrScan(admin, {
+    ...input,
+    token: employee.qrCodeToken,
+    kioskScan: true,
+    scanSource: "biometric",
+    deviceLabel: input.deviceLabel ?? "Biometric · Right thumb",
+  });
+
+  if (!result.ok) {
+    if (isMissingEmployeesTable({ message: result.error })) {
+      return { ok: false, error: EMPLOYEES_SETUP_MESSAGE, status: 503 };
+    }
+    return result;
+  }
+
+  return { ...result, fingerLabel: "Right thumb" };
+}

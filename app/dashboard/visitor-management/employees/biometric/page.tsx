@@ -112,8 +112,9 @@ export default function VisitorManagementEmployeesBiometricPage() {
           Biometric fingerprint
         </h1>
         <p className="mt-1 text-sm text-gray-600">
-          Enroll each employee’s right thumb and use a shared reception terminal for sign-in and
-          sign-out — alongside QR and member-code attendance.
+          Enroll each employee’s right thumb on the reception kiosk. Staff check in by searching
+          their member ID or name, then confirming with fingerprint — alongside QR and member-code
+          attendance.
         </p>
         <p className="mt-2 text-sm flex flex-wrap gap-x-4 gap-y-1">
           <Link

@@ -151,12 +151,16 @@ export function isMissingBiometricTable(error: unknown): boolean {
     msg.includes("visitor_employee_biometric") ||
     msg.includes("biometric_enrollments") ||
     msg.includes("biometric_terminals") ||
-    (msg.includes("does not exist") && msg.toLowerCase().includes("biometric"))
+    msg.includes("visitor_employee_webauthn") ||
+    msg.includes("webauthn_credentials") ||
+    msg.includes("webauthn_challenges") ||
+    (msg.includes("does not exist") &&
+      (msg.toLowerCase().includes("biometric") || msg.toLowerCase().includes("webauthn")))
   );
 }
 
 export const BIOMETRIC_SETUP_MESSAGE =
-  "Biometric fingerprint module not set up. Run database/visitor_employees_patch_19_biometric_fingerprint.sql in Supabase.";
+  "Biometric fingerprint module not set up. Run database/visitor_employees_patch_19_biometric_fingerprint.sql and database/visitor_employees_patch_20_webauthn_credentials.sql in Supabase.";
 
 export const BIOMETRIC_NOT_REGISTERED_MESSAGE =
   "You are not yet registered. Kindly contact the administrator to add you to the attendance register.";

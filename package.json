@@ -17,6 +17,8 @@
     "@paystack/inline-js": "^2.22.7",
     "@react-email/components": "^1.0.7",
     "@react-email/render": "^2.0.4",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.2",
     "@supabase/supabase-js": "^2.90.0",
     "@tavily/core": "^0.7.2",
     "ai": "^6.0.86",
