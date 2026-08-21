@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { Clock, FileText } from "lucide-react";
 
 import { DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
-import { blogImageOptimizeProps } from "@/lib/blog-image";
+import { blogImageOptimizeProps, resolveBlogImageSrc } from "@/lib/blog-image";
 import type { BlogColumnSidebarRow } from "@/lib/blog-server";
 
 type Props = {
@@ -39,10 +39,10 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
         <Link href={`/blogs/${featured.slug}`} className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
             <Image
-              src={featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
+              src={resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, 640)}
               alt={featured.title}
               fill
-              {...blogImageOptimizeProps(featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
+              {...blogImageOptimizeProps(resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, 640))}
               className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
               loading="lazy"
               sizes="(max-width: 1024px) 100vw, 320px"
@@ -75,10 +75,10 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
               >
                 <div className="relative w-24 h-[4.25rem] shrink-0 overflow-hidden rounded-md bg-gray-100 border border-gray-100">
                   <Image
-                    src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
+                    src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 192)}
                     alt=""
                     fill
-                    {...blogImageOptimizeProps(p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
+                    {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 192))}
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
                     sizes="96px"

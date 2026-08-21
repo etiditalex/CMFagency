@@ -3,7 +3,7 @@ import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import BlogColumnsWidget from "@/components/blogs/BlogColumnsWidget";
-import { blogImageOptimizeProps } from "@/lib/blog-image";
+import { blogImageOptimizeProps, resolveBlogImageSrc } from "@/lib/blog-image";
 import type { BlogColumnSidebarRow, BlogTrendingRow } from "@/lib/blog-server";
 
 const CMFA_EVENT_HREF = "/events/upcoming/coast-fashion-modelling-awards-2026";
@@ -61,7 +61,7 @@ export default function BlogListingSidebar({ trending, columnPosts, className = 
           className="block relative aspect-[4/3] w-full bg-black outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80"
         >
           <Image
-            src={CMFA_BANNER_IMAGE}
+            src={resolveBlogImageSrc(CMFA_BANNER_IMAGE, CMFA_BANNER_IMAGE, 640)}
             alt="Coast Fashion and Modelling Awards 2026 — CMFA banner"
             fill
             className="absolute inset-0 h-full w-full object-cover object-center"

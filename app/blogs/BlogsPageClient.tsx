@@ -6,7 +6,7 @@ import BlogNewsletterLazy from "@/components/blogs/BlogNewsletterLazy";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
 import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
-import { blogImageOptimizeProps } from "@/lib/blog-image";
+import { blogImageOptimizeProps, resolveBlogImageSrc } from "@/lib/blog-image";
 import type {
   BlogColumnSidebarRow,
   BlogListingRow,
@@ -71,7 +71,7 @@ export default function BlogsPageClient({
                 </div>
               ) : (
                 initialPosts.map((post, idx) => {
-                  const src = post.image_url || DEFAULT_BLOG_CARD_IMAGE;
+                  const src = resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, 720);
                   return (
                     <article
                       key={post.id}

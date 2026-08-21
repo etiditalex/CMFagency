@@ -211,7 +211,7 @@ async function loadBlogIndexData(): Promise<{
     return { posts: [], sidebarAds: [], trending: [], columnPosts: [], listingTruncated: false };
   }
 
-  const [postsRes, trendingRes, adsRes, columnPosts] = await Promise.all([
+  const [postsRes, trendingRes, adsRes, columnsRes] = await Promise.all([
     supabase
       .from("fusion_blogs")
       .select("id, slug, title, excerpt, author, category, image_url, published_at")
@@ -228,7 +228,13 @@ async function loadBlogIndexData(): Promise<{
       .from("fusion_blog_sidebar_ads")
       .select("id, title, image_url, href")
       .order("sort_order", { ascending: true }),
-    getBlogColumnsSidebarPosts(undefined, 5),
+    supabase
+      .from("fusion_blogs")
+      .select("slug, title, image_url, published_at, category")
+      .not("published_at", "is", null)
+      .in("category", [...COLUMN_SIDEBAR_CATEGORIES])
+      .order("published_at", { ascending: false })
+      .limit(5),
   ]);
 
   const rawPosts =
@@ -241,6 +247,8 @@ async function loadBlogIndexData(): Promise<{
     !adsRes.error && adsRes.data ? (adsRes.data as BlogSidebarAdRow[]) : [];
   const trending =
     !trendingRes.error && trendingRes.data ? (trendingRes.data as BlogTrendingRow[]) : [];
+  const columnPosts =
+    !columnsRes.error && columnsRes.data ? (columnsRes.data as BlogColumnSidebarRow[]) : [];
 
   return { posts, sidebarAds, trending, columnPosts, listingTruncated };
 }

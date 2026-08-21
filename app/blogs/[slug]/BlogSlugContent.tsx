@@ -17,7 +17,7 @@ import BlogCmfaInlineBanner from "@/components/blogs/BlogCmfaInlineBanner";
 import BlogEditorialDesk from "@/components/blogs/BlogEditorialDesk";
 import BlogShareBar from "@/components/blogs/BlogShareBar";
 import { SITE_URL } from "@/lib/site-url";
-import { blogImageOptimizeProps } from "@/lib/blog-image";
+import { blogImageOptimizeProps, resolveBlogImageSrc } from "@/lib/blog-image";
 
 type Props = {
   post: BlogPostRow;
@@ -29,10 +29,7 @@ type Props = {
 };
 
 function heroSrcFor(post: BlogPostRow): string {
-  const u = post.image_url?.trim() ?? "";
-  if (u.startsWith("//")) return `https:${u}`;
-  if (u.startsWith("http://")) return `https://${u.slice(7)}`;
-  return u || DEFAULT_BLOG_CARD_IMAGE;
+  return resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, 1200);
 }
 
 function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relatedBySlug: Record<string, BlogRelatedCard> }) {
@@ -52,10 +49,10 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
           >
             <div className="relative w-28 h-20 sm:w-32 sm:h-[4.5rem] shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
               <Image
-                src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
+                src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 256)}
                 alt={p.title}
                 fill
-                {...blogImageOptimizeProps(p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
+                {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 256))}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 sizes="(max-width: 640px) 112px, 128px"
