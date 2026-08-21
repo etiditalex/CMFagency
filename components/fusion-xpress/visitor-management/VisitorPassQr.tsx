@@ -30,7 +30,7 @@ export default function VisitorPassQr({
 
   return (
     <div className={`inline-flex flex-col items-center gap-2 ${className}`}>
-      <div className="rounded-xl border border-gray-200 bg-white p-3">
+      <div className="border border-[#e5e5e5] bg-white p-3">
         <QRCodeSVG value={value} size={size} level="M" includeMargin />
       </div>
       {label ? (

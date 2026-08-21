@@ -169,7 +169,7 @@ export default function VisitorSubscriptionSettingsPage() {
             ← Visitor Management
           </Link>
         </p>
-        <h1 className="mt-2 text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="mt-2 text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <CreditCard className="w-7 h-7 text-primary-600" />
           Subscription
         </h1>
@@ -192,7 +192,7 @@ export default function VisitorSubscriptionSettingsPage() {
       ) : null}
 
       {subscription ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-2">
+        <div className="border border-[#e5e5e5] bg-white p-5 space-y-2">
           <p className="text-sm text-gray-600">
             Current plan:{" "}
             <strong className="text-gray-900">{VISITOR_PLAN_LABELS[subscription.plan]}</strong>

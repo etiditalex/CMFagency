@@ -705,7 +705,7 @@ export default function CampaignReportPage() {
               )}
             </div>
 
-            <h2 className="mt-4 text-2xl md:text-3xl font-extrabold text-gray-900 truncate text-left">
+            <h2 className="mt-4 text-2xl md:text-3xl font-bold text-[#1a2332] truncate text-left">
               {campaign?.title ?? "Campaign"}
             </h2>
             <div className="mt-2 text-gray-600 text-left">
@@ -756,7 +756,7 @@ export default function CampaignReportPage() {
         </div>
 
         {/* Date range controls */}
-        <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 p-4">
+        <div className="mt-6 bg-white border border-[#e5e5e5] p-4">
           <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
             <div className="text-sm text-gray-600 text-left">
               <span className="font-semibold">Range:</span> {rangeLabel}
@@ -833,11 +833,11 @@ export default function CampaignReportPage() {
 
         {/* KPIs */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="bg-white p-6 border border-[#e5e5e5]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Revenue</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{formatRevenue}</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{formatRevenue}</div>
                 <div className="mt-2 text-sm text-gray-600">Successful payments only.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
@@ -846,11 +846,11 @@ export default function CampaignReportPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="bg-white p-6 border border-[#e5e5e5]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{successfulPayments.toLocaleString()}</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{successfulPayments.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">
                   All successful payments in this range (not just the latest 50 in the table below).
                 </div>
@@ -861,11 +861,11 @@ export default function CampaignReportPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="bg-white p-6 border border-[#e5e5e5]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Tickets issued</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalTicketsIssued.toLocaleString()}</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{totalTicketsIssued.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">From ticket_issues.</div>
               </div>
               <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
@@ -874,11 +874,11 @@ export default function CampaignReportPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+          <div className="bg-white p-6 border border-[#e5e5e5]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
-                <div className="mt-2 text-2xl font-extrabold text-gray-900">{totalVotes.toLocaleString()}</div>
+                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{totalVotes.toLocaleString()}</div>
                 <div className="mt-2 text-sm text-gray-600">
                   {isVote
                     ? "Sum of quantities on successful vote payments (by payment confirmation time in this range)."
@@ -894,10 +894,10 @@ export default function CampaignReportPage() {
 
         {/* Vote breakdown */}
         {isVote && (
-          <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+          <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
-              <h2 className="mt-1 text-xl font-extrabold text-gray-900">Votes by contestant</h2>
+              <h2 className="mt-1 text-xl font-bold text-[#1a2332]">Votes by contestant</h2>
               <p className="mt-2 text-gray-600 text-sm">
                 Totals use successful vote transactions: quantity per payment. Range uses verified_at when set;
                 otherwise created_at or paid_at for older rows.
@@ -938,7 +938,7 @@ export default function CampaignReportPage() {
 
             <div className="overflow-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-white border-b border-[#e5e5e5]">
                   <tr className="text-left">
                     <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
                     <th className="px-6 py-3 font-bold text-gray-600">Votes</th>
@@ -998,10 +998,10 @@ export default function CampaignReportPage() {
         )}
 
         {/* Transactions */}
-        <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+        <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
-            <h2 className="mt-1 text-xl font-extrabold text-gray-900">Transactions</h2>
+            <h2 className="mt-1 text-xl font-bold text-[#1a2332]">Transactions</h2>
             <p className="mt-2 text-gray-600 text-sm">
               Latest transactions in the selected range. STK Push confirms automatically. If the customer paid via{" "}
               <span className="font-semibold">paybill</span> after STK failed, an admin must{" "}
@@ -1017,7 +1017,7 @@ export default function CampaignReportPage() {
 
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-white border-b border-[#e5e5e5]">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600">Time</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Payer</th>

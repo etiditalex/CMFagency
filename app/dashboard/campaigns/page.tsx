@@ -371,7 +371,7 @@ export default function DashboardCampaignsPage() {
     <div className="text-left">
       <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Campaigns</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Campaigns</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Create ticket or voting campaigns and share public payment links. Payment confirmation and fulfillment are
             handled by webhook only.
@@ -455,7 +455,7 @@ export default function DashboardCampaignsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6">
         {filtered.length === 0 ? (
-          <div className="bg-white rounded-md shadow-sm p-8 border border-gray-200">
+          <div className="bg-white p-8 border border-[#e5e5e5]">
             <p className="text-gray-700 text-left">
               {searchQuery.trim()
                 ? `No campaigns match "${searchQuery.trim()}". Try a different search or clear the search.`
@@ -484,7 +484,7 @@ export default function DashboardCampaignsPage() {
               const publicUrl = `/${c.slug}`;
 
               return (
-                <div key={c.id} className="bg-white rounded-md shadow-sm p-4 border border-gray-200">
+                <div key={c.id} className="bg-white p-4 border border-[#e5e5e5]">
                   <div className="flex flex-col gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -492,7 +492,7 @@ export default function DashboardCampaignsPage() {
                           <Icon className="w-5 h-5 text-primary-700" />
                         </span>
                         <div className="min-w-0">
-                          <div className="font-extrabold text-gray-900 text-lg truncate text-left">{c.title}</div>
+                          <div className="font-bold text-[#1a2332] text-lg truncate text-left">{c.title}</div>
                           <div className="text-sm text-gray-600 truncate text-left">
                             <span className="font-semibold">{isVote ? "Voting" : "Tickets"}</span> ·{" "}
                             <span className="font-mono">{c.slug}</span>
@@ -604,7 +604,7 @@ export default function DashboardCampaignsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-extrabold text-gray-900">Assign campaign to client</h3>
+              <h3 className="text-lg font-bold text-[#1a2332]">Assign campaign to client</h3>
               <button
                 type="button"
                 onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}

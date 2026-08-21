@@ -184,7 +184,7 @@ export default function AttendanceReportLogTable({
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm print:border-gray-300">
+    <section className="overflow-hidden border border-[#e5e5e5] bg-white print:border-gray-300">
       <div className="border-b border-slate-200 px-4 py-3 print:hidden sm:px-5">
         <div>
           <h2 className="text-xl font-extrabold tracking-tight text-slate-900">{title.toUpperCase()}</h2>

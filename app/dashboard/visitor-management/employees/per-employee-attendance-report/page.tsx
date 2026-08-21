@@ -345,7 +345,7 @@ export default function PerEmployeeAttendanceReportPage() {
       `}</style>
 
       <div className="no-print">
-        <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-900">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
           <UserRound className="h-7 w-7 text-primary-600" />
           {scopedBusinessName ? `${scopedBusinessName} — Per employee attendance report` : "Per employee attendance report"}
         </h1>
@@ -368,7 +368,7 @@ export default function PerEmployeeAttendanceReportPage() {
 
       {!needsSelection && !setupRequired ? (
         <>
-          <section className="no-print space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <section className="no-print space-y-4 border border-[#e5e5e5] bg-white p-4">
             <div className="flex flex-wrap gap-2">
               {PRESET_BUTTONS.map((button) => (
                 <button
@@ -466,10 +466,10 @@ export default function PerEmployeeAttendanceReportPage() {
           ) : (
             <div id="per-employee-attendance-print" ref={printRef} className="space-y-6">
               {selectedEmployee ? (
-                <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid">
+                <section className="border border-[#e5e5e5] bg-white p-4 print:break-inside-avoid">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-extrabold text-gray-900">{selectedEmployee.fullName}</h2>
+                      <h2 className="text-lg font-bold text-[#1a2332]">{selectedEmployee.fullName}</h2>
                       <p className="text-sm text-gray-600">
                         {selectedEmployee.department || "No department"} ·{" "}
                         {memberTypeLabel(selectedEmployee.memberType)}
@@ -509,8 +509,8 @@ export default function PerEmployeeAttendanceReportPage() {
               ) : null}
 
               {employeeSummary ? (
-                <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
+                <section className="border border-[#e5e5e5] bg-white overflow-hidden print:break-inside-avoid">
+                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#e5e5e5] bg-white px-4 py-3">
                     <div>
                       <h2 className="text-sm font-bold text-gray-900">Attendance summary</h2>
                       <p className="mt-0.5 text-xs text-gray-500">{rangeLabel}</p>
@@ -567,8 +567,8 @@ export default function PerEmployeeAttendanceReportPage() {
               ) : null}
 
               {employeeLeave.length > 0 ? (
-                <section className="rounded-xl border border-gray-200 bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+                <section className="border border-[#e5e5e5] bg-white overflow-hidden print:break-inside-avoid">
+                  <div className="border-b border-[#e5e5e5] bg-white px-4 py-3">
                     <h2 className="text-sm font-bold text-gray-900">Leave in this period</h2>
                   </div>
                   <div className="overflow-x-auto">

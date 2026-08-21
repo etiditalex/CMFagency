@@ -97,7 +97,7 @@ export default function VisitorManagementEmployeesGpsPage() {
   return (
     <div className="space-y-6 -mx-2 sm:mx-0">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <MapPin className="w-7 h-7 text-sky-600" />
           GPS tracking
         </h1>

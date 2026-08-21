@@ -11,8 +11,8 @@ import {
 export default function FxQrCodeGeneratorDashboardGuide() {
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-extrabold text-gray-900">How the public tool works</h2>
+      <section className="border border-[#e5e5e5] bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-[#1a2332]">How the public tool works</h2>
         <p className="mt-2 text-sm leading-relaxed text-gray-600">{FX_QR_GENERATOR_SHORT_ANSWER}</p>
         <ol className="mt-4 space-y-3">
           {FX_QR_GENERATOR_HOW_TO_STEPS.map((step, index) => (
@@ -29,11 +29,11 @@ export default function FxQrCodeGeneratorDashboardGuide() {
         </ol>
       </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-extrabold text-gray-900">Use cases to promote</h2>
+      <section className="border border-[#e5e5e5] bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-[#1a2332]">Use cases to promote</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {FX_QR_GENERATOR_USE_CASES.map((item) => (
-            <article key={item.title} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <article key={item.title} className="border border-[#e5e5e5] bg-white p-4">
               <h3 className="text-sm font-bold text-gray-900">{item.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
             </article>
@@ -50,11 +50,11 @@ export default function FxQrCodeGeneratorDashboardGuide() {
 
       <FxQrCodeGeneratorSharePanel variant="dashboard" />
 
-      <section className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-extrabold text-gray-900">FAQ for your marketing team</h2>
+      <section className="border border-[#e5e5e5] bg-white p-5 sm:p-6">
+        <h2 className="text-lg font-bold text-[#1a2332]">FAQ for your marketing team</h2>
         <dl className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {FX_QR_GENERATOR_FAQ.map((item) => (
-            <div key={item.question} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <div key={item.question} className="border border-[#e5e5e5] bg-white p-4">
               <dt className="text-sm font-bold text-gray-900">{item.question}</dt>
               <dd className="mt-2 text-sm leading-relaxed text-gray-600">{item.answer}</dd>
             </div>

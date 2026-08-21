@@ -144,7 +144,7 @@ export default function DashboardEventsPage() {
     <div className="text-left">
       <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Events</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Events</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Manage events shown on the upcoming events, past events, and all events pages. Use{" "}
             <span className="font-semibold text-gray-800">Live / Off</span> to open or close ticket
@@ -184,10 +184,10 @@ export default function DashboardEventsPage() {
         ))}
       </div>
 
-      <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-[#e5e5e5]">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Event</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Date</th>

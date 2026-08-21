@@ -576,7 +576,7 @@ export default function VisitorManagementEmployeesPage() {
   return (
     <div className="w-full space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <UserCog className="w-7 h-7 text-primary-600" />
           {isAdmin && scopedBusinessName ? scopedBusinessName : "Employee attendance"}
         </h1>
@@ -791,8 +791,8 @@ export default function VisitorManagementEmployeesPage() {
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+      <div className="border border-[#e5e5e5] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
             <Users className="w-4 h-4 text-gray-500" />
             {isRealEstateOrg ? `${memberTypeLabel(memberTab)} team` : "Staff members"}

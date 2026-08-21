@@ -234,11 +234,11 @@ export default function LeaveAllocationSettingsPanel({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-white/15 bg-white shadow-sm">
+      <div className="overflow-hidden border border-[#e5e5e5] bg-white">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <tr className="border-b border-[#e5e5e5] bg-white text-left text-xs uppercase text-gray-500">
                 <th className="px-4 py-3 font-semibold">Employee</th>
                 {LEAVE_TYPES.map((type) => (
                   <th key={type} className="px-3 py-3 font-semibold whitespace-nowrap">

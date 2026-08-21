@@ -209,7 +209,7 @@ export default function SmartManagementInvoicePage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-6 items-start border border-gray-100 rounded-lg p-4 bg-gray-50/80">
-        <div className="shrink-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm relative h-14 w-[200px]">
+        <div className="shrink-0 border border-[#e5e5e5] bg-white p-3 relative h-14 w-[200px]">
           <Image src={BRAND_LOGO_URL} alt="Changer Fusions" fill className="object-contain p-1" sizes="200px" />
         </div>
         <div className="text-sm text-gray-700 leading-relaxed min-w-0">
@@ -353,7 +353,7 @@ export default function SmartManagementInvoicePage() {
       </div>
 
       <div>
-        <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
+        <h2 className="text-base font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <FileText className="w-5 h-5 text-primary-600" aria-hidden />
           Included features — {smartManagementPackageLabel(plan)}
         </h2>

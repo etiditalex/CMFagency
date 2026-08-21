@@ -60,7 +60,7 @@ export default function VisitorManagementHrPayrollApiPage() {
       {isAdmin && needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <KeyRound className="w-7 h-7 text-primary-600" />
           HR &amp; Payroll API
         </h1>

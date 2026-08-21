@@ -249,7 +249,7 @@ export default function ManagedPageEditor({ route }: { route: string }) {
             <ChevronLeft className="w-4 h-4" />
             Back to Pages
           </button>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">{existing ? "Edit page" : "Create page"}</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">{existing ? "Edit page" : "Create page"}</h2>
           <p className="text-gray-600 mt-1">
             Route: <span className="font-mono text-gray-700">{route}</span>
           </p>
@@ -280,7 +280,7 @@ export default function ManagedPageEditor({ route }: { route: string }) {
 
       <div className="mt-6 grid grid-cols-1 xl:grid-cols-12 gap-6">
         <div className="xl:col-span-5">
-          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-5">
+          <div className="bg-white border border-[#e5e5e5] p-5">
             <div className="space-y-4">
               {managed?.section === "services" && (
                 <div className="space-y-3">
@@ -399,7 +399,7 @@ export default function ManagedPageEditor({ route }: { route: string }) {
         </div>
 
         <div className="xl:col-span-7">
-          <div className="bg-white rounded-md shadow-sm border border-gray-200 p-5">
+          <div className="bg-white border border-[#e5e5e5] p-5">
             <div className="text-sm font-bold text-gray-700 mb-3">Preview</div>
             <div className="overflow-auto max-h-[70vh] pr-2">
               {section === "services" ? (

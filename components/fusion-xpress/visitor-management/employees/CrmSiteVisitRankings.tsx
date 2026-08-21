@@ -10,8 +10,8 @@ type Props = {
 
 export default function CrmSiteVisitRankings({ rankings, fromLabel, toLabel }: Props) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <section className="border border-[#e5e5e5] bg-white overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white">
         <h3 className="text-sm font-bold text-gray-900">CRM site visit rankings</h3>
         <p className="text-xs text-gray-500 mt-0.5">
           Completed site visits ({fromLabel} – {toLabel}). Used for awards — most visits wins

@@ -20,9 +20,9 @@ import {
 function DocSectionCard({ section }: { section: DocSection }) {
   return (
     <section id={section.id} className="scroll-mt-24">
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-gray-100 bg-gradient-to-r from-primary-50 to-white px-5 py-4 sm:px-6">
-          <h2 className="text-lg font-extrabold text-gray-900">{section.title}</h2>
+      <div className="border border-[#e5e5e5] bg-white overflow-hidden">
+        <div className="border-b border-[#e5e5e5] bg-white px-5 py-4 sm:px-6">
+          <h2 className="text-lg font-bold text-[#1a2332]">{section.title}</h2>
           <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{section.summary}</p>
         </div>
 
@@ -43,7 +43,7 @@ function DocSectionCard({ section }: { section: DocSection }) {
               {section.steps.map((step, index) => (
                 <li
                   key={step.title}
-                  className="flex gap-3 rounded-lg border border-gray-100 bg-gray-50/80 px-4 py-3"
+                  className="flex gap-3 border border-[#e5e5e5] bg-white px-4 py-3"
                 >
                   <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-700 text-xs font-bold text-white">
                     {index + 1}
@@ -126,17 +126,17 @@ export default function VisitorManagementDoc() {
 
   return (
     <div className="space-y-8 -mx-2 sm:mx-0">
-      <div className="rounded-xl border border-primary-200 bg-gradient-to-br from-primary-700 via-primary-800 to-secondary-800 p-6 sm:p-8 text-white shadow-md">
+      <div className="border border-[#e5e5e5] bg-white p-6 sm:p-8">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/15">
-            <BookOpen className="h-6 w-6" />
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center border border-[#e5e5e5] bg-white">
+            <BookOpen className="h-6 w-6 text-primary-700" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-primary-200">Doc</p>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#555]">Doc</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
               Smart Visitor Management guide
             </h1>
-            <p className="mt-2 max-w-2xl text-sm sm:text-base text-white/90 leading-relaxed">
+            <p className="mt-2 max-w-2xl text-sm sm:text-base text-[#555] leading-relaxed">
               How guests, employees, leave, GPS, CRM site visits, reports, and subscriptions work
               together in Fusion Xpress.
             </p>
@@ -144,7 +144,7 @@ export default function VisitorManagementDoc() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
+      <div className="border border-[#e5e5e5] bg-white p-5 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <GitBranch className="h-4 w-4 text-primary-700" />
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-gray-800">
@@ -153,7 +153,7 @@ export default function VisitorManagementDoc() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {VISITOR_MANAGEMENT_DOC_FLOWS.map((flow) => (
-            <div key={flow.title} className="rounded-lg border border-gray-100 bg-gray-50/60 p-4">
+            <div key={flow.title} className="border border-[#e5e5e5] bg-white p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-primary-700 mb-3">
                 {flow.title}
               </p>
@@ -179,7 +179,7 @@ export default function VisitorManagementDoc() {
           className="hidden lg:block"
           aria-label="Documentation sections"
         >
-          <div className="sticky top-24 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="sticky top-24 border border-[#e5e5e5] bg-white p-3">
             <p className="px-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
               On this page
             </p>

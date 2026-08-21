@@ -724,7 +724,7 @@ export default function DashboardHomePage() {
                 ) : (
                   trendingItems.slice(0, 10).map((it) => (
                     <tr key={it.contestantId} className="border-b border-gray-100">
-                      <td className="px-6 py-4 font-extrabold text-gray-900">#{it.rank}</td>
+                      <td className="px-6 py-4 font-bold text-[#1a2332]">#{it.rank}</td>
                       <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="inline-flex w-9 h-9 rounded-full bg-gray-100 overflow-hidden items-center justify-center shrink-0">

@@ -255,7 +255,7 @@ export default function DashboardPayoutsPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Payouts</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Payouts</h2>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -290,7 +290,7 @@ export default function DashboardPayoutsPage() {
         <>
           {/* Wallet balances */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+            <div className="bg-white p-6 border border-[#e5e5e5]">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Smartphone className="w-5 h-5" />
                 M-Pesa total received
@@ -305,7 +305,7 @@ export default function DashboardPayoutsPage() {
                 Scope: {balance?.scope === "visible_campaigns" ? "all campaigns visible to your account" : "owned campaigns only"}.
               </div>
             </div>
-            <div className="bg-white rounded-md shadow-sm p-6 border border-gray-200">
+            <div className="bg-white p-6 border border-[#e5e5e5]">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Wallet className="w-5 h-5" />
                 Paystack
@@ -317,7 +317,7 @@ export default function DashboardPayoutsPage() {
           </div>
 
           {hasFeature("kcm_membership") && kcmSummary ? (
-            <div className="mt-4 bg-white rounded-md shadow-sm p-6 border border-primary-200">
+            <div className="mt-4 bg-white p-6 border border-primary-200">
               <div className="flex items-center gap-2 text-primary-800 font-extrabold">
                 <Wallet className="w-5 h-5" />
                 KCM membership collections (separate)
@@ -336,20 +336,20 @@ export default function DashboardPayoutsPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
-            <h3 className="font-extrabold text-gray-900">M-Pesa Wallet</h3>
+          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+            <h3 className="font-bold text-[#1a2332]">M-Pesa Wallet</h3>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
                 <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">Inflow (successful)</div>
-                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesa ?? 0)}</div>
+                <div className="mt-1 text-lg font-bold text-[#1a2332]">KES {formatKes(balance?.mpesa ?? 0)}</div>
               </div>
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
                 <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">Paid out (completed)</div>
-                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesaPaidOut ?? 0)}</div>
+                <div className="mt-1 text-lg font-bold text-[#1a2332]">KES {formatKes(balance?.mpesaPaidOut ?? 0)}</div>
               </div>
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
                 <div className="text-xs font-bold text-gray-600 uppercase tracking-wide">In transit (approved/processing)</div>
-                <div className="mt-1 text-lg font-extrabold text-gray-900">KES {formatKes(balance?.mpesaInTransit ?? 0)}</div>
+                <div className="mt-1 text-lg font-bold text-[#1a2332]">KES {formatKes(balance?.mpesaInTransit ?? 0)}</div>
               </div>
               <div className="rounded border border-green-200 bg-green-50 p-3">
                 <div className="text-xs font-bold text-green-800 uppercase tracking-wide">Net available</div>
@@ -364,8 +364,8 @@ export default function DashboardPayoutsPage() {
           </div>
 
           {/* Request withdrawal */}
-          <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
-            <h3 className="font-extrabold text-gray-900">Request M-Pesa Withdrawal</h3>
+          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+            <h3 className="font-bold text-[#1a2332]">Request M-Pesa Withdrawal</h3>
             <form onSubmit={handleWithdraw} className="mt-4 flex flex-wrap gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Amount (KES)</label>
@@ -404,7 +404,7 @@ export default function DashboardPayoutsPage() {
 
           {/* Admin: Pending approvals */}
           {isFullAdmin && pendingAdmin.length > 0 && (
-            <div className="mt-6 bg-amber-50 rounded-md shadow-sm p-6 border border-amber-200">
+            <div className="mt-6 bg-amber-50 p-6 border border-amber-200">
               <h3 className="font-extrabold text-amber-900">Pending approvals</h3>
               <p className="mt-1 text-sm text-amber-800">Review and approve or reject withdrawal requests.</p>
               <div className="mt-4 space-y-3">
@@ -453,7 +453,7 @@ export default function DashboardPayoutsPage() {
 
           {/* Admin: Stuck withdrawals (revert when B2C fails or callback never arrives) */}
           {isFullAdmin && stuckWithdrawals.length > 0 && (
-            <div className="mt-6 bg-orange-50 rounded-md shadow-sm p-6 border border-orange-200">
+            <div className="mt-6 bg-orange-50 p-6 border border-orange-200">
               <h3 className="font-extrabold text-orange-900">Stuck withdrawals</h3>
               <p className="mt-1 text-sm text-orange-800">
                 These were approved but cash may not have been sent. Click Revert to restore balance.
@@ -489,8 +489,8 @@ export default function DashboardPayoutsPage() {
           )}
 
           {/* Withdrawal history */}
-          <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
-            <h3 className="font-extrabold text-gray-900">Withdrawal history</h3>
+          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+            <h3 className="font-bold text-[#1a2332]">Withdrawal history</h3>
             {myWithdrawals.length === 0 ? (
               <p className="mt-2 text-sm text-gray-600">No withdrawal requests yet.</p>
             ) : (

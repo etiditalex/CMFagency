@@ -374,7 +374,7 @@ export default function DashboardUsersPage() {
     <div className="text-left">
         <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Users</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Users</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Create accounts for clients and manage existing users. View all added users and change their features, role, or tier.
           </p>
@@ -392,7 +392,7 @@ export default function DashboardUsersPage() {
         </div>
       )}
 
-      <form onSubmit={onCreate} className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
+      <form onSubmit={onCreate} className="mt-6 bg-white p-6 border border-[#e5e5e5]">
         <div className="flex items-center gap-2 text-primary-700 font-extrabold">
           <UserPlus className="w-5 h-5" />
           Create user
@@ -571,7 +571,7 @@ export default function DashboardUsersPage() {
 
       {/* All users list */}
       <div className="mt-10">
-        <h3 className="text-lg font-extrabold text-gray-900 mb-4">All users</h3>
+        <h3 className="text-lg font-bold text-[#1a2332] mb-4">All users</h3>
         {loadingUsers ? (
           <div className="text-gray-600 py-8">Loading users…</div>
         ) : users.length === 0 ? (
@@ -579,10 +579,10 @@ export default function DashboardUsersPage() {
             No users yet. Create one above.
           </div>
         ) : (
-          <div className="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white border border-[#e5e5e5] overflow-hidden">
             <div className="overflow-auto max-h-[400px]">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                <thead className="bg-white border-b border-[#e5e5e5] sticky top-0">
                   <tr>
                     <th className="px-4 py-3 font-bold text-gray-600 text-left">Email</th>
                     <th className="px-4 py-3 font-bold text-gray-600 text-left">Role</th>
@@ -674,7 +674,7 @@ export default function DashboardUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-extrabold text-gray-900">Set up Google Authenticator</h3>
+              <h3 className="text-xl font-bold text-[#1a2332]">Set up Google Authenticator</h3>
               <button
                 type="button"
                 onClick={() => {
@@ -755,7 +755,7 @@ export default function DashboardUsersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-extrabold text-gray-900">Edit user</h3>
+              <h3 className="text-xl font-bold text-[#1a2332]">Edit user</h3>
               <button
                 type="button"
                 onClick={() => { setEditingUser(null); setEditForm(null); }}

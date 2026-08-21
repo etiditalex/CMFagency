@@ -157,7 +157,7 @@ export default function DashboardInquiriesPage() {
     <div className="text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
             Inquiries
           </h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
@@ -190,7 +190,7 @@ export default function DashboardInquiriesPage() {
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-gray-500">
             <Inbox className="w-12 h-12 mx-auto mb-3 text-gray-300" />

@@ -9,11 +9,11 @@ export default function DashboardSegmentLoading() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-24 rounded-lg border border-gray-100 bg-gray-50 animate-pulse" />
+          <div key={i} className="h-24 border border-[#e5e5e5] bg-white animate-pulse" />
         ))}
       </div>
-      <div className="rounded-md border border-gray-200 overflow-hidden">
-        <div className="h-11 bg-gray-50 border-b border-gray-200" />
+      <div className="border border-[#e5e5e5] overflow-hidden">
+        <div className="h-11 bg-white border-b border-[#e5e5e5]" />
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="h-14 border-b border-gray-100 flex items-center px-4 gap-3">
             <div className="h-4 flex-1 max-w-md rounded bg-gray-100 animate-pulse" />

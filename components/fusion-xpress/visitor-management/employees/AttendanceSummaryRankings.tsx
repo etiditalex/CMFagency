@@ -19,8 +19,8 @@ function RankingsTable({
   emptyMessage: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white print:break-inside-avoid">
-      <div className="border-b border-gray-100 bg-gray-50 px-4 py-3">
+    <section className="overflow-hidden border border-[#e5e5e5] bg-white print:break-inside-avoid">
+      <div className="border-b border-[#e5e5e5] bg-white px-4 py-3">
         <h3 className="text-sm font-bold text-gray-900">{title}</h3>
         <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
       </div>
@@ -84,7 +84,7 @@ export default function AttendanceSummaryRankingsPanel({
       <div>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-extrabold text-gray-900">Staff rankings</h2>
+            <h2 className="text-base font-bold text-[#1a2332]">Staff rankings</h2>
             <p className="text-xs text-gray-500 mt-1">
               Based on deduplicated attendance (one sign-in and one sign-out per person per day).
             </p>
@@ -113,7 +113,7 @@ export default function AttendanceSummaryRankingsPanel({
       </div>
 
       <div>
-        <h2 className="text-base font-extrabold text-gray-900">CRM rankings</h2>
+        <h2 className="text-base font-bold text-[#1a2332]">CRM rankings</h2>
         <p className="text-xs text-gray-500 mt-1">
           CRM may visit flexibly; each day allows one sign-in and one sign-out only.
         </p>

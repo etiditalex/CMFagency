@@ -393,7 +393,7 @@ export default function DashboardGatePage() {
       <div className={`text-left max-w-2xl ${cameraActive ? "invisible h-0 overflow-hidden" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Gate – Scan receipt</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Gate – Scan receipt</h2>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -432,7 +432,7 @@ export default function DashboardGatePage() {
       {/* Camera scanner UI */}
       <div className="mt-6">
         {!cameraActive && (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+          <div className="bg-white border border-[#e5e5e5] p-6">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full bg-primary-100 flex items-center justify-center mb-4">
                 <Camera className="w-10 h-10 text-primary-600" />
@@ -494,7 +494,7 @@ export default function DashboardGatePage() {
 
       {/* Manual entry (collapsible) */}
       {(manualMode || refInput) && (
-        <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
           <div className="flex items-center gap-2 mb-2">
             <Keyboard className="w-4 h-4 text-gray-500" />
             <label className="text-sm font-medium text-gray-700">Enter reference manually</label>

@@ -168,8 +168,8 @@ export default function NotificationAdminsPanel({ disabled }: NotificationAdmins
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+    <section className="border border-[#e5e5e5] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex items-center gap-2">
         <Mail className="w-4 h-4 text-gray-500" />
         <span className="text-sm font-bold text-gray-800">Attendance notifications</span>
       </div>

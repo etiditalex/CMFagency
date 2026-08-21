@@ -132,7 +132,7 @@ export default function VotingVisibilitySettingsPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Vote visibility</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Vote visibility</h2>
           <p className="text-gray-600 mt-1 max-w-2xl">
             Control whether the public can see vote totals for <strong>all contestants across every voting category</strong>. Turn
             this off during live voting so no one can see results or who is leading. Voting and payments keep working, and this
@@ -160,7 +160,7 @@ export default function VotingVisibilitySettingsPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-2xl shadow-[0_6px_24px_rgba(2,6,23,0.06)] border border-slate-100 p-6">
+      <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
         <div className="flex items-start gap-4 flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3 min-w-0">
             <span
@@ -175,7 +175,7 @@ export default function VotingVisibilitySettingsPage() {
               )}
             </span>
             <div className="min-w-0">
-              <div className="font-extrabold text-gray-900">Show vote totals to the public</div>
+              <div className="font-bold text-[#1a2332]">Show vote totals to the public</div>
               <p className="text-sm text-gray-600 mt-1">
                 {loading
                   ? "Checking current setting..."

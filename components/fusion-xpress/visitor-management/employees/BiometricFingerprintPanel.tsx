@@ -382,7 +382,7 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
             )}
           </section>
 
-          <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-5">
+          <section className="border border-[#e5e5e5] bg-white p-5 space-y-5">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Enroll a fingerprint</h2>
               <p className="mt-1 text-sm text-gray-600">
@@ -450,7 +450,7 @@ export default function BiometricFingerprintPanel({ adminOwnerId }: Props) {
             </div>
           </section>
 
-          <section className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+          <section className="border border-[#e5e5e5] bg-white p-5 space-y-3">
             <h2 className="text-lg font-bold text-gray-900">Active enrollments</h2>
             {enrollments.length === 0 ? (
               <p className="text-sm text-gray-600">No fingerprints enrolled yet.</p>

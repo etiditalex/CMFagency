@@ -163,7 +163,7 @@ export default function NewEventPage() {
     <div className="text-left">
       <div className="flex flex-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">New Event</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">New Event</h2>
           <p className="text-gray-600 mt-1 text-left">
             Add an event to appear on the upcoming or past events pages.
           </p>
@@ -180,7 +180,7 @@ export default function NewEventPage() {
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200 space-y-6">
+      <form onSubmit={onSubmit} className="mt-6 bg-white p-6 border border-[#e5e5e5] space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
           <input

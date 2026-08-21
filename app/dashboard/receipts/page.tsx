@@ -251,7 +251,7 @@ export default function DashboardReceiptsPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-6 items-start border border-gray-100 rounded-lg p-4 bg-gray-50/80">
-        <div className="shrink-0 rounded-lg border border-gray-200 bg-white p-3 shadow-sm relative h-14 w-[200px]">
+        <div className="shrink-0 border border-[#e5e5e5] bg-white p-3 relative h-14 w-[200px]">
           <Image src={BRAND_LOGO_URL} alt="Changer Fusions" fill className="object-contain p-1" sizes="200px" />
         </div>
         <div className="text-sm text-gray-700 leading-relaxed min-w-0">
@@ -432,7 +432,7 @@ export default function DashboardReceiptsPage() {
 
       <div>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-extrabold text-gray-900 flex items-center gap-2">
+          <h2 className="text-base font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
             <Receipt className="w-5 h-5 text-primary-600" aria-hidden />
             Line items (KSh)
           </h2>
@@ -452,7 +452,7 @@ export default function DashboardReceiptsPage() {
         <div className="mt-3 overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-white border-b border-[#e5e5e5]">
                 <th className="px-3 py-2 font-bold text-gray-800">Description</th>
                 <th className="px-3 py-2 font-bold text-gray-800 w-20">Qty</th>
                 <th className="px-3 py-2 font-bold text-gray-800 w-28">Rate (KSh)</th>
@@ -522,7 +522,7 @@ export default function DashboardReceiptsPage() {
                 );
               })}
               <tr className="bg-gray-50 border-t-2 border-gray-300">
-                <td colSpan={3} className="px-3 py-3 text-right text-sm font-extrabold text-gray-900">
+                <td colSpan={3} className="px-3 py-3 text-right text-sm font-bold text-[#1a2332]">
                   Invoice total
                 </td>
                 <td className="px-3 py-3 text-right text-base font-extrabold tabular-nums text-gray-900">

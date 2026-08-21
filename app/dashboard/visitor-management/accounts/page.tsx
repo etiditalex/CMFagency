@@ -129,7 +129,7 @@ export default function VisitorManagementAccountsPage() {
             <UserCheck className="w-4 h-4" />
             Smart Visitor Management
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Accounts Manager</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Accounts Manager</h1>
           <p className="mt-2 text-gray-600 text-sm">Client accounts and subscription extensions.</p>
         </div>
         <button
@@ -149,7 +149,7 @@ export default function VisitorManagementAccountsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white border border-[#e5e5e5] overflow-hidden">
         {loading ? (
           <div className="p-10 text-center text-gray-500 text-sm">Loading accounts…</div>
         ) : accounts.length === 0 ? (
@@ -161,7 +161,7 @@ export default function VisitorManagementAccountsPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
+                <tr className="border-b border-[#e5e5e5] bg-white text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                   <th className="px-4 py-3">Business</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Plan</th>

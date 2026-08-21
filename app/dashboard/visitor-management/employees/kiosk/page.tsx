@@ -585,7 +585,7 @@ export default function EmployeeKioskPage() {
           >
             ← Employees
           </Link>
-          <h1 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+          <h1 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
             <ScanLine className="w-6 h-6 sm:w-7 sm:h-7 text-primary-600 shrink-0" />
             Staff QR kiosk
           </h1>

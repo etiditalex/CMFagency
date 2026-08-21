@@ -172,7 +172,7 @@ export default function DashboardAccountPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Account</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Account</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Manage your account settings. Change your password while staying logged in.
           </p>
@@ -190,7 +190,7 @@ export default function DashboardAccountPage() {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200 max-w-xl">
+      <form onSubmit={onSubmit} className="mt-6 bg-white p-6 border border-[#e5e5e5] max-w-xl">
         <div className="flex items-center gap-2 text-primary-700 font-extrabold">
           <Lock className="w-5 h-5" />
           Change password
@@ -246,7 +246,7 @@ export default function DashboardAccountPage() {
         </div>
       </form>
 
-      <div className="mt-10 bg-white rounded-md shadow-sm p-6 border border-gray-200 max-w-xl">
+      <div className="mt-10 bg-white p-6 border border-[#e5e5e5] max-w-xl">
         <div className="flex items-center gap-2 text-primary-700 font-extrabold">
           <Shield className="w-5 h-5" />
           Two-factor authentication

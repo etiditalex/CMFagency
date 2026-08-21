@@ -337,7 +337,7 @@ export default function DashboardKcmMembershipPage() {
     <div className="text-left">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-extrabold text-gray-900 md:text-2xl">KCM Membership</h2>
+          <h2 className="text-xl font-bold text-[#1a2332] md:text-2xl">KCM Membership</h2>
           <p className="mt-1 text-gray-600">
             Review and manage Kenya Coast Models membership registrations. Download member data as Excel (.xlsx)
             for one person or for everyone matching the status filter.
@@ -381,21 +381,21 @@ export default function DashboardKcmMembershipPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-3">
+        <div className="border border-[#e5e5e5] bg-white p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">New</div>
-          <div className="mt-1 text-2xl font-extrabold text-gray-900">{summary.new}</div>
+          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.new}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3">
+        <div className="border border-[#e5e5e5] bg-white p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">In review</div>
-          <div className="mt-1 text-2xl font-extrabold text-gray-900">{summary.in_review}</div>
+          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.in_review}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3">
+        <div className="border border-[#e5e5e5] bg-white p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Approved</div>
-          <div className="mt-1 text-2xl font-extrabold text-gray-900">{summary.approved}</div>
+          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.approved}</div>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-3">
+        <div className="border border-[#e5e5e5] bg-white p-3">
           <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Rejected</div>
-          <div className="mt-1 text-2xl font-extrabold text-gray-900">{summary.rejected}</div>
+          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.rejected}</div>
         </div>
       </div>
 
@@ -445,7 +445,7 @@ export default function DashboardKcmMembershipPage() {
 
       <div className="mt-6 overflow-x-auto rounded-md border border-gray-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-gray-200 bg-gray-50">
+          <thead className="border-b border-[#e5e5e5] bg-white">
             <tr className="text-left">
               <th className="px-4 py-3 font-bold text-gray-600">Name</th>
               <th className="px-4 py-3 font-bold text-gray-600">Profile</th>

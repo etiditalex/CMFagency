@@ -337,7 +337,7 @@ export default function DashboardMerchandisePage() {
     <div className="text-left">
       <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Merchandise</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Merchandise</h2>
         </div>
       </div>
 
@@ -347,7 +347,7 @@ export default function DashboardMerchandisePage() {
 
       <form
         onSubmit={handleSubmit}
-        className="mt-8 p-6 bg-white rounded-md border border-gray-200 shadow-sm space-y-4 max-w-3xl"
+        className="mt-8 p-6 bg-white border border-[#e5e5e5] space-y-4 max-w-3xl"
       >
         <h3 className="text-lg font-bold text-gray-900">{editingId != null ? "Edit product" : "Add product"}</h3>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -538,10 +538,10 @@ export default function DashboardMerchandisePage() {
         </div>
       </form>
 
-      <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-[#e5e5e5]">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Product</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Price</th>

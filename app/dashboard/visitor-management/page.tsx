@@ -362,10 +362,10 @@ export default function DashboardVisitorManagementPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-primary-100 bg-gradient-to-r from-white via-primary-50/50 to-white px-5 py-5 shadow-sm sm:px-7">
+      <section className="border border-[#e5e5e5] bg-white px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
               <UserCheck className="w-7 h-7 text-primary-600" />
               {isAdmin && scopedBusinessName
                 ? scopedBusinessName
@@ -414,7 +414,7 @@ export default function DashboardVisitorManagementPage() {
         {statCards.map((c) => {
           const Icon = c.icon;
           return (
-            <div key={c.label} className={`rounded-xl border p-5 shadow-sm transition hover:shadow-md ${c.tone}`}>
+            <div key={c.label} className={`border p-5 ${c.tone}`}>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{c.label}</span>
                 <Icon className="w-4 h-4 opacity-70" />
@@ -425,9 +425,9 @@ export default function DashboardVisitorManagementPage() {
         })}
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="border border-[#e5e5e5] bg-white p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+          <div className="flex flex-1 items-center gap-2 border border-[#e5e5e5] bg-white px-3 py-2">
             <Search className="h-4 w-4 text-gray-500" />
             <input
               value={searchTerm}
@@ -520,8 +520,8 @@ export default function DashboardVisitorManagementPage() {
         onSubmit={handleRegisterGuest}
       />
 
-      <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80 flex items-center justify-between gap-2">
+      <div className="border border-[#e5e5e5] overflow-hidden bg-white">
+        <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-bold text-gray-800">Visitors</span>
@@ -638,7 +638,7 @@ export default function DashboardVisitorManagementPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="border border-[#e5e5e5] bg-white p-4 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-bold text-gray-900">Incoming Visitors</p>
           <Link href={VISITOR_MANAGEMENT_PATH} className="text-xs font-semibold text-primary-700 hover:underline">

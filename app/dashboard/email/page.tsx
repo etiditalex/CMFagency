@@ -246,7 +246,7 @@ export default function DashboardEmailPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Campaign communications</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Campaign communications</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Send emails to voters (voting campaigns) or ticket buyers (ticketing campaigns). Recipients are from successful transactions.
           </p>
@@ -269,7 +269,7 @@ export default function DashboardEmailPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200 space-y-6">
+      <div className="mt-6 bg-white p-6 border border-[#e5e5e5] space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Campaign</label>
           <select

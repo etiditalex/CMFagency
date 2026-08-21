@@ -142,8 +142,8 @@ export default function IntegrationApiKeysPanel({
   };
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
+    <section className="border border-[#e5e5e5] bg-white overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex items-center gap-2">
         <KeyRound className="w-5 h-5 text-primary-600" aria-hidden />
         <div>
           <h2 className="text-sm font-bold text-gray-900">HR &amp; payroll integrations</h2>

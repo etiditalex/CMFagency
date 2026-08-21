@@ -41,14 +41,14 @@ export default function DashboardNewPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Create Page</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Create Page</h2>
           <p className="text-gray-600 mt-1 max-w-3xl">
             Choose a mapped Careers/Services route. This will create/update content in the dashboard-managed pages table.
           </p>
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 p-5">
+      <div className="mt-6 bg-white border border-[#e5e5e5] p-5">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Mapped route</label>

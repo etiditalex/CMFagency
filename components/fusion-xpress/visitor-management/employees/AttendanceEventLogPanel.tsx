@@ -143,8 +143,8 @@ export default function AttendanceEventLogPanel({
   };
 
   return (
-    <div className={`rounded-xl border border-gray-200 overflow-hidden bg-white ${className}`}>
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center justify-between gap-2">
+    <div className={`border border-[#e5e5e5] overflow-hidden bg-white ${className}`}>
+      <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
           <Clock className="w-4 h-4 text-gray-500" aria-hidden />
           {title}

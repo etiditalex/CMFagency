@@ -281,7 +281,7 @@ export default function DashboardJobListingsPage() {
     <div className="text-left">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Job board listings</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Job board listings</h2>
             {isEmployer && !isAdmin && (
               <p className="mt-1 text-gray-600 text-sm max-w-3xl">
                 Create and manage your vacancies. After you publish, roles appear on the public job board subject to our listing rules.
@@ -517,7 +517,7 @@ export default function DashboardJobListingsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-white border-b border-[#e5e5e5]">
                   <tr>
                     <th className="text-left p-3 font-semibold text-gray-700">Title</th>
                     <th className="text-left p-3 font-semibold text-gray-700">Company</th>

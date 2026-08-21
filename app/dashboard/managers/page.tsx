@@ -27,7 +27,7 @@ export default function DashboardManagersPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Managers</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Managers</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Add and manage team members who help you run campaigns and events.
           </p>
@@ -42,7 +42,7 @@ export default function DashboardManagersPage() {
         </div>
       </div>
 
-      <div className="mt-6 bg-white rounded-md shadow-sm p-6 border border-gray-200">
+      <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
         <div className="flex items-center gap-2 text-primary-700 font-extrabold">
           <UserCog className="w-5 h-5" />
           Manager access

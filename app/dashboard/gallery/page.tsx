@@ -325,7 +325,7 @@ export default function DashboardGalleryPage() {
     <div className="text-left">
       <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Gallery</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Gallery</h2>
           <p className="text-gray-600 mt-1 max-w-3xl">
             Upload and manage images shown on the public{" "}
             <Link href="/portfolios" className="text-primary-600 font-semibold hover:underline inline-flex items-center gap-1">
@@ -342,7 +342,7 @@ export default function DashboardGalleryPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="mt-8 p-6 bg-white rounded-md border border-gray-200 shadow-sm space-y-4 max-w-3xl"
+        className="mt-8 p-6 bg-white border border-[#e5e5e5] space-y-4 max-w-3xl"
       >
         <h3 className="text-lg font-bold text-gray-900">{editingId != null ? "Edit image" : "Add image"}</h3>
 
@@ -504,10 +504,10 @@ export default function DashboardGalleryPage() {
         </div>
       </form>
 
-      <div className="mt-10 bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-white border-b border-[#e5e5e5]">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Image</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Category</th>

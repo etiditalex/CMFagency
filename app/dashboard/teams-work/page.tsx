@@ -264,7 +264,7 @@ export default function DashboardTeamsWorkPage() {
     <div className="text-left space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Teams Work</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Teams Work</h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
             Submit daily updates or upload deliverables. Directors and CEOs can review everything in the admin view.
           </p>
@@ -320,10 +320,10 @@ export default function DashboardTeamsWorkPage() {
       {message && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-800">{message}</div>}
 
       {tab === "me" && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_6px_24px_rgba(2,6,23,0.06)] space-y-4">
+        <div className="border border-[#e5e5e5] bg-white p-5 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <div className="text-sm font-extrabold text-gray-700">New submission</div>
+              <div className="text-sm font-normal text-[#555]">New submission</div>
               <div className="mt-1 text-xs text-gray-500">Daily log (text) or upload deliverable (file).</div>
             </div>
             <div className="flex items-center gap-2">
@@ -394,8 +394,8 @@ export default function DashboardTeamsWorkPage() {
       )}
 
       {tab === "admin" && canUseAdminTab && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-[0_6px_24px_rgba(2,6,23,0.06)] space-y-4">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-gray-700">
+        <div className="border border-[#e5e5e5] bg-white p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-normal text-[#555]">
             <Filter className="h-4 w-4" />
             Filters
           </div>
@@ -445,7 +445,7 @@ export default function DashboardTeamsWorkPage() {
           </div>
         ) : (
           activeList.map((e) => (
-            <div key={e.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div key={e.id} className="border border-[#e5e5e5] bg-white p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -457,7 +457,7 @@ export default function DashboardTeamsWorkPage() {
                       <span className="text-xs text-gray-500 break-all">user: {e.user_id}</span>
                     )}
                   </div>
-                  <div className="mt-2 text-base font-extrabold text-gray-900 break-words">
+                  <div className="mt-2 text-base font-bold text-[#1a2332] break-words">
                     {e.title?.trim() ? e.title : e.entry_type === "upload" ? "Uploaded deliverable" : "Daily log"}
                   </div>
                   {e.body?.trim() ? (
@@ -504,7 +504,7 @@ export default function DashboardTeamsWorkPage() {
               </div>
 
               {(e.attachments?.length ?? 0) > 0 && (
-                <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <div className="mt-4 border border-[#e5e5e5] bg-white p-4">
                   <div className="text-xs font-extrabold uppercase tracking-widest text-gray-500">Attachments</div>
                   <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                     {e.attachments.map((a) => (

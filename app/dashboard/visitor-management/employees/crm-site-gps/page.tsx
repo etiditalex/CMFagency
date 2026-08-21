@@ -222,7 +222,7 @@ export default function CrmSiteGpsPage() {
   return (
     <div className="space-y-6 -mx-2 sm:mx-0">
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
           <MapPin className="w-7 h-7 text-emerald-600" />
           CRM site GPS
         </h1>
@@ -310,8 +310,8 @@ export default function CrmSiteGpsPage() {
       <CrmSiteVisitRankings rankings={rankings} fromLabel={from} toLabel={to} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <section className="border border-[#e5e5e5] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white">
             <h2 className="text-sm font-bold text-gray-900">Project catalogue</h2>
             <p className="text-xs text-gray-500 mt-0.5">Optional list CRM can pick when signing in</p>
           </div>
@@ -380,8 +380,8 @@ export default function CrmSiteGpsPage() {
           )}
         </section>
 
-        <section className="rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <section className="border border-[#e5e5e5] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white">
             <h2 className="text-sm font-bold text-gray-900">Site visits</h2>
             <p className="text-xs text-gray-500 mt-0.5">GPS captured at sign-in and sign-out</p>
           </div>

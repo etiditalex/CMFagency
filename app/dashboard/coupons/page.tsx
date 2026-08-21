@@ -183,7 +183,7 @@ export default function DashboardCouponsPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 text-left">Coupons</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Coupons</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Create offer codes for ticketing campaigns. Buyers enter the code at checkout to get a discount.
           </p>
@@ -214,7 +214,7 @@ export default function DashboardCouponsPage() {
       )}
 
       {showForm && (
-        <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
             <BadgePercent className="w-5 h-5 text-primary-600" />
             Create offer code
@@ -343,8 +343,8 @@ export default function DashboardCouponsPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
+      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex items-center gap-2">
           <BadgePercent className="w-5 h-5 text-primary-600" />
           <span className="font-semibold text-gray-900">Your offer codes</span>
         </div>
@@ -359,7 +359,7 @@ export default function DashboardCouponsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-white border-b border-[#e5e5e5]">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Code</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Discount</th>

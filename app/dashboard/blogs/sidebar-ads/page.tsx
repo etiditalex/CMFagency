@@ -145,7 +145,7 @@ export default function BlogSidebarAdsPage() {
         <ArrowLeft className="w-4 h-4" />
         Back to blogs
       </Link>
-      <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Blog sidebar ads</h2>
+      <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Blog sidebar ads</h2>
       <p className="text-gray-600 mt-1 text-sm md:text-base mb-8">
         Promotional blocks on each public blog article (right column). Only items marked <strong>Approved</strong> appear
         on the site.
@@ -155,7 +155,7 @@ export default function BlogSidebarAdsPage() {
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">{error}</div>
       )}
 
-      <form onSubmit={addRow} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm mb-10 space-y-4">
+      <form onSubmit={addRow} className="border border-[#e5e5e5] bg-white p-6 mb-10 space-y-4">
         <h3 className="font-bold text-gray-900 flex items-center gap-2">
           <Plus className="w-5 h-5" />
           New item

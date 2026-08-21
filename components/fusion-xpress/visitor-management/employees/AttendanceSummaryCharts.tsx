@@ -25,7 +25,7 @@ function GroupedBarChart({ title, subtitle, points, maxBars = 31 }: BarSeriesPro
   const peak = maxCount(visible);
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid">
+    <section className="border border-[#e5e5e5] bg-white p-4 print:break-inside-avoid">
       <div className="mb-4">
         <h3 className="text-sm font-bold text-gray-900">{title}</h3>
         {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}
@@ -104,7 +104,7 @@ function HourlyLineChart({ title, subtitle, points }: LineChartProps) {
   const hasData = points.some((p) => p.signIns > 0 || p.signOuts > 0);
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm print:break-inside-avoid">
+    <section className="border border-[#e5e5e5] bg-white p-4 print:break-inside-avoid">
       <div className="mb-3">
         <h3 className="text-sm font-bold text-gray-900">{title}</h3>
         {subtitle ? <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p> : null}

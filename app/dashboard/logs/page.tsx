@@ -151,7 +151,7 @@ export default function DashboardLogsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 inline-flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] inline-flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
             <Activity className="w-6 h-6 text-primary-600" />
             Live system logs
           </h2>
@@ -195,10 +195,10 @@ export default function DashboardLogsPage() {
 
       {error && <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="border border-[#e5e5e5] bg-white overflow-hidden">
         <div className="max-h-[70vh] overflow-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-gray-50 border-b border-gray-200">
+            <thead className="sticky top-0 bg-white border-b border-[#e5e5e5]">
               <tr className="text-left text-gray-600">
                 <th className="px-4 py-3 font-bold">Time</th>
                 <th className="px-4 py-3 font-bold">Table</th>

@@ -147,7 +147,7 @@ export default function VisitorManagementLeavePage() {
       ) : null}
 
       {!needsSelection ? (
-        <div className="w-full overflow-hidden rounded-lg border border-primary-800/30 shadow-[0_8px_32px_rgba(15,23,42,0.18)]">
+        <div className="w-full overflow-hidden border border-[#e5e5e5]">
           <header className="relative flex items-center bg-primary-900 px-4 py-3 sm:px-6">
             <div className="relative z-10 flex shrink-0 items-center">
               <Image

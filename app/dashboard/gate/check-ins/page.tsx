@@ -141,7 +141,7 @@ export default function GateCheckInsPage() {
             Back to Gate
           </Link>
           <div>
-            <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
               <ListChecks className="w-6 h-6 text-primary-600" />
               Check-ins & registrations
             </h2>
@@ -182,7 +182,7 @@ export default function GateCheckInsPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
         {loading ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
@@ -196,7 +196,7 @@ export default function GateCheckInsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
+                <tr className="border-b border-[#e5e5e5] bg-white">
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Registered</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Gate confirmed</th>
                   <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>

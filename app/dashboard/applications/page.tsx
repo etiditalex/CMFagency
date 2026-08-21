@@ -482,7 +482,7 @@ export default function DashboardApplicationsPage() {
     <div className="text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
             Job Applications
           </h2>
         </div>
@@ -567,32 +567,32 @@ export default function DashboardApplicationsPage() {
 
       {!loading && !error && applications.length > 0 && (
         <div className="mt-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total (filtered)</div>
-            <div className="mt-1 text-2xl font-extrabold text-gray-900">{total}</div>
+            <div className="mt-1 text-2xl font-bold text-[#1a2332]">{total}</div>
             <div className="text-xs text-gray-500 mt-0.5">{applications.length} loaded</div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full submission</div>
             <div className="mt-1 text-2xl font-extrabold text-emerald-800">{stats.complete}</div>
             <div className="text-xs text-gray-500 mt-0.5">Required ID + CV present</div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Listed role</div>
             <div className="mt-1 text-2xl font-extrabold text-emerald-900">{stats.listedRole}</div>
             <div className="text-xs text-gray-500 mt-0.5">Matches job catalog</div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">No listing</div>
             <div className="mt-1 text-2xl font-extrabold text-orange-800">{stats.unlistedRole}</div>
             <div className="text-xs text-gray-500 mt-0.5">Applicant notified</div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Flagged (invalid)</div>
             <div className="mt-1 text-2xl font-extrabold text-red-800">{stats.validationFailed}</div>
             <div className="text-xs text-gray-500 mt-0.5">Client checks failed</div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="border border-[#e5e5e5] bg-white p-4">
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Warnings only</div>
             <div className="mt-1 text-2xl font-extrabold text-amber-800">{stats.withWarnings}</div>
             <div className="text-xs text-gray-500 mt-0.5">Review document names / quality</div>
@@ -600,7 +600,7 @@ export default function DashboardApplicationsPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-gray-500">
             <Briefcase className="w-12 h-12 mx-auto mb-3 text-gray-300" />

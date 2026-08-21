@@ -105,7 +105,7 @@ export default function DashboardInsightsPage() {
     <div className="space-y-6 text-left">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 inline-flex items-center gap-2">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] inline-flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
             <BarChart3 className="w-6 h-6 text-primary-600" />
             Sales &amp; votes
           </h2>
@@ -149,10 +149,10 @@ export default function DashboardInsightsPage() {
             ].map((card) => (
               <div
                 key={card.label}
-                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                className="border border-[#e5e5e5] bg-white p-4"
               >
                 <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{card.label}</div>
-                <div className="mt-1 text-xl md:text-2xl font-extrabold text-gray-900 tabular-nums">
+                <div className="mt-1 text-xl md:text-2xl font-bold text-[#1a2332] tabular-nums">
                   {card.fmt(card.value)}
                 </div>
               </div>
@@ -160,20 +160,20 @@ export default function DashboardInsightsPage() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="font-extrabold text-gray-900 mb-4">Revenue mix (all time)</h3>
+            <div className="border border-[#e5e5e5] bg-white p-6">
+              <h3 className="font-bold text-[#1a2332] mb-4">Revenue mix (all time)</h3>
               <RevenuePieChart vote={pie.vote} ticket={pie.ticket} merchandise={pie.merchandise} />
             </div>
-            <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <h3 className="font-extrabold text-gray-900 mb-2">Daily revenue — votes &amp; tickets</h3>
+            <div className="border border-[#e5e5e5] bg-white p-6">
+              <h3 className="font-bold text-[#1a2332] mb-2">Daily revenue — votes &amp; tickets</h3>
               <p className="text-xs text-gray-500 mb-6">Bar and line charts across all available dates (UTC).</p>
               <DailyVoteTicketCharts rows={daily} />
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm overflow-hidden">
+          <div className="border border-[#e5e5e5] bg-white p-6 overflow-hidden">
             <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
-              <h3 className="font-extrabold text-gray-900">Top voting categories by revenue</h3>
+              <h3 className="font-bold text-[#1a2332]">Top voting categories by revenue</h3>
               <Link href="/dashboard/transactions" className="text-sm font-semibold text-primary-600 hover:underline">
                 View all transactions
               </Link>

@@ -122,8 +122,8 @@ function MostNominatedPanel({
   const busy = downloading !== null;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
+    <div className="border border-[#e5e5e5] bg-white overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#e5e5e5] bg-white px-4 py-3">
         <Trophy className="w-4 h-4 text-secondary-600" aria-hidden />
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
           {title}
@@ -461,7 +461,7 @@ export default function DashboardNominatePage() {
     <div className="text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
             Nominate
           </h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
@@ -542,7 +542,7 @@ export default function DashboardNominatePage() {
       <div className="mt-6">
         <div className="mb-3 flex items-center gap-2">
           <Trophy className="w-5 h-5 text-secondary-600" aria-hidden />
-          <h3 className="text-base md:text-lg font-extrabold text-gray-900">
+          <h3 className="text-base md:text-lg font-bold text-[#1a2332]">
             Most nominated so far
           </h3>
         </div>
@@ -568,8 +568,8 @@ export default function DashboardNominatePage() {
         </div>
       </div>
 
-      <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="border-b border-gray-100 bg-gray-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-8 bg-white border border-[#e5e5e5] overflow-hidden">
+        <div className="border-b border-[#e5e5e5] bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
             All nominations
           </h3>

@@ -149,7 +149,7 @@ export default function DashboardContestantResultsPage() {
       </p>
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-extrabold text-gray-900">Download contestant results</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Download contestant results</h2>
           <p className="text-gray-600 mt-1 max-w-2xl">
             Official results for every voting category, with the winner listed first. Download a PDF booklet of
             winners, a full contestant PDF, or an Excel workbook with a Winners sheet and an All contestants sheet.
@@ -205,7 +205,7 @@ export default function DashboardContestantResultsPage() {
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
       )}
 
-      <div className="mt-6 bg-white rounded-md shadow-sm border border-gray-200 p-6">
+      <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
         {loading ? (
           <div className="py-12 text-center text-gray-500">Loading ranked results...</div>
         ) : !snapshot || snapshot.categories.length === 0 ? (
@@ -229,7 +229,7 @@ export default function DashboardContestantResultsPage() {
               <div className="inline-flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 px-4 py-2">
                 <Download className="w-5 h-5 text-gray-700" />
                 <span className="font-bold text-gray-800">Total votes</span>
-                <span className="text-2xl font-extrabold text-gray-900">
+                <span className="text-2xl font-bold text-[#1a2332]">
                   {snapshot.totalVotes.toLocaleString("en-KE")}
                 </span>
               </div>
@@ -239,7 +239,7 @@ export default function DashboardContestantResultsPage() {
               {snapshot.categories.map((cat) => (
                 <section key={cat.id}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-                    <h3 className="text-base font-extrabold text-gray-900">{cat.title}</h3>
+                    <h3 className="text-base font-bold text-[#1a2332]">{cat.title}</h3>
                     <p className="text-xs text-gray-500">
                       {cat.totalVotes.toLocaleString("en-KE")} vote{cat.totalVotes === 1 ? "" : "s"}
                     </p>
@@ -249,7 +249,7 @@ export default function DashboardContestantResultsPage() {
                   ) : (
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50 border-b border-gray-200">
+                        <thead className="bg-white border-b border-[#e5e5e5]">
                           <tr className="text-left">
                             <th className="px-4 py-2 font-bold text-gray-600 w-16">Rank</th>
                             <th className="px-4 py-2 font-bold text-gray-600">Contestant</th>
