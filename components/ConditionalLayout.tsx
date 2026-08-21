@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import CookieBanner from "@/components/CookieBanner";
-import { useAndroidShellSession } from "@/components/android-shell/useAndroidShellSession";
 
 const DashboardShell = dynamic(() => import("@/components/dashboard/DashboardShell"), {
   ssr: false,
@@ -25,8 +24,6 @@ export default function ConditionalLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isAndroidShell = useAndroidShellSession();
-  const isAndroidApp = pathname === "/app" || Boolean(pathname?.startsWith("/app/"));
   const isVerifyEmailPage = pathname === "/verify-email";
   const isDashboard = pathname?.startsWith("/dashboard");
   const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
@@ -91,11 +88,6 @@ export default function ConditionalLayout({
     );
   }
 
-  // Android Play Store shell — full-bleed mobile UI, no marketing chrome.
-  if (isAndroidApp) {
-    return <main className="min-h-screen">{children}</main>;
-  }
-
   // Fusion Xpress admin, visitor auth, employee attendance kiosk, and industry check-in — no site chrome.
   if (
     isFusionAdminLogin ||
@@ -104,16 +96,6 @@ export default function ConditionalLayout({
     isIndustryCheckInForm ||
     isFxQrGeneratorPage
   ) {
-    return (
-      <>
-        <main className="min-h-screen">{children}</main>
-        <CookieBanner />
-        <ScrollToTopButton />
-      </>
-    );
-  }
-
-  if (isAndroidShell) {
     return (
       <>
         <main className="min-h-screen">{children}</main>
