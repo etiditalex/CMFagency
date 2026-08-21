@@ -1,10 +1,9 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import BlogColumnsWidget from "@/components/blogs/BlogColumnsWidget";
+import { blogImageOptimizeProps } from "@/lib/blog-image";
 import type { BlogColumnSidebarRow, BlogTrendingRow } from "@/lib/blog-server";
 
 const CMFA_EVENT_HREF = "/events/upcoming/coast-fashion-modelling-awards-2026";
@@ -68,7 +67,9 @@ export default function BlogListingSidebar({ trending, columnPosts, className = 
             className="absolute inset-0 h-full w-full object-cover object-center"
             loading="lazy"
             sizes="(max-width: 1024px) 100vw, 320px"
+            quality={70}
             referrerPolicy="no-referrer"
+            {...blogImageOptimizeProps(CMFA_BANNER_IMAGE)}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4 text-center">

@@ -1,5 +1,3 @@
-"use client";
-
 import dynamic from "next/dynamic";
 import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +6,7 @@ import Image from "next/image";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import BlogListingSidebar from "@/components/blogs/BlogListingSidebar";
 import { DEFAULT_BLOG_AUTHOR, DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
+import { blogImageOptimizeProps } from "@/lib/blog-image";
 import type {
   BlogColumnSidebarRow,
   BlogListingRow,
@@ -76,55 +75,64 @@ export default function BlogsPageClient({
                   </p>
                 </div>
               ) : (
-                initialPosts.map((post, idx) => (
-                  <article
-                    key={post.id}
-                    className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
-                  >
-                    <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
-                      <Image
-                        src={post.image_url || DEFAULT_BLOG_CARD_IMAGE}
-                        alt={post.title}
-                        fill
-                        unoptimized
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading={idx < 3 ? "eager" : "lazy"}
-                        fetchPriority={idx === 0 ? "high" : "auto"}
-                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute top-3 left-3">
-                        <span className="bg-primary-600 text-white px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold">
-                          {post.category || "Blog"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-3 sm:p-4 md:p-5">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                          {post.published_at ? formatBlogCardDate(post.published_at) : ""}
-                        </span>
-                        <span className="hidden sm:inline">•</span>
-                        <span className="inline-flex items-center gap-1 min-w-0">
-                          <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                          <span className="truncate">{post.author || DEFAULT_BLOG_AUTHOR}</span>
-                        </span>
-                      </div>
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">
-                        {post.title}
-                      </h3>
-                      <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{post.excerpt || ""}</p>
-                      <Link
-                        href={`/blogs/${post.slug}`}
-                        className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 text-sm sm:text-base group/link"
-                      >
-                        <span>Read more</span>
-                        <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
+                initialPosts.map((post, idx) => {
+                  const src = post.image_url || DEFAULT_BLOG_CARD_IMAGE;
+                  return (
+                    <article
+                      key={post.id}
+                      className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200/80 shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden group w-full min-w-0"
+                    >
+                      <Link href={`/blogs/${post.slug}`} className="block">
+                        <div className="relative h-40 sm:h-44 md:h-48 overflow-hidden bg-gray-100">
+                          <Image
+                            src={src}
+                            alt={post.title}
+                            fill
+                            {...blogImageOptimizeProps(src)}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading={idx < 3 ? "eager" : "lazy"}
+                            fetchPriority={idx === 0 ? "high" : "auto"}
+                            priority={idx === 0}
+                            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                            quality={72}
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute top-3 left-3">
+                            <span className="bg-primary-600 text-white px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-semibold">
+                              {post.category || "Blog"}
+                            </span>
+                          </div>
+                        </div>
                       </Link>
-                    </div>
-                  </article>
-                ))
+                      <div className="p-3 sm:p-4 md:p-5">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-500 mb-2">
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                            {post.published_at ? (
+                              <time dateTime={post.published_at}>{formatBlogCardDate(post.published_at)}</time>
+                            ) : null}
+                          </span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="inline-flex items-center gap-1 min-w-0">
+                            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                            <span className="truncate">{post.author || DEFAULT_BLOG_AUTHOR}</span>
+                          </span>
+                        </div>
+                        <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors line-clamp-3">
+                          <Link href={`/blogs/${post.slug}`}>{post.title}</Link>
+                        </h2>
+                        <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{post.excerpt || ""}</p>
+                        <Link
+                          href={`/blogs/${post.slug}`}
+                          className="inline-flex items-center text-primary-600 font-semibold hover:text-primary-700 text-sm sm:text-base group/link"
+                        >
+                          <span>Read more</span>
+                          <ArrowRight className="w-4 h-4 ml-1.5 group-hover/link:translate-x-0.5 transition-transform" />
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })
               )}
             </div>
             {listingTruncated && initialPosts.length > 0 && (

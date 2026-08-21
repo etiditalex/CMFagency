@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { BlogSidebarAdRow } from "@/lib/blog-server";
+import { blogOptimizedPlainSrc } from "@/lib/blog-image";
 
 const PROMO_ROTATE_MS = 5500;
 
@@ -36,7 +37,7 @@ export function PromoSlideCard({
       {src && !imageFailed ? (
         <div className="w-full flex justify-center items-center rounded-lg overflow-hidden bg-gray-100 min-h-0">
           <img
-            src={src}
+            src={blogOptimizedPlainSrc(src)}
             alt={ad.title ? `${ad.title} (promo)` : "Promotional image"}
             className={`block max-w-full w-auto h-auto object-contain object-center ${imageMaxClass}`}
             loading={imagePriority ? "eager" : "lazy"}
@@ -147,7 +148,7 @@ export default function BlogPromoCarousel({
       >
         {nextSrc ? (
           <img
-            src={nextSrc}
+            src={blogOptimizedPlainSrc(nextSrc, 900)}
             alt=""
             aria-hidden="true"
             className="hidden"

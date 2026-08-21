@@ -1,11 +1,10 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Clock, FileText } from "lucide-react";
 
 import { DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
+import { blogImageOptimizeProps } from "@/lib/blog-image";
 import type { BlogColumnSidebarRow } from "@/lib/blog-server";
 
 type Props = {
@@ -43,10 +42,11 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
               src={featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
               alt={featured.title}
               fill
-              unoptimized
+              {...blogImageOptimizeProps(featured.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
               className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
               loading="lazy"
               sizes="(max-width: 1024px) 100vw, 320px"
+              quality={70}
               referrerPolicy="no-referrer"
             />
             <span className="absolute bottom-2 right-2 bg-primary-600 text-white text-[10px] font-bold tracking-wide px-2 py-1 uppercase shadow-sm">
@@ -78,10 +78,11 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
                     src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                     alt=""
                     fill
-                    unoptimized
+                    {...blogImageOptimizeProps(p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
                     sizes="96px"
+                    quality={65}
                     referrerPolicy="no-referrer"
                   />
                 </div>

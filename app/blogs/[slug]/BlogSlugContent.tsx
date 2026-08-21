@@ -17,6 +17,7 @@ import BlogCmfaInlineBanner from "@/components/blogs/BlogCmfaInlineBanner";
 import BlogEditorialDesk from "@/components/blogs/BlogEditorialDesk";
 import BlogShareBar from "@/components/blogs/BlogShareBar";
 import { SITE_URL } from "@/lib/site-url";
+import { blogImageOptimizeProps } from "@/lib/blog-image";
 
 type Props = {
   post: BlogPostRow;
@@ -54,10 +55,11 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
                 src={p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE}
                 alt={p.title}
                 fill
-                unoptimized
+                {...blogImageOptimizeProps(p.image_url?.trim() || DEFAULT_BLOG_CARD_IMAGE)}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 sizes="(max-width: 640px) 112px, 128px"
+                quality={65}
                 referrerPolicy="no-referrer"
               />
             </div>
@@ -157,11 +159,12 @@ export default function BlogSlugContent({
                   src={heroSrc}
                   alt={post.title}
                   fill
-                  unoptimized
+                  {...blogImageOptimizeProps(heroSrc)}
                   className="absolute inset-0 w-full h-full object-cover"
                   fetchPriority="high"
                   priority
                   sizes="(max-width: 1024px) 100vw, 900px"
+                  quality={78}
                   referrerPolicy="no-referrer"
                 />
               </div>

@@ -1,6 +1,9 @@
 export default function BlogsLoading() {
   return (
-    <div className="pt-20 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
+    <div className="pt-28 md:pt-32 min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden bg-transparent">
+      <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 mb-5 sm:mb-6">
+        <div className="h-8 w-48 rounded bg-gray-200/80 animate-pulse" />
+      </div>
       <div className="w-full px-2 sm:px-3 md:px-5 lg:px-6 xl:px-8 2xl:px-10 pb-8 sm:pb-10">
         <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px] lg:gap-8 xl:gap-10">
           <div className="min-w-0 space-y-6 sm:space-y-8">

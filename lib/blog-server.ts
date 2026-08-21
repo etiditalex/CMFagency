@@ -2,6 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
+/** Bust listing, articles, and feeds together after a CMS publish. */
+export const BLOG_PUBLIC_CACHE_TAG = "blog-public";
+
+const BLOG_CACHE = { revalidate: 120 as const, tags: [BLOG_PUBLIC_CACHE_TAG] };
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase =
@@ -35,15 +40,22 @@ export async function getPublishedBlogSlugsForStatic(): Promise<{ slug: string }
 
 /** Cached server-side fetch for a single published blog by slug. Dedupes when used in generateMetadata + page. */
 export const getBlogBySlug = cache(async (slug: string): Promise<BlogPostRow | null> => {
-  if (!slug || !supabase) return null;
-  const { data, error } = await supabase
-    .from("fusion_blogs")
-    .select("id, slug, title, excerpt, body, author, category, image_url, published_at, updated_at, external_links")
-    .eq("slug", slug)
-    .not("published_at", "is", null)
-    .maybeSingle();
-  if (error) return null;
-  return data as BlogPostRow | null;
+  const db = supabase;
+  if (!slug || !db) return null;
+  return unstable_cache(
+    async () => {
+      const { data, error } = await db
+        .from("fusion_blogs")
+        .select("id, slug, title, excerpt, body, author, category, image_url, published_at, updated_at, external_links")
+        .eq("slug", slug)
+        .not("published_at", "is", null)
+        .maybeSingle();
+      if (error) return null;
+      return data as BlogPostRow | null;
+    },
+    ["blog-by-slug-v1", slug],
+    BLOG_CACHE
+  )();
 });
 
 export type BlogTrendingRow = { slug: string; title: string };
@@ -62,18 +74,25 @@ const COLUMN_SIDEBAR_CATEGORIES = ["News", "Business"] as const;
 /** Published News/Business posts for article sidebar; optionally exclude the current article. */
 export const getBlogColumnsSidebarPosts = cache(
   async (excludeSlug?: string, limit = 5): Promise<BlogColumnSidebarRow[]> => {
-    if (!supabase) return [];
-    let q = supabase
-      .from("fusion_blogs")
-      .select("slug, title, image_url, published_at, category")
-      .not("published_at", "is", null)
-      .in("category", [...COLUMN_SIDEBAR_CATEGORIES])
-      .order("published_at", { ascending: false })
-      .limit(limit);
-    if (excludeSlug) q = q.neq("slug", excludeSlug);
-    const { data, error } = await q;
-    if (error || !data) return [];
-    return data as BlogColumnSidebarRow[];
+    const db = supabase;
+    if (!db) return [];
+    return unstable_cache(
+      async () => {
+        let q = db
+          .from("fusion_blogs")
+          .select("slug, title, image_url, published_at, category")
+          .not("published_at", "is", null)
+          .in("category", [...COLUMN_SIDEBAR_CATEGORIES])
+          .order("published_at", { ascending: false })
+          .limit(limit);
+        if (excludeSlug) q = q.neq("slug", excludeSlug);
+        const { data, error } = await q;
+        if (error || !data) return [];
+        return data as BlogColumnSidebarRow[];
+      },
+      ["blog-columns-v1", excludeSlug ?? "", String(limit)],
+      BLOG_CACHE
+    )();
   }
 );
 
@@ -87,18 +106,25 @@ export type BlogRelatedCard = {
 /** Resolve published posts for :::related blocks (order matches requested slugs; skips missing). */
 export const getBlogRelatedCardsBySlugs = cache(async (slugs: string[]): Promise<BlogRelatedCard[]> => {
   const unique = [...new Set(slugs.map((s) => s.trim()).filter(Boolean))];
-  if (!supabase || unique.length === 0) return [];
-  const { data, error } = await supabase
-    .from("fusion_blogs")
-    .select("slug, title, image_url, published_at")
-    .in("slug", unique)
-    .not("published_at", "is", null);
-  if (error || !data) return [];
-  const bySlug = new Map((data as BlogRelatedCard[]).map((r) => [r.slug, r]));
-  return unique.flatMap((s) => {
-    const row = bySlug.get(s);
-    return row ? [row] : [];
-  });
+  const db = supabase;
+  if (!db || unique.length === 0) return [];
+  return unstable_cache(
+    async () => {
+      const { data, error } = await db
+        .from("fusion_blogs")
+        .select("slug, title, image_url, published_at")
+        .in("slug", unique)
+        .not("published_at", "is", null);
+      if (error || !data) return [];
+      const bySlug = new Map((data as BlogRelatedCard[]).map((r) => [r.slug, r]));
+      return unique.flatMap((s) => {
+        const row = bySlug.get(s);
+        return row ? [row] : [];
+      });
+    },
+    ["blog-related-v1", unique.join("|")],
+    BLOG_CACHE
+  )();
 });
 
 export type BlogSidebarAdRow = {
@@ -110,27 +136,41 @@ export type BlogSidebarAdRow = {
 
 /** Other recent posts for the blog article sidebar (excludes current slug). */
 export const getBlogTrendingExcluding = cache(async (excludeSlug: string, limit = 6): Promise<BlogTrendingRow[]> => {
-  if (!supabase || !excludeSlug) return [];
-  const { data, error } = await supabase
-    .from("fusion_blogs")
-    .select("slug, title")
-    .neq("slug", excludeSlug)
-    .not("published_at", "is", null)
-    .order("published_at", { ascending: false })
-    .limit(limit);
-  if (error) return [];
-  return (data ?? []) as BlogTrendingRow[];
+  const db = supabase;
+  if (!db || !excludeSlug) return [];
+  return unstable_cache(
+    async () => {
+      const { data, error } = await db
+        .from("fusion_blogs")
+        .select("slug, title")
+        .neq("slug", excludeSlug)
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(limit);
+      if (error) return [];
+      return (data ?? []) as BlogTrendingRow[];
+    },
+    ["blog-trending-v1", excludeSlug, String(limit)],
+    BLOG_CACHE
+  )();
 });
 
 /** Approved sidebar promos (RLS returns only approved rows). */
 export const getApprovedBlogSidebarAds = cache(async (): Promise<BlogSidebarAdRow[]> => {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("fusion_blog_sidebar_ads")
-    .select("id, title, image_url, href")
-    .order("sort_order", { ascending: true });
-  if (error) return [];
-  return (data ?? []) as BlogSidebarAdRow[];
+  const db = supabase;
+  if (!db) return [];
+  return unstable_cache(
+    async () => {
+      const { data, error } = await db
+        .from("fusion_blog_sidebar_ads")
+        .select("id, title, image_url, href")
+        .order("sort_order", { ascending: true });
+      if (error) return [];
+      return (data ?? []) as BlogSidebarAdRow[];
+    },
+    ["blog-sidebar-ads-v1"],
+    BLOG_CACHE
+  )();
 });
 
 /** Published posts for /blogs listing (no body — smaller payload). */
@@ -146,7 +186,7 @@ export type BlogListingRow = {
 };
 
 /** Cap listing grid payload; trending/columns use separate small queries so older News/Business posts still appear in sidebars. */
-export const BLOG_LISTING_PAGE_SIZE = 60;
+export const BLOG_LISTING_PAGE_SIZE = 24;
 
 /** Keeps `unstable_cache` payload under Next.js ~2MB data cache limit; cards only show a short preview. */
 const LISTING_EXCERPT_MAX_CHARS = 220;
@@ -209,9 +249,7 @@ async function loadBlogIndexData(): Promise<{
  * Server-only index data: parallel bounded queries.
  * Cached across requests to reduce Supabase round-trips on high-traffic /blogs loads.
  */
-const getBlogIndexDataCached = unstable_cache(loadBlogIndexData, ["blog-index-data-v1"], {
-  revalidate: 120,
-});
+const getBlogIndexDataCached = unstable_cache(loadBlogIndexData, ["blog-index-data-v2"], BLOG_CACHE);
 
 /** Request-level dedupe wrapper around cross-request cached loader. */
 export const getBlogIndexData = cache(async () => getBlogIndexDataCached());
@@ -243,13 +281,20 @@ export type BlogFeedRow = { slug: string; title: string; excerpt: string | null;
 
 /** Recent published posts for RSS (discovery / aggregators). */
 export async function getPublishedBlogsForFeed(limit = 50): Promise<BlogFeedRow[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("fusion_blogs")
-    .select("slug, title, excerpt, published_at")
-    .not("published_at", "is", null)
-    .order("published_at", { ascending: false })
-    .limit(limit);
-  if (error || !data) return [];
-  return data as BlogFeedRow[];
+  const db = supabase;
+  if (!db) return [];
+  return unstable_cache(
+    async () => {
+      const { data, error } = await db
+        .from("fusion_blogs")
+        .select("slug, title, excerpt, published_at")
+        .not("published_at", "is", null)
+        .order("published_at", { ascending: false })
+        .limit(limit);
+      if (error || !data) return [];
+      return data as BlogFeedRow[];
+    },
+    ["blog-feed-v1", String(limit)],
+    BLOG_CACHE
+  )();
 }

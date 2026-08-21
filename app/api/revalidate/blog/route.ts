@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { BLOG_PUBLIC_CACHE_TAG } from "@/lib/blog-server";
 
 async function getCallerAdminRole(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       ? (body as { previousSlug: string }).previousSlug.trim()
       : "";
 
+  revalidateTag(BLOG_PUBLIC_CACHE_TAG, "max");
   revalidatePath("/blogs");
   revalidatePath("/sitemap.xml");
   revalidatePath("/blogs/rss.xml");

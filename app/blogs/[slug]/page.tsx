@@ -11,20 +11,16 @@ import {
   getBlogTrendingExcluding,
 } from "@/lib/blog-server";
 import { resolveBlogShareImageUrl } from "@/lib/blog-share-image";
+import { DEFAULT_BLOG_AUTHOR } from "@/lib/blog-defaults";
+import { SITE_URL } from "@/lib/site-url";
 import BlogPostingJsonLd from "@/components/blogs/BlogPostingJsonLd";
 import BlogSlugContent from "./BlogSlugContent";
-
-const BASE_URL =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-/** Avoid prerendering every post at build (many parallel DB calls → Vercel 60s timeouts). SSR per request. */
-export const dynamic = "force-dynamic";
-
-/** Cache rendered pages after generation (on-demand). */
+/** Article HTML is request-rendered (root CSP nonce). Post body and sidebars are cached 120s. */
 export const revalidate = 120;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -34,7 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) {
     const fallback = resolveBlogShareImageUrl(slug, null);
     return {
-      title: "Blog | Changer Fusions",
+      title: "Blog",
+      robots: { index: false, follow: true },
       openGraph: {
         siteName: "Changer Fusions",
         images: [{ url: fallback, width: 1200, height: 630, alt: "Changer Fusions blog" }],
@@ -43,23 +40,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = post.title || "Blog | Changer Fusions";
+  const title = post.title || "Blog";
   const description = post.excerpt || "Read more on the Changer Fusions blog.";
   const imageUrl = resolveBlogShareImageUrl(slug, post.image_url);
-  const url = `${BASE_URL}/blogs/${slug}`;
+  const url = `${SITE_URL}/blogs/${slug}`;
   const modified = blogLastModifiedDate(post.published_at, post.updated_at);
+  const authorName = post.author?.trim() || DEFAULT_BLOG_AUTHOR;
+  const keywords = [post.category, "Changer Fusions", "Kenya marketing", "blog"].filter(
+    (v): v is string => Boolean(v && v.trim())
+  );
 
   return {
     title,
     description,
+    keywords,
+    authors: [{ name: authorName }],
+    category: post.category || "Blog",
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
     openGraph: {
       title,
       description,
       url,
       siteName: "Changer Fusions",
       type: "article",
+      locale: "en_KE",
       publishedTime: post.published_at ?? undefined,
       modifiedTime: modified?.toISOString(),
+      authors: [authorName],
       images: [
         {
           url: imageUrl,
@@ -115,7 +132,7 @@ export default async function BlogSlugPage({ params }: Props) {
   const relatedBySlug: Record<string, (typeof relatedRows)[number]> = {};
   for (const r of relatedRows) relatedBySlug[r.slug] = r;
 
-  const canonicalUrl = `${BASE_URL}/blogs/${post.slug}`;
+  const canonicalUrl = `${SITE_URL}/blogs/${post.slug}`;
   const shareImageUrl = resolveBlogShareImageUrl(post.slug, post.image_url);
 
   return (
