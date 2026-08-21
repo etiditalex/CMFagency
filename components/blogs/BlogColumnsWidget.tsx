@@ -39,10 +39,12 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
         <Link href={`/blogs/${featured.slug}`} className="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 rounded-lg">
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
             <Image
-              src={resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, 640)}
+              src={resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, featured.slug)}
               alt={featured.title}
               fill
-              {...blogImageOptimizeProps(resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, 640))}
+              {...blogImageOptimizeProps(
+                resolveBlogImageSrc(featured.image_url, DEFAULT_BLOG_CARD_IMAGE, featured.slug)
+              )}
               className="absolute inset-0 h-full w-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
               loading="lazy"
               sizes="(max-width: 1024px) 100vw, 320px"
@@ -75,10 +77,10 @@ export default function BlogColumnsWidget({ posts, className = "" }: Props) {
               >
                 <div className="relative w-24 h-[4.25rem] shrink-0 overflow-hidden rounded-md bg-gray-100 border border-gray-100">
                   <Image
-                    src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 192)}
+                    src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, p.slug)}
                     alt=""
                     fill
-                    {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 192))}
+                    {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, p.slug))}
                     className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform"
                     loading="lazy"
                     sizes="96px"

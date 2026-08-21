@@ -61,7 +61,7 @@ export default function BlogListingSidebar({ trending, columnPosts, className = 
           className="block relative aspect-[4/3] w-full bg-black outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80"
         >
           <Image
-            src={resolveBlogImageSrc(CMFA_BANNER_IMAGE, CMFA_BANNER_IMAGE, 640)}
+            src={resolveBlogImageSrc(CMFA_BANNER_IMAGE, CMFA_BANNER_IMAGE)}
             alt="Coast Fashion and Modelling Awards 2026 — CMFA banner"
             fill
             className="absolute inset-0 h-full w-full object-cover object-center"

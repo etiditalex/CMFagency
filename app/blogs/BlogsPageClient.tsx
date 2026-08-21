@@ -71,7 +71,7 @@ export default function BlogsPageClient({
                 </div>
               ) : (
                 initialPosts.map((post, idx) => {
-                  const src = resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, 720);
+                  const src = resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, post.slug);
                   return (
                     <article
                       key={post.id}

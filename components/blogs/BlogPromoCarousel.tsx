@@ -148,7 +148,7 @@ export default function BlogPromoCarousel({
       >
         {nextSrc ? (
           <img
-            src={blogOptimizedPlainSrc(nextSrc, 900)}
+            src={blogOptimizedPlainSrc(nextSrc)}
             alt=""
             aria-hidden="true"
             className="hidden"

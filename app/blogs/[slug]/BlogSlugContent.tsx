@@ -29,7 +29,7 @@ type Props = {
 };
 
 function heroSrcFor(post: BlogPostRow): string {
-  return resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, 1200);
+  return resolveBlogImageSrc(post.image_url, DEFAULT_BLOG_CARD_IMAGE, post.slug);
 }
 
 function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relatedBySlug: Record<string, BlogRelatedCard> }) {
@@ -49,10 +49,10 @@ function RelatedArticlesBlock({ slugs, relatedBySlug }: { slugs: string[]; relat
           >
             <div className="relative w-28 h-20 sm:w-32 sm:h-[4.5rem] shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
               <Image
-                src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 256)}
+                src={resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, p.slug)}
                 alt={p.title}
                 fill
-                {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, 256))}
+                {...blogImageOptimizeProps(resolveBlogImageSrc(p.image_url, DEFAULT_BLOG_CARD_IMAGE, p.slug))}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
                 sizes="(max-width: 640px) 112px, 128px"
