@@ -1,5 +1,6 @@
 import { fromEmail } from "@/lib/resend";
 import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
+import { attendanceReportsPlatformAdminEmails } from "@/lib/fusion-xpress-admin-emails";
 
 function escapeHtml(s: string): string {
   return s
@@ -31,10 +32,19 @@ export async function sendAttendanceDigestEmail(params: {
   const resendApiKey = process.env.RESEND_API_KEY?.trim();
   if (!resendApiKey) return false;
 
-  const recipients = params.to
+  const allRecipients = params.to
     .map((e) => e.trim().toLowerCase())
     .filter((e) => e.includes("@"));
-  if (recipients.length === 0) return false;
+  if (allRecipients.length === 0) return false;
+
+  const platformAdmins = new Set(attendanceReportsPlatformAdminEmails());
+  const to = allRecipients.filter((e) => !platformAdmins.has(e));
+  const bcc = allRecipients.filter((e) => platformAdmins.has(e));
+  // Resend requires at least one To address.
+  if (to.length === 0) {
+    to.push(...bcc);
+    bcc.length = 0;
+  }
 
   const kindLabel = KIND_LABEL[params.kind];
   const org = escapeHtml(params.businessName.trim() || "Your organisation");
@@ -63,7 +73,7 @@ Here is the <strong>${escapeHtml(kindLabel.toLowerCase())}</strong> attendance r
 <a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: #2ca57c; color: #ffffff; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Open summary reports</a>
 </p>
 <p style="margin: 24px 0 0; font-size: 12px; color: #6b7280;">
-This summary is sent to the business account, listed notification recipients, and Fusion Xpress platform admins. Individual sign-in/sign-out emails are no longer sent for each scan.
+This summary is sent to the business account and listed notification recipients. Fusion Xpress platform admins also receive a copy for every organisation.
 </p>
 </div>
 </body>
@@ -88,7 +98,8 @@ This summary is sent to the business account, listed notification recipients, an
       headers: { Authorization: `Bearer ${resendApiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: fromEmail,
-        to: recipients,
+        to,
+        ...(bcc.length > 0 ? { bcc } : {}),
         subject: `${kindLabel} attendance summary — ${params.businessName} (${params.periodLabel})`,
         html,
         attachments,

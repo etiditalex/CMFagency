@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { parseFusionXpressAdminEmails } from "@/lib/fusion-xpress-admin-emails";
+import { attendanceReportsPlatformAdminEmails } from "@/lib/fusion-xpress-admin-emails";
 
 function parseNotificationEmails(raw: unknown): string[] {
   if (Array.isArray(raw)) {
@@ -21,7 +21,7 @@ function parseNotificationEmails(raw: unknown): string[] {
  * Recipients for one organisation's attendance PDF digest:
  * 1. Business account email (subscription owner)
  * 2. People listed to receive notifications for that business
- * 3. Fusion Xpress platform admin emails (always get a copy)
+ * 3. Fusion Xpress platform admin (auriljoy916@gmail.com) and extra FUSION_XPRESS_ADMIN_EMAILS
  */
 export async function resolveAttendanceDigestRecipients(
   admin: SupabaseClient,
@@ -54,7 +54,7 @@ export async function resolveAttendanceDigestRecipients(
     if (email.includes("@")) recipients.add(email);
   }
 
-  for (const email of parseFusionXpressAdminEmails()) {
+  for (const email of attendanceReportsPlatformAdminEmails()) {
     recipients.add(email);
   }
 
