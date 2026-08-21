@@ -30,6 +30,7 @@ type ReceiptPdfRequestBody = {
   paymentMethod?: string;
   mpesaReference?: string;
   mpesaNumber?: string;
+  mpesaAccount?: string;
   memo?: string;
   balanceDueDays?: number;
 };
@@ -117,6 +118,7 @@ export async function POST(req: NextRequest) {
     paymentMethod: String(payload.paymentMethod ?? "").trim() || undefined,
     mpesaReference: String(payload.mpesaReference ?? "").trim() || undefined,
     mpesaNumber: String(payload.mpesaNumber ?? "").trim() || undefined,
+    mpesaAccount: String(payload.mpesaAccount ?? "").trim() || undefined,
     memo,
     balanceDueDays,
   });

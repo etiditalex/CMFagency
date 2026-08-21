@@ -8,7 +8,13 @@ import { Loader2, Plus, Receipt, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
-import { INVOICE_MPESA_ACCOUNT, INVOICE_MPESA_PAYBILL } from "@/lib/invoice-payment-details";
+import {
+  getReceiptPaymentDestination,
+  INVOICE_MPESA_ACCOUNT,
+  INVOICE_MPESA_PAYBILL,
+  INVOICE_MPESA_SEND_TO,
+  RECEIPT_PAYMENT_METHODS,
+} from "@/lib/invoice-payment-details";
 import { supabase } from "@/lib/supabase";
 
 type Line = {
@@ -78,7 +84,8 @@ export default function DashboardReceiptsPage() {
   const [amountPaid, setAmountPaid] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("M-Pesa transfer");
   const [mpesaReference, setMpesaReference] = useState("");
-  const [mpesaNumber, setMpesaNumber] = useState("");
+  const [mpesaNumber, setMpesaNumber] = useState(INVOICE_MPESA_SEND_TO);
+  const [mpesaAccount, setMpesaAccount] = useState("");
   const [balanceDueDays, setBalanceDueDays] = useState("14");
   const [memo, setMemo] = useState("");
   const [lines, setLines] = useState<Line[]>(() => [newLine()]);
@@ -135,6 +142,15 @@ export default function DashboardReceiptsPage() {
     setLines((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   };
 
+  const paymentDestination = useMemo(() => getReceiptPaymentDestination(paymentMethod), [paymentMethod]);
+
+  const applyPaymentMethod = (method: string) => {
+    const next = getReceiptPaymentDestination(method);
+    setPaymentMethod(method);
+    setMpesaNumber(next.destinationValue);
+    setMpesaAccount(next.accountValue);
+  };
+
   const onGenerate = async () => {
     setError(null);
     setSubmitting(true);
@@ -181,8 +197,9 @@ export default function DashboardReceiptsPage() {
           paymentDateIso: paymentDate.trim() || null,
           amountPaidKes,
           paymentMethod: paymentMethod.trim() || "M-Pesa transfer",
-          mpesaReference: mpesaReference.trim() || undefined,
-          mpesaNumber: mpesaNumber.trim() || undefined,
+          mpesaReference: paymentDestination.showReference ? mpesaReference.trim() || undefined : undefined,
+          mpesaNumber: paymentDestination.showDestination ? mpesaNumber.trim() || undefined : undefined,
+          mpesaAccount: paymentDestination.showAccount ? mpesaAccount.trim() || undefined : undefined,
           memo: memo.trim() || undefined,
           balanceDueDays: Number(balanceDueDays) || 14,
           lineItems,
@@ -342,36 +359,65 @@ export default function DashboardReceiptsPage() {
             <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Payment method</label>
             <select
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) => applyPaymentMethod(e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
             >
-              <option>M-Pesa transfer</option>
-              <option>M-Pesa Paybill</option>
-              <option>Bank transfer</option>
-              <option>Card / Paystack</option>
-              <option>Cash</option>
+              {RECEIPT_PAYMENT_METHODS.map((method) => (
+                <option key={method} value={method}>
+                  {method}
+                </option>
+              ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">M-Pesa reference</label>
-              <input
-                value={mpesaReference}
-                onChange={(e) => setMpesaReference(e.target.value)}
-                placeholder="e.g. UH43P23PUP"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              />
+          {paymentDestination.showReference || paymentDestination.showDestination || paymentDestination.showAccount ? (
+            <div
+              className={`grid gap-3 ${
+                paymentDestination.showReference && (paymentDestination.showDestination || paymentDestination.showAccount)
+                  ? "grid-cols-2"
+                  : "grid-cols-1"
+              }`}
+            >
+              {paymentDestination.showReference ? (
+                <div className={paymentDestination.showAccount ? "col-span-2" : undefined}>
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {paymentDestination.referenceLabel}
+                  </label>
+                  <input
+                    value={mpesaReference}
+                    onChange={(e) => setMpesaReference(e.target.value)}
+                    placeholder={paymentDestination.referencePlaceholder}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  />
+                </div>
+              ) : null}
+              {paymentDestination.showDestination ? (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {paymentDestination.destinationLabel}
+                  </label>
+                  <input
+                    value={mpesaNumber}
+                    onChange={(e) => setMpesaNumber(e.target.value)}
+                    placeholder={paymentDestination.destinationPlaceholder}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
+                  />
+                </div>
+              ) : null}
+              {paymentDestination.showAccount ? (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">
+                    {paymentDestination.accountLabel}
+                  </label>
+                  <input
+                    value={mpesaAccount}
+                    onChange={(e) => setMpesaAccount(e.target.value)}
+                    placeholder={paymentDestination.accountPlaceholder}
+                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
+                  />
+                </div>
+              ) : null}
             </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Received on number</label>
-              <input
-                value={mpesaNumber}
-                onChange={(e) => setMpesaNumber(e.target.value)}
-                placeholder="e.g. 254796988686"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500"
-              />
-            </div>
-          </div>
+          ) : null}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Balance due within (days)</label>
             <input

@@ -1,7 +1,11 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
-import { INVOICE_MPESA_ACCOUNT, INVOICE_MPESA_PAYBILL } from "@/lib/invoice-payment-details";
+import {
+  getReceiptPaymentDestination,
+  INVOICE_MPESA_ACCOUNT,
+  INVOICE_MPESA_PAYBILL,
+} from "@/lib/invoice-payment-details";
 
 export type ReceiptLineItem = {
   description: string;
@@ -26,6 +30,8 @@ export type BuildChangerFusionReceiptPdfInput = {
   paymentMethod?: string;
   mpesaReference?: string;
   mpesaNumber?: string;
+  /** Paybill account (or other method-specific account) printed with the destination. */
+  mpesaAccount?: string;
   memo?: string;
   /** Days until remaining balance is due. Default 14. */
   balanceDueDays?: number;
@@ -168,6 +174,7 @@ export async function buildChangerFusionReceiptPdfBytes(
   const relatedInvoice = input.relatedInvoice.trim();
   const receiptNumber = input.receiptNumber.trim();
   const paymentMethod = (input.paymentMethod ?? "M-Pesa transfer").trim() || "M-Pesa transfer";
+  const paymentDestination = getReceiptPaymentDestination(paymentMethod);
   const balanceDueDays = Number.isFinite(input.balanceDueDays) ? Math.max(0, Math.round(input.balanceDueDays as number)) : 14;
 
   let remainingPaid = amountPaid;
@@ -362,11 +369,29 @@ export async function buildChangerFusionReceiptPdfBytes(
   page.drawText(`Method: ${paymentMethod}`, { x: M, y, size: 10, font: fontReg, color: TEXT });
   y -= 13;
   if (input.mpesaReference?.trim()) {
-    page.drawText(`M-Pesa reference: ${input.mpesaReference.trim()}`, { x: M, y, size: 10, font: fontReg, color: TEXT });
+    page.drawText(`${paymentDestination.referenceLabel}: ${input.mpesaReference.trim()}`, {
+      x: M,
+      y,
+      size: 10,
+      font: fontReg,
+      color: TEXT,
+    });
     y -= 13;
   }
-  if (input.mpesaNumber?.trim()) {
-    page.drawText(`Received on M-Pesa number: ${input.mpesaNumber.trim()}`, {
+  const destinationValue = input.mpesaNumber?.trim() || paymentDestination.destinationValue;
+  if (destinationValue && paymentDestination.showDestination) {
+    page.drawText(`${paymentDestination.pdfDestinationLabel}: ${destinationValue}`, {
+      x: M,
+      y,
+      size: 10,
+      font: fontReg,
+      color: TEXT,
+    });
+    y -= 13;
+  }
+  const accountValue = input.mpesaAccount?.trim() || paymentDestination.accountValue;
+  if (accountValue && paymentDestination.showAccount && paymentDestination.pdfAccountLabel) {
+    page.drawText(`${paymentDestination.pdfAccountLabel}: ${accountValue}`, {
       x: M,
       y,
       size: 10,
