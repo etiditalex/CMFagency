@@ -429,7 +429,11 @@ export default function IndustryDemoForm({
       {demo.sections.map((section, sIdx) => (
         <div key={sIdx} className="space-y-5 overflow-visible">
           {section.title ? (
-            <h2 className="py-1 text-center text-lg font-bold leading-snug text-gray-900">
+            <h2
+              className={`py-1 text-lg font-bold leading-snug text-gray-900 ${
+                isPreRegister ? "text-left" : "text-center"
+              }`}
+            >
               {section.title}
             </h2>
           ) : null}
@@ -492,7 +496,9 @@ export default function IndustryDemoForm({
         </button>
       </div>
       {!isDashboard ? (
-        <p className="text-center text-xs text-gray-500">Fusion Xpress · Changer Fusions</p>
+        <p className={`text-xs text-gray-500 ${isPreRegister ? "text-left" : "text-center"}`}>
+          Fusion Xpress · Changer Fusions
+        </p>
       ) : null}
     </form>
   );

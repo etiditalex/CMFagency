@@ -54,7 +54,7 @@ export default function IndustryDemoFormClient({
                 </Link>
               </nav>
 
-              <header className="text-center">
+              <header className={mode === "preregister" ? "text-left" : "text-center"}>
                 <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-gray-900 md:text-3xl">
                   {mode === "preregister"
                     ? demo.title.replace(/Demo\s*$/i, "Pre-registration")
