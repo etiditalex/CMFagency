@@ -30,7 +30,6 @@ import {
   QrCode,
   Receipt,
   ScanLine,
-  Shield,
   ShoppingBag,
   Star,
   Ticket,
@@ -46,7 +45,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
+  Bell,
 } from "lucide-react";
+
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -124,6 +126,14 @@ const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2
 
 /** Inactivity timeout in ms. User is logged out after this period without activity. */
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+
+const NAV_ACTIVE =
+  "relative bg-[#eaf1fb] text-primary-800 before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-primary-700";
+const NAV_IDLE = "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
+const NAV_CHILD_ACTIVE = "bg-[#eaf1fb] text-primary-800";
+const NAV_CHILD_IDLE = "text-slate-500 hover:bg-slate-50 hover:text-slate-800";
+const NAV_ICON_ACTIVE = "text-primary-700";
+const NAV_ICON_IDLE = "text-slate-400 group-hover:text-slate-600";
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
@@ -304,22 +314,20 @@ function DashboardNavItem({
           <button
             type="button"
             onClick={() => setNestedNavOpen(!nestedNavOpen)}
-            className={`group flex w-full items-center rounded-md transition-colors ${
-              parentActive
-                ? "bg-primary-600/20 border border-primary-500/30 text-white"
-                : "text-white/80 hover:bg-white/5 hover:text-white"
+            className={`group flex w-full items-center rounded-r-md transition-colors ${
+              parentActive ? NAV_ACTIVE : NAV_IDLE
             } gap-3 px-3 py-2.5`}
           >
             <Icon
-              className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+              className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
             />
             <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
             <ChevronDown
-              className={`w-4 h-4 flex-shrink-0 text-white/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
           </button>
           {isOpen ? (
-            <div className="ml-3 space-y-0.5 border-l border-white/10 pl-2">
+            <div className="ml-3 space-y-0.5 border-l border-slate-200 pl-2">
               {visibleLinks.map((link) => {
                 const childActive = isNestedLinkActive(pathname, link.href);
                 return (
@@ -329,9 +337,7 @@ function DashboardNavItem({
                     prefetch={false}
                     onClick={onNavigate}
                     className={`block rounded-md py-2 px-3 text-sm font-medium transition-colors ${
-                      childActive
-                        ? "bg-primary-600/25 text-white border border-primary-500/20"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                      childActive ? NAV_CHILD_ACTIVE : NAV_CHILD_IDLE
                     }`}
                   >
                     {link.label}
@@ -355,15 +361,13 @@ function DashboardNavItem({
           href={item.href}
           prefetch={false}
           onClick={onNavigate}
-          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
-            parentActive
-              ? "bg-primary-600/20 border border-primary-500/30 text-white"
-              : "text-white/80 hover:bg-white/5 hover:text-white"
+          className={`group flex items-center justify-center rounded-r-md px-2 py-2.5 transition-colors ${
+            parentActive ? NAV_ACTIVE : NAV_IDLE
           }`}
           title={item.label}
         >
           <Icon
-            className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
           />
         </Link>
       );
@@ -374,22 +378,20 @@ function DashboardNavItem({
         <button
           type="button"
           onClick={() => setVisitorNavOpen(!visitorNavOpen)}
-          className={`group flex w-full items-center rounded-md transition-colors ${
-            parentActive
-              ? "bg-primary-600/20 border border-primary-500/30 text-white"
-              : "text-white/80 hover:bg-white/5 hover:text-white"
+          className={`group flex w-full items-center rounded-r-md transition-colors ${
+            parentActive ? NAV_ACTIVE : NAV_IDLE
           } gap-3 px-3 py-2.5`}
         >
           <Icon
-            className={`w-4 h-4 flex-shrink-0 ${parentActive ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
           />
           <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
           <ChevronDown
-            className={`w-4 h-4 flex-shrink-0 text-white/50 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
         {isOpen ? (
-          <div className="ml-3 space-y-0.5 border-l border-white/10 pl-2">
+          <div className="ml-3 space-y-0.5 border-l border-slate-200 pl-2">
             {item.children
               .filter((child) => !("adminOnly" in child && child.adminOnly) || isAdmin)
               .map((child) => {
@@ -409,9 +411,7 @@ function DashboardNavItem({
                     className={`block rounded-md py-2 font-medium transition-colors ${
                       nestedChild ? "ml-3 px-3 text-xs" : "px-3 text-sm"
                     } ${
-                      childActive
-                        ? "bg-primary-600/25 text-white border border-primary-500/20"
-                        : "text-white/70 hover:bg-white/5 hover:text-white"
+                      childActive ? NAV_CHILD_ACTIVE : NAV_CHILD_IDLE
                     }`}
                   >
                     {child.label}
@@ -430,26 +430,24 @@ function DashboardNavItem({
       href={item.href}
       prefetch={false}
       onClick={onNavigate}
-      className={`group flex items-center rounded-md transition-colors ${
-        active
-          ? "bg-primary-600/20 border border-primary-500/30 text-white"
-          : "text-white/80 hover:bg-white/5 hover:text-white"
+      className={`group flex items-center rounded-r-md transition-colors ${
+        active ? NAV_ACTIVE : NAV_IDLE
       } ${showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
       title={!showLabels ? item.label : undefined}
     >
       <Icon
-        className={`w-4 h-4 flex-shrink-0 ${active ? "text-primary-100" : "text-white/60 group-hover:text-white/80"}`}
+        className={`w-4 h-4 flex-shrink-0 ${active ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
       />
       {showLabels && (
         <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
           <span className="truncate">{item.label}</span>
           {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-primary-700 text-white text-[10px] font-extrabold flex-shrink-0">
               {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
             </span>
           )}
           {item.href === "/dashboard/gate" && pendingCmfaCount > 0 && (
-            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-amber-400 text-gray-950 text-[10px] font-extrabold flex-shrink-0">
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-primary-700 text-white text-[10px] font-extrabold flex-shrink-0">
               {pendingCmfaCount > 99 ? "99+" : pendingCmfaCount}
             </span>
           )}
@@ -466,7 +464,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const currentType = sp?.get("type") ?? null;
   const visitorIndustry = sp?.get("industry") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly } =
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly, isManager, isFullAdmin, role } =
     usePortal();
   const adminOwnerId = isAdmin ? sp?.get("owner")?.trim() || null : null;
   const isLeaveManagementPage =
@@ -649,8 +647,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   /** Desktop only: when the rail is collapsed, expand while the pointer is over the sidebar. */
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
   const [search, setSearch] = useState("");
+  const [now, setNow] = useState(() => new Date());
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
   const [pendingCmfaCount, setPendingCmfaCount] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {
@@ -748,7 +752,49 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     return navItems.find((x) => isActivePath(pathname, currentType, x.href))?.label ?? "Dashboard";
   }, [currentType, pathname, visitorIndustry, navItems]);
 
-  const breadcrumbTail = active === "Dashboard" ? "Read" : active;
+  const breadcrumbTail = active === "Dashboard" ? "Overview" : active;
+
+  const clockLabel = useMemo(() => {
+    try {
+      const datePart = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Africa/Nairobi",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(now);
+      const timePart = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Africa/Nairobi",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(now);
+      return `${datePart} | ${timePart}`;
+    } catch {
+      return now.toLocaleString();
+    }
+  }, [now]);
+
+  const displayName = user?.name || user?.email || "Admin";
+  const initials = String(displayName).trim().charAt(0).toUpperCase() || "A";
+  const roleLabel = isFullAdmin
+    ? "Administrator"
+    : isManager
+      ? "Manager"
+      : isEmployer
+        ? "Employer"
+        : isVisitorOnly
+          ? "Visitor management"
+          : role
+            ? `${role.charAt(0).toUpperCase()}${role.slice(1)}`
+            : "Member";
+  const noticeCount = pendingApplicationsCount + pendingCmfaCount;
+  const noticeHref =
+    pendingApplicationsCount > 0
+      ? "/dashboard/applications"
+      : pendingCmfaCount > 0
+        ? "/dashboard/gate"
+        : null;
 
   // Avoid flashing private shell while auth pages redirect.
   if (authLoading || portalLoading || !isAuthenticated || !isPortalMember) {
@@ -761,264 +807,285 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     { key: "settings", label: "Application Settings" },
   ];
 
+  const isWidePage =
+    isLeaveManagementPage ||
+    isLeaveSettingsPage ||
+    isSummaryReportsPage ||
+    isPerEmployeeReportPage ||
+    isEmployeesPage ||
+    isVisitorManagementPage;
+  const isDashboardHome = pathname === "/dashboard";
+
+  const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) =>
+    sections.map((s) => (
+      <div key={s.key}>
+        {showLabels ? (
+          <div className="px-3 text-[10px] font-bold tracking-[0.18em] uppercase text-primary-700">
+            {s.label}
+          </div>
+        ) : null}
+        <div className={`${showLabels ? "mt-2" : "mt-1"} space-y-0.5`}>
+          {navItems
+            .filter((x) => x.section === s.key && canSeeItem(x))
+            .map((item) => (
+              <DashboardNavItem
+                key={item.href}
+                item={item}
+                pathname={pathname}
+                currentType={currentType}
+                visitorIndustry={visitorIndustry}
+                visitorNavOpen={visitorNavOpen}
+                setVisitorNavOpen={setVisitorNavOpen}
+                nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
+                setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
+                showLabels={showLabels}
+                onNavigate={onNavigate}
+                pendingApplicationsCount={pendingApplicationsCount}
+                pendingCmfaCount={pendingCmfaCount}
+                isAdmin={isAdmin}
+                adminOwnerId={adminOwnerId}
+              />
+            ))}
+        </div>
+      </div>
+    ));
+
+  const noticeControl = (
+    <span className="relative inline-flex">
+      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10">
+        <Bell className="h-[18px] w-[18px]" />
+      </span>
+      {noticeCount > 0 ? (
+        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-secondary-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-800">
+          {noticeCount > 99 ? "99+" : noticeCount}
+        </span>
+      ) : null}
+    </span>
+  );
+
   return (
-    <div className="min-h-screen bg-white flex">
-      {/* Sidebar (desktop): icon rail when collapsed; expands on hover or stays open when pinned */}
-      <aside
-        className={`hidden lg:flex flex-col flex-shrink-0 bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/5 overflow-hidden transition-[width] duration-300 ease-out ${
-          showDesktopSidebarFull ? "w-72" : "w-[4.25rem]"
-        }`}
-        onMouseEnter={() => {
-          if (sidebarCollapsed) setSidebarHoverExpanded(true);
-        }}
-        onMouseLeave={() => setSidebarHoverExpanded(false)}
-      >
-        <div
-          className={`relative h-16 flex items-center border-b border-white/5 ${showDesktopSidebarFull ? "gap-3 px-5" : "justify-center px-2"}`}
-        >
-          <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center flex-shrink-0">
-            <Shield className="w-5 h-5 text-primary-100" />
-          </div>
-          {showDesktopSidebarFull && (
-            <div className="min-w-0 flex-1 flex items-start gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-                <div className="text-xs text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
-              </div>
-              {sidebarCollapsed && sidebarHoverExpanded && (
-                <button
-                  type="button"
-                  onClick={toggleSidebarCollapsed}
-                  className="flex-shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
-                  aria-label="Keep sidebar open"
-                  title="Keep open"
-                >
-                  <PanelLeftOpen className="w-4 h-4 text-white/80" />
-                </button>
-              )}
-            </div>
-          )}
-          {!sidebarCollapsed && (
-            <button
-              type="button"
-              onClick={toggleSidebarCollapsed}
-              className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-white/5 hover:bg-white/10 border border-white/10"
-              aria-label="Collapse sidebar"
-              title="Collapse to icons"
-            >
-              <PanelLeftClose className="w-4 h-4 text-white/80" />
-            </button>
-          )}
-          {sidebarCollapsed && !sidebarHoverExpanded && (
-            <button
-              type="button"
-              onClick={toggleSidebarCollapsed}
-              className="absolute top-4 -right-3 z-10 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-600 border border-primary-400 shadow"
-              aria-label="Pin sidebar open"
-              title="Keep sidebar open"
-            >
-              <PanelLeftOpen className="w-3.5 h-3.5 text-white" />
-            </button>
-          )}
-        </div>
-
-        <nav className={`flex-1 overflow-y-auto py-4 space-y-5 ${showDesktopSidebarFull ? "px-3" : "px-2"}`}>
-          {sections.map((s) => (
-            <div key={s.key}>
-              {showDesktopSidebarFull && (
-                <div className="px-3 text-xs font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
-              )}
-              <div className="mt-2 space-y-1">
-                {navItems.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
-                  <DashboardNavItem
-                    key={item.href}
-                    item={item}
-                    pathname={pathname}
-                    currentType={currentType}
-                    visitorIndustry={visitorIndustry}
-                    visitorNavOpen={visitorNavOpen}
-                    setVisitorNavOpen={setVisitorNavOpen}
-                    nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
-                    setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
-                    showLabels={showDesktopSidebarFull}
-                    pendingApplicationsCount={pendingApplicationsCount}
-                    pendingCmfaCount={pendingCmfaCount}
-                    isAdmin={isAdmin}
-                    adminOwnerId={adminOwnerId}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        <div className={`mt-auto border-t border-white/5 ${showDesktopSidebarFull ? "p-4" : "p-2"}`}>
-          <div className={`flex items-center ${showDesktopSidebarFull ? "justify-between gap-3" : "justify-center"}`}>
-            {showDesktopSidebarFull && (
-              <div className="min-w-0">
-                <div className="text-sm font-bold truncate">{user?.name || user?.email || "Admin"}</div>
-                <div className="text-xs text-white/55 truncate">{user?.email || "Signed in"}</div>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={handleDashboardLogout}
-              className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4 text-white/80" />
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile drawer: tap hamburger; backdrop + slide-in (touch has no hover) */}
-      {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div
-            className="absolute inset-0 bg-black/55"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
+    <div className="min-h-screen flex flex-col bg-[#e8edf3]">
+      <header className="relative z-30 h-[58px] flex-shrink-0 bg-primary-800 text-white flex items-center gap-2 sm:gap-4 px-3 sm:px-5 shadow-[0_2px_10px_rgba(15,47,100,0.22)]">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BRAND_LOGO_URL}
+            alt="CMFAgency"
+            className="h-9 w-9 rounded-md object-contain bg-white/10 p-0.5 flex-shrink-0"
           />
-          <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-gradient-to-b from-gray-950 via-gray-950 to-gray-900 text-white border-r border-white/10 shadow-xl">
-            <div className="h-16 flex items-center justify-between gap-3 px-5 border-b border-white/10 flex-shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-lg bg-primary-600/20 border border-primary-500/30 flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-5 h-5 text-primary-100" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-base font-extrabold tracking-wide leading-tight">Fusion Xpress</div>
-                  <div className="text-xs sm:text-sm text-white/60 leading-tight truncate">CMFAgency admin dashboard</div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileOpen(false)}
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10"
-                aria-label="Close menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-              {sections.map((s) => (
-                <div key={s.key}>
-                  <div className="px-3 text-xs sm:text-sm font-extrabold tracking-widest text-white/45 uppercase">{s.label}</div>
-                  <div className="mt-2 space-y-1">
-                    {navItems.filter((x) => x.section === s.key && canSeeItem(x)).map((item) => (
-                      <DashboardNavItem
-                        key={item.href}
-                        item={item}
-                        pathname={pathname}
-                        currentType={currentType}
-                        visitorIndustry={visitorIndustry}
-                        visitorNavOpen={visitorNavOpen}
-                        setVisitorNavOpen={setVisitorNavOpen}
-                        nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
-                        setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
-                        showLabels
-                        onNavigate={() => setMobileOpen(false)}
-                        pendingApplicationsCount={pendingApplicationsCount}
-                        pendingCmfaCount={pendingCmfaCount}
-                        isAdmin={isAdmin}
-                        adminOwnerId={adminOwnerId}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </nav>
-
-            <div className="p-4 border-t border-white/10 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  void handleDashboardLogout();
-                }}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-semibold"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
-
-      {/* Main area */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-16 flex items-center gap-3 px-4 sm:px-6 border-b border-black/5 bg-gradient-to-r from-primary-800 via-primary-600 to-secondary-700">
+          <div className="min-w-0 hidden sm:block">
+            <div className="text-[13px] sm:text-sm font-bold tracking-wide leading-tight truncate">Fusion Xpress</div>
+            <div className="text-[10px] sm:text-[11px] text-white/65 leading-tight truncate">CMFAgency admin dashboard</div>
+          </div>
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-md bg-white/15 hover:bg-white/20 border border-white/20"
+            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10"
             aria-label="Open menu"
           >
-            <Menu className="w-5 h-5 text-white" />
+            <Menu className="w-5 h-5" />
           </button>
+          <button
+            type="button"
+            onClick={toggleSidebarCollapsed}
+            className="hidden lg:inline-flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
 
-          <div className="flex items-center gap-2 bg-white/95 rounded-md border border-primary-600/25 w-full max-w-xl h-10 px-3 shadow-sm">
-            <Search className="w-4 h-4 text-gray-500 flex-shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search"
-              className="flex-1 bg-transparent outline-none text-base sm:text-sm text-gray-900 placeholder:text-gray-500 min-w-0"
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 min-w-0">
+          {noticeHref ? (
+            <Link href={noticeHref} prefetch={false} aria-label="Pending items">
+              {noticeControl}
+            </Link>
+          ) : (
+            <span aria-hidden="true">{noticeControl}</span>
+          )}
+
+          <div className="flex items-center gap-2.5 min-w-0 pl-2 sm:pl-3 border-l border-white/15">
+            <div className="hidden sm:block min-w-0 text-right">
+              <div className="text-sm font-semibold truncate max-w-[180px]">{displayName}</div>
+              <div className="text-[11px] text-white/65 truncate">{roleLabel}</div>
+            </div>
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-sm font-bold ring-1 ring-white/20">
+              {initials}
+            </span>
+            <button
+              type="button"
+              onClick={handleDashboardLogout}
+              className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-md text-white/80 hover:bg-white/10"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <aside
+          className={`hidden lg:flex flex-col flex-shrink-0 bg-white border-r border-slate-200/80 overflow-hidden transition-[width] duration-300 ease-out ${
+            showDesktopSidebarFull ? "w-[16.5rem]" : "w-[4.25rem]"
+          }`}
+          onMouseEnter={() => {
+            if (sidebarCollapsed) setSidebarHoverExpanded(true);
+          }}
+          onMouseLeave={() => setSidebarHoverExpanded(false)}
+        >
+          <div
+            className={`relative h-11 flex items-center border-b border-slate-100 ${
+              showDesktopSidebarFull ? "justify-end px-3" : "justify-center px-2"
+            }`}
+          >
+            {showDesktopSidebarFull ? (
+              <button
+                type="button"
+                onClick={toggleSidebarCollapsed}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+                aria-label="Collapse sidebar"
+                title="Collapse to icons"
+              >
+                {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleSidebarCollapsed}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:bg-slate-50 hover:text-primary-700"
+                aria-label="Pin sidebar open"
+                title="Keep sidebar open"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          <nav className={`flex-1 overflow-y-auto py-4 space-y-5 ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
+            {renderSectionNav(showDesktopSidebarFull)}
+          </nav>
+
+          <div className={`mt-auto border-t border-slate-100 ${showDesktopSidebarFull ? "p-3" : "p-2"}`}>
+            <button
+              type="button"
+              onClick={handleDashboardLogout}
+              className={`w-full inline-flex items-center rounded-md text-slate-500 hover:bg-slate-50 hover:text-slate-800 ${
+                showDesktopSidebarFull ? "justify-start gap-2.5 px-3 py-2.5 text-sm font-semibold" : "justify-center h-10"
+              }`}
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4 flex-shrink-0" />
+              {showDesktopSidebarFull ? <span>Sign out</span> : null}
+            </button>
+          </div>
+        </aside>
+
+        {mobileOpen && (
+          <div className="lg:hidden fixed inset-0 z-50 flex">
+            <div
+              className="absolute inset-0 bg-slate-900/40"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden="true"
             />
-          </div>
+            <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-white border-r border-slate-200 shadow-2xl">
+              <div className="h-[58px] flex items-center justify-between gap-3 px-4 border-b border-slate-100 flex-shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={BRAND_LOGO_URL}
+                    alt=""
+                    className="h-9 w-9 rounded-md object-contain bg-primary-50 p-0.5 flex-shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-slate-900 leading-tight">Fusion Xpress</div>
+                    <div className="text-[11px] text-slate-500 leading-tight truncate">CMFAgency admin dashboard</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-md text-slate-500 hover:bg-slate-50"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-          <div className="ml-auto hidden sm:flex items-center gap-2 text-white min-w-0">
-            <div className="text-sm font-semibold truncate max-w-[220px]">{user?.name || user?.email || "Admin"}</div>
-          </div>
-        </header>
+              <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5">{renderSectionNav(true, () => setMobileOpen(false))}</nav>
 
-        <div className="px-4 sm:px-6 pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 text-left">{active}</h1>
-              <div className="mt-1 text-sm text-gray-600 text-left">
-                <span className="text-primary-700 font-semibold">Dashboard</span>
-                <span className="mx-2">/</span>
-                <span className="text-gray-700">{breadcrumbTail}</span>
+              <div className="p-3 border-t border-slate-100 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void handleDashboardLogout();
+                  }}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-primary-800 text-white font-semibold hover:bg-primary-900"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          <div className="bg-primary-700 text-white px-4 sm:px-7 pt-6 pb-5 shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-left leading-tight">{active}</h1>
+                <p className="mt-1.5 text-sm text-white/80 text-left">
+                  Welcome, {displayName}.
+                </p>
+              </div>
+              <p className="hidden md:block text-sm text-white/70 max-w-xs text-right leading-relaxed">
+                <span className="font-medium text-white/90">Dashboard</span>
+                <span className="mx-1.5 text-white/40">/</span>
+                {breadcrumbTail}
+              </p>
+            </div>
+
+            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="inline-flex items-center gap-2 text-[13px] text-white/90">
+                <Calendar className="w-4 h-4 text-white/75 flex-shrink-0" />
+                <span className="font-medium tabular-nums">{clockLabel}</span>
+              </div>
+              <div className="sm:ml-auto w-full sm:w-auto sm:min-w-[240px] max-w-md">
+                <label className="flex items-center gap-2 bg-white rounded-md h-9 px-3 shadow-sm">
+                  <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search"
+                    className="flex-1 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400 min-w-0"
+                  />
+                </label>
               </div>
             </div>
           </div>
-        </div>
 
-        <main className="flex-1 px-4 sm:px-6 pb-10 pt-6">
-          <div
-            className={
-              isLeaveManagementPage ||
-              isLeaveSettingsPage ||
-              isSummaryReportsPage ||
-              isPerEmployeeReportPage ||
-              isEmployeesPage ||
-              isVisitorManagementPage
-                ? "max-w-none"
-                : "mx-auto max-w-4xl lg:max-w-5xl"
-            }
-          >
-            <div
-              className={
-                isLeaveManagementPage ||
-              isLeaveSettingsPage ||
-              isSummaryReportsPage ||
-              isPerEmployeeReportPage ||
-              isEmployeesPage ||
-              isVisitorManagementPage
-                  ? "p-0"
-                  : "border border-[#e5e5e5] bg-white p-4 sm:p-6 md:p-8"
-              }
-            >
-              {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
-              {children}
+          <main className="flex-1 px-4 sm:px-6 pb-8 pt-6">
+            <div className={isWidePage ? "max-w-none" : "mx-auto max-w-[1280px]"}>
+              <div
+                className={
+                  isWidePage || isDashboardHome
+                    ? "p-0"
+                    : "rounded-[12px] bg-white p-4 sm:p-6 md:p-8 shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]"
+                }
+              >
+                {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
+                {children}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
+
+      <footer className="h-8 flex-shrink-0 bg-primary-800 text-white/75 text-[11px] tracking-wide flex items-center justify-center">
+        Fusion Xpress · CMFAgency
+      </footer>
     </div>
   );
 }
-
