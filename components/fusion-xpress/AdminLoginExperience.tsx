@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { KeyRound, Lock, Mail, Shield } from "lucide-react";
+import { Camera, KeyRound, Lock, Mail } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 
@@ -287,183 +287,175 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     }
   };
 
-  const loginBackgroundStyle = {
-    backgroundImage:
-      "linear-gradient(135deg, rgba(6, 18, 52, 0.9), rgba(8, 40, 88, 0.88)), url('https://res.cloudinary.com/dyfnobo9r/image/upload/v1776151059/models_wjrxfw.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  } as const;
+  const underlineFieldClass =
+    "w-full border-0 bg-transparent py-1.5 text-[15px] font-light text-slate-600 outline-none placeholder:font-light placeholder:italic placeholder:text-slate-400 focus:ring-0";
 
   return (
-    <main className="relative min-h-screen overflow-hidden text-slate-900" style={loginBackgroundStyle}>
-      <div className="relative z-10 flex min-h-screen items-start justify-center px-3 pb-6 pt-6 sm:items-center sm:p-6">
-        <motion.section
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-          className="w-full max-w-[28rem] rounded-2xl border border-white/90 bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] sm:max-w-md sm:p-8"
-          aria-label="Fusion Xpress admin sign in"
-        >
-          <div className="mb-5 flex items-center justify-between sm:mb-6">
-            <Link href="/fusion-xpress" className="text-xs text-primary-700 transition hover:text-primary-900">
-              Back
-            </Link>
-            <span className="rounded-full border border-secondary-300/60 bg-secondary-100 px-3 py-1 text-xs font-medium text-secondary-800">
-              Admin Portal
-            </span>
-          </div>
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-16 font-montserrat"
+      style={{
+        backgroundImage:
+          "linear-gradient(180deg, #f3d4d6 0%, #e8d5d8 18%, #d5e4e8 48%, #b7e4e2 78%, #9fd9d6 100%)",
+      }}
+    >
+      <Link
+        href="/fusion-xpress"
+        className="absolute left-4 top-4 text-xs font-medium text-primary-800/70 hover:text-primary-900"
+      >
+        Back
+      </Link>
 
-          <div className="mb-5 sm:mb-6">
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-secondary-400/25 to-primary-500/25 ring-1 ring-white/20">
-              {step === "code" ? <KeyRound className="h-5 w-5 text-secondary-100" /> : <Shield className="h-5 w-5 text-secondary-100" />}
-            </div>
-            <p className="text-xs uppercase tracking-[0.26em] text-primary-700/80">Fusion Xpress</p>
-            <h1 className="mt-2 text-xl font-semibold leading-tight text-slate-900 sm:text-2xl">
-              {step === "code" ? "Verify Your Login" : "Welcome Back, Admin"}
-            </h1>
-            <p className="mt-2 text-xs text-slate-600 sm:text-sm">
-              {step === "code"
-                ? "Enter your 6-digit verification code to continue."
-                : "Secure access to campaign management, ticketing, and analytics."}
-            </p>
-          </div>
-
-          {error ? (
-            <div className="mb-4 rounded-lg border border-red-300/35 bg-red-500/10 px-3 py-2 text-sm text-red-100">{error}</div>
-          ) : null}
-          {(passwordJustReset || resetSent) && !error ? (
-            <div className="mb-4 rounded-lg border border-secondary-300/40 bg-secondary-400/15 px-3 py-2 text-sm text-secondary-100">
-              {passwordJustReset
-                ? "Password updated. Sign in with your new password."
-                : "Password reset link sent. Check your email, then open the link to set a new password."}
-            </div>
-          ) : null}
-
+      <motion.section
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className="relative w-full max-w-[380px] pt-12"
+        aria-label="Fusion Xpress admin sign in"
+      >
+        <div className="absolute left-1/2 top-0 z-20 flex h-[92px] w-[92px] -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-[0_6px_18px_rgba(15,47,100,0.16)]">
           {step === "code" ? (
-            <form className="space-y-4" onSubmit={onVerifyCode}>
-              <label className="block text-sm text-slate-700" htmlFor="verification-code">
-                Verification code
-              </label>
-              <motion.input
-                id="verification-code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                whileFocus={{ scale: 1.01 }}
-                className="w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-3.5 font-mono tracking-[0.3em] text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30 sm:tracking-[0.35em]"
-                placeholder="000000"
-                aria-label="Verification code"
-              />
-
-              <button
-                type="submit"
-                disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
-                className="min-h-12 w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
-              >
-                {codeLoading ? "Verifying..." : "Verify and continue"}
-              </button>
-
-              <div className="flex flex-col gap-2 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-                {twoFactorMethod === "email" ? (
-                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="text-left hover:text-slate-900">
-                    {resendCodeLoading ? "Sending..." : "Resend code"}
-                  </button>
-                ) : (
-                  <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="text-left hover:text-slate-900">
-                    Send email code
-                  </button>
-                )}
-                {hasTotp && twoFactorMethod === "email" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTwoFactorMethod("totp");
-                      setCode("");
-                    }}
-                    className="text-left hover:text-slate-900"
-                  >
-                    Use authenticator app
-                  </button>
-                ) : null}
-              </div>
-            </form>
+            <KeyRound className="h-10 w-10 text-primary-800" strokeWidth={1.5} />
           ) : (
-            <form className="space-y-4" onSubmit={onSubmit}>
-              <div>
-                <label className="mb-2 block text-sm text-slate-700" htmlFor="admin-email">
-                  Email
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <motion.input
+            <Camera className="h-10 w-10 text-primary-800" strokeWidth={1.5} />
+          )}
+        </div>
+
+        <div className="overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_rgba(15,47,100,0.18)]">
+          <header className="bg-primary-800 pb-5 pt-[3.35rem] text-center">
+            <h1 className="text-[22px] font-light uppercase tracking-[0.28em] text-white">
+              {step === "code" ? "Verify Login" : "User Login"}
+            </h1>
+          </header>
+
+          <div className="px-9 pb-9 pt-8">
+            {error ? (
+              <p className="mb-5 text-center text-sm text-red-600">{error}</p>
+            ) : null}
+            {(passwordJustReset || resetSent) && !error ? (
+              <p className="mb-5 text-center text-sm text-secondary-700">
+                {passwordJustReset
+                  ? "Password updated. Sign in with your new password."
+                  : "Password reset link sent. Check your email, then open the link to set a new password."}
+              </p>
+            ) : null}
+
+            {step === "code" ? (
+              <form className="space-y-8" onSubmit={onVerifyCode}>
+                <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                  <KeyRound className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                  <input
+                    id="verification-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    className={`${underlineFieldClass} tracking-[0.35em]`}
+                    placeholder="Code"
+                    aria-label="Verification code"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={codeLoading || code.trim().replace(/\D/g, "").length !== 6}
+                  className="w-full bg-primary-800 py-3 text-[15px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {codeLoading ? "Verifying..." : "Verify"}
+                </button>
+
+                <div className="flex items-center justify-between text-[13px] italic text-slate-400">
+                  {twoFactorMethod === "email" ? (
+                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-slate-600">
+                      {resendCodeLoading ? "Sending..." : "Resend code"}
+                    </button>
+                  ) : (
+                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-slate-600">
+                      Send email code
+                    </button>
+                  )}
+                  {hasTotp && twoFactorMethod === "email" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTwoFactorMethod("totp");
+                        setCode("");
+                      }}
+                      className="hover:text-slate-600"
+                    >
+                      Use authenticator
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            ) : (
+              <form className="space-y-8" onSubmit={onSubmit}>
+                <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                  <Mail className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                  <input
                     id="admin-email"
                     type="email"
                     required
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    whileFocus={{ scale: 1.01 }}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white/80 py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30"
-                    placeholder="you@fusionxpress.com"
+                    className={underlineFieldClass}
+                    placeholder="Email ID"
+                    aria-label="Email ID"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="mb-2 block text-sm text-slate-700" htmlFor="admin-password">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <motion.input
+                <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                  <Lock className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                  <input
                     id="admin-password"
                     type="password"
                     required
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    whileFocus={{ scale: 1.01 }}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white/80 py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30"
-                    placeholder="Enter your password"
+                    className={underlineFieldClass}
+                    placeholder="Password"
+                    aria-label="Password"
                   />
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <label className="inline-flex items-center gap-2 text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 rounded border-white/40 bg-transparent text-primary-500 focus:ring-primary-400/50"
-                  />
-                  Remember me
-                </label>
+                <div className="flex items-center justify-between text-[13px] italic text-slate-400">
+                  <label className="inline-flex cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-3.5 w-3.5 shrink-0 appearance-none rounded-[2px] border border-slate-500 bg-white checked:border-slate-600 checked:bg-slate-600 checked:bg-[length:12px_12px] checked:bg-center checked:bg-no-repeat focus:outline-none focus:ring-0"
+                      style={
+                        rememberMe
+                          ? {
+                              backgroundImage:
+                                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8.2 6.4 11l6.1-6.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                            }
+                          : undefined
+                      }
+                    />
+                    Remember me
+                  </label>
+                  <button type="button" onClick={onForgotPassword} disabled={loading} className="hover:text-slate-600">
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={onForgotPassword}
-                  className="text-left font-medium text-primary-300 hover:text-primary-200 sm:text-right"
-                  disabled={loading}
+                  type="submit"
+                  disabled={loading || !canSubmit}
+                  className="w-full bg-primary-800 py-3 text-[15px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  Forgot Password
+                  {loading ? "Signing in..." : "Login"}
                 </button>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || !canSubmit}
-                className="min-h-12 w-full rounded-xl bg-secondary-400 px-4 py-3 font-semibold text-black transition hover:bg-secondary-300 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-55"
-              >
-                {loading ? "Signing in..." : "Sign in"}
-              </button>
-            </form>
-          )}
-        </motion.section>
-      </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </motion.section>
     </main>
   );
 }
