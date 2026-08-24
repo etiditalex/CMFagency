@@ -6,11 +6,17 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Lock, Mail } from "lucide-react";
 
 import { businessTotpSetupUrl } from "@/lib/auth/business-totp";
-import { safeAppRedirect } from "@/lib/android-shell";
 import { supabase } from "@/lib/supabase";
 import { hasVisitorManagementAccess, VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
 type Step = "login" | "code";
+
+function safeAppRedirect(raw: string | null | undefined): string | null {
+  const value = String(raw ?? "").trim();
+  if (!value.startsWith("/app")) return null;
+  if (value.startsWith("//") || value.includes("://")) return null;
+  return value;
+}
 
 function parseFeatures(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.map((f) => String(f).toLowerCase().trim()) : [];

@@ -41,7 +41,19 @@ next-env.d.ts
 deployment-package.zip
 temp-deployment.zip
 
-# Android Play Store shell (review locally; do not commit keystores or APKs)
+# Android Play Store / in-app shell (keep local; do not deploy)
+/android-shell/
+/app/app/
+/app/.well-known/assetlinks.json/
+/components/android-shell/
+/components/fusion-xpress/app-ui/
+/lib/android-shell.ts
+/lib/fusion-xpress-app.ts
+/lib/hooks/usePortalCampaigns.ts
+/lib/hooks/useVisitorEmployees.ts
+/lib/hooks/useVotingCatalog.ts
+/public/android-shell-manifest.webmanifest
+/public/android-shell-sw.js
 android-shell/.gradle/
 android-shell/**/build/
 android-shell/local.properties

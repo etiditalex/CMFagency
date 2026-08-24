@@ -5,9 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import BusinessTotpSetupForm from "@/components/auth/BusinessTotpSetupForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { safeAppRedirect, visitorSignInHref } from "@/lib/android-shell";
 import { supabase } from "@/lib/supabase";
 import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
+
+function safeAppRedirect(raw: string | null | undefined): string | null {
+  const value = String(raw ?? "").trim();
+  if (!value.startsWith("/app")) return null;
+  if (value.startsWith("//") || value.includes("://")) return null;
+  return value;
+}
+
+function visitorSignInHref(returnTo?: string): string {
+  const dest = safeAppRedirect(returnTo) ?? "/app/home";
+  return `/app/sign-in?redirect=${encodeURIComponent(dest)}`;
+}
 
 export default function SetupAuthenticatorPage() {
   const router = useRouter();
