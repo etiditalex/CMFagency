@@ -20,6 +20,12 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import {
+  DailyActivityBars,
+  HomeCampaignDonut,
+  HomeRevenueBars,
+  HomeRevenuePie,
+} from "@/components/dashboard/DashboardHomeCharts";
 import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_VOTING_END_MS, lastVotingDayYmdFromEndIso } from "@/lib/voting-schedule-public";
@@ -94,6 +100,10 @@ export default function DashboardHomePage() {
   const [campaignsCount, setCampaignsCount] = useState(0);
   const [activeCampaignsCount, setActiveCampaignsCount] = useState(0);
   const [inactiveCampaignsCount, setInactiveCampaignsCount] = useState(0);
+  const [activeVoteCampaignsCount, setActiveVoteCampaignsCount] = useState(0);
+  const [dailyRevenue, setDailyRevenue] = useState<Array<{ date: string; voteRevenue: number; ticketRevenue: number }>>(
+    []
+  );
   const [totalVotes, setTotalVotes] = useState(0);
   const [totalTicketsIssued, setTotalTicketsIssued] = useState(0);
   const [successfulPayments, setSuccessfulPayments] = useState(0);
@@ -130,6 +140,8 @@ export default function DashboardHomePage() {
   const [votingScheduleMessage, setVotingScheduleMessage] = useState<string | null>(null);
   const [allVotingCopied, setAllVotingCopied] = useState(false);
   const [allVotingPublicUrl, setAllVotingPublicUrl] = useState("");
+  const [votingWindowOpen, setVotingWindowOpen] = useState(false);
+  const [votingEnded, setVotingEnded] = useState(true);
 
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingError, setTrendingError] = useState<string | null>(null);
@@ -165,14 +177,25 @@ export default function DashboardHomePage() {
         const res = await fetch("/api/voting-schedule");
         const j = (await res.json()) as { voting_starts_at?: string | null; voting_ends_at?: string | null };
         if (cancelled) return;
-        const effectiveStart = j?.voting_starts_at || VOTING_START_FALLBACK_ISO;
-        const effectiveEnd = j?.voting_ends_at || VOTING_END_FALLBACK_ISO;
+        const startIso = j?.voting_starts_at || null;
+        const endIso = j?.voting_ends_at || null;
+        const startMs = startIso ? new Date(startIso).getTime() : NaN;
+        const endMs = endIso ? new Date(endIso).getTime() : NaN;
+        const now = Date.now();
+        const ended = Number.isFinite(endMs) && now >= endMs;
+        setVotingEnded(ended);
+        setVotingWindowOpen(!ended && Number.isFinite(startMs) && now >= startMs);
+
+        const effectiveStart = startIso || VOTING_START_FALLBACK_ISO;
+        const effectiveEnd = endIso || VOTING_END_FALLBACK_ISO;
         setVotingScheduleDate(isoToNairobiDateInput(effectiveStart) || "2026-04-01");
         setVotingScheduleEndDate(lastVotingDayYmdFromEndIso(effectiveEnd) || isoToNairobiDateInput(effectiveEnd));
         setVotingScheduleDisplay(formatVotingDateInNairobi(effectiveStart));
         setVotingScheduleEndDisplay(formatVotingDateInNairobi(effectiveEnd));
       } catch {
         if (!cancelled) {
+          setVotingWindowOpen(false);
+          setVotingEnded(true);
           setVotingScheduleDate("2026-04-01");
           setVotingScheduleEndDate(
             lastVotingDayYmdFromEndIso(VOTING_END_FALLBACK_ISO) || isoToNairobiDateInput(VOTING_END_FALLBACK_ISO)
@@ -235,6 +258,7 @@ export default function DashboardHomePage() {
         campaignsCount?: number;
         activeCampaignsCount?: number;
         inactiveCampaignsCount?: number;
+        activeVoteCampaignsCount?: number;
         campaignTitleById?: Record<string, { title: string; type: string }>;
         recentTransactions?: typeof recentTransactions;
         successfulPayments?: number;
@@ -257,6 +281,7 @@ export default function DashboardHomePage() {
       setCampaignsCount(Number(j.campaignsCount ?? 0));
       setActiveCampaignsCount(Number(j.activeCampaignsCount ?? 0));
       setInactiveCampaignsCount(Number(j.inactiveCampaignsCount ?? 0));
+      setActiveVoteCampaignsCount(Number(j.activeVoteCampaignsCount ?? 0));
       setCampaignTitleById(j.campaignTitleById ?? {});
 
       let rawTx = Array.isArray(j.recentTransactions) ? j.recentTransactions : [];
@@ -295,6 +320,28 @@ export default function DashboardHomePage() {
       }
 
       setLastUpdatedAt(new Date().toISOString());
+
+      try {
+        const salesRes = await fetch("/api/fusion-xpress/analytics/sales-overview", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const sales = (await salesRes.json().catch(() => ({}))) as {
+          daily?: Array<{ date: string; voteRevenue?: number; ticketRevenue?: number }>;
+        };
+        if (salesRes.ok && Array.isArray(sales.daily)) {
+          setDailyRevenue(
+            sales.daily.map((r) => ({
+              date: String(r.date),
+              voteRevenue: Number(r.voteRevenue ?? 0) || 0,
+              ticketRevenue: Number(r.ticketRevenue ?? 0) || 0,
+            }))
+          );
+        } else {
+          setDailyRevenue([]);
+        }
+      } catch {
+        setDailyRevenue([]);
+      }
     } catch (e: any) {
       const parts = [e?.message, e?.details, e?.hint, e?.code ? `code=${e.code}` : null].filter(Boolean);
       setError(parts.length ? parts.join("\n") : "Failed to load dashboard reports");
@@ -480,7 +527,7 @@ export default function DashboardHomePage() {
         if (cancelled) return;
         setError(null);
         setSessionChecking(false);
-        await Promise.all([refreshData(), loadTrending()]);
+        await refreshData();
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Unable to load dashboard");
         if (!cancelled) setSessionChecking(false);
@@ -491,7 +538,7 @@ export default function DashboardHomePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, loadTrending, router, user]);
+  }, [authLoading, isAuthenticated, isPortalMember, portalLoading, refreshData, router, user]);
 
   useEffect(() => {
     if (!isPortalMember || !user?.id || isEmployer) return;
@@ -515,6 +562,25 @@ export default function DashboardHomePage() {
       supabase.removeChannel(channel);
     };
   }, [isPortalMember, refreshData, scheduleRefresh, user?.id, isEmployer]);
+
+  useEffect(() => {
+    if (authLoading || portalLoading || isEmployer) return;
+    if (!hasFeature("voting") || (!isFullAdmin && !isManager)) return;
+    if (votingEnded) return;
+    if (!votingWindowOpen && activeVoteCampaignsCount <= 0) return;
+    void loadTrending();
+  }, [
+    authLoading,
+    portalLoading,
+    isEmployer,
+    hasFeature,
+    isFullAdmin,
+    isManager,
+    votingEnded,
+    votingWindowOpen,
+    activeVoteCampaignsCount,
+    loadTrending,
+  ]);
 
   if (authLoading || portalLoading || sessionChecking) {
     return (
@@ -555,41 +621,80 @@ export default function DashboardHomePage() {
   }
 
   const updatedLabel = lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleString() : "—";
-  const showVotingCard = (isFullAdmin || isManager) && hasFeature("voting");
+  const showVotingCard =
+    (isFullAdmin || isManager) &&
+    hasFeature("voting") &&
+    !votingEnded &&
+    (votingWindowOpen || activeVoteCampaignsCount > 0);
   const showTrending = showVotingCard;
+
+  const revenueVotesTotal = Object.values(revenueByCurrencyVotes).reduce(
+    (s, n) => s + (Number.isFinite(n) ? n : 0),
+    0
+  );
+  const revenueTicketsTotal = Object.values(revenueByCurrencyTickets).reduce(
+    (s, n) => s + (Number.isFinite(n) ? n : 0),
+    0
+  );
+  const revenueMerchTotal = Object.values(revenueByCurrencyMerchandise).reduce(
+    (s, n) => s + (Number.isFinite(n) ? n : 0),
+    0
+  );
+  const hasDailyChart = dailyRevenue.some((r) => r.voteRevenue > 0 || r.ticketRevenue > 0);
 
   return (
     <div className="text-left">
-      <div className={`grid grid-cols-1 gap-6 ${showVotingCard ? "xl:grid-cols-3" : ""}`}>
-        <div className={`${dashCard} ${showVotingCard ? "xl:col-span-2" : ""}`}>
-          <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
-            <div className="min-w-0">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900 text-left pb-3 border-b border-slate-100">Recent Activity</h2>
-              <div className="mt-3 text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="text-left">
-                  <span className="font-semibold">Last updated:</span> {updatedLabel}
-                </div>
-                <div className="text-left text-gray-500">Auto-updates when payments/votes/tickets change.</div>
-              </div>
-            </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-slate-500">
+          <span className="font-semibold text-slate-700">Last updated:</span> {updatedLabel}
+        </div>
+        <button
+          type="button"
+          onClick={refreshData}
+          disabled={dataLoading}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 font-semibold disabled:opacity-60"
+          title="Refresh reports"
+        >
+          <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={refreshData}
-                disabled={dataLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold disabled:opacity-60"
-                title="Refresh reports"
-              >
-                <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
+      {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) ? (
+        <div className={`mt-5 grid grid-cols-1 gap-6 xl:grid-cols-3 ${dataLoading ? "animate-pulse opacity-[0.65]" : ""}`}>
+          <div className={dashCard}>
+            <div className="text-sm font-semibold text-slate-700">Revenue mix</div>
+            <div className="mt-4">
+              <HomeRevenuePie votes={revenueVotesTotal} tickets={revenueTicketsTotal} merchandise={revenueMerchTotal} />
+            </div>
+          </div>
+          <div className={dashCard}>
+            <div className="text-sm font-semibold text-slate-700">Campaigns</div>
+            <div className="mt-4">
+              <HomeCampaignDonut active={activeCampaignsCount} inactive={inactiveCampaignsCount} />
+            </div>
+          </div>
+          <div className={dashCard}>
+            <div className="text-sm font-semibold text-slate-700">
+              {hasDailyChart ? "Daily revenue" : "Revenue by stream"}
+            </div>
+            <div className="mt-4">
+              {hasDailyChart ? (
+                <DailyActivityBars rows={dailyRevenue} />
+              ) : (
+                <HomeRevenueBars
+                  votes={revenueVotesTotal}
+                  tickets={revenueTicketsTotal}
+                  merchandise={revenueMerchTotal}
+                />
+              )}
             </div>
           </div>
         </div>
+      ) : null}
 
-        {showVotingCard && (
-          <div className={dashCard}>
+      {showVotingCard && (
+        <div className={`${dashCard} mt-6`}>
             <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
               <span className="inline-flex w-11 h-11 rounded-full bg-primary-50 items-center justify-center flex-shrink-0">
                 <Calendar className="w-5 h-5 text-primary-700" />
@@ -678,9 +783,8 @@ export default function DashboardHomePage() {
             {votingScheduleMessage && (
               <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{votingScheduleMessage}</p>
             )}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {showTrending && (
         <div

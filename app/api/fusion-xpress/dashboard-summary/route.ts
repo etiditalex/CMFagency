@@ -270,12 +270,17 @@ export async function GET(req: NextRequest) {
     totalTicketsIssued = metrics.ticketUnits;
   }
 
+  const activeRows = campaignRowsExcludingMerchandise.filter((c) => (c as { is_active?: boolean }).is_active);
+  const inactiveRows = campaignRowsExcludingMerchandise.filter((c) => !(c as { is_active?: boolean }).is_active);
+  const typeOf = (c: unknown) => String((c as { type?: string }).type ?? "").toLowerCase();
+
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
     campaignsCount: campaignRowsExcludingMerchandise.length,
-    activeCampaignsCount: campaignRowsExcludingMerchandise.filter((c) => (c as { is_active?: boolean }).is_active).length,
-    inactiveCampaignsCount: campaignRowsExcludingMerchandise.filter((c) => !(c as { is_active?: boolean }).is_active)
-      .length,
+    activeCampaignsCount: activeRows.length,
+    inactiveCampaignsCount: inactiveRows.length,
+    activeVoteCampaignsCount: activeRows.filter((c) => typeOf(c) === "vote").length,
+    activeTicketCampaignsCount: activeRows.filter((c) => typeOf(c) === "ticket").length,
     campaignTitleById: titleMap,
     recentTransactions,
     successfulPayments,
