@@ -47,28 +47,47 @@ export function checkEmployerRegisterRateLimit(ip: string): { allowed: boolean; 
   return { allowed: true };
 }
 
-export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+function checkWindowedLimit(
+  identifier: string,
+  prefix: string,
+  maxAttempts: number,
+  windowMs: number
+): { allowed: boolean; retryAfter?: number } {
   cleanup();
-  const key = getKey(ip, "login");
+  const key = getKey(identifier, prefix);
   const now = Date.now();
   const entry = store.get(key);
 
   if (!entry) {
-    store.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    store.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true };
   }
 
   if (entry.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    store.set(key, { count: 1, resetAt: now + windowMs });
     return { allowed: true };
   }
 
-  if (entry.count >= MAX_ATTEMPTS) {
+  if (entry.count >= maxAttempts) {
     return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
   }
 
   entry.count += 1;
   return { allowed: true };
+}
+
+export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(ip, "login", MAX_ATTEMPTS, WINDOW_MS);
+}
+
+/** Per-email cap so rotating IPs cannot brute-force one account. */
+export function checkLoginEmailRateLimit(email: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(email.trim().toLowerCase(), "login-email", MAX_ATTEMPTS, WINDOW_MS);
+}
+
+/** Separate budget for 2FA code send/verify so it does not share the password lockout. */
+export function checkLoginCodeRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(ip, "login-code", 10, WINDOW_MS);
 }
 
 const PASSWORD_RESET_WINDOW_MS = 60 * 60 * 1000; // 1 hour

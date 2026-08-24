@@ -7,7 +7,8 @@ Users are automatically remembered after creating an account. They can log in wi
 ## How It Works
 
 ### 1. **Session Persistence**
-- Supabase automatically stores user sessions in `localStorage`
+- Sessions are stored in **httpOnly + Secure cookies**, not `localStorage`
+- JavaScript cannot read session tokens via `document.cookie`
 - Sessions persist across:
   - Page refreshes
   - Browser restarts (until logout or session expires)
@@ -29,22 +30,22 @@ Users are automatically remembered after creating an account. They can log in wi
 1. User goes to `/login`
 2. Enters email and password
 3. Clicks "Sign In"
-4. Supabase validates credentials
-5. Session created and stored
-6. User redirected to `/application`
+4. The request is rate-limited, then Supabase Auth verifies the bcrypt-hashed password
+5. Session is stored in httpOnly cookies
+6. After email verification, user is redirected to `/application`
 7. User stays logged in until logout
 
 ## Technical Implementation
 
 ### Supabase Configuration
 ```typescript
-// lib/supabase.ts
+// lib/supabase.ts — tokens persist via httpOnly cookies, never localStorage
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,        // ✅ Sessions persist in localStorage
-    autoRefreshToken: true,      // ✅ Tokens refresh automatically
-    detectSessionInUrl: true,    // ✅ Detect OAuth sessions
-    storage: window.localStorage // ✅ Use browser localStorage
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: httpOnlyCookieStorage,
   },
 });
 ```

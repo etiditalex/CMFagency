@@ -2,11 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fromEmail } from "@/lib/resend";
 import { buildResendEmailHeaderHtml } from "@/lib/resend-email-header";
+import { checkLoginCodeRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const CODE_EXPIRY_MINUTES = 10;
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const { allowed, retryAfter } = checkLoginCodeRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later.", retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter ?? 900) } }
+      );
+    }
+
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace(/^Bearer\s+/i, "") ?? "";
     if (!token) return NextResponse.json({ error: "Missing authorization" }, { status: 401 });

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { loginWithPassword } from "@/lib/auth/password-login";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface User {
@@ -76,20 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string, recaptchaToken?: string): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        if (error.message.includes("Email not confirmed")) {
+      let session;
+      try {
+        ({ session } = await loginWithPassword(email, password));
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "An error occurred during login";
+        if (message.includes("Email not confirmed")) {
           return { success: false, error: "Please verify your email before logging in.", requiresVerification: true };
         }
-        return { success: false, error: error.message };
+        return { success: false, error: message };
       }
 
-      if (data.session?.user) {
-        const token = data.session.access_token;
+      if (session?.user) {
+        const token = session.access_token;
         const sendRes = await fetch("/api/send-login-verification-code", {
           method: "POST",
           headers: {

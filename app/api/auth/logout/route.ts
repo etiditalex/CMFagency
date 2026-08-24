@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+import { clearSupabaseAuthCookies } from "@/lib/auth/session-cookies";
 
 const COOKIE_NAME = "login_verified";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_NAME, "", {
     httpOnly: true,
@@ -11,5 +13,6 @@ export async function POST() {
     path: "/",
     maxAge: 0,
   });
+  clearSupabaseAuthCookies(req, res);
   return res;
 }

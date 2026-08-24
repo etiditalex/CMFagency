@@ -41,4 +41,13 @@ next-env.d.ts
 deployment-package.zip
 temp-deployment.zip
 
+# Android Play Store shell (review locally; do not commit keystores or APKs)
+android-shell/.gradle/
+android-shell/**/build/
+android-shell/local.properties
+android-shell/*.apk
+android-shell/*.aab
+android-shell/*.jks
+android-shell/*.keystore
+
 

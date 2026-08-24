@@ -5,6 +5,9 @@ import { X, Mail, Lock, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { loginWithPassword } from "@/lib/auth/password-login";
+import { supabase } from "@/lib/supabase";
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,99 +44,70 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     };
   }, [isOpen]);
 
-  // Check if user exists by email
-  const getUserByEmail = (email: string) => {
-    try {
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        const user = JSON.parse(userData);
-        if (user.email === email) {
-          return user;
-        }
-      }
-    } catch (error) {
-      console.error("Error reading user data:", error);
-    }
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Validation
-    if (mode === "signup") {
-      if (!formData.name || !formData.email || !formData.password) {
-        setError("Please fill in all fields");
+    try {
+      if (mode === "signup") {
+        if (!formData.name || !formData.email || !formData.password) {
+          setError("Please fill in all fields");
+          setLoading(false);
+          return;
+        }
+        if (formData.password.length < 6) {
+          setError("Password must be at least 6 characters");
+          setLoading(false);
+          return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: { data: { name: formData.name } },
+        });
+        if (signUpError && !data?.user) {
+          setError(signUpError.message);
+          setLoading(false);
+          return;
+        }
+        await supabase.auth.signOut().catch(() => undefined);
+        const userData = {
+          name: formData.name,
+          email: formData.email,
+        };
         setLoading(false);
-        return;
-      }
-      if (formData.password.length < 6) {
-        setError("Password must be at least 6 characters");
-        setLoading(false);
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        setLoading(false);
+        onSuccess(userData);
+        onClose();
+        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
         return;
       }
 
-      // Check if user already exists
-      const existingUser = getUserByEmail(formData.email);
-      if (existingUser) {
-        setError("An account with this email already exists. Please sign in instead.");
-        setLoading(false);
-        setMode("login");
-        return;
-      }
-    } else {
       if (!formData.email || !formData.password) {
         setError("Please fill in all fields");
         setLoading(false);
         return;
       }
 
-      // Check if user exists for login
-      const existingUser = getUserByEmail(formData.email);
-      if (!existingUser) {
-        setError("No account found with this email. Please sign up first.");
-        setLoading(false);
-        setMode("signup");
-        return;
-      }
+      const { user } = await loginWithPassword(formData.email, formData.password);
+      const userData = {
+        name: user.user_metadata?.name || user.email?.split("@")[0] || formData.email.split("@")[0],
+        email: user.email || formData.email,
+      };
+      setLoading(false);
+      onSuccess(userData);
+      onClose();
+      setFormData({ name: "", email: "", password: "", confirmPassword: "" });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setLoading(false);
     }
-
-    // Simulate API call
-    setTimeout(() => {
-      const existingUser = getUserByEmail(formData.email);
-      
-      if (mode === "signup" || !existingUser) {
-        // Create new account
-        const userData = {
-          name: formData.name || formData.email.split("@")[0],
-          email: formData.email,
-          password: formData.password, // In production, this should be hashed
-          phone: "+254 700 000 000",
-          location: "Nairobi, Kenya",
-          memberSince: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || formData.email.split("@")[0])}&background=6366f1&color=fff&size=200`,
-          authMethods: ["email"], // Track which auth methods are linked
-        };
-        localStorage.setItem("user", JSON.stringify(userData));
-        setLoading(false);
-        onSuccess(userData);
-        onClose();
-        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
-      } else {
-        // Login with existing account
-        setLoading(false);
-        onSuccess(existingUser);
-        onClose();
-        setFormData({ name: "", email: "", password: "", confirmPassword: "" });
-      }
-    }, 1000);
   };
 
   if (!isOpen || !mounted || typeof window === "undefined") return null;

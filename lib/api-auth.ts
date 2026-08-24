@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+import { createRequestAuthClient } from "@/lib/auth/session-cookies";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+async function getTokenFromCookies(req: NextRequest): Promise<string> {
+  try {
+    const supabase = createRequestAuthClient(req, () => undefined);
+    const { data: userData, error } = await supabase.auth.getUser();
+    if (error || !userData.user) return "";
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token?.trim() || "";
+  } catch {
+    return "";
+  }
+}
 
 export type AuthResult =
   | { authenticated: true; userId: string; token: string }
@@ -14,7 +28,7 @@ export type AuthResult =
  */
 export async function requireAuth(req: NextRequest): Promise<AuthResult> {
   const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "")?.trim();
+  const token = authHeader?.replace(/^Bearer\s+/i, "")?.trim() || (await getTokenFromCookies(req));
 
   if (!token) {
     return {

@@ -166,19 +166,16 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
     setLoading(true);
 
     try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (signInErr) throw signInErr;
+      const { loginWithPassword } = await import("@/lib/auth/password-login");
+      const { session } = await loginWithPassword(email, password);
 
-      const userId = data.user?.id;
+      const userId = session.user?.id;
       if (!userId) throw new Error("Sign in failed. Please try again.");
 
       await maybeClaimAdmin();
       await requirePortalMemberOrSignOut(userId);
 
-      const token = data.session?.access_token;
+      const token = session.access_token;
       if (!token) throw new Error("Session missing. Please try again.");
 
       const methodRes = await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } });

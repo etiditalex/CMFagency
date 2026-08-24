@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { KeyRound, Lock, Mail } from "lucide-react";
 
 import { businessTotpSetupUrl } from "@/lib/auth/business-totp";
+import { safeAppRedirect } from "@/lib/android-shell";
 import { supabase } from "@/lib/supabase";
 import { hasVisitorManagementAccess, VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
@@ -61,6 +62,14 @@ export default function VisitorSignInForm() {
 
   const canSubmit = useMemo(() => email.trim() && password.length > 0, [email, password]);
 
+  const afterAuthPath = () => {
+    if (typeof window === "undefined") return VISITOR_ONLY_DASHBOARD_PREFIX;
+    return (
+      safeAppRedirect(new URLSearchParams(window.location.search).get("redirect")) ??
+      VISITOR_ONLY_DASHBOARD_PREFIX
+    );
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("passwordReset") === "1") {
       setPasswordJustReset(true);
@@ -74,7 +83,7 @@ export default function VisitorSignInForm() {
         await assertVisitorPortalMember(uid);
         const statusRes = await fetch("/api/fusion-xpress/login-status", { credentials: "include" });
         const status = (await statusRes.json().catch(() => ({}))) as { verified?: boolean };
-        if (status.verified) router.replace(VISITOR_ONLY_DASHBOARD_PREFIX);
+        if (status.verified) router.replace(afterAuthPath());
       } catch {
         /* not a visitor session */
       }
@@ -95,7 +104,7 @@ export default function VisitorSignInForm() {
     setTotpRequired(methodData.totpRequired !== false);
 
     if (methodData.totpRequired !== false && !useTotp) {
-      router.replace(businessTotpSetupUrl(VISITOR_ONLY_DASHBOARD_PREFIX));
+      router.replace(businessTotpSetupUrl(afterAuthPath()));
       return;
     }
 
@@ -144,12 +153,12 @@ export default function VisitorSignInForm() {
     setResetSent(false);
     setLoading(true);
     try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (signInErr) {
-        const msg = signInErr.message.toLowerCase();
+      const { loginWithPassword } = await import("@/lib/auth/password-login");
+      let session;
+      try {
+        ({ session } = await loginWithPassword(email, password));
+      } catch (signInErr: unknown) {
+        const msg = (signInErr instanceof Error ? signInErr.message : "").toLowerCase();
         if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
           throw new Error(
             "Please verify your email first. Check your inbox or use the verification page linked below."
@@ -158,8 +167,8 @@ export default function VisitorSignInForm() {
         throw signInErr;
       }
 
-      const uid = data.user?.id;
-      const token = data.session?.access_token;
+      const uid = session.user?.id;
+      const token = session.access_token;
       if (!uid || !token) throw new Error("Sign in failed.");
 
       await assertVisitorPortalMember(uid);
@@ -192,7 +201,7 @@ export default function VisitorSignInForm() {
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Invalid code");
 
-      router.replace(VISITOR_ONLY_DASHBOARD_PREFIX);
+      router.replace(afterAuthPath());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {

@@ -16,6 +16,8 @@ function getClientIp(request: NextRequest): string {
 function isLoginRoute(pathname: string): boolean {
   return (
     pathname === "/login" ||
+    pathname === "/fusion-xpress/admin-login" ||
+    pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/send-login-verification-code") ||
     pathname.startsWith("/api/verify-login-verification-code")
   );
@@ -55,10 +57,10 @@ function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: numbe
  *
  * IMPORTANT: Pages must be dynamically rendered for nonce injection to work.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Login rate limit: POST to login page or login verification APIs
+  // Login rate limit: POST to /login, /api/auth/login, and login verification APIs
   if (request.method === "POST" && isLoginRoute(pathname)) {
     const ip = getClientIp(request);
     const { allowed, retryAfter } = checkLoginRateLimit(ip);
@@ -121,6 +123,26 @@ export function proxy(request: NextRequest) {
   });
 
   response.headers.set("Content-Security-Policy", contentSecurityPolicyHeaderValue);
+
+  // Refresh httpOnly session cookies when a Supabase auth cookie is present.
+  try {
+    const { applyCookiesToResponse, createRequestAuthClient, hasSupabaseAuthCookie } = await import(
+      "@/lib/auth/session-cookies"
+    );
+    if (hasSupabaseAuthCookie(request)) {
+      const cookiesToSet: import("@/lib/auth/session-cookies").CookieToSet[] = [];
+      let extraHeaders: Record<string, string> = {};
+      const supabase = createRequestAuthClient(request, (cookies, headers) => {
+        cookiesToSet.push(...cookies);
+        extraHeaders = { ...extraHeaders, ...headers };
+      });
+      await supabase.auth.getUser();
+      applyCookiesToResponse(response, cookiesToSet, extraHeaders);
+    }
+  } catch {
+    // Auth refresh must not block the rest of the site.
+  }
+
   return response;
 }
 
@@ -207,7 +229,9 @@ export const config = {
     },
     "/api/send-login-verification-code",
     "/api/verify-login-verification-code",
+    "/api/auth/login",
     "/login",
+    "/fusion-xpress/admin-login",
   ],
 };
 

@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verify } from "otplib";
+import { checkLoginCodeRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const COOKIE_NAME = "portal_2fa_verified";
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req);
+    const { allowed, retryAfter } = checkLoginCodeRateLimit(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later.", retryAfter },
+        { status: 429, headers: { "Retry-After": String(retryAfter ?? 900) } }
+      );
+    }
+
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace(/^Bearer\s+/i, "") ?? "";
     if (!token) return NextResponse.json({ error: "Missing authorization" }, { status: 401 });

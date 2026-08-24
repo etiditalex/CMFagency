@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import BusinessTotpSetupForm from "@/components/auth/BusinessTotpSetupForm";
 import { useAuth } from "@/contexts/AuthContext";
+import { safeAppRedirect, visitorSignInHref } from "@/lib/android-shell";
 import { supabase } from "@/lib/supabase";
 import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
 
@@ -15,16 +16,19 @@ export default function SetupAuthenticatorPage() {
 
   const redirectTo = useMemo(() => {
     const raw = searchParams?.get("redirect")?.trim();
-    if (raw && raw.startsWith("/")) return raw;
+    const app = safeAppRedirect(raw);
+    if (app) return app;
+    if (raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("://")) return raw;
     return "/dashboard";
   }, [searchParams]);
 
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated || !user) {
-      const signIn =
-        redirectTo.startsWith("/dashboard/visitor-management") ||
-        redirectTo === VISITOR_ONLY_DASHBOARD_PREFIX
+      const signIn = redirectTo.startsWith("/app")
+        ? visitorSignInHref(redirectTo)
+        : redirectTo.startsWith("/dashboard/visitor-management") ||
+            redirectTo === VISITOR_ONLY_DASHBOARD_PREFIX
           ? "/fusion-xpress/smart-visitor-management/sign-in"
           : "/fusion-xpress";
       router.replace(signIn);

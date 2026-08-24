@@ -1,0 +1,13 @@
+# Android Play Store shell — local/build artifacts only
+.gradle/
+**/build/
+local.properties
+*.apk
+*.aab
+*.ap_
+*.jks
+*.keystore
+captures/
+.idea/
+*.iml
+.DS_Store
