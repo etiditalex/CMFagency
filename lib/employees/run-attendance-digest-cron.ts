@@ -214,7 +214,7 @@ export type AttendanceDigestRunResult = {
   details: { ownerId: string; kind: AttendanceDigestKind; status: string; periodKey: string }[];
 };
 
-/** Daily cron: send due daily / weekly / monthly PDF digests per organisation. */
+/** Hourly cron: send due daily / weekly / monthly PDF digests per organisation. */
 export async function runAttendanceDigestCron(
   admin: SupabaseClient,
   now = new Date()
