@@ -50,7 +50,6 @@ temp-deployment.zip
 /lib/android-shell.ts
 /lib/fusion-xpress-app.ts
 /lib/hooks/usePortalCampaigns.ts
-/lib/hooks/useVisitorEmployees.ts
 /lib/hooks/useVotingCatalog.ts
 /public/android-shell-manifest.webmanifest
 /public/android-shell-sw.js
