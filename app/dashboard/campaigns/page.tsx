@@ -8,6 +8,7 @@ import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, 
 import TicketingVotingDashboard from "@/components/dashboard/TicketingVotingDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { loadCampaignReportableFinancials } from "@/lib/campaign-reportable-stats";
 import { normalizeSlug } from "@/lib/ensure-campaign-from-event";
 import { supabase } from "@/lib/supabase";
 
@@ -30,13 +31,6 @@ type CampaignRow = {
   image_url?: string | null;
   starts_at?: string | null;
   ends_at?: string | null;
-};
-
-type CampaignStatsRow = {
-  campaign_id: string;
-  total_amount: number;
-  total_votes: number;
-  successful_transactions: number;
 };
 
 type CampaignWithStats = CampaignRow & {
@@ -78,8 +72,7 @@ export default function DashboardCampaignsPage() {
       setError(null);
 
       try {
-        /** Client path: set when event slugs are loaded in parallel with stats for owned campaigns. */
-        let statsOwnedRes: { data: unknown; error: unknown } | null = null;
+        /** Client path: set when event slugs are loaded in parallel with owned campaigns. */
 
         const campaignsSelect =
           "id,type,slug,title,currency,unit_amount,is_active,created_at,created_by,image_url,starts_at,ends_at";
@@ -87,33 +80,9 @@ export default function DashboardCampaignsPage() {
         // Admins see all campaigns. Clients see only: (1) campaigns they created, (2) campaigns for events they own.
         let campaignRows: CampaignRow[] | null = null;
         if (isFullAdmin) {
-          const [campRes, statsRes] = await Promise.all([
-            supabase.from("campaigns").select(campaignsSelect).order("created_at", { ascending: false }),
-            supabase
-              .from("campaign_stats")
-              .select("campaign_id,total_amount,total_votes,successful_transactions"),
-          ]);
+          const campRes = await supabase.from("campaigns").select(campaignsSelect).order("created_at", { ascending: false });
           if (campRes.error) throw campRes.error;
           campaignRows = campRes.data as CampaignRow[];
-
-          const statsById = new Map<string, CampaignStatsRow>(
-            (!statsRes.error ? (statsRes.data ?? []) : []).map((s) => [s.campaign_id, s as CampaignStatsRow])
-          );
-
-          const merged: CampaignWithStats[] = (campaignRows ?? [])
-            .filter((c: CampaignRow) => String(c.slug ?? "").toLowerCase() !== "merchandise")
-            .map((c: CampaignRow) => {
-              const s = statsById.get(c.id);
-              return {
-                ...c,
-                total_amount: s?.total_amount ?? 0,
-                total_votes: s?.total_votes ?? 0,
-                successful_transactions: s?.successful_transactions ?? 0,
-              };
-            });
-
-          if (!cancelled) setCampaigns(merged);
-          return;
         } else if (user?.id) {
           const [ownedRes, eventsRes] = await Promise.all([
             supabase
@@ -139,23 +108,13 @@ export default function DashboardCampaignsPage() {
               if (ts) eventSlugs.add(ts);
             }
           }
-          const ownedOnlyIds = Array.from(byId.keys());
 
           if (eventSlugs.size > 0) {
-            const [eventCampaignsRes, statsParallelRes] = await Promise.all([
-              supabase
-                .from("campaigns")
-                .select(campaignsSelect)
-                .in("slug", Array.from(eventSlugs))
-                .order("created_at", { ascending: false }),
-              ownedOnlyIds.length > 0
-                ? supabase
-                    .from("campaign_stats")
-                    .select("campaign_id,total_amount,total_votes,successful_transactions")
-                    .in("campaign_id", ownedOnlyIds)
-                : Promise.resolve({ data: [], error: null }),
-            ]);
-            statsOwnedRes = statsParallelRes;
+            const eventCampaignsRes = await supabase
+              .from("campaigns")
+              .select(campaignsSelect)
+              .in("slug", Array.from(eventSlugs))
+              .order("created_at", { ascending: false });
             if (!eventCampaignsRes.error && eventCampaignsRes.data?.length) {
               for (const c of eventCampaignsRes.data as CampaignRow[]) {
                 if (!byId.has(c.id)) byId.set(c.id, c);
@@ -171,64 +130,22 @@ export default function DashboardCampaignsPage() {
 
         if (campaignRows === null) campaignRows = [];
 
-        const ids = (campaignRows ?? []).map((c) => c.id).filter(Boolean);
-        let statsRows: CampaignStatsRow[] | null = null;
-        let statsError: { message?: string } | null = null;
-        if (ids.length > 0) {
-          if (statsOwnedRes) {
-            const err = statsOwnedRes.error as { message?: string } | null;
-            if (err) {
-              statsError = err;
-            } else {
-              statsRows = (statsOwnedRes.data ?? []) as CampaignStatsRow[];
-              const have = new Set((statsRows ?? []).map((s) => s.campaign_id));
-              const missing = ids.filter((id) => !have.has(id));
-              if (missing.length > 0) {
-                const extraRes = await supabase
-                  .from("campaign_stats")
-                  .select("campaign_id,total_amount,total_votes,successful_transactions")
-                  .in("campaign_id", missing);
-                if (extraRes.error) {
-                  statsError = extraRes.error;
-                  statsRows = null;
-                } else {
-                  statsRows = [...(statsRows ?? []), ...((extraRes.data ?? []) as CampaignStatsRow[])];
-                }
-              }
-            }
-            if (statsError && ids.length > 0) {
-              const statsRes = await supabase
-                .from("campaign_stats")
-                .select("campaign_id,total_amount,total_votes,successful_transactions")
-                .in("campaign_id", ids);
-              statsRows = statsRes.data as CampaignStatsRow[] | null;
-              statsError = statsRes.error;
-            }
-          } else {
-            const statsRes = await supabase
-              .from("campaign_stats")
-              .select("campaign_id,total_amount,total_votes,successful_transactions")
-              .in("campaign_id", ids);
-            statsRows = statsRes.data as CampaignStatsRow[] | null;
-            statsError = statsRes.error;
-          }
-        }
-
-        const statsById = new Map<string, CampaignStatsRow>(
-          (!statsError ? (statsRows ?? []) : []).map((s) => [s.campaign_id, s])
+        const visible = (campaignRows ?? []).filter(
+          (c: CampaignRow) => String(c.slug ?? "").toLowerCase() !== "merchandise"
         );
-
-        const merged: CampaignWithStats[] = (campaignRows ?? [])
-          .filter((c: CampaignRow) => String(c.slug ?? "").toLowerCase() !== "merchandise")
-          .map((c: CampaignRow) => {
-            const s = statsById.get(c.id);
-            return {
-              ...c,
-              total_amount: s?.total_amount ?? 0,
-              total_votes: s?.total_votes ?? 0,
-              successful_transactions: s?.successful_transactions ?? 0,
-            };
-          });
+        const financials = await loadCampaignReportableFinancials(
+          supabase,
+          visible.map((c) => c.id)
+        );
+        const merged: CampaignWithStats[] = visible.map((c: CampaignRow) => {
+          const s = financials.get(c.id);
+          return {
+            ...c,
+            total_amount: s?.total_amount ?? 0,
+            total_votes: s?.total_votes ?? 0,
+            successful_transactions: s?.successful_transactions ?? 0,
+          };
+        });
 
         if (!cancelled) setCampaigns(merged);
       } catch (e: any) {
