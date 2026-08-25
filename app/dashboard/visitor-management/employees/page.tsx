@@ -4,17 +4,19 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BadgeCheck,
+  CalendarDays,
+  ClipboardList,
   Download,
-  Fingerprint,
+  FileBarChart,
   LogIn,
-  LogOut,
   Plus,
   QrCode,
   ScanLine,
   Pencil,
-  UserCog,
+  Settings,
+  UserCheck,
   Users,
+  UserPlus,
   X,
 } from "lucide-react";
 
@@ -30,6 +32,7 @@ import EmployeeSetupBanner from "@/components/fusion-xpress/visitor-management/e
 import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-management/employees/NotificationAdminsPanel";
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
+import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -58,8 +61,6 @@ import type {
   EmployeeRecord,
   EmployeeReportingSettings,
 } from "@/lib/employees/types";
-
-const MEMBER_TYPES: EmployeeMemberType[] = ["staff", "crm"];
 import {
   employeeAttendanceBadgeClass,
   employeeAttendanceLabel,
@@ -67,6 +68,7 @@ import {
   employeeStatusBadgeClass,
   formatEmployeeTimestamp,
 } from "@/lib/employees/utils";
+import { eatDayKey, eatTodayDayKey } from "@/lib/time/eat";
 import { supabase } from "@/lib/supabase";
 import {
   VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH,
@@ -83,6 +85,19 @@ import {
   accountHasVisitorFeature,
   type VisitorSubscriptionState,
 } from "@/lib/visitors/subscription";
+
+const MEMBER_TYPES: EmployeeMemberType[] = ["staff", "crm"];
+
+function formatLongDate(ymd: string) {
+  const d = new Date(`${ymd}T12:00:00+03:00`);
+  if (Number.isNaN(d.getTime())) return ymd;
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Nairobi",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
+}
 
 export default function VisitorManagementEmployeesPage() {
   const router = useRouter();
@@ -120,6 +135,7 @@ export default function VisitorManagementEmployeesPage() {
   const [visitorSubscription, setVisitorSubscription] = useState<VisitorSubscriptionState | null>(
     null
   );
+  const [selectedDate, setSelectedDate] = useState(eatTodayDayKey);
 
   const getToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -333,6 +349,31 @@ export default function VisitorManagementEmployeesPage() {
     [employees, displayedEmployees, isRealEstateOrg]
   );
 
+  const presentTodayCount = useMemo(() => {
+    const pool = isRealEstateOrg ? displayedEmployees : employees;
+    const ids = new Set<string>();
+    const viewingToday = selectedDate === eatTodayDayKey();
+    for (const e of pool) {
+      if (e.status !== "active") continue;
+      if (e.lastSignedInAt && eatDayKey(e.lastSignedInAt) === selectedDate) ids.add(e.id);
+      if (viewingToday && e.attendanceStatus === "in") ids.add(e.id);
+    }
+    for (const row of attendance) {
+      if (row.eventType !== "sign_in") continue;
+      if (eatDayKey(row.createdAt) !== selectedDate) continue;
+      if (pool.some((e) => e.id === row.employeeId)) ids.add(row.employeeId);
+    }
+    return ids.size;
+  }, [attendance, displayedEmployees, employees, isRealEstateOrg, selectedDate]);
+
+  const checkInsToday = useMemo(
+    () =>
+      attendance.filter(
+        (r) => r.eventType === "sign_in" && eatDayKey(r.createdAt) === selectedDate
+      ).length,
+    [attendance, selectedDate]
+  );
+
   const employeeNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const e of employees) m.set(e.id, e.fullName);
@@ -544,28 +585,32 @@ export default function VisitorManagementEmployeesPage() {
 
   const statCards = [
     {
-      label: isRealEstateOrg ? `Total ${memberTypeLabel(memberTab)}` : "Total staff",
+      label: isRealEstateOrg ? `Total ${memberTypeLabel(memberTab)}` : "Total employees",
       value: stats.total,
+      hint: `Active: ${stats.active}`,
       icon: Users,
-      tone: "text-primary-700 bg-primary-50 border-primary-100",
+      tone: "bg-primary-50 text-primary-700",
     },
     {
-      label: "Active",
-      value: stats.active,
-      icon: BadgeCheck,
-      tone: "text-emerald-700 bg-emerald-50 border-emerald-100",
+      label: "Present today",
+      value: presentTodayCount,
+      hint: `Signed in now: ${stats.signedIn}`,
+      icon: UserCheck,
+      tone: "bg-secondary-50 text-secondary-700",
     },
     {
       label: "Signed in now",
       value: stats.signedIn,
+      hint: `Signed out: ${stats.signedOut}`,
       icon: LogIn,
-      tone: "text-sky-700 bg-sky-50 border-sky-100",
+      tone: "bg-primary-100 text-primary-800",
     },
     {
-      label: "Signed out",
-      value: stats.signedOut,
-      icon: LogOut,
-      tone: "text-slate-700 bg-slate-50 border-slate-200",
+      label: "Check-ins",
+      value: checkInsToday,
+      hint: "Sign-ins for selected date",
+      icon: ScanLine,
+      tone: "bg-secondary-50 text-secondary-800",
     },
   ];
 
@@ -575,23 +620,42 @@ export default function VisitorManagementEmployeesPage() {
 
   return (
     <div className="w-full space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
-          <UserCog className="w-7 h-7 text-primary-600" />
-          {isAdmin && scopedBusinessName ? scopedBusinessName : "Employee attendance"}
-        </h1>
-        {!isVisitorOnly ? (
-          <p className="mt-2 text-sm">
-            <Link href={VISITOR_MANAGEMENT_PATH} className="font-semibold text-primary-700 hover:underline">
-              ← Back to visitors
-            </Link>
-          </p>
-        ) : null}
-      </div>
-
       {isAdmin ? (
         <BusinessScopeBar basePath={VISITOR_MANAGEMENT_EMPLOYEES_PATH} />
       ) : null}
+
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1a2332] sm:text-[28px]">
+            {isAdmin && scopedBusinessName ? scopedBusinessName : "Employee attendance"}
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+            Staff roster, reception QR, reporting windows, and attendance logs.
+            {!isVisitorOnly ? (
+              <>
+                {" "}
+                <Link
+                  href={pathWithOwner(VISITOR_MANAGEMENT_PATH, adminOwnerId)}
+                  className="font-semibold text-primary-700 hover:underline"
+                >
+                  Back to visitor dashboard
+                </Link>
+              </>
+            ) : null}
+          </p>
+        </div>
+        <label className="relative inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-[0_8px_18px_rgba(15,47,100,0.08)] ring-1 ring-black/[0.03]">
+          <CalendarDays className="h-4 w-4 text-primary-700" />
+          <span>{formatLongDate(selectedDate)}</span>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="Dashboard date"
+          />
+        </label>
+      </section>
 
       {needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
@@ -615,6 +679,9 @@ export default function VisitorManagementEmployeesPage() {
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Biometric fingerprint
           </Link>
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+            Kiosk scanner
+          </Link>
         </p>
       ) : null}
       {loadError && !setupRequired ? (
@@ -628,51 +695,25 @@ export default function VisitorManagementEmployeesPage() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((c) => {
           const Icon = c.icon;
           return (
-            <div key={c.label} className={`rounded-xl border p-4 ${c.tone}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                  {c.label}
+            <div key={c.label} className={`${VM_CARD} p-5`}>
+              <div className="flex items-center gap-4">
+                <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${c.tone}`}>
+                  <Icon className="h-5 w-5" />
                 </span>
-                <Icon className="w-4 h-4 opacity-70" />
+                <div className="min-w-0">
+                  <div className="text-2xl font-bold tabular-nums text-[#1a2332]">{c.value.toLocaleString()}</div>
+                  <div className="text-sm font-medium text-slate-600">{c.label}</div>
+                  <div className="text-xs text-slate-500">{c.hint}</div>
+                </div>
               </div>
-              <div className="mt-2 text-2xl font-extrabold">{c.value}</div>
             </div>
           );
         })}
-      </div>
-
-      <div className="flex flex-wrap gap-2 sm:ml-auto">
-          <Link
-            href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, adminOwnerId)}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-primary-300 bg-white px-4 py-2.5 text-sm font-semibold text-primary-800 hover:bg-primary-50"
-          >
-            <ScanLine className="w-4 h-4" />
-            Kiosk scanner
-          </Link>
-          <Link
-            href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH, adminOwnerId)}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-sky-300 bg-white px-4 py-2.5 text-sm font-semibold text-sky-900 hover:bg-sky-50"
-          >
-            <Fingerprint className="w-4 h-4" />
-            Biometric fingerprint
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              setNotice(null);
-              setAddOpen(true);
-            }}
-            disabled={setupRequired}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 disabled:opacity-50"
-          >
-            <Plus className="w-4 h-4" />
-            Add employee
-          </button>
-        </div>
+      </section>
 
       {!needsSelection && !canDownloadQr && !setupRequired ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -690,16 +731,6 @@ export default function VisitorManagementEmployeesPage() {
         organizationName={organizationName}
         canDownloadQr={canDownloadQr}
       />
-
-      <NotificationAdminsPanel disabled={setupRequired} />
-
-      {!setupRequired ? (
-        <ReportingTimesPanel
-          disabled={setupRequired}
-          isRealEstate={isRealEstateOrg}
-          isRetailHospitality={isRetailHospitalityOrg}
-        />
-      ) : null}
 
       <AddEmployeeModal
         open={addOpen}
@@ -791,10 +822,10 @@ export default function VisitorManagementEmployeesPage() {
         </div>
       ) : null}
 
-      <div className="border border-[#e5e5e5] overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
-            <Users className="w-4 h-4 text-gray-500" />
+      <div className={`${VM_CARD} overflow-hidden`}>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
+          <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            <Users className="h-4 w-4 text-primary-700" />
             {isRealEstateOrg ? `${memberTypeLabel(memberTab)} team` : "Staff members"}
           </span>
           {isRealEstateOrg ? (
@@ -828,26 +859,39 @@ export default function VisitorManagementEmployeesPage() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[800px] text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs uppercase tracking-wide text-gray-500">
-                  <th className="px-4 py-3 font-semibold">Name</th>
-                  <th className="px-4 py-3 font-semibold">Member ID</th>
+                <tr className="bg-[#f4f7fb] text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-5 py-3">Name</th>
+                  <th className="px-5 py-3">Member ID</th>
                   {isRealEstateOrg ? (
-                    <th className="px-4 py-3 font-semibold">Team</th>
+                    <th className="px-5 py-3">Team</th>
                   ) : null}
-                  <th className="px-4 py-3 font-semibold">Department</th>
-                  <th className="px-4 py-3 font-semibold">Attendance</th>
-                  <th className="px-4 py-3 font-semibold">Last sign-in</th>
+                  <th className="px-5 py-3">Department</th>
+                  <th className="px-5 py-3">Attendance</th>
+                  <th className="px-5 py-3">Last sign-in</th>
                   {isRealEstateOrg ? (
-                    <th className="px-4 py-3 font-semibold">Reporting</th>
+                    <th className="px-5 py-3">Reporting</th>
                   ) : null}
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Actions</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {displayedEmployees.map((emp) => (
                   <tr key={emp.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{emp.fullName}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-xs font-bold text-primary-800">
+                          {emp.fullName
+                            .split(" ")
+                            .filter(Boolean)
+                            .map((p) => p[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                        <span className="font-semibold text-slate-900">{emp.fullName}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-700">
                       {emp.employeeCode || "—"}
                     </td>
@@ -885,10 +929,11 @@ export default function VisitorManagementEmployeesPage() {
                         {employeeAttendanceLabel(emp.attendanceStatus)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-5 py-3 text-slate-600">
                       {formatEmployeeTimestamp(emp.lastSignedInAt)}
                     </td>
-                    <td className="px-4 py-3">
+                    {isRealEstateOrg ? (
+                    <td className="px-5 py-3">
                       <span
                         className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${signInStatusClass(
                           signInReportingStatus(
@@ -925,9 +970,10 @@ export default function VisitorManagementEmployeesPage() {
                         )}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    ) : null}
+                    <td className="px-5 py-3">
                       <span
-                        className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold capitalize ${employeeStatusBadgeClass(emp.status)}`}
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize ${employeeStatusBadgeClass(emp.status)}`}
                       >
                         {emp.status}
                       </span>
@@ -1026,6 +1072,65 @@ export default function VisitorManagementEmployeesPage() {
         onError={setNotice}
         labelSignOutOvertime={isRetailHospitalityOrg}
       />
+
+      <section className={`${VM_CARD} flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center`}>
+        <div className="inline-flex items-center gap-2 text-sm font-bold text-slate-800">
+          <Settings className="h-4 w-4 text-primary-700" />
+          Quick actions
+        </div>
+        <div className="flex flex-wrap gap-2 lg:ml-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setNotice(null);
+              setAddOpen(true);
+            }}
+            disabled={setupRequired}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            Add employee
+          </button>
+          <Link
+            href={pathWithOwner(VISITOR_MANAGEMENT_PATH, adminOwnerId)}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <UserPlus className="h-4 w-4" />
+            Pre-register visitor
+          </Link>
+          <Link
+            href={pathWithOwner(VISITOR_MANAGEMENT_PATH, adminOwnerId)}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <Users className="h-4 w-4" />
+            View all visitors
+          </Link>
+          <a
+            href="#attendance-log"
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <ClipboardList className="h-4 w-4" />
+            Attendance logs
+          </a>
+          <Link
+            href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, adminOwnerId)}
+            className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            <FileBarChart className="h-4 w-4" />
+            Generate report
+          </Link>
+        </div>
+      </section>
+
+      <NotificationAdminsPanel disabled={setupRequired} />
+
+      {!setupRequired ? (
+        <ReportingTimesPanel
+          disabled={setupRequired}
+          isRealEstate={isRealEstateOrg}
+          isRetailHospitality={isRetailHospitalityOrg}
+        />
+      ) : null}
 
     </div>
   );

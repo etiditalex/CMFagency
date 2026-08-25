@@ -1,49 +1,49 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Clock,
-  Copy,
-  Eye,
-  Flame,
-  Link2,
-  LogIn,
-  Plus,
-  Search,
-  UserCheck,
-  Users,
-  X,
-} from "lucide-react";
+import { Eye, Plus, Search, Users, X } from "lucide-react";
 
+import AddEmployeeModal from "@/components/fusion-xpress/visitor-management/employees/AddEmployeeModal";
 import MockQrCode from "@/components/fusion-xpress/visitor-management/MockQrCode";
 import BusinessScopeBar, {
   AdminSelectBusinessPrompt,
 } from "@/components/fusion-xpress/visitor-management/BusinessScopeBar";
 import RegisterGuestModal from "@/components/fusion-xpress/visitor-management/RegisterGuestModal";
 import type { RegisterGuestPayload } from "@/components/fusion-xpress/visitor-management/RegisterGuestForm";
+import VisitorEmployeeOverview from "@/components/fusion-xpress/visitor-management/VisitorEmployeeOverview";
+import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { DEFAULT_REPORTING_SETTINGS } from "@/lib/employees/db-mapper";
+import { isRealEstateIndustry } from "@/lib/employees/real-estate";
+import { organizationIndustryFromMetadata } from "@/lib/employees/require-real-estate-org";
+import type {
+  EmployeeFormInput,
+  EmployeeLeaveRecord,
+  EmployeeReportingSettings,
+} from "@/lib/employees/types";
 import { useAdminBusinessScope } from "@/lib/hooks/useAdminBusinessScope";
-import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
+import { useVisitorEmployees } from "@/lib/hooks/useVisitorEmployees";
+import { eatTodayDayKey } from "@/lib/time/eat";
 import { supabase } from "@/lib/supabase";
 import {
   industryLabel,
   isVisitorIndustrySlug,
   VISITOR_MANAGEMENT_PATH,
-  VISITOR_MANAGEMENT_VERIFICATION_PATH,
 } from "@/lib/visitors/industry-options";
 import { industryPreRegisterUrl } from "@/lib/visitors/preregistration";
 import { MOCK_VISITORS } from "@/lib/visitors/mock-data";
+import {
+  accountHasVisitorFeature,
+  type VisitorSubscriptionState,
+} from "@/lib/visitors/subscription";
 import type { VisitorDemoSubmission, VisitorRecord, VisitorStatus } from "@/lib/visitors/types";
 import {
   formatActualCheckDetail,
-  formatActualCheckTimes,
   formatVisitDateTime,
   statusBadgeClass,
   statusLabel,
-  visitorStats,
 } from "@/lib/visitors/utils";
 
 const DEFAULT_INDUSTRY = "retail-hospitality";
@@ -59,7 +59,15 @@ export default function DashboardVisitorManagementPage() {
     ownerId: adminOwnerId,
     industry: scopedIndustry,
     businessName: scopedBusinessName,
+    isRealEstate: scopedRealEstate,
   } = useAdminBusinessScope();
+
+  const {
+    employees,
+    attendance,
+    addEmployee,
+    reload: reloadEmployees,
+  } = useVisitorEmployees();
 
   const industryFilter = useMemo(() => {
     const param = searchParams?.get("industry");
@@ -100,8 +108,18 @@ export default function DashboardVisitorManagementPage() {
   const [qrPreview, setQrPreview] = useState<VisitorRecord | null>(null);
   const [registerGuestOpen, setRegisterGuestOpen] = useState(false);
   const [registerGuestNotice, setRegisterGuestNotice] = useState<string | null>(null);
-  const [checkInLinkCopied, setCheckInLinkCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState(eatTodayDayKey);
+  const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
+  const [gateToken, setGateToken] = useState<string | null>(null);
+  const [leaveRecords, setLeaveRecords] = useState<EmployeeLeaveRecord[]>([]);
+  const [reportingSettings, setReportingSettings] =
+    useState<EmployeeReportingSettings>(DEFAULT_REPORTING_SETTINGS);
+  const [organizationName, setOrganizationName] = useState("");
+  const [isRealEstate, setIsRealEstate] = useState(false);
+  const [visitorSubscription, setVisitorSubscription] = useState<VisitorSubscriptionState | null>(
+    null
+  );
 
   const publicCheckInUrl = useMemo(() => {
     if (!activityOwnerId) return "";
@@ -116,6 +134,91 @@ export default function DashboardVisitorManagementPage() {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token ?? null;
   }, []);
+
+  const isRealEstateOrg = isAdmin ? scopedRealEstate : isRealEstate;
+
+  useEffect(() => {
+    if (isAdmin && scopedBusinessName) {
+      setOrganizationName(scopedBusinessName);
+    }
+  }, [isAdmin, scopedBusinessName]);
+
+  useEffect(() => {
+    if (isAdmin) return;
+    if (!user?.id) return;
+    void supabase.auth.getUser().then(({ data }) => {
+      const meta = data.user?.user_metadata as Record<string, unknown> | undefined;
+      const name = String(meta?.business_name ?? meta?.businessName ?? "").trim();
+      if (name) setOrganizationName(name);
+      setIsRealEstate(isRealEstateIndustry(organizationIndustryFromMetadata(meta)));
+    });
+  }, [user?.id, isAdmin]);
+
+  const canDownloadQr = useMemo(() => {
+    if (!visitorSubscription && !user?.email) return false;
+    return accountHasVisitorFeature({
+      isAdmin,
+      isVisitorOnly,
+      email: user?.email,
+      plan: visitorSubscription?.plan ?? "trial",
+      feature: "employee_qr_download",
+      subscriptionActive: visitorSubscription?.isActive ?? false,
+    });
+  }, [isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
+
+  const loadOverviewExtras = useCallback(async () => {
+    if (isAdmin && needsSelection) return;
+    try {
+      const token = await getToken();
+      if (!token) return;
+      const headers = { Authorization: `Bearer ${token}` };
+      const gateQs = isRealEstateOrg ? "?includeCrm=1" : "";
+      const [subRes, settingsRes, leaveRes, gateRes] = await Promise.all([
+        fetch("/api/visitor-management/subscription", { headers, cache: "no-store" }),
+        fetch(appendOwnerQuery("/api/visitor-employees/reporting-settings"), {
+          headers,
+          cache: "no-store",
+        }),
+        fetch(appendOwnerQuery(`/api/visitor-employees/leave?from=${selectedDate}&to=${selectedDate}`), {
+          headers,
+          cache: "no-store",
+        }),
+        fetch(appendOwnerQuery(`/api/visitor-employees/reception-gates${gateQs}`), {
+          headers,
+          cache: "no-store",
+        }),
+      ]);
+
+      const subJson = (await subRes.json().catch(() => ({}))) as {
+        subscription?: VisitorSubscriptionState;
+      };
+      if (subRes.ok && subJson.subscription) setVisitorSubscription(subJson.subscription);
+
+      const settingsJson = (await settingsRes.json().catch(() => ({}))) as {
+        settings?: EmployeeReportingSettings;
+      };
+      if (settingsRes.ok && settingsJson.settings) setReportingSettings(settingsJson.settings);
+
+      const leaveJson = (await leaveRes.json().catch(() => ({}))) as {
+        leave?: EmployeeLeaveRecord[];
+      };
+      if (leaveRes.ok && Array.isArray(leaveJson.leave)) setLeaveRecords(leaveJson.leave);
+
+      const gateJson = (await gateRes.json().catch(() => ({}))) as {
+        gates?: Array<{ memberType: string; gateToken: string }>;
+      };
+      const staffGate = Array.isArray(gateJson.gates)
+        ? gateJson.gates.find((g) => g.memberType === "staff") ?? gateJson.gates[0]
+        : undefined;
+      setGateToken(staffGate?.gateToken ?? null);
+    } catch {
+      /* extras are optional for the overview */
+    }
+  }, [appendOwnerQuery, getToken, isAdmin, isRealEstateOrg, needsSelection, selectedDate]);
+
+  useEffect(() => {
+    void loadOverviewExtras();
+  }, [loadOverviewExtras, selectedDate]);
 
   const loadVisitors = useCallback(async (industrySlug?: string) => {
     if (isAdmin && needsSelection) {
@@ -232,7 +335,6 @@ export default function DashboardVisitorManagementPage() {
     needsSelection,
   ]);
 
-  const stats = useMemo(() => visitorStats(visitors), [visitors]);
   const filteredVisitors = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) return visitors;
@@ -347,12 +449,20 @@ export default function DashboardVisitorManagementPage() {
     [usingMockData, getToken, registerIndustrySlug, industryFilter, loadVisitors]
   );
 
-  const statCards = [
-    { label: "Total Visitors", value: stats.total, icon: Users, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
-    { label: "Checked-in", value: stats.checkedIn, icon: LogIn, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
-    { label: "Checked-out", value: stats.checkedOut, icon: Flame, tone: "text-amber-700 bg-amber-50 border-amber-100" },
-    { label: "Average Visitor Wait Time", value: "0", icon: Clock, tone: "text-primary-700 bg-primary-50/70 border-primary-100" },
-  ];
+  const handleAddEmployee = useCallback(
+    async (payload: EmployeeFormInput) => {
+      await addEmployee(payload);
+      await reloadEmployees();
+    },
+    [addEmployee, reloadEmployees]
+  );
+
+  const overviewTitle =
+    isAdmin && scopedBusinessName
+      ? scopedBusinessName
+      : industryFilter === "all"
+        ? "Visitor management"
+        : industryLabel(industryFilter);
 
   if (authLoading || portalLoading) {
     return (
@@ -362,155 +472,55 @@ export default function DashboardVisitorManagementPage() {
 
   return (
     <div className="space-y-6">
-      <section className="border border-[#e5e5e5] bg-white px-5 py-5 sm:px-7">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
-              <UserCheck className="w-7 h-7 text-primary-600" />
-              {isAdmin && scopedBusinessName
-                ? scopedBusinessName
-                : industryFilter === "all"
-                  ? "Visitor Management"
-                  : industryLabel(industryFilter)}
-            </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              Corporate-grade reception dashboard for check-ins, approvals, and live visitor flow.
-              {usingMockData ? " Sample data until database setup is complete." : ""}
-            </p>
-          </div>
-          {!isVisitorOnly ? (
-            <Link
-              href={pathWithOwner("/dashboard/visitor-management/employees", adminOwnerId)}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
-            >
-              Employee attendance
-            </Link>
-          ) : null}
-        </div>
-      </section>
-
-      {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} className="mt-2" /> : null}
+      {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} /> : null}
 
       {needsSelection ? <AdminSelectBusinessPrompt /> : null}
       {!needsSelection && (
         <>
       {setupRequired && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Run <code className="font-mono text-xs">database/visitor_management_patch_01.sql</code> in the
           Supabase SQL Editor to enable live visitor records.
         </p>
       )}
       {loadError && !setupRequired ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
         </p>
       ) : null}
 
-      {loadingVisitors ? (
-        <p className="text-sm text-gray-500 py-8 text-center">Loading visitors…</p>
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.label} className={`border p-5 ${c.tone}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide opacity-80">{c.label}</span>
-                <Icon className="w-4 h-4 opacity-70" />
-              </div>
-              <div className="mt-2 text-3xl font-extrabold">{c.value}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="border border-[#e5e5e5] bg-white p-4 sm:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 items-center gap-2 border border-[#e5e5e5] bg-white px-3 py-2">
-            <Search className="h-4 w-4 text-gray-500" />
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search visitor name, host, phone or status..."
-              className="w-full bg-transparent text-sm text-gray-900 placeholder:text-gray-500 outline-none"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setRegisterGuestNotice(null);
-                setRegisterGuestOpen(true);
-              }}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-700 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Register guest
-            </button>
-            <Link
-              href={publicCheckInUrl || "#"}
-              target="_blank"
-              rel="noreferrer"
-              className={`inline-flex min-h-[44px] items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold ${
-                publicCheckInUrl
-                  ? "border-primary-200 bg-primary-50 text-primary-800 hover:bg-primary-100"
-                  : "pointer-events-none border-gray-200 bg-gray-100 text-gray-500"
-              }`}
-            >
-              {industryLabel(registerIndustrySlug)} pre-registration
-            </Link>
-          </div>
-        </div>
-      </div>
+      <VisitorEmployeeOverview
+        title={overviewTitle}
+        subtitle={`Track staff attendance, visitor flow, and reception QR tools in one place.${
+          usingMockData ? " Sample visitor data until database setup is complete." : ""
+        }`}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        employees={employees}
+        attendance={attendance}
+        visitors={visitors}
+        leaveRecords={leaveRecords}
+        reportingSettings={reportingSettings}
+        gateToken={gateToken}
+        visitorPreRegisterUrl={publicCheckInUrl}
+        organizationName={organizationName}
+        adminOwnerId={adminOwnerId}
+        canDownloadQr={canDownloadQr}
+        onAddEmployee={() => setAddEmployeeOpen(true)}
+        onRegisterGuest={() => {
+          setRegisterGuestNotice(null);
+          setRegisterGuestOpen(true);
+        }}
+        showAddEmployee={!isVisitorOnly}
+      />
 
       {registerGuestNotice ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="rounded-[12px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           {registerGuestNotice}
         </p>
       ) : null}
-
-      {activityOwnerId && !usingMockData ? (
-        <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <p className="flex items-center gap-2 text-sm font-bold text-primary-900">
-                <Link2 className="h-4 w-4 shrink-0" />
-                {industryLabel(registerIndustrySlug)} pre-registration link
-              </p>
-              <p className="mt-1 text-xs text-primary-800/80">
-                Share this industry form. Guests pre-register on their phone; on arrival they scan
-                the reception QR. Device and contact number from registration verify the scan.{" "}
-                <Link
-                  href={VISITOR_MANAGEMENT_VERIFICATION_PATH}
-                  className="font-semibold underline-offset-2 hover:underline"
-                >
-                  Open verification
-                </Link>
-              </p>
-              <p className="mt-2 break-all font-mono text-xs text-gray-800 bg-white/80 rounded-lg border border-primary-100 px-3 py-2">
-                {publicCheckInUrl || "…"}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={async () => {
-                if (!publicCheckInUrl) return;
-                try {
-                  await navigator.clipboard.writeText(publicCheckInUrl);
-                  setCheckInLinkCopied(true);
-                  window.setTimeout(() => setCheckInLinkCopied(false), 2000);
-                } catch {
-                  /* ignore */
-                }
-              }}
-              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-lg border border-primary-300 bg-white px-4 py-2 text-sm font-semibold text-primary-800 hover:bg-primary-50"
-            >
-              <Copy className="h-4 w-4" />
-              {checkInLinkCopied ? "Copied" : "Copy link"}
-            </button>
-          </div>
-        </div>
+      {loadingVisitors ? (
+        <p className="text-center text-sm text-slate-500">Loading visitor register…</p>
       ) : null}
 
       <RegisterGuestModal
@@ -519,63 +529,92 @@ export default function DashboardVisitorManagementPage() {
         defaultIndustrySlug={registerIndustrySlug}
         onSubmit={handleRegisterGuest}
       />
+      <AddEmployeeModal
+        open={addEmployeeOpen}
+        onClose={() => setAddEmployeeOpen(false)}
+        onSubmit={handleAddEmployee}
+        showMemberType={isRealEstateOrg}
+        title={isRealEstateOrg ? "Add employee" : "Add staff member"}
+      />
 
-      <div className="border border-[#e5e5e5] overflow-hidden bg-white">
-        <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex items-center justify-between gap-2">
+      <div id="visitor-register" className={`${VM_CARD} overflow-hidden`}>
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-bold text-gray-800">Visitors</span>
+            <Users className="h-4 w-4 text-primary-700" />
+            <span className="text-sm font-bold text-slate-900">Visitor register</span>
+            <span className="text-xs font-semibold text-slate-500">{filteredVisitors.length} item(s)</span>
           </div>
-          <span className="text-xs font-semibold text-gray-500">{filteredVisitors.length} item(s)</span>
+          <div className="flex flex-1 flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center lg:justify-end">
+            <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search visitor name, host, phone or status..."
+                className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setRegisterGuestNotice(null);
+                setRegisterGuestOpen(true);
+              }}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800"
+            >
+              <Plus className="h-4 w-4" />
+              Register guest
+            </button>
+          </div>
         </div>
         <div className="overflow-x-auto"><table className="w-full min-w-[1060px] text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-left text-[11px] uppercase tracking-wide text-gray-500">
-                <th className="px-4 py-3 font-semibold">Visit Date</th>
-                <th className="px-4 py-3 font-semibold">Visitor Name</th>
-                <th className="px-4 py-3 font-semibold">Visitor Pass ID</th>
-                <th className="px-4 py-3 font-semibold">Host Name</th>
-                <th className="px-4 py-3 font-semibold">Phone</th>
-                <th className="px-4 py-3 font-semibold">Organization</th>
-                <th className="px-4 py-3 font-semibold">Category</th>
-                <th className="px-4 py-3 font-semibold">Check-in Time</th>
-                <th className="px-4 py-3 font-semibold">Checkout Time</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">QR Code</th>
-                <th className="px-4 py-3 font-semibold">Actions</th>
+              <tr className="bg-[#f4f7fb] text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="px-5 py-3">Visit Date</th>
+                <th className="px-5 py-3">Visitor Name</th>
+                <th className="px-5 py-3">Visitor Pass ID</th>
+                <th className="px-5 py-3">Host Name</th>
+                <th className="px-5 py-3">Phone</th>
+                <th className="px-5 py-3">Organization</th>
+                <th className="px-5 py-3">Category</th>
+                <th className="px-5 py-3">Check-in Time</th>
+                <th className="px-5 py-3">Checkout Time</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">QR Code</th>
+                <th className="px-5 py-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredVisitors.map((v, index) => (
-                <tr key={v.id} className="border-b border-gray-50 hover:bg-primary-50/20">
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                <tr key={v.id} className="border-b border-slate-100 last:border-0 hover:bg-primary-50/20">
+                  <td className="px-5 py-3 text-slate-600 whitespace-nowrap">
                     {new Date(v.visitDate).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
                     })}
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{v.fullName}</td>
-                  <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                  <td className="px-5 py-3 font-medium text-slate-900">{v.fullName}</td>
+                  <td className="px-5 py-3 text-slate-600 font-mono text-xs">
                     {formatVisitorPassId(v, index)}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={v.host}>
+                  <td className="px-5 py-3 text-slate-600 max-w-[140px] truncate" title={v.host}>
                     {v.host}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{v.phoneNumber}</td>
-                  <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={industryLabel(v.industrySlug)}>
+                  <td className="px-5 py-3 text-slate-600">{v.phoneNumber}</td>
+                  <td className="px-5 py-3 text-slate-600 max-w-[140px] truncate" title={industryLabel(v.industrySlug)}>
                     {industryLabel(v.industrySlug)}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate" title={v.purposeOfVisit}>
+                  <td className="px-5 py-3 text-slate-600 max-w-[120px] truncate" title={v.purposeOfVisit}>
                     {v.purposeOfVisit || "Visitor"}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                  <td className="px-5 py-3 text-slate-600 whitespace-nowrap">
                     {v.checkedInAt
                       ? new Date(v.checkedInAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                       : "—"}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                    <span className="font-medium text-gray-900">
+                  <td className="px-5 py-3 text-slate-600 whitespace-nowrap">
+                    <span className="font-medium text-slate-900">
                       {v.checkedOutAt
                         ? new Date(v.checkedOutAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                         : "—"}
@@ -586,14 +625,14 @@ export default function DashboardVisitorManagementPage() {
                       <span className="mt-0.5 block text-xs text-primary-700">Pre-registered</span>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3">
                     <span
-                      className={`inline-flex px-2 py-0.5 rounded text-xs font-medium border ${statusBadgeClass(v.status)}`}
+                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusBadgeClass(v.status)}`}
                     >
                       {statusLabel(v.status, v.source)}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3">
                     {v.qrCodeToken ? (
                       <button
                         type="button"
@@ -607,7 +646,7 @@ export default function DashboardVisitorManagementPage() {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-5 py-3">
                     <div className="flex flex-wrap gap-1">
                       {v.status === "pending" && (
                         <>
@@ -628,7 +667,7 @@ export default function DashboardVisitorManagementPage() {
               ))}
               {filteredVisitors.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-sm text-gray-500">
+                  <td colSpan={12} className="px-5 py-10 text-center text-sm text-slate-500">
                     No visitors match this filter.
                   </td>
                 </tr>
@@ -638,12 +677,12 @@ export default function DashboardVisitorManagementPage() {
         </div>
       </div>
 
-      <div className="border border-[#e5e5e5] bg-white p-4 sm:p-5">
+      <div className={`${VM_CARD} p-5`}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-gray-900">Incoming Visitors</p>
-          <Link href={VISITOR_MANAGEMENT_PATH} className="text-xs font-semibold text-primary-700 hover:underline">
+          <p className="text-sm font-bold text-slate-900">Incoming visitors</p>
+          <a href="#visitor-register" className="text-xs font-semibold text-primary-700 hover:underline">
             See all
-          </Link>
+          </a>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {incomingVisitors.length ? (
@@ -719,7 +758,7 @@ function ActionBtn({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold border ${tones[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${tones[tone]}`}
     >
       {Icon ? <Icon className="w-3 h-3" /> : null}
       {label}

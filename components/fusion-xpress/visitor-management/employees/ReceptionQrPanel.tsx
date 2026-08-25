@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, QrCode } from "lucide-react";
+import { Download, Printer, QrCode, ScanLine } from "lucide-react";
 
 import EmployeeQrCode from "@/components/fusion-xpress/visitor-management/employees/EmployeeQrCode";
+import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
 import { downloadReceptionQrPdf } from "@/lib/employees/download-reception-qr-pdf";
 import { memberTypeLabel } from "@/lib/employees/real-estate";
-import { receptionGateQrPayload } from "@/lib/employees/reception-gate";
 import type { EmployeeMemberType } from "@/lib/employees/types";
 import { supabase } from "@/lib/supabase";
 
@@ -21,6 +21,24 @@ type ReceptionQrPanelProps = {
   organizationName?: string;
   canDownloadQr?: boolean;
 };
+
+function printGateQr(title: string, svgMarkup: string) {
+  const w = window.open("", "_blank", "noopener,noreferrer,width=480,height=640");
+  if (!w) return;
+  w.document.write(`<!doctype html><html><head><title>${title}</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, sans-serif; text-align: center; padding: 32px; color: #1a2332; }
+      h1 { font-size: 18px; margin-bottom: 8px; }
+      p { color: #64748b; font-size: 13px; }
+      .qr { margin: 24px auto; display: inline-block; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; }
+    </style></head><body>
+    <h1>${title}</h1>
+    <p>Fusion Xpress</p>
+    <div class="qr">${svgMarkup}</div>
+    <script>window.onload = function(){ window.print(); }<\/script>
+    </body></html>`);
+  w.document.close();
+}
 
 export default function ReceptionQrPanel({
   disabled,
@@ -88,6 +106,12 @@ export default function ReceptionQrPanel({
     }
   };
 
+  const handlePrint = (gate: GateInfo) => {
+    const svg = document.querySelector(`#fx-reception-gate-${gate.memberType} svg`);
+    if (!svg) return;
+    printGateQr(`${memberTypeLabel(gate.memberType)} reception QR`, svg.outerHTML);
+  };
+
   const gateCards = gates.length
     ? gates
     : isRealEstate
@@ -98,81 +122,89 @@ export default function ReceptionQrPanel({
       : [{ memberType: "staff" as const, gateToken: "" }];
 
   return (
-    <section className="rounded-xl border border-emerald-200 bg-emerald-50/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-emerald-100 bg-white/80 flex items-center gap-2">
-        <QrCode className="w-4 h-4 text-emerald-700" />
-        <span className="text-sm font-bold text-emerald-900">Reception QR (mount at desk)</span>
-      </div>
-      <div className="p-4 space-y-4">
-        <p className="text-xs text-emerald-900/90">
-          Download one QR per team and mount at reception. Staff enter their <strong>member ID</strong>{" "}
-          once to link their phone; after that they only tap sign in or out (no shared name list).
-          {isRealEstate ? " Use separate QR posters for Staff and CRM." : null}
+    <section className={`grid gap-4 ${isRealEstate ? "xl:grid-cols-2" : ""}`}>
+      {setupRequired ? (
+        <p className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Run <code className="font-mono text-xs">database/visitor_employees_patch_04_reception_gates.sql</code>{" "}
+          in Supabase to enable reception QR codes.
         </p>
-        {setupRequired ? (
-          <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            Run <code className="font-mono">database/visitor_employees_patch_04_reception_gates.sql</code>{" "}
-            in Supabase to enable reception QR codes.
-          </p>
-        ) : null}
-        {error ? (
-          <p className="text-xs text-red-800 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-            {error}
-          </p>
-        ) : null}
-        {loading ? (
-          <p className="text-sm text-gray-500">Loading reception codes…</p>
-        ) : (
-          <div className={`grid gap-4 ${isRealEstate ? "sm:grid-cols-2" : ""}`}>
-            {gateCards.map((gate) => {
-              const label = memberTypeLabel(gate.memberType);
-              const hasToken = Boolean(gate.gateToken);
-              const previewUrl = hasToken
-                ? receptionGateQrPayload(gate.gateToken, window.location.origin)
-                : "";
-              return (
+      ) : null}
+      {error ? (
+        <p className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>
+      ) : null}
+      {loading ? (
+        <p className="text-sm text-slate-500">Loading reception codes…</p>
+      ) : (
+        gateCards.map((gate) => {
+          const label = memberTypeLabel(gate.memberType);
+          const hasToken = Boolean(gate.gateToken);
+          return (
+            <div key={gate.memberType} className={`${VM_CARD} p-5`}>
+              <div className="mb-4 flex items-center gap-2">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-700">
+                  <QrCode className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-900">
+                    {isRealEstate ? `${label} reception QR` : "Employee QR code"}
+                  </h3>
+                  <p className="text-xs text-slate-500">Mount at reception for sign-in and sign-out.</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
                 <div
-                  key={gate.memberType}
-                  className="rounded-lg border border-white bg-white p-4 flex flex-col items-center gap-3"
+                  id={`fx-reception-gate-${gate.memberType}`}
+                  className="flex shrink-0 justify-center rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100"
                 >
-                  <p className="text-sm font-bold text-gray-900 w-full text-center">{label} team</p>
                   {hasToken ? (
-                    <EmployeeQrCode
-                      token={gate.gateToken}
-                      variant="gate"
-                      size={140}
-                      className="[&_span.font-mono]:hidden"
-                      employeeName={label}
-                    />
+                    <EmployeeQrCode token={gate.gateToken} variant="gate" size={148} showCaption={false} />
                   ) : (
-                    <div className="h-[140px] w-[140px] rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500 text-center px-2">
-                      Run patch 04 in Supabase
+                    <div className="flex h-[148px] w-[148px] items-center justify-center text-center text-xs text-slate-500">
+                      Reception QR not set up yet
                     </div>
                   )}
-                  {canDownloadQr ? (
-                    <button
-                      type="button"
-                      disabled={disabled || setupRequired || !hasToken || downloading === gate.memberType}
-                      onClick={() => void handlePdf(gate)}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                    >
-                      <Download className="w-4 h-4" />
-                      {downloading === gate.memberType ? "Creating PDF…" : `Download ${label} QR PDF`}
-                    </button>
-                  ) : (
-                    <p className="w-full text-center text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                      QR PDF download requires a Professional or Enterprise subscription.
-                    </p>
-                  )}
-                  {hasToken && previewUrl ? (
-                    <p className="text-[10px] text-gray-400 text-center break-all">{previewUrl}</p>
-                  ) : null}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                <ul className="space-y-3 text-sm text-slate-600">
+                  <li className="flex gap-2">
+                    <ScanLine className="mt-0.5 h-4 w-4 shrink-0 text-primary-700" />
+                    Staff scan this code at the desk, then enter their member ID once to link a phone.
+                  </li>
+                  <li className="flex gap-2">
+                    <QrCode className="mt-0.5 h-4 w-4 shrink-0 text-primary-700" />
+                    After linking, each scan records sign-in or sign-out and emails directors.
+                  </li>
+                </ul>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {canDownloadQr ? (
+                  <button
+                    type="button"
+                    disabled={disabled || setupRequired || !hasToken || downloading === gate.memberType}
+                    onClick={() => void handlePdf(gate)}
+                    className="inline-flex h-10 items-center gap-2 rounded-md bg-primary-700 px-4 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4" />
+                    {downloading === gate.memberType ? "Creating PDF…" : "Download QR"}
+                  </button>
+                ) : (
+                  <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    QR PDF download requires a Professional or Enterprise subscription.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={!hasToken}
+                  onClick={() => handlePrint(gate)}
+                  className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print QR
+                </button>
+              </div>
+            </div>
+          );
+        })
+      )}
     </section>
   );
 }

@@ -3,6 +3,7 @@
 import { Clock, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
 import { memberTypeBadgeClass, memberTypeLabel } from "@/lib/employees/real-estate";
 import {
   reportingWindowForMember,
@@ -143,10 +144,10 @@ export default function AttendanceEventLogPanel({
   };
 
   return (
-    <div className={`border border-[#e5e5e5] overflow-hidden bg-white ${className}`}>
-      <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex flex-wrap items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-sm font-bold text-gray-800">
-          <Clock className="w-4 h-4 text-gray-500" aria-hidden />
+    <div id="attendance-log" className={`${VM_CARD} overflow-hidden ${className}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
+        <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <Clock className="h-4 w-4 text-primary-700" aria-hidden />
           {title}
         </span>
         {onExportExcel ? (
@@ -154,7 +155,7 @@ export default function AttendanceEventLogPanel({
             type="button"
             disabled={setupRequired || exportingExcel || employees.length === 0}
             onClick={() => void onExportExcel()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-300 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-primary-50 disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" aria-hidden />
             {exportingExcel ? "Exporting…" : "Download Excel"}
@@ -194,26 +195,14 @@ export default function AttendanceEventLogPanel({
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="bg-[#f6f7f9] border-b border-gray-200">
-                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                  Name
-                </th>
-                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                  Status
-                </th>
-                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                  Sign in / out
-                </th>
-                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                  Time
-                </th>
-                <th className="px-4 py-3.5 text-left text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                  Device / browser
-                </th>
+              <tr className="bg-[#f4f7fb] text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th className="px-5 py-3">Name</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Sign in / out</th>
+                <th className="px-5 py-3">Time</th>
+                <th className="px-5 py-3">Device / browser</th>
                 {onSaveAttendanceTime ? (
-                  <th className="px-4 py-3.5 text-right text-[11px] uppercase tracking-wide font-semibold text-gray-500">
-                    Actions
-                  </th>
+                  <th className="px-5 py-3 text-right">Actions</th>
                 ) : null}
               </tr>
             </thead>
