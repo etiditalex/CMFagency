@@ -14,7 +14,7 @@ function createServiceClient() {
 }
 
 /**
- * Hourly (Vercel Cron): once voting has closed at midnight EAT, generate the gold
+ * Daily (Vercel Cron, 21:10 UTC / 00:10 EAT): once voting has closed at midnight EAT, generate the gold
  * winners PDF and the all-contestants PDF and email them to the voting admin.
  * Runs as a no-op until the close instant, then sends once.
  *

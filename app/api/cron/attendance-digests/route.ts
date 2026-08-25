@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * Hourly (Vercel Cron): send due daily / weekly / monthly attendance PDF digests.
- * Daily fires ~30 minutes after expected sign-out (or 17:30 EAT default).
+ * Daily (Vercel Cron, 18:00 UTC / 21:00 EAT): send due daily / weekly / monthly attendance PDF digests.
+ * Daily fires once the clock is past expected sign-out + 30 minutes, or from 20:00 EAT as a catch-up.
  * Weekly: Mondays from 08:00 EAT (previous Mon–Sun).
  * Monthly: 1st of month from 08:00 EAT (previous calendar month).
  *
