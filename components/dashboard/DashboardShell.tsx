@@ -214,8 +214,20 @@ function isActivePath(pathname: string, currentType: string | null, href: string
   if (!matchesPath) return false;
 
   const expectedType = query.get("type");
+  const type = String(currentType ?? "").toLowerCase();
+  const isTypedCampaignList =
+    pathname === "/dashboard/campaigns" && (type === "ticket" || type === "vote");
+
+  if (path === "/dashboard/campaigns") {
+    if (expectedType === "ticket" || expectedType === "vote") {
+      return pathname === "/dashboard/campaigns" && type === expectedType;
+    }
+    if (pathname === "/dashboard/campaigns") return !isTypedCampaignList;
+    return true;
+  }
+
   if (!expectedType) return true;
-  return String(currentType ?? "").toLowerCase() === expectedType.toLowerCase();
+  return type === expectedType.toLowerCase();
 }
 
 function isVisitorSection(pathname: string) {
@@ -807,13 +819,17 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     { key: "settings", label: "Application Settings" },
   ];
 
+  const isTicketingVotingWorkspace =
+    pathname === "/dashboard/campaigns" &&
+    (String(currentType ?? "").toLowerCase() === "ticket" || String(currentType ?? "").toLowerCase() === "vote");
   const isWidePage =
     isLeaveManagementPage ||
     isLeaveSettingsPage ||
     isSummaryReportsPage ||
     isPerEmployeeReportPage ||
     isEmployeesPage ||
-    isVisitorManagementPage;
+    isVisitorManagementPage ||
+    isTicketingVotingWorkspace;
   const isDashboardHome = pathname === "/dashboard";
 
   const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) =>
@@ -1070,7 +1086,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             <div className={isWidePage ? "max-w-none" : "mx-auto max-w-[1280px]"}>
               <div
                 className={
-                  isWidePage || isDashboardHome
+                  isWidePage || isDashboardHome || isTicketingVotingWorkspace
                     ? "p-0"
                     : "rounded-[12px] bg-white p-4 sm:p-6 md:p-8 shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]"
                 }

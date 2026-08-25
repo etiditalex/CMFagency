@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Minus, Plus, Ticket, Upload, Vote, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,6 +30,7 @@ function slugify(input: string) {
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const sp = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, hasFeature, features } = usePortal();
 
@@ -65,9 +66,12 @@ export default function NewCampaignPage() {
     if (portalLoading) return;
     const hasT = features.includes("ticketing");
     const hasV = features.includes("voting");
-    if (!hasT && hasV) setType("vote");
-    if (hasT && !hasV) setType("ticket");
-  }, [portalLoading, features]);
+    const requested = (sp?.get("type") ?? "").toLowerCase();
+    if (requested === "vote" && hasV) setType("vote");
+    else if (requested === "ticket" && hasT) setType("ticket");
+    else if (!hasT && hasV) setType("vote");
+    else if (hasT && !hasV) setType("ticket");
+  }, [portalLoading, features, sp]);
 
   useEffect(() => {
     // Auto-suggest slug if user hasn't typed one yet.
@@ -188,7 +192,8 @@ export default function NewCampaignPage() {
         if (contestantsErr) throw contestantsErr;
       }
 
-      router.push("/dashboard/campaigns");
+      const dest = type === "vote" ? "/dashboard/campaigns?type=vote" : "/dashboard/campaigns?type=ticket";
+      router.push(dest);
     } catch (e: any) {
       setError(e?.message ?? "Failed to create campaign");
     } finally {
@@ -212,6 +217,8 @@ export default function NewCampaignPage() {
 
   const canCreateTicket = hasFeature("ticketing");
   const canCreateVote = hasFeature("voting");
+  const backHref =
+    type === "vote" ? "/dashboard/campaigns?type=vote" : type === "ticket" ? "/dashboard/campaigns?type=ticket" : "/dashboard/campaigns";
 
   return (
     <div className="text-left">
@@ -223,8 +230,8 @@ export default function NewCampaignPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/campaigns" className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold">
-            Back to campaigns
+          <Link href={backHref} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 font-semibold">
+            Back
           </Link>
         </div>
       </div>

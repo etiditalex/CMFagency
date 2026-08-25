@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Copy, ExternalLink, FileEdit, LineChart, Pencil, Plus, Search, Trash2, Ticket, UserPlus, Vote, X } from "lucide-react";
 
+import TicketingVotingDashboard from "@/components/dashboard/TicketingVotingDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { normalizeSlug } from "@/lib/ensure-campaign-from-event";
@@ -26,6 +27,9 @@ type CampaignRow = {
   is_active: boolean;
   created_at: string;
   created_by?: string;
+  image_url?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
 };
 
 type CampaignStatsRow = {
@@ -78,7 +82,7 @@ export default function DashboardCampaignsPage() {
         let statsOwnedRes: { data: unknown; error: unknown } | null = null;
 
         const campaignsSelect =
-          "id,type,slug,title,currency,unit_amount,is_active,created_at,created_by";
+          "id,type,slug,title,currency,unit_amount,is_active,created_at,created_by,image_url,starts_at,ends_at";
 
         // Admins see all campaigns. Clients see only: (1) campaigns they created, (2) campaigns for events they own.
         let campaignRows: CampaignRow[] | null = null;
@@ -316,6 +320,12 @@ export default function DashboardCampaignsPage() {
     return "all";
   })() as CampaignTypeFilter;
 
+  useEffect(() => {
+    if (portalLoading) return;
+    if (filter === "ticket" && !hasFeature("ticketing")) router.replace("/dashboard");
+    if (filter === "vote" && !hasFeature("voting")) router.replace("/dashboard");
+  }, [filter, hasFeature, portalLoading, router]);
+
   const counts = useMemo(() => {
     const ticket = campaigns.filter((c) => c.type === "ticket").length;
     const vote = campaigns.filter((c) => c.type === "vote").length;
@@ -366,6 +376,95 @@ export default function DashboardCampaignsPage() {
 
   // If redirecting, render nothing to avoid flashing private UI
   if (!isAuthenticated || !user || !isPortalMember) return null;
+
+  const assignModal = assignCampaign ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[#1a2332]">Assign campaign to client</h3>
+              <button
+                type="button"
+                onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-gray-600 text-sm mb-4">
+              <strong>{assignCampaign.title}</strong> will appear in the selected client&apos;s dashboard with the same sales and transaction stats. The client may need to refresh their dashboard to see it.
+            </p>
+            {usersListLoading ? (
+              <p className="text-gray-500 text-sm">Loading users…</p>
+            ) : (
+              <>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Select user (client)</label>
+                <select
+                  value={assignTargetUserId}
+                  onChange={(e) => setAssignTargetUserId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
+                >
+                  <option value="">— Select —</option>
+                  {usersList.map((u) => (
+                    <option key={u.user_id} value={u.user_id}>
+                      {u.email} {u.role !== "client" ? `(${u.role})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-6 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
+                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignToClient}
+                    disabled={assignLoading || !assignTargetUserId}
+                    className="px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {assignLoading ? "Assigning…" : "Assign"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+  ) : null;
+
+  if (filter === "ticket" || filter === "vote") {
+    const typed = campaigns.filter((c) => c.type === filter);
+    return (
+      <>
+        {(error || sp?.get("error") === "access") && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">
+            {sp?.get("error") === "access"
+              ? "You don't have access to that campaign. You can only view and edit campaigns you created."
+              : error}
+          </div>
+        )}
+        <TicketingVotingDashboard
+          mode={filter}
+          campaigns={typed}
+          origin={origin}
+          userId={user.id}
+          isFullAdmin={isFullAdmin}
+          canOpenTicketing={hasFeature("ticketing")}
+          canOpenVoting={hasFeature("voting")}
+          canCreate={hasFeature("create_campaign")}
+          canEdit={hasFeature("create_campaign")}
+          canReport={hasFeature("reports")}
+          canDelete={hasFeature("create_campaign") || isFullAdmin}
+          deletingId={deletingId}
+          onCopyLink={(slug) => void copyLink(slug)}
+          onDelete={(id, title) => void handleDelete(id, title)}
+          onAssign={isFullAdmin ? (c) => { setAssignCampaign(c); setAssignTargetUserId(""); } : undefined}
+        />
+        {assignModal}
+      </>
+    );
+  }
 
   return (
     <div className="text-left">
@@ -461,11 +560,7 @@ export default function DashboardCampaignsPage() {
                 ? `No campaigns match "${searchQuery.trim()}". Try a different search or clear the search.`
                 : filter === "drafts"
                 ? "You don't have any draft campaigns. Unpublished (inactive) campaigns appear here."
-                : filter === "vote"
-                ? "You don’t have any voting campaigns yet. Create one to start collecting votes."
-                : filter === "ticket"
-                  ? "You don’t have any ticketing campaigns yet. Create one to start selling tickets."
-                  : "You don’t have any campaigns yet. Create your first one to generate a shareable link."}
+                : "You don’t have any campaigns yet. Create your first one to generate a shareable link."}
             </p>
             <div className="mt-6">
               <Link
@@ -599,62 +694,7 @@ export default function DashboardCampaignsPage() {
         )}
       </div>
 
-      {/* Assign campaign to client modal (admin only) */}
-      {assignCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-[#1a2332]">Assign campaign to client</h3>
-              <button
-                type="button"
-                onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              <strong>{assignCampaign.title}</strong> will appear in the selected client&apos;s dashboard with the same sales and transaction stats. The client may need to refresh their dashboard to see it.
-            </p>
-            {usersListLoading ? (
-              <p className="text-gray-500 text-sm">Loading users…</p>
-            ) : (
-              <>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Select user (client)</label>
-                <select
-                  value={assignTargetUserId}
-                  onChange={(e) => setAssignTargetUserId(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900"
-                >
-                  <option value="">— Select —</option>
-                  {usersList.map((u) => (
-                    <option key={u.user_id} value={u.user_id}>
-                      {u.email} {u.role !== "client" ? `(${u.role})` : ""}
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-6 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setAssignCampaign(null); setAssignTargetUserId(""); }}
-                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAssignToClient}
-                    disabled={assignLoading || !assignTargetUserId}
-                    className="px-4 py-2 rounded-lg bg-primary-700 text-white font-semibold hover:bg-primary-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {assignLoading ? "Assigning…" : "Assign"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {assignModal}
     </div>
   );
 }
