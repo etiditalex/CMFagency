@@ -58,6 +58,7 @@ export async function GET(
 
   const safeRedirect = resolveSafeImageRedirectUrl(raw);
   if (safeRedirect) {
+    // nosemgrep: javascript.express.open-redirect-deepsemgrep.open-redirect-deepsemgrep -- host validated against allowlist in resolveSafeImageRedirectUrl
     return NextResponse.redirect(safeRedirect);
   }
 
