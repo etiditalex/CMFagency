@@ -1,9 +1,8 @@
-const SITE_ORIGIN =
-  (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" && process.env.NEXT_PUBLIC_SITE_URL.trim()) ||
-  "https://cmfagency.co.ke";
+import { resolveSafeImageRedirectUrl } from "@/lib/safe-image-redirect";
+import { SITE_URL } from "@/lib/site-url";
 
 function siteBase(): string {
-  return SITE_ORIGIN.replace(/\/$/, "");
+  return SITE_URL.replace(/\/$/, "");
 }
 
 /**
@@ -28,9 +27,8 @@ export function resolveEventShareImageUrl(options: {
     if (trimmed.startsWith("data:") && options.slug) {
       return `${siteBase()}/events/share-image/${encodeURIComponent(options.slug)}`;
     }
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    if (trimmed.startsWith("//")) return `https:${trimmed}`;
-    if (trimmed.startsWith("/")) return `${siteBase()}${trimmed}`;
+    const safe = resolveSafeImageRedirectUrl(trimmed);
+    if (safe) return safe;
   }
   return options.generatedOgImageUrl;
 }
@@ -45,5 +43,5 @@ export function shareableEventImageUrlForOgRender(
   if (trimmed.startsWith("data:") && slug) {
     return `${siteBase()}/events/share-image/${encodeURIComponent(slug)}`;
   }
-  return trimmed;
+  return resolveSafeImageRedirectUrl(trimmed) ?? "";
 }

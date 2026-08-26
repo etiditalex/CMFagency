@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
+import { resolveSafeImageRedirectUrl } from "@/lib/safe-image-redirect";
 
 export const runtime = "nodejs";
 
 const MAX_BYTES = 4 * 1024 * 1024;
-
-const SITE_ORIGIN =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
 
 function galleryFirstString(gallery: unknown): string | null {
   if (!Array.isArray(gallery) || gallery.length === 0) return null;
@@ -58,14 +56,9 @@ export async function GET(
     return NextResponse.redirect(EVENTS_BANNER_OG.url);
   }
 
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return NextResponse.redirect(raw);
-  }
-  if (raw.startsWith("//")) {
-    return NextResponse.redirect(`https:${raw}`);
-  }
-  if (raw.startsWith("/")) {
-    return NextResponse.redirect(`${SITE_ORIGIN}${raw}`);
+  const safeRedirect = resolveSafeImageRedirectUrl(raw);
+  if (safeRedirect) {
+    return NextResponse.redirect(safeRedirect);
   }
 
   const dataMatch = raw.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);

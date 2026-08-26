@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 import { DEFAULT_BLOG_SHARE_IMAGE } from "@/lib/blog-share-image";
+import { resolveSafeImageRedirectUrl } from "@/lib/safe-image-redirect";
 
 const MAX_BYTES = 4 * 1024 * 1024;
-
-const SITE_ORIGIN =
-  (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
 
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug")?.trim();
@@ -32,14 +30,9 @@ export async function GET(req: NextRequest) {
 
   const raw = String(data.image_url).trim();
 
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return NextResponse.redirect(raw);
-  }
-  if (raw.startsWith("//")) {
-    return NextResponse.redirect(`https:${raw}`);
-  }
-  if (raw.startsWith("/")) {
-    return NextResponse.redirect(`${SITE_ORIGIN}${raw}`);
+  const safeRedirect = resolveSafeImageRedirectUrl(raw);
+  if (safeRedirect) {
+    return NextResponse.redirect(safeRedirect);
   }
 
   const dataMatch = raw.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);

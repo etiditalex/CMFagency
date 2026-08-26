@@ -1,13 +1,12 @@
+import { resolveSafeImageRedirectUrl } from "@/lib/safe-image-redirect";
+import { SITE_URL } from "@/lib/site-url";
+
 /** Default OG / listing hero when a post has no shareable image. */
 export const DEFAULT_BLOG_SHARE_IMAGE =
   "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg";
 
-const SITE_ORIGIN =
-  (typeof process.env.NEXT_PUBLIC_SITE_URL === "string" && process.env.NEXT_PUBLIC_SITE_URL.trim()) ||
-  "https://cmfagency.co.ke";
-
 function siteBase(): string {
-  return SITE_ORIGIN.replace(/\/$/, "");
+  return SITE_URL.replace(/\/$/, "");
 }
 
 /**
@@ -22,17 +21,5 @@ export function resolveBlogShareImageUrl(slug: string, imageUrl: string | null |
     return `${siteBase()}/api/blogs/og-image?slug=${encodeURIComponent(slug)}`;
   }
 
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
-
-  if (trimmed.startsWith("//")) {
-    return `https:${trimmed}`;
-  }
-
-  if (trimmed.startsWith("/")) {
-    return `${siteBase()}${trimmed}`;
-  }
-
-  return DEFAULT_BLOG_SHARE_IMAGE;
+  return resolveSafeImageRedirectUrl(trimmed) ?? DEFAULT_BLOG_SHARE_IMAGE;
 }
