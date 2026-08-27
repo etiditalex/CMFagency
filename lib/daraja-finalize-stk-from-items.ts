@@ -148,7 +148,7 @@ export async function finalizeDarajaStkFromMetadataItems(
     const toEmailMismatch = tx.email?.trim?.();
     if (toEmailMismatch) {
       sendPurchaseReminderByRef(tx.reference, supabase).catch((err) =>
-        console.warn(`${logPrefix} Purchase reminder email error:`, err instanceof Error ? err.message : err)
+        console.warn(logPrefix, "Purchase reminder email error:", err instanceof Error ? err.message : err)
       );
     }
     return "amount_mismatch";
@@ -178,7 +178,7 @@ export async function finalizeDarajaStkFromMetadataItems(
     const invId = String(updatedMeta.service_invoice_id);
     const mark = await markServiceInvoicePaid(supabase, invId, tx.id);
     if (!mark.ok) {
-      console.error(`${logPrefix} service invoice mark failed:`, mark.error);
+      console.error(logPrefix, "service invoice mark failed:", mark.error);
     }
     await supabase
       .from("transactions")

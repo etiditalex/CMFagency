@@ -47,13 +47,13 @@ export async function upsertVoteOrTicketForSuccessfulTx(
       .update({ campaign_type: effective } as Record<string, unknown>)
       .eq("id", args.id);
     if (patchErr) {
-      console.warn(`${logPrefix} campaign_type backfill skipped:`, patchErr.message);
+      console.warn(logPrefix, "campaign_type backfill skipped:", patchErr.message);
     }
   }
 
   if (effective === "vote") {
     if (!args.contestant_id) {
-      console.error(`${logPrefix} Vote success but contestant_id is null`, args.id);
+      console.error(logPrefix, "Vote success but contestant_id is null", args.id);
       return { fulfillErr: "vote_missing_contestant_id", effectiveType: effective };
     }
     const { error } = await supabase.from("votes").upsert(
@@ -66,7 +66,7 @@ export async function upsertVoteOrTicketForSuccessfulTx(
       { onConflict: "transaction_id" }
     );
     if (error) {
-      console.error(`${logPrefix} votes upsert failed:`, error.message);
+      console.error(logPrefix, "votes upsert failed:", error.message);
       return { fulfillErr: error.message, effectiveType: effective };
     }
     return { fulfillErr: null, effectiveType: effective };
@@ -82,7 +82,7 @@ export async function upsertVoteOrTicketForSuccessfulTx(
       { onConflict: "transaction_id" }
     );
     if (error) {
-      console.error(`${logPrefix} ticket_issues upsert failed:`, error.message);
+      console.error(logPrefix, "ticket_issues upsert failed:", error.message);
       return { fulfillErr: error.message, effectiveType: effective };
     }
     return { fulfillErr: null, effectiveType: effective };

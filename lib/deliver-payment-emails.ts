@@ -290,17 +290,17 @@ export async function deliverPaymentEmailsOnce(
 
     if (result.ok) {
       await markPaymentEmailSent(supabase, tx.id);
-      console.log(`${logPrefix} sent to ${tx.email} (ref: ${tx.reference})`);
+      console.log(logPrefix, "sent to", tx.email, "ref:", tx.reference);
       return { ok: true };
     }
 
     await releasePaymentEmailClaim(supabase, tx.id);
-    console.warn(`${logPrefix} send failed for ${tx.reference}:`, result.error);
+    console.warn(logPrefix, "send failed for", tx.reference, result.error);
     return { ok: false, error: result.error };
   } catch (e) {
     await releasePaymentEmailClaim(supabase, tx.id);
     const msg = e instanceof Error ? e.message : "Unknown error";
-    console.warn(`${logPrefix} send error for ${tx.reference}:`, msg);
+    console.warn(logPrefix, "send error for", tx.reference, msg);
     return { ok: false, error: msg };
   }
 }

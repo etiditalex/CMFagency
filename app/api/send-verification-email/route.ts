@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
           data = await response.json();
         } catch (parseError) {
           const text = await response.text();
-          console.error(`❌ Attempt ${attempt}: Failed to parse response:`, text);
+          console.error("❌ Attempt failed to parse response:", attempt, text);
           if (attempt === maxRetries) {
             return NextResponse.json({ 
               success: false,
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
 
         if (!response.ok) {
           const errorMessage = data.message || data.error?.message || `HTTP ${response.status}`;
-          console.error(`❌ Attempt ${attempt} failed:`, {
+          console.error("❌ Attempt failed:", attempt, {
             status: response.status,
             error: errorMessage,
             fullResponse: data,
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         });
         
       } catch (error: any) {
-        console.error(`❌ Attempt ${attempt} error:`, error.message);
+        console.error("❌ Attempt error:", attempt, error.message);
         
         if (attempt === maxRetries) {
           return NextResponse.json({ 
