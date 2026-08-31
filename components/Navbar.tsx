@@ -94,6 +94,7 @@ export default function Navbar() {
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
     { href: "/blogs", label: "Blogs/News" },
+    { href: "/download", label: "Download" },
   ];
 
   const servicesLinks = [

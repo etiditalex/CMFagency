@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { Download } from "lucide-react";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 import type { ServiceShowcaseBand } from "./types";
 
@@ -99,6 +100,22 @@ export default function ServiceShowcaseBandSection({ band }: ServiceShowcaseBand
                 </Link>
                 {band.link.suffix ? ` ${band.link.suffix}` : null}
               </p>
+            ) : null}
+
+            {band.cta ? (
+              <a
+                href={band.cta.href}
+                {...(band.cta.download
+                  ? {
+                      download:
+                        band.cta.download === true ? true : band.cta.download,
+                    }
+                  : {})}
+                className="btn-primary mt-6 inline-flex items-center gap-2"
+              >
+                {band.cta.download ? <Download className="h-5 w-5" aria-hidden /> : null}
+                {band.cta.label}
+              </a>
             ) : null}
           </motion.div>
         </div>

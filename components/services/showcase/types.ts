@@ -20,6 +20,12 @@ export type ServiceShowcaseBand = {
     prefix?: string;
     suffix?: string;
   };
+  cta?: {
+    href: string;
+    label: string;
+    /** When set, the browser downloads the file instead of navigating. */
+    download?: string | true;
+  };
 };
 
 export type ServiceShowcaseConfig = {
