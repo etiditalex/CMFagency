@@ -6,6 +6,7 @@ import { MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
+import ServiceShowcaseHero from "@/components/services/showcase/ServiceShowcaseHero";
 import { eventListDayKey, isEventPast } from "@/lib/event-status";
 import { useNowTick } from "@/lib/hooks/useNowTick";
 import { supabase } from "@/lib/supabase";
@@ -25,6 +26,10 @@ type EventRow = {
 };
 
 const DEFAULT_IMG = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg";
+const PAST_EVENTS_HERO = {
+  src: DEFAULT_IMG,
+  alt: "Audience and stage at a Changer Fusions past event",
+};
 
 export default function PastEventsPage() {
   const now = useNowTick();
@@ -52,44 +57,14 @@ export default function PastEventsPage() {
   const pastEvents = events.filter((event) => isEventPast(event, now));
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative w-full h-screen overflow-hidden flex items-center">
-        {/* Background Video */}
-        <div className="absolute inset-0 w-full h-full">
-          <iframe
-            src="https://www.youtube.com/embed/GpbNlgVikiE?autoplay=1&mute=1&loop=1&playlist=GpbNlgVikiE&controls=0&rel=0&modestbranding=1&playsinline=1"
-            title="Past Events Background Video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ 
-              border: "none",
-              pointerEvents: "none"
-            }}
-          />
-          {/* Dark overlay for better text readability */}
-          <div className="absolute inset-0 bg-black/60"></div>
-        </div>
-        
-        {/* Content */}
-        <div className="container-custom relative z-10 px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
-              Past Events
-            </h1>
-            <p className="text-lg text-white/90">
-              Relive the memorable moments from our past events. Explore event details, galleries, and share your feedback.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <ServiceShowcaseHero
+        watermark="Events"
+        title="Past Events"
+        description="Relive the memorable moments from our past events. Explore event details, galleries, and share your feedback."
+        image={PAST_EVENTS_HERO}
+        headingId="past-events-hero-heading"
+      />
 
-      {/* Events List */}
       <section className="section-padding bg-white py-16">
         <div className="container-custom max-w-6xl">
           {loading ? (
