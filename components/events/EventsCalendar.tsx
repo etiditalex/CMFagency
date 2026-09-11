@@ -19,6 +19,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { eventPublicPath } from "@/lib/event-status";
 
 type ViewMode = "month" | "week" | "day";
 
@@ -28,6 +29,7 @@ type EventRow = {
   title: string;
   event_date: string;
   end_date: string | null;
+  time?: string | null;
 };
 
 const CFMA_2026: EventRow = {
@@ -36,13 +38,13 @@ const CFMA_2026: EventRow = {
   title: "Coast Fashion and Modelling Awards 2026 (CMFA)",
   event_date: "2026-08-15",
   end_date: null,
+  time: "6:50 PM",
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
-function eventDetailHref(eventDate: string, slug: string): string {
-  const today = format(new Date(), "yyyy-MM-dd");
-  return eventDate >= today ? `/events/upcoming/${slug}` : `/events/past/${slug}`;
+function eventDetailHref(event: EventRow): string {
+  return eventPublicPath(event);
 }
 
 /** Dates (yyyy-MM-dd) an event occupies from event_date through end_date inclusive. */
@@ -75,7 +77,7 @@ export default function EventsCalendar() {
     (async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,end_date")
+        .select("id,slug,title,event_date,end_date,time")
         .order("event_date", { ascending: true });
       if (cancelled) return;
       const rows = (error ? [] : (data ?? [])) as EventRow[];
@@ -228,7 +230,7 @@ export default function EventsCalendar() {
                         {dayEvents.map((e) => (
                           <Link
                             key={`${e.id}-${format(day, "yyyy-MM-dd")}`}
-                            href={eventDetailHref(e.event_date, e.slug)}
+                            href={eventDetailHref(e)}
                             className="block truncate rounded bg-primary-600 px-1 py-0.5 text-[10px] font-semibold text-white hover:bg-primary-700 sm:text-xs"
                             title={e.title}
                           >
@@ -257,7 +259,7 @@ export default function EventsCalendar() {
                         {dayEvents.map((e) => (
                           <li key={`${e.id}-${format(day, "yyyy-MM-dd")}`}>
                             <Link
-                              href={eventDetailHref(e.event_date, e.slug)}
+                              href={eventDetailHref(e)}
                               className="block rounded bg-primary-600 px-1.5 py-1 text-[11px] font-semibold leading-tight text-white hover:bg-primary-700 sm:text-xs"
                             >
                               {e.title}
@@ -279,7 +281,7 @@ export default function EventsCalendar() {
                   eventsForDay(events, cursor).map((e) => (
                     <li key={e.id}>
                       <Link
-                        href={eventDetailHref(e.event_date, e.slug)}
+                        href={eventDetailHref(e)}
                         className="inline-block rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700"
                       >
                         {e.title}

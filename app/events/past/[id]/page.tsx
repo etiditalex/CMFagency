@@ -5,8 +5,9 @@ import { motion } from "framer-motion";
 import { Calendar, CalendarPlus, Download, MapPin, ArrowLeft, ExternalLink, Star, Send, CheckCircle, Ticket, Clock } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { isEventUpcoming } from "@/lib/event-status";
 
 type DbEvent = {
   id: string;
@@ -185,6 +186,7 @@ const pastEventsData: { [key: string]: any } = {
 
 export default function PastEventDetailPage() {
   const params = useParams<{ id?: string | string[] }>();
+  const router = useRouter();
   const idParam = params?.id;
   const slugParam = Array.isArray(idParam) ? idParam[0] : idParam;
 
@@ -205,17 +207,24 @@ export default function PastEventDetailPage() {
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,venue,hosted_by,gallery,ticket_campaign_slug,payment_link,document_url,document_label,map_url")
         .eq("slug", slugParam)
-        .lt("event_date", format(new Date(), "yyyy-MM-dd"))
         .maybeSingle();
-      if (!cancelled) {
-        if (!error && data) setDbEvent(data as DbEvent);
-        else setNotFound(true);
+      if (cancelled) return;
+      if (!error && data) {
+        const event = data as DbEvent;
+        if (isEventUpcoming(event)) {
+          router.replace(`/events/upcoming/${slugParam}`);
+        } else {
+          setDbEvent(event);
+          setLoading(false);
+        }
+      } else {
+        setNotFound(true);
         setLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [hardcodedEvent, slugParam]);
+  }, [hardcodedEvent, router, slugParam]);
 
   const event = hardcodedEvent ?? (dbEvent ? {
     title: dbEvent.title,

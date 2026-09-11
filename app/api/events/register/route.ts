@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { randomBytes } from "crypto";
 import { sendEventInviteEmail } from "@/lib/send-event-invite-email";
+import { isEventUpcoming } from "@/lib/event-status";
 
 export const runtime = "nodejs";
 
@@ -40,17 +41,15 @@ export async function POST(req: NextRequest) {
 
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  const today = new Date().toISOString().slice(0, 10);
   const { data: event, error: eventErr } = await supabase
     .from("fusion_events")
-    .select("id, slug, title, event_date, time, location, venue, map_url")
+    .select("id, slug, title, event_date, end_date, time, location, venue, map_url")
     .eq("slug", slug)
     .eq("is_live", true)
     .eq("free_registration", true)
-    .gte("event_date", today)
     .maybeSingle();
 
-  if (eventErr || !event) {
+  if (eventErr || !event || !isEventUpcoming(event as { event_date: string; end_date?: string | null; time?: string | null })) {
     return NextResponse.json(
       { error: "Event not found or not open for free registration" },
       { status: 404 }

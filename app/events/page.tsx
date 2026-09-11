@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Search, Rocket, Briefcase, BookOpen, Users, Sparkles } from "lucide-react";
+import { Calendar, Search, Rocket, Briefcase, BookOpen, Users, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { format } from "date-fns";
+import { isEventUpcoming } from "@/lib/event-status";
+import { useNowTick } from "@/lib/hooks/useNowTick";
 import { supabase } from "@/lib/supabase";
 
 type EventRow = {
@@ -13,6 +14,7 @@ type EventRow = {
   slug: string;
   title: string;
   event_date: string;
+  end_date: string | null;
   location: string | null;
   time: string | null;
   description: string | null;
@@ -48,6 +50,7 @@ const getIconGradient = (index: number) => {
 type DisplayEvent = EventRow & { status: "upcoming" | "past" };
 
 function EventsPageContent() {
+  const now = useNowTick();
   const searchParams = useSearchParams();
   const urlFilter = searchParams?.get("filter");
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">(
@@ -55,7 +58,7 @@ function EventsPageContent() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
-  const [events, setEvents] = useState<DisplayEvent[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,26 +71,24 @@ function EventsPageContent() {
 
   useEffect(() => {
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,location,time,description,image_url,category")
+        .select("id,slug,title,event_date,end_date,location,time,description,image_url,category")
         .order("event_date", { ascending: false });
       if (!cancelled) {
-        if (!error && data) {
-          const display: DisplayEvent[] = (data as EventRow[]).map((e) => ({
-            ...e,
-            status: e.event_date >= today ? "upcoming" : "past",
-          }));
-          setEvents(display);
-        }
+        if (!error && data) setEvents(data as EventRow[]);
         setLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
   }, []);
+
+  const displayEvents: DisplayEvent[] = events.map((e) => ({
+    ...e,
+    status: isEventUpcoming(e, now) ? "upcoming" : "past",
+  }));
 
   const categories = [
     "All",
@@ -98,7 +99,7 @@ function EventsPageContent() {
     "Student Engagement",
   ];
 
-  const filteredEvents = events.filter((event) => {
+  const filteredEvents = displayEvents.filter((event) => {
     const matchesFilter = filter === "all" || event.status === filter;
     const desc = event.description ?? "";
     const matchesSearch =

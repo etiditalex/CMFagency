@@ -15,10 +15,11 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 import CfmaShowcasePage from "@/components/events/cfma/CfmaShowcasePage";
+import { isEventUpcoming } from "@/lib/event-status";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { supabase } from "@/lib/supabase";
 
@@ -91,6 +92,7 @@ const upcomingEventsData: Record<
     fullDescription?: string;
     image: string;
     isCfma?: boolean;
+    time?: string;
   }
 > = {
   [CFMA_2026_ID]: {
@@ -102,6 +104,7 @@ const upcomingEventsData: Record<
     image:
       "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
     isCfma: true,
+    time: "6:50 PM",
   },
 };
 
@@ -515,38 +518,57 @@ function GenericUpcomingEventDetail({
 
 export default function UpcomingEventDetailPage() {
   const params = useParams<{ id?: string | string[] }>();
+  const router = useRouter();
   const idParam = params?.id;
   const slugParam = Array.isArray(idParam) ? idParam[0] : idParam;
   const hardcodedEvent = slugParam ? upcomingEventsData[slugParam] : undefined;
+  const hardcodedStillUpcoming =
+    !!hardcodedEvent &&
+    isEventUpcoming({
+      event_date: format(hardcodedEvent.date, "yyyy-MM-dd"),
+      time: hardcodedEvent.time ?? null,
+    });
 
   const [dbEvent, setDbEvent] = useState<DbEvent | null>(null);
-  const [loading, setLoading] = useState(!!slugParam && !hardcodedEvent);
+  const [loading, setLoading] = useState(!!slugParam && !hardcodedStillUpcoming);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (hardcodedEvent || !slugParam) {
-      if (!slugParam) setNotFound(true);
+    if (!slugParam) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+    if (hardcodedStillUpcoming) {
       setLoading(false);
       return;
     }
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,full_description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,payment_link,document_url,document_label,map_url,gallery,image_focus,free_registration,lipa_pole_pole,is_live")
         .eq("slug", slugParam)
-        .gte("event_date", today)
         .maybeSingle();
-      if (!cancelled) {
-        if (!error && data) setDbEvent(data as DbEvent);
-        else setNotFound(true);
+      if (cancelled) return;
+      if (!error && data) {
+        const event = data as DbEvent;
+        if (isEventUpcoming(event)) {
+          setDbEvent(event);
+          setLoading(false);
+        } else {
+          router.replace(`/events/past/${slugParam}`);
+        }
+      } else if (hardcodedEvent) {
+        router.replace("/events/past");
+      } else {
+        setNotFound(true);
         setLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [hardcodedEvent, slugParam]);
+  }, [hardcodedEvent, hardcodedStillUpcoming, router, slugParam]);
 
   if (loading) {
     return (
@@ -559,7 +581,7 @@ export default function UpcomingEventDetailPage() {
     );
   }
 
-  if (notFound || (!hardcodedEvent && !dbEvent)) {
+  if (notFound || (!hardcodedStillUpcoming && !dbEvent)) {
     return (
       <div className="pt-20 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -572,11 +594,11 @@ export default function UpcomingEventDetailPage() {
     );
   }
 
-  if (hardcodedEvent?.isCfma) {
+  if (hardcodedStillUpcoming && hardcodedEvent?.isCfma) {
     return <CfmaShowcasePage />;
   }
 
-  if (hardcodedEvent) {
+  if (hardcodedStillUpcoming && hardcodedEvent) {
     return <GenericUpcomingEventDetail event={hardcodedEvent} />;
   }
 

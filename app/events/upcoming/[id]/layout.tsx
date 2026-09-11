@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import CoastFlashSaleStructuredData from "@/components/CoastFlashSaleStructuredData";
 import { resolveEventShareImageUrl } from "@/lib/event-share-image";
 import { getFusionEventShareFieldsBySlug, getUpcomingEventBySlug } from "@/lib/events-server";
+import { isEventUpcoming } from "@/lib/event-status";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 const CFMA_SLUG = "coast-fashion-modelling-awards-2026";
@@ -122,7 +123,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  if (slug === CFMA_SLUG) {
+  if (slug === CFMA_SLUG && isEventUpcoming({ event_date: "2026-08-15", time: "6:50 PM" })) {
     return {
       title: CFMA_META.title,
       description: CFMA_META.description,

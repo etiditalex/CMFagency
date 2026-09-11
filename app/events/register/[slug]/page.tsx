@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Calendar, MapPin, Send, ChevronLeft } from "lucide-react";
 import { format } from "date-fns";
+import { isEventUpcoming } from "@/lib/event-status";
 import { supabase } from "@/lib/supabase";
 
 type EventInfo = {
@@ -12,6 +13,7 @@ type EventInfo = {
   slug: string;
   title: string;
   event_date: string;
+  end_date: string | null;
   time: string | null;
   location: string | null;
   venue: string | null;
@@ -42,19 +44,17 @@ export default function EventRegisterPage() {
       return;
     }
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
     (async () => {
       setLoading(true);
       setError(null);
       const { data, error } = await supabase
         .from("fusion_events")
-        .select("id,slug,title,event_date,time,location,venue,description,free_registration,is_live")
+        .select("id,slug,title,event_date,end_date,time,location,venue,description,free_registration,is_live")
         .eq("slug", slug)
         .eq("free_registration", true)
-        .gte("event_date", today)
         .maybeSingle();
       if (!cancelled) {
-        if (error || !data) {
+        if (error || !data || !isEventUpcoming(data as EventInfo)) {
           setError("Event not found or registration is not open.");
           setEvent(null);
         } else {

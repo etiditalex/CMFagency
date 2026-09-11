@@ -7,7 +7,9 @@ import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
+import { eventListDayKey, isEventUpcoming } from "@/lib/event-status";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
+import { useNowTick } from "@/lib/hooks/useNowTick";
 import { supabase } from "@/lib/supabase";
 
 const DEFAULT_HERO = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
@@ -47,7 +49,6 @@ function listClosedLabel(slug: string): string {
   return slug === FLASH_SALE_SLUG ? "Flash sale closed for now" : "Sales closed for now";
 }
 
-// CFMA 2026: Always show in upcoming list (alongside events from Fusion Xpress dashboard)
 const CFMA_2026_EVENT: EventRow = {
   id: "cfma-2026-default",
   slug: "coast-fashion-modelling-awards-2026",
@@ -68,6 +69,7 @@ const CFMA_2026_EVENT: EventRow = {
 };
 
 export default function UpcomingEventsPage() {
+  const now = useNowTick();
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [tieredEvent, setTieredEvent] = useState<EventRow | null>(null);
   const [buyLoadingEventId, setBuyLoadingEventId] = useState<string | null>(null);
@@ -76,12 +78,12 @@ export default function UpcomingEventsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = eventListDayKey();
     const load = async () => {
       const { data, error: queryError } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,description,image_url,default_image_url,ticket_campaign_slug,ticket_price_kes,ticket_tiers,image_focus,free_registration,lipa_pole_pole,is_live")
-        .gte("event_date", today)
+        .or(`end_date.gte.${today},event_date.gte.${today}`)
         .order("event_date", { ascending: true });
       if (!cancelled) {
         const dbEvents = (queryError ? [] : (data ?? [])) as EventRow[];
@@ -97,6 +99,8 @@ export default function UpcomingEventsPage() {
     return () => { cancelled = true; };
   }, []);
 
+  const upcomingEvents = events.filter((event) => isEventUpcoming(event, now));
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Gray page background shows above the grid (like listing sites); extra top padding clears the nav + adds breathing room before cards */}
@@ -107,7 +111,7 @@ export default function UpcomingEventsPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading events...</p>
             </div>
-          ) : events.length === 0 ? (
+          ) : upcomingEvents.length === 0 ? (
             <div className="text-center py-12 text-gray-600 max-w-xl mx-auto space-y-3">
               <p className="text-lg font-medium text-gray-800">No upcoming dates are published yet.</p>
               <p className="text-sm leading-relaxed">
@@ -124,7 +128,7 @@ export default function UpcomingEventsPage() {
             </div>
           ) : (
           <div className="mt-2 grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
-            {events.map((event, index) => {
+            {upcomingEvents.map((event, index) => {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_HERO;
               const objectPosition = (event.image_focus as string | null) || "center center";

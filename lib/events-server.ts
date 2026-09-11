@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
+import { isEventUpcoming } from "@/lib/event-status";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -25,15 +26,14 @@ export type UpcomingEventRow = {
 export const getUpcomingEventBySlug = cache(
   async (slug: string): Promise<UpcomingEventRow | null> => {
     if (!slug || !supabase) return null;
-    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("fusion_events")
       .select("id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url, is_live")
       .eq("slug", slug)
-      .gte("event_date", today)
       .maybeSingle();
-    if (error) return null;
-    return data as UpcomingEventRow | null;
+    if (error || !data) return null;
+    const event = data as UpcomingEventRow;
+    return isEventUpcoming(event) ? event : null;
   }
 );
 
@@ -78,16 +78,15 @@ export const getFusionEventShareFieldsBySlug = cache(
 export const getPastEventBySlug = cache(
   async (slug: string): Promise<PastEventRow | null> => {
     if (!slug || !supabase) return null;
-    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("fusion_events")
       .select(
         "id, slug, title, event_date, end_date, location, time, description, full_description, image_url, default_image_url, gallery"
       )
       .eq("slug", slug)
-      .lt("event_date", today)
       .maybeSingle();
-    if (error) return null;
-    return data as PastEventRow | null;
+    if (error || !data) return null;
+    const event = data as PastEventRow;
+    return isEventUpcoming(event) ? null : event;
   }
 );

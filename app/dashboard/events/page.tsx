@@ -7,6 +7,7 @@ import { ExternalLink, Pencil, Plus, Radio, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { isEventUpcoming } from "@/lib/event-status";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
 
@@ -15,6 +16,8 @@ type EventRow = {
   slug: string;
   title: string;
   event_date: string;
+  end_date?: string | null;
+  time?: string | null;
   location: string | null;
   category: string | null;
   image_url: string | null;
@@ -59,7 +62,7 @@ export default function DashboardEventsPage() {
         let query = supabase
           .from("fusion_events")
           .select(
-            "id,slug,title,event_date,location,category,image_url,created_at,created_by,ticket_price_kes,lipa_pole_pole,is_live"
+            "id,slug,title,event_date,end_date,time,location,category,image_url,created_at,created_by,ticket_price_kes,lipa_pole_pole,is_live"
           )
           .order("event_date", { ascending: false });
 
@@ -83,11 +86,9 @@ export default function DashboardEventsPage() {
     };
   }, [hasFeature, isFullAdmin, user?.id]);
 
-  const today = format(new Date(), "yyyy-MM-dd");
-
   const filtered = events.filter((e) => {
-    if (filter === "upcoming") return e.event_date >= today;
-    if (filter === "past") return e.event_date < today;
+    if (filter === "upcoming") return isEventUpcoming(e);
+    if (filter === "past") return !isEventUpcoming(e);
     return true;
   });
 
@@ -137,8 +138,8 @@ export default function DashboardEventsPage() {
 
   if (!isAuthenticated || !user || !isPortalMember || !hasFeature("events")) return null;
 
-  const upcomingCount = events.filter((e) => e.event_date >= today).length;
-  const pastCount = events.filter((e) => e.event_date < today).length;
+  const upcomingCount = events.filter((e) => isEventUpcoming(e)).length;
+  const pastCount = events.filter((e) => !isEventUpcoming(e)).length;
 
   return (
     <div className="text-left">
@@ -211,7 +212,7 @@ export default function DashboardEventsPage() {
                 </tr>
               ) : (
                 filtered.map((e) => {
-                  const isUpcoming = e.event_date >= today;
+                  const isUpcoming = isEventUpcoming(e);
                   const isLive = e.is_live !== false;
                   return (
                     <tr key={e.id} className="border-b border-gray-100">

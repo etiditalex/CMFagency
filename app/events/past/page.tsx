@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, ArrowRight } from "lucide-react";
+import { MapPin, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import Image from "next/image";
+import { eventListDayKey, isEventPast } from "@/lib/event-status";
+import { useNowTick } from "@/lib/hooks/useNowTick";
 import { supabase } from "@/lib/supabase";
 
 type EventRow = {
@@ -25,17 +27,18 @@ type EventRow = {
 const DEFAULT_IMG = "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg";
 
 export default function PastEventsPage() {
+  const now = useNowTick();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = eventListDayKey();
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,venue,description,image_url,default_image_url")
-        .lt("event_date", today)
+        .lte("event_date", today)
         .order("event_date", { ascending: false });
       if (!cancelled) {
         if (!error) setEvents((data ?? []) as EventRow[]);
@@ -45,6 +48,8 @@ export default function PastEventsPage() {
     load();
     return () => { cancelled = true; };
   }, []);
+
+  const pastEvents = events.filter((event) => isEventPast(event, now));
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -92,13 +97,13 @@ export default function PastEventsPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading events...</p>
             </div>
-          ) : events.length === 0 ? (
+          ) : pastEvents.length === 0 ? (
             <div className="text-center py-12 text-gray-600">
               <p className="text-lg">No past events to display.</p>
             </div>
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event, index) => {
+            {pastEvents.map((event, index) => {
               const eventDate = new Date(event.event_date);
               const imgUrl = event.image_url || event.default_image_url || DEFAULT_IMG;
               const locationStr = event.venue && event.location ? `${event.venue}, ${event.location}` : event.location || event.venue || "—";

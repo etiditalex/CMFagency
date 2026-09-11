@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
+import { eventListDayKey, isEventUpcoming } from "@/lib/event-status";
+import { useNowTick } from "@/lib/hooks/useNowTick";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 type UpcomingEventItem = {
@@ -129,19 +131,20 @@ export default function HeroSupportSection() {
 }
 
 function UpcomingEventsList() {
+  const now = useNowTick();
   const [events, setEvents] = useState<UpcomingEventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const today = format(new Date(), "yyyy-MM-dd");
+    const today = eventListDayKey();
 
     const load = async () => {
       const { data, error } = await supabase
         .from("fusion_events")
         .select("id,slug,title,event_date,end_date,location,time,ticket_price_kes,image_url,default_image_url")
-        .gte("event_date", today)
+        .or(`end_date.gte.${today},event_date.gte.${today}`)
         .order("event_date", { ascending: true })
         .limit(20);
 
@@ -177,6 +180,8 @@ function UpcomingEventsList() {
     };
   }, []);
 
+  const upcomingEvents = events.filter((event) => isEventUpcoming(event, now));
+
   if (loading) {
     return (
       <div className="flex min-h-[9.5rem] flex-1 items-center justify-center rounded-md border border-gray-200 bg-gray-50">
@@ -185,7 +190,7 @@ function UpcomingEventsList() {
     );
   }
 
-  if (events.length === 0) {
+  if (upcomingEvents.length === 0) {
     return (
       <div className="flex min-h-[9.5rem] flex-1 items-center rounded-md border border-gray-200 bg-gray-50 p-4">
         <p className="text-sm text-gray-700">No upcoming events published yet.</p>
@@ -223,7 +228,7 @@ function UpcomingEventsList() {
         aria-label="Upcoming events"
         className="hero-upcoming-events-scroll min-h-[9.5rem] flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-color:theme(colors.primary.300)_theme(colors.gray.100)] [scrollbar-width:thin]"
       >
-      {events.map((event) => {
+      {upcomingEvents.map((event) => {
         const eventDate = event.event_date ? new Date(event.event_date) : null;
         const endDate = event.end_date ? new Date(event.end_date) : null;
         const dateLabel = eventDate
