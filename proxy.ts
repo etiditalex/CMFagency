@@ -105,7 +105,7 @@ export async function proxy(request: NextRequest) {
     img-src 'self' data: blob: https: https://res.cloudinary.com https://images.unsplash.com https://ui-avatars.com https://*.supabase.co https://*.supabase.in https://upload.wikimedia.org https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://jobicy.com https://*.jobicy.com https://remotive.com https://*.remotive.com https://remoteok.com https://*.remoteok.com;
     font-src 'self' data: https://fonts.gstatic.com;
     connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.supabase.in https://www.google-analytics.com https://analytics.google.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://api.paystack.co https://js.paystack.co https://checkout.paystack.com https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://tpc.googlesyndication.com;
-    frame-src 'self' https://*.supabase.co https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com https://checkout.paystack.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google;
+    frame-src 'self' https://*.supabase.co https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com https://checkout.paystack.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://ep1.adtrafficquality.google https://ep2.adtrafficquality.google https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com;
     upgrade-insecure-requests;
   `;
 

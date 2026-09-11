@@ -1,149 +1,70 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Handshake } from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { cloudinaryLoader } from "@/lib/cloudinary";
 
-const carouselItems = [
-  {
-    id: 1,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg",
-    alt: "Marketing and Events",
-  },
-  {
-    id: 2,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg",
-    alt: "Business Growth",
-  },
-  {
-    id: 3,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.32.06_AM_loqhra.jpg",
-    alt: "Marketing Excellence",
-  },
-  {
-    id: 4,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg",
-    alt: "Events and Exhibitions",
-  },
-  {
-    id: 5,
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
-    alt: "Strategic Marketing",
-  },
-];
+const HERO_VIDEO_ID = "GpbNlgVikiE";
+const HERO_POSTER =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892265/IMG_9922_mbb7gc.jpg";
+
+const HERO_EMBED_SRC = `https://www.youtube-nocookie.com/embed/${HERO_VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${HERO_VIDEO_ID}&controls=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1&fs=0`;
 
 export default function Hero() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [playVideo, setPlayVideo] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % carouselItems.length);
-    }, 5000);
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motionQuery.matches) return undefined;
 
-    return () => clearInterval(timer);
+    const enable = () => setPlayVideo(true);
+    const timer = window.setTimeout(enable, 80);
+    return () => window.clearTimeout(timer);
   }, []);
-
-  const slideVariants = {
-    enter: { opacity: 0 },
-    center: { opacity: 1 },
-    exit: { opacity: 0 },
-  };
 
   return (
     <section
-      className="relative flex min-h-[70svh] items-center justify-center overflow-hidden pt-28 sm:pt-32 md:pt-36"
+      className="relative flex min-h-[58svh] items-center justify-center overflow-hidden pt-24 sm:min-h-[68svh] sm:pt-28 md:min-h-[74svh] md:pt-32 lg:min-h-[82svh] lg:pt-36"
       aria-labelledby="home-hero-heading"
     >
-      <div className="relative min-h-[70svh] w-full">
-        <AnimatePresence initial={false} mode="sync">
-          <motion.div
-            key={currentIndex}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ opacity: { duration: 0.22, ease: "linear" } }}
-            className="absolute inset-0"
-          >
-            <div className="absolute inset-0">
-              <Image
-                loader={cloudinaryLoader}
-                src={carouselItems[currentIndex].image}
-                alt={carouselItems[currentIndex].alt}
-                fill
-                className="object-cover"
-                priority={currentIndex === 0}
-                fetchPriority={currentIndex === 0 ? "high" : undefined}
-                sizes="100vw"
+      <div className="relative min-h-[inherit] w-full">
+        <div className="absolute inset-0">
+          <Image
+            loader={cloudinaryLoader}
+            src={HERO_POSTER}
+            alt=""
+            fill
+            className="object-cover"
+            priority
+            fetchPriority="high"
+            sizes="100vw"
+          />
+          {playVideo ? (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+              <iframe
+                src={HERO_EMBED_SRC}
+                title="Changer Fusions event film"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                className="absolute left-1/2 top-1/2 min-h-full min-w-full -translate-x-1/2 -translate-y-1/2 border-0"
+                style={{ width: "177.78vh", height: "56.25vw" }}
               />
-              <div className="absolute inset-0 bg-black/60" />
             </div>
-          </motion.div>
-        </AnimatePresence>
-
-        <div className="relative z-10 flex h-full min-h-[70svh] items-center py-10 sm:py-12">
-          <div className="container-custom w-full">
-            <div className="max-w-3xl min-w-0">
-              <motion.h1
-                id="home-hero-heading"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.15 }}
-                className="mb-3 max-w-2xl text-left text-[1.65rem] font-bold leading-[1.12] tracking-tight text-white drop-shadow-2xl sm:mb-5 sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl"
-              >
-                Strategic Marketing That Powers Growth and Relevance
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.28 }}
-                className="mb-6 max-w-xl text-base leading-relaxed text-white/95 drop-shadow-lg sm:mb-8 sm:text-lg md:text-2xl"
-              >
-                Market to thrive, Market to exist
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.4 }}
-                className="flex w-full flex-row gap-3 sm:w-auto sm:gap-4"
-              >
-                <Link
-                  href="/events"
-                  className="group inline-flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white px-2 py-3 text-center text-xs font-semibold text-primary-700 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-gray-100 hover:shadow-xl sm:w-auto sm:flex-none sm:gap-2 sm:px-8 sm:py-3.5 sm:text-base sm:whitespace-nowrap"
-                >
-                  <Calendar className="h-4 w-4 shrink-0 text-primary-600 sm:h-5 sm:w-5" aria-hidden />
-                  <span>Planning an event?</span>
-                </Link>
-                <Link
-                  href="/contact"
-                  className="group inline-flex min-h-[48px] w-full min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/45 bg-white/10 px-2 py-3 text-center text-xs font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-xl sm:w-auto sm:flex-none sm:gap-2 sm:px-8 sm:py-3.5 sm:text-base sm:whitespace-nowrap"
-                >
-                  <Handshake className="h-4 w-4 shrink-0 text-white sm:h-5 sm:w-5" aria-hidden />
-                  <span>Partner with Us</span>
-                </Link>
-              </motion.div>
-            </div>
-          </div>
+          ) : null}
+          <div className="absolute inset-0 bg-black/55" />
+          <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/75 to-transparent sm:h-44" />
         </div>
 
-        <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 space-x-2 sm:bottom-8">
-          {carouselItems.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => setCurrentIndex(index)}
-              className={`h-2.5 rounded-full transition-all duration-300 ${
-                index === currentIndex ? "w-8 bg-white" : "w-2.5 bg-white/45 hover:bg-white/70"
-              }`}
-              aria-current={index === currentIndex ? "true" : "false"}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
+        <div className="relative z-10 flex min-h-[inherit] w-full items-end justify-center pb-[calc(4.75rem+env(safe-area-inset-bottom,0px))] sm:pb-10 md:pb-12 lg:pb-14">
+          <motion.h1
+            id="home-hero-heading"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.15 }}
+            className="w-full max-w-[100%] px-4 text-center text-[1.2rem] font-bold leading-snug tracking-tight text-white drop-shadow-2xl sm:px-6 sm:text-2xl sm:leading-tight md:whitespace-nowrap md:px-8 md:text-[clamp(1.05rem,2.35vw,2.5rem)] md:leading-none lg:px-10"
+          >
+            Strategic Marketing That Powers Growth and Relevance
+          </motion.h1>
         </div>
       </div>
     </section>

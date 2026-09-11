@@ -12,7 +12,6 @@ const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryC
 });
 
 const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarousel"), {
-  ssr: false,
   loading: galleryPlaceholder,
 });
 

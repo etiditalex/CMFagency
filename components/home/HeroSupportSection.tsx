@@ -57,17 +57,19 @@ function InfoCard({
   buttonClassName: string;
 }) {
   return (
-    <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-4 sm:p-5 md:p-6">
-      <div className="mb-3 flex items-center gap-3 sm:mb-5">
-        <h3 className={`shrink-0 text-xs font-extrabold uppercase tracking-[0.12em] sm:text-sm sm:tracking-[0.14em] ${titleClassName}`}>
+    <article className="flex h-full flex-col px-1 py-4 sm:px-2 sm:py-5 md:p-6">
+      <div className="mb-3 flex items-center gap-2 sm:mb-5 sm:gap-3">
+        <h3 className={`min-w-0 text-[0.7rem] font-extrabold uppercase leading-tight tracking-[0.1em] sm:text-xs sm:tracking-[0.12em] md:text-sm md:tracking-[0.14em] ${titleClassName}`}>
           {title}
         </h3>
-        <span className={`h-0.5 w-full ${lineClassName}`} aria-hidden />
+        <span className={`h-0.5 min-w-[1.5rem] flex-1 ${lineClassName}`} aria-hidden />
       </div>
-      <p className="mb-5 flex-1 text-sm leading-6 text-gray-700 sm:mb-7 sm:leading-7">{content}</p>
+      <p className="mb-5 flex-1 text-sm leading-6 text-gray-700 sm:mb-7 sm:text-[0.95rem] sm:leading-7 lg:text-base">
+        {content}
+      </p>
       <Link
         href={buttonHref}
-        className={`mt-auto inline-flex min-h-[44px] items-center self-start rounded-md px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors sm:px-6 sm:py-3 ${buttonClassName}`}
+        className={`mt-auto inline-flex min-h-[44px] w-full items-center justify-center rounded-md px-5 py-2.5 text-sm font-semibold uppercase tracking-wide text-white transition-colors sm:w-auto sm:self-start sm:px-6 sm:py-3 ${buttonClassName}`}
       >
         {buttonText}
       </Link>
@@ -77,12 +79,12 @@ function InfoCard({
 
 export default function HeroSupportSection() {
   return (
-    <section className="w-full bg-white py-8 sm:py-10 md:py-14" aria-labelledby="home-highlights-heading">
-      <div className="w-full max-w-none px-4 sm:px-6 lg:px-8">
+    <section className="w-full bg-white py-8 sm:py-10 md:py-14 lg:py-16" aria-labelledby="home-highlights-heading">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 xl:max-w-[90rem]">
         <h2 id="home-highlights-heading" className="sr-only">
           Smart management, Fusion Xpress, and upcoming events
         </h2>
-        <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-6 sm:gap-6 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
           <InfoCard
             title="Smart Management System"
             titleClassName="text-primary-700"
@@ -103,12 +105,12 @@ export default function HeroSupportSection() {
             buttonClassName="bg-secondary-700 hover:bg-secondary-800"
           />
 
-          <article className="flex h-full flex-col rounded-lg border-2 border-gray-300 p-4 sm:p-5 md:p-6">
-            <div className="mb-3 flex items-center gap-3 sm:mb-5">
-              <h3 className="shrink-0 text-xs font-extrabold uppercase tracking-[0.12em] text-primary-700 sm:text-sm sm:tracking-[0.14em]">
+          <article className="flex h-full flex-col px-1 py-4 sm:px-2 sm:py-5 md:p-6 md:col-span-2 lg:col-span-1">
+            <div className="mb-3 flex items-center gap-2 sm:mb-5 sm:gap-3">
+              <h3 className="min-w-0 text-[0.7rem] font-extrabold uppercase leading-tight tracking-[0.1em] text-primary-700 sm:text-xs sm:tracking-[0.12em] md:text-sm md:tracking-[0.14em]">
                 Upcoming Events
               </h3>
-              <span className="h-0.5 w-full bg-primary-500" aria-hidden />
+              <span className="h-0.5 min-w-[1.5rem] flex-1 bg-primary-500" aria-hidden />
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col">
@@ -226,7 +228,7 @@ function UpcomingEventsList() {
         ref={listRef}
         role="list"
         aria-label="Upcoming events"
-        className="hero-upcoming-events-scroll min-h-[9.5rem] flex-1 space-y-3 overflow-y-auto pr-1 [scrollbar-color:theme(colors.primary.300)_theme(colors.gray.100)] [scrollbar-width:thin]"
+        className="hero-upcoming-events-scroll max-h-[16rem] min-h-[9.5rem] flex-1 space-y-3 overflow-y-auto pr-1 sm:max-h-[18rem] lg:max-h-none [scrollbar-color:theme(colors.primary.300)_theme(colors.gray.100)] [scrollbar-width:thin]"
       >
       {upcomingEvents.map((event) => {
         const eventDate = event.event_date ? new Date(event.event_date) : null;
@@ -242,9 +244,9 @@ function UpcomingEventsList() {
             key={event.id}
             href={href}
             role="listitem"
-            className="flex gap-3 rounded-md p-2 transition-colors hover:bg-gray-50"
+            className="flex min-h-[44px] gap-3 rounded-md p-2 transition-colors hover:bg-gray-50"
           >
-            <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-sm bg-gray-100">
+            <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-sm bg-gray-100 sm:h-14 sm:w-24">
               <Image src={image} alt={event.title} fill className="object-cover" sizes="96px" />
             </div>
             <div className="min-w-0">
