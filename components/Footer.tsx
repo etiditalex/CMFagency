@@ -4,6 +4,38 @@ import Image from "next/image";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
+/** Kenya country outline (lon/lat projected into a portrait viewBox). Decorative only. */
+const KENYA_PATH =
+  "M69.77,62.00 L75.42,69.78 L68.74,73.54 L66.38,77.48 L62.80,78.17 L61.45,84.81 L58.38,88.61 L56.52,94.89 L52.68,98.00 L38.97,88.58 L38.32,83.11 L3.71,63.90 L2.10,62.87 L2.00,52.87 L4.73,49.05 L9.43,42.81 L12.91,35.94 L8.71,25.12 L7.59,20.39 L3.06,13.84 L8.94,8.21 L15.41,2.00 L20.37,3.58 L20.37,8.87 L23.63,11.98 L30.27,11.98 L42.35,19.98 L45.37,20.08 L47.61,19.82 L49.72,20.90 L56.09,21.65 L58.91,17.72 L67.63,13.77 L71.48,16.96 L78.00,16.96 L69.66,27.66 L69.77,62.00 Z";
+
+function FooterKenyaDotMap() {
+  return (
+    <div
+      className="pointer-events-none absolute -inset-[38%] z-0"
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 80 100"
+        preserveAspectRatio="xMidYMid meet"
+        className="h-full w-full"
+        focusable="false"
+      >
+        <defs>
+          <pattern
+            id="footer-kenya-dots"
+            width="1.9"
+            height="1.9"
+            patternUnits="userSpaceOnUse"
+          >
+            <circle cx="0.95" cy="0.95" r="0.52" fill="#cbd5e1" />
+          </pattern>
+        </defs>
+        <path d={KENYA_PATH} fill="url(#footer-kenya-dots)" opacity="0.38" />
+      </svg>
+    </div>
+  );
+}
+
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const footerActionLinks = [
@@ -36,11 +68,12 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="relative bg-gray-900 text-gray-300">
+      <div className="relative overflow-hidden">
       <div className="container-custom section-padding">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
-          <div>
+          <div className="relative z-10">
             <div className="flex items-center space-x-3 mb-4">
               <div className="relative w-10 h-10">
                 <Image
@@ -76,7 +109,7 @@ export default function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="relative z-10">
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               {quickLinks.map((link) => (
@@ -93,7 +126,7 @@ export default function Footer() {
           </div>
 
           {/* Services */}
-          <div>
+          <div className="relative z-10">
             <h3 className="text-white font-semibold mb-4">Services</h3>
             <ul className="space-y-2">
               {services.map((service) => (
@@ -110,7 +143,17 @@ export default function Footer() {
           </div>
 
           {/* Social & Newsletter */}
-          <div>
+          <div className="relative overflow-visible">
+            <FooterKenyaDotMap />
+            <div
+              className="pointer-events-none absolute inset-0 z-[1]"
+              aria-hidden
+              style={{
+                background:
+                  "radial-gradient(ellipse at 50% 40%, rgba(17,24,39,0.9) 0%, rgba(17,24,39,0.62) 48%, rgba(17,24,39,0.2) 76%, transparent 100%)",
+              }}
+            />
+            <div className="relative z-10 drop-shadow-[0_1px_10px_rgba(17,24,39,0.95)]">
             <h3 className="text-white font-semibold mb-4">Stay Connected</h3>
             <p className="text-sm mb-4">
               Subscribe to our newsletter for the latest updates and event announcements.
@@ -162,10 +205,11 @@ export default function Footer() {
             </div>
 
             <NewsletterSubscribeForm variant="footer" />
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8">
+        <div className="relative z-10 border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-center md:text-left">
               <p className="text-sm text-gray-400">
@@ -188,6 +232,7 @@ export default function Footer() {
             </div>
           </div>
         </div>
+      </div>
       </div>
       {/* Short dock (~52px + safe area). Keep in sync with CookieBanner mobile bottom offset. */}
       <div className="fixed inset-x-0 bottom-0 z-[60] pb-[env(safe-area-inset-bottom,0px)] md:hidden">
