@@ -142,7 +142,7 @@ export default function WhatWeDoOrbit() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative z-0 bg-primary-600 py-10 text-white sm:py-14 md:py-16 lg:py-20">
+    <section className="relative z-0 overflow-x-clip bg-primary-600 py-8 text-white sm:py-14 md:py-16 lg:py-20">
       {/* Soft radial highlight behind the hub (matches reference) */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_48%,rgba(255,255,255,0.14),transparent_72%)]"
@@ -150,18 +150,18 @@ export default function WhatWeDoOrbit() {
       />
 
       <div className="container-custom relative z-10">
-        <div className="mx-auto mb-7 max-w-3xl text-center sm:mb-10 md:mb-12">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
+        <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-10 md:mb-12">
+          <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
             What we&apos;re building
           </p>
-          <h2 className="text-2xl font-bold text-white sm:text-3xl md:text-4xl lg:text-5xl">
+          <h2 className="text-[1.45rem] font-bold leading-snug text-white sm:text-3xl md:text-4xl lg:text-5xl">
             People, platforms &amp; experiences — together
           </h2>
         </div>
 
         {/* Flat 2D orbit (no rotateX / perspective) so nothing paints into the stats section below */}
-        <div className="mx-auto max-w-xl px-2 sm:max-w-2xl sm:px-3 md:max-w-3xl">
-          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(94vw,440px)] sm:max-w-[min(92vw,520px)] md:max-w-[580px]">
+        <div className="mx-auto max-w-xl px-1 sm:max-w-2xl sm:px-3 md:max-w-3xl">
+          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(88vw,400px)] sm:max-w-[min(92vw,520px)] md:max-w-[580px]">
             {/* Rotate only the dashed ring — cards stay static to avoid nested-transform ghosting in production */}
             <div className="pointer-events-none absolute inset-[5%] z-[1]">
               <motion.div
@@ -181,26 +181,26 @@ export default function WhatWeDoOrbit() {
               /* r≈44% from center; literals here so Tailwind JIT always emits utilities (no dynamic class strings). */
               const slotClass =
                 index === 0
-                  ? "left-[50%] top-[6%]"
+                  ? "left-[50%] top-[10%]"
                   : index === 1
-                    ? "left-[88.1%] top-[28%]"
+                    ? "left-[84%] top-[30%]"
                     : index === 2
-                      ? "left-[88.1%] top-[72%]"
+                      ? "left-[84%] top-[70%]"
                       : index === 3
-                        ? "left-[50%] top-[94%]"
+                        ? "left-[50%] top-[90%]"
                         : index === 4
-                          ? "left-[11.9%] top-[72%]"
-                          : "left-[11.9%] top-[28%]";
+                          ? "left-[16%] top-[70%]"
+                          : "left-[16%] top-[30%]";
 
               return (
                 <div
                   key={service.label}
-                  className={`absolute z-30 w-[26%] min-w-[6.75rem] max-w-[8.5rem] -translate-x-1/2 -translate-y-1/2 sm:max-w-[9rem] md:max-w-[9.5rem] ${slotClass}`}
+                  className={`absolute z-30 w-[24%] min-w-[4.75rem] max-w-[7.75rem] -translate-x-1/2 -translate-y-1/2 sm:min-w-[6.75rem] sm:max-w-[9rem] md:max-w-[9.5rem] ${slotClass}`}
                 >
                   <Link
                     href={service.href}
                     title={service.label}
-                    className="group flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1.5 py-2 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5"
+                    className="group flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1 py-1.5 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5"
                   >
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent} sm:h-10 sm:w-10`}
@@ -210,7 +210,7 @@ export default function WhatWeDoOrbit() {
                         strokeWidth={2}
                       />
                     </div>
-                    <span className="line-clamp-3 text-[0.58rem] font-semibold leading-tight text-gray-900 group-hover:text-primary-600 sm:line-clamp-none sm:text-[0.68rem]">
+                    <span className="line-clamp-3 text-[0.55rem] font-semibold leading-tight text-gray-900 group-hover:text-primary-600 sm:line-clamp-none sm:text-[0.68rem]">
                       {service.label}
                     </span>
                   </Link>

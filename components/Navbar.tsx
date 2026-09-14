@@ -19,6 +19,7 @@ export default function Navbar() {
   const [kcmOpen, setKcmOpen] = useState(false);
   const [fusionXpressOpen, setFusionXpressOpen] = useState(false);
   const [fusionXpressMobileSubmenuOpen, setFusionXpressMobileSubmenuOpen] = useState<string | null>(null);
+  const [jobBoardOpen, setJobBoardOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [careersOpen, setCareersOpen] = useState(false);
   const [careersNewsIndex, setCareersNewsIndex] = useState(0);
@@ -144,6 +145,14 @@ export default function Navbar() {
     },
     { href: "/fusion-xpress/fx-qr-code-generator", label: "FX QR Code Generator" },
     { href: "/teams-work/portal", label: "Teams Work portal" },
+  ];
+
+  const jobBoardLinks = [
+    { href: "/events/calendar", label: "Events calendar" },
+    { href: "/portfolios", label: "Portfolios" },
+    { href: "/jobs", label: "Job board" },
+    { href: "/talent", label: "Talent showcase" },
+    { href: "/careers", label: "Career development" },
   ];
 
   // Quick actions for CFMA 2026 (no images)
@@ -865,6 +874,48 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
+            <div
+              className="relative"
+              onMouseEnter={() => setJobBoardOpen(true)}
+              onMouseLeave={() => setJobBoardOpen(false)}
+            >
+              <button
+                type="button"
+                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                aria-haspopup="menu"
+                aria-expanded={jobBoardOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setJobBoardOpen((p) => !p);
+                }}
+              >
+                <span>Job board</span>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <AnimatePresence>
+                {jobBoardOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full right-0 mt-2 w-max min-w-[14rem] max-w-none bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
+                  >
+                    {jobBoardLinks.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium whitespace-nowrap"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
 
           {/* Mobile: Cart icon + Hamburger */}
@@ -1328,6 +1379,41 @@ export default function Navbar() {
                             </Link>
                           )
                         )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setJobBoardOpen(!jobBoardOpen)}
+                    className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                  >
+                    <span>Job board</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {jobBoardOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="pl-4 space-y-2 mt-2"
+                      >
+                        {jobBoardLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setJobBoardOpen(false);
+                            }}
+                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
                       </motion.div>
                     )}
                   </AnimatePresence>

@@ -118,7 +118,7 @@ export default function HomeGalleryCarousel() {
   }, [lightboxIndex]);
 
   return (
-    <section className="bg-white py-10 sm:py-14 md:py-20">
+    <section className="overflow-x-clip bg-white py-7 sm:py-14 md:py-20">
       {/* Keep heading aligned to site container */}
       <div className="container-custom">
         <motion.div
@@ -139,12 +139,12 @@ export default function HomeGalleryCarousel() {
       </div>
 
       {/* Full-bleed carousel strip */}
-      <div className="relative left-1/2 w-screen -translate-x-1/2">
+      <div className="relative w-full overflow-hidden">
         {/* Arrows */}
         <button
           type="button"
           onClick={() => scrollByAmount("left")}
-          className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/85 p-2.5 shadow-md hover:bg-white sm:left-3 sm:p-3 md:left-6"
+          className="absolute left-2 top-1/2 z-10 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/85 p-2 shadow-md hover:bg-white sm:left-3 sm:p-3 md:left-6"
           aria-label="Previous"
         >
           <ChevronLeft className="h-5 w-5 text-primary-700" />
@@ -152,7 +152,7 @@ export default function HomeGalleryCarousel() {
         <button
           type="button"
           onClick={() => scrollByAmount("right")}
-          className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-gray-200 bg-white/85 p-2.5 shadow-md hover:bg-white sm:right-3 sm:p-3 md:right-6"
+          className="absolute right-2 top-1/2 z-10 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/85 p-2 shadow-md hover:bg-white sm:right-3 sm:p-3 md:right-6"
           aria-label="Next"
         >
           <ChevronRight className="h-5 w-5 text-primary-700" />
@@ -167,7 +167,7 @@ export default function HomeGalleryCarousel() {
           {images.map((src, index) => (
             <div
               key={src}
-              className="min-w-[220px] snap-center sm:min-w-[300px] md:min-w-[360px] lg:min-w-[400px]"
+              className="min-w-[82vw] snap-center sm:min-w-[300px] md:min-w-[360px] lg:min-w-[400px]"
             >
               <button
                 type="button"

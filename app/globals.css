@@ -108,8 +108,84 @@
   .gallery-hero h1,
   .gallery-hero h2,
   .gallery-hero h3,
-  .gallery-hero p {
+  .gallery-hero p,
+  .home-hero h1,
+  .home-hero h2,
+  .home-hero h3,
+  .home-hero p,
+  .home-hero h1 span {
     text-align: left !important;
+  }
+
+  .home-about h2,
+  .home-about h3,
+  .home-about p {
+    text-align: center !important;
+  }
+
+  .home-about li,
+  .home-about li span {
+    text-align: left !important;
+  }
+
+  .home-why h2,
+  .home-why h3,
+  .home-why p {
+    text-align: center !important;
+  }
+
+  .home-impact h2,
+  .home-impact .home-impact-eyebrow {
+    text-align: left !important;
+  }
+
+  .home-impact .home-impact-stat p {
+    text-align: center !important;
+  }
+
+  .home-leadership h2,
+  .home-leadership .home-leadership-copy {
+    text-align: center !important;
+  }
+
+  .home-leadership .home-leadership-name,
+  .home-leadership .home-leadership-role {
+    text-align: left !important;
+  }
+
+  .home-success h2,
+  .home-success h3 {
+    text-align: center !important;
+  }
+
+  .home-success h3 {
+    text-align: left !important;
+  }
+
+  .home-success .home-success-role,
+  .home-success .home-success-quote {
+    text-align: left !important;
+  }
+
+  .home-success-scroller {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    touch-action: pan-x;
+  }
+
+  .home-success-scroller::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-hero-caret {
+    animation: home-hero-caret-blink 1s steps(1, end) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-hero-caret {
+      animation: none;
+      opacity: 1;
+    }
   }
   
   /* Navigation, forms, and controls should remain left-aligned (not justified) */
@@ -150,5 +226,16 @@
   border-color: rgba(255, 255, 255, 0.85) !important;
   border-radius: 1rem !important;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important;
+}
+
+@keyframes home-hero-caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 

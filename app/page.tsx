@@ -1,11 +1,12 @@
 import { Metadata } from "next";
 import Hero from "@/components/home/Hero";
-import HeroSupportSection from "@/components/home/HeroSupportSection";
-import FeaturedEvents from "@/components/home/FeaturedEvents";
+import AboutUsSection from "@/components/home/AboutUsSection";
+import WhyChangerFusionsSection from "@/components/home/WhyChangerFusionsSection";
 import CoreValues from "@/components/home/CoreValues";
-import QuickLinks from "@/components/home/QuickLinks";
+import ImpactKenyaSection from "@/components/home/ImpactKenyaSection";
+import HomeLeadershipSection from "@/components/home/HomeLeadershipSection";
+import HomeSuccessStoriesSection from "@/components/home/HomeSuccessStoriesSection";
 import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
-import StatsSection from "@/components/home/StatsSection";
 import { HomeDeferredGallery, HomeDeferredPartnersCTA } from "@/components/home/HomeBelowFoldDynamic";
 import HomeJsonLd from "@/components/home/HomeJsonLd";
 
@@ -84,13 +85,14 @@ export default function Home() {
     <>
       <HomeJsonLd />
       <Hero />
-      <HeroSupportSection />
-      <FeaturedEvents />
+      <AboutUsSection />
+      <WhyChangerFusionsSection />
       <CoreValues />
+      <ImpactKenyaSection />
+      <HomeLeadershipSection />
+      <HomeSuccessStoriesSection />
       <HomeDeferredGallery />
-      <QuickLinks />
       <WhatWeDoOrbit />
-      <StatsSection />
       <HomeDeferredPartnersCTA />
     </>
   );

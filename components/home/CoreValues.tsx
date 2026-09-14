@@ -48,16 +48,16 @@ const coreValues = [
 
 export default function CoreValues() {
   return (
-    <section className="bg-white py-10 sm:py-14 md:py-20">
+    <section className="bg-white py-7 sm:py-14 md:py-20">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-8 text-center sm:mb-12 md:mb-14"
+          className="mb-5 text-center sm:mb-12 md:mb-14"
         >
-          <h2 className="mb-3 text-2xl font-bold uppercase tracking-wide text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">
+          <h2 className="mb-3 text-[1.65rem] font-bold uppercase tracking-wide text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">
             Core Values
           </h2>
           <div className="flex items-center justify-center space-x-2">
@@ -66,7 +66,7 @@ export default function CoreValues() {
           </div>
         </motion.div>
 
-        <div className="mb-8 grid grid-cols-1 gap-6 sm:gap-8 md:mb-10 md:grid-cols-3">
+        <div className="mb-5 grid grid-cols-1 gap-4 sm:gap-8 md:mb-10 md:grid-cols-3">
           {coreValues.slice(0, 3).map((value, index) => (
             <motion.div
               key={value.title}
@@ -89,7 +89,7 @@ export default function CoreValues() {
           ))}
         </div>
 
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2">
+        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:gap-8 md:grid-cols-2">
           {coreValues.slice(3).map((value, index) => (
             <motion.div
               key={value.title}

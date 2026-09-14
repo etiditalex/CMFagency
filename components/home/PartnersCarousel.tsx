@@ -44,7 +44,7 @@ const partnerLogos = [
 
 export default function PartnersCarousel() {
   return (
-    <section className="w-full bg-gradient-to-br from-gray-50 to-white py-10 sm:py-14 md:py-16 lg:py-20">
+    <section className="w-full bg-gradient-to-br from-gray-50 to-white py-8 sm:py-14 md:py-16 lg:py-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:max-w-none lg:px-10 xl:px-14">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -62,7 +62,7 @@ export default function PartnersCarousel() {
           {partnerLogos.map((partner) => (
             <div
               key={partner.id}
-              className="relative flex h-24 items-center justify-center rounded-lg border border-gray-100 bg-white p-2 shadow-md sm:h-28 sm:p-3 md:h-32 lg:h-36 xl:h-40"
+              className="relative flex h-20 items-center justify-center rounded-lg border border-gray-100 bg-white p-2 shadow-md sm:h-28 sm:p-3 md:h-32 lg:h-36 xl:h-40"
             >
               <Image
                 loader={cloudinaryLoader}
