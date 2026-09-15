@@ -48,7 +48,7 @@ const coreValues = [
 
 export default function CoreValues() {
   return (
-    <section className="bg-white py-7 sm:py-14 md:py-20">
+    <section className="home-core-values bg-white py-7 sm:py-14 md:py-20" aria-labelledby="home-core-values-heading">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -57,7 +57,7 @@ export default function CoreValues() {
           transition={{ duration: 0.6 }}
           className="mb-5 text-center sm:mb-12 md:mb-14"
         >
-          <h2 className="mb-3 text-[1.65rem] font-bold uppercase tracking-wide text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">
+          <h2 id="home-core-values-heading" className="mb-3 overflow-visible px-1 text-[1.55rem] font-bold uppercase leading-snug tracking-wide text-gray-900 sm:mb-4 sm:text-4xl md:text-5xl">
             Core Values
           </h2>
           <div className="flex items-center justify-center space-x-2">

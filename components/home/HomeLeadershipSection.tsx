@@ -149,12 +149,12 @@ export default function HomeLeadershipSection() {
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
         <h2
           id="home-leadership-heading"
-          className="font-montserrat text-[1.65rem] font-bold leading-tight text-white sm:text-4xl md:text-5xl"
+          className="overflow-visible px-1 font-montserrat text-[1.55rem] font-bold leading-snug text-white sm:text-4xl md:text-5xl"
         >
           Leadership at Changer Fusions
         </h2>
       </div>
-      <p className="home-leadership-copy mx-auto mt-4 w-full max-w-none px-4 text-center text-[0.9rem] leading-relaxed text-white/95 sm:mt-7 sm:px-6 sm:text-xl sm:leading-relaxed md:px-8 md:text-2xl md:leading-[1.55] lg:px-10 lg:text-[1.65rem] lg:leading-[1.5]">
+      <p className="home-leadership-copy mx-auto mt-4 w-full max-w-3xl px-4 text-center text-[0.95rem] leading-[1.65] text-white/95 sm:mt-7 sm:max-w-4xl sm:px-6 sm:text-xl sm:leading-relaxed md:max-w-5xl md:px-8 md:text-2xl md:leading-[1.55] lg:max-w-6xl lg:px-10 lg:text-[1.65rem] lg:leading-[1.5]">
         We plan events, run digital marketing, and keep campaigns moving with Fusion Xpress so
         brands stay visible and relevant. From first brief to last guest, our directors shape the
         work on the ground and the systems behind it—event design, campaign strategy, ticketing,
@@ -181,10 +181,31 @@ export default function HomeLeadershipSection() {
             <LeaderSlot
               key={reduceMotion ? leader.name : `slot-${slot}`}
               leader={leader}
-              className={!reduceMotion && slot > 0 ? "hidden sm:flex" : undefined}
+              className={!reduceMotion && slot > 0 ? "hidden md:flex" : undefined}
             />
           ))}
         </ul>
+
+        {!reduceMotion ? (
+          <div className="mt-5 flex justify-center gap-1 md:hidden" role="group" aria-label="Leadership">
+            {LEADERS.map((leader, leaderIndex) => (
+              <button
+                key={leader.name}
+                type="button"
+                aria-label={`Show ${leader.name}`}
+                aria-current={index === leaderIndex ? "true" : undefined}
+                onClick={() => setIndex(leaderIndex)}
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center"
+              >
+                <span
+                  className={`block h-2.5 w-2.5 rounded-full ${
+                    index === leaderIndex ? "bg-white" : "bg-white/40"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

@@ -22,7 +22,7 @@ export default function ImpactKenyaSection() {
           </p>
           <h2
             id="home-impact-heading"
-            className="mb-4 font-montserrat text-[1.75rem] font-bold text-primary-950 sm:mb-10 sm:text-5xl md:text-6xl"
+            className="mb-4 overflow-visible font-montserrat text-[1.6rem] font-bold leading-snug text-primary-950 sm:mb-10 sm:text-5xl md:text-6xl"
           >
             Where We Work
           </h2>
@@ -47,7 +47,7 @@ export default function ImpactKenyaSection() {
                     durationMs={1600 + index * 180}
                   />
                 </p>
-                <p className="mt-1 text-xs text-primary-800/80 sm:mt-2 sm:text-base">{stat.label}</p>
+                <p className="mt-1 text-xs font-medium text-primary-900 sm:mt-2 sm:text-base">{stat.label}</p>
               </div>
             );
           })}

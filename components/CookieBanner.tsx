@@ -58,19 +58,19 @@ export default function CookieBanner() {
               <div className="flex items-center space-x-3 flex-shrink-0">
                 <button
                   onClick={handleDecline}
-                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                  className="min-h-[44px] px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
                 >
                   Decline
                 </button>
                 <button
                   onClick={handleAccept}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold transition-colors"
+                  className="min-h-[44px] px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold transition-colors"
                 >
                   Accept All
                 </button>
                 <button
                   onClick={() => setIsVisible(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 text-gray-400 hover:text-gray-600 transition-colors"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />

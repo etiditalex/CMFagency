@@ -21,7 +21,7 @@ export default function AboutUsSection() {
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
         <h2
           id="home-about-heading"
-          className="mb-5 font-montserrat text-[1.65rem] font-bold text-primary-600 sm:mb-10 sm:text-4xl md:mb-12"
+          className="mb-5 overflow-visible px-1 font-montserrat text-[1.55rem] font-bold leading-snug text-primary-600 sm:mb-10 sm:text-4xl md:mb-12"
         >
           About Us
         </h2>

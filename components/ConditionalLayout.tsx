@@ -114,7 +114,7 @@ export default function ConditionalLayout({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen overflow-x-clip">{children}</main>
       <Footer />
       <SiteViewTracker />
       <CookieBanner />

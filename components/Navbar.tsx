@@ -198,11 +198,11 @@ export default function Navbar() {
       }`}
     >
       {/* Top bar: tagline + phone; Track + Login (icons on small screens) */}
-      <div className="bg-primary-600 text-white overflow-hidden">
+      <div className="bg-primary-600 pt-[env(safe-area-inset-top,0px)] text-white">
         <div className="container-custom">
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 py-2 min-h-10 sm:min-h-0 sm:h-10 sm:py-0 md:h-12 md:gap-4">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-2 sm:gap-3 md:gap-4">
-              <p className="min-w-0 text-balance text-[10px] leading-snug min-[380px]:text-[11px] sm:text-xs md:text-sm font-medium text-white/95">
+              <p className="min-w-0 !text-left text-[10px] leading-snug min-[380px]:text-[11px] sm:text-xs md:text-sm font-medium text-white/95">
                 Market to thrive, Market to exist
               </p>
               <a
@@ -216,7 +216,7 @@ export default function Navbar() {
             <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
               <Link
                 href="/track-application"
-                className="flex items-center space-x-1 rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:min-h-0 md:min-w-0 md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
                 aria-label="Track Application"
               >
                 <Search className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
@@ -227,7 +227,7 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/application"
-                    className="flex items-center rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:hidden"
+                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:hidden"
                     aria-label="My Application"
                   >
                     <FileText className="h-4 w-4 shrink-0" />
@@ -262,7 +262,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center space-x-1 rounded-md p-1.5 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:min-h-0 md:min-w-0 md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
                   aria-label="Login"
                 >
                   <User className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
@@ -375,7 +375,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[var(--site-nav-height)] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Links: container 1 */}
@@ -481,7 +481,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[var(--site-nav-height)] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Container 1: Attachments */}
@@ -659,7 +659,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed left-0 right-0 top-[112px] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[var(--site-nav-height)] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Container 1 */}
@@ -922,7 +922,7 @@ export default function Navbar() {
           <div className="lg:hidden flex items-center gap-1">
             <Link
               href="/cart"
-              className="relative p-2.5 rounded-lg text-gray-700 hover:bg-gray-100 hover:text-primary-600 transition-colors"
+              className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-700 transition-colors hover:bg-gray-100 hover:text-primary-600"
               aria-label="Shopping Cart"
             >
               <ShoppingCart className="w-6 h-6" />
@@ -933,9 +933,11 @@ export default function Navbar() {
               )}
             </Link>
             <button
+              type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-700 hover:bg-gray-100"
               aria-label="Toggle menu"
+              aria-expanded={isOpen}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -952,14 +954,14 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden border-t border-gray-200 bg-white"
           >
-            <div className="container-custom max-h-[calc(100vh-152px)] overflow-y-auto overscroll-contain py-4 pb-24 space-y-3">
+            <div className="container-custom max-h-[calc(100dvh-var(--site-nav-height))] overflow-y-auto overscroll-contain py-4 pb-24 space-y-3">
               {/* Social Media Icons - Mobile */}
               <div className="flex items-center justify-center gap-4 pb-4 border-b border-gray-200">
                 <a
                   href="https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors duration-200"
+                  className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary-600 transition-colors duration-200 hover:bg-primary-700"
                   aria-label="Follow us on Instagram"
                 >
                   <Instagram className="w-5 h-5 text-white" />
@@ -968,7 +970,7 @@ export default function Navbar() {
                   href="https://www.facebook.com/share/187Kse9GrQ/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors duration-200"
+                  className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary-600 transition-colors duration-200 hover:bg-primary-700"
                   aria-label="Follow us on Facebook"
                 >
                   <Facebook className="w-5 h-5 text-white" />
@@ -977,7 +979,7 @@ export default function Navbar() {
                   href="https://www.linkedin.com/in/changer-fusions-2262a53a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-colors duration-200"
+                  className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-primary-600 transition-colors duration-200 hover:bg-primary-700"
                   aria-label="Follow us on LinkedIn"
                 >
                   <Linkedin className="w-5 h-5 text-white" />

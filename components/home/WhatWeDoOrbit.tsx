@@ -142,7 +142,10 @@ export default function WhatWeDoOrbit() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative z-0 overflow-x-clip bg-primary-600 py-8 text-white sm:py-14 md:py-16 lg:py-20">
+    <section
+      className="home-orbit relative z-0 bg-primary-600 py-8 text-white sm:py-14 md:py-16 lg:py-20"
+      aria-labelledby="home-orbit-heading"
+    >
       {/* Soft radial highlight behind the hub (matches reference) */}
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_48%,rgba(255,255,255,0.14),transparent_72%)]"
@@ -151,18 +154,38 @@ export default function WhatWeDoOrbit() {
 
       <div className="container-custom relative z-10">
         <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-10 md:mb-12">
-          <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
+          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
             What we&apos;re building
           </p>
-          <h2 className="text-[1.45rem] font-bold leading-snug text-white sm:text-3xl md:text-4xl lg:text-5xl">
+          <h2
+            id="home-orbit-heading"
+            className="overflow-visible px-1 text-[1.4rem] font-bold leading-snug text-white sm:text-3xl md:text-4xl lg:text-5xl"
+          >
             People, platforms &amp; experiences — together
           </h2>
         </div>
 
-        {/* Flat 2D orbit (no rotateX / perspective) so nothing paints into the stats section below */}
-        <div className="mx-auto max-w-xl px-1 sm:max-w-2xl sm:px-3 md:max-w-3xl">
-          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(88vw,400px)] sm:max-w-[min(92vw,520px)] md:max-w-[580px]">
-            {/* Rotate only the dashed ring — cards stay static to avoid nested-transform ghosting in production */}
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden">
+          {services.map((service) => (
+            <li key={service.label}>
+              <Link
+                href={service.href}
+                className="flex min-h-[52px] items-center gap-3 rounded-2xl border border-white/20 bg-white px-3 py-3 text-gray-900 shadow-sm"
+              >
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent}`}
+                >
+                  <service.icon className="h-5 w-5 text-white" strokeWidth={2} />
+                </span>
+                <span className="home-orbit-label text-sm font-semibold leading-snug">{service.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        {/* Flat 2D orbit on tablet/desktop so labels stay readable */}
+        <div className="mx-auto hidden max-w-xl px-1 sm:max-w-2xl sm:px-3 md:block md:max-w-3xl">
+          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(92vw,520px)] md:max-w-[580px]">
             <div className="pointer-events-none absolute inset-[5%] z-[1]">
               <motion.div
                 className="h-full w-full rounded-full border-2 border-dashed border-white/35"
@@ -178,7 +201,6 @@ export default function WhatWeDoOrbit() {
             </div>
 
             {services.map((service, index) => {
-              /* r≈44% from center; literals here so Tailwind JIT always emits utilities (no dynamic class strings). */
               const slotClass =
                 index === 0
                   ? "left-[50%] top-[10%]"
@@ -195,22 +217,19 @@ export default function WhatWeDoOrbit() {
               return (
                 <div
                   key={service.label}
-                  className={`absolute z-30 w-[24%] min-w-[4.75rem] max-w-[7.75rem] -translate-x-1/2 -translate-y-1/2 sm:min-w-[6.75rem] sm:max-w-[9rem] md:max-w-[9.5rem] ${slotClass}`}
+                  className={`absolute z-30 w-[24%] min-w-[6.75rem] max-w-[9.5rem] -translate-x-1/2 -translate-y-1/2 ${slotClass}`}
                 >
                   <Link
                     href={service.href}
                     title={service.label}
-                    className="group flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-2xl border border-gray-200 bg-white px-1 py-1.5 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md sm:min-h-0 sm:gap-1.5 sm:px-2.5 sm:py-2.5"
+                    className="group flex min-h-[44px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-2.5 py-2.5 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md"
                   >
                     <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent} sm:h-10 sm:w-10`}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent}`}
                     >
-                      <service.icon
-                        className="h-[1.15rem] w-[1.15rem] text-white sm:h-5 sm:w-5"
-                        strokeWidth={2}
-                      />
+                      <service.icon className="h-5 w-5 text-white" strokeWidth={2} />
                     </div>
-                    <span className="line-clamp-3 text-[0.55rem] font-semibold leading-tight text-gray-900 group-hover:text-primary-600 sm:line-clamp-none sm:text-[0.68rem]">
+                    <span className="home-orbit-label text-xs font-semibold leading-snug text-gray-900 group-hover:text-primary-600">
                       {service.label}
                     </span>
                   </Link>

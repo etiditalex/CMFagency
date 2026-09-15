@@ -118,7 +118,7 @@ export default function HomeGalleryCarousel() {
   }, [lightboxIndex]);
 
   return (
-    <section className="overflow-x-clip bg-white py-7 sm:py-14 md:py-20">
+    <section className="overflow-x-clip bg-white py-7 sm:py-14 md:py-20" aria-labelledby="home-gallery-heading">
       {/* Keep heading aligned to site container */}
       <div className="container-custom">
         <motion.div
@@ -130,7 +130,7 @@ export default function HomeGalleryCarousel() {
         >
           <div className="flex items-center justify-center gap-4">
             <div className="hidden h-px w-24 bg-gray-200 sm:block" />
-            <h2 className="text-lg font-extrabold uppercase tracking-widest text-secondary-600 sm:text-xl md:text-2xl">
+            <h2 id="home-gallery-heading" className="overflow-visible text-lg font-extrabold uppercase leading-snug tracking-widest text-secondary-600 sm:text-xl md:text-2xl">
               Gallery
             </h2>
             <div className="hidden h-px w-24 bg-gray-200 sm:block" />

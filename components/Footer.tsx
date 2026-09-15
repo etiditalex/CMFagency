@@ -70,7 +70,7 @@ export default function Footer() {
   return (
     <footer className="relative bg-gray-900 text-gray-300">
       <div className="relative overflow-hidden">
-      <div className="container-custom section-padding">
+      <div className="container-custom section-padding max-md:!pb-[calc(var(--site-mobile-dock-height)+1.75rem)]">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="relative z-10">
@@ -86,10 +86,10 @@ export default function Footer() {
               </div>
               <span className="text-xl font-bold text-white">Changer Fusions</span>
             </div>
-            <p className="text-sm mb-4 font-semibold text-primary-300 mb-2">
+            <p className="mb-4 text-sm font-semibold leading-snug text-primary-300">
               Market to thrive, Market to exist
             </p>
-            <p className="text-sm mb-4">
+            <p className="mb-4 text-left text-sm leading-relaxed text-gray-300">
               A forward-thinking marketing strategic partner specializing in blending innovative marketing techniques, cutting-edge technologies, and transformative strategies to create impactful solutions.
             </p>
             <div className="space-y-2 text-sm">
@@ -212,21 +212,21 @@ export default function Footer() {
         <div className="relative z-10 border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-center md:text-left">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-300">
                 &copy; {currentYear} Changer Fusions. All rights reserved.
               </p>
-              <p className="text-xs text-gray-500 mt-2">Built by Changer Fusions</p>
+              <p className="mt-2 text-xs text-gray-300">Built by Changer Fusions</p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-              <Link href="/privacy" className="text-gray-400 hover:text-primary-400 transition-colors duration-200">
+              <Link href="/privacy" className="text-gray-300 hover:text-primary-400 transition-colors duration-200">
                 Privacy Policy
               </Link>
               <span className="text-gray-600">|</span>
-              <Link href="/terms" className="text-gray-400 hover:text-primary-400 transition-colors duration-200">
+              <Link href="/terms" className="text-gray-300 hover:text-primary-400 transition-colors duration-200">
                 Terms & Conditions
               </Link>
               <span className="text-gray-600">|</span>
-              <Link href="/cookies" className="text-gray-400 hover:text-primary-400 transition-colors duration-200">
+              <Link href="/cookies" className="text-gray-300 hover:text-primary-400 transition-colors duration-200">
                 Cookie Policy
               </Link>
             </div>

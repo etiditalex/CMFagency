@@ -44,7 +44,7 @@ export default function WhyChangerFusionsSection() {
     >
       <h2
         id="home-why-heading"
-        className="mb-5 font-montserrat text-[1.65rem] font-bold text-white sm:mb-10 sm:text-4xl md:mb-12 md:text-5xl"
+        className="mb-5 overflow-visible px-1 font-montserrat text-[1.55rem] font-bold leading-snug text-white sm:mb-10 sm:text-4xl md:mb-12 md:text-5xl"
       >
         Why Changer Fusions?
       </h2>
@@ -64,11 +64,11 @@ export default function WhyChangerFusionsSection() {
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
                 />
                 <div className="absolute inset-0 bg-black/55" aria-hidden />
-                <div className="relative z-10 flex h-full flex-col items-center px-2 pt-5 text-center sm:px-6 sm:pt-12">
-                  <h3 className="font-montserrat text-[0.85rem] font-bold leading-tight text-white sm:text-2xl">
+                <div className="relative z-10 flex h-full flex-col items-center px-2.5 pt-7 text-center sm:px-6 sm:pt-12">
+                  <h3 className="overflow-visible px-0.5 font-montserrat text-sm font-bold leading-snug text-white sm:text-2xl">
                     {card.title}
                   </h3>
-                  <p className="mt-1.5 max-w-[16rem] text-[0.7rem] leading-snug text-white sm:mt-3 sm:text-[0.95rem] sm:leading-relaxed">
+                  <p className="mt-2 max-w-[16rem] text-xs leading-relaxed text-white sm:mt-3 sm:text-[0.95rem]">
                     {card.description}
                   </p>
                 </div>

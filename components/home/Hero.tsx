@@ -92,10 +92,10 @@ export default function Hero() {
 
   return (
     <section
-      className="home-hero relative w-full overflow-x-clip bg-primary-950 pt-[6.5rem] sm:pt-[8.25rem] md:pt-[8.75rem]"
+      className="home-hero relative w-full overflow-x-visible bg-primary-950 pt-[calc(env(safe-area-inset-top,0px)+9.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+9.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9.75rem)]"
       aria-labelledby="home-hero-heading"
     >
-      <div className="relative isolate min-h-[20rem] sm:min-h-[28rem] md:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[38rem]">
+      <div className="relative isolate min-h-[22rem] overflow-visible sm:min-h-[28rem] md:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[38rem]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
           <Image
             loader={cloudinaryLoader}
@@ -112,26 +112,26 @@ export default function Hero() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-950/85 via-primary-950/25 to-primary-950/45 sm:from-primary-950/70 sm:via-primary-950/20 sm:to-primary-950/30 lg:from-primary-950/25 lg:via-transparent lg:to-primary-950/20" />
         </div>
 
-        <div className="relative z-10 flex min-h-[inherit] w-full items-start px-4 pb-6 pt-1 sm:px-8 sm:pb-12 sm:pt-3 md:px-12 md:pb-14 md:pt-3 lg:px-16 lg:pb-16 lg:pt-4 xl:px-20">
+        <div className="relative z-10 flex min-h-[inherit] w-full items-start overflow-visible px-4 pb-6 pt-4 sm:px-8 sm:pb-12 sm:pt-5 md:px-12 md:pb-14 md:pt-5 lg:px-16 lg:pb-16 lg:pt-6 xl:px-20">
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-xl md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
+            className="w-full max-w-xl overflow-visible md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
           >
             <h1
               id="home-hero-heading"
               aria-label={CANONICAL_TITLE}
-              className="!text-left font-montserrat text-[1.55rem] font-bold leading-[1.12] tracking-tight text-white sm:text-5xl sm:leading-none md:text-6xl lg:text-7xl xl:text-[4.75rem]"
+              className="!text-left overflow-visible font-montserrat text-[clamp(1.35rem,6.4vw,1.75rem)] font-bold leading-[1.28] tracking-normal text-white sm:text-5xl sm:leading-tight md:text-6xl lg:text-7xl xl:text-[4.75rem]"
             >
-              <span aria-hidden="true">
-                <span className="block">Strategic Marketing</span>
-                <span className="block">That Powers</span>
-                <span className="relative mt-0.5 block min-h-[1.15em] sm:min-h-[2.35em] md:h-[1.15em] md:min-h-0">
+              <span aria-hidden="true" className="flex flex-col items-start gap-1.5 overflow-visible sm:gap-2">
+                <span className="block overflow-visible py-[0.08em]">Strategic Marketing</span>
+                <span className="block overflow-visible py-[0.08em]">That Powers</span>
+                <span className="relative block min-h-[1.45em] w-full overflow-visible py-[0.08em] sm:min-h-[2.6em] md:min-h-[1.35em]">
                   <span className="invisible !text-left md:whitespace-nowrap" aria-hidden>
                     {LONGEST_PHRASE}
                   </span>
-                  <span className="absolute inset-0 !text-left md:whitespace-nowrap">
+                  <span className="absolute left-0 top-0 w-full overflow-visible break-words !text-left md:whitespace-nowrap">
                     {animatedWords}
                     {reduceMotion ? null : (
                       <span
@@ -143,7 +143,7 @@ export default function Hero() {
                 </span>
               </span>
             </h1>
-            <p className="!text-left mt-3 w-full max-w-none text-[0.8125rem] leading-relaxed text-white/90 sm:mt-6 sm:max-w-2xl sm:text-base sm:leading-7 md:max-w-3xl md:text-[1.05rem] md:leading-[1.7] lg:max-w-[min(42rem,calc(50vw-5rem))] lg:text-[1.08rem]">
+            <p className="!text-left mt-4 w-full max-w-none text-sm leading-relaxed text-white/90 sm:mt-6 sm:max-w-2xl sm:text-base sm:leading-7 md:max-w-3xl md:text-[1.05rem] md:leading-[1.7] lg:max-w-[min(42rem,calc(50vw-5rem))] lg:text-[1.08rem]">
               {HERO_DESCRIPTION}
             </p>
           </motion.div>

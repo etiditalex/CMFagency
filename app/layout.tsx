@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { connection } from "next/server";
@@ -147,6 +147,12 @@ export const metadata: Metadata = {
     "ICBM": "-4.0435, 39.6682",
     "google-adsense-account": "ca-pub-7231529725117325",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
