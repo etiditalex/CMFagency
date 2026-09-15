@@ -4,62 +4,64 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
+import {
+  FALLBACK_TESTIMONIALS_PAGE,
+  isMissingTestimonialsTable,
+  TESTIMONIAL_PUBLIC_SELECT,
+  testimonialInitials,
+} from "@/lib/testimonials";
 
-const testimonials = [
-  {
-    id: 1,
-    name: "Haron Waswa",
-    role: "Mr. Climate Kenya 2023-2025",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892256/IMG_0331_zz7s2k.jpg",
-    rating: 4.5,
-    quote: "Haron Waswa is the Flag Carrier for Mr. Climate Kenya 2023–2025 and also crowned Mr. Cambridge University. He is the former Mr. Rectified Eldoret, and currently the Mr. Kitenge Fashion Fest, a prestigious platform that showcases authentic cultural fabrics in fashion. He is Passionate, visionary, and committed, I continue to stand at the frontline of climate advocacy, community empowerment, and sustainable development.",
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    role: "CEO, TechCorp Inc.",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892261/IMG_9817_qlxozr.jpg",
-    rating: 5,
-    quote: "Changer Fusions transformed our event planning process. Their attention to detail and creative approach made our annual conference a huge success. The team's professionalism and dedication to excellence is unmatched. Highly recommended!",
-  },
-  {
-    id: 3,
-    name: "Michael Chen",
-    role: "Marketing Director, GreenLife",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892256/IMG_0331_zz7s2k.jpg",
-    rating: 5,
-    quote: "Working with Changer Fusions has been a game-changer for our brand. Their marketing strategies and portfolio of work speak for themselves. They understand our vision and deliver exceptional results every time.",
-  },
-  {
-    id: 4,
-    name: "Emily Rodriguez",
-    role: "Event Coordinator, EventPro",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892255/IMG_0320_xc3kuq.jpg",
-    rating: 4.5,
-    quote: "The team at Changer Fusions is professional, creative, and always delivers on time. They've helped us execute multiple successful events with seamless planning. Their expertise in event management is truly remarkable.",
-  },
-  {
-    id: 5,
-    name: "David Thompson",
-    role: "Founder, StartupHub",
-    image: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765892258/IMG_0373_e07xid.jpg",
-    rating: 5,
-    quote: "Changer Fusions' comprehensive approach to marketing and event planning helped us establish our brand in the market. Their expertise is unmatched, and they truly care about their clients' success.",
-  },
-];
+type PageTestimonial = {
+  id: number;
+  name: string;
+  role: string;
+  quote: string;
+  image_url: string;
+  rating: number | null;
+};
 
 export default function TestimonialsPage() {
+  const [testimonials, setTestimonials] = useState<PageTestimonial[]>(FALLBACK_TESTIMONIALS_PAGE);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("testimonials")
+          .select(TESTIMONIAL_PUBLIC_SELECT)
+          .eq("is_active", true)
+          .eq("show_on_testimonials_page", true)
+          .order("sort_order", { ascending: true })
+          .order("id", { ascending: true });
+        if (error) throw error;
+        if (cancelled) return;
+        setTestimonials((data ?? []) as PageTestimonial[]);
+        setCurrentIndex(0);
+      } catch (error) {
+        if (!cancelled && !isMissingTestimonialsTable(error as { message?: string; code?: string })) {
+          setTestimonials(FALLBACK_TESTIMONIALS_PAGE);
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (testimonials.length <= 1) return undefined;
     const timer = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
     }, 6000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [testimonials.length]);
 
   const slideVariants = {
     enter: (direction: number) => ({
@@ -79,6 +81,7 @@ export default function TestimonialsPage() {
   };
 
   const paginate = (newDirection: number) => {
+    if (testimonials.length === 0) return;
     setDirection(newDirection);
     if (newDirection === 1) {
       setCurrentIndex((prev) => (prev + 1) % testimonials.length);
@@ -88,6 +91,7 @@ export default function TestimonialsPage() {
   };
 
   const currentTestimonial = testimonials[currentIndex];
+  const rating = currentTestimonial?.rating ?? 5;
 
   return (
     <div className="pt-20 min-h-screen">
@@ -121,108 +125,125 @@ export default function TestimonialsPage() {
             </h1>
             
             {/* Navigation Dots */}
-            <div className="flex items-center justify-center space-x-3 mb-8">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    setDirection(index > currentIndex ? 1 : -1);
-                    setCurrentIndex(index);
-                  }}
-                  className={`transition-all duration-300 ${
-                    index === currentIndex
-                      ? "w-8 h-1 bg-white"
-                      : "w-1 h-1 bg-white/50 rounded-full hover:bg-white/75"
-                  }`}
-                  aria-label={`Go to testimonial ${index + 1}`}
-                />
-              ))}
-            </div>
+            {testimonials.length > 1 ? (
+              <div className="flex items-center justify-center space-x-3 mb-8">
+                {testimonials.map((item, index) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setDirection(index > currentIndex ? 1 : -1);
+                      setCurrentIndex(index);
+                    }}
+                    className={`transition-all duration-300 ${
+                      index === currentIndex
+                        ? "w-8 h-1 bg-white"
+                        : "w-1 h-1 bg-white/50 rounded-full hover:bg-white/75"
+                    }`}
+                    aria-label={`Go to testimonial ${index + 1}`}
+                  />
+                ))}
+              </div>
+            ) : null}
           </motion.div>
 
           {/* Testimonial Carousel */}
           <div className="relative max-w-6xl mx-auto">
-            <AnimatePresence initial={false} custom={direction} mode="wait">
-              <motion.div
-                key={currentIndex}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: "spring", stiffness: 300, damping: 30 },
-                  opacity: { duration: 0.2 },
-                }}
-                className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-center px-4"
-              >
-                {/* Profile Picture */}
-                <div className="flex justify-center lg:justify-start">
-                  <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl">
-                    <Image
-                      src={currentTestimonial.image}
-                      alt={currentTestimonial.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-
-                {/* Testimonial Content */}
-                <div className="lg:col-span-2 space-y-3 md:space-y-4">
-                  {/* Star Rating */}
-                  <div className="flex items-center space-x-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-6 h-6 ${
-                          i < Math.floor(currentTestimonial.rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : i < currentTestimonial.rating
-                            ? "fill-yellow-400/50 text-yellow-400"
-                            : "text-white/30"
-                        }`}
-                      />
-                    ))}
+            {!currentTestimonial ? (
+              <p className="text-center text-white/80 text-lg">Published testimonials will appear here.</p>
+            ) : (
+              <AnimatePresence initial={false} custom={direction} mode="wait">
+                <motion.div
+                  key={currentTestimonial.id}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    x: { type: "spring", stiffness: 300, damping: 30 },
+                    opacity: { duration: 0.2 },
+                  }}
+                  className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-center px-4"
+                >
+                  {/* Profile Picture */}
+                  <div className="flex justify-center lg:justify-start">
+                    <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-white/40 shadow-2xl bg-white/10">
+                      {currentTestimonial.image_url ? (
+                        <Image
+                          src={currentTestimonial.image_url}
+                          alt={currentTestimonial.name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-white">
+                          {testimonialInitials(currentTestimonial.name)}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Quote */}
-                  <div className="relative">
-                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -left-2 sm:-left-4 -top-2 sm:-top-4 leading-none">
-                      "
-                    </span>
-                    <p className="text-white text-base sm:text-lg md:text-xl leading-relaxed pl-6 sm:pl-8 pr-2 sm:pr-4 relative z-10 drop-shadow-md">
-                      {currentTestimonial.quote}
-                    </p>
-                    <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 leading-none">
-                      "
-                    </span>
-                  </div>
+                  {/* Testimonial Content */}
+                  <div className="lg:col-span-2 space-y-3 md:space-y-4">
+                    {/* Star Rating */}
+                    <div className="flex items-center space-x-1 mb-4">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-6 h-6 ${
+                            i < Math.floor(rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : i < rating
+                              ? "fill-yellow-400/50 text-yellow-400"
+                              : "text-white/30"
+                          }`}
+                        />
+                      ))}
+                    </div>
 
-                  {/* Attribution */}
-                  <div className="pt-3 md:pt-4">
-                    <p className="text-white text-lg sm:text-xl font-semibold drop-shadow-md">{currentTestimonial.name}</p>
-                    <p className="text-white text-base sm:text-lg drop-shadow-md">{currentTestimonial.role}</p>
+                    {/* Quote */}
+                    <div className="relative">
+                      <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -left-2 sm:-left-4 -top-2 sm:-top-4 leading-none">
+                        "
+                      </span>
+                      <p className="text-white text-base sm:text-lg md:text-xl leading-relaxed pl-6 sm:pl-8 pr-2 sm:pr-4 relative z-10 drop-shadow-md">
+                        {currentTestimonial.quote}
+                      </p>
+                      <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-white/25 absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 leading-none">
+                        "
+                      </span>
+                    </div>
+
+                    {/* Attribution */}
+                    <div className="pt-3 md:pt-4">
+                      <p className="text-white text-lg sm:text-xl font-semibold drop-shadow-md">{currentTestimonial.name}</p>
+                      <p className="text-white text-base sm:text-lg drop-shadow-md">{currentTestimonial.role}</p>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                </motion.div>
+              </AnimatePresence>
+            )}
 
             {/* Navigation Arrows */}
-            <button
-              onClick={() => paginate(-1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 lg:-translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
-              aria-label="Previous testimonial"
-            >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-            </button>
-            <button
-              onClick={() => paginate(1)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 lg:translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
-              aria-label="Next testimonial"
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
-            </button>
+            {testimonials.length > 1 ? (
+              <>
+                <button
+                  onClick={() => paginate(-1)}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 lg:-translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
+                  aria-label="Previous testimonial"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
+                </button>
+                <button
+                  onClick={() => paginate(1)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 lg:translate-x-12 bg-white/25 hover:bg-white/40 backdrop-blur-md p-2 sm:p-3 rounded-full transition-all duration-300 z-20 group shadow-lg"
+                  aria-label="Next testimonial"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white group-hover:scale-110 transition-transform" />
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       </section>

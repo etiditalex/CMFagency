@@ -255,6 +255,8 @@ export default function PastEventDetailPage() {
     review: "",
   });
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const [contactFormData, setContactFormData] = useState({
     name: "",
@@ -289,13 +291,34 @@ export default function PastEventDetailPage() {
     );
   }
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setReviewSubmitted(true);
-    setTimeout(() => {
-      setReviewSubmitted(false);
+    setReviewError(null);
+    setReviewSubmitting(true);
+    try {
+      const res = await fetch("/api/testimonials/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: reviewFormData.name,
+          email: reviewFormData.email,
+          rating: reviewFormData.rating,
+          review: reviewFormData.review,
+          event_slug: slugParam || "",
+          event_title: event.title,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Could not save your review. Please try again.");
+      }
+      setReviewSubmitted(true);
       setReviewFormData({ name: "", email: "", rating: 5, review: "" });
-    }, 3000);
+    } catch (err) {
+      setReviewError(err instanceof Error ? err.message : "Could not save your review. Please try again.");
+    } finally {
+      setReviewSubmitting(false);
+    }
   };
 
   const handleContactSubmit = (e: React.FormEvent) => {
@@ -451,7 +474,7 @@ export default function PastEventDetailPage() {
                   >
                     <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold mb-2 text-gray-900">Thank You!</h3>
-                    <p className="text-gray-600">Your review has been submitted successfully.</p>
+                    <p className="text-gray-600">Your review has been submitted. The team will review it before it appears on the site.</p>
                   </motion.div>
                 ) : (
                   <form onSubmit={handleReviewSubmit} className="space-y-6">
@@ -522,13 +545,18 @@ export default function PastEventDetailPage() {
                         onChange={(e) => setReviewFormData({ ...reviewFormData, review: e.target.value })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                         placeholder="Share your experience at this event..."
+                        minLength={20}
                       />
                     </div>
+                    {reviewError ? (
+                      <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{reviewError}</p>
+                    ) : null}
                     <button
                       type="submit"
-                      className="w-full btn-primary inline-flex items-center justify-center"
+                      disabled={reviewSubmitting}
+                      className="w-full btn-primary inline-flex items-center justify-center disabled:opacity-60"
                     >
-                      Submit Review
+                      {reviewSubmitting ? "Submitting..." : "Submit Review"}
                       <Send className="ml-2 w-5 h-5" />
                     </button>
                   </form>
