@@ -1,18 +1,4 @@
-import {
-  PDFDocument,
-  StandardFonts,
-  rgb,
-  pushGraphicsState,
-  popGraphicsState,
-  moveTo,
-  lineTo,
-  closePath,
-  clip,
-  endPath,
-  type PDFFont,
-  type PDFImage,
-  type PDFPage,
-} from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 
 import type { EventTicketPdfInput } from "@/lib/event-ticket";
 import { EVENT_TICKET_TERMS } from "@/lib/event-ticket-terms";
@@ -67,22 +53,26 @@ function wrapLines(text: string, font: PDFFont, size: number, maxW: number): str
   return lines.length ? lines : [""];
 }
 
+/** Fetch the full poster — never c_fill crop. */
 function posterPdfUrl(url: string): string {
   try {
     const u = new URL(url);
-    if (u.hostname.includes("cloudinary.com") && u.pathname.includes("/image/upload/")) {
-      if (!/\/image\/upload\/[^/]*f_/.test(u.pathname)) {
-        u.pathname = u.pathname.replace(
-          "/image/upload/",
-          "/image/upload/f_jpg,c_fill,g_auto,w_1400,h_900,q_auto/"
-        );
-      }
-      return u.href;
-    }
+    if (!u.hostname.includes("cloudinary.com")) return url;
+    const marker = "/image/upload/";
+    const i = u.pathname.indexOf(marker);
+    if (i < 0) return url;
+    const rest = u.pathname.slice(i + marker.length);
+    const parts = rest.split("/").filter(Boolean);
+    if (parts.length === 0) return url;
+    const looksLikeTransform =
+      !/^v\d+$/i.test(parts[0]) && !/\.(jpe?g|png|webp|gif|avif)$/i.test(parts[0]);
+    const remainder = (looksLikeTransform ? parts.slice(1) : parts).join("/");
+    if (!remainder) return url;
+    u.pathname = `${u.pathname.slice(0, i + marker.length)}f_jpg,q_auto:good,c_limit,w_2000/${remainder}`;
+    return u.href;
   } catch {
-    /* keep original */
+    return url;
   }
-  return url;
 }
 
 async function embedRaster(doc: PDFDocument, bytes: Uint8Array): Promise<PDFImage | null> {
@@ -126,32 +116,25 @@ async function embedUrl(doc: PDFDocument, url: string | null | undefined): Promi
   return embedRaster(doc, bytes);
 }
 
-function drawCover(page: PDFPage, image: PDFImage, x: number, y: number, w: number, h: number) {
-  const imgAspect = image.width / image.height;
+/** Fit the whole image inside the box — never crop. */
+function drawContain(page: PDFPage, image: PDFImage, x: number, y: number, w: number, h: number) {
+  const imgAspect = image.width / Math.max(1, image.height);
   const boxAspect = w / h;
   let dw: number;
   let dh: number;
   if (imgAspect > boxAspect) {
-    dh = h;
-    dw = h * imgAspect;
-  } else {
     dw = w;
     dh = w / imgAspect;
+  } else {
+    dh = h;
+    dw = h * imgAspect;
   }
-  const dx = x - (dw - w) / 2;
-  const dy = y - (dh - h) / 2;
-  page.pushOperators(
-    pushGraphicsState(),
-    moveTo(x, y),
-    lineTo(x + w, y),
-    lineTo(x + w, y + h),
-    lineTo(x, y + h),
-    closePath(),
-    clip(),
-    endPath()
-  );
-  page.drawImage(image, { x: dx, y: dy, width: dw, height: dh });
-  page.pushOperators(popGraphicsState());
+  page.drawImage(image, {
+    x: x + (w - dw) / 2,
+    y: y + (h - dh) / 2,
+    width: dw,
+    height: dh,
+  });
 }
 
 function drawField(
@@ -174,55 +157,61 @@ function drawField(
   return cy - 10;
 }
 
+function drawFallbackPosterPage(
+  page: PDFPage,
+  input: EventTicketPdfInput,
+  font: PDFFont,
+  bold: PDFFont
+) {
+  page.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: PAGE_H, color: NAVY });
+  const title = wrapLines(input.eventTitle, bold, 28, BODY_W);
+  let ty = PAGE_H / 2 + title.length * 16;
+  for (const line of title) {
+    const tw = bold.widthOfTextAtSize(line, 28);
+    page.drawText(line, {
+      x: (PAGE_W - tw) / 2,
+      y: ty,
+      size: 28,
+      font: bold,
+      color: rgb(1, 1, 1),
+    });
+    ty -= 34;
+  }
+  const host = pdfSafe(input.organizerName);
+  const hw = font.widthOfTextAtSize(host, 12);
+  page.drawText(host, {
+    x: (PAGE_W - hw) / 2,
+    y: M + 24,
+    size: 12,
+    font,
+    color: GOLD,
+  });
+}
+
 export async function buildEventTicketPdf(input: EventTicketPdfInput): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=${encodeURIComponent(input.qrData)}`;
-  const [poster, qr] = await Promise.all([
-    embedUrl(doc, input.posterUrl),
-    embedUrl(doc, qrUrl),
-  ]);
+  const [poster, qr] = await Promise.all([embedUrl(doc, input.posterUrl), embedUrl(doc, qrUrl)]);
 
   const page1 = doc.addPage([PAGE_W, PAGE_H]);
-  const posterH = 360;
-  const posterY = PAGE_H - M - posterH;
-  page1.drawRectangle({ x: M, y: posterY, width: BODY_W, height: posterH, color: NAVY });
   if (poster) {
-    drawCover(page1, poster, M, posterY, BODY_W, posterH);
+    page1.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: PAGE_H, color: rgb(1, 1, 1) });
+    drawContain(page1, poster, 0, 0, PAGE_W, PAGE_H);
   } else {
-    const title = wrapLines(input.eventTitle, bold, 22, BODY_W - 48);
-    let ty = posterY + posterH / 2 + title.length * 12;
-    for (const line of title) {
-      const tw = bold.widthOfTextAtSize(line, 22);
-      page1.drawText(line, {
-        x: M + (BODY_W - tw) / 2,
-        y: ty,
-        size: 22,
-        font: bold,
-        color: rgb(1, 1, 1),
-      });
-      ty -= 28;
-    }
+    drawFallbackPosterPage(page1, input, font, bold);
   }
 
-  page1.drawRectangle({ x: M, y: posterY - 4, width: BODY_W, height: 4, color: GOLD });
+  const page2 = doc.addPage([PAGE_W, PAGE_H]);
+  let y = PAGE_H - M;
 
-  let y = posterY - 28;
-  for (const line of wrapLines(input.eventTitle, bold, 18, BODY_W)) {
-    page1.drawText(line, { x: M, y, size: 18, font: bold, color: INK });
-    y -= 22;
+  for (const line of wrapLines(input.eventTitle, bold, 16, BODY_W)) {
+    page2.drawText(line, { x: M, y, size: 16, font: bold, color: INK });
+    y -= 20;
   }
-
-  y -= 4;
-  page1.drawLine({
-    start: { x: M, y },
-    end: { x: PAGE_W - M, y },
-    thickness: 1,
-    color: RULE,
-  });
-  y -= 26;
+  y -= 8;
 
   const qrSize = 108;
   const detailsW = BODY_W - qrSize - 24;
@@ -238,15 +227,15 @@ export async function buildEventTicketPdf(input: EventTicketPdfInput): Promise<U
   const fieldsTop = y;
   let fy = y;
   for (const [label, value] of fields) {
-    fy = drawField(page1, font, bold, label, value, M, fy, detailsW);
+    fy = drawField(page2, font, bold, label, value, M, fy, detailsW);
   }
 
   if (qr) {
-    const qrY = fieldsTop - qrSize + 4;
-    page1.drawImage(qr, { x: PAGE_W - M - qrSize, y: qrY, width: qrSize, height: qrSize });
+    const qrY = Math.max(fy + 8, fieldsTop - qrSize);
+    page2.drawImage(qr, { x: PAGE_W - M - qrSize, y: qrY, width: qrSize, height: qrSize });
     const scan = "Show at entry";
     const sw = font.widthOfTextAtSize(scan, 8);
-    page1.drawText(scan, {
+    page2.drawText(scan, {
       x: PAGE_W - M - qrSize + (qrSize - sw) / 2,
       y: qrY - 12,
       size: 8,
@@ -255,25 +244,16 @@ export async function buildEventTicketPdf(input: EventTicketPdfInput): Promise<U
     });
   }
 
-  page1.drawText(pdfSafe(input.organizerName), {
-    x: M,
-    y: M,
-    size: 9,
-    font: bold,
-    color: INK,
+  y = Math.min(fy, fieldsTop - qrSize - 20) - 8;
+  page2.drawLine({
+    start: { x: M, y },
+    end: { x: PAGE_W - M, y },
+    thickness: 1,
+    color: RULE,
   });
-
-  const page2 = doc.addPage([PAGE_W, PAGE_H]);
-  if (poster) {
-    drawCover(page2, poster, M, PAGE_H - M - 120, BODY_W, 120);
-    page2.drawRectangle({ x: M, y: PAGE_H - M - 124, width: BODY_W, height: 4, color: GOLD });
-    y = PAGE_H - M - 150;
-  } else {
-    y = PAGE_H - M - 24;
-  }
-
-  page2.drawText(pdfSafe(input.eventTitle), { x: M, y, size: 14, font: bold, color: INK });
+  page2.drawRectangle({ x: M, y: y - 4, width: 72, height: 4, color: GOLD });
   y -= 28;
+
   page2.drawText("Terms and Conditions", { x: M, y, size: 16, font: bold, color: INK });
   y -= 22;
 
