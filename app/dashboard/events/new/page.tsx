@@ -109,6 +109,21 @@ export default function NewEventPage() {
       let imageUrl: string | null = null;
       if (imageFile) imageUrl = await uploadImageFile(imageFile);
 
+      const sellingGeneral =
+        !freeRegistration && !useTieredTickets && Boolean(ticketCampaignSlug.trim() || ticketPriceKes.trim());
+      const resolvedCampaignSlug = sellingGeneral
+        ? ticketCampaignSlug.trim() || normalizedSlug
+        : ticketCampaignSlug.trim() || null;
+      const resolvedTiers =
+        useTieredTickets && ticketTiers.length > 0
+          ? ticketTiers.map((t) =>
+              tierToStoredJson({
+                ...t,
+                slug: t.slug.trim() || `${normalizedSlug}-${slugify(t.label || t.id)}`,
+              })
+            )
+          : null;
+
       const { error: insertErr } = await supabase.from("fusion_events").insert({
         slug: normalizedSlug,
         title: title.trim(),
@@ -121,7 +136,7 @@ export default function NewEventPage() {
         category: category.trim() || null,
         venue: venue.trim() || null,
         hosted_by: hostedBy.trim() || null,
-        ticket_campaign_slug: ticketCampaignSlug.trim() || null,
+        ticket_campaign_slug: resolvedCampaignSlug,
         payment_link: paymentLink.trim() || null,
         document_url: documentUrl.trim() || null,
         document_label: documentLabel.trim() || null,
@@ -131,10 +146,7 @@ export default function NewEventPage() {
         free_registration_ask_party_size: freeRegistration,
         lipa_pole_pole: freeRegistration ? false : lipaPolePole,
         is_live: isLive,
-        ticket_tiers:
-          useTieredTickets && ticketTiers.length > 0
-            ? ticketTiers.map((t) => tierToStoredJson(t))
-            : null,
+        ticket_tiers: resolvedTiers,
         image_focus: imageFocus.trim() || null,
         image_url: imageUrl,
         created_by: user.id,
@@ -552,7 +564,9 @@ export default function NewEventPage() {
               placeholder="e.g. cfma-2026"
               disabled={freeRegistration || useTieredTickets}
             />
-            <p className="text-xs text-gray-500 mt-2">Single campaign link. Leave empty if using free registration or tiered tickets.</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Optional. If you set a ticket price and leave this empty, checkout uses the event slug automatically so Buy Ticket Online still opens the payment banner.
+            </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Payment link (optional)</label>

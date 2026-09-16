@@ -92,7 +92,11 @@ function normalizeTiers(
 
 export default function CmfAwardsTicketModal({ open, onClose, event: eventProp, tiers: tiersProp }: Props) {
   const EVENT = eventProp ?? DEFAULT_EVENT;
-  const TICKET_TIERS = useMemo(() => normalizeTiers(tiersProp), [tiersProp]);
+  const TICKET_TIERS = useMemo(() => {
+    if (tiersProp && tiersProp.length > 0) return normalizeTiers(tiersProp);
+    if (eventProp) return [];
+    return normalizeTiers(null);
+  }, [tiersProp, eventProp]);
   const shortTitle = EVENT.shortTitle ?? EVENT.title;
   const imageUrl = EVENT.imageUrl ?? DEFAULT_EVENT.imageUrl;
 

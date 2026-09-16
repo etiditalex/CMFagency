@@ -252,6 +252,21 @@ export default function EditEventPage() {
         finalImageUrl = imageUrl.trim();
       }
 
+      const sellingGeneral =
+        !freeRegistration && !useTieredTickets && Boolean(ticketCampaignSlug.trim() || ticketPriceKes.trim());
+      const resolvedCampaignSlug = sellingGeneral
+        ? ticketCampaignSlug.trim() || normalizedSlug
+        : ticketCampaignSlug.trim() || null;
+      const resolvedTiers =
+        useTieredTickets && ticketTiers.length > 0
+          ? ticketTiers.map((t) =>
+              tierToStoredJson({
+                ...t,
+                slug: t.slug.trim() || `${normalizedSlug}-${slugify(t.label || t.id)}`,
+              })
+            )
+          : null;
+
       const { error: updateErr } = await supabase
         .from("fusion_events")
         .update({
@@ -266,7 +281,7 @@ export default function EditEventPage() {
           category: category.trim() || null,
           venue: venue.trim() || null,
           hosted_by: hostedBy.trim() || null,
-          ticket_campaign_slug: ticketCampaignSlug.trim() || null,
+          ticket_campaign_slug: resolvedCampaignSlug,
           payment_link: paymentLink.trim() || null,
           document_url: documentUrl.trim() || null,
           document_label: documentLabel.trim() || null,
@@ -276,7 +291,7 @@ export default function EditEventPage() {
           free_registration_ask_party_size: freeRegistration,
           lipa_pole_pole: freeRegistration ? false : lipaPolePole,
           is_live: isLive,
-          ticket_tiers: useTieredTickets && ticketTiers.length > 0 ? ticketTiers.map((t) => tierToStoredJson(t)) : null,
+          ticket_tiers: resolvedTiers,
           image_focus: imageFocus.trim() || null,
           image_url: finalImageUrl,
         })

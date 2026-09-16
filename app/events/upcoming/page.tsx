@@ -8,6 +8,11 @@ import { format } from "date-fns";
 import Image from "next/image";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 import { eventListDayKey, isEventUpcoming } from "@/lib/event-status";
+import {
+  eventSellsTickets,
+  eventTicketCheckoutSlug,
+  tiersForTicketModal,
+} from "@/lib/event-ticket-checkout";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { useNowTick } from "@/lib/hooks/useNowTick";
 import { supabase } from "@/lib/supabase";
@@ -188,7 +193,7 @@ export default function UpcomingEventsPage() {
                       </span>
                     </div>
                   </Link>
-                  {(event.free_registration || event.ticket_campaign_slug || event.ticket_tiers?.length || event.slug === "coast-fashion-modelling-awards-2026") && (
+                  {(event.free_registration || eventSellsTickets(event) || event.slug === "coast-fashion-modelling-awards-2026") && (
                     <div className="px-5 pb-5">
                       {!salesOpen ? (
                         <Link
@@ -207,57 +212,40 @@ export default function UpcomingEventsPage() {
                           <Ticket className="w-4 h-4" />
                           Register
                         </Link>
-                      ) : (event.ticket_tiers?.length ?? 0) > 0 ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setTieredEvent(event);
-                            setTicketModalOpen(true);
-                          }}
-                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
-                        >
-                          <Ticket className="w-4 h-4" />
-                          Buy Ticket Online
-                        </button>
-                      ) : event.slug === "coast-fashion-modelling-awards-2026" ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setTieredEvent(null);
-                            setTicketModalOpen(true);
-                          }}
-                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
-                        >
-                          <Ticket className="w-4 h-4" />
-                          Buy Ticket Online
-                        </button>
-                      ) : event.ticket_campaign_slug?.trim() ? (
+                      ) : eventSellsTickets(event) ? (
                         <button
                           type="button"
                           disabled={buyLoadingEventId === event.id}
                           onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            const readyTiers = tiersForTicketModal(event);
+                            if (readyTiers.length > 0) {
+                              setTieredEvent({ ...event, ticket_tiers: readyTiers });
+                              setTicketModalOpen(true);
+                              return;
+                            }
+                            const slug = eventTicketCheckoutSlug(event);
                             setBuyLoadingEventId(event.id);
                             try {
-                              const slug = event.ticket_campaign_slug!.trim();
                               const tier = await resolveFusionModalTicketTier(slug, event.ticket_price_kes);
-                              if (tier === "navigate") {
-                                window.location.href = `/${slug}`;
-                                return;
-                              }
+                              const resolved =
+                                tier === "navigate"
+                                  ? {
+                                      id: `ga-${slug}`,
+                                      label: "General admission",
+                                      slug,
+                                      unit_amount_kes: Number(event.ticket_price_kes) || 0,
+                                    }
+                                  : tier;
                               setTieredEvent({
                                 ...event,
                                 ticket_tiers: [
                                   {
-                                    id: tier.id,
-                                    label: tier.label,
-                                    slug: tier.slug,
-                                    unit_amount_kes: tier.unit_amount_kes,
+                                    id: resolved.id,
+                                    label: resolved.label,
+                                    slug: resolved.slug,
+                                    unit_amount_kes: resolved.unit_amount_kes,
                                   },
                                 ],
                               });
@@ -274,6 +262,20 @@ export default function UpcomingEventsPage() {
                             <Ticket className="w-4 h-4 shrink-0" />
                           )}
                           {buyLoadingEventId === event.id ? "Opening checkout…" : "Buy Ticket Online"}
+                        </button>
+                      ) : event.slug === "coast-fashion-modelling-awards-2026" ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTieredEvent(null);
+                            setTicketModalOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center gap-2 w-full rounded-lg bg-gray-900 hover:bg-black text-white font-semibold py-2.5 px-4 text-sm transition-colors"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          Buy Ticket Online
                         </button>
                       ) : null}
                     </div>

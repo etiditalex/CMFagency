@@ -29,6 +29,13 @@ export async function resolveFusionModalTicketTier(
     };
   }
 
+  const fallback: FusionModalTicketTier = {
+    id: `ga-${slug}`,
+    label: "General admission",
+    slug,
+    unit_amount_kes: Number.isFinite(priceRaw) && priceRaw > 0 ? Math.round(priceRaw) : 0,
+  };
+
   const res = await fetch(`/api/campaigns/${encodeURIComponent(slug)}/page-data`);
   let body: {
     not_found?: boolean;
@@ -37,14 +44,14 @@ export async function resolveFusionModalTicketTier(
   try {
     body = await res.json();
   } catch {
-    return "navigate";
+    return fallback;
   }
-  if (!res.ok || body.not_found || !body.campaign) return "navigate";
+  if (!res.ok || body.not_found || !body.campaign) return fallback;
   const c = body.campaign;
-  if (c.type !== "ticket") return "navigate";
-  if (!isKenyaShillingsForLipa(c.currency)) return "navigate";
+  if (c.type !== "ticket") return fallback;
+  if (!isKenyaShillingsForLipa(c.currency)) return fallback;
   const ua = Math.round(Number(c.unit_amount));
-  if (!Number.isFinite(ua) || ua < 1) return "navigate";
+  if (!Number.isFinite(ua) || ua < 1) return fallback;
   return {
     id: `ga-${c.slug}`,
     label: "Ticket",

@@ -20,6 +20,12 @@ import { format } from "date-fns";
 import CmfAwardsTicketModal from "@/components/CmfAwardsTicketModalLazy";
 import CfmaShowcasePage from "@/components/events/cfma/CfmaShowcasePage";
 import { isEventUpcoming } from "@/lib/event-status";
+import {
+  eventSellsTickets,
+  eventTicketCheckoutSlug,
+  generalAdmissionTiersFromEvent,
+  tiersForTicketModal,
+} from "@/lib/event-ticket-checkout";
 import { resolveFusionModalTicketTier } from "@/lib/fusion-general-admission-tier";
 import { supabase } from "@/lib/supabase";
 
@@ -120,7 +126,8 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
   const endDate = event.end_date ? new Date(event.end_date) : null;
   const salesOpen = event.is_live !== false;
   const closedMsg = salesClosedMessage(event.slug);
-  const hasTicket = !!event.ticket_campaign_slug?.trim();
+  const sellsTickets = eventSellsTickets(event);
+  const hasTicket = sellsTickets;
   const hasTieredTickets = (event.ticket_tiers?.length ?? 0) > 0;
   const hasPayment = !!event.payment_link;
   const hasFreeReg = !!event.free_registration;
@@ -132,45 +139,44 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
     const endIso = event.end_date && event.end_date !== startIso ? event.end_date : null;
     return [startIso, ...(endIso ? [endIso] : [])];
   })();
-  const tiers = (event.ticket_tiers ?? []) as TicketTierRow[];
+  const tiers = tiersForTicketModal(event);
 
   const inlineGeneralTiers = useMemo((): TicketTierRow[] | null => {
-    if (!hasTicket || hasTieredTickets || hasFreeReg) return null;
-    const slug = event.ticket_campaign_slug!.trim();
-    const p = Number(event.ticket_price_kes);
-    if (!Number.isFinite(p) || p < 1) return null;
-    return [{ id: `ga-${slug}`, label: "General admission", slug, unit_amount_kes: Math.round(p) }];
-  }, [hasTicket, hasTieredTickets, hasFreeReg, event.ticket_campaign_slug, event.ticket_price_kes]);
+    if (hasTieredTickets || hasFreeReg) return null;
+    return generalAdmissionTiersFromEvent(event);
+  }, [hasTieredTickets, hasFreeReg, event]);
 
   const closeTicketModal = () => {
     setTicketModalOpen(false);
     setModalTiersOverride(null);
   };
 
-  const openTieredCheckout = () => {
-    if (!salesOpen) return;
+  const openTicketCheckout = () => {
+    if (!salesOpen || !sellsTickets) return;
     setModalTiersOverride(null);
     setTicketModalOpen(true);
   };
 
   const openGeneralCheckout = async () => {
-    if (!salesOpen) return;
-    if (inlineGeneralTiers) {
-      setTicketModalOpen(true);
+    if (!salesOpen || !sellsTickets) return;
+    if (hasTieredTickets || inlineGeneralTiers) {
+      openTicketCheckout();
       return;
     }
-    const slug = event.ticket_campaign_slug?.trim();
+    const slug = eventTicketCheckoutSlug(event);
     if (!slug) return;
     setBuyLoading(true);
     try {
       const tier = await resolveFusionModalTicketTier(slug, event.ticket_price_kes);
       if (tier === "navigate") {
-        window.location.href = `/${slug}`;
-        return;
+        setModalTiersOverride([
+          { id: `ga-${slug}`, label: "General admission", slug, unit_amount_kes: Number(event.ticket_price_kes) || 0 },
+        ]);
+      } else {
+        setModalTiersOverride([
+          { id: tier.id, label: tier.label, slug: tier.slug, unit_amount_kes: tier.unit_amount_kes },
+        ]);
       }
-      setModalTiersOverride([
-        { id: tier.id, label: tier.label, slug: tier.slug, unit_amount_kes: tier.unit_amount_kes },
-      ]);
       setTicketModalOpen(true);
     } finally {
       setBuyLoading(false);
@@ -179,15 +185,10 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
 
   const tiersForModal = useMemo((): TicketTierRow[] => {
     if (modalTiersOverride) return modalTiersOverride;
-    if (hasTieredTickets) return (event.ticket_tiers ?? []) as TicketTierRow[];
-    return inlineGeneralTiers ?? [];
-  }, [modalTiersOverride, hasTieredTickets, event.ticket_tiers, inlineGeneralTiers]);
+    return tiers;
+  }, [modalTiersOverride, tiers]);
 
-  const shouldMountTicketModal =
-    salesOpen &&
-    ((hasTieredTickets && tiersForModal.length > 0) ||
-      inlineGeneralTiers != null ||
-      modalTiersOverride != null);
+  const shouldMountTicketModal = salesOpen && sellsTickets;
 
   return (
     <div className="pt-16 sm:pt-20 min-h-screen bg-gray-50">
@@ -290,7 +291,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                       <button
                         key={t.id || t.slug}
                         type="button"
-                        onClick={() => openTieredCheckout()}
+                        onClick={() => openTicketCheckout()}
                         disabled={!salesOpen}
                         className="w-full text-left rounded-xl border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-60 disabled:hover:bg-white disabled:cursor-not-allowed p-3 sm:p-4 shadow-sm"
                       >
@@ -358,7 +359,7 @@ function DbUpcomingEventDetail({ event }: { event: DbEvent }) {
                   {hasTieredTickets && !hasFreeReg && (
                     <button
                       type="button"
-                      onClick={() => openTieredCheckout()}
+                      onClick={() => openTicketCheckout()}
                       disabled={!salesOpen}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:hover:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 transition-colors"
                     >

@@ -78,6 +78,19 @@ export async function ensureCampaignFromEvent(
   }
 
   if (!event) {
+    const { data: byEventSlug } = await supabaseAdmin
+      .from("fusion_events")
+      .select(EVENT_SELECT)
+      .eq("slug", slugNorm)
+      .eq("is_live", true)
+      .maybeSingle();
+    if (byEventSlug) {
+      event = byEventSlug as FusionEventRow;
+      unitAmountKes = Number(event.ticket_price_kes) || 0;
+    }
+  }
+
+  if (!event) {
     // 2) Event with slug in ticket_tiers (match normalized so "old is gold" = "old-is-gold")
     const { data: eventsWithTiers } = await supabaseAdmin
       .from("fusion_events")
