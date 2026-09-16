@@ -20,6 +20,7 @@ import {
 } from "@/lib/daraja-stk-config";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 import { findVotingWindowRejection } from "@/lib/voting-window";
+import { eventPosterMetaForSlug } from "@/lib/event-ticket";
 
 type StkPushBody = {
   slug?: string;
@@ -301,6 +302,9 @@ export async function POST(req: Request) {
       amount = q * unitAmount - discountInt;
     }
 
+    const eventMeta =
+      campaign.type === "ticket" ? await eventPosterMetaForSlug(supabaseAdmin, campaign.slug) : {};
+
     const insertPayload = {
       campaign_id: campaign.id,
       campaign_type: campaign.type,
@@ -321,6 +325,7 @@ export async function POST(req: Request) {
         campaign_title: campaign.title,
         phone,
         payer_phone: phone,
+        ...eventMeta,
         ...(referredBy ? { referred_by: referredBy } : {}),
         ...(referrerPhone ? { referrer_phone: referrerPhone } : {}),
         ...lipaMeta,

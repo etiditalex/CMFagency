@@ -8,6 +8,7 @@ import { normalizeKenyaCurrencyForPayments, resolveInstallmentPaymentKes } from 
 import { validateReferredByNameOnly } from "@/lib/referred-by-name-only";
 import { normalizeKenyaPhone, parseOptionalKenyaPhone } from "@/lib/kenya-phone";
 import { findVotingWindowRejection } from "@/lib/voting-window";
+import { eventPosterMetaForSlug } from "@/lib/event-ticket";
 
 type InitBody = {
   slug?: string;
@@ -279,6 +280,10 @@ export async function POST(req: Request) {
       paystack_amount_subunit: amountMainRounded * 100,
       ...lipaMeta,
     };
+    if (campaign.type === "ticket") {
+      const eventMeta = await eventPosterMetaForSlug(supabaseAdmin ?? supabase, campaign.slug);
+      Object.assign(txMetadata, eventMeta);
+    }
     if (payerPhoneStored) txMetadata.payer_phone = payerPhoneStored;
     if (referredBy) txMetadata.referred_by = referredBy;
     if (referrerPhone) txMetadata.referrer_phone = referrerPhone;

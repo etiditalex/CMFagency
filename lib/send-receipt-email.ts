@@ -1,9 +1,13 @@
 import React from "react";
 import { render } from "@react-email/render";
 import { resend, fromEmail } from "./resend";
-import { isSmtpConfigured, sendEmailViaSmtp } from "./email-smtp";
+import { isSmtpConfigured, sendEmailViaSmtp, type SmtpAttachment } from "./email-smtp";
 import { DEFAULT_LOGO_URL, CHANGER_LOGO_CID } from "./admin-email-template";
 import { ReceiptEmail } from "@/components/emails/receipt-email";
+import { TicketConfirmationEmail } from "@/components/emails/ticket-confirmation-email";
+import type { EventTicketPdfInput } from "@/lib/event-ticket";
+import { ticketPdfFilename } from "@/lib/event-ticket";
+import { buildEventTicketPdf } from "@/lib/event-ticket-pdf";
 
 export type ReceiptParams = {
   to: string;
@@ -20,6 +24,7 @@ export type ReceiptParams = {
   variant?: "mpesa" | "paystack";
   viewTicketsUrl?: string;
   downloadReceiptUrl?: string;
+  downloadTicketUrl?: string;
   eventDate?: string;
   eventTime?: string;
   eventLocation?: string;
@@ -27,6 +32,7 @@ export type ReceiptParams = {
   organizerEmail?: string;
   rsvpUrl?: string;
   campaignSlug?: string;
+  ticketPdf?: EventTicketPdfInput;
 };
 
 let cachedLogo: { buf: Buffer; at: number } | null = null;
@@ -74,46 +80,80 @@ const receiptProps = (
   campaignSlug: params.campaignSlug,
 });
 
-export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {
-  const { to, campaignTitle, typeLabel, variant = "paystack" } = params;
+async function buildTicketPdfBuffer(
+  ticket: EventTicketPdfInput | undefined
+): Promise<{ filename: string; content: Buffer } | null> {
+  if (!ticket) return null;
+  try {
+    const bytes = await buildEventTicketPdf(ticket);
+    return { filename: ticketPdfFilename(ticket.ticketId), content: Buffer.from(bytes) };
+  } catch (e) {
+    console.warn("[ticket-email] PDF build failed:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
 
-  const subject =
-    typeLabel === "Ticket"
-      ? `Your invitation & ticket – ${campaignTitle}`
-      : `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
+export async function sendReceiptEmail(params: ReceiptParams): Promise<{ ok: boolean; error?: string }> {
+  const { to, campaignTitle, typeLabel } = params;
+  const isTicket = typeLabel === "Ticket";
+  const eventTitle = params.ticketPdf?.eventTitle || campaignTitle;
+  const subject = isTicket
+    ? `Your ticket – ${eventTitle}`
+    : `Your ${typeLabel.toLowerCase()} receipt – ${campaignTitle}`;
   const from = fromEmail;
 
+  const ticketPdf = isTicket ? await buildTicketPdfBuffer(params.ticketPdf) : null;
   const logoAttachmentResend = { path: DEFAULT_LOGO_URL, filename: "changer-logo.png", contentId: CHANGER_LOGO_CID };
 
-  // Prefer Resend SMTP when configured (Resend dashboard → SMTP)
+  const ticketEmailEl = React.createElement(TicketConfirmationEmail, {
+    holderName: params.holderName,
+    ticketTypeLabel: params.ticketPdf?.ticketTypeLabel || campaignTitle,
+    ticketDay: params.ticketPdf?.ticketDay || params.eventDate || "",
+    organizerName: params.ticketPdf?.organizerName || params.organizerName || "Changer Fusions",
+    downloadTicketUrl: params.downloadTicketUrl,
+  });
+
   if (isSmtpConfigured()) {
     try {
-      const html = await render(
-        React.createElement(ReceiptEmail, receiptProps(params))
-      );
+      const html = await render(isTicket ? ticketEmailEl : React.createElement(ReceiptEmail, receiptProps(params)));
       const logoBuf = await getCachedLogoBuffer();
-      const smtpLogoAttachment = logoBuf
-        ? [{ filename: "changer-logo.png", content: logoBuf, cid: CHANGER_LOGO_CID }]
-        : undefined;
-      return sendEmailViaSmtp({ to, subject, html, from, attachments: smtpLogoAttachment });
+      const attachments: SmtpAttachment[] = [];
+      if (logoBuf) attachments.push({ filename: "changer-logo.png", content: logoBuf, cid: CHANGER_LOGO_CID });
+      if (ticketPdf) attachments.push({ filename: ticketPdf.filename, content: ticketPdf.content });
+      return sendEmailViaSmtp({
+        to,
+        subject,
+        html,
+        from,
+        attachments: attachments.length ? attachments : undefined,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       return { ok: false, error: msg };
     }
   }
 
-  // Resend API (default)
   if (!resend) {
     return { ok: false, error: "RESEND_API_KEY not configured" };
   }
 
   try {
+    const attachments: Array<{
+      filename: string;
+      path?: string;
+      content?: Buffer;
+      contentId?: string;
+    }> = [logoAttachmentResend];
+    if (ticketPdf) {
+      attachments.push({ filename: ticketPdf.filename, content: ticketPdf.content });
+    }
+
     const { error } = await resend.emails.send({
       from,
       to: [to],
       subject,
-      react: ReceiptEmail(receiptProps(params)),
-      attachments: [logoAttachmentResend],
+      react: isTicket ? ticketEmailEl : ReceiptEmail(receiptProps(params)),
+      attachments,
     });
 
     if (error) {

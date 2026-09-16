@@ -325,7 +325,17 @@ export default async function ReceiptPage({ searchParams }: Props) {
           {!(isVoteReceipt && slug && slug !== "event") && (
             <Link href="/" className="text-[#B8860B] font-medium hover:underline">← Back to home</Link>
           )}
-          <PrintButton />
+          <div className="flex flex-wrap items-center gap-3">
+            {typeLabel === "Ticket" && !(lipaBalance && !lipaBalance.completed) && (
+              <a
+                href={`/api/tickets/pdf?ref=${encodeURIComponent(ref)}`}
+                className="px-4 py-2 rounded-lg font-semibold text-white bg-gradient-to-br from-[#D4AF37] to-[#B8860B] hover:opacity-90 shadow"
+              >
+                Download ticket PDF
+              </a>
+            )}
+            <PrintButton />
+          </div>
         </div>
         <ReceiptContent
           campaignTitle={campaignTitle}

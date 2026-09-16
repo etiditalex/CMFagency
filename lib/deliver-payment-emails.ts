@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
 
 import { fetchContestantNameById } from "@/lib/contestant-name-for-receipt";
+import { eventDetailsFromTicket, loadEventTicketPdfInput, ticketNumberFromReference } from "@/lib/event-ticket";
 import { isLipaPolePoleMetadata } from "@/lib/lipa-pole-pole";
 import { runAfterResponse } from "@/lib/schedule-after-response";
 import { sendLipaPolePoleEmail } from "@/lib/send-lipa-pole-pole-email";
@@ -98,28 +99,6 @@ async function releasePaymentEmailClaim(supabase: SupabaseClient, transactionId:
   });
 }
 
-async function loadEventDetails(
-  supabase: SupabaseClient,
-  slug: string
-): Promise<{ eventLocation?: string; eventDate?: string; eventTime?: string }> {
-  if (!slug || slug === "event") return {};
-  const { data: eventRow } = await supabase
-    .from("fusion_events")
-    .select("location, venue, event_date, time")
-    .eq("ticket_campaign_slug", slug)
-    .maybeSingle();
-  if (!eventRow) return {};
-  const loc = (eventRow as { location?: string | null }).location;
-  const venue = (eventRow as { venue?: string | null }).venue;
-  const eventLocation = venue && loc ? `${venue}, ${loc}` : loc || venue || undefined;
-  const ed = (eventRow as { event_date?: string | null }).event_date;
-  const eventDate = ed
-    ? new Date(ed).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
-    : undefined;
-  const eventTime = (eventRow as { time?: string | null }).time ?? undefined;
-  return { eventLocation, eventDate, eventTime };
-}
-
 async function buildReceiptParams(
   supabase: SupabaseClient,
   tx: TxRow,
@@ -130,17 +109,15 @@ async function buildReceiptParams(
 
   const reference = String(tx.reference);
   const holderName = tx.payer_name?.trim?.() || toEmail;
-  const ticketSuffix = reference.replace(/^cmf_/, "").slice(-8).toUpperCase();
   const slug = String(meta.slug || meta.campaign_slug || "event");
-  const prefix = slug.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
-  const typeCode = tx.campaign_type === "vote" ? "VOT" : meta.merchandise_cart ? "ORD" : "TKT";
-  const ticketNumber = `${prefix}-${typeCode}-${ticketSuffix}`;
+  const isMerchandise = Boolean(meta.merchandise_cart);
+  const ticketNumber = ticketNumberFromReference(reference, slug, tx.campaign_type, isMerchandise);
   const campaignTitle = String(meta.campaign_title || meta.slug || "Event");
-  const typeLabel = (tx.campaign_type === "vote" ? "Vote" : meta.merchandise_cart ? "Order" : "Ticket") as
+  const typeLabel = (tx.campaign_type === "vote" ? "Vote" : isMerchandise ? "Order" : "Ticket") as
     | "Ticket"
     | "Vote"
     | "Order";
-  const quantityLabel = tx.campaign_type === "vote" ? "votes" : meta.merchandise_cart ? "items" : "tickets";
+  const quantityLabel = tx.campaign_type === "vote" ? "votes" : isMerchandise ? "items" : "tickets";
   const isMpesa = String(tx.provider ?? "").toLowerCase() === "daraja";
   const mpesaReceipt = (meta.mpesa_receipt as string)?.trim() || undefined;
   const currency = String(tx.currency || "KES").toUpperCase();
@@ -149,10 +126,25 @@ async function buildReceiptParams(
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://cmfagency.co.ke").replace(/\/$/, "");
   const viewTicketsUrl = slug && slug !== "event" ? `${baseUrl}/${slug}?ref=${encodeURIComponent(reference)}` : undefined;
   const downloadReceiptUrl = `${baseUrl}/receipt?ref=${encodeURIComponent(reference)}`;
+  const downloadTicketUrl = `${baseUrl}/api/tickets/pdf?ref=${encodeURIComponent(reference)}`;
   const rsvpUrl = `${baseUrl}/invite?ref=${encodeURIComponent(reference)}`;
-  const { eventLocation, eventDate, eventTime } = await loadEventDetails(supabase, slug);
   const votedForName =
     tx.campaign_type === "vote" ? await fetchContestantNameById(supabase, tx.contestant_id) : undefined;
+
+  const ticketPdf =
+    typeLabel === "Ticket"
+      ? await loadEventTicketPdfInput(supabase, {
+          slug,
+          campaignTitle,
+          holderName,
+          reference,
+          ticketNumber,
+          amountKes: amount,
+          quantity,
+          meta,
+        })
+      : undefined;
+  const fromTicket = ticketPdf ? eventDetailsFromTicket(ticketPdf) : {};
 
   return {
     to: toEmail,
@@ -169,10 +161,13 @@ async function buildReceiptParams(
     votedForName,
     viewTicketsUrl,
     downloadReceiptUrl,
-    eventLocation,
-    eventDate,
-    eventTime,
+    downloadTicketUrl: typeLabel === "Ticket" ? downloadTicketUrl : undefined,
+    eventLocation: fromTicket.eventLocation,
+    eventDate: fromTicket.eventDate,
+    eventTime: fromTicket.eventTime,
+    organizerName: ticketPdf?.organizerName,
     rsvpUrl: typeLabel === "Ticket" ? rsvpUrl : undefined,
+    ticketPdf,
   };
 }
 
@@ -275,7 +270,10 @@ export async function deliverPaymentEmailsOnce(
   const meta = claim.meta;
   try {
     let result: { ok: boolean; error?: string };
-    if (isLipaPolePoleMetadata(meta)) {
+    const lipaComplete =
+      isLipaPolePoleMetadata(meta) &&
+      (Boolean(meta.lipa_pole_pole_plan_completed) || Number(meta.lipa_pole_pole_balance_remaining_kes) <= 0);
+    if (isLipaPolePoleMetadata(meta) && !lipaComplete) {
       result = await sendLipaEmailForTx(supabase, tx, meta);
     } else if (meta.service_invoice_id) {
       result = await sendServiceInvoiceEmailForTx(supabase, tx, meta);
