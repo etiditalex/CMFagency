@@ -47,6 +47,7 @@ import {
   PanelLeftOpen,
   ChevronDown,
   Bell,
+  Settings,
 } from "lucide-react";
 
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
@@ -98,7 +99,7 @@ type NavItem = {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
-  section: "engagement" | "commerce" | "administration";
+  section: "home" | "campaigns_voting" | "access_events" | "teams_membership" | "commerce" | "administration";
   adminOnly?: boolean;
   /** Feature key: client needs this feature enabled to see item. Prefer over minTier. */
   featureKey?:
@@ -130,47 +131,49 @@ const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
 const NAV_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
 const NAV_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
+const NAV_EXPAND_IDLE = "font-medium text-ink-muted hover:bg-brand-muted/50 hover:text-ink";
 const NAV_CHILD_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
 const NAV_CHILD_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
 const NAV_ICON_ACTIVE = "text-brand";
 const NAV_ICON_IDLE = "text-ink-muted group-hover:text-ink";
+const NAV_SUBTREE = "ml-4 space-y-0.5 border-l border-hairline pl-2";
 
 const NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "engagement" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "home" },
   {
     label: "Sales & votes",
     href: "/dashboard/insights",
     icon: PieChart,
-    section: "engagement",
+    section: "campaigns_voting",
     featureKey: "reports",
   },
-  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "engagement", featureKey: "ticketing" },
-  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "engagement", featureKey: "voting" },
-  { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "engagement", featureKey: "voting" },
+  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "campaigns_voting", featureKey: "voting" },
+  { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "campaigns_voting", featureKey: "voting" },
   {
     label: "Contestants",
     href: "/dashboard/contestants",
     icon: UserPlus,
-    section: "engagement",
+    section: "campaigns_voting",
     featureKey: "voting",
     nestedLinks: [
       { label: "All contestants", href: "/dashboard/contestants" },
       { label: "Download results", href: "/dashboard/contestants/results", adminOnly: true },
     ],
   },
-  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "engagement", featureKey: "teams_work" },
-  { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "engagement", featureKey: "kcm_membership" },
-  { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "engagement", featureKey: "reports" },
-  { label: "FX QR Code Generator", href: "/dashboard/fx-qr-code-generator", icon: QrCode, section: "engagement" },
+  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "campaigns_voting", featureKeysAny: ["ticketing", "voting"] },
+  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "access_events", featureKey: "ticketing" },
+  { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "access_events", featureKey: "reports" },
+  { label: "FX QR Code Generator", href: "/dashboard/fx-qr-code-generator", icon: QrCode, section: "access_events" },
   {
     label: "Visitor Management",
     href: VISITOR_MANAGEMENT_PATH,
     icon: UserCheck,
-    section: "engagement",
+    section: "access_events",
     featureKey: "visitor_management",
     children: [...VISITOR_MANAGEMENT_NAV_CHILDREN],
   },
-  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "engagement", featureKeysAny: ["ticketing", "voting"] },
+  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "teams_membership", featureKey: "teams_work" },
+  { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "teams_membership", featureKey: "kcm_membership" },
   { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "commerce", featureKey: "reports" },
   { label: "Invoices", href: "/dashboard/invoices", icon: FileText, section: "commerce" },
   { label: "Receipts", href: "/dashboard/receipts", icon: Receipt, section: "commerce" },
@@ -187,6 +190,7 @@ const NAV: NavItem[] = [
   { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "commerce", featureKey: "coupons" },
   { label: "Users", href: "/dashboard/users", icon: Users, section: "administration", adminOnly: true },
   { label: "Logs", href: "/dashboard/logs", icon: Activity, section: "administration", adminOnly: true },
+  { label: "Settings", href: "/dashboard/account", icon: User, section: "administration" },
   { label: "Applications", href: "/dashboard/applications", icon: Briefcase, section: "administration", adminOnly: true },
   { label: "Job board", href: "/dashboard/job-listings", icon: ClipboardList, section: "administration", adminOnly: true },
   { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "administration", adminOnly: true },
@@ -199,7 +203,6 @@ const NAV: NavItem[] = [
   { label: "Events", href: "/dashboard/events", icon: Calendar, section: "administration", featureKey: "events" },
   { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "administration", featureKey: "managers" },
   { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "administration", featureKey: "email" },
-  { label: "Account", href: "/dashboard/account", icon: User, section: "administration" },
 ];
 
 function parseHref(href: string) {
@@ -321,6 +324,25 @@ function DashboardNavItem({
     const parentActive = isContestantsSection(pathname);
     const isOpen = showLabels && (nestedNavOpen || parentActive);
 
+    if (!showLabels && extraLinks.length > 0) {
+      return (
+        <Link
+          href={item.href}
+          prefetch={false}
+          onClick={onNavigate}
+          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
+            parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
+          }`}
+          title={item.label}
+        >
+          <Icon
+            strokeWidth={1.5}
+            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
+          />
+        </Link>
+      );
+    }
+
     if (showLabels && extraLinks.length > 0) {
       return (
         <div className="space-y-0.5">
@@ -328,7 +350,7 @@ function DashboardNavItem({
             type="button"
             onClick={() => setNestedNavOpen(!nestedNavOpen)}
             className={`group flex w-full items-center rounded-md transition-colors ${
-              parentActive ? NAV_ACTIVE : NAV_IDLE
+              parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
             } gap-3 px-3 py-2.5`}
           >
             <Icon
@@ -341,7 +363,7 @@ function DashboardNavItem({
             />
           </button>
           {isOpen ? (
-            <div className="ml-3 space-y-0.5 border-l border-hairline pl-2">
+            <div className={NAV_SUBTREE}>
               {visibleLinks.map((link) => {
                 const childActive = isNestedLinkActive(pathname, link.href);
                 return (
@@ -376,7 +398,7 @@ function DashboardNavItem({
           prefetch={false}
           onClick={onNavigate}
           className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
-            parentActive ? NAV_ACTIVE : NAV_IDLE
+            parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
           }`}
           title={item.label}
         >
@@ -394,7 +416,7 @@ function DashboardNavItem({
           type="button"
           onClick={() => setVisitorNavOpen(!visitorNavOpen)}
           className={`group flex w-full items-center rounded-md transition-colors ${
-            parentActive ? NAV_ACTIVE : NAV_IDLE
+            parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
           } gap-3 px-3 py-2.5`}
         >
           <Icon
@@ -407,7 +429,7 @@ function DashboardNavItem({
           />
         </button>
         {isOpen ? (
-          <div className="ml-3 space-y-0.5 border-l border-hairline pl-2">
+          <div className={NAV_SUBTREE}>
             {item.children
               .filter((child) => !("adminOnly" in child && child.adminOnly) || isAdmin)
               .map((child) => {
@@ -793,7 +815,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }, [now]);
 
   const displayName = user?.name || user?.email || "Admin";
-  const initials = String(displayName).trim().charAt(0).toUpperCase() || "A";
+  const initials = (() => {
+    const parts = String(displayName).trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+    }
+    return String(displayName).trim().slice(0, 2).toUpperCase() || "A";
+  })();
   const roleLabel = isFullAdmin
     ? "Administrator"
     : isManager
@@ -818,10 +846,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const sections: Array<{ key: NavItem["section"]; label: string }> = [
-    { key: "engagement", label: "Engagement" },
+  const workSections: Array<{ key: NavItem["section"]; label: string }> = [
+    { key: "campaigns_voting", label: "Campaigns & Voting" },
+    { key: "access_events", label: "Access & Events" },
+    { key: "teams_membership", label: "Teams & Membership" },
     { key: "commerce", label: "Commerce" },
-    { key: "administration", label: "Administration" },
   ];
 
   const isTicketingVotingWorkspace =
@@ -837,42 +866,113 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     isTicketingVotingWorkspace;
   const isDashboardHome = pathname === "/dashboard";
 
-  const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) =>
-    sections.map((s) => {
-      const items = navItems.filter((x) => x.section === s.key && canSeeItem(x));
-      if (items.length === 0) return null;
-      return (
-      <div key={s.key}>
+  const renderNavItem = (item: NavItem, showLabels: boolean, onNavigate?: () => void) => (
+    <DashboardNavItem
+      key={item.href}
+      item={item}
+      pathname={pathname}
+      currentType={currentType}
+      visitorIndustry={visitorIndustry}
+      visitorNavOpen={visitorNavOpen}
+      setVisitorNavOpen={setVisitorNavOpen}
+      nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
+      setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
+      showLabels={showLabels}
+      onNavigate={onNavigate}
+      pendingApplicationsCount={pendingApplicationsCount}
+      pendingCmfaCount={pendingCmfaCount}
+      isAdmin={isAdmin}
+      adminOwnerId={adminOwnerId}
+    />
+  );
+
+  const renderGroupedSection = (
+    key: NavItem["section"],
+    label: string,
+    showLabels: boolean,
+    items: NavItem[],
+    onNavigate?: () => void
+  ) => {
+    if (items.length === 0) return null;
+    return (
+      <div key={key} className="mt-2 border-t border-hairline pt-2">
         {showLabels ? (
           <div className="px-3 text-[11px] font-medium text-ink-muted">
-            {s.label}
+            {label}
           </div>
         ) : null}
         <div className={`${showLabels ? "mt-2" : "mt-1"} space-y-0.5`}>
-          {items
-            .map((item) => (
-              <DashboardNavItem
-                key={item.href}
-                item={item}
-                pathname={pathname}
-                currentType={currentType}
-                visitorIndustry={visitorIndustry}
-                visitorNavOpen={visitorNavOpen}
-                setVisitorNavOpen={setVisitorNavOpen}
-                nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
-                setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
-                showLabels={showLabels}
-                onNavigate={onNavigate}
-                pendingApplicationsCount={pendingApplicationsCount}
-                pendingCmfaCount={pendingCmfaCount}
-                isAdmin={isAdmin}
-                adminOwnerId={adminOwnerId}
-              />
-            ))}
+          {items.map((item) => renderNavItem(item, showLabels, onNavigate))}
         </div>
       </div>
-      );
-    });
+    );
+  };
+
+  const dashboardItem = navItems.find((x) => x.section === "home" && canSeeItem(x));
+  const adminItems = navItems.filter((x) => x.section === "administration" && canSeeItem(x));
+
+  const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) => (
+    <>
+      {dashboardItem ? renderNavItem(dashboardItem, showLabels, onNavigate) : null}
+      {workSections.map((s) =>
+        renderGroupedSection(
+          s.key,
+          s.label,
+          showLabels,
+          navItems.filter((x) => x.section === s.key && canSeeItem(x)),
+          onNavigate
+        )
+      )}
+      {adminItems.length > 0 ? (
+        <div className="mt-auto">
+          {renderGroupedSection("administration", "Administration", showLabels, adminItems, onNavigate)}
+        </div>
+      ) : null}
+    </>
+  );
+
+  const identityStrip = (showLabels: boolean, onNavigate?: () => void) => (
+    <div className={`flex-shrink-0 border-t border-hairline ${showLabels ? "p-3" : "p-2"}`}>
+      <div className={`flex items-center ${showLabels ? "gap-2.5" : "justify-center"}`}>
+        <Link
+          href="/dashboard/account"
+          prefetch={false}
+          onClick={onNavigate}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-muted text-xs font-bold text-brand"
+          title={displayName}
+        >
+          {initials}
+        </Link>
+        {showLabels ? (
+          <>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-ink">{displayName}</div>
+              <div className="truncate text-[11px] text-ink-muted">CMFAgency</div>
+            </div>
+            <Link
+              href="/dashboard/account"
+              prefetch={false}
+              onClick={onNavigate}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" strokeWidth={1.5} />
+            </Link>
+            <button
+              type="button"
+              onClick={handleDashboardLogout}
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
+              title="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <span className="sr-only">{displayName}</span>
+        )}
+      </div>
+    </div>
+  );
 
   const noticeControl = (
     <span className="relative inline-flex">
@@ -986,23 +1086,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <nav className={`flex-1 overflow-y-auto py-4 flex flex-col gap-3 ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
+          <nav className={`flex-1 min-h-0 overflow-y-auto py-4 flex flex-col ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
             {renderSectionNav(showDesktopSidebarFull)}
           </nav>
 
-          <div className={`mt-auto border-t border-hairline ${showDesktopSidebarFull ? "p-3" : "p-2"}`}>
-            <button
-              type="button"
-              onClick={handleDashboardLogout}
-              className={`w-full inline-flex items-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink ${
-                showDesktopSidebarFull ? "justify-start gap-2.5 px-3 py-2.5 text-sm font-semibold" : "justify-center h-10"
-              }`}
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4 flex-shrink-0" />
-              {showDesktopSidebarFull ? <span>Sign out</span> : null}
-            </button>
-          </div>
+          {identityStrip(showDesktopSidebarFull)}
         </aside>
 
         {mobileOpen && (
@@ -1036,21 +1124,11 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 </button>
               </div>
 
-              <nav className="flex-1 overflow-y-auto px-2.5 py-4 flex flex-col gap-3">{renderSectionNav(true, () => setMobileOpen(false))}</nav>
+              <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-4 flex flex-col">
+                {renderSectionNav(true, () => setMobileOpen(false))}
+              </nav>
 
-              <div className="p-3 border-t border-hairline flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    void handleDashboardLogout();
-                  }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-brand-dark text-white font-bold hover:bg-brand"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </button>
-              </div>
+              {identityStrip(true, () => setMobileOpen(false))}
             </aside>
           </div>
         )}
