@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ComponentType, ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   Activity,
   BarChart3,
@@ -97,7 +97,7 @@ type NestedNavLink = {
 type NavItem = {
   label: string;
   href: string;
-  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: typeof LayoutDashboard;
   section: "engagement" | "commerce" | "administration";
   adminOnly?: boolean;
   /** Feature key: client needs this feature enabled to see item. Prefer over minTier. */
