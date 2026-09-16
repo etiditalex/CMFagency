@@ -39,7 +39,7 @@ export default function CopyLeaveApplicationLink({
       <button
         type="button"
         onClick={() => void copyLink()}
-        className={`inline-flex items-center gap-1 rounded-md border border-violet-200 px-2 py-1 text-xs font-semibold text-violet-800 hover:bg-violet-50 ${className}`}
+        className={`inline-flex items-center gap-1 rounded-md border border-brand/30 px-2 py-1 text-xs font-medium text-brand-dark hover:bg-brand-muted ${className}`}
       >
         {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
         {copied ? "Copied" : "Leave link"}
@@ -48,12 +48,12 @@ export default function CopyLeaveApplicationLink({
   }
 
   return (
-    <div className={`rounded-lg border border-violet-200 bg-violet-50/60 p-3 ${className}`}>
+    <div className={`rounded-lg border border-brand/30 bg-brand-muted/60 p-3 ${className}`}>
       <div className="flex items-start gap-2">
-        <Link2 className="w-4 h-4 text-violet-700 mt-0.5 shrink-0" aria-hidden />
+        <Link2 className="w-4 h-4 text-brand mt-0.5 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-violet-950">Employee leave application link</p>
-          <p className="text-xs text-violet-900/80 mt-0.5">
+          <p className="text-xs font-bold text-brand-dark">Employee leave application link</p>
+          <p className="text-xs text-brand-dark/80 mt-0.5">
             {employeeName
               ? `Send this link to ${employeeName} so they can apply for leave with their details filled in automatically.`
               : "Send this personal link so the employee can apply for leave with their details filled in automatically."}
@@ -61,7 +61,7 @@ export default function CopyLeaveApplicationLink({
           <button
             type="button"
             onClick={() => void copyLink()}
-            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-violet-300 bg-white px-3 py-1.5 text-xs font-semibold text-violet-900 hover:bg-violet-50"
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-brand/40 bg-surface px-3 py-1.5 text-xs font-medium text-brand-dark hover:bg-brand-muted"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Link copied" : "Copy leave application link"}

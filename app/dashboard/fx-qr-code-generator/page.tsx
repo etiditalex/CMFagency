@@ -32,7 +32,7 @@ export default function DashboardFxQrCodeGeneratorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border border-[#e5e5e5] bg-white p-5 sm:p-6">
+      <div className="border border-hairline bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-primary-700">

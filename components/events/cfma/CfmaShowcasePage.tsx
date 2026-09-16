@@ -250,11 +250,6 @@ export default function CfmaShowcasePage() {
                 </p>
               </div>
               <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap">
-                <Link href="/events/upcoming/cmfa-registration" className={primaryBtn}>
-                  <Ticket className="h-5 w-5" />
-                  CMFA Registration
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
                 <button type="button" onClick={() => setTicketModalOpen(true)} className={darkBtn}>
                   <Ticket className="h-5 w-5" />
                   Buy Ticket Online

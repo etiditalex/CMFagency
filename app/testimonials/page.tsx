@@ -36,7 +36,7 @@ export default function TestimonialsPage() {
           .eq("is_active", true)
           .eq("show_on_testimonials_page", true)
           .order("sort_order", { ascending: true })
-          .order("id", { ascending: true });
+          .order("id", { ascending: false });
         if (error) throw error;
         if (cancelled) return;
         setTestimonials((data ?? []) as PageTestimonial[]);

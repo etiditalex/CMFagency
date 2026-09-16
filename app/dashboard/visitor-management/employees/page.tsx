@@ -33,6 +33,7 @@ import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-manageme
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
 import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
+import { StatCard } from "@/components/dashboard/ui";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -696,23 +697,15 @@ export default function VisitorManagementEmployeesPage() {
       ) : null}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((c) => {
-          const Icon = c.icon;
-          return (
-            <div key={c.label} className={`${VM_CARD} p-5`}>
-              <div className="flex items-center gap-4">
-                <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${c.tone}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-2xl font-bold tabular-nums text-[#1a2332]">{c.value.toLocaleString()}</div>
-                  <div className="text-sm font-medium text-slate-600">{c.label}</div>
-                  <div className="text-xs text-slate-500">{c.hint}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {statCards.map((c, idx) => (
+          <StatCard
+            key={c.label}
+            label={c.label}
+            value={c.value.toLocaleString()}
+            hint={c.hint}
+            featured={idx === 0}
+          />
+        ))}
       </section>
 
       {!needsSelection && !canDownloadQr && !setupRequired ? (
@@ -1021,7 +1014,7 @@ export default function VisitorManagementEmployeesPage() {
                           type="button"
                           disabled={patchingId === emp.id || setupRequired}
                           onClick={() => void clearEmployeeDevice(emp.id, emp.fullName)}
-                          className="text-xs font-semibold text-violet-700 hover:underline disabled:opacity-50"
+                          className="text-xs font-medium text-brand hover:underline disabled:opacity-50"
                           title={
                             emp.registeredDeviceId
                               ? "Clear the phone linked to this employee"

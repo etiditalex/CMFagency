@@ -149,7 +149,7 @@ export default function DashboardContestantResultsPage() {
       </p>
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Download contestant results</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">Download contestant results</h2>
           <p className="text-gray-600 mt-1 max-w-2xl">
             Official results for every voting category, with the winner listed first. Download a PDF booklet of
             winners, a full contestant PDF, or an Excel workbook with a Winners sheet and an All contestants sheet.
@@ -205,7 +205,7 @@ export default function DashboardContestantResultsPage() {
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700">{error}</div>
       )}
 
-      <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
+      <div className="mt-6 bg-white border border-hairline p-6">
         {loading ? (
           <div className="py-12 text-center text-gray-500">Loading ranked results...</div>
         ) : !snapshot || snapshot.categories.length === 0 ? (
@@ -249,7 +249,7 @@ export default function DashboardContestantResultsPage() {
                   ) : (
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-white border-b border-[#e5e5e5]">
+                        <thead className="bg-white border-b border-hairline">
                           <tr className="text-left">
                             <th className="px-4 py-2 font-bold text-gray-600 w-16">Rank</th>
                             <th className="px-4 py-2 font-bold text-gray-600">Contestant</th>

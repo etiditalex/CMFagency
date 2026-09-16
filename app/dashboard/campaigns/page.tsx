@@ -387,7 +387,7 @@ export default function DashboardCampaignsPage() {
     <div className="text-left">
       <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Campaigns</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-hairline">Campaigns</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Create ticket or voting campaigns and share public payment links. Payment confirmation and fulfillment are
             handled by webhook only.
@@ -471,7 +471,7 @@ export default function DashboardCampaignsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6">
         {filtered.length === 0 ? (
-          <div className="bg-white p-8 border border-[#e5e5e5]">
+          <div className="bg-white p-8 border border-hairline">
             <p className="text-gray-700 text-left">
               {searchQuery.trim()
                 ? `No campaigns match "${searchQuery.trim()}". Try a different search or clear the search.`
@@ -496,7 +496,7 @@ export default function DashboardCampaignsPage() {
               const publicUrl = `/${c.slug}`;
 
               return (
-                <div key={c.id} className="bg-white p-4 border border-[#e5e5e5]">
+                <div key={c.id} className="bg-white p-4 border border-hairline">
                   <div className="flex flex-col gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">

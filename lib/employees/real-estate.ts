@@ -13,6 +13,6 @@ export function memberTypeLabel(memberType: "staff" | "crm"): string {
 
 export function memberTypeBadgeClass(memberType: "staff" | "crm"): string {
   return memberType === "crm"
-    ? "text-violet-800 bg-violet-50 border-violet-200"
+    ? "text-brand-dark bg-brand-muted border-brand/30"
     : "text-slate-800 bg-slate-50 border-slate-200";
 }

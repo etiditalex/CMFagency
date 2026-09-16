@@ -255,7 +255,7 @@ export default function DashboardPayoutsPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Payouts</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-hairline">Payouts</h2>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -290,7 +290,7 @@ export default function DashboardPayoutsPage() {
         <>
           {/* Wallet balances */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white p-6 border border-[#e5e5e5]">
+            <div className="bg-white p-6 border border-hairline">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Smartphone className="w-5 h-5" />
                 M-Pesa total received
@@ -305,7 +305,7 @@ export default function DashboardPayoutsPage() {
                 Scope: {balance?.scope === "visible_campaigns" ? "all campaigns visible to your account" : "owned campaigns only"}.
               </div>
             </div>
-            <div className="bg-white p-6 border border-[#e5e5e5]">
+            <div className="bg-white p-6 border border-hairline">
               <div className="flex items-center gap-2 text-primary-700 font-extrabold">
                 <Wallet className="w-5 h-5" />
                 Paystack
@@ -336,7 +336,7 @@ export default function DashboardPayoutsPage() {
             </div>
           ) : null}
 
-          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+          <div className="mt-6 bg-white p-6 border border-hairline">
             <h3 className="font-bold text-[#1a2332]">M-Pesa Wallet</h3>
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded border border-gray-200 bg-gray-50 p-3">
@@ -364,7 +364,7 @@ export default function DashboardPayoutsPage() {
           </div>
 
           {/* Request withdrawal */}
-          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+          <div className="mt-6 bg-white p-6 border border-hairline">
             <h3 className="font-bold text-[#1a2332]">Request M-Pesa Withdrawal</h3>
             <form onSubmit={handleWithdraw} className="mt-4 flex flex-wrap gap-4 items-end">
               <div>
@@ -489,7 +489,7 @@ export default function DashboardPayoutsPage() {
           )}
 
           {/* Withdrawal history */}
-          <div className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+          <div className="mt-6 bg-white p-6 border border-hairline">
             <h3 className="font-bold text-[#1a2332]">Withdrawal history</h3>
             {myWithdrawals.length === 0 ? (
               <p className="mt-2 text-sm text-gray-600">No withdrawal requests yet.</p>

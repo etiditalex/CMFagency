@@ -293,10 +293,7 @@ export default function DashboardTestimonialsPage() {
     }
   };
 
-  const pendingCount = useMemo(
-    () => items.filter((row) => row.source === "event_review" && !row.is_active).length,
-    [items]
-  );
+  const pendingCount = useMemo(() => items.filter((row) => !row.is_active).length, [items]);
 
   if (authLoading || portalLoading) {
     return (
@@ -325,17 +322,17 @@ export default function DashboardTestimonialsPage() {
     <div className="text-left">
       <div className="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Testimonials</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">Testimonials</h2>
           <p className="text-gray-600 mt-1 max-w-3xl">
             Add Success Stories for the homepage and quotes for the public{" "}
             <Link href="/testimonials" className="text-primary-600 font-semibold hover:underline inline-flex items-center gap-1">
               Testimonials <ExternalLink className="w-3.5 h-3.5" />
             </Link>{" "}
-            page. Reviews from past events appear here as pending until you publish them.
+            page. Reviews submitted on past events go live on both surfaces as soon as they are sent.
           </p>
           {pendingCount > 0 && (
             <p className="mt-2 text-sm font-semibold text-amber-800">
-              {pendingCount} event review{pendingCount === 1 ? "" : "s"} waiting to be published.
+              {pendingCount} unpublished item{pendingCount === 1 ? "" : "s"} — publish to show them on the site.
             </p>
           )}
         </div>
@@ -345,7 +342,7 @@ export default function DashboardTestimonialsPage() {
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">{error}</div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-8 p-6 bg-white border border-[#e5e5e5] space-y-4 max-w-3xl">
+      <form onSubmit={handleSubmit} className="mt-8 p-6 bg-white border border-hairline space-y-4 max-w-3xl">
         <h3 className="text-lg font-bold text-gray-900">{editingId != null ? "Edit testimonial" : "Add testimonial"}</h3>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -509,10 +506,10 @@ export default function DashboardTestimonialsPage() {
         </div>
       </form>
 
-      <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
+      <div className="mt-10 bg-white border border-hairline overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-white border-b border-[#e5e5e5]">
+            <thead className="bg-white border-b border-hairline">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Person</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Placement</th>
@@ -566,7 +563,7 @@ export default function DashboardTestimonialsPage() {
                           {row.is_active ? "Published" : "Pending"}
                         </span>
                         {row.source === "event_review" ? (
-                          <span className="inline-flex w-fit px-2 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800">
+                          <span className="inline-flex w-fit px-2 py-0.5 rounded text-xs font-bold bg-brand-muted text-brand-dark">
                             Event review
                           </span>
                         ) : null}

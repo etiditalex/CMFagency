@@ -122,8 +122,8 @@ function MostNominatedPanel({
   const busy = downloading !== null;
 
   return (
-    <div className="border border-[#e5e5e5] bg-white overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#e5e5e5] bg-white px-4 py-3">
+    <div className="border border-hairline bg-white overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 border-b border-hairline bg-white px-4 py-3">
         <Trophy className="w-4 h-4 text-secondary-600" aria-hidden />
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
           {title}
@@ -461,20 +461,11 @@ export default function DashboardNominatePage() {
     <div className="text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">
             Nominate
           </h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
-            Live nominations from{" "}
-            <a
-              href="/events/nominate-model"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 font-semibold hover:underline"
-            >
-              /events/nominate-model
-            </a>
-            . New entries appear here in real time.
+            Existing nominations still appear here. The public nominate-model form is closed for now.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -568,8 +559,8 @@ export default function DashboardNominatePage() {
         </div>
       </div>
 
-      <div className="mt-8 bg-white border border-[#e5e5e5] overflow-hidden">
-        <div className="border-b border-[#e5e5e5] bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-8 bg-white border border-hairline overflow-hidden">
+        <div className="border-b border-hairline bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-extrabold uppercase tracking-wide text-gray-900">
             All nominations
           </h3>
@@ -616,7 +607,7 @@ export default function DashboardNominatePage() {
             <Star className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>No nominations yet.</p>
             <p className="mt-1 text-sm">
-              Submissions from the Nominate Model page will appear here live.
+              The public nominate-model form is closed. Existing submissions still appear here.
             </p>
           </div>
         ) : (

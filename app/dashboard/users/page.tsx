@@ -374,7 +374,7 @@ export default function DashboardUsersPage() {
     <div className="text-left">
         <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Users</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-hairline">Users</h2>
           <p className="mt-1 text-gray-600 text-left max-w-3xl">
             Create accounts for clients and manage existing users. View all added users and change their features, role, or tier.
           </p>
@@ -392,7 +392,7 @@ export default function DashboardUsersPage() {
         </div>
       )}
 
-      <form onSubmit={onCreate} className="mt-6 bg-white p-6 border border-[#e5e5e5]">
+      <form onSubmit={onCreate} className="mt-6 bg-white p-6 border border-hairline">
         <div className="flex items-center gap-2 text-primary-700 font-extrabold">
           <UserPlus className="w-5 h-5" />
           Create user
@@ -579,10 +579,10 @@ export default function DashboardUsersPage() {
             No users yet. Create one above.
           </div>
         ) : (
-          <div className="bg-white border border-[#e5e5e5] overflow-hidden">
+          <div className="bg-white border border-hairline overflow-hidden">
             <div className="overflow-auto max-h-[400px]">
               <table className="min-w-full text-sm">
-                <thead className="bg-white border-b border-[#e5e5e5] sticky top-0">
+                <thead className="bg-white border-b border-hairline sticky top-0">
                   <tr>
                     <th className="px-4 py-3 font-bold text-gray-600 text-left">Email</th>
                     <th className="px-4 py-3 font-bold text-gray-600 text-left">Role</th>

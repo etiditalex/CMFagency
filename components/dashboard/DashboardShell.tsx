@@ -97,8 +97,8 @@ type NestedNavLink = {
 type NavItem = {
   label: string;
   href: string;
-  icon: ComponentType<{ className?: string }>;
-  section: "main" | "manage" | "settings";
+  icon: ComponentType<{ className?: string; strokeWidth?: number }>;
+  section: "engagement" | "commerce" | "administration";
   adminOnly?: boolean;
   /** Feature key: client needs this feature enabled to see item. Prefer over minTier. */
   featureKey?:
@@ -128,79 +128,78 @@ const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2
 /** Inactivity timeout in ms. User is logged out after this period without activity. */
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
-const NAV_ACTIVE =
-  "relative bg-[#eaf1fb] text-primary-800 before:absolute before:inset-y-[6px] before:left-0 before:w-[3px] before:rounded-full before:bg-primary-700";
-const NAV_IDLE = "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
-const NAV_CHILD_ACTIVE = "bg-[#eaf1fb] text-primary-800";
-const NAV_CHILD_IDLE = "text-slate-500 hover:bg-slate-50 hover:text-slate-800";
-const NAV_ICON_ACTIVE = "text-primary-700";
-const NAV_ICON_IDLE = "text-slate-400 group-hover:text-slate-600";
+const NAV_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
+const NAV_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
+const NAV_CHILD_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
+const NAV_CHILD_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
+const NAV_ICON_ACTIVE = "text-brand";
+const NAV_ICON_IDLE = "text-ink-muted group-hover:text-ink";
 
 const NAV: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "main" },
-  { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "main", featureKey: "reports" },
-  { label: "Invoices", href: "/dashboard/invoices", icon: FileText, section: "main" },
-  { label: "Receipts", href: "/dashboard/receipts", icon: Receipt, section: "main" },
-  {
-    label: "Smart Management Invoice",
-    href: "/dashboard/smart-management-invoice",
-    icon: FileText,
-    section: "main",
-  },
-  { label: "Quotation", href: "/dashboard/quotations", icon: FilePenLine, section: "main" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "engagement" },
   {
     label: "Sales & votes",
     href: "/dashboard/insights",
     icon: PieChart,
-    section: "main",
+    section: "engagement",
     featureKey: "reports",
   },
-  { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "main", featureKey: "reports" },
-  { label: "FX QR Code Generator", href: "/dashboard/fx-qr-code-generator", icon: QrCode, section: "main" },
-  {
-    label: "Visitor Management",
-    href: VISITOR_MANAGEMENT_PATH,
-    icon: UserCheck,
-    section: "main",
-    featureKey: "visitor_management",
-    children: [...VISITOR_MANAGEMENT_NAV_CHILDREN],
-  },
-  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "main", featureKeysAny: ["ticketing", "voting"] },
-  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "main", featureKey: "ticketing" },
-  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "main", featureKey: "voting" },
-  { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "main", featureKey: "voting" },
+  { label: "Ticketing", href: "/dashboard/campaigns?type=ticket", icon: Ticket, section: "engagement", featureKey: "ticketing" },
+  { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "engagement", featureKey: "voting" },
+  { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "engagement", featureKey: "voting" },
   {
     label: "Contestants",
     href: "/dashboard/contestants",
     icon: UserPlus,
-    section: "main",
+    section: "engagement",
     featureKey: "voting",
     nestedLinks: [
       { label: "All contestants", href: "/dashboard/contestants" },
       { label: "Download results", href: "/dashboard/contestants/results", adminOnly: true },
     ],
   },
-  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "main", featureKey: "teams_work" },
-  { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "main", featureKey: "kcm_membership" },
-  { label: "Users", href: "/dashboard/users", icon: Users, section: "main", adminOnly: true },
-  { label: "Logs", href: "/dashboard/logs", icon: Activity, section: "main", adminOnly: true },
-  { label: "Applications", href: "/dashboard/applications", icon: Briefcase, section: "main", adminOnly: true },
-  { label: "Job board", href: "/dashboard/job-listings", icon: ClipboardList, section: "main", adminOnly: true },
-  { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "main", adminOnly: true },
-  { label: "Nominate", href: "/dashboard/nominations", icon: Star, section: "main", adminOnly: true },
-  { label: "Merchandise", href: "/dashboard/merchandise", icon: ShoppingBag, section: "main", adminOnly: true },
-  { label: "Gallery", href: "/dashboard/gallery", icon: ImageIcon, section: "main", adminOnly: true },
-  { label: "Testimonials", href: "/dashboard/testimonials", icon: Quote, section: "main", adminOnly: true },
-  { label: "Blogs", href: "/dashboard/blogs", icon: BookOpen, section: "main", adminOnly: true },
-  { label: "Blog sidebar ads", href: "/dashboard/blogs/sidebar-ads", icon: LayoutPanelLeft, section: "main", adminOnly: true },
-  { label: "Pages", href: "/dashboard/pages", icon: FilePenLine, section: "main", adminOnly: true },
-  { label: "Events", href: "/dashboard/events", icon: Calendar, section: "main", featureKey: "events" },
-  { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "manage", featureKey: "create_campaign" },
-  { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "manage", featureKey: "payouts" },
-  { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "manage", featureKey: "coupons" },
-  { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "manage", featureKey: "managers" },
-  { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "manage", featureKey: "email" },
-  { label: "Account", href: "/dashboard/account", icon: User, section: "settings" },
+  { label: "Teams Work", href: "/dashboard/teams-work", icon: ClipboardCheck, section: "engagement", featureKey: "teams_work" },
+  { label: "KCM Membership", href: "/dashboard/kcm-membership", icon: Crown, section: "engagement", featureKey: "kcm_membership" },
+  { label: "Gate", href: "/dashboard/gate", icon: ScanLine, section: "engagement", featureKey: "reports" },
+  { label: "FX QR Code Generator", href: "/dashboard/fx-qr-code-generator", icon: QrCode, section: "engagement" },
+  {
+    label: "Visitor Management",
+    href: VISITOR_MANAGEMENT_PATH,
+    icon: UserCheck,
+    section: "engagement",
+    featureKey: "visitor_management",
+    children: [...VISITOR_MANAGEMENT_NAV_CHILDREN],
+  },
+  { label: "All Campaigns", href: "/dashboard/campaigns", icon: BarChart3, section: "engagement", featureKeysAny: ["ticketing", "voting"] },
+  { label: "Transactions", href: "/dashboard/transactions", icon: Download, section: "commerce", featureKey: "reports" },
+  { label: "Invoices", href: "/dashboard/invoices", icon: FileText, section: "commerce" },
+  { label: "Receipts", href: "/dashboard/receipts", icon: Receipt, section: "commerce" },
+  {
+    label: "Smart Management Invoice",
+    href: "/dashboard/smart-management-invoice",
+    icon: FileText,
+    section: "commerce",
+  },
+  { label: "Quotation", href: "/dashboard/quotations", icon: FilePenLine, section: "commerce" },
+  { label: "Merchandise", href: "/dashboard/merchandise", icon: ShoppingBag, section: "commerce", adminOnly: true },
+  { label: "New Campaign", href: "/dashboard/campaigns/new", icon: Plus, section: "commerce", featureKey: "create_campaign" },
+  { label: "Payouts", href: "/dashboard/payouts", icon: Wallet, section: "commerce", featureKey: "payouts" },
+  { label: "Coupons", href: "/dashboard/coupons", icon: BadgePercent, section: "commerce", featureKey: "coupons" },
+  { label: "Users", href: "/dashboard/users", icon: Users, section: "administration", adminOnly: true },
+  { label: "Logs", href: "/dashboard/logs", icon: Activity, section: "administration", adminOnly: true },
+  { label: "Applications", href: "/dashboard/applications", icon: Briefcase, section: "administration", adminOnly: true },
+  { label: "Job board", href: "/dashboard/job-listings", icon: ClipboardList, section: "administration", adminOnly: true },
+  { label: "Inquiries", href: "/dashboard/inquiries", icon: Inbox, section: "administration", adminOnly: true },
+  { label: "Nominate", href: "/dashboard/nominations", icon: Star, section: "administration", adminOnly: true },
+  { label: "Gallery", href: "/dashboard/gallery", icon: ImageIcon, section: "administration", adminOnly: true },
+  { label: "Testimonials", href: "/dashboard/testimonials", icon: Quote, section: "administration", adminOnly: true },
+  { label: "Blogs", href: "/dashboard/blogs", icon: BookOpen, section: "administration", adminOnly: true },
+  { label: "Blog sidebar ads", href: "/dashboard/blogs/sidebar-ads", icon: LayoutPanelLeft, section: "administration", adminOnly: true },
+  { label: "Pages", href: "/dashboard/pages", icon: FilePenLine, section: "administration", adminOnly: true },
+  { label: "Events", href: "/dashboard/events", icon: Calendar, section: "administration", featureKey: "events" },
+  { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "administration", featureKey: "managers" },
+  { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "administration", featureKey: "email" },
+  { label: "Account", href: "/dashboard/account", icon: User, section: "administration" },
 ];
 
 function parseHref(href: string) {
@@ -328,20 +327,21 @@ function DashboardNavItem({
           <button
             type="button"
             onClick={() => setNestedNavOpen(!nestedNavOpen)}
-            className={`group flex w-full items-center rounded-r-md transition-colors ${
+            className={`group flex w-full items-center rounded-md transition-colors ${
               parentActive ? NAV_ACTIVE : NAV_IDLE
             } gap-3 px-3 py-2.5`}
           >
             <Icon
+              strokeWidth={1.5}
               className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
             />
-            <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
+            <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
             <ChevronDown
-              className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
           </button>
           {isOpen ? (
-            <div className="ml-3 space-y-0.5 border-l border-slate-200 pl-2">
+            <div className="ml-3 space-y-0.5 border-l border-hairline pl-2">
               {visibleLinks.map((link) => {
                 const childActive = isNestedLinkActive(pathname, link.href);
                 return (
@@ -375,12 +375,13 @@ function DashboardNavItem({
           href={item.href}
           prefetch={false}
           onClick={onNavigate}
-          className={`group flex items-center justify-center rounded-r-md px-2 py-2.5 transition-colors ${
+          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
             parentActive ? NAV_ACTIVE : NAV_IDLE
           }`}
           title={item.label}
         >
           <Icon
+            strokeWidth={1.5}
             className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
           />
         </Link>
@@ -392,20 +393,21 @@ function DashboardNavItem({
         <button
           type="button"
           onClick={() => setVisitorNavOpen(!visitorNavOpen)}
-          className={`group flex w-full items-center rounded-r-md transition-colors ${
+          className={`group flex w-full items-center rounded-md transition-colors ${
             parentActive ? NAV_ACTIVE : NAV_IDLE
           } gap-3 px-3 py-2.5`}
         >
           <Icon
+            strokeWidth={1.5}
             className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
           />
-          <span className="text-sm font-semibold truncate flex-1 text-left">{item.label}</span>
+          <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
           <ChevronDown
-            className={`w-4 h-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
         {isOpen ? (
-          <div className="ml-3 space-y-0.5 border-l border-slate-200 pl-2">
+          <div className="ml-3 space-y-0.5 border-l border-hairline pl-2">
             {item.children
               .filter((child) => !("adminOnly" in child && child.adminOnly) || isAdmin)
               .map((child) => {
@@ -444,24 +446,25 @@ function DashboardNavItem({
       href={item.href}
       prefetch={false}
       onClick={onNavigate}
-      className={`group flex items-center rounded-r-md transition-colors ${
+      className={`group flex items-center rounded-md transition-colors ${
         active ? NAV_ACTIVE : NAV_IDLE
       } ${showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
       title={!showLabels ? item.label : undefined}
     >
       <Icon
+        strokeWidth={1.5}
         className={`w-4 h-4 flex-shrink-0 ${active ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
       />
       {showLabels && (
-        <span className="text-sm font-semibold flex items-center gap-2 min-w-0">
+        <span className="text-sm font-medium flex items-center gap-2 min-w-0">
           <span className="truncate">{item.label}</span>
           {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
-            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-primary-700 text-white text-[10px] font-extrabold flex-shrink-0">
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold flex-shrink-0">
               {pendingApplicationsCount > 99 ? "99+" : pendingApplicationsCount}
             </span>
           )}
           {item.href === "/dashboard/gate" && pendingCmfaCount > 0 && (
-            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-primary-700 text-white text-[10px] font-extrabold flex-shrink-0">
+            <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold flex-shrink-0">
               {pendingCmfaCount > 99 ? "99+" : pendingCmfaCount}
             </span>
           )}
@@ -816,9 +819,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   const sections: Array<{ key: NavItem["section"]; label: string }> = [
-    { key: "main", label: "Main Navigation" },
-    { key: "manage", label: "Manage Menu" },
-    { key: "settings", label: "Application Settings" },
+    { key: "engagement", label: "Engagement" },
+    { key: "commerce", label: "Commerce" },
+    { key: "administration", label: "Administration" },
   ];
 
   const isTicketingVotingWorkspace =
@@ -835,16 +838,18 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const isDashboardHome = pathname === "/dashboard";
 
   const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) =>
-    sections.map((s) => (
+    sections.map((s) => {
+      const items = navItems.filter((x) => x.section === s.key && canSeeItem(x));
+      if (items.length === 0) return null;
+      return (
       <div key={s.key}>
         {showLabels ? (
-          <div className="px-3 text-[10px] font-bold tracking-[0.18em] uppercase text-primary-700">
+          <div className="px-3 text-[11px] font-medium text-ink-muted">
             {s.label}
           </div>
         ) : null}
         <div className={`${showLabels ? "mt-2" : "mt-1"} space-y-0.5`}>
-          {navItems
-            .filter((x) => x.section === s.key && canSeeItem(x))
+          {items
             .map((item) => (
               <DashboardNavItem
                 key={item.href}
@@ -866,7 +871,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             ))}
         </div>
       </div>
-    ));
+      );
+    });
 
   const noticeControl = (
     <span className="relative inline-flex">
@@ -874,7 +880,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         <Bell className="h-[18px] w-[18px]" />
       </span>
       {noticeCount > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-secondary-500 px-1 text-[10px] font-bold text-white ring-2 ring-primary-800">
+        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-accent-green px-1 text-[10px] font-bold text-white ring-2 ring-brand-dark">
           {noticeCount > 99 ? "99+" : noticeCount}
         </span>
       ) : null}
@@ -882,8 +888,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#e8edf3]">
-      <header className="relative z-30 h-[58px] flex-shrink-0 bg-primary-800 text-white flex items-center gap-2 sm:gap-4 px-3 sm:px-5 shadow-[0_2px_10px_rgba(15,47,100,0.22)]">
+    <div className="fx-dashboard min-h-screen flex flex-col bg-canvas">
+      <header className="relative z-30 h-[58px] flex-shrink-0 bg-brand-dark text-white flex items-center gap-2 sm:gap-4 px-3 sm:px-5">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -944,7 +950,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         <aside
-          className={`hidden lg:flex flex-col flex-shrink-0 bg-white border-r border-slate-200/80 overflow-hidden transition-[width] duration-300 ease-out ${
+          className={`hidden lg:flex flex-col flex-shrink-0 bg-surface border-r border-hairline overflow-hidden transition-[width] duration-300 ease-out ${
             showDesktopSidebarFull ? "w-[16.5rem]" : "w-[4.25rem]"
           }`}
           onMouseEnter={() => {
@@ -953,7 +959,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           onMouseLeave={() => setSidebarHoverExpanded(false)}
         >
           <div
-            className={`relative h-11 flex items-center border-b border-slate-100 ${
+            className={`relative h-11 flex items-center border-b border-hairline ${
               showDesktopSidebarFull ? "justify-end px-3" : "justify-center px-2"
             }`}
           >
@@ -961,7 +967,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={toggleSidebarCollapsed}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
                 aria-label="Collapse sidebar"
                 title="Collapse to icons"
               >
@@ -971,7 +977,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={toggleSidebarCollapsed}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:bg-slate-50 hover:text-primary-700"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-canvas hover:text-brand"
                 aria-label="Pin sidebar open"
                 title="Keep sidebar open"
               >
@@ -980,15 +986,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <nav className={`flex-1 overflow-y-auto py-4 space-y-5 ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
+          <nav className={`flex-1 overflow-y-auto py-4 flex flex-col gap-3 ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
             {renderSectionNav(showDesktopSidebarFull)}
           </nav>
 
-          <div className={`mt-auto border-t border-slate-100 ${showDesktopSidebarFull ? "p-3" : "p-2"}`}>
+          <div className={`mt-auto border-t border-hairline ${showDesktopSidebarFull ? "p-3" : "p-2"}`}>
             <button
               type="button"
               onClick={handleDashboardLogout}
-              className={`w-full inline-flex items-center rounded-md text-slate-500 hover:bg-slate-50 hover:text-slate-800 ${
+              className={`w-full inline-flex items-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink ${
                 showDesktopSidebarFull ? "justify-start gap-2.5 px-3 py-2.5 text-sm font-semibold" : "justify-center h-10"
               }`}
               title="Sign out"
@@ -1006,40 +1012,40 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               onClick={() => setMobileOpen(false)}
               aria-hidden="true"
             />
-            <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-white border-r border-slate-200 shadow-2xl">
-              <div className="h-[58px] flex items-center justify-between gap-3 px-4 border-b border-slate-100 flex-shrink-0">
+            <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-surface border-r border-hairline shadow-[0_1px_3px_rgba(17,72,192,.06)]">
+              <div className="h-[58px] flex items-center justify-between gap-3 px-4 border-b border-hairline flex-shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={BRAND_LOGO_URL}
                     alt=""
-                    className="h-9 w-9 rounded-md object-contain bg-primary-50 p-0.5 flex-shrink-0"
+                    className="h-9 w-9 rounded-md object-contain bg-brand-muted p-0.5 flex-shrink-0"
                   />
                   <div className="min-w-0">
-                    <div className="text-sm font-bold text-slate-900 leading-tight">Fusion Xpress</div>
-                    <div className="text-[11px] text-slate-500 leading-tight truncate">CMFAgency admin dashboard</div>
+                    <div className="text-sm font-bold text-ink leading-tight">Fusion Xpress</div>
+                    <div className="text-[11px] text-ink-muted leading-tight truncate">CMFAgency admin dashboard</div>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-md text-slate-500 hover:bg-slate-50"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-md text-ink-muted hover:bg-canvas"
                   aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5">{renderSectionNav(true, () => setMobileOpen(false))}</nav>
+              <nav className="flex-1 overflow-y-auto px-2.5 py-4 flex flex-col gap-3">{renderSectionNav(true, () => setMobileOpen(false))}</nav>
 
-              <div className="p-3 border-t border-slate-100 flex-shrink-0">
+              <div className="p-3 border-t border-hairline flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileOpen(false);
                     void handleDashboardLogout();
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-primary-800 text-white font-semibold hover:bg-primary-900"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-brand-dark text-white font-bold hover:bg-brand"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign out
@@ -1050,7 +1056,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="bg-primary-700 text-white px-4 sm:px-7 pt-6 pb-5 shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]">
+          <div className="bg-brand text-white px-4 sm:px-7 pt-6 pb-5">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-left leading-tight">{active}</h1>
@@ -1072,12 +1078,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
               </div>
               <div className="sm:ml-auto w-full sm:w-auto sm:min-w-[240px] max-w-md">
                 <label className="flex items-center gap-2 bg-white rounded-md h-9 px-3 shadow-sm">
-                  <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <Search className="w-3.5 h-3.5 text-ink-muted flex-shrink-0" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search"
-                    className="flex-1 bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400 min-w-0"
+                    className="flex-1 bg-transparent outline-none text-sm text-ink placeholder:text-ink-muted min-w-0"
                   />
                 </label>
               </div>
@@ -1090,7 +1096,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
                 className={
                   isWidePage || isDashboardHome || isTicketingVotingWorkspace
                     ? "p-0"
-                    : "rounded-[12px] bg-white p-4 sm:p-6 md:p-8 shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]"
+                    : "rounded-lg bg-surface border border-hairline p-4 sm:p-6 md:p-8"
                 }
               >
                 {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
@@ -1101,7 +1107,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <footer className="h-8 flex-shrink-0 bg-primary-800 text-white/75 text-[11px] tracking-wide flex items-center justify-center">
+      <footer className="h-8 flex-shrink-0 bg-brand-dark text-white/75 text-[11px] tracking-wide flex items-center justify-center">
         Fusion Xpress · CMFAgency
       </footer>
     </div>

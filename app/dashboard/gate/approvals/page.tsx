@@ -273,7 +273,7 @@ export default function GateCmfaApprovalsPage() {
             <ArrowLeft className="w-4 h-4" />
             Back to Gate scanner
           </Link>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">CMFA Registration Approvals</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">CMFA Registration Approvals</h2>
           <p className="text-sm text-gray-600 mt-1">
             Review in-house CMFA registrations. Approve to choose Regular, VIP, or VVIP and email a complimentary QR
             ticket. Already-approved tickets are not changed.
@@ -326,7 +326,7 @@ export default function GateCmfaApprovalsPage() {
         <div className="mt-4 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{error}</div>
       )}
 
-      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
+      <div className="mt-6 bg-white border border-hairline overflow-hidden">
         {loading ? (
           <div className="p-10 text-center text-gray-600">
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-primary-600" />
@@ -340,7 +340,7 @@ export default function GateCmfaApprovalsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-white border-b border-[#e5e5e5]">
+              <thead className="bg-white border-b border-hairline">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-gray-700">Name</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-700">Contact</th>

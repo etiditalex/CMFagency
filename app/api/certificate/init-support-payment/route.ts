@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
   const amountInSubunit = amount * 100;
   const origin = req.headers.get("origin") ?? "";
   const callbackBase = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
-  const callback_url = `${callbackBase}/events/register-as-model?ref=${reference}&cert_support=1`;
+  const callback_url = `${callbackBase}/contact?ref=${reference}&cert_support=1`;
 
   const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
     method: "POST",

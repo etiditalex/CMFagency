@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
-export default function CmfaRegistrationRedirectPage() {
-  redirect("/events/upcoming/cmfa-registration");
+export default function CmfaRegistrationAliasRemovedPage() {
+  notFound();
 }

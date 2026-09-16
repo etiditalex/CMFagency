@@ -61,15 +61,15 @@ export default function HowToWorkWithUs() {
               </p>
               <p className="!text-left">
                 <strong className="font-semibold text-gray-900">Awards or event categories:</strong>{" "}
+                watch the{" "}
                 <Link
-                  href="/events/register-as-model"
+                  href="/events/upcoming/coast-fashion-modelling-awards-2026"
                   className="font-medium text-secondary-600 underline underline-offset-2 transition-colors hover:text-secondary-700"
                 >
-                  Register for the relevant programme
+                  CFMA 2026 event page
                 </Link>{" "}
-                when registrations are open, and follow the instructions for photos, payments (if
-                any), and voting links. Category registration is handled through the dedicated
-                event flow—not a public directory of every participant.
+                and our channels when a programme is open. Category registration is handled through
+                a dedicated event flow—not a public directory of every participant.
               </p>
               <p className="!text-left">
                 <strong className="font-semibold text-gray-900">Brand or corporate bookings:</strong>{" "}

@@ -7,6 +7,7 @@ import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { CompositeMetricCard } from "@/components/dashboard/ui";
 import { supabase } from "@/lib/supabase";
 
 type MembershipStatus = "new" | "in_review" | "approved" | "rejected";
@@ -380,29 +381,24 @@ export default function DashboardKcmMembershipPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="border border-[#e5e5e5] bg-white p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">New</div>
-          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.new}</div>
-        </div>
-        <div className="border border-[#e5e5e5] bg-white p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">In review</div>
-          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.in_review}</div>
-        </div>
-        <div className="border border-[#e5e5e5] bg-white p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Approved</div>
-          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.approved}</div>
-        </div>
-        <div className="border border-[#e5e5e5] bg-white p-3">
-          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Rejected</div>
-          <div className="mt-1 text-2xl font-bold text-[#1a2332]">{summary.rejected}</div>
-        </div>
+      <div className="mt-6">
+        <CompositeMetricCard
+          title="Memberships"
+          value={(summary.new + summary.in_review + summary.approved + summary.rejected).toLocaleString()}
+          featured
+          rows={[
+            { label: "New", value: summary.new.toLocaleString() },
+            { label: "In review", value: summary.in_review.toLocaleString() },
+            { label: "Approved", value: summary.approved.toLocaleString() },
+            { label: "Rejected", value: summary.rejected.toLocaleString() },
+          ]}
+        />
       </div>
 
       {(isAdmin || isManager) ? (
-      <div className="mt-6 rounded-lg border border-primary-200 bg-primary-50/90 p-4 md:p-5">
-        <h3 className="text-sm font-bold text-primary-950">KCM registration fee</h3>
-        <p className="mt-1 text-xs text-primary-900">
+      <div className="mt-6 rounded-lg border border-brand/30 bg-brand-muted p-4 md:p-5">
+        <h3 className="text-sm font-bold text-brand-dark">KCM registration fee</h3>
+        <p className="mt-1 text-xs text-brand-dark">
           This amount is used for new M-Pesa STK prompts and stored on each membership record. Allowed range: 1–1,000,000
           KES.
         </p>
@@ -445,7 +441,7 @@ export default function DashboardKcmMembershipPage() {
 
       <div className="mt-6 overflow-x-auto rounded-md border border-gray-200 bg-white">
         <table className="min-w-full text-sm">
-          <thead className="border-b border-[#e5e5e5] bg-white">
+          <thead className="border-b border-hairline bg-white">
             <tr className="text-left">
               <th className="px-4 py-3 font-bold text-gray-600">Name</th>
               <th className="px-4 py-3 font-bold text-gray-600">Profile</th>

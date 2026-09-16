@@ -123,11 +123,6 @@ export default function SEOStructuredData() {
       },
       {
         "@type": "WebPage",
-        name: "Register as a Model",
-        url: "https://cmfagency.co.ke/events/register-as-model",
-      },
-      {
-        "@type": "WebPage",
         name: "Fusion Xpress",
         url: "https://cmfagency.co.ke/fusion-xpress",
       },
@@ -158,11 +153,10 @@ export default function SEOStructuredData() {
       { "@type": "SiteNavigationElement", position: 2, name: "About Us", url: "https://cmfagency.co.ke/about" },
       { "@type": "SiteNavigationElement", position: 3, name: "Our Team", url: "https://cmfagency.co.ke/about/team" },
       { "@type": "SiteNavigationElement", position: 4, name: "Events", url: "https://cmfagency.co.ke/events" },
-      { "@type": "SiteNavigationElement", position: 5, name: "Register as a Model", url: "https://cmfagency.co.ke/events/register-as-model" },
-      { "@type": "SiteNavigationElement", position: 6, name: "KCM", url: "https://cmfagency.co.ke/kcm" },
-      { "@type": "SiteNavigationElement", position: 7, name: "Fusion Xpress", url: "https://cmfagency.co.ke/fusion-xpress" },
-      { "@type": "SiteNavigationElement", position: 8, name: "Jobs", url: "https://cmfagency.co.ke/jobs" },
-      { "@type": "SiteNavigationElement", position: 9, name: "Contact", url: "https://cmfagency.co.ke/contact" },
+      { "@type": "SiteNavigationElement", position: 5, name: "KCM", url: "https://cmfagency.co.ke/kcm" },
+      { "@type": "SiteNavigationElement", position: 6, name: "Fusion Xpress", url: "https://cmfagency.co.ke/fusion-xpress" },
+      { "@type": "SiteNavigationElement", position: 7, name: "Jobs", url: "https://cmfagency.co.ke/jobs" },
+      { "@type": "SiteNavigationElement", position: 8, name: "Contact", url: "https://cmfagency.co.ke/contact" },
     ],
   };
 

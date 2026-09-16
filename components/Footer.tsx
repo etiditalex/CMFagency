@@ -40,7 +40,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   const footerActionLinks = [
     { href: "/", label: "Home", icon: House },
-    { href: "/events/register-as-model", label: "Certification", icon: Award },
+    { href: "/kcm", label: "Certification", icon: Award },
     { href: "/kcm/member-portal", label: "KCM Member", icon: Crown },
     { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
   ];

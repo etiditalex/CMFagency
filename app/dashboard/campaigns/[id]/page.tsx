@@ -18,6 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { StatCard } from "@/components/dashboard/ui";
 import {
   reconcileStalePendingTransactions,
   type ReconcileTxRow,
@@ -756,7 +757,7 @@ export default function CampaignReportPage() {
         </div>
 
         {/* Date range controls */}
-        <div className="mt-6 bg-white border border-[#e5e5e5] p-4">
+        <div className="mt-6 bg-white border border-hairline p-4">
           <div className="flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row">
             <div className="text-sm text-gray-600 text-left">
               <span className="font-semibold">Range:</span> {rangeLabel}
@@ -831,70 +832,37 @@ export default function CampaignReportPage() {
           </div>
         )}
 
-        {/* KPIs */}
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white p-6 border border-[#e5e5e5]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Revenue</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{formatRevenue}</div>
-                <div className="mt-2 text-sm text-gray-600">Successful payments only.</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
-                <Wallet className="w-5 h-5 text-gray-600" />
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 border border-[#e5e5e5]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Successful payments</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{successfulPayments.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">
-                  All successful payments in this range (not just the latest 50 in the table below).
-                </div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
-                <Shield className="w-5 h-5 text-gray-600" />
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 border border-[#e5e5e5]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Tickets issued</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{totalTicketsIssued.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">From ticket_issues.</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
-                <Ticket className="w-5 h-5 text-gray-600" />
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 border border-[#e5e5e5]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Votes counted</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332]">{totalVotes.toLocaleString()}</div>
-                <div className="mt-2 text-sm text-gray-600">
-                  {isVote
-                    ? "Sum of quantities on successful vote payments (by payment confirmation time in this range)."
-                    : "From votes table."}
-                </div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded bg-gray-100 items-center justify-center">
-                <Vote className="w-5 h-5 text-gray-600" />
-              </span>
-            </div>
-          </div>
+          <StatCard
+            label="Revenue"
+            value={formatRevenue}
+            hint="Successful payments only"
+            featured
+          />
+          <StatCard
+            label="Successful payments"
+            value={successfulPayments.toLocaleString()}
+            hint="All successful payments in this range"
+          />
+          <StatCard
+            label="Tickets issued"
+            value={totalTicketsIssued.toLocaleString()}
+            hint="From ticket issues"
+          />
+          <StatCard
+            label="Votes counted"
+            value={totalVotes.toLocaleString()}
+            hint={
+              isVote
+                ? "Successful vote payments in this range"
+                : "From votes table"
+            }
+          />
         </div>
 
         {/* Vote breakdown */}
         {isVote && (
-          <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
+          <div className="mt-10 bg-white border border-hairline overflow-hidden">
             <div className="p-6 border-b border-gray-200">
               <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Voting</div>
               <h2 className="mt-1 text-xl font-bold text-[#1a2332]">Votes by contestant</h2>
@@ -938,7 +906,7 @@ export default function CampaignReportPage() {
 
             <div className="overflow-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-white border-b border-[#e5e5e5]">
+                <thead className="bg-white border-b border-hairline">
                   <tr className="text-left">
                     <th className="px-6 py-3 font-bold text-gray-600">Contestant</th>
                     <th className="px-6 py-3 font-bold text-gray-600">Votes</th>
@@ -998,7 +966,7 @@ export default function CampaignReportPage() {
         )}
 
         {/* Transactions */}
-        <div className="mt-10 bg-white border border-[#e5e5e5] overflow-hidden">
+        <div className="mt-10 bg-white border border-hairline overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="text-xs font-bold tracking-widest text-gray-500 uppercase">Payments</div>
             <h2 className="mt-1 text-xl font-bold text-[#1a2332]">Transactions</h2>
@@ -1017,7 +985,7 @@ export default function CampaignReportPage() {
 
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-white border-b border-[#e5e5e5]">
+              <thead className="bg-white border-b border-hairline">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600">Time</th>
                   <th className="px-6 py-3 font-bold text-gray-600">Payer</th>

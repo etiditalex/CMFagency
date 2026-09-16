@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
       event_title: eventTitle || null,
       reviewer_email: email || null,
       source: "event_review",
-      show_on_home: false,
-      show_on_testimonials_page: false,
-      is_active: false,
+      show_on_home: true,
+      show_on_testimonials_page: true,
+      is_active: true,
       sort_order: 0,
     });
 

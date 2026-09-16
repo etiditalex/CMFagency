@@ -11,11 +11,7 @@ import {
   ExternalLink,
   Plus,
   RefreshCw,
-  Shield,
-  ShoppingBag,
-  Ticket,
   Vote,
-  Wallet,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +22,12 @@ import {
   HomeRevenueBars,
   HomeRevenuePie,
 } from "@/components/dashboard/DashboardHomeCharts";
+import {
+  Card,
+  CompositeMetricCard,
+  StatCard,
+  periodDelta,
+} from "@/components/dashboard/ui";
 import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
 import { supabase } from "@/lib/supabase";
 import { FALLBACK_VOTING_END_MS, lastVotingDayYmdFromEndIso } from "@/lib/voting-schedule-public";
@@ -80,10 +82,7 @@ function formatVotingDateInNairobi(iso: string): string {
 const VOTING_START_FALLBACK_ISO = "2026-04-01T00:00:00+03:00";
 const VOTING_END_FALLBACK_ISO = new Date(FALLBACK_VOTING_END_MS).toISOString();
 
-const dashCard =
-  "rounded-[12px] bg-white p-5 shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]";
-const dashTableWrap =
-  "rounded-[12px] bg-white overflow-hidden shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]";
+const dashTableWrap = "rounded-lg bg-surface overflow-hidden border border-hairline";
 
 export default function DashboardHomePage() {
   const router = useRouter();
@@ -586,7 +585,7 @@ export default function DashboardHomePage() {
     return (
       <div className="min-h-[60vh] bg-transparent flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard…</p>
         </div>
       </div>
@@ -598,12 +597,12 @@ export default function DashboardHomePage() {
 
   if (isEmployer) {
     return (
-      <div className={`${dashCard} text-left max-w-2xl`}>
-        <h2 className="text-xl md:text-2xl font-bold text-[#1a2332]">Employer hub</h2>
+      <Card className="text-left max-w-2xl">
+        <h2 className="text-xl md:text-2xl font-bold text-ink">Employer hub</h2>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/dashboard/job-listings"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5 font-semibold text-white hover:bg-primary-700"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 font-bold text-white hover:bg-brand-dark"
           >
             <Briefcase className="w-5 h-5" />
             Job listings
@@ -616,7 +615,7 @@ export default function DashboardHomePage() {
             <ExternalLink className="w-4 h-4" />
           </Link>
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -641,18 +640,21 @@ export default function DashboardHomePage() {
     0
   );
   const hasDailyChart = dailyRevenue.some((r) => r.voteRevenue > 0 || r.ticketRevenue > 0);
+  const voteSeries = dailyRevenue.map((r) => r.voteRevenue);
+  const ticketSeries = dailyRevenue.map((r) => r.ticketRevenue);
+  const totalRevenueSeries = dailyRevenue.map((r) => r.voteRevenue + r.ticketRevenue);
 
   return (
     <div className="text-left">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-500">
-          <span className="font-semibold text-slate-700">Last updated:</span> {updatedLabel}
+        <div className="text-sm text-ink-muted">
+          <span className="font-medium text-ink">Last updated:</span> {updatedLabel}
         </div>
         <button
           type="button"
           onClick={refreshData}
           disabled={dataLoading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-900 font-semibold disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-hairline bg-surface hover:bg-canvas text-ink font-medium disabled:opacity-60"
           title="Refresh reports"
         >
           <RefreshCw className={`w-4 h-4 ${dataLoading ? "animate-spin" : ""}`} />
@@ -662,20 +664,20 @@ export default function DashboardHomePage() {
 
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) ? (
         <div className={`mt-5 grid grid-cols-1 gap-6 xl:grid-cols-3 ${dataLoading ? "animate-pulse opacity-[0.65]" : ""}`}>
-          <div className={dashCard}>
-            <div className="text-sm font-semibold text-slate-700">Revenue mix</div>
+          <Card>
+            <div className="text-sm font-medium text-ink">Revenue mix</div>
             <div className="mt-4">
               <HomeRevenuePie votes={revenueVotesTotal} tickets={revenueTicketsTotal} merchandise={revenueMerchTotal} />
             </div>
-          </div>
-          <div className={dashCard}>
-            <div className="text-sm font-semibold text-slate-700">Campaigns</div>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium text-ink">Campaigns</div>
             <div className="mt-4">
               <HomeCampaignDonut active={activeCampaignsCount} inactive={inactiveCampaignsCount} />
             </div>
-          </div>
-          <div className={dashCard}>
-            <div className="text-sm font-semibold text-slate-700">
+          </Card>
+          <Card>
+            <div className="text-sm font-medium text-ink">
               {hasDailyChart ? "Daily revenue" : "Revenue by stream"}
             </div>
             <div className="mt-4">
@@ -689,19 +691,19 @@ export default function DashboardHomePage() {
                 />
               )}
             </div>
-          </div>
+          </Card>
         </div>
       ) : null}
 
       {showVotingCard && (
-        <div className={`${dashCard} mt-6`}>
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <span className="inline-flex w-11 h-11 rounded-full bg-primary-50 items-center justify-center flex-shrink-0">
-                <Calendar className="w-5 h-5 text-primary-700" />
+        <Card className="mt-6">
+            <div className="flex items-center gap-3 pb-3 border-b border-hairline">
+              <span className="inline-flex w-11 h-11 rounded-full bg-brand-muted items-center justify-center flex-shrink-0">
+                <Calendar className="w-5 h-5 text-brand" strokeWidth={1.5} />
               </span>
               <div>
-                <div className="font-bold text-slate-900 inline-flex items-center gap-2">
-                  <Vote className="w-4 h-4 text-primary-700" />
+                <div className="font-bold text-ink inline-flex items-center gap-2">
+                  <Vote className="w-4 h-4 text-brand" strokeWidth={1.5} />
                   Voting dates
                 </div>
                 <div className="mt-1 text-xs text-gray-600">
@@ -722,7 +724,7 @@ export default function DashboardHomePage() {
                   value={votingScheduleDate}
                   onChange={(e) => setVotingScheduleDate(e.target.value)}
                   disabled={votingScheduleLoading || votingScheduleSaving}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
+                  className="mt-1 block w-full rounded-md border border-hairline px-3 py-2 text-ink shadow-sm focus:border-brand focus:ring-brand disabled:opacity-60"
                 />
               </div>
               <div>
@@ -736,7 +738,7 @@ export default function DashboardHomePage() {
                   min={votingScheduleDate || undefined}
                   onChange={(e) => setVotingScheduleEndDate(e.target.value)}
                   disabled={votingScheduleLoading || votingScheduleSaving}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:opacity-60"
+                  className="mt-1 block w-full rounded-md border border-hairline px-3 py-2 text-ink shadow-sm focus:border-brand focus:ring-brand disabled:opacity-60"
                 />
               </div>
             </div>
@@ -748,7 +750,7 @@ export default function DashboardHomePage() {
                 type="button"
                 onClick={() => void saveVotingSchedule()}
                 disabled={votingScheduleLoading || votingScheduleSaving}
-                className="inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-md bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60"
               >
                 {votingScheduleSaving ? "Saving…" : "Save dates"}
               </button>
@@ -775,7 +777,7 @@ export default function DashboardHomePage() {
               href="/voting/all"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-800"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-brand hover:text-brand-dark"
             >
               Preview voting page
               <ExternalLink className="w-4 h-4" />
@@ -783,7 +785,7 @@ export default function DashboardHomePage() {
             {votingScheduleMessage && (
               <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap">{votingScheduleMessage}</p>
             )}
-        </div>
+        </Card>
       )}
 
       {showTrending && (
@@ -794,8 +796,8 @@ export default function DashboardHomePage() {
         >
           <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
-              <div className="font-bold text-slate-900 inline-flex items-center gap-2">
-                <Crown className="w-4 h-4 text-primary-700" />
+              <div className="font-bold text-ink inline-flex items-center gap-2">
+                <Crown className="w-4 h-4 text-brand" strokeWidth={1.5} />
                 Trending (this week)
               </div>
               <div className="mt-1 text-sm text-gray-600">{trendingWeekLabel || "—"}</div>
@@ -833,7 +835,7 @@ export default function DashboardHomePage() {
                 ) : (
                   trendingItems.slice(0, 10).map((it) => (
                     <tr key={it.contestantId} className="border-b border-slate-100 even:bg-[#f7f9fc]">
-                      <td className="px-6 py-3.5 font-bold text-slate-900">#{it.rank}</td>
+                      <td className="px-6 py-3.5 font-bold text-ink">#{it.rank}</td>
                       <td className="px-6 py-4 text-gray-900 font-semibold whitespace-nowrap">
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="inline-flex w-9 h-9 rounded-full bg-gray-100 overflow-hidden items-center justify-center shrink-0">
@@ -863,7 +865,7 @@ export default function DashboardHomePage() {
       )}
 
       {isManager && (
-        <div className="mt-6 rounded-[12px] border border-secondary-200 bg-secondary-50 p-4 text-secondary-900 shadow-[0_8px_20px_rgba(24,109,79,0.06)]">
+        <div className="mt-6 rounded-lg border border-hairline bg-surface p-4 text-ink">
           <div className="font-extrabold">Manager access</div>
           <div className="mt-1 text-sm">
             You can add clients and manage campaigns. Only full admins can add other admins or managers.
@@ -872,13 +874,13 @@ export default function DashboardHomePage() {
       )}
 
       {error && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-[12px] text-red-700 whitespace-pre-wrap">
+        <div className="mt-6 p-4 bg-negative/10 border border-negative/20 rounded-lg text-negative whitespace-pre-wrap">
           {error}
         </div>
       )}
 
       {isAdmin && pendingJobApplications > 0 && (
-        <div className="mt-6 rounded-[12px] border border-primary-200 bg-primary-50 p-4 text-primary-950 shadow-[0_8px_20px_rgba(30,88,202,0.06)]">
+        <div className="mt-6 rounded-lg border border-brand-muted bg-brand-muted p-4 text-ink">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="font-extrabold inline-flex items-center gap-2">
@@ -892,7 +894,7 @@ export default function DashboardHomePage() {
             </div>
             <Link
               href="/dashboard/applications"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-primary-300 bg-white hover:bg-primary-100 text-primary-950 text-sm font-semibold shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-brand/30 bg-surface hover:bg-brand-muted text-brand-dark text-sm font-medium shrink-0"
             >
               Open Applications
               <ExternalLink className="w-3.5 h-3.5" />
@@ -902,7 +904,7 @@ export default function DashboardHomePage() {
       )}
 
       {!hasFeature("reports") && (
-        <div className="mt-6 rounded-[12px] border border-secondary-200 bg-secondary-50 p-6 text-secondary-900 shadow-[0_8px_20px_rgba(24,109,79,0.06)]">
+        <div className="mt-6 rounded-lg border border-hairline bg-surface p-6 text-ink">
           <div className="font-extrabold">Dashboard</div>
           <div className="mt-2 text-sm">
             Summary reports are not enabled for your account. Visit{" "}
@@ -915,7 +917,7 @@ export default function DashboardHomePage() {
       )}
 
       {hasFeature("reports") && campaignsCount === 0 && !isFullAdmin && !isManager && (
-        <div className="mt-6 rounded-[12px] border border-secondary-200 bg-secondary-50 p-6 text-secondary-900 shadow-[0_8px_20px_rgba(24,109,79,0.06)]">
+        <div className="mt-6 rounded-lg border border-hairline bg-surface p-6 text-ink">
           <div className="font-extrabold">No reports yet</div>
           <div className="mt-2 text-sm">
             Your dashboard will show activity once your campaign is live and our agreement is in place. Until then, you will not see any transactions or payment data.
@@ -925,217 +927,86 @@ export default function DashboardHomePage() {
 
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
-      {/* KPI cards */}
+      <div
+        className={`mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
+      >
+        <CompositeMetricCard
+          title="Revenue"
+          value={formatRevenue}
+          delta={periodDelta(totalRevenueSeries)}
+          sparkline={totalRevenueSeries}
+          href="/dashboard/campaigns"
+          featured
+          rows={[
+            { label: "Tickets", value: formatRevenueTickets, href: "/dashboard/campaigns?type=ticket" },
+            { label: "Votes", value: formatRevenueVotes, href: "/dashboard/campaigns?type=vote" },
+            { label: "Merchandise", value: formatRevenueMerchandise, href: "/merchandise" },
+          ]}
+        />
+        <CompositeMetricCard
+          title="Campaigns"
+          value={campaignsCount.toLocaleString()}
+          href="/dashboard/campaigns"
+          featured={false}
+          rows={[
+            { label: "Active", value: activeCampaignsCount.toLocaleString() },
+            { label: "Inactive", value: inactiveCampaignsCount.toLocaleString() },
+          ]}
+        />
+      </div>
+
       <div
         className={`mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
       >
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenue}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary-700" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns?type=ticket"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (tickets)</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueTickets}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-secondary-50 items-center justify-center">
-                <Ticket className="w-5 h-5 text-secondary-700" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns?type=vote"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (votes)</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueVotes}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-primary-100 items-center justify-center">
-                <Vote className="w-5 h-5 text-primary-800" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/merchandise"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Revenue (merchandise)</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{formatRevenueMerchandise}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-secondary-100 items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-secondary-800" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Successful payments</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{successfulPayments.toLocaleString()}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
-                <Shield className="w-5 h-5 text-primary-700" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Tickets issued</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{totalTicketsIssued.toLocaleString()}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
-                <Ticket className="w-5 h-5 text-primary-700" />
-              </span>
-            </div>
-        </div>
-
-        <div className={dashCard}>
-          <div className="flex items-center justify-end">
-            <Link
-              href="/dashboard/campaigns"
-              className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-            >
-              View more
-            </Link>
-          </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">Votes counted</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{totalVotes.toLocaleString()}</div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-secondary-50 items-center justify-center">
-                <Vote className="w-5 h-5 text-secondary-700" />
-              </span>
-            </div>
-        </div>
-
-        {hasFeature("kcm_membership") && (
-          <div className={dashCard}>
-            <div className="flex items-center justify-end">
-              <Link
-                href="/dashboard/kcm-membership"
-                className="text-primary-700 hover:text-primary-800 text-sm font-semibold"
-              >
-                View more
-              </Link>
-            </div>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="mt-4 text-sm font-normal text-[#555] text-left">KCM membership paid</div>
-                <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">
-                  KES {kcmMembershipPaidKes.toLocaleString()}
-                </div>
-                <div className="mt-2 text-sm text-gray-600 text-left">
-                  Contributions: <span className="font-semibold text-secondary-700">KES {kcmContributionsKes.toLocaleString()}</span>
-                </div>
-                <div className="mt-1 text-xs text-gray-500 text-left">
-                  Paid members: {kcmMembershipPaidCount.toLocaleString()}
-                </div>
-              </div>
-              <span className="inline-flex w-10 h-10 rounded-full bg-primary-100 items-center justify-center">
-                <Crown className="w-5 h-5 text-primary-700" />
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Summary tiles */}
-      <div className={`mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}>
-        <div className={dashCard}>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm font-normal text-[#555] text-left">Total campaigns</div>
-              <div className="mt-2 text-2xl font-bold text-[#1a2332] text-left">{campaignsCount.toLocaleString()}</div>
-              <div className="mt-2 text-sm text-gray-600 text-left">
-                Active: <span className="font-semibold text-secondary-700">{activeCampaignsCount}</span> · Inactive:{" "}
-                <span className="font-semibold text-gray-600">{inactiveCampaignsCount}</span>
-              </div>
-            </div>
-            <span className="inline-flex w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
-              <ExternalLink className="w-5 h-5 text-primary-700" />
-            </span>
-          </div>
-        </div>
-
-        <div className={dashCard}>
+        <StatCard
+          label="Successful payments"
+          value={successfulPayments.toLocaleString()}
+          href="/dashboard/campaigns"
+        />
+        <StatCard
+          label="Tickets issued"
+          value={totalTicketsIssued.toLocaleString()}
+          delta={periodDelta(ticketSeries)}
+          sparkline={ticketSeries}
+          href="/dashboard/campaigns?type=ticket"
+        />
+        <StatCard
+          label="Votes counted"
+          value={totalVotes.toLocaleString()}
+          delta={periodDelta(voteSeries)}
+          sparkline={voteSeries}
+          href="/dashboard/campaigns?type=vote"
+        />
+        {hasFeature("kcm_membership") ? (
+          <CompositeMetricCard
+            title="KCM membership paid"
+            value={`KES ${kcmMembershipPaidKes.toLocaleString()}`}
+            href="/dashboard/kcm-membership"
+            featured={false}
+            rows={[
+              { label: "Contributions", value: `KES ${kcmContributionsKes.toLocaleString()}` },
+              { label: "Paid members", value: kcmMembershipPaidCount.toLocaleString() },
+            ]}
+          />
+        ) : null}
+        <Card>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/dashboard/campaigns"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-hairline bg-surface hover:bg-canvas text-ink font-medium"
             >
               Manage campaigns
-              <ExternalLink className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
             </Link>
             <Link
               href="/dashboard/campaigns/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary-700 text-white font-semibold hover:bg-primary-800"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white font-bold hover:bg-brand-dark"
             >
               Create new
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" strokeWidth={1.5} />
             </Link>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Money report: recent transactions */}
@@ -1144,7 +1015,7 @@ export default function DashboardHomePage() {
       >
         <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-xl font-bold text-slate-900 text-left">Recent Payments</div>
+            <div className="text-xl font-bold text-ink">Recent payments</div>
             {!isAdmin && (
               <p className="mt-2 text-xs text-gray-500 max-w-xl text-left">
                 Incomplete checkouts are hidden here. You&apos;ll get an email when a payer doesn&apos;t finish — successful
@@ -1164,7 +1035,7 @@ export default function DashboardHomePage() {
               type="button"
               onClick={syncPendingPayments}
               disabled={syncing}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary-200 bg-primary-50 text-primary-800 font-semibold hover:bg-primary-100 disabled:opacity-60"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-brand/30 bg-brand-muted text-brand-dark font-medium hover:bg-brand-muted disabled:opacity-60"
             >
               <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing..." : "Sync pending"}

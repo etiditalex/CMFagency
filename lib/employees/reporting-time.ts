@@ -134,7 +134,7 @@ export function signOutStatusClass(status: SignOutReportingStatus): string {
     case "early":
       return "text-amber-800 bg-amber-50 border-amber-200";
     case "overtime":
-      return "text-violet-900 bg-violet-50 border-violet-200";
+      return "text-brand-dark bg-brand-muted border-brand/30";
     default:
       return "text-gray-500 bg-gray-50 border-gray-200";
   }

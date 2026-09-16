@@ -48,6 +48,7 @@ import {
 import type { VisitorRecord } from "@/lib/visitors/types";
 import { statusBadgeClass, statusLabel } from "@/lib/visitors/utils";
 import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
+import { StatCard } from "@/components/dashboard/ui";
 
 function initials(name: string) {
   return name
@@ -370,23 +371,15 @@ export default function VisitorEmployeeOverview({
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className={`${VM_CARD} p-5`}>
-              <div className="flex items-center gap-4">
-                <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${card.tone}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-2xl font-bold tabular-nums text-[#1a2332]">{card.value.toLocaleString()}</div>
-                  <div className="text-sm font-medium text-slate-600">{card.label}</div>
-                  <div className="text-xs text-slate-500">{card.hint}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {kpiCards.map((card, idx) => (
+          <StatCard
+            key={card.label}
+            label={card.label}
+            value={card.value.toLocaleString()}
+            hint={card.hint}
+            featured={idx === 0}
+          />
+        ))}
       </section>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">

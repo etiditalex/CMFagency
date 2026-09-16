@@ -163,8 +163,8 @@ export default function DashboardBlogsPage() {
             <div key={i} className="h-10 w-28 bg-gray-100 rounded-lg animate-pulse" />
           ))}
         </div>
-        <div className="mt-6 border border-[#e5e5e5] overflow-hidden bg-white">
-          <div className="h-11 bg-white border-b border-[#e5e5e5]" />
+        <div className="mt-6 border border-hairline overflow-hidden bg-white">
+          <div className="h-11 bg-white border-b border-hairline" />
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="h-14 border-b border-gray-100 flex items-center px-6 gap-4">
               <div className="h-10 flex-1 max-w-md bg-gray-100 rounded animate-pulse" />
@@ -184,7 +184,7 @@ export default function DashboardBlogsPage() {
     <div className="text-left">
       <div className="flex flex-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-[#e5e5e5]">Blogs</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-hairline">Blogs</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
             Create and manage blog posts shown on the public Blogs & News page. The first time you publish a post,
             subscribers get an email with the excerpt and a link to the article; <strong>approved blog sidebar promos</strong> are
@@ -225,10 +225,10 @@ export default function DashboardBlogsPage() {
         ))}
       </div>
 
-      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
+      <div className="mt-6 bg-white border border-hairline overflow-hidden">
         <div className="overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-white border-b border-[#e5e5e5]">
+            <thead className="bg-white border-b border-hairline">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Post</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Category</th>
@@ -290,7 +290,7 @@ export default function DashboardBlogsPage() {
                               type="button"
                               onClick={() => notifySubscribers(b.slug, b.title)}
                               disabled={notifySlug === b.slug}
-                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold disabled:opacity-50"
+                              className="inline-flex items-center gap-1 text-brand hover:text-brand-dark font-medium disabled:opacity-50"
                               title="Email all newsletter subscribers about this post"
                             >
                               <Mail className="w-4 h-4" />

@@ -478,13 +478,13 @@ export default function DashboardVisitorManagementPage() {
       {!needsSelection && (
         <>
       {setupRequired && (
-        <p className="rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Run <code className="font-mono text-xs">database/visitor_management_patch_01.sql</code> in the
           Supabase SQL Editor to enable live visitor records.
         </p>
       )}
       {loadError && !setupRequired ? (
-        <p className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {loadError}
         </p>
       ) : null}
@@ -515,7 +515,7 @@ export default function DashboardVisitorManagementPage() {
       />
 
       {registerGuestNotice ? (
-        <p className="rounded-[12px] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           {registerGuestNotice}
         </p>
       ) : null}

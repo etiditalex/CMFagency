@@ -9,6 +9,18 @@
   --font-montserrat: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --site-nav-height: calc(env(safe-area-inset-top, 0px) + 7.25rem);
   --site-mobile-dock-height: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+  --brand: #1148C0;
+  --brand-muted: #E7EEFB;
+  --brand-dark: #0D3A99;
+  --accent-green: #2CBD71;
+  --accent-teal: #1FBBBF;
+  --ink: #151321;
+  --ink-muted: #6B6B7A;
+  --border: #E4E7EF;
+  --surface: #FFFFFF;
+  --bg: #F6F7FB;
+  --positive: #1F9D6C;
+  --negative: #D64545;
 }
 
 @media (min-width: 640px) {
@@ -272,6 +284,61 @@
   border-color: rgba(255, 255, 255, 0.85) !important;
   border-radius: 1rem !important;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Fusion Xpress admin: one family, 500/700 weights, sentence-case labels, left-aligned */
+.fx-dashboard {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.fx-dashboard p,
+.fx-dashboard div,
+.fx-dashboard span,
+.fx-dashboard li,
+.fx-dashboard td,
+.fx-dashboard th,
+.fx-dashboard article,
+.fx-dashboard section,
+.fx-dashboard h1,
+.fx-dashboard h2,
+.fx-dashboard h3,
+.fx-dashboard h4,
+.fx-dashboard h5,
+.fx-dashboard h6 {
+  text-align: left !important;
+}
+
+.fx-dashboard .font-semibold,
+.fx-dashboard .font-medium {
+  font-weight: 500;
+}
+
+.fx-dashboard .fx-nav-active,
+.fx-dashboard .fx-nav-active span,
+.fx-dashboard .fx-nav-active button {
+  font-weight: 600 !important;
+}
+
+.fx-dashboard .font-extrabold,
+.fx-dashboard .font-bold,
+.fx-dashboard .font-black {
+  font-weight: 700;
+}
+
+.fx-dashboard .uppercase {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.fx-dashboard main .border.border-hairline {
+  border-radius: 8px;
+}
+
+.fx-dashboard .text-\[\#1a2332\] {
+  color: var(--ink) !important;
 }
 
 @keyframes home-hero-caret-blink {

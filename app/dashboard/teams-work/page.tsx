@@ -264,7 +264,7 @@ export default function DashboardTeamsWorkPage() {
     <div className="text-left space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Teams Work</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">Teams Work</h2>
           <p className="mt-1 text-gray-600 max-w-3xl">
             Submit daily updates or upload deliverables. Directors and CEOs can review everything in the admin view.
           </p>
@@ -320,7 +320,7 @@ export default function DashboardTeamsWorkPage() {
       {message && <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-800">{message}</div>}
 
       {tab === "me" && (
-        <div className="border border-[#e5e5e5] bg-white p-5 space-y-4">
+        <div className="border border-hairline bg-white p-5 space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-normal text-[#555]">New submission</div>
@@ -394,7 +394,7 @@ export default function DashboardTeamsWorkPage() {
       )}
 
       {tab === "admin" && canUseAdminTab && (
-        <div className="border border-[#e5e5e5] bg-white p-5 space-y-4">
+        <div className="border border-hairline bg-white p-5 space-y-4">
           <div className="flex items-center gap-2 text-sm font-normal text-[#555]">
             <Filter className="h-4 w-4" />
             Filters
@@ -445,7 +445,7 @@ export default function DashboardTeamsWorkPage() {
           </div>
         ) : (
           activeList.map((e) => (
-            <div key={e.id} className="border border-[#e5e5e5] bg-white p-5">
+            <div key={e.id} className="border border-hairline bg-white p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -504,7 +504,7 @@ export default function DashboardTeamsWorkPage() {
               </div>
 
               {(e.attachments?.length ?? 0) > 0 && (
-                <div className="mt-4 border border-[#e5e5e5] bg-white p-4">
+                <div className="mt-4 border border-hairline bg-white p-4">
                   <div className="text-xs font-extrabold uppercase tracking-widest text-gray-500">Attachments</div>
                   <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                     {e.attachments.map((a) => (

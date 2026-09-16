@@ -567,7 +567,7 @@ export default function DashboardContestantsPage() {
     <div className="text-left">
       <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">Contestants</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">Contestants</h2>
           <p className="text-gray-600 mt-1">
             View contestants by category
             {canManageResults ? (
@@ -687,7 +687,7 @@ export default function DashboardContestantsPage() {
         </div>
       )}
 
-      <div className="mt-6 bg-white border border-[#e5e5e5] p-6">
+      <div className="mt-6 bg-white border border-hairline p-6">
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <div className="inline-flex items-center gap-2 rounded-lg bg-primary-50 border border-primary-200 px-4 py-2">
             <UserPlus className="w-5 h-5 text-primary-700" />
@@ -712,7 +712,7 @@ export default function DashboardContestantsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-white border-b border-[#e5e5e5]">
+              <thead className="bg-white border-b border-hairline">
                 <tr className="text-left">
                   <th className="px-6 py-3 font-bold text-gray-600 w-8" />
                   <th className="px-6 py-3 font-bold text-gray-600">Category</th>
@@ -760,7 +760,7 @@ export default function DashboardContestantsPage() {
                             <span className="font-semibold text-gray-800">Certificate of participation</span>
                           </div>
                           <p className="text-xs text-gray-600 mb-3">
-                            Approve contestants to send their e-signed certificate by email; they can also download it from the Register as a Model page. Below: who has been approved and who has downloaded.
+                            Approve contestants to send their e-signed certificate by email. Below: who has been approved and who has downloaded.
                           </p>
                           <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden bg-white">
                             <thead className="bg-gray-100">

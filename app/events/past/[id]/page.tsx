@@ -474,7 +474,7 @@ export default function PastEventDetailPage() {
                   >
                     <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold mb-2 text-gray-900">Thank You!</h3>
-                    <p className="text-gray-600">Your review has been submitted. The team will review it before it appears on the site.</p>
+                    <p className="text-gray-600">Your review is live on Success Stories and the Testimonials page.</p>
                   </motion.div>
                 ) : (
                   <form onSubmit={handleReviewSubmit} className="space-y-6">

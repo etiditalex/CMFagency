@@ -435,7 +435,7 @@ export default function EmployeeSummaryReportsPage() {
       `}</style>
 
       <div className="no-print">
-        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-[#e5e5e5]">
+        <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-hairline">
           <BarChart3 className="w-7 h-7 text-primary-600" />
           {isAdmin && scopedBusinessName ? `${scopedBusinessName} — Summary` : "Summary reports"}
         </h1>
@@ -457,7 +457,7 @@ export default function EmployeeSummaryReportsPage() {
 
       {!needsSelection && !setupRequired ? (
         <>
-          <section className="no-print border border-[#e5e5e5] bg-white p-4 space-y-4">
+          <section className="no-print border border-hairline bg-white p-4 space-y-4">
             <div className="flex flex-wrap gap-2">
               {PRESET_BUTTONS.map((b) => (
                 <button
@@ -601,7 +601,7 @@ export default function EmployeeSummaryReportsPage() {
                       label: "Staff with activity",
                       value: summary.totals.uniqueEmployees,
                       icon: Users,
-                      tone: "bg-violet-50 border-violet-200 text-violet-900",
+                      tone: "bg-brand-muted border-brand/30 text-brand-dark",
                     },
                     {
                       label: "Total events",
@@ -649,8 +649,8 @@ export default function EmployeeSummaryReportsPage() {
                   onExportExcel={() => void handleExportRankings()}
                 />
 
-                <section className="border border-[#e5e5e5] bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="px-4 py-3 border-b border-[#e5e5e5] bg-white flex flex-wrap items-start justify-between gap-2">
+                <section className="border border-hairline bg-white overflow-hidden print:break-inside-avoid">
+                  <div className="px-4 py-3 border-b border-hairline bg-white flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <h2 className="text-sm font-bold text-gray-900">Per-employee summary</h2>
                       <p className="text-xs text-gray-500 mt-0.5">{rangeLabel}</p>

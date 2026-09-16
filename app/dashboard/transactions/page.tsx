@@ -318,10 +318,10 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      <div className="bg-white border border-[#e5e5e5] overflow-hidden">
+      <div className="bg-white border border-hairline overflow-hidden">
         <div className="overflow-auto max-h-[70vh]">
           <table className="min-w-full text-sm">
-            <thead className="bg-white border-b border-[#e5e5e5] sticky top-0">
+            <thead className="bg-white border-b border-hairline sticky top-0">
               <tr className="text-left">
                 <th className="px-6 py-3 font-bold text-gray-600">Date</th>
                 <th className="px-6 py-3 font-bold text-gray-600">Payer</th>

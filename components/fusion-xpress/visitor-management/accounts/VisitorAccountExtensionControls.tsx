@@ -80,9 +80,9 @@ export default function VisitorAccountExtensionControls({
   };
 
   return (
-    <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 space-y-3 min-w-[260px]">
+    <div className="rounded-lg border border-brand/30 bg-brand-muted/50 p-3 space-y-3 min-w-[260px]">
       <div className="flex items-start gap-2">
-        <Sparkles className="w-4 h-4 text-violet-600 mt-0.5 shrink-0" aria-hidden />
+        <Sparkles className="w-4 h-4 text-brand mt-0.5 shrink-0" aria-hidden />
         <div className="text-xs text-gray-700 space-y-1">
           <p className="font-bold text-gray-900">Plan access</p>
           <p>
@@ -100,7 +100,7 @@ export default function VisitorAccountExtensionControls({
             <p className="text-gray-600">Access until {subscription.periodEndsLabel}</p>
           ) : null}
           {extension.active ? (
-            <p className="text-violet-900 font-semibold">
+            <p className="text-brand-dark font-medium">
               Admin extension until {extension.endsLabel || "—"}
               {extension.plan ? ` · ${extension.plan}` : ""}
             </p>
@@ -151,7 +151,7 @@ export default function VisitorAccountExtensionControls({
           type="button"
           disabled={busy !== null}
           onClick={() => void postExtension("activate")}
-          className="inline-flex items-center gap-1 rounded-lg bg-violet-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-violet-800 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-xs font-bold text-white hover:bg-brand-dark disabled:opacity-50"
         >
           <CalendarClock className="w-3.5 h-3.5" />
           {busy === "activate" ? "Activating…" : extension.active ? "Extend access" : "Activate access"}

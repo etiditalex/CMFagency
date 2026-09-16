@@ -127,8 +127,8 @@ export default function AddEmployeeModal({
                     className={`rounded-md px-3 py-2.5 text-sm font-semibold transition-colors ${
                       memberType === type
                         ? type === "crm"
-                          ? "bg-violet-600 text-white shadow-sm"
-                          : "bg-primary-600 text-white shadow-sm"
+                          ? "bg-brand text-white"
+                          : "bg-brand text-white"
                         : "text-gray-600 hover:bg-white"
                     }`}
                     aria-pressed={memberType === type}

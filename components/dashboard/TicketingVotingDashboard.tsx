@@ -3,26 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Archive,
   BarChart3,
   CalendarRange,
   Check,
-  Coins,
   Copy,
   Download,
   ExternalLink,
   LineChart,
-  Link2,
   Pencil,
   Plus,
   Search,
   Smartphone,
   Ticket,
   Trash2,
-  Users,
   Vote,
 } from "lucide-react";
 
+import { StatCard, cardClassName, periodDelta } from "@/components/dashboard/ui";
+import { BRAND, ACCENT_GREEN } from "@/components/dashboard/ui/tokens";
 import { supabase } from "@/lib/supabase";
 
 export type WorkspaceCampaign = {
@@ -55,8 +53,8 @@ type OverviewState = {
 };
 
 const PAGE_SIZE = 5;
-const CARD =
-  "rounded-[12px] bg-white p-5 shadow-[0_10px_28px_rgba(15,47,100,0.07)] ring-1 ring-black/[0.04]";
+const CARD = cardClassName("default", "p-5");
+const CARD_FEATURED = cardClassName("featured", "p-5");
 
 function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
@@ -94,7 +92,7 @@ function ymdInNairobi(iso: string) {
 
 function TrendLine({ values }: { values: number[] }) {
   if (values.length === 0 || values.every((v) => v <= 0)) {
-    return <p className="py-10 text-center text-sm text-slate-500">No activity in this period yet.</p>;
+    return <p className="py-10 text-center text-sm text-ink-muted">No activity in this period yet.</p>;
   }
   const W = 360;
   const H = 140;
@@ -109,17 +107,21 @@ function TrendLine({ values }: { values: number[] }) {
   const area = `${pad.l},${pad.t + plotH} ${line} ${pad.l + plotW},${pad.t + plotH}`;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-36 w-full text-primary-600" role="img" aria-label="Activity over time">
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-36 w-full text-brand" role="img" aria-label="Activity over time">
       <defs>
         <linearGradient id="fx-tv-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1e58ca" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#1e58ca" stopOpacity="0.02" />
+          <stop offset="0%" stopColor={BRAND} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={BRAND} stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="fx-tv-stroke" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={BRAND} />
+          <stop offset="100%" stopColor={ACCENT_GREEN} />
         </linearGradient>
       </defs>
       <polygon points={area} fill="url(#fx-tv-fill)" />
-      <polyline fill="none" stroke="#1e58ca" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" points={line} />
+      <polyline fill="none" stroke="url(#fx-tv-stroke)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" points={line} />
       {values.map((v, i) => (
-        <circle key={i} cx={xAt(i)} cy={yAt(v)} r="2.4" fill="#1a4ba8" />
+        <circle key={i} cx={xAt(i)} cy={yAt(v)} r="2.4" fill={BRAND} />
       ))}
     </svg>
   );
@@ -129,12 +131,12 @@ function HeaderArt({ mode }: { mode: "ticket" | "vote" }) {
   const Icon = mode === "vote" ? Vote : Ticket;
   return (
     <div className="relative hidden h-[120px] w-[168px] shrink-0 lg:block" aria-hidden>
-      <div className="absolute right-2 top-3 h-20 w-20 rounded-2xl bg-primary-50 ring-1 ring-primary-100" />
-      <div className="absolute right-10 top-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-[0_10px_20px_rgba(30,88,202,0.28)]">
-        <Icon className="h-8 w-8" />
+      <div className="absolute right-2 top-3 h-20 w-20 rounded-lg bg-brand-muted" />
+      <div className="absolute right-10 top-8 flex h-16 w-16 items-center justify-center rounded-lg bg-brand text-white">
+        <Icon className="h-8 w-8" strokeWidth={1.5} />
       </div>
-      <div className="absolute bottom-2 right-16 flex h-12 w-12 items-center justify-center rounded-xl bg-white text-primary-700 shadow-[0_8px_18px_rgba(15,47,100,0.12)] ring-1 ring-black/[0.04]">
-        <Smartphone className="h-6 w-6" />
+      <div className="absolute bottom-2 right-16 flex h-12 w-12 items-center justify-center rounded-lg bg-surface text-brand border border-hairline">
+        <Smartphone className="h-6 w-6" strokeWidth={1.5} />
       </div>
     </div>
   );
@@ -400,29 +402,21 @@ export default function TicketingVotingDashboard({
           label: "Active voting links",
           value: kpis.active.toLocaleString(),
           hint: "Public campaigns currently live",
-          icon: Link2,
-          tone: "bg-primary-50 text-primary-700",
         },
         {
           label: "Total votes",
           value: kpis.votes.toLocaleString(),
           hint: "Across campaigns you can access",
-          icon: Users,
-          tone: "bg-primary-100 text-primary-800",
         },
         {
           label: "Voting revenue",
           value: formatMoney(kpis.currency, kpis.revenue),
           hint: "Successful payments",
-          icon: Coins,
-          tone: "bg-secondary-50 text-secondary-700",
         },
         {
           label: "Draft campaigns",
           value: kpis.closed.toLocaleString(),
           hint: "Not publicly visible",
-          icon: Archive,
-          tone: "bg-primary-50 text-primary-800",
         },
       ]
     : [
@@ -430,51 +424,43 @@ export default function TicketingVotingDashboard({
           label: "Active ticketing links",
           value: kpis.active.toLocaleString(),
           hint: "Public campaigns currently live",
-          icon: Link2,
-          tone: "bg-primary-50 text-primary-700",
         },
         {
           label: "Successful sales",
           value: kpis.sales.toLocaleString(),
           hint: "Paid ticket transactions",
-          icon: Ticket,
-          tone: "bg-secondary-50 text-secondary-700",
         },
         {
           label: "Ticketing revenue",
           value: formatMoney(kpis.currency, kpis.revenue),
           hint: "Successful payments",
-          icon: Coins,
-          tone: "bg-secondary-50 text-secondary-800",
         },
         {
           label: "Draft campaigns",
           value: kpis.closed.toLocaleString(),
           hint: "Not publicly visible",
-          icon: Archive,
-          tone: "bg-primary-50 text-primary-800",
         },
       ];
 
   return (
     <div className="space-y-6 text-left">
-      <section className={`${CARD} flex items-start justify-between gap-6`}>
+      <section className={`${CARD_FEATURED} flex items-start justify-between gap-6`}>
         <div className="min-w-0">
-          <h2 className="text-2xl font-bold tracking-tight text-[#1a2332] sm:text-[28px]">
+          <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-[28px]">
             {isVote ? "Voting" : "Ticketing"}
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+          <p className="mt-1 max-w-2xl text-sm text-ink-muted">
             {isVote
               ? "Create, manage and monitor voting campaigns and shareable public links."
               : "Create, manage and monitor ticket campaigns and shareable public payment links."}
           </p>
           {canOpenTicketing || canOpenVoting ? (
-            <div className="mt-4 inline-flex rounded-full bg-slate-100 p-1 ring-1 ring-slate-200/80">
+            <div className="mt-4 inline-flex rounded-full bg-canvas p-1 ring-1 ring-hairline">
               {canOpenTicketing ? (
                 <Link
                   href="/dashboard/campaigns?type=ticket"
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
-                    !isVote ? "bg-primary-700 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                    !isVote ? "bg-brand text-white" : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   <Ticket className="h-4 w-4" />
@@ -484,8 +470,8 @@ export default function TicketingVotingDashboard({
               {canOpenVoting ? (
                 <Link
                   href="/dashboard/campaigns?type=vote"
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
-                    isVote ? "bg-primary-700 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium ${
+                    isVote ? "bg-brand text-white" : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   <BarChart3 className="h-4 w-4" />
@@ -499,42 +485,35 @@ export default function TicketingVotingDashboard({
       </section>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div key={card.label} className={CARD}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium text-slate-500">{card.label}</div>
-                  <div className="mt-2 text-2xl font-bold tabular-nums text-[#1a2332]">{card.value}</div>
-                  <div className="mt-1 text-xs text-slate-500">{card.hint}</div>
-                </div>
-                <span className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${card.tone}`}>
-                  <Icon className="h-5 w-5" />
-                </span>
-              </div>
-            </div>
-          );
-        })}
+        {kpiCards.map((card) => (
+          <StatCard
+            key={card.label}
+            label={card.label}
+            value={card.value}
+            hint={card.hint}
+            sparkline={card.label.toLowerCase().includes("revenue") ? overview.series.map((s) => s.value) : undefined}
+            delta={card.label.toLowerCase().includes("revenue") ? periodDelta(overview.series.map((s) => s.value)) : undefined}
+          />
+        ))}
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
         <div className={`${CARD} p-0 overflow-hidden`}>
-          <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b border-hairline px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-5 text-sm font-semibold">
               {canCreate ? (
-                <Link href={createHref} className="text-slate-500 hover:text-primary-700">
+                <Link href={createHref} className="text-ink-muted hover:text-brand">
                   {isVote ? "Create voting link" : "Create ticketing link"}
                 </Link>
               ) : null}
-              <span className="border-b-2 border-primary-700 pb-1 text-primary-800">
+              <span className="border-b-2 border-brand pb-1 text-brand-dark">
                 {isVote ? "Created voting links" : "Created ticketing links"}
               </span>
             </div>
             {canCreate ? (
               <Link
                 href={createHref}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-bold text-white hover:bg-brand-dark"
               >
                 <Plus className="h-4 w-4" />
                 {isVote ? "Create voting link" : "Create ticketing link"}
@@ -542,21 +521,21 @@ export default function TicketingVotingDashboard({
             ) : null}
           </div>
 
-          <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-3 lg:flex-row lg:items-center">
+          <div className="flex flex-col gap-3 border-b border-hairline px-5 py-3 lg:flex-row lg:items-center">
             <label className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title or slug"
-                className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                className="h-10 w-full rounded-md border border-hairline bg-white pl-9 pr-3 text-sm text-ink placeholder:text-ink-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              className="h-10 rounded-md border border-hairline bg-white px-3 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
               aria-label="Filter by status"
             >
               <option value="all">Status: All</option>
@@ -564,26 +543,26 @@ export default function TicketingVotingDashboard({
               <option value="draft">Draft</option>
             </select>
             <div className="flex items-center gap-2">
-              <CalendarRange className="hidden h-4 w-4 text-slate-400 sm:block" />
+              <CalendarRange className="hidden h-4 w-4 text-ink-muted sm:block" />
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="h-10 rounded-md border border-slate-200 px-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                className="h-10 rounded-md border border-hairline px-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
                 aria-label="From date"
               />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="h-10 rounded-md border border-slate-200 px-2 text-sm text-slate-800 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                className="h-10 rounded-md border border-hairline px-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30"
                 aria-label="To date"
               />
             </div>
             <button
               type="button"
               onClick={exportCsv}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-hairline bg-white px-3 text-sm font-semibold text-ink hover:bg-canvas"
             >
               <Download className="h-4 w-4" />
               Export
@@ -592,7 +571,7 @@ export default function TicketingVotingDashboard({
 
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-[#f4f7fb] text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <thead className="bg-canvas text-left text-[11px] font-bold text-ink-muted">
                 <tr>
                   <th className="px-5 py-3">{isVote ? "Campaign" : "Event"}</th>
                   <th className="px-5 py-3">{isVote ? "Voting link" : "Ticketing link"}</th>
@@ -607,14 +586,14 @@ export default function TicketingVotingDashboard({
               <tbody>
                 {pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-10 text-slate-600">
+                    <td colSpan={8} className="px-5 py-10 text-ink-muted">
                       {searchQuery.trim() || statusFilter !== "all" || dateFrom || dateTo
                         ? "No campaigns match these filters."
                         : isVote
                           ? "You don’t have any voting campaigns yet. Create one to start collecting votes."
                           : "You don’t have any ticketing campaigns yet. Create one to start selling tickets."}
                       {canCreate && filtered.length === 0 ? (
-                        <Link href={createHref} className="mt-3 block font-semibold text-primary-700 hover:underline">
+                        <Link href={createHref} className="mt-3 block font-semibold text-brand hover:underline">
                           {isVote ? "Create a voting campaign" : "Create a ticketing campaign"}
                         </Link>
                       ) : null}
@@ -629,26 +608,26 @@ export default function TicketingVotingDashboard({
                       <tr
                         key={c.id}
                         onClick={() => setSelectedId(c.id)}
-                        className={`cursor-pointer border-b border-slate-100 ${
-                          selectedRow ? "bg-primary-50/70" : "even:bg-[#f7f9fc] hover:bg-slate-50"
+                        className={`cursor-pointer border-b border-hairline ${
+                          selectedRow ? "bg-brand-muted" : "even:bg-canvas hover:bg-canvas"
                         }`}
                       >
                         <td className="px-5 py-3">
                           <div className="flex items-center gap-3 min-w-[12rem]">
-                            <span className="inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-primary-50 ring-1 ring-black/[0.04]">
+                            <span className="inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-brand-muted ring-1 ring-black/[0.04]">
                               {c.image_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={c.image_url} alt="" className="h-full w-full object-cover" />
                               ) : (
-                                <span className="flex h-full w-full items-center justify-center text-primary-700">
+                                <span className="flex h-full w-full items-center justify-center text-brand">
                                   {isVote ? <Vote className="h-4 w-4" /> : <Ticket className="h-4 w-4" />}
                                 </span>
                               )}
                             </span>
                             <div className="min-w-0">
-                              <div className="truncate font-semibold text-slate-900">{c.title}</div>
+                              <div className="truncate font-semibold text-ink">{c.title}</div>
                               {isFullAdmin && c.created_by ? (
-                                <div className="text-[11px] text-slate-500">
+                                <div className="text-[11px] text-ink-muted">
                                   {c.created_by === userId ? "Created by you" : "Created by client"}
                                 </div>
                               ) : null}
@@ -660,7 +639,7 @@ export default function TicketingVotingDashboard({
                             <Link
                               href={publicPath}
                               onClick={(e) => e.stopPropagation()}
-                              className="max-w-[9rem] truncate font-mono text-xs text-primary-700 hover:underline"
+                              className="max-w-[9rem] truncate font-mono text-xs text-brand hover:underline"
                               title={publicUrl}
                             >
                               {publicUrl.replace(/^https?:\/\//, "")}
@@ -671,25 +650,25 @@ export default function TicketingVotingDashboard({
                                 e.stopPropagation();
                                 void copy(c.slug);
                               }}
-                              className="rounded p-1 text-slate-400 hover:bg-white hover:text-primary-700"
+                              className="rounded p-1 text-ink-muted hover:bg-white hover:text-brand"
                               title="Copy public link"
                             >
                               {copiedSlug === c.slug ? <Check className="h-3.5 w-3.5 text-secondary-600" /> : <Copy className="h-3.5 w-3.5" />}
                             </button>
                           </div>
                         </td>
-                        <td className="px-5 py-3 whitespace-nowrap text-slate-700">{formatDate(c.starts_at || c.created_at)}</td>
-                        <td className="px-5 py-3 whitespace-nowrap text-slate-700">{formatDate(c.ends_at)}</td>
-                        <td className="px-5 py-3 font-semibold tabular-nums text-slate-900">
+                        <td className="px-5 py-3 whitespace-nowrap text-ink">{formatDate(c.starts_at || c.created_at)}</td>
+                        <td className="px-5 py-3 whitespace-nowrap text-ink">{formatDate(c.ends_at)}</td>
+                        <td className="px-5 py-3 font-semibold tabular-nums text-ink">
                           {(isVote ? c.total_votes : c.successful_transactions).toLocaleString()}
                         </td>
-                        <td className="px-5 py-3 whitespace-nowrap font-semibold tabular-nums text-slate-900">
+                        <td className="px-5 py-3 whitespace-nowrap font-semibold tabular-nums text-ink">
                           {formatMoney(c.currency, c.total_amount)}
                         </td>
                         <td className="px-5 py-3">
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                              c.is_active ? "bg-secondary-50 text-secondary-800" : "bg-slate-100 text-slate-600"
+                              c.is_active ? "bg-secondary-50 text-secondary-800" : "bg-canvas text-ink-muted"
                             }`}
                           >
                             {c.is_active ? "Active" : "Draft"}
@@ -699,7 +678,7 @@ export default function TicketingVotingDashboard({
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <Link
                               href={publicPath}
-                              className="rounded p-1.5 text-slate-500 hover:bg-white hover:text-primary-700"
+                              className="rounded p-1.5 text-ink-muted hover:bg-white hover:text-brand"
                               title="Open public link"
                             >
                               <ExternalLink className="h-4 w-4" />
@@ -707,7 +686,7 @@ export default function TicketingVotingDashboard({
                             {canEdit ? (
                               <Link
                                 href={`/dashboard/campaigns/${c.id}/edit`}
-                                className="rounded p-1.5 text-slate-500 hover:bg-white hover:text-primary-700"
+                                className="rounded p-1.5 text-ink-muted hover:bg-white hover:text-brand"
                                 title="Edit campaign"
                               >
                                 <Pencil className="h-4 w-4" />
@@ -716,7 +695,7 @@ export default function TicketingVotingDashboard({
                             {canReport ? (
                               <Link
                                 href={`/dashboard/campaigns/${c.id}`}
-                                className="rounded p-1.5 text-slate-500 hover:bg-white hover:text-primary-700"
+                                className="rounded p-1.5 text-ink-muted hover:bg-white hover:text-brand"
                                 title="Open campaign report"
                               >
                                 <LineChart className="h-4 w-4" />
@@ -727,7 +706,7 @@ export default function TicketingVotingDashboard({
                                 type="button"
                                 onClick={() => onDelete(c.id, c.title)}
                                 disabled={deletingId === c.id}
-                                className="rounded p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                                className="rounded p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
                                 title="Delete campaign"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -743,8 +722,8 @@ export default function TicketingVotingDashboard({
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
+          <div className="flex flex-col gap-3 border-t border-hairline px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-ink-muted">
               Showing {fromIdx} to {toIdx} of {filtered.length} entries
             </p>
             <div className="flex flex-wrap items-center gap-1">
@@ -754,7 +733,7 @@ export default function TicketingVotingDashboard({
                   type="button"
                   onClick={() => setPage(n)}
                   className={`h-8 min-w-8 rounded-md px-2 text-sm font-semibold ${
-                    n === safePage ? "bg-primary-700 text-white" : "text-slate-600 hover:bg-slate-100"
+                    n === safePage ? "bg-brand text-white" : "text-ink-muted hover:bg-canvas"
                   }`}
                 >
                   {n}
@@ -770,7 +749,7 @@ export default function TicketingVotingDashboard({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="truncate text-base font-bold text-[#1a2332]">Overview ({selected.title})</h3>
-                  <div className="mt-1 inline-flex items-center gap-2 text-sm text-slate-600">
+                  <div className="mt-1 inline-flex items-center gap-2 text-sm text-ink-muted">
                     <span className={`h-2 w-2 rounded-full ${selected.is_active ? "bg-secondary-500" : "bg-slate-400"}`} />
                     Status: {selected.is_active ? "Active" : "Draft"}
                   </div>
@@ -778,7 +757,7 @@ export default function TicketingVotingDashboard({
                 {canReport ? (
                   <Link
                     href={`/dashboard/campaigns/${selected.id}`}
-                    className="shrink-0 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                    className="shrink-0 rounded-md border border-hairline px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas"
                   >
                     View details
                   </Link>
@@ -786,33 +765,33 @@ export default function TicketingVotingDashboard({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <div className="rounded-lg bg-canvas p-3 border border-hairline">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     {isVote ? "Total votes" : "Successful sales"}
                   </div>
-                  <div className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+                  <div className="mt-1 text-lg font-bold tabular-nums text-ink">
                     {(isVote ? selected.total_votes : selected.successful_transactions).toLocaleString()}
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Revenue</div>
-                  <div className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+                <div className="rounded-lg bg-canvas p-3 border border-hairline">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Revenue</div>
+                  <div className="mt-1 text-lg font-bold tabular-nums text-ink">
                     {formatMoney(selected.currency, selected.total_amount)}
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <div className="rounded-lg bg-canvas p-3 border border-hairline">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     {isVote ? "Unique voters" : "Unique buyers"}
                   </div>
-                  <div className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+                  <div className="mt-1 text-lg font-bold tabular-nums text-ink">
                     {overview.loading ? "…" : overview.uniquePeople.toLocaleString()}
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                <div className="rounded-lg bg-canvas p-3 border border-hairline">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     {isVote ? "Votes today" : "Sales today"}
                   </div>
-                  <div className="mt-1 text-lg font-bold tabular-nums text-slate-900">
+                  <div className="mt-1 text-lg font-bold tabular-nums text-ink">
                     {overview.loading ? "…" : overview.todayCount.toLocaleString()}
                   </div>
                 </div>
@@ -820,11 +799,11 @@ export default function TicketingVotingDashboard({
 
               <div>
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-slate-900">{isVote ? "Votes over time" : "Sales over time"}</h4>
+                  <h4 className="text-sm font-bold text-ink">{isVote ? "Votes over time" : "Sales over time"}</h4>
                   <select
                     value={chartGrain}
                     onChange={(e) => setChartGrain(e.target.value as ChartGrain)}
-                    className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+                    className="h-8 rounded-md border border-hairline bg-white px-2 text-xs font-semibold text-ink"
                     aria-label="Chart frequency"
                   >
                     <option value="daily">Daily</option>
@@ -837,13 +816,13 @@ export default function TicketingVotingDashboard({
               {isVote ? (
                 <div>
                   <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">Top candidates (by votes)</h4>
-                    <Link href="/dashboard/contestants" className="text-xs font-semibold text-primary-700 hover:underline">
+                    <h4 className="text-sm font-bold text-ink">Top candidates (by votes)</h4>
+                    <Link href="/dashboard/contestants" className="text-xs font-semibold text-brand hover:underline">
                       View all
                     </Link>
                   </div>
                   {overview.leaders.length === 0 ? (
-                    <p className="text-sm text-slate-500">No contestants or votes recorded yet.</p>
+                    <p className="text-sm text-ink-muted">No contestants or votes recorded yet.</p>
                   ) : (
                     <ol className="space-y-3">
                       {overview.leaders.map((l, idx) => {
@@ -851,15 +830,15 @@ export default function TicketingVotingDashboard({
                         return (
                           <li key={l.id}>
                             <div className="mb-1 flex items-center justify-between gap-2 text-sm">
-                              <span className="truncate font-semibold text-slate-800">
+                              <span className="truncate font-semibold text-ink">
                                 {idx + 1}. {l.name}
                               </span>
-                              <span className="shrink-0 tabular-nums text-slate-600">
+                              <span className="shrink-0 tabular-nums text-ink-muted">
                                 {l.votes.toLocaleString()} · {leaderMax > 0 ? pct : 0}%
                               </span>
                             </div>
-                            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                              <div className="h-full rounded-full bg-primary-600" style={{ width: `${pct}%` }} />
+                            <div className="h-2 overflow-hidden rounded-full bg-canvas">
+                              <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
                             </div>
                           </li>
                         );
@@ -868,16 +847,16 @@ export default function TicketingVotingDashboard({
                   )}
                 </div>
               ) : (
-                <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                  <div className="text-sm font-bold text-slate-900">Campaign details</div>
+                <div className="rounded-lg bg-canvas p-4 border border-hairline">
+                  <div className="text-sm font-bold text-ink">Campaign details</div>
                   <dl className="mt-3 space-y-2 text-sm">
                     <div className="flex justify-between gap-3">
-                      <dt className="text-slate-500">Unit price</dt>
-                      <dd className="font-semibold text-slate-900">{formatMoney(selected.currency, selected.unit_amount)}</dd>
+                      <dt className="text-ink-muted">Unit price</dt>
+                      <dd className="font-semibold text-ink">{formatMoney(selected.currency, selected.unit_amount)}</dd>
                     </div>
                     <div className="flex justify-between gap-3">
-                      <dt className="text-slate-500">Public link</dt>
-                      <dd className="truncate font-mono text-xs text-primary-700">/{selected.slug}</dd>
+                      <dt className="text-ink-muted">Public link</dt>
+                      <dd className="truncate font-mono text-xs text-brand">/{selected.slug}</dd>
                     </div>
                   </dl>
                 </div>
@@ -887,18 +866,18 @@ export default function TicketingVotingDashboard({
                 <button
                   type="button"
                   onClick={() => onAssign(selected)}
-                  className="w-full rounded-md border border-primary-200 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+                  className="w-full rounded-md border border-brand/30 px-3 py-2 text-sm font-semibold text-brand hover:bg-brand-muted"
                 >
                   Assign to client
                 </button>
               ) : null}
             </>
           ) : (
-            <div className="py-10 text-center text-sm text-slate-500">
+            <div className="py-10 text-center text-sm text-ink-muted">
               Select a campaign to see its overview.
               {(isVote ? canOpenTicketing : canOpenVoting) ? (
                 <div className="mt-3">
-                  <Link href={otherHref} className="font-semibold text-primary-700 hover:underline">
+                  <Link href={otherHref} className="font-semibold text-brand hover:underline">
                     Switch to {isVote ? "ticketing" : "voting"}
                   </Link>
                 </div>

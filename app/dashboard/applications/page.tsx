@@ -17,6 +17,7 @@ import {
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { StatCard } from "@/components/dashboard/ui";
 import { supabase } from "@/lib/supabase";
 
 type DocMeta = {
@@ -464,7 +465,7 @@ export default function DashboardApplicationsPage() {
       qualified: "bg-teal-100 text-teal-900 border-teal-200",
       accepted: "bg-green-100 text-green-800 border-green-200",
       rejected: "bg-red-100 text-red-800 border-red-200",
-      interview_invited: "bg-indigo-100 text-indigo-900 border-indigo-200",
+      interview_invited: "bg-brand-muted text-brand-dark border-brand/30",
       no_open_role: "bg-orange-100 text-orange-900 border-orange-200",
     };
     const s = styles[status] ?? "bg-gray-100 text-gray-700 border-gray-200";
@@ -482,7 +483,7 @@ export default function DashboardApplicationsPage() {
     <div className="text-left">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
+          <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">
             Job Applications
           </h2>
         </div>
@@ -534,7 +535,7 @@ export default function DashboardApplicationsPage() {
                   type="button"
                   onClick={() => void bulkSendInterviewInvites()}
                   disabled={bulkInviting || selectedIds.size === 0}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-brand text-white text-sm font-medium hover:bg-brand-dark disabled:opacity-60"
                 >
                   <Send className="w-4 h-4" />
                   {bulkInviting ? "Sending…" : `Invite selected (${selectedIds.size})`}
@@ -566,41 +567,17 @@ export default function DashboardApplicationsPage() {
       </div>
 
       {!loading && !error && applications.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total (filtered)</div>
-            <div className="mt-1 text-2xl font-bold text-[#1a2332]">{total}</div>
-            <div className="text-xs text-gray-500 mt-0.5">{applications.length} loaded</div>
-          </div>
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full submission</div>
-            <div className="mt-1 text-2xl font-extrabold text-emerald-800">{stats.complete}</div>
-            <div className="text-xs text-gray-500 mt-0.5">Required ID + CV present</div>
-          </div>
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Listed role</div>
-            <div className="mt-1 text-2xl font-extrabold text-emerald-900">{stats.listedRole}</div>
-            <div className="text-xs text-gray-500 mt-0.5">Matches job catalog</div>
-          </div>
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">No listing</div>
-            <div className="mt-1 text-2xl font-extrabold text-orange-800">{stats.unlistedRole}</div>
-            <div className="text-xs text-gray-500 mt-0.5">Applicant notified</div>
-          </div>
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Flagged (invalid)</div>
-            <div className="mt-1 text-2xl font-extrabold text-red-800">{stats.validationFailed}</div>
-            <div className="text-xs text-gray-500 mt-0.5">Client checks failed</div>
-          </div>
-          <div className="border border-[#e5e5e5] bg-white p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Warnings only</div>
-            <div className="mt-1 text-2xl font-extrabold text-amber-800">{stats.withWarnings}</div>
-            <div className="text-xs text-gray-500 mt-0.5">Review document names / quality</div>
-          </div>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <StatCard label="Total (filtered)" value={total} hint={`${applications.length} loaded`} featured />
+          <StatCard label="Full submission" value={stats.complete} hint="Required ID + CV present" />
+          <StatCard label="Listed role" value={stats.listedRole} hint="Matches job catalog" />
+          <StatCard label="No listing" value={stats.unlistedRole} hint="Applicant notified" />
+          <StatCard label="Flagged (invalid)" value={stats.validationFailed} hint="Client checks failed" />
+          <StatCard label="Warnings only" value={stats.withWarnings} hint="Review document names / quality" />
         </div>
       )}
 
-      <div className="mt-6 bg-white border border-[#e5e5e5] overflow-hidden">
+      <div className="mt-6 bg-white border border-hairline overflow-hidden">
         {loading ? (
           <div className="p-12 text-center text-gray-500">
             <Briefcase className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -655,7 +632,7 @@ export default function DashboardApplicationsPage() {
                           type="checkbox"
                           checked={selectedIds.has(app.id)}
                           onChange={() => toggleSelect(app.id)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          className="rounded border-gray-300 text-brand focus:ring-brand"
                         />
                       </label>
                       <span className="font-mono text-sm font-semibold text-gray-900">
@@ -706,7 +683,7 @@ export default function DashboardApplicationsPage() {
                             ? "Email interview invitation with office location"
                             : "Requires listed role, email on file, and status other than rejected / no open role / already invited"
                         }
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-indigo-200 bg-indigo-50 text-indigo-900 text-xs font-semibold hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded border border-brand/30 bg-brand-muted text-brand-dark text-xs font-medium hover:bg-brand-muted disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Send className="w-3.5 h-3.5" />
                         {invitingId === app.id ? "Sending…" : "Invite"}

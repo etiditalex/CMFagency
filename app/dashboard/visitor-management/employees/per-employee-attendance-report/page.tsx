@@ -345,7 +345,7 @@ export default function PerEmployeeAttendanceReportPage() {
       `}</style>
 
       <div className="no-print">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1a2332] pb-3 border-b border-[#e5e5e5]">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-[#1a2332] pb-3 border-b border-hairline">
           <UserRound className="h-7 w-7 text-primary-600" />
           {scopedBusinessName ? `${scopedBusinessName} — Per employee attendance report` : "Per employee attendance report"}
         </h1>
@@ -368,7 +368,7 @@ export default function PerEmployeeAttendanceReportPage() {
 
       {!needsSelection && !setupRequired ? (
         <>
-          <section className="no-print space-y-4 border border-[#e5e5e5] bg-white p-4">
+          <section className="no-print space-y-4 border border-hairline bg-white p-4">
             <div className="flex flex-wrap gap-2">
               {PRESET_BUTTONS.map((button) => (
                 <button
@@ -466,7 +466,7 @@ export default function PerEmployeeAttendanceReportPage() {
           ) : (
             <div id="per-employee-attendance-print" ref={printRef} className="space-y-6">
               {selectedEmployee ? (
-                <section className="border border-[#e5e5e5] bg-white p-4 print:break-inside-avoid">
+                <section className="border border-hairline bg-white p-4 print:break-inside-avoid">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-lg font-bold text-[#1a2332]">{selectedEmployee.fullName}</h2>
@@ -489,7 +489,7 @@ export default function PerEmployeeAttendanceReportPage() {
               {employeeSummary ? (
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 no-print">
                   {[
-                    { label: "Days attended", value: employeeSummary.daysAttended, icon: CalendarDays, tone: "bg-violet-50 border-violet-200 text-violet-900" },
+                    { label: "Days attended", value: employeeSummary.daysAttended, icon: CalendarDays, tone: "bg-brand-muted border-brand/30 text-brand-dark" },
                     { label: "Approved leave", value: employeeSummary.leaveDays, icon: BarChart3, tone: "bg-amber-50 border-amber-200 text-amber-900" },
                     { label: "Sign ins", value: employeeSummary.signInCount, icon: LogIn, tone: "bg-emerald-50 border-emerald-200 text-emerald-900" },
                     { label: "Sign outs", value: employeeSummary.signOutCount, icon: LogOut, tone: "bg-sky-50 border-sky-200 text-sky-900" },
@@ -509,8 +509,8 @@ export default function PerEmployeeAttendanceReportPage() {
               ) : null}
 
               {employeeSummary ? (
-                <section className="border border-[#e5e5e5] bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#e5e5e5] bg-white px-4 py-3">
+                <section className="border border-hairline bg-white overflow-hidden print:break-inside-avoid">
+                  <div className="flex flex-wrap items-start justify-between gap-2 border-b border-hairline bg-white px-4 py-3">
                     <div>
                       <h2 className="text-sm font-bold text-gray-900">Attendance summary</h2>
                       <p className="mt-0.5 text-xs text-gray-500">{rangeLabel}</p>
@@ -567,8 +567,8 @@ export default function PerEmployeeAttendanceReportPage() {
               ) : null}
 
               {employeeLeave.length > 0 ? (
-                <section className="border border-[#e5e5e5] bg-white overflow-hidden print:break-inside-avoid">
-                  <div className="border-b border-[#e5e5e5] bg-white px-4 py-3">
+                <section className="border border-hairline bg-white overflow-hidden print:break-inside-avoid">
+                  <div className="border-b border-hairline bg-white px-4 py-3">
                     <h2 className="text-sm font-bold text-gray-900">Leave in this period</h2>
                   </div>
                   <div className="overflow-x-auto">
