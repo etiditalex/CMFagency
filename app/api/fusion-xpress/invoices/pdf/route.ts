@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   const notes = String(payload.notes ?? "").trim().slice(0, MAX_NOTES) || undefined;
-  const documentTitle = String(payload.documentTitle ?? "Proforma Invoice").trim().slice(0, 80) || "Proforma Invoice";
+  const documentTitle = String(payload.documentTitle ?? "Invoice").trim().slice(0, 80) || "Invoice";
   const dueRaw = payload.dueDateIso != null ? String(payload.dueDateIso).trim() : "";
   const dueDateIso = dueRaw ? dueRaw : null;
 
@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
     documentTitle,
     dueDateIso,
     invoiceRef,
+    issueDateIso: now.toISOString(),
   });
 
   const safeLabel = sanitizeFilenameLabel(billToName);

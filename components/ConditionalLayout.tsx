@@ -44,6 +44,7 @@ export default function ConditionalLayout({
     Boolean(pathname?.startsWith("/fusion-xpress/smart-visitor-management/pre-register/"));
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
   const isFxQrGeneratorPage = pathname === "/fusion-xpress/fx-qr-code-generator";
+  const isServiceInvoice = Boolean(pathname?.startsWith("/invoice/"));
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -100,7 +101,8 @@ export default function ConditionalLayout({
     isVisitorManagementAuth ||
     isEmployeeAttendanceCheck ||
     isIndustryCheckInForm ||
-    isFxQrGeneratorPage
+    isFxQrGeneratorPage ||
+    isServiceInvoice
   ) {
     return (
       <>

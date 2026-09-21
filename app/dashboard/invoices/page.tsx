@@ -49,7 +49,7 @@ export default function DashboardInvoicesPage() {
   const [billToEmail, setBillToEmail] = useState("");
   const [billToPhone, setBillToPhone] = useState("");
   const [billToAddress, setBillToAddress] = useState("");
-  const [documentTitle, setDocumentTitle] = useState("Proforma Invoice");
+  const [documentTitle, setDocumentTitle] = useState("Invoice");
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<Line[]>(() => [newLine(), newLine()]);
@@ -127,7 +127,7 @@ export default function DashboardInvoicesPage() {
           billToEmail: billToEmail.trim() || undefined,
           billToPhone: billToPhone.trim() || undefined,
           billToAddress: billToAddress.trim() || undefined,
-          documentTitle: documentTitle.trim() || "Proforma Invoice",
+          documentTitle: documentTitle.trim() || "Invoice",
           dueDateIso: dueDate.trim() || null,
           notes: notes.trim() || undefined,
           lineItems,
@@ -190,8 +190,8 @@ export default function DashboardInvoicesPage() {
             <span className="mx-2 text-gray-300">·</span>
             <span className="font-bold text-gray-900">Account No.</span> {INVOICE_MPESA_ACCOUNT}
             <span className="block mt-1 text-gray-600">
-              Use the invoice reference shown on the PDF as the payment description. Printed PDFs include a signature
-              line for the authorized signatory.
+              Use the invoice reference shown on the PDF as the payment description. Paybill details print under the
+              amount due.
             </span>
           </div>
         </div>

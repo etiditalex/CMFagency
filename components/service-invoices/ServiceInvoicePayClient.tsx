@@ -3,6 +3,8 @@
 import { useState } from "react";
 import PaystackPop from "@paystack/inline-js";
 
+import { INVOICE_PAY_LINK_COLOR } from "@/lib/invoice-document";
+
 type Props = {
   accessToken: string;
   customerEmail: string;
@@ -14,6 +16,7 @@ export default function ServiceInvoicePayClient({ accessToken, customerEmail, un
   const [phone, setPhone] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   if (!unpaid) return null;
 
@@ -100,30 +103,31 @@ export default function ServiceInvoicePayClient({ accessToken, customerEmail, un
   };
 
   return (
-    <div className="mt-8 border-t border-gray-200 pt-8">
-      <h3 className="text-lg font-extrabold text-gray-900">Pay now</h3>
-      <p className="mt-2 text-sm text-gray-600">
-        Card or mobile money via Paystack, or M-Pesa STK. You can return to this link from your email anytime until paid.
-      </p>
-      {err ? (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>
-      ) : null}
-      {msg ? (
-        <div className="mt-4 rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm text-secondary-900">
-          {msg}
-        </div>
-      ) : null}
-      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
-        <button
-          type="button"
-          onClick={() => void payPaystack()}
-          disabled={busy !== null}
-          className="btn-secondary inline-flex items-center justify-center rounded-lg px-8 py-3.5 text-sm font-bold uppercase tracking-wide disabled:opacity-60"
-        >
-          {busy === "paystack" ? "Opening…" : "Pay with Paystack"}
-        </button>
-        <div className="flex min-w-[280px] flex-1 flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1">
+    <div className="print:hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-[10pt] font-bold underline decoration-[1.1px] underline-offset-2"
+        style={{ color: INVOICE_PAY_LINK_COLOR, textDecorationColor: INVOICE_PAY_LINK_COLOR }}
+      >
+        Pay online
+      </button>
+
+      {open ? (
+        <div className="mt-3 max-w-md space-y-3 text-[10pt] text-neutral-800">
+          {err ? <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">{err}</div> : null}
+          {msg ? (
+            <div className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-900">{msg}</div>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void payPaystack()}
+            disabled={busy !== null}
+            className="inline-flex items-center justify-center rounded bg-black px-4 py-2 text-[13px] font-semibold text-white disabled:opacity-60"
+          >
+            {busy === "paystack" ? "Opening…" : "Card / mobile money"}
+          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label htmlFor="mpesa-phone" className="sr-only">
               M-Pesa phone
             </label>
@@ -133,20 +137,20 @@ export default function ServiceInvoicePayClient({ accessToken, customerEmail, un
               placeholder="254712345678"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-gray-900 placeholder:text-gray-400 focus:border-secondary-500 focus:outline-none focus:ring-2 focus:ring-secondary-500/25"
+              className="w-full rounded border border-neutral-300 px-3 py-2 text-[13px] text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-500 focus:outline-none"
             />
+            <button
+              type="button"
+              onClick={() => void payMpesa()}
+              disabled={busy !== null}
+              className="inline-flex shrink-0 items-center justify-center rounded border border-neutral-800 px-4 py-2 text-[13px] font-semibold text-neutral-900 disabled:opacity-60"
+            >
+              {busy === "mpesa" ? "Sending…" : "Pay with M-Pesa"}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void payMpesa()}
-            disabled={busy !== null}
-            className="inline-flex items-center justify-center rounded-lg border-2 border-secondary-600 bg-white px-6 py-3 text-sm font-bold uppercase tracking-wide text-secondary-800 hover:bg-secondary-50 disabled:opacity-60"
-          >
-            {busy === "mpesa" ? "Sending…" : "Pay with M-Pesa"}
-          </button>
+          <p className="text-[11px] text-neutral-500">Receipt email: {customerEmail}</p>
         </div>
-      </div>
-      <p className="mt-3 text-xs text-gray-500">Receipt email: {customerEmail}</p>
+      ) : null}
     </div>
   );
 }

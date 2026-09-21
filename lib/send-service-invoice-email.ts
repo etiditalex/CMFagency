@@ -68,7 +68,7 @@ export async function sendServiceInvoicePaidEmail(params: {
   <p>Hi ${escapeHtml(params.customerName)},</p>
   <p>We&apos;ve received your payment for <strong>${escapeHtml(params.packageTitle)}</strong> (${amountFmt}).</p>
   <p><strong>Reference:</strong> ${escapeHtml(params.reference)}</p>
-  <p>Our team will follow up with next steps for your SEO subscription.</p>
+  <p>Our team will follow up with next steps for your subscription.</p>
   <p style="margin-top:24px;">— Changer Fusions</p>
 </body></html>`;
   return sendHtmlEmail(params.to, subject, html);
