@@ -1,0 +1,494 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ContestantCardPanel } from "@/components/events/ContestantCardPanel";
+import type { ContestantCardData } from "@/lib/ideal-mr-miss";
+import { FileText, MessageCircle } from "lucide-react";
+import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+
+const EVENT_ISO = "2026-12-12T00:00:00+03:00";
+const WHATSAPP_URL =
+  "https://wa.me/254797777347?text=" +
+  encodeURIComponent("Hello, I need help with the Kenya’s Ideal Mr & Miss 2026 application.");
+
+type Category = "kids" | "teens" | "adults";
+type ApplyingAs = "mr" | "miss";
+
+function ageOnEvent(isoDate: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const dob = new Date(`${isoDate}T00:00:00+03:00`);
+  const event = new Date(EVENT_ISO);
+  if (Number.isNaN(dob.getTime())) return null;
+  let age = event.getFullYear() - dob.getFullYear();
+  const month = event.getMonth() - dob.getMonth();
+  if (month < 0 || (month === 0 && event.getDate() < dob.getDate())) age -= 1;
+  return age;
+}
+
+function wordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function remaining(target: number) {
+  const diff = Math.max(0, target - Date.now());
+  const totalSeconds = Math.floor(diff / 1000);
+  return {
+    days: Math.floor(totalSeconds / 86400),
+    hours: Math.floor((totalSeconds % 86400) / 3600),
+    minutes: Math.floor((totalSeconds % 3600) / 60),
+    seconds: totalSeconds % 60,
+  };
+}
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-secondary-700 focus:ring-2 focus:ring-secondary-700/20";
+
+export default function IdealMrMissRegistration() {
+  const eventMs = useMemo(() => new Date(EVENT_ISO).getTime(), []);
+  const [clock, setClock] = useState(() => remaining(eventMs));
+  const [about, setAbout] = useState("");
+  const [category, setCategory] = useState<Category | "">("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [priorEvent, setPriorEvent] = useState<"" | "yes" | "no">("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [card, setCard] = useState<ContestantCardData | null>(null);
+  const [emailedTo, setEmailedTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setClock(remaining(eventMs)), 1000);
+    return () => window.clearInterval(id);
+  }, [eventMs]);
+
+  const age = dateOfBirth ? ageOnEvent(dateOfBirth) : null;
+  const minor = age != null && age < 18;
+  const aboutWords = wordCount(about);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+
+    if (!data.get("fullName") || !dateOfBirth || !category || !data.get("applyingAs") || !data.get("townCounty")) {
+      setError("Complete the required contestant details.");
+      return;
+    }
+    if (age == null) {
+      setError("Enter a valid date of birth.");
+      return;
+    }
+    const band =
+      category === "kids" ? [7, 12] : category === "teens" ? [13, 17] : category === "adults" ? [18, 25] : null;
+    if (!band || age < band[0] || age > band[1]) {
+      setError("Date of birth does not match the selected category on 12 December 2026.");
+      return;
+    }
+    if (aboutWords < 50 || aboutWords > 100) {
+      setError("Tell us a little about yourself in 50 to 100 words.");
+      return;
+    }
+    if (minor) {
+      if (!data.get("guardianName") || !data.get("guardianRelationship") || !data.get("guardianPhone")) {
+        setError("Parent or guardian details are required for contestants under 18.");
+        return;
+      }
+      if (!data.get("guardianConsent")) {
+        setError("Parent or guardian consent is required for contestants under 18.");
+        return;
+      }
+    }
+    if (!data.get("accuracy") || !data.get("fee") || !data.get("contact")) {
+      setError("Confirm the required declarations.");
+      return;
+    }
+    const photo = data.get("photo");
+    if (!(photo instanceof File) || photo.size === 0) {
+      setError("Upload one recent, clear photo of the contestant.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/events/ideal-mr-miss/apply", { method: "POST", body: data });
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        card?: ContestantCardData;
+        emailedTo?: string | null;
+      };
+      if (!res.ok || !json.card) {
+        setError(json.error || "Could not submit the application.");
+        return;
+      }
+      setCard(json.card);
+      setEmailedTo(json.emailedTo ?? null);
+      form.reset();
+      setAbout("");
+      setCategory("");
+      setDateOfBirth("");
+      setPriorEvent("");
+    } catch {
+      setError("Could not submit the application. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const units = [
+    { label: "Days", value: clock.days },
+    { label: "Hours", value: clock.hours },
+    { label: "Minutes", value: clock.minutes },
+    { label: "Seconds", value: clock.seconds },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f3f1ec] px-4 pb-20 pt-28 sm:pt-32 md:pt-40">
+      <div className="mx-auto max-w-[640px]">
+        <div id="event-details" className="text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-12 w-auto" />
+          <p className="mt-5 text-center text-sm font-semibold uppercase tracking-[0.18em] text-secondary-800">Kenya’s Ideal</p>
+          <h1 className="mt-1 text-4xl font-extrabold leading-none text-secondary-900 sm:text-5xl">
+            Mr &amp; Miss
+            <span className="mt-1 block text-center text-secondary-700">2026</span>
+          </h1>
+          <p className="mx-auto mt-6 max-w-xl text-center text-[15px] leading-relaxed text-gray-700">
+            Welcome to the contestant application for Kenya’s Ideal Mr &amp; Miss 2026. The theme is Models for
+            Education. The event is on 12 December 2026 at Malaika Lounge, Malindi, and the registration fee is KES
+            500. Submit this form so Changer Fusions can review the entry.
+          </p>
+        </div>
+
+        <section className="mt-8 rounded-2xl bg-secondary-800 px-5 py-8 text-center text-white shadow-md sm:px-8">
+          <h2 className="text-lg font-bold">Event day — 12 Dec 2026</h2>
+          <p className="mt-1 text-center text-sm text-white/85">Register before the event. The registration fee is KES 500.</p>
+          <div className="mt-7 flex items-start justify-center gap-3 sm:gap-6">
+            {units.map((unit) => (
+              <div key={unit.label} className="w-16">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 text-2xl font-semibold tabular-nums">
+                  {unit.value}
+                </div>
+                <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">
+                  {unit.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-6 rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-sm">
+          <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
+            <FileText className="h-7 w-7" strokeWidth={1.75} />
+          </span>
+          <h2 className="mt-2 text-xl font-bold text-gray-900">Contestant application</h2>
+          <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
+            Register in the category you are applying for: Kids 7–12, Teens 13–17, or Adults 18–25.
+          </p>
+          <a
+            href="#application"
+            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg bg-secondary-700 text-sm font-bold text-white hover:bg-secondary-800"
+          >
+            Apply for Kenya’s Ideal Mr &amp; Miss →
+          </a>
+          <a
+            href="#event-details"
+            className="mt-3 flex h-11 w-full items-center justify-center rounded-lg border border-secondary-700 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
+          >
+            Event details →
+          </a>
+        </section>
+
+        <section id="help" className="mt-5 rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-sm">
+          <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-700">
+            <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
+          </span>
+          <h2 className="mt-2 text-xl font-bold text-gray-900">Need help?</h2>
+          <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
+            If you have any problem registering or checking what to send, reach Changer Fusions on WhatsApp and the
+            events team will assist.
+          </p>
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-secondary-700 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
+          >
+            Changer Fusions WhatsApp: 0797 777 347
+          </a>
+        </section>
+
+        <section id="application" className="mt-8 scroll-mt-32 rounded-2xl border border-gray-200 bg-white px-5 py-8 shadow-sm sm:px-8">
+          {card ? (
+            <ContestantCardPanel card={card} emailedTo={emailedTo} />
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-8 text-left">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">1. Contestant details</h2>
+                <div className="mt-4 space-y-4">
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Full name <span className="text-negative">*</span>
+                    <input name="fullName" required className={inputClass} autoComplete="name" />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Date of birth <span className="text-negative">*</span>
+                    <input
+                      name="dateOfBirth"
+                      type="date"
+                      required
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className={inputClass}
+                    />
+                  </label>
+                  <fieldset>
+                    <legend className="text-sm font-semibold text-gray-800">
+                      Which category are you applying for? <span className="text-negative">*</span>
+                    </legend>
+                    <div className="mt-2 space-y-2 text-sm text-gray-700">
+                      {(
+                        [
+                          ["kids", "Kids: 7–12 years"],
+                          ["teens", "Teens: 13–17 years"],
+                          ["adults", "Adults: 18–25 years"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label key={value} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="category"
+                            value={value}
+                            required
+                            checked={category === value}
+                            onChange={() => setCategory(value)}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <fieldset>
+                    <legend className="text-sm font-semibold text-gray-800">
+                      Are you applying for Mr or Miss? <span className="text-negative">*</span>
+                    </legend>
+                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                      {(["mr", "miss"] as ApplyingAs[]).map((value) => (
+                        <label key={value} className="flex items-center gap-2">
+                          <input type="radio" name="applyingAs" value={value} required />
+                          {value === "mr" ? "Mr" : "Miss"}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Town and county of residence <span className="text-negative">*</span>
+                    <input name="townCounty" required className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Contestant’s phone number for calls <span className="font-medium text-gray-500">(if applicable)</span>
+                    <input name="phoneCalls" type="tel" className={inputClass} autoComplete="tel" />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Contestant’s WhatsApp number <span className="font-medium text-gray-500">(if applicable)</span>
+                    <input name="phoneWhatsapp" type="tel" className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Contestant’s email address <span className="font-medium text-gray-500">(if applicable)</span>
+                    <input name="email" type="email" className={inputClass} autoComplete="email" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">2. Parent or guardian details</h2>
+                <p className="mt-1 text-sm text-gray-600">Complete this section for contestants under 18.</p>
+                <div className="mt-4 space-y-4">
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Parent or legal guardian’s full name{" "}
+                    {minor ? <span className="text-negative">*</span> : <span className="font-medium text-gray-500">(required for minors)</span>}
+                    <input name="guardianName" required={minor} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Relationship to the contestant{" "}
+                    {minor ? <span className="text-negative">*</span> : <span className="font-medium text-gray-500">(required for minors)</span>}
+                    <input name="guardianRelationship" required={minor} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Parent or legal guardian’s phone number{" "}
+                    {minor ? <span className="text-negative">*</span> : <span className="font-medium text-gray-500">(required for minors)</span>}
+                    <input name="guardianPhone" type="tel" required={minor} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Parent or legal guardian’s email address <span className="font-medium text-gray-500">(optional)</span>
+                    <input name="guardianEmail" type="email" className={inputClass} />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">3. Education and interests</h2>
+                <div className="mt-4 space-y-4">
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Which school, college or learning institution do you currently attend?{" "}
+                    <span className="font-medium text-gray-500">(optional)</span>
+                    <input name="institution" className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Tell us a little about yourself. <span className="text-negative">*</span>
+                    <span className="font-medium text-gray-500"> (50–100 words)</span>
+                    <textarea
+                      name="about"
+                      required
+                      rows={5}
+                      value={about}
+                      onChange={(e) => setAbout(e.target.value)}
+                      className={inputClass}
+                    />
+                    <span className={`mt-1 block text-xs ${aboutWords > 0 && (aboutWords < 50 || aboutWords > 100) ? "text-negative" : "text-gray-500"}`}>
+                      {aboutWords} words
+                    </span>
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Why would you like to participate in Kenya’s Ideal Mr &amp; Miss? <span className="text-negative">*</span>
+                    <textarea name="whyParticipate" required rows={4} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    What talent, skill or interest would you like to showcase? <span className="text-negative">*</span>
+                    <textarea name="talent" required rows={3} className={inputClass} />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    What does “Models for Education” mean to you? <span className="text-negative">*</span>
+                    <span className="mt-1 block font-medium text-gray-500">
+                      Younger contestants may receive help from a parent or guardian.
+                    </span>
+                    <textarea name="modelsForEducation" required rows={4} className={inputClass} />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">4. Photo and availability</h2>
+                <div className="mt-4 space-y-4">
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Upload one recent, clear photo of the contestant. <span className="text-negative">*</span>
+                    <span className="mt-1 block font-medium text-gray-500">Required for application review. JPG, PNG, or WebP, up to 5MB.</span>
+                    <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required className={`${inputClass} file:mr-3 file:rounded-md file:border-0 file:bg-secondary-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-secondary-800`} />
+                  </label>
+                  <fieldset>
+                    <legend className="text-sm font-semibold text-gray-800">
+                      Have you participated in a modelling or talent event before?
+                    </legend>
+                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                      {(["yes", "no"] as const).map((value) => (
+                        <label key={value} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="priorEvent"
+                            value={value}
+                            required
+                            checked={priorEvent === value}
+                            onChange={() => setPriorEvent(value)}
+                          />
+                          {value === "yes" ? "Yes" : "No"}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  {priorEvent === "yes" ? (
+                    <label className="block text-sm font-semibold text-gray-800">
+                      If yes, which event? <span className="font-medium text-gray-500">(optional)</span>
+                      <input name="priorEventName" className={inputClass} />
+                    </label>
+                  ) : null}
+                  <fieldset>
+                    <legend className="text-sm font-semibold text-gray-800">
+                      Will you be available to attend the event in Malindi on 12 December 2026 if selected?{" "}
+                      <span className="text-negative">*</span>
+                    </legend>
+                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                      {(["yes", "no"] as const).map((value) => (
+                        <label key={value} className="flex items-center gap-2">
+                          <input type="radio" name="available" value={value} required />
+                          {value === "yes" ? "Yes" : "No"}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">5. Declarations and consent</h2>
+                <div className="mt-4 space-y-3 text-sm text-gray-700">
+                  <label className="flex items-start gap-2">
+                    <input name="accuracy" type="checkbox" value="true" required className="mt-1" />
+                    <span>
+                      I confirm that the information provided in this application is accurate. I understand that
+                      submitting an application does not guarantee selection.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input name="fee" type="checkbox" value="true" required className="mt-1" />
+                    <span>
+                      I understand that the registration fee is KES 500 and that Changer Fusions will communicate the
+                      payment and participation instructions.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input name="contact" type="checkbox" value="true" required className="mt-1" />
+                    <span>I agree to be contacted about this application using the details provided.</span>
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input name="guardianConsent" type="checkbox" value="true" required={minor} className="mt-1" />
+                    <span>
+                      I am the parent or legal guardian of the contestant named above, and I consent to their
+                      application and participation, subject to the event rules shared with me.
+                      {minor ? " Required for contestants under 18." : " Required only for contestants under 18."}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Photo and video marketing consent</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                  May Changer Fusions use photos or videos of the contestant to promote and report on Kenya’s Ideal Mr
+                  &amp; Miss, including on social media, its website and event promotional materials?{" "}
+                  <span className="text-negative">*</span>
+                </p>
+                <p className="mt-2 text-sm text-gray-600">
+                  {minor
+                    ? "For contestants under 18, the parent or legal guardian gives this answer."
+                    : "For contestants aged 18–25, the contestant gives this answer."}
+                </p>
+                <div className="mt-3 flex gap-6 text-sm text-gray-700">
+                  {(["yes", "no"] as const).map((value) => (
+                    <label key={value} className="flex items-center gap-2">
+                      <input type="radio" name="marketingConsent" value={value} required />
+                      {value === "yes" ? "Yes" : "No"}
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-gray-600">
+                  Choosing “No” does not prevent a contestant from applying. The application photo may still be used
+                  privately to review the entry, but it should not be published for marketing without consent.
+                </p>
+              </div>
+
+              {error ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex h-12 w-full items-center justify-center rounded-lg bg-secondary-700 text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+              >
+                {submitting ? "Submitting…" : "Apply for Kenya’s Ideal Mr & Miss"}
+              </button>
+            </form>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}

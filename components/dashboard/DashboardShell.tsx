@@ -207,6 +207,7 @@ const NAV: NavItem[] = [
   { label: "Blog sidebar ads", href: "/dashboard/blogs/sidebar-ads", icon: LayoutPanelLeft, section: "administration", adminOnly: true },
   { label: "Pages", href: "/dashboard/pages", icon: FilePenLine, section: "administration", adminOnly: true },
   { label: "Events", href: "/dashboard/events", icon: Calendar, section: "administration", featureKey: "events" },
+  { label: "Registrations", href: "/dashboard/registrations", icon: ClipboardList, section: "administration", adminOnly: true },
   { label: "Managers", href: "/dashboard/managers", icon: UserCog, section: "administration", featureKey: "managers" },
   { label: "Email", href: "/dashboard/email", icon: MessagesSquare, section: "administration", featureKey: "email" },
 ];
