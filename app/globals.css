@@ -333,6 +333,26 @@
   letter-spacing: normal;
 }
 
+.fx-dashboard .fx-tile-label {
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.fx-dashboard .fx-page-in {
+  animation: fx-page-in 280ms ease-out;
+}
+
+@keyframes fx-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .fx-dashboard main .border.border-hairline {
   border-radius: 8px;
 }

@@ -48,7 +48,7 @@ import {
 import type { VisitorRecord } from "@/lib/visitors/types";
 import { statusBadgeClass, statusLabel } from "@/lib/visitors/utils";
 import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
-import { StatCard } from "@/components/dashboard/ui";
+import { METRIC_TILE_TONES, MetricTile } from "@/components/dashboard/ui";
 
 function initials(name: string) {
   return name
@@ -370,14 +370,14 @@ export default function VisitorEmployeeOverview({
         </label>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpiCards.map((card, idx) => (
-          <StatCard
+          <MetricTile
             key={card.label}
             label={card.label}
             value={card.value.toLocaleString()}
-            hint={card.hint}
-            featured={idx === 0}
+            icon={card.icon}
+            tone={METRIC_TILE_TONES[idx % METRIC_TILE_TONES.length]}
           />
         ))}
       </section>

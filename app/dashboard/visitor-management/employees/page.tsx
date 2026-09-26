@@ -33,7 +33,7 @@ import NotificationAdminsPanel from "@/components/fusion-xpress/visitor-manageme
 import ReceptionQrPanel from "@/components/fusion-xpress/visitor-management/employees/ReceptionQrPanel";
 import ReportingTimesPanel from "@/components/fusion-xpress/visitor-management/employees/ReportingTimesPanel";
 import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
-import { StatCard } from "@/components/dashboard/ui";
+import { METRIC_TILE_TONES, MetricTile } from "@/components/dashboard/ui";
 import { downloadEmployeeAttendanceExcel } from "@/lib/employees/attendance-excel";
 import { DEFAULT_REPORTING_SETTINGS, isMissingEmployeesTableMessage } from "@/lib/employees/db-mapper";
 import {
@@ -696,14 +696,14 @@ export default function VisitorManagementEmployeesPage() {
         </p>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((c, idx) => (
-          <StatCard
+          <MetricTile
             key={c.label}
             label={c.label}
             value={c.value.toLocaleString()}
-            hint={c.hint}
-            featured={idx === 0}
+            icon={c.icon}
+            tone={METRIC_TILE_TONES[idx % METRIC_TILE_TONES.length]}
           />
         ))}
       </section>

@@ -17,15 +17,17 @@ import {
   FileText,
   Download,
   Inbox,
+  Facebook,
+  Instagram,
   LayoutDashboard,
   LayoutPanelLeft,
   Image as ImageIcon,
+  Mail,
   Menu,
   MessagesSquare,
   PieChart,
   Plus,
   Quote,
-  Search,
   ClipboardList,
   Crown,
   QrCode,
@@ -43,14 +45,10 @@ import {
   X,
   LogOut,
   User,
-  PanelLeftClose,
-  PanelLeftOpen,
   ChevronDown,
   Bell,
   Settings,
 } from "lucide-react";
-
-import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -129,14 +127,22 @@ const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2
 /** Inactivity timeout in ms. User is logged out after this period without activity. */
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
 
-const NAV_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
-const NAV_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
-const NAV_EXPAND_IDLE = "font-medium text-ink-muted hover:bg-brand-muted/50 hover:text-ink";
-const NAV_CHILD_ACTIVE = "fx-nav-active bg-brand-muted text-brand";
-const NAV_CHILD_IDLE = "font-medium text-ink-muted hover:bg-canvas hover:text-ink";
-const NAV_ICON_ACTIVE = "text-brand";
-const NAV_ICON_IDLE = "text-ink-muted group-hover:text-ink";
-const NAV_SUBTREE = "ml-4 space-y-0.5 border-l border-hairline pl-2";
+const NAV_ACTIVE = "fx-nav-active bg-white text-ink shadow-[0_1px_3px_rgba(21,19,33,0.08)]";
+const NAV_IDLE = "text-ink hover:bg-white/80";
+const NAV_EXPAND_IDLE = "text-ink hover:bg-white/70";
+const NAV_CHILD_ACTIVE = "fx-nav-active bg-white text-ink shadow-[0_1px_2px_rgba(21,19,33,0.06)]";
+const NAV_CHILD_IDLE = "text-ink-muted hover:bg-white/70 hover:text-ink";
+const NAV_SUBTREE = "ml-1 space-y-0.5 py-0.5 pl-1";
+const NAV_ICON_TONES = [
+  "text-negative",
+  "text-brand",
+  "text-fx-warn",
+  "text-accent-teal",
+  "text-accent-green",
+  "text-brand-dark",
+  "text-secondary-600",
+  "text-primary-500",
+];
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, section: "home" },
@@ -296,6 +302,7 @@ function DashboardNavItem({
   setNestedNavOpen,
   showLabels,
   onNavigate,
+  iconClassName = "text-ink-muted",
   pendingApplicationsCount,
   pendingCmfaCount,
   isAdmin,
@@ -311,6 +318,7 @@ function DashboardNavItem({
   setNestedNavOpen: (open: boolean) => void;
   showLabels: boolean;
   onNavigate?: () => void;
+  iconClassName?: string;
   pendingApplicationsCount: number;
   pendingCmfaCount: number;
   isAdmin: boolean;
@@ -330,15 +338,12 @@ function DashboardNavItem({
           href={item.href}
           prefetch={false}
           onClick={onNavigate}
-          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
+          className={`group flex items-center justify-center rounded-sm px-2 py-2 transition-colors duration-200 ${
             parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
           }`}
           title={item.label}
         >
-          <Icon
-            strokeWidth={1.5}
-            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
-          />
+          <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
         </Link>
       );
     }
@@ -349,15 +354,12 @@ function DashboardNavItem({
           <button
             type="button"
             onClick={() => setNestedNavOpen(!nestedNavOpen)}
-            className={`group flex w-full items-center rounded-md transition-colors ${
+            className={`group flex w-full items-center rounded-sm transition-colors duration-200 ${
               parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
-            } gap-3 px-3 py-2.5`}
+            } gap-3 px-3 py-2`}
           >
-            <Icon
-              strokeWidth={1.5}
-              className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
-            />
-            <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
+            <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
+            <span className="text-[13px] font-medium truncate flex-1 text-left">{item.label}</span>
             <ChevronDown
               className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
@@ -397,15 +399,12 @@ function DashboardNavItem({
           href={item.href}
           prefetch={false}
           onClick={onNavigate}
-          className={`group flex items-center justify-center rounded-md px-2 py-2.5 transition-colors ${
+          className={`group flex items-center justify-center rounded-sm px-2 py-2 transition-colors duration-200 ${
             parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
           }`}
           title={item.label}
         >
-          <Icon
-            strokeWidth={1.5}
-            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
-          />
+          <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
         </Link>
       );
     }
@@ -415,15 +414,12 @@ function DashboardNavItem({
         <button
           type="button"
           onClick={() => setVisitorNavOpen(!visitorNavOpen)}
-          className={`group flex w-full items-center rounded-md transition-colors ${
+          className={`group flex w-full items-center rounded-sm transition-colors duration-200 ${
             parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
-          } gap-3 px-3 py-2.5`}
+          } gap-3 px-3 py-2`}
         >
-          <Icon
-            strokeWidth={1.5}
-            className={`w-4 h-4 flex-shrink-0 ${parentActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
-          />
-          <span className="text-sm font-medium truncate flex-1 text-left">{item.label}</span>
+          <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
+          <span className="text-[13px] font-medium truncate flex-1 text-left">{item.label}</span>
           <ChevronDown
             className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
@@ -468,17 +464,14 @@ function DashboardNavItem({
       href={item.href}
       prefetch={false}
       onClick={onNavigate}
-      className={`group flex items-center rounded-md transition-colors ${
+      className={`group flex items-center rounded-sm transition-colors duration-200 ${
         active ? NAV_ACTIVE : NAV_IDLE
-      } ${showLabels ? "gap-3 px-3 py-2.5" : "justify-center px-2 py-2.5"}`}
+      } ${showLabels ? "gap-3 px-3 py-2" : "justify-center px-2 py-2"}`}
       title={!showLabels ? item.label : undefined}
     >
-      <Icon
-        strokeWidth={1.5}
-        className={`w-4 h-4 flex-shrink-0 ${active ? NAV_ICON_ACTIVE : NAV_ICON_IDLE}`}
-      />
+      <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
       {showLabels && (
-        <span className="text-sm font-medium flex items-center gap-2 min-w-0">
+        <span className="text-[13px] font-medium flex items-center gap-2 min-w-0">
           <span className="truncate">{item.label}</span>
           {item.href === "/dashboard/applications" && pendingApplicationsCount > 0 && (
             <span className="inline-flex min-w-[1.25rem] h-5 px-1.5 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold flex-shrink-0">
@@ -685,15 +678,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   });
   /** Desktop only: when the rail is collapsed, expand while the pointer is over the sidebar. */
   const [sidebarHoverExpanded, setSidebarHoverExpanded] = useState(false);
-  const [search, setSearch] = useState("");
-  const [now, setNow] = useState(() => new Date());
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
   const [pendingCmfaCount, setPendingCmfaCount] = useState(0);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   const toggleSidebarCollapsed = () => {
     setSidebarCollapsed((prev) => {
@@ -793,27 +780,6 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const breadcrumbTail = active === "Dashboard" ? "Overview" : active;
 
-  const clockLabel = useMemo(() => {
-    try {
-      const datePart = new Intl.DateTimeFormat("en-US", {
-        timeZone: "Africa/Nairobi",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }).format(now);
-      const timePart = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Africa/Nairobi",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      }).format(now);
-      return `${datePart} | ${timePart}`;
-    } catch {
-      return now.toLocaleString();
-    }
-  }, [now]);
-
   const displayName = user?.name || user?.email || "Admin";
   const initials = (() => {
     const parts = String(displayName).trim().split(/\s+/).filter(Boolean);
@@ -866,7 +832,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     isTicketingVotingWorkspace;
   const isDashboardHome = pathname === "/dashboard";
 
-  const renderNavItem = (item: NavItem, showLabels: boolean, onNavigate?: () => void) => (
+  const renderNavItem = (
+    item: NavItem,
+    showLabels: boolean,
+    onNavigate: (() => void) | undefined,
+    iconClassName: string
+  ) => (
     <DashboardNavItem
       key={item.href}
       item={item}
@@ -879,6 +850,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
       showLabels={showLabels}
       onNavigate={onNavigate}
+      iconClassName={iconClassName}
       pendingApplicationsCount={pendingApplicationsCount}
       pendingCmfaCount={pendingCmfaCount}
       isAdmin={isAdmin}
@@ -888,22 +860,19 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const renderGroupedSection = (
     key: NavItem["section"],
-    label: string,
     showLabels: boolean,
     items: NavItem[],
-    onNavigate?: () => void
+    onNavigate: (() => void) | undefined,
+    toneCursor: { i: number }
   ) => {
     if (items.length === 0) return null;
     return (
-      <div key={key} className="mt-2 border-t border-hairline pt-2">
-        {showLabels ? (
-          <div className="px-3 text-[11px] font-medium text-ink-muted">
-            {label}
-          </div>
-        ) : null}
-        <div className={`${showLabels ? "mt-2" : "mt-1"} space-y-0.5`}>
-          {items.map((item) => renderNavItem(item, showLabels, onNavigate))}
-        </div>
+      <div key={key} className="mt-1 space-y-0.5">
+        {items.map((item) => {
+          const tone = NAV_ICON_TONES[toneCursor.i % NAV_ICON_TONES.length];
+          toneCursor.i += 1;
+          return renderNavItem(item, showLabels, onNavigate, tone);
+        })}
       </div>
     );
   };
@@ -911,271 +880,253 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const dashboardItem = navItems.find((x) => x.section === "home" && canSeeItem(x));
   const adminItems = navItems.filter((x) => x.section === "administration" && canSeeItem(x));
 
-  const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) => (
-    <>
-      {dashboardItem ? renderNavItem(dashboardItem, showLabels, onNavigate) : null}
-      {workSections.map((s) =>
-        renderGroupedSection(
-          s.key,
-          s.label,
-          showLabels,
-          navItems.filter((x) => x.section === s.key && canSeeItem(x)),
-          onNavigate
-        )
-      )}
-      {adminItems.length > 0 ? (
-        <div className="mt-auto">
-          {renderGroupedSection("administration", "Administration", showLabels, adminItems, onNavigate)}
-        </div>
-      ) : null}
-    </>
-  );
-
-  const identityStrip = (showLabels: boolean, onNavigate?: () => void) => (
-    <div className={`flex-shrink-0 border-t border-hairline ${showLabels ? "p-3" : "p-2"}`}>
-      <div className={`flex items-center ${showLabels ? "gap-2.5" : "justify-center"}`}>
-        <Link
-          href="/dashboard/account"
-          prefetch={false}
-          onClick={onNavigate}
-          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-muted text-xs font-bold text-brand"
-          title={displayName}
-        >
-          {initials}
-        </Link>
-        {showLabels ? (
-          <>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-ink">{displayName}</div>
-              <div className="truncate text-[11px] text-ink-muted">CMFAgency</div>
-            </div>
-            <Link
-              href="/dashboard/account"
-              prefetch={false}
-              onClick={onNavigate}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" strokeWidth={1.5} />
-            </Link>
-            <button
-              type="button"
-              onClick={handleDashboardLogout}
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </>
-        ) : (
-          <span className="sr-only">{displayName}</span>
+  const renderSectionNav = (showLabels: boolean, onNavigate?: () => void) => {
+    const toneCursor = { i: 0 };
+    const nextTone = () => {
+      const tone = NAV_ICON_TONES[toneCursor.i % NAV_ICON_TONES.length];
+      toneCursor.i += 1;
+      return tone;
+    };
+    return (
+      <>
+        {dashboardItem ? renderNavItem(dashboardItem, showLabels, onNavigate, nextTone()) : null}
+        {workSections.map((s) =>
+          renderGroupedSection(
+            s.key,
+            showLabels,
+            navItems.filter((x) => x.section === s.key && canSeeItem(x)),
+            onNavigate,
+            toneCursor
+          )
         )}
-      </div>
+        {adminItems.length > 0
+          ? renderGroupedSection("administration", showLabels, adminItems, onNavigate, toneCursor)
+          : null}
+      </>
+    );
+  };
+
+  const quickActions = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, className: "bg-brand", show: true },
+    {
+      href: "/dashboard/insights",
+      label: "Sales and votes",
+      icon: PieChart,
+      className: "bg-accent-green",
+      show: hasFeature("reports"),
+    },
+    {
+      href: VISITOR_MANAGEMENT_PATH,
+      label: "Visitor management",
+      icon: Users,
+      className: "bg-accent-teal",
+      show: hasFeature("visitor_management"),
+    },
+    {
+      href: "/dashboard/campaigns",
+      label: "Campaigns",
+      icon: Briefcase,
+      className: "bg-fx-warn",
+      show: hasFeature("ticketing") || hasFeature("voting") || isAdmin,
+    },
+    {
+      href: "/dashboard/events",
+      label: "Events",
+      icon: Calendar,
+      className: "bg-brand-dark",
+      show: hasFeature("events") || isAdmin,
+    },
+  ]
+    .filter((action) => action.show)
+    .slice(0, 4);
+
+  const renderQuickActions = (showLabels: boolean, onNavigate?: () => void) => (
+    <div className={`flex gap-2 px-3 pb-3 pt-3 ${showLabels ? "flex-row" : "flex-col items-center"}`}>
+      {quickActions.map((action) => {
+        const Icon = action.icon;
+        return (
+          <Link
+            key={action.href}
+            href={action.href}
+            prefetch={false}
+            onClick={onNavigate}
+            title={action.label}
+            className={`inline-flex h-8 w-8 items-center justify-center text-white shadow-sm transition-transform duration-200 hover:-translate-y-0.5 ${action.className}`}
+          >
+            <Icon className="h-4 w-4" strokeWidth={2} />
+          </Link>
+        );
+      })}
     </div>
   );
 
-  const noticeControl = (
-    <span className="relative inline-flex">
-      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10">
-        <Bell className="h-[18px] w-[18px]" />
+  const mailHref = isAdmin ? "/dashboard/inquiries" : hasFeature("email") ? "/dashboard/email" : "/dashboard/account";
+  const bellHref = noticeHref ?? (isAdmin ? "/dashboard/applications" : "/dashboard/gate");
+
+  const headerBadge = (count: number) =>
+    count > 0 ? (
+      <span className="absolute -right-1 -top-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-fx-warn px-1 text-[10px] font-bold text-white">
+        {count > 99 ? "99+" : count}
       </span>
-      {noticeCount > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[18px] h-[18px] items-center justify-center rounded-full bg-accent-green px-1 text-[10px] font-bold text-white ring-2 ring-brand-dark">
-          {noticeCount > 99 ? "99+" : noticeCount}
-        </span>
-      ) : null}
-    </span>
-  );
+    ) : null;
 
   return (
-    <div className="fx-dashboard min-h-screen flex flex-col bg-canvas">
-      <header className="relative z-30 h-[58px] flex-shrink-0 bg-brand-dark text-white flex items-center gap-2 sm:gap-4 px-3 sm:px-5">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={BRAND_LOGO_URL}
-            alt="CMFAgency"
-            className="h-9 w-9 rounded-md object-contain bg-white/10 p-0.5 flex-shrink-0"
-          />
-          <div className="min-w-0 hidden sm:block">
-            <div className="text-[13px] sm:text-sm font-bold tracking-wide leading-tight truncate">Fusion Xpress</div>
-            <div className="text-[10px] sm:text-[11px] text-white/65 leading-tight truncate">CMFAgency admin dashboard</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setMobileOpen(true)}
-            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10"
-            aria-label="Open menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={toggleSidebarCollapsed}
-            className="hidden lg:inline-flex h-10 w-10 items-center justify-center rounded-md text-white/90 hover:bg-white/10"
-            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fx-dashboard flex min-h-screen flex-col bg-[#e7edf3]">
+      <header className="relative z-30 flex h-12 flex-shrink-0 items-center gap-1 bg-brand px-3 text-white sm:gap-2 sm:px-4">
+        <div className="min-w-0 truncate text-[15px] font-bold tracking-wide">Fusion Xpress</div>
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="inline-flex h-9 w-9 items-center justify-center text-white/90 hover:bg-white/10 lg:hidden"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={toggleSidebarCollapsed}
+          className="hidden h-9 w-9 items-center justify-center text-white/90 hover:bg-white/10 lg:inline-flex"
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-4 min-w-0">
-          {noticeHref ? (
-            <Link href={noticeHref} prefetch={false} aria-label="Pending items">
-              {noticeControl}
-            </Link>
-          ) : (
-            <span aria-hidden="true">{noticeControl}</span>
-          )}
+        <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+          <Link
+            href={mailHref}
+            prefetch={false}
+            aria-label="Messages"
+            className="relative inline-flex h-9 w-9 items-center justify-center text-white/90 hover:bg-white/10"
+          >
+            <Mail className="h-[18px] w-[18px]" />
+            {headerBadge(pendingApplicationsCount)}
+          </Link>
+          <Link
+            href={bellHref}
+            prefetch={false}
+            aria-label="Notifications"
+            className="relative inline-flex h-9 w-9 items-center justify-center text-white/90 hover:bg-white/10"
+          >
+            <Bell className="h-[18px] w-[18px]" />
+            {headerBadge(pendingCmfaCount)}
+          </Link>
 
-          <div className="flex items-center gap-2.5 min-w-0 pl-2 sm:pl-3 border-l border-white/15">
-            <div className="hidden sm:block min-w-0 text-right">
-              <div className="text-sm font-semibold truncate max-w-[180px]">{displayName}</div>
-              <div className="text-[11px] text-white/65 truncate">{roleLabel}</div>
-            </div>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-sm font-bold ring-1 ring-white/20">
-              {initials}
-            </span>
+          <div className="relative ml-1">
             <button
               type="button"
-              onClick={handleDashboardLogout}
-              className="hidden sm:inline-flex h-9 w-9 items-center justify-center rounded-md text-white/80 hover:bg-white/10"
-              title="Sign out"
+              onClick={() => setAccountMenuOpen((open) => !open)}
+              className="flex items-center gap-2 rounded-sm px-1 py-1 hover:bg-white/10"
+              aria-expanded={accountMenuOpen}
+              aria-haspopup="menu"
             >
-              <LogOut className="w-4 h-4" />
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-xs font-bold">
+                {initials}
+              </span>
+              <span className="hidden max-w-[160px] truncate text-sm sm:inline">Welcome, {displayName}</span>
+              <ChevronDown
+                className={`hidden h-4 w-4 transition-transform duration-200 sm:block ${accountMenuOpen ? "rotate-180" : ""}`}
+              />
             </button>
+            {accountMenuOpen ? (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-40 cursor-default"
+                  aria-label="Close account menu"
+                  onClick={() => setAccountMenuOpen(false)}
+                />
+                <div className="absolute right-0 z-50 mt-2 w-52 border border-hairline bg-white py-1 text-ink shadow-lg" role="menu">
+                  <div className="px-3 py-2 text-xs text-ink-muted">{roleLabel}</div>
+                  <Link
+                    href="/dashboard/account"
+                    prefetch={false}
+                    onClick={() => setAccountMenuOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-canvas"
+                  >
+                    <Settings className="h-4 w-4" />
+                    Account
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleDashboardLogout}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-canvas"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside
-          className={`hidden lg:flex flex-col flex-shrink-0 bg-surface border-r border-hairline overflow-hidden transition-[width] duration-300 ease-out ${
-            showDesktopSidebarFull ? "w-[16.5rem]" : "w-[4.25rem]"
+          className={`hidden flex-shrink-0 flex-col overflow-hidden border-r border-[#d5dde6] bg-[#e7edf3] transition-[width] duration-300 ease-out lg:flex ${
+            showDesktopSidebarFull ? "w-60" : "w-[4.25rem]"
           }`}
           onMouseEnter={() => {
             if (sidebarCollapsed) setSidebarHoverExpanded(true);
           }}
           onMouseLeave={() => setSidebarHoverExpanded(false)}
         >
-          <div
-            className={`relative h-11 flex items-center border-b border-hairline ${
-              showDesktopSidebarFull ? "justify-end px-3" : "justify-center px-2"
-            }`}
-          >
-            {showDesktopSidebarFull ? (
-              <button
-                type="button"
-                onClick={toggleSidebarCollapsed}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-canvas hover:text-ink"
-                aria-label="Collapse sidebar"
-                title="Collapse to icons"
-              >
-                {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={toggleSidebarCollapsed}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-canvas hover:text-brand"
-                aria-label="Pin sidebar open"
-                title="Keep sidebar open"
-              >
-                <PanelLeftOpen className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <nav className={`flex-1 min-h-0 overflow-y-auto py-4 flex flex-col ${showDesktopSidebarFull ? "px-2.5" : "px-2"}`}>
+          {renderQuickActions(showDesktopSidebarFull)}
+          <nav className={`flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 ${showDesktopSidebarFull ? "px-2" : "px-1.5"}`}>
             {renderSectionNav(showDesktopSidebarFull)}
           </nav>
-
-          {identityStrip(showDesktopSidebarFull)}
         </aside>
 
-        {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 flex">
-            <div
-              className="absolute inset-0 bg-slate-900/40"
-              onClick={() => setMobileOpen(false)}
-              aria-hidden="true"
-            />
-            <aside className="relative z-10 h-full w-[min(20rem,85vw)] max-w-[85vw] flex flex-col bg-surface border-r border-hairline shadow-[0_1px_3px_rgba(17,72,192,.06)]">
-              <div className="h-[58px] flex items-center justify-between gap-3 px-4 border-b border-hairline flex-shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={BRAND_LOGO_URL}
-                    alt=""
-                    className="h-9 w-9 rounded-md object-contain bg-brand-muted p-0.5 flex-shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-sm font-bold text-ink leading-tight">Fusion Xpress</div>
-                    <div className="text-[11px] text-ink-muted leading-tight truncate">CMFAgency admin dashboard</div>
-                  </div>
-                </div>
+        {mobileOpen ? (
+          <div className="fixed inset-0 z-50 flex lg:hidden">
+            <div className="absolute inset-0 bg-ink/40" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+            <aside className="relative z-10 flex h-full w-[min(18rem,85vw)] max-w-[85vw] flex-col border-r border-[#d5dde6] bg-[#e7edf3] shadow-xl">
+              <div className="flex h-12 flex-shrink-0 items-center justify-between gap-3 border-b border-[#d5dde6] px-3">
+                <div className="text-sm font-bold text-ink">Fusion Xpress</div>
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-md text-ink-muted hover:bg-canvas"
+                  className="inline-flex h-9 w-9 items-center justify-center text-ink-muted hover:bg-white"
                   aria-label="Close menu"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
-
-              <nav className="flex-1 min-h-0 overflow-y-auto px-2.5 py-4 flex flex-col">
+              {renderQuickActions(true, () => setMobileOpen(false))}
+              <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-4">
                 {renderSectionNav(true, () => setMobileOpen(false))}
               </nav>
-
-              {identityStrip(true, () => setMobileOpen(false))}
+              <div className="border-t border-[#d5dde6] p-3">
+                <button
+                  type="button"
+                  onClick={handleDashboardLogout}
+                  className="flex w-full items-center gap-2 px-2 py-2 text-sm text-ink hover:bg-white"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
             </aside>
           </div>
-        )}
+        ) : null}
 
-        <div className="flex-1 min-w-0 flex flex-col">
-          <div className="bg-brand text-white px-4 sm:px-7 pt-6 pb-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight text-left leading-tight">{active}</h1>
-                <p className="mt-1.5 text-sm text-white/80 text-left">
-                  Welcome, {displayName}.
-                </p>
-              </div>
-              <p className="hidden md:block text-sm text-white/70 max-w-xs text-right leading-relaxed">
-                <span className="font-medium text-white/90">Dashboard</span>
-                <span className="mx-1.5 text-white/40">/</span>
-                {breadcrumbTail}
-              </p>
-            </div>
-
-            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="inline-flex items-center gap-2 text-[13px] text-white/90">
-                <Calendar className="w-4 h-4 text-white/75 flex-shrink-0" />
-                <span className="font-medium tabular-nums">{clockLabel}</span>
-              </div>
-              <div className="sm:ml-auto w-full sm:w-auto sm:min-w-[240px] max-w-md">
-                <label className="flex items-center gap-2 bg-white rounded-md h-9 px-3 shadow-sm">
-                  <Search className="w-3.5 h-3.5 text-ink-muted flex-shrink-0" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search"
-                    className="flex-1 bg-transparent outline-none text-sm text-ink placeholder:text-ink-muted min-w-0"
-                  />
-                </label>
-              </div>
-            </div>
+        <div className="flex min-w-0 flex-1 flex-col bg-white">
+          <div className="bg-white px-4 pb-1 pt-4 sm:px-5">
+            <h1 className="text-[15px] font-semibold text-ink">
+              Fusion Xpress
+              <span className="mx-2 font-normal text-ink-muted">»</span>
+              <span className="font-normal text-ink-muted">{breadcrumbTail}</span>
+            </h1>
           </div>
-
-          <main className="flex-1 px-4 sm:px-6 pb-8 pt-6">
+          <main className="flex-1 px-4 pb-8 pt-3 sm:px-5">
             <div className={isWidePage ? "max-w-none" : "mx-auto max-w-[1280px]"}>
               <div
-                className={
+                key={`${pathname}:${currentType ?? ""}`}
+                className={`fx-page-in ${
                   isWidePage || isDashboardHome || isTicketingVotingWorkspace
                     ? "p-0"
-                    : "rounded-lg bg-surface border border-hairline p-4 sm:p-6 md:p-8"
-                }
+                    : "border border-hairline bg-surface p-4 sm:p-6 md:p-8"
+                }`}
               >
                 {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
                 {children}
@@ -1185,8 +1136,26 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <footer className="h-8 flex-shrink-0 bg-brand-dark text-white/75 text-[11px] tracking-wide flex items-center justify-center">
-        Fusion Xpress · CMFAgency
+      <footer className="flex h-12 flex-shrink-0 items-center justify-center gap-3 border-t border-hairline bg-white text-[12px] text-brand">
+        <span>Fusion Xpress · CMFAgency © {new Date().getFullYear()}</span>
+        <a
+          href="https://www.facebook.com/share/187Kse9GrQ/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Facebook"
+          className="text-brand hover:text-brand-dark"
+        >
+          <Facebook className="h-3.5 w-3.5" />
+        </a>
+        <a
+          href="https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram"
+          className="text-brand hover:text-brand-dark"
+        >
+          <Instagram className="h-3.5 w-3.5" />
+        </a>
       </footer>
     </div>
   );

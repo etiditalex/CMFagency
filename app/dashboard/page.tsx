@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BarChart3,
   Briefcase,
   Calendar,
   Copy,
   Crown,
   ExternalLink,
   Plus,
+  Receipt,
   RefreshCw,
+  Wallet,
+  Ticket,
   Vote,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,8 +29,8 @@ import {
 } from "@/components/dashboard/DashboardHomeCharts";
 import {
   Card,
-  CompositeMetricCard,
-  StatCard,
+  METRIC_TILE_TONES,
+  MetricTile,
   periodDelta,
 } from "@/components/dashboard/ui";
 import { reconcileStalePendingTransactionsInBackground } from "@/lib/reconcile-pending-transaction-refs";
@@ -225,9 +230,6 @@ export default function DashboardHomePage() {
   };
 
   const formatRevenue = useMemo(() => formatRevenueMap(revenueByCurrency), [revenueByCurrency]);
-  const formatRevenueTickets = useMemo(() => formatRevenueMap(revenueByCurrencyTickets), [revenueByCurrencyTickets]);
-  const formatRevenueVotes = useMemo(() => formatRevenueMap(revenueByCurrencyVotes), [revenueByCurrencyVotes]);
-  const formatRevenueMerchandise = useMemo(() => formatRevenueMap(revenueByCurrencyMerchandise), [revenueByCurrencyMerchandise]);
 
   const refreshData = useCallback(async () => {
     if (!user?.id) return;
@@ -644,9 +646,108 @@ export default function DashboardHomePage() {
   const ticketSeries = dailyRevenue.map((r) => r.ticketRevenue);
   const totalRevenueSeries = dailyRevenue.map((r) => r.voteRevenue + r.ticketRevenue);
 
+  const overviewTiles = [
+    {
+      label: "Active campaigns",
+      value: activeCampaignsCount.toLocaleString(),
+      icon: BarChart3,
+      href: "/dashboard/campaigns",
+      show: true,
+    },
+    {
+      label: "Tickets issued",
+      value: totalTicketsIssued.toLocaleString(),
+      icon: Ticket,
+      href: "/dashboard/campaigns?type=ticket",
+      delta: periodDelta(ticketSeries),
+      show: true,
+    },
+    {
+      label: "Inactive campaigns",
+      value: inactiveCampaignsCount.toLocaleString(),
+      icon: X,
+      href: "/dashboard/campaigns",
+      show: true,
+    },
+    {
+      label: "Votes counted",
+      value: totalVotes.toLocaleString(),
+      icon: Vote,
+      href: "/dashboard/campaigns?type=vote",
+      delta: periodDelta(voteSeries),
+      show: true,
+    },
+    {
+      label: "Successful payments",
+      value: successfulPayments.toLocaleString(),
+      icon: Receipt,
+      href: "/dashboard/transactions",
+      show: true,
+    },
+    {
+      label: "Vote campaigns",
+      value: activeVoteCampaignsCount.toLocaleString(),
+      icon: Vote,
+      href: "/dashboard/campaigns?type=vote",
+      show: true,
+    },
+    {
+      label: "Campaigns",
+      value: campaignsCount.toLocaleString(),
+      icon: Briefcase,
+      href: "/dashboard/campaigns",
+      show: true,
+    },
+    {
+      label: "Revenue",
+      value: formatRevenue,
+      icon: Wallet,
+      href: "/dashboard/transactions",
+      delta: periodDelta(totalRevenueSeries),
+      show: true,
+    },
+    {
+      label: "Paid members",
+      value: kcmMembershipPaidCount.toLocaleString(),
+      icon: Crown,
+      href: "/dashboard/kcm-membership",
+      show: hasFeature("kcm_membership"),
+    },
+    {
+      label: "KCM paid",
+      value: `KES ${kcmMembershipPaidKes.toLocaleString()}`,
+      icon: Crown,
+      href: "/dashboard/kcm-membership",
+      show: hasFeature("kcm_membership"),
+    },
+    {
+      label: "Contributions",
+      value: `KES ${kcmContributionsKes.toLocaleString()}`,
+      icon: Wallet,
+      href: "/dashboard/kcm-membership",
+      show: hasFeature("kcm_membership"),
+    },
+  ].filter((tile) => tile.show);
+
   return (
     <div className="text-left">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) ? (
+        <div className={`grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}>
+          {overviewTiles.map((tile, index) => (
+            <MetricTile
+              key={tile.label}
+              label={tile.label}
+              value={tile.value}
+              icon={tile.icon}
+              href={tile.href}
+              delta={"delta" in tile ? tile.delta : undefined}
+              tone={METRIC_TILE_TONES[index % METRIC_TILE_TONES.length]}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-ink-muted">
           <span className="font-medium text-ink">Last updated:</span> {updatedLabel}
         </div>
@@ -927,86 +1028,21 @@ export default function DashboardHomePage() {
 
       {hasFeature("reports") && (campaignsCount > 0 || isFullAdmin || isManager) && (
       <>
-      <div
-        className={`mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
-      >
-        <CompositeMetricCard
-          title="Revenue"
-          value={formatRevenue}
-          delta={periodDelta(totalRevenueSeries)}
-          sparkline={totalRevenueSeries}
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
           href="/dashboard/campaigns"
-          featured
-          rows={[
-            { label: "Tickets", value: formatRevenueTickets, href: "/dashboard/campaigns?type=ticket" },
-            { label: "Votes", value: formatRevenueVotes, href: "/dashboard/campaigns?type=vote" },
-            { label: "Merchandise", value: formatRevenueMerchandise, href: "/merchandise" },
-          ]}
-        />
-        <CompositeMetricCard
-          title="Campaigns"
-          value={campaignsCount.toLocaleString()}
-          href="/dashboard/campaigns"
-          featured={false}
-          rows={[
-            { label: "Active", value: activeCampaignsCount.toLocaleString() },
-            { label: "Inactive", value: inactiveCampaignsCount.toLocaleString() },
-          ]}
-        />
-      </div>
-
-      <div
-        className={`mt-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 ${dataLoading ? "animate-pulse opacity-[0.65] pointer-events-none" : ""}`}
-      >
-        <StatCard
-          label="Successful payments"
-          value={successfulPayments.toLocaleString()}
-          href="/dashboard/campaigns"
-        />
-        <StatCard
-          label="Tickets issued"
-          value={totalTicketsIssued.toLocaleString()}
-          delta={periodDelta(ticketSeries)}
-          sparkline={ticketSeries}
-          href="/dashboard/campaigns?type=ticket"
-        />
-        <StatCard
-          label="Votes counted"
-          value={totalVotes.toLocaleString()}
-          delta={periodDelta(voteSeries)}
-          sparkline={voteSeries}
-          href="/dashboard/campaigns?type=vote"
-        />
-        {hasFeature("kcm_membership") ? (
-          <CompositeMetricCard
-            title="KCM membership paid"
-            value={`KES ${kcmMembershipPaidKes.toLocaleString()}`}
-            href="/dashboard/kcm-membership"
-            featured={false}
-            rows={[
-              { label: "Contributions", value: `KES ${kcmContributionsKes.toLocaleString()}` },
-              { label: "Paid members", value: kcmMembershipPaidCount.toLocaleString() },
-            ]}
-          />
-        ) : null}
-        <Card>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/dashboard/campaigns"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-hairline bg-surface hover:bg-canvas text-ink font-medium"
-            >
-              Manage campaigns
-              <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
-            </Link>
-            <Link
-              href="/dashboard/campaigns/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white font-bold hover:bg-brand-dark"
-            >
-              Create new
-              <Plus className="w-4 h-4" strokeWidth={1.5} />
-            </Link>
-          </div>
-        </Card>
+          className="inline-flex items-center gap-2 px-4 py-2 border border-hairline bg-surface text-ink font-medium hover:bg-canvas"
+        >
+          Manage campaigns
+          <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+        </Link>
+        <Link
+          href="/dashboard/campaigns/new"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-brand font-bold text-white hover:bg-brand-dark"
+        >
+          Create new
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
+        </Link>
       </div>
 
       {/* Money report: recent transactions */}
