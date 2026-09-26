@@ -58,7 +58,7 @@ export function ContestantCardPanel({
         type="button"
         onClick={onDownload}
         disabled={downloading}
-        className="mt-5 inline-flex h-11 items-center justify-center rounded-lg bg-secondary-700 px-5 text-sm font-semibold text-white hover:bg-secondary-800 disabled:opacity-60"
+        className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-700 px-5 text-sm font-semibold text-white hover:bg-secondary-800 disabled:opacity-60 sm:w-auto"
       >
         {downloading ? "Preparing card…" : "Download application card"}
       </button>

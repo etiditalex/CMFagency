@@ -41,7 +41,9 @@ function remaining(target: number) {
 }
 
 const inputClass =
-  "mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-secondary-700 focus:ring-2 focus:ring-secondary-700/20";
+  "mt-1.5 w-full min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 outline-none focus:border-secondary-700 focus:ring-2 focus:ring-secondary-700/20 sm:text-sm";
+
+const choiceClass = "flex min-h-11 items-center gap-2.5 [&_input]:h-5 [&_input]:w-5 [&_input]:shrink-0";
 
 export default function IdealMrMissRegistration() {
   const eventMs = useMemo(() => new Date(EVENT_ISO).getTime(), []);
@@ -142,89 +144,97 @@ export default function IdealMrMissRegistration() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f3f1ec] px-4 pb-20 pt-28 sm:pt-32 md:pt-40">
-      <div className="mx-auto max-w-[640px]">
-        <div id="event-details" className="text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-12 w-auto" />
-          <p className="mt-5 text-center text-sm font-semibold uppercase tracking-[0.18em] text-secondary-800">Kenya’s Ideal</p>
-          <h1 className="mt-1 text-4xl font-extrabold leading-none text-secondary-900 sm:text-5xl">
-            Mr &amp; Miss
-            <span className="mt-1 block text-center text-secondary-700">2026</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-xl text-center text-[15px] leading-relaxed text-gray-700">
-            Welcome to the contestant application for Kenya’s Ideal Mr &amp; Miss 2026. The theme is Models for
-            Education. The event is on 12 December 2026 at Malaika Lounge, Malindi, and the registration fee is KES
-            500. Submit this form so Changer Fusions can review the entry.
-          </p>
+    <div className="min-h-screen overflow-x-hidden bg-[#f3f1ec] px-4 pb-28 pt-[var(--site-nav-height)] sm:px-6 md:pb-20 lg:px-8">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="grid items-center gap-6 lg:grid-cols-12 lg:gap-10">
+          <div id="event-details" className="text-center lg:col-span-7 lg:text-left">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-12 w-auto sm:h-14 lg:mx-0" />
+            <p className="mt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-secondary-800 sm:text-sm lg:text-left">
+              Kenya’s Ideal
+            </p>
+            <h1 className="mt-1 text-[2rem] font-extrabold leading-none text-secondary-900 sm:text-5xl lg:text-left lg:text-6xl">
+              Mr &amp; Miss
+              <span className="mt-1 block text-center text-secondary-700 lg:text-left">2026</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px] lg:mx-0 lg:text-left lg:text-base">
+              Welcome to the contestant application for Kenya’s Ideal Mr &amp; Miss 2026. The theme is Models for
+              Education. The event is on 12 December 2026 at Malaika Lounge, Malindi, and the registration fee is KES
+              500. Submit this form so Changer Fusions can review the entry.
+            </p>
+          </div>
+
+          <section className="rounded-2xl bg-secondary-800 px-4 py-6 text-center text-white shadow-md sm:px-8 sm:py-8 lg:col-span-5">
+            <h2 className="text-base font-bold sm:text-lg">Event day — 12 Dec 2026</h2>
+            <p className="mt-1 text-center text-sm text-white/85">Register before the event. The registration fee is KES 500.</p>
+            <div className="mt-6 grid grid-cols-4 gap-2 sm:mt-7 sm:gap-4">
+              {units.map((unit) => (
+                <div key={unit.label} className="min-w-0">
+                  <div className="mx-auto flex aspect-square w-full max-w-[4.25rem] items-center justify-center rounded-full border-2 border-white/80 text-lg font-semibold tabular-nums sm:max-w-[5rem] sm:text-2xl lg:max-w-[5.5rem]">
+                    {unit.value}
+                  </div>
+                  <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/80 sm:text-xs">
+                    {unit.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
 
-        <section className="mt-8 rounded-2xl bg-secondary-800 px-5 py-8 text-center text-white shadow-md sm:px-8">
-          <h2 className="text-lg font-bold">Event day — 12 Dec 2026</h2>
-          <p className="mt-1 text-center text-sm text-white/85">Register before the event. The registration fee is KES 500.</p>
-          <div className="mt-7 flex items-start justify-center gap-3 sm:gap-6">
-            {units.map((unit) => (
-              <div key={unit.label} className="w-16">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 text-2xl font-semibold tabular-nums">
-                  {unit.value}
-                </div>
-                <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80">
-                  {unit.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 md:gap-6">
+          <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
+            <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
+              <FileText className="h-7 w-7" strokeWidth={1.75} />
+            </span>
+            <h2 className="mt-2 text-xl font-bold text-gray-900">Contestant application</h2>
+            <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
+              Register in the category you are applying for: Kids 7–12, Teens 13–17, or Adults 18–25.
+            </p>
+            <div className="mt-auto flex flex-col gap-3 pt-5">
+              <a
+                href="#application"
+                className="flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-700 px-4 text-center text-sm font-bold text-white hover:bg-secondary-800"
+              >
+                Apply for Kenya’s Ideal Mr &amp; Miss →
+              </a>
+              <a
+                href="#event-details"
+                className="flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
+              >
+                Event details →
+              </a>
+            </div>
+          </section>
 
-        <section className="mt-6 rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-sm">
-          <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
-            <FileText className="h-7 w-7" strokeWidth={1.75} />
-          </span>
-          <h2 className="mt-2 text-xl font-bold text-gray-900">Contestant application</h2>
-          <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
-            Register in the category you are applying for: Kids 7–12, Teens 13–17, or Adults 18–25.
-          </p>
-          <a
-            href="#application"
-            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg bg-secondary-700 text-sm font-bold text-white hover:bg-secondary-800"
-          >
-            Apply for Kenya’s Ideal Mr &amp; Miss →
-          </a>
-          <a
-            href="#event-details"
-            className="mt-3 flex h-11 w-full items-center justify-center rounded-lg border border-secondary-700 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
-          >
-            Event details →
-          </a>
-        </section>
+          <section id="help" className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
+            <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-700">
+              <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
+            </span>
+            <h2 className="mt-2 text-xl font-bold text-gray-900">Need help?</h2>
+            <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
+              If you have any problem registering or checking what to send, reach Changer Fusions on WhatsApp and the
+              events team will assist.
+            </p>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-auto flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 py-2.5 text-center text-sm font-semibold leading-snug text-secondary-800 hover:bg-secondary-50"
+            >
+              Changer Fusions WhatsApp: 0797 777 347
+            </a>
+          </section>
+        </div>
 
-        <section id="help" className="mt-5 rounded-2xl border border-gray-200 bg-white px-6 py-8 text-center shadow-sm">
-          <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-700">
-            <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
-          </span>
-          <h2 className="mt-2 text-xl font-bold text-gray-900">Need help?</h2>
-          <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
-            If you have any problem registering or checking what to send, reach Changer Fusions on WhatsApp and the
-            events team will assist.
-          </p>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-5 flex h-11 w-full items-center justify-center rounded-lg border border-secondary-700 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
-          >
-            Changer Fusions WhatsApp: 0797 777 347
-          </a>
-        </section>
-
-        <section id="application" className="mt-8 scroll-mt-32 rounded-2xl border border-gray-200 bg-white px-5 py-8 shadow-sm sm:px-8">
+        <section id="application" className="mt-6 scroll-mt-32 rounded-2xl border border-gray-200 bg-white px-4 py-6 shadow-sm sm:mt-8 sm:px-8 sm:py-8 lg:px-10">
           {card ? (
             <ContestantCardPanel card={card} emailedTo={emailedTo} />
           ) : (
-            <form onSubmit={onSubmit} className="space-y-8 text-left">
+            <form onSubmit={onSubmit} className="space-y-8 text-left [&_fieldset]:min-w-0 [&_label]:text-left [&_legend]:text-left [&_p]:text-left [&_span]:text-left">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">1. Contestant details</h2>
-                <div className="mt-4 space-y-4">
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">1. Contestant details</h2>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm font-semibold text-gray-800">
                     Full name <span className="text-negative">*</span>
                     <input name="fullName" required className={inputClass} autoComplete="name" />
@@ -244,7 +254,7 @@ export default function IdealMrMissRegistration() {
                     <legend className="text-sm font-semibold text-gray-800">
                       Which category are you applying for? <span className="text-negative">*</span>
                     </legend>
-                    <div className="mt-2 space-y-2 text-sm text-gray-700">
+                    <div className="mt-2 grid gap-1 text-sm text-gray-700 sm:grid-cols-1">
                       {(
                         [
                           ["kids", "Kids: 7–12 years"],
@@ -252,7 +262,7 @@ export default function IdealMrMissRegistration() {
                           ["adults", "Adults: 18–25 years"],
                         ] as const
                       ).map(([value, label]) => (
-                        <label key={value} className="flex items-center gap-2">
+                        <label key={value} className={choiceClass}>
                           <input
                             type="radio"
                             name="category"
@@ -270,16 +280,16 @@ export default function IdealMrMissRegistration() {
                     <legend className="text-sm font-semibold text-gray-800">
                       Are you applying for Mr or Miss? <span className="text-negative">*</span>
                     </legend>
-                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                    <div className="mt-2 flex flex-wrap gap-x-6 text-sm text-gray-700">
                       {(["mr", "miss"] as ApplyingAs[]).map((value) => (
-                        <label key={value} className="flex items-center gap-2">
+                        <label key={value} className={choiceClass}>
                           <input type="radio" name="applyingAs" value={value} required />
                           {value === "mr" ? "Mr" : "Miss"}
                         </label>
                       ))}
                     </div>
                   </fieldset>
-                  <label className="block text-sm font-semibold text-gray-800">
+                  <label className="block text-sm font-semibold text-gray-800 sm:col-span-2">
                     Town and county of residence <span className="text-negative">*</span>
                     <input name="townCounty" required className={inputClass} />
                   </label>
@@ -291,7 +301,7 @@ export default function IdealMrMissRegistration() {
                     Contestant’s WhatsApp number <span className="font-medium text-gray-500">(if applicable)</span>
                     <input name="phoneWhatsapp" type="tel" className={inputClass} />
                   </label>
-                  <label className="block text-sm font-semibold text-gray-800">
+                  <label className="block text-sm font-semibold text-gray-800 sm:col-span-2">
                     Contestant’s email address <span className="font-medium text-gray-500">(if applicable)</span>
                     <input name="email" type="email" className={inputClass} autoComplete="email" />
                   </label>
@@ -299,9 +309,9 @@ export default function IdealMrMissRegistration() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-900">2. Parent or guardian details</h2>
-                <p className="mt-1 text-sm text-gray-600">Complete this section for contestants under 18.</p>
-                <div className="mt-4 space-y-4">
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">2. Parent or guardian details</h2>
+                <p className="mt-1 text-left text-sm text-gray-600">Complete this section for contestants under 18.</p>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="block text-sm font-semibold text-gray-800">
                     Parent or legal guardian’s full name{" "}
                     {minor ? <span className="text-negative">*</span> : <span className="font-medium text-gray-500">(required for minors)</span>}
@@ -325,8 +335,8 @@ export default function IdealMrMissRegistration() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-900">3. Education and interests</h2>
-                <div className="mt-4 space-y-4">
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">3. Education and interests</h2>
+                <div className="mt-4 grid gap-4">
                   <label className="block text-sm font-semibold text-gray-800">
                     Which school, college or learning institution do you currently attend?{" "}
                     <span className="font-medium text-gray-500">(optional)</span>
@@ -366,9 +376,9 @@ export default function IdealMrMissRegistration() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-900">4. Photo and availability</h2>
-                <div className="mt-4 space-y-4">
-                  <label className="block text-sm font-semibold text-gray-800">
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">4. Photo and availability</h2>
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <label className="block text-sm font-semibold text-gray-800 lg:col-span-2">
                     Upload one recent, clear photo of the contestant. <span className="text-negative">*</span>
                     <span className="mt-1 block font-medium text-gray-500">Required for application review. JPG, PNG, or WebP, up to 5MB.</span>
                     <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" required className={`${inputClass} file:mr-3 file:rounded-md file:border-0 file:bg-secondary-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-secondary-800`} />
@@ -377,9 +387,9 @@ export default function IdealMrMissRegistration() {
                     <legend className="text-sm font-semibold text-gray-800">
                       Have you participated in a modelling or talent event before?
                     </legend>
-                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                    <div className="mt-2 flex flex-wrap gap-x-6 text-sm text-gray-700">
                       {(["yes", "no"] as const).map((value) => (
-                        <label key={value} className="flex items-center gap-2">
+                        <label key={value} className={choiceClass}>
                           <input
                             type="radio"
                             name="priorEvent"
@@ -394,19 +404,19 @@ export default function IdealMrMissRegistration() {
                     </div>
                   </fieldset>
                   {priorEvent === "yes" ? (
-                    <label className="block text-sm font-semibold text-gray-800">
+                    <label className="block text-sm font-semibold text-gray-800 lg:col-span-2">
                       If yes, which event? <span className="font-medium text-gray-500">(optional)</span>
                       <input name="priorEventName" className={inputClass} />
                     </label>
                   ) : null}
-                  <fieldset>
+                  <fieldset className="lg:col-span-2">
                     <legend className="text-sm font-semibold text-gray-800">
                       Will you be available to attend the event in Malindi on 12 December 2026 if selected?{" "}
                       <span className="text-negative">*</span>
                     </legend>
-                    <div className="mt-2 flex gap-6 text-sm text-gray-700">
+                    <div className="mt-2 flex flex-wrap gap-x-6 text-sm text-gray-700">
                       {(["yes", "no"] as const).map((value) => (
-                        <label key={value} className="flex items-center gap-2">
+                        <label key={value} className={choiceClass}>
                           <input type="radio" name="available" value={value} required />
                           {value === "yes" ? "Yes" : "No"}
                         </label>
@@ -417,28 +427,28 @@ export default function IdealMrMissRegistration() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-900">5. Declarations and consent</h2>
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">5. Declarations and consent</h2>
                 <div className="mt-4 space-y-3 text-sm text-gray-700">
-                  <label className="flex items-start gap-2">
-                    <input name="accuracy" type="checkbox" value="true" required className="mt-1" />
+                  <label className="flex items-start gap-3">
+                    <input name="accuracy" type="checkbox" value="true" required className="mt-1 h-5 w-5 shrink-0" />
                     <span>
                       I confirm that the information provided in this application is accurate. I understand that
                       submitting an application does not guarantee selection.
                     </span>
                   </label>
-                  <label className="flex items-start gap-2">
-                    <input name="fee" type="checkbox" value="true" required className="mt-1" />
+                  <label className="flex items-start gap-3">
+                    <input name="fee" type="checkbox" value="true" required className="mt-1 h-5 w-5 shrink-0" />
                     <span>
                       I understand that the registration fee is KES 500 and that Changer Fusions will communicate the
                       payment and participation instructions.
                     </span>
                   </label>
-                  <label className="flex items-start gap-2">
-                    <input name="contact" type="checkbox" value="true" required className="mt-1" />
+                  <label className="flex items-start gap-3">
+                    <input name="contact" type="checkbox" value="true" required className="mt-1 h-5 w-5 shrink-0" />
                     <span>I agree to be contacted about this application using the details provided.</span>
                   </label>
-                  <label className="flex items-start gap-2">
-                    <input name="guardianConsent" type="checkbox" value="true" required={minor} className="mt-1" />
+                  <label className="flex items-start gap-3">
+                    <input name="guardianConsent" type="checkbox" value="true" required={minor} className="mt-1 h-5 w-5 shrink-0" />
                     <span>
                       I am the parent or legal guardian of the contestant named above, and I consent to their
                       application and participation, subject to the event rules shared with me.
@@ -449,26 +459,26 @@ export default function IdealMrMissRegistration() {
               </div>
 
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Photo and video marketing consent</h2>
-                <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl">Photo and video marketing consent</h2>
+                <p className="mt-2 text-left text-sm leading-relaxed text-gray-700">
                   May Changer Fusions use photos or videos of the contestant to promote and report on Kenya’s Ideal Mr
                   &amp; Miss, including on social media, its website and event promotional materials?{" "}
                   <span className="text-negative">*</span>
                 </p>
-                <p className="mt-2 text-sm text-gray-600">
+                <p className="mt-2 text-left text-sm text-gray-600">
                   {minor
                     ? "For contestants under 18, the parent or legal guardian gives this answer."
                     : "For contestants aged 18–25, the contestant gives this answer."}
                 </p>
-                <div className="mt-3 flex gap-6 text-sm text-gray-700">
+                <div className="mt-3 flex flex-wrap gap-x-6 text-sm text-gray-700">
                   {(["yes", "no"] as const).map((value) => (
-                    <label key={value} className="flex items-center gap-2">
+                    <label key={value} className={choiceClass}>
                       <input type="radio" name="marketingConsent" value={value} required />
                       {value === "yes" ? "Yes" : "No"}
                     </label>
                   ))}
                 </div>
-                <p className="mt-3 text-sm text-gray-600">
+                <p className="mt-3 text-left text-sm text-gray-600">
                   Choosing “No” does not prevent a contestant from applying. The application photo may still be used
                   privately to review the entry, but it should not be published for marketing without consent.
                 </p>
@@ -481,7 +491,7 @@ export default function IdealMrMissRegistration() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex h-12 w-full items-center justify-center rounded-lg bg-secondary-700 text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+                className="flex min-h-12 w-full items-center justify-center rounded-lg bg-secondary-700 px-4 text-center text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60 sm:text-base"
               >
                 {submitting ? "Submitting…" : "Apply for Kenya’s Ideal Mr & Miss"}
               </button>

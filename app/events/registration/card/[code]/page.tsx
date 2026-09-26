@@ -49,8 +49,8 @@ export default async function IdealApplicationCardPage({ params }: { params: Pro
   };
 
   return (
-    <main className="min-h-screen bg-[#f3f1ec] px-4 pb-16 pt-32 sm:pt-36">
-      <div className="mx-auto max-w-2xl text-center">
+    <main className="min-h-screen overflow-x-hidden bg-[#f3f1ec] px-4 pb-28 pt-[var(--site-nav-height)] sm:px-6 md:pb-16">
+      <div className="mx-auto w-full max-w-2xl text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-14 w-auto" />
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white px-5 py-8 shadow-sm sm:px-8">
