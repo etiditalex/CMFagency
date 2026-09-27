@@ -1,34 +1,59 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
 import { ContestantCardPanel } from "@/components/events/ContestantCardPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { categoryLabel, titleLabel, type ContestantCardData, type ContestantCategory, type ContestantTitle } from "@/lib/ideal-mr-miss";
+import { categoryLabel, formatIssuedDate, titleLabel, type ContestantCardData, type ContestantCategory, type ContestantTitle } from "@/lib/ideal-mr-miss";
 import { supabase } from "@/lib/supabase";
+
+const PAGE_SIZE = 10;
 
 type Registration = ContestantCardData & {
   id: string;
   status: "new" | "reviewed" | "shortlisted" | "rejected";
+  dateOfBirth: string;
   phoneCalls: string | null;
+  phoneWhatsapp: string | null;
   email: string | null;
+  guardianName: string | null;
+  guardianPhone: string | null;
+  institution: string | null;
+  about: string;
+  whyParticipate: string;
+  talent: string;
+  modelsForEducation: string;
 };
 
 type Row = {
   id: string;
   application_code: string;
   full_name: string;
+  date_of_birth: string;
   applying_as: ContestantTitle;
   category: ContestantCategory;
   town_county: string;
   phone_calls: string | null;
+  phone_whatsapp: string | null;
   email: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  institution: string | null;
+  about: string;
+  why_participate: string;
+  talent: string;
+  models_for_education: string;
   status: Registration["status"];
   created_at: string;
 };
+
+function cell(value: string | null | undefined) {
+  const text = value?.trim();
+  return text ? text : "—";
+}
 
 export default function DashboardRegistrationsPage() {
   const router = useRouter();
@@ -37,6 +62,7 @@ export default function DashboardRegistrationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Registration[]>([]);
+  const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [feeDraft, setFeeDraft] = useState("500");
   const [feeLoading, setFeeLoading] = useState(false);
@@ -50,7 +76,9 @@ export default function DashboardRegistrationsPage() {
     try {
       const { data, error: fetchErr } = await supabase
         .from("ideal_mr_miss_applications")
-        .select("id, application_code, full_name, applying_as, category, town_county, phone_calls, email, status, created_at")
+        .select(
+          "id, application_code, full_name, date_of_birth, applying_as, category, town_county, phone_calls, phone_whatsapp, email, guardian_name, guardian_phone, institution, about, why_participate, talent, models_for_education, status, created_at"
+        )
         .order("created_at", { ascending: false });
       if (fetchErr) throw fetchErr;
       setRows(
@@ -58,15 +86,25 @@ export default function DashboardRegistrationsPage() {
           id: row.id,
           applicationCode: row.application_code,
           fullName: row.full_name,
+          dateOfBirth: row.date_of_birth,
           applyingAs: row.applying_as,
           category: row.category,
           townCounty: row.town_county,
           issuedOn: row.created_at,
           status: row.status,
           phoneCalls: row.phone_calls,
+          phoneWhatsapp: row.phone_whatsapp,
           email: row.email,
+          guardianName: row.guardian_name,
+          guardianPhone: row.guardian_phone,
+          institution: row.institution,
+          about: row.about,
+          whyParticipate: row.why_participate,
+          talent: row.talent,
+          modelsForEducation: row.models_for_education,
         }))
       );
+      setPage(0);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to load registrations";
       const missing = msg.includes("does not exist") || msg.includes("42P01") || msg.includes("application_code");
@@ -149,6 +187,13 @@ export default function DashboardRegistrationsPage() {
     void loadFee();
   }, [authLoading, isAuthenticated, isAdmin, isPortalMember, portalLoading, load, loadFee, router, user]);
 
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = useMemo(
+    () => rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
+    [rows, safePage]
+  );
+
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember || !isAdmin) return null;
 
@@ -209,6 +254,14 @@ export default function DashboardRegistrationsPage() {
       </div>
 
       <div className="mt-6 overflow-hidden border border-hairline bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left">
+          <h3 className="text-left text-sm font-extrabold uppercase tracking-wide text-gray-900">Applications</h3>
+          {!loading && !error && rows.length > 0 ? (
+            <p className="text-xs text-gray-500">
+              Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, rows.length)} of {rows.length}
+            </p>
+          ) : null}
+        </div>
         {loading ? (
           <p className="p-12 text-center text-gray-500">Loading registrations...</p>
         ) : error ? (
@@ -216,30 +269,104 @@ export default function DashboardRegistrationsPage() {
         ) : rows.length === 0 ? (
           <p className="p-12 text-center text-gray-500">No contestant applications yet.</p>
         ) : (
-          <div className="divide-y divide-hairline">
-            {rows.map((row) => (
-              <div key={row.id} className="p-4 sm:p-5">
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+                <thead className="bg-[#f4f7fb]">
+                  <tr>
+                    {[
+                      "Application no.",
+                      "Name",
+                      "Title",
+                      "Category",
+                      "Date of birth",
+                      "Town and county",
+                      "Phone",
+                      "Email",
+                      "Status",
+                      "Submitted",
+                    ].map((heading) => (
+                      <th
+                        key={heading}
+                        className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
+                      >
+                        {heading}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((row) => {
+                    const open = openId === row.id;
+                    return (
+                      <Fragment key={row.id}>
+                        <tr
+                          className={open ? "bg-secondary-50" : "odd:bg-white even:bg-slate-50/60"}
+                        >
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-semibold text-gray-900">
+                            <button type="button" onClick={() => setOpenId(open ? null : row.id)} className="hover:underline">
+                              {row.applicationCode}
+                            </button>
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-medium text-gray-900">{row.fullName}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{titleLabel(row.applyingAs)}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{categoryLabel(row.category)}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{formatIssuedDate(row.dateOfBirth)}</td>
+                          <td className="border-b border-hairline px-4 py-3 text-left">{row.townCounty}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{cell(row.phoneCalls)}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{cell(row.email)}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left capitalize">{row.status}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{formatIssuedDate(row.issuedOn)}</td>
+                        </tr>
+                        {open ? (
+                          <tr className="bg-secondary-50">
+                            <td colSpan={10} className="border-b border-hairline px-4 py-5 text-left">
+                              <div className="grid gap-4 text-sm text-gray-700 md:grid-cols-2">
+                                <p><span className="font-semibold text-gray-900">WhatsApp:</span> {cell(row.phoneWhatsapp)}</p>
+                                <p><span className="font-semibold text-gray-900">Institution:</span> {cell(row.institution)}</p>
+                                <p><span className="font-semibold text-gray-900">Guardian:</span> {cell(row.guardianName)}</p>
+                                <p><span className="font-semibold text-gray-900">Guardian phone:</span> {cell(row.guardianPhone)}</p>
+                                <p className="md:col-span-2"><span className="font-semibold text-gray-900">About:</span> {row.about}</p>
+                                <p className="md:col-span-2"><span className="font-semibold text-gray-900">Why participate:</span> {row.whyParticipate}</p>
+                                <p className="md:col-span-2"><span className="font-semibold text-gray-900">Talent:</span> {row.talent}</p>
+                                <p className="md:col-span-2"><span className="font-semibold text-gray-900">Models for Education:</span> {row.modelsForEducation}</p>
+                              </div>
+                              <div className="mx-auto mt-5 max-w-2xl">
+                                <ContestantCardPanel card={row} showIntro={false} />
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {rows.length > PAGE_SIZE ? (
+              <div className="flex items-center justify-between border-t border-hairline px-4 py-3 text-sm text-gray-600">
                 <button
                   type="button"
-                  onClick={() => setOpenId((current) => (current === row.id ? null : row.id))}
-                  className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
+                  disabled={safePage <= 0}
+                  onClick={() => setPage((current) => Math.max(0, current - 1))}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40"
                 >
-                  <div>
-                    <p className="font-semibold text-gray-900">{row.fullName}</p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {row.applicationCode} · {titleLabel(row.applyingAs)} · {categoryLabel(row.category)}
-                    </p>
-                  </div>
-                  <span className="text-sm capitalize text-gray-500">{row.status}</span>
+                  Previous
                 </button>
-                {openId === row.id ? (
-                  <div className="mx-auto mt-5 max-w-2xl">
-                    <ContestantCardPanel card={row} showIntro={false} />
-                  </div>
-                ) : null}
+                <span>
+                  Page {safePage + 1} of {pageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= pageCount - 1}
+                  onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            ) : null}
+          </>
         )}
       </div>
     </div>
