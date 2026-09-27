@@ -13,6 +13,7 @@ import {
 } from "@/lib/ideal-mr-miss";
 import { getIdealApplicationFeeKes } from "@/lib/ideal-mr-miss-fee";
 import { fromEmail, resend } from "@/lib/resend";
+import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
 import { escapeHtml, sanitizeText } from "@/lib/sanitize";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -108,7 +109,10 @@ export async function POST(request: NextRequest) {
     const dateOfBirth = sanitizeText(form.get("dateOfBirth"));
     const category = sanitizeText(form.get("category")) as Category;
     const applyingAs = sanitizeText(form.get("applyingAs")) as ApplyingAs;
-    const townCounty = sanitizeText(form.get("townCounty"));
+    const town = sanitizeText(form.get("town"));
+    const county = sanitizeText(form.get("county"));
+    const knownCounty = KENYA_COUNTY_DEFINITIONS.some((item) => item.label === county);
+    const townCounty = town && knownCounty ? sanitizeText(`${town}, ${county}`) : "";
     const phoneCalls = sanitizeText(form.get("phoneCalls"));
     const phoneWhatsapp = sanitizeText(form.get("phoneWhatsapp"));
     const email = sanitizeText(form.get("email"));
@@ -131,8 +135,8 @@ export async function POST(request: NextRequest) {
     const guardianConsent = form.get("guardianConsent") === "on" || form.get("guardianConsent") === "true";
     const photo = form.get("photo");
 
-    if (!fullName || !dateOfBirth || !townCounty || !about || !whyParticipate || !talent || !modelsForEducation) {
-      return NextResponse.json({ error: "Please complete every required field." }, { status: 400 });
+    if (!fullName || !dateOfBirth || !town || !knownCounty || !about || !whyParticipate || !talent || !modelsForEducation) {
+      return NextResponse.json({ error: "Please complete every required field and choose a Kenyan county." }, { status: 400 });
     }
     if (category !== "kids" && category !== "teens" && category !== "adults") {
       return NextResponse.json({ error: "Choose a category." }, { status: 400 });

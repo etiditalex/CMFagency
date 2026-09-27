@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ContestantCardPanel } from "@/components/events/ContestantCardPanel";
 import { formatIdealFeeKes, IDEAL_APPLICATION_FEE_DEFAULT_KES, type ContestantCardData } from "@/lib/ideal-mr-miss";
+import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
 import { FileText, MessageCircle } from "lucide-react";
 
 const EVENT_ISO = "2026-12-12T00:00:00+03:00";
@@ -97,7 +98,10 @@ export default function IdealMrMissRegistration() {
 
   function validateStep(current: number, data: FormData): string | null {
     if (current === 0) {
-      if (!String(data.get("fullName") || "").trim() || !dateOfBirth || !category || !data.get("applyingAs") || !String(data.get("townCounty") || "").trim()) {
+      const town = String(data.get("town") || "").trim();
+      const county = String(data.get("county") || "").trim();
+      const knownCounty = KENYA_COUNTY_DEFINITIONS.some((item) => item.label === county);
+      if (!String(data.get("fullName") || "").trim() || !dateOfBirth || !category || !data.get("applyingAs") || !town || !knownCounty) {
         return "Complete the required contestant details.";
       }
       if (age == null) return "Enter a valid date of birth.";
@@ -147,10 +151,14 @@ export default function IdealMrMissRegistration() {
     const form = event.currentTarget;
     const data = new FormData(form);
 
-    if (!data.get("fullName") || !dateOfBirth || !category || !data.get("applyingAs") || !data.get("townCounty")) {
+    const town = String(data.get("town") || "").trim();
+    const county = String(data.get("county") || "").trim();
+    const knownCounty = KENYA_COUNTY_DEFINITIONS.some((item) => item.label === county);
+    if (!data.get("fullName") || !dateOfBirth || !category || !data.get("applyingAs") || !town || !knownCounty) {
       setError("Complete the required contestant details.");
       return;
     }
+    data.set("townCounty", `${town}, ${county}`);
     if (age == null) {
       setError("Enter a valid date of birth.");
       return;
@@ -398,9 +406,27 @@ export default function IdealMrMissRegistration() {
                       ))}
                     </div>
                   </fieldset>
-                  <label className="block text-sm font-semibold text-gray-800 sm:max-lg:col-span-2">
-                    Town and county of residence <span className="text-negative">*</span>
-                    <input name="townCounty" required={step === 0} className={inputClass} />
+                  <label className="block text-sm font-semibold text-gray-800">
+                    Town <span className="text-negative">*</span>
+                    <input name="town" required={step === 0} className={inputClass} autoComplete="address-level2" />
+                  </label>
+                  <label className="block text-sm font-semibold text-gray-800">
+                    County of residence <span className="text-negative">*</span>
+                    <select
+                      name="county"
+                      required={step === 0}
+                      defaultValue=""
+                      className={`${inputClass} cursor-pointer invalid:text-gray-500`}
+                    >
+                      <option value="" disabled>
+                        Select a county
+                      </option>
+                      {KENYA_COUNTY_DEFINITIONS.map((item) => (
+                        <option key={item.label} value={item.label}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                   <label className="block text-sm font-semibold text-gray-800">
                     Contestant’s phone number for calls <span className="font-medium text-gray-500">(if applicable)</span>
