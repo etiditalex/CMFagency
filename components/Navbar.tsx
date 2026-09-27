@@ -9,6 +9,10 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 
+const NAV_LOGO_URL = BRAND_LOGO_URL.replace("/upload/", "/upload/e_trim,f_png/");
+const desktopNavItem =
+  "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[13px] font-semibold tracking-wide text-[#1a2332] transition-colors hover:bg-[#f4f7fb] hover:text-primary-700";
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -169,37 +173,35 @@ export default function Navbar() {
 
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-white shadow-lg backdrop-blur-md"
-          : "bg-white/95 backdrop-blur-sm"
+      initial={false}
+      className={`fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white transition-shadow duration-200 ${
+        scrolled ? "shadow-sm" : ""
       }`}
     >
       {/* Top bar: tagline + phone; Track + Login (icons on small screens) */}
-      <div className="bg-primary-600 pt-[env(safe-area-inset-top,0px)] text-white">
+      <div className="bg-primary-800 pt-[env(safe-area-inset-top,0px)] text-white">
         <div className="container-custom">
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-2 py-2 min-h-10 sm:min-h-0 sm:h-10 sm:py-0 md:h-12 md:gap-4">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5 min-[380px]:flex-row min-[380px]:items-center min-[380px]:gap-2 sm:gap-3 md:gap-4">
-              <p className="min-w-0 !text-left text-[10px] leading-snug min-[380px]:text-[11px] sm:text-xs md:text-sm font-medium text-white/95">
+          <div className="flex h-8 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <p className="min-w-0 truncate !text-left text-[11px] font-medium tracking-wide text-white/90">
                 Market to thrive, Market to exist
               </p>
+              <span className="hidden h-3 w-px shrink-0 bg-white/25 sm:block" aria-hidden />
               <a
                 href="tel:+254797777347"
-                className="inline-flex w-fit max-w-full items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-semibold tabular-nums transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:gap-1.5 sm:px-2 sm:text-xs md:text-sm"
+                className="inline-flex shrink-0 items-center gap-1 rounded px-1 text-[11px] font-semibold tabular-nums text-white transition-colors hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                <PhoneCall className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
-                <span className="break-all min-[360px]:break-normal">0797&nbsp;777&nbsp;347</span>
+                <PhoneCall className="h-3 w-3 shrink-0" aria-hidden />
+                <span>0797&nbsp;777&nbsp;347</span>
               </a>
             </div>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-3">
               <Link
                 href="/track-application"
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:min-h-0 md:min-w-0 md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                className="flex h-8 items-center justify-center gap-1.5 rounded px-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2"
                 aria-label="Track Application"
               >
-                <Search className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+                <Search className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden md:inline">Track Application</span>
               </Link>
 
@@ -207,7 +209,7 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/application"
-                    className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:hidden"
+                    className="flex h-8 w-8 items-center justify-center rounded text-white transition-colors hover:bg-white/10 md:hidden"
                     aria-label="My Application"
                   >
                     <FileText className="h-4 w-4 shrink-0" />
@@ -215,9 +217,9 @@ export default function Navbar() {
                   <div className="relative group hidden md:block">
                     <button
                       type="button"
-                      className="flex items-center space-x-1 rounded-md px-2 py-1.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 lg:px-3"
+                      className="flex h-8 items-center gap-1.5 rounded px-2 text-[11px] font-semibold text-white transition-colors hover:bg-white/10"
                     >
-                      <User className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
+                      <User className="h-3.5 w-3.5" />
                       <span className="hidden lg:inline">{user?.name?.split(" ")[0] || "Account"}</span>
                     </button>
                     <div className="invisible absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:opacity-100">
@@ -242,10 +244,10 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-md p-2 text-white transition-all duration-200 hover:bg-black/20 hover:ring-2 hover:ring-white/35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:min-h-0 md:min-w-0 md:px-2 md:py-1.5 md:text-sm md:font-semibold lg:px-3"
+                  className="flex h-8 items-center justify-center gap-1.5 rounded px-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white md:px-2"
                   aria-label="Login"
                 >
-                  <User className="h-4 w-4 shrink-0 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+                  <User className="h-3.5 w-3.5 shrink-0" />
                   <span className="hidden md:inline">Login</span>
                 </Link>
               )}
@@ -256,30 +258,25 @@ export default function Navbar() {
 
       {/* Main Navigation Bar */}
       <div className="container-custom bg-white">
-        <div className="flex items-center justify-between h-[72px] sm:h-[80px] md:h-[88px]">
-            {/* Logo - Left; matches bar height, no overflow */}
-            <Link href="/" className="flex-shrink-0 flex items-center h-full py-2">
+        <div className="flex h-14 items-center justify-between sm:h-16">
+            <Link href="/" className="flex h-full shrink-0 items-center">
               <Image
-                src={BRAND_LOGO_URL}
-                alt="Changer Fusions Logo"
-                width={200}
-                height={56}
-                className="h-full max-h-[56px] sm:max-h-[64px] md:max-h-[72px] w-auto object-contain object-left"
+                src={NAV_LOGO_URL}
+                alt="Changer Fusions"
+                width={168}
+                height={76}
+                className="h-8 w-auto object-contain object-left sm:h-9"
                 priority
               />
             </Link>
 
           {/* Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-6 flex-1 justify-center">
+          <div className="hidden flex-1 items-center justify-center gap-0.5 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`font-bold text-gray-900 transition-colors duration-200 ${
-                  link.href === "/"
-                    ? "px-4 py-2 rounded-lg border border-gray-900 bg-white"
-                    : "hover:text-primary-600"
-                }`}
+                className={desktopNavItem}
               >
                 {link.label}
               </Link>
@@ -293,7 +290,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={aboutOpen}
                 onClick={(e) => {
@@ -302,7 +299,7 @@ export default function Navbar() {
                 }}
               >
                 <span>About</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
               </button>
               
               <AnimatePresence>
@@ -318,7 +315,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
                       >
                         {item.label}
                       </Link>
@@ -336,7 +333,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={servicesOpen}
                 onClick={(e) => {
@@ -345,7 +342,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Services</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
               </button>
               
               <AnimatePresence>
@@ -355,7 +352,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed left-0 right-0 top-[var(--site-nav-height)] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[var(--site-nav-height)] z-50 border-b border-gray-200 bg-white p-3 shadow-md"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {/* Links: container 1 */}
@@ -442,7 +439,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={careersOpen}
                 onClick={(e) => {
@@ -451,7 +448,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Careers</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${careersOpen ? 'rotate-180' : ''}`} />
               </button>
               
               <AnimatePresence>
@@ -461,7 +458,7 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
-                    className="fixed left-0 right-0 top-[var(--site-nav-height)] bg-white rounded-xl shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed left-0 right-0 top-[var(--site-nav-height)] z-50 border-b border-gray-200 bg-white p-3 shadow-md"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Container 1: Attachments */}
@@ -564,7 +561,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={testimonialsOpen}
                 onClick={(e) => {
@@ -573,7 +570,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Testimonials</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
               </button>
               
               <AnimatePresence>
@@ -589,7 +586,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
                       >
                         {item.label}
                       </Link>
@@ -607,7 +604,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={eventsOpen}
                 onClick={(e) => {
@@ -616,7 +613,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Events</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
               </button>
               
               <AnimatePresence>
@@ -632,7 +629,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
                       >
                         {item.label}
                       </Link>
@@ -649,7 +646,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={kcmOpen}
                 onClick={(e) => {
@@ -658,7 +655,7 @@ export default function Navbar() {
                 }}
               >
                 <span>KCM</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence>
@@ -674,7 +671,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium"
+                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
                       >
                         {item.label}
                       </Link>
@@ -691,7 +688,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={fusionXpressOpen}
                 onClick={(e) => {
@@ -700,7 +697,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Fusion Xpress</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence>
@@ -738,7 +735,7 @@ export default function Navbar() {
                         <Link
                           key={item.href}
                           href={item.href}
-                          className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium whitespace-nowrap"
+                          className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700 whitespace-nowrap"
                         >
                           {item.label}
                         </Link>
@@ -756,7 +753,7 @@ export default function Navbar() {
             >
               <button
                 type="button"
-                className="font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200 flex items-center space-x-1"
+                className={desktopNavItem}
                 aria-haspopup="menu"
                 aria-expanded={jobBoardOpen}
                 onClick={(e) => {
@@ -765,7 +762,7 @@ export default function Navbar() {
                 }}
               >
                 <span>Job board</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
               </button>
 
               <AnimatePresence>
@@ -781,7 +778,7 @@ export default function Navbar() {
                       <Link
                         key={item.href}
                         href={item.href}
-                        className="block px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors duration-200 font-medium whitespace-nowrap"
+                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700 whitespace-nowrap"
                       >
                         {item.label}
                       </Link>
@@ -793,7 +790,7 @@ export default function Navbar() {
 
             <Link
               href="/cart"
-              className="relative inline-flex items-center font-bold text-gray-900 hover:text-primary-600 transition-colors duration-200"
+              className="relative inline-flex items-center rounded-md p-2 text-[#1a2332] transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
               aria-label="Shopping Cart"
             >
               <ShoppingCart className="w-5 h-5" />
@@ -810,10 +807,10 @@ export default function Navbar() {
           <div className="lg:hidden flex items-center gap-1">
             <Link
               href="/cart"
-              className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-700 transition-colors hover:bg-gray-100 hover:text-primary-600"
+              className="relative flex h-10 w-10 items-center justify-center rounded-md text-gray-700 transition-colors hover:bg-gray-100 hover:text-primary-700"
               aria-label="Shopping Cart"
             >
-              <ShoppingCart className="w-6 h-6" />
+              <ShoppingCart className="h-5 w-5" />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-secondary-600 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {getTotalItems()}
@@ -823,11 +820,11 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2.5 text-gray-700 hover:bg-gray-100"
+              className="flex h-10 w-10 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
               aria-label="Toggle menu"
               aria-expanded={isOpen}
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -892,7 +889,7 @@ export default function Navbar() {
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
                   <span>About</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {aboutOpen && (
@@ -927,7 +924,7 @@ export default function Navbar() {
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
                   <span>Services</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${servicesOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {servicesOpen && (
@@ -995,7 +992,7 @@ export default function Navbar() {
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
                   <span>Careers</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${careersMobileOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${careersMobileOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {careersMobileOpen && (
@@ -1106,7 +1103,7 @@ export default function Navbar() {
                     <Ticket className="w-5 h-5" />
                     <span>Events</span>
                   </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${eventsOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {eventsOpen && (
@@ -1140,7 +1137,7 @@ export default function Navbar() {
                   className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
                   <span>KCM</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${kcmOpen ? "rotate-180" : ""}`} />
                 </button>
                 <AnimatePresence>
                   {kcmOpen && (
@@ -1176,7 +1173,7 @@ export default function Navbar() {
                     className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                   >
                     <span>Fusion Xpress</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${fusionXpressOpen ? "rotate-180" : ""}`} />
                   </button>
                   <AnimatePresence>
                     {fusionXpressOpen && (
@@ -1261,7 +1258,7 @@ export default function Navbar() {
                     className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                   >
                     <span>Job board</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${jobBoardOpen ? "rotate-180" : ""}`} />
                   </button>
                   <AnimatePresence>
                     {jobBoardOpen && (
@@ -1305,7 +1302,7 @@ export default function Navbar() {
                     className="flex items-center justify-between w-full py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                   >
                     <span>Testimonials</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-3.5 w-3.5 text-gray-500 transition-transform duration-200 ${testimonialsOpen ? 'rotate-180' : ''}`} />
                   </button>
                   <AnimatePresence>
                     {testimonialsOpen && (
