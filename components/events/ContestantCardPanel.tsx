@@ -3,16 +3,23 @@
 import { useEffect, useState } from "react";
 import { ContestantApplicationCard } from "@/components/events/ContestantApplicationCard";
 import { downloadContestantCard } from "@/components/events/download-contestant-card";
-import { contestantCardPath, type ContestantCardData } from "@/lib/ideal-mr-miss";
+import {
+  contestantCardPath,
+  formatIdealFeeKes,
+  IDEAL_APPLICATION_FEE_DEFAULT_KES,
+  type ContestantCardData,
+} from "@/lib/ideal-mr-miss";
 
 export function ContestantCardPanel({
   card,
   emailedTo,
   showIntro = true,
+  feeKes = IDEAL_APPLICATION_FEE_DEFAULT_KES,
 }: {
   card: ContestantCardData;
   emailedTo?: string | null;
   showIntro?: boolean;
+  feeKes?: number;
 }) {
   const [qrValue, setQrValue] = useState(() => contestantCardPath(card.applicationCode));
   const [downloading, setDownloading] = useState(false);
@@ -41,7 +48,7 @@ export function ContestantCardPanel({
           <h2 className="text-xl font-bold text-gray-900">Application received</h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed text-gray-600">
             Keep this application ID. Changer Fusions will review the entry for Kenya’s Ideal Mr &amp; Miss 2026 and
-            contact you with payment and participation instructions. The registration fee is KES 500. Submitting an
+            contact you with payment and participation instructions. The registration fee is {formatIdealFeeKes(feeKes)}. Submitting an
             application does not guarantee selection.
           </p>
           {emailedTo ? (

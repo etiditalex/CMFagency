@@ -6,10 +6,12 @@ import {
   IDEAL_EVENT_VENUE,
   categoryLabel,
   contestantCardPath,
+  formatIdealFeeKes,
   makeApplicationCode,
   titleLabel,
   type ContestantCardData,
 } from "@/lib/ideal-mr-miss";
+import { getIdealApplicationFeeKes } from "@/lib/ideal-mr-miss-fee";
 import { fromEmail, resend } from "@/lib/resend";
 import { escapeHtml, sanitizeText } from "@/lib/sanitize";
 
@@ -65,7 +67,7 @@ function siteOrigin(request: NextRequest): string {
   return host ? `${proto}://${host}` : "https://cmfagency.co.ke";
 }
 
-async function emailApplicationId(to: string, card: ContestantCardData, cardUrl: string): Promise<boolean> {
+async function emailApplicationId(to: string, card: ContestantCardData, cardUrl: string, feeKes: number): Promise<boolean> {
   if (!resend) return false;
   const title = escapeHtml(titleLabel(card.applyingAs));
   const safeName = escapeHtml(card.fullName);
@@ -86,7 +88,7 @@ async function emailApplicationId(to: string, card: ContestantCardData, cardUrl:
 <strong>Venue:</strong> ${IDEAL_EVENT_VENUE}<br>
 <strong>Event date:</strong> ${IDEAL_EVENT_DATE_LABEL}</p>
 <p>Open your application card here: <a href="${safeUrl}">${safeUrl}</a></p>
-<p>The registration fee is KES 500. Submitting an application does not guarantee selection. Changer Fusions will contact you with payment and participation instructions.</p>`,
+<p>The registration fee is ${escapeHtml(formatIdealFeeKes(feeKes))}. Submitting an application does not guarantee selection. Changer Fusions will contact you with payment and participation instructions.</p>`,
     });
     if (error) {
       console.error("ideal mr miss email:", error.message);
@@ -273,7 +275,8 @@ export async function POST(request: NextRequest) {
     };
     const recipient = email || guardianEmail || null;
     const cardUrl = `${siteOrigin(request)}${contestantCardPath(applicationCode)}`;
-    const emailed = recipient ? await emailApplicationId(recipient, card, cardUrl) : false;
+    const feeKes = await getIdealApplicationFeeKes(supabaseAdmin);
+    const emailed = recipient ? await emailApplicationId(recipient, card, cardUrl, feeKes) : false;
 
     return NextResponse.json({ ok: true, card, emailedTo: emailed ? recipient : null });
   } catch (error) {

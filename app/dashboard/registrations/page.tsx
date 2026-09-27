@@ -38,6 +38,11 @@ export default function DashboardRegistrationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<Registration[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [feeDraft, setFeeDraft] = useState("500");
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [feeMessage, setFeeMessage] = useState<string | null>(null);
+  const [feeMessageIsError, setFeeMessageIsError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,6 +80,61 @@ export default function DashboardRegistrationsPage() {
     }
   }, []);
 
+  const loadFee = useCallback(async () => {
+    setFeeLoading(true);
+    setFeeMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/fusion-xpress/ideal-mr-miss-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { application_fee_kes?: number };
+      if (res.ok && typeof json.application_fee_kes === "number") setFeeDraft(String(json.application_fee_kes));
+    } finally {
+      setFeeLoading(false);
+    }
+  }, []);
+
+  const saveFee = async () => {
+    const n = Math.floor(Number(feeDraft));
+    if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
+      setFeeMessage("Enter an amount between 1 and 1,000,000 KES.");
+      setFeeMessageIsError(true);
+      return;
+    }
+    setFeeSaving(true);
+    setFeeMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+      const res = await fetch("/api/fusion-xpress/ideal-mr-miss-settings", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ application_fee_kes: n }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { application_fee_kes?: number; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Could not save the application fee.");
+      if (typeof json.application_fee_kes === "number") setFeeDraft(String(json.application_fee_kes));
+      setFeeMessage("Application fee saved. The registration page now shows this amount.");
+      setFeeMessageIsError(false);
+    } catch (e: unknown) {
+      setFeeMessage(e instanceof Error ? e.message : "Could not save the application fee.");
+      setFeeMessageIsError(true);
+    } finally {
+      setFeeSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading || portalLoading) return;
     if (!isAuthenticated || !user || !isPortalMember) {
@@ -86,7 +146,8 @@ export default function DashboardRegistrationsPage() {
       return;
     }
     load();
-  }, [authLoading, isAuthenticated, isAdmin, isPortalMember, portalLoading, load, router, user]);
+    void loadFee();
+  }, [authLoading, isAuthenticated, isAdmin, isPortalMember, portalLoading, load, loadFee, router, user]);
 
   if (authLoading || portalLoading) return null;
   if (!isAuthenticated || !user || !isPortalMember || !isAdmin) return null;
@@ -109,6 +170,42 @@ export default function DashboardRegistrationsPage() {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
+      </div>
+
+      <div className="mt-6 border border-hairline bg-white p-4 sm:p-5">
+        <h3 className="text-sm font-bold text-[#1a2332]">Application fee</h3>
+        <p className="mt-1 max-w-3xl text-sm text-gray-600">
+          This is the amount shown on the public registration page. It starts at KES 500 and can be changed to another
+          figure. Allowed range: 1–1,000,000 KES.
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="ideal-application-fee" className="block text-xs font-medium text-gray-700">
+              Amount (KES)
+            </label>
+            <input
+              id="ideal-application-fee"
+              type="number"
+              min={1}
+              max={1_000_000}
+              value={feeDraft}
+              onChange={(e) => setFeeDraft(e.target.value)}
+              disabled={feeLoading || feeSaving}
+              className="mt-0.5 w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => void saveFee()}
+            disabled={feeLoading || feeSaving || feeDraft === ""}
+            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {feeSaving ? "Saving..." : "Save fee"}
+          </button>
+        </div>
+        {feeMessage ? (
+          <p className={`mt-2 text-sm ${feeMessageIsError ? "text-negative" : "text-secondary-800"}`}>{feeMessage}</p>
+        ) : null}
       </div>
 
       <div className="mt-6 overflow-hidden border border-hairline bg-white">

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { ContestantCardPanel } from "@/components/events/ContestantCardPanel";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
+import { getIdealApplicationFeeKes } from "@/lib/ideal-mr-miss-fee";
 import type { ContestantCardData, ContestantCategory, ContestantTitle } from "@/lib/ideal-mr-miss";
 
 export const metadata: Metadata = {
@@ -54,7 +55,7 @@ export default async function IdealApplicationCardPage({ params }: { params: Pro
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-14 w-auto" />
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white px-5 py-8 shadow-sm sm:px-8">
-          <ContestantCardPanel card={card} />
+          <ContestantCardPanel card={card} feeKes={await getIdealApplicationFeeKes(supabaseAdmin)} />
         </div>
       </div>
     </main>

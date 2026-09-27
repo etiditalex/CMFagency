@@ -12,6 +12,19 @@ export type ContestantCardData = {
 
 export const IDEAL_EVENT_VENUE = "Malaika Lounge, Malindi";
 export const IDEAL_EVENT_DATE_LABEL = "12 Dec 2026";
+export const IDEAL_APPLICATION_FEE_DEFAULT_KES = 500;
+const IDEAL_FEE_MIN_KES = 1;
+const IDEAL_FEE_MAX_KES = 1_000_000;
+
+export function clampIdealApplicationFeeKes(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return IDEAL_APPLICATION_FEE_DEFAULT_KES;
+  return Math.min(IDEAL_FEE_MAX_KES, Math.max(IDEAL_FEE_MIN_KES, Math.floor(n)));
+}
+
+export function formatIdealFeeKes(amount: number): string {
+  return `KES ${clampIdealApplicationFeeKes(amount).toLocaleString("en-KE")}`;
+}
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
