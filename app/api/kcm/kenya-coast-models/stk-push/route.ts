@@ -13,7 +13,8 @@ import {
 } from "@/lib/daraja-stk-config";
 import { isValidKenyaPhone, normalizeKenyaPhone } from "@/lib/kenya-phone";
 import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
-import { forumFeeKes, KCM_FORUM_CAPACITY } from "@/lib/kenya-coast-models";
+import { KCM_FORUM_CAPACITY, KCM_FORUM_MEMBER_FEE_KES, KCM_FORUM_NON_MEMBER_FEE_KES } from "@/lib/kenya-coast-models";
+import { findApprovedMemberByEmail, findApprovedMemberByNumber } from "@/lib/kenya-coast-models-membership";
 import { sanitizeText } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,8 @@ type Body = {
   modelLevel?: string;
   brandName?: string;
   mpesaPhone?: string;
+  membershipNumber?: string;
+  experience?: string;
 };
 
 const ATTENDEE = new Set(["model", "designer", "guest"]);
@@ -49,6 +52,7 @@ export async function POST(req: NextRequest) {
     const modelLevel = sanitizeText(body.modelLevel);
     const brandName = sanitizeText(body.brandName);
     const mpesaPhone = normalizeKenyaPhone(String(body.mpesaPhone || body.phoneCalls || ""));
+    const experience = sanitizeText(body.experience);
 
     if (!fullName || !town || !KENYA_COUNTY_DEFINITIONS.some((item) => item.label === county)) {
       return NextResponse.json({ error: "Enter your name, town, and a Kenyan county." }, { status: 400 });
@@ -85,6 +89,46 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    let membershipId: string | null = null;
+    let membershipNumber: string | null = null;
+    let feeKes = KCM_FORUM_NON_MEMBER_FEE_KES;
+    if (isMember) {
+      const found = await findApprovedMemberByNumber(admin, body.membershipNumber);
+      if (!found.member) {
+        return NextResponse.json({ error: found.error || "Membership number not found." }, { status: 400 });
+      }
+      membershipId = found.member.id;
+      membershipNumber = found.member.membershipNumber;
+      feeKes = KCM_FORUM_MEMBER_FEE_KES;
+      const { count: already } = await admin
+        .from("kenya_coast_models_registrations")
+        .select("id", { count: "exact", head: true })
+        .eq("membership_id", membershipId)
+        .eq("payment_status", "success");
+      if ((already ?? 0) > 0) {
+        return NextResponse.json({ error: "This membership number is already registered for the forum." }, { status: 409 });
+      }
+    } else {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return NextResponse.json(
+          { error: "Enter an email address. New members receive their membership number by email after approval." },
+          { status: 400 }
+        );
+      }
+      if (experience.trim().length < 2) {
+        return NextResponse.json({ error: "Tell us a little about your experience so we can register your membership." }, { status: 400 });
+      }
+      const existingMember = await findApprovedMemberByEmail(admin, email);
+      if (existingMember) {
+        return NextResponse.json(
+          {
+            error: `This email already belongs to member ${existingMember.membershipNumber}. Choose Member and enter that number to pay KES ${KCM_FORUM_MEMBER_FEE_KES}.`,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const { count, error: countErr } = await admin
       .from("kenya_coast_models_registrations")
       .select("id", { count: "exact", head: true })
@@ -104,7 +148,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Attendance is full. This forum is limited to 100 guests." }, { status: 409 });
     }
 
-    const feeKes = forumFeeKes(isMember);
     const { data: inserted, error: insertErr } = await admin
       .from("kenya_coast_models_registrations")
       .insert({
@@ -115,6 +158,9 @@ export async function POST(req: NextRequest) {
         town,
         county,
         is_member: isMember,
+        membership_id: membershipId,
+        membership_number: membershipNumber,
+        experience: isMember ? null : experience,
         attendee_type: attendeeType,
         model_level: attendeeType === "model" ? modelLevel : null,
         brand_name: attendeeType === "designer" ? brandName || null : null,
@@ -125,7 +171,15 @@ export async function POST(req: NextRequest) {
       .select("id")
       .single();
     if (insertErr || !inserted) {
-      return NextResponse.json({ error: insertErr?.message ?? "Could not start registration." }, { status: 500 });
+      const missingColumn = insertErr?.code === "42703" || (insertErr?.message ?? "").includes("membership_id");
+      return NextResponse.json(
+        {
+          error: missingColumn
+            ? "Forum membership linking is not set up yet. Run database/ticketing_voting_mvp_patch_95_kenya_coast_models_membership_link.sql in Supabase."
+            : (insertErr?.message ?? "Could not start registration."),
+        },
+        { status: 500 }
+      );
     }
 
     const registrationId = String((inserted as { id: string }).id);

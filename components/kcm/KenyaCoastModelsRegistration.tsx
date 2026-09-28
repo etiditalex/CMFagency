@@ -6,7 +6,6 @@ import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
 import { isValidKenyaPhone, normalizeKenyaPhone } from "@/lib/kenya-phone";
 import {
   formatForumFeeKes,
-  forumFeeKes,
   KCM_FORUM_EVENT_ISO,
   KCM_FORUM_EVENT_LABEL,
   KCM_FORUM_MEMBER_FEE_KES,
@@ -58,6 +57,10 @@ export default function KenyaCoastModelsRegistration() {
   const [town, setTown] = useState("");
   const [county, setCounty] = useState("");
   const [isMember, setIsMember] = useState<"" | "yes" | "no">("");
+  const [membershipNumber, setMembershipNumber] = useState("");
+  const [verifiedMember, setVerifiedMember] = useState<{ number: string; firstName: string } | null>(null);
+  const [experience, setExperience] = useState("");
+  const [checkingMember, setCheckingMember] = useState(false);
   const [attendeeType, setAttendeeType] = useState<AttendeeType>("");
   const [modelLevel, setModelLevel] = useState<ModelLevel>("");
   const [brandName, setBrandName] = useState("");
@@ -73,8 +76,8 @@ export default function KenyaCoastModelsRegistration() {
   const [confirmed, setConfirmed] = useState(false);
 
   const whatsapp = sameWhatsapp ? phoneCalls : whatsappInput;
-  const member = isMember === "yes";
-  const feeKes = isMember === "" ? null : forumFeeKes(member);
+  const member = isMember === "yes" && verifiedMember != null;
+  const feeKes = isMember === "yes" ? (verifiedMember ? KCM_FORUM_MEMBER_FEE_KES : null) : isMember === "no" ? KCM_FORUM_NON_MEMBER_FEE_KES : null;
   const paymentLocked = paymentStatus === "pending" || paymentStatus === "success";
 
   useEffect(() => {
@@ -138,6 +141,10 @@ export default function KenyaCoastModelsRegistration() {
     }
     if (current === 1) {
       if (isMember !== "yes" && isMember !== "no") return "Say whether you are a Kenya-Coast Models member.";
+      if (isMember === "yes" && !membershipNumber.trim()) return "Enter the membership number from your approval email.";
+      if (isMember === "no" && !email.trim()) return "Enter an email address. New members receive their membership number by email.";
+      if (isMember === "no" && !validEmail(email)) return "Enter a valid email address.";
+      if (isMember === "no" && experience.trim().length < 2) return "Tell us a little about your experience so we can register your membership.";
       if (!attendeeType) return "Choose how you will attend.";
       if (attendeeType === "model" && !modelLevel) return "Choose emerging or professional model.";
     }
@@ -147,12 +154,36 @@ export default function KenyaCoastModelsRegistration() {
     return null;
   }
 
-  function goNext() {
+  async function goNext() {
     if (step == null) return;
     const message = validateStep(step);
     if (message) {
       setError(message);
       return;
+    }
+    if (step === 1 && isMember === "yes") {
+      setCheckingMember(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/kcm/kenya-coast-models/member-check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ membershipNumber }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string; membershipNumber?: string; firstName?: string };
+        if (!res.ok || !json.membershipNumber) {
+          setVerifiedMember(null);
+          setError(json.error || "That membership number was not found.");
+          return;
+        }
+        setMembershipNumber(json.membershipNumber);
+        setVerifiedMember({ number: json.membershipNumber, firstName: json.firstName || "Member" });
+      } catch {
+        setError("Could not check the membership number. Try again.");
+        return;
+      } finally {
+        setCheckingMember(false);
+      }
     }
     setError(null);
     if (step === 1) setMpesaPhone((current) => current || phoneCalls);
@@ -167,6 +198,10 @@ export default function KenyaCoastModelsRegistration() {
   async function sendPrompt() {
     setError(null);
     setPaymentNote(null);
+    if (isMember === "yes" && !verifiedMember) {
+      setError("Confirm your membership number before payment.");
+      return;
+    }
     if (isMember !== "yes" && isMember !== "no") {
       setError("Choose member or non-member before payment.");
       return;
@@ -188,6 +223,8 @@ export default function KenyaCoastModelsRegistration() {
           town,
           county,
           isMember: member,
+          membershipNumber: verifiedMember?.number || membershipNumber,
+          experience,
           attendeeType,
           modelLevel,
           brandName,
@@ -458,12 +495,63 @@ export default function KenyaCoastModelsRegistration() {
                   <div className="mt-2 flex flex-wrap gap-x-6">
                     {(["yes", "no"] as const).map((value) => (
                       <label key={value} className={choiceClass}>
-                        <input type="radio" name="isMember" checked={isMember === value} onChange={() => setIsMember(value)} required={step === 1} />
+                        <input
+                          type="radio"
+                          name="isMember"
+                          checked={isMember === value}
+                          onChange={() => {
+                            setIsMember(value);
+                            setVerifiedMember(null);
+                          }}
+                          required={step === 1}
+                        />
                         {value === "yes" ? "Member" : "Non-member"}
                       </label>
                     ))}
                   </div>
                 </fieldset>
+                {isMember === "yes" ? (
+                  <label className="mt-4 block text-sm font-semibold text-gray-800">
+                    Membership number <span className="text-negative">*</span>
+                    <input
+                      value={membershipNumber}
+                      onChange={(e) => {
+                        setMembershipNumber(e.target.value);
+                        setVerifiedMember(null);
+                      }}
+                      required={step === 1}
+                      disabled={paymentLocked}
+                      placeholder="KCM/2026/001"
+                      className={inputClass}
+                      autoComplete="off"
+                    />
+                    <span className="mt-1 block text-xs font-medium text-gray-600">
+                      Use the member ID emailed when your Kenya-Coast Models membership was approved. A matching number pays {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}.
+                    </span>
+                  </label>
+                ) : null}
+                {isMember === "no" ? (
+                  <div className="mt-4 space-y-4">
+                    <p className="text-sm leading-relaxed text-gray-700">
+                      You will be registered as a Kenya-Coast Models member. The attendance fee stays {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. After approval, your membership number is emailed to you.
+                    </p>
+                    <label className="block text-sm font-semibold text-gray-800">
+                      Email address <span className="text-negative">*</span>
+                      <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required={step === 1} disabled={paymentLocked} className={inputClass} autoComplete="email" />
+                    </label>
+                    <label className="block text-sm font-semibold text-gray-800">
+                      Experience <span className="text-negative">*</span>
+                      <textarea
+                        value={experience}
+                        onChange={(e) => setExperience(e.target.value)}
+                        required={step === 1}
+                        disabled={paymentLocked}
+                        rows={4}
+                        className={inputClass}
+                      />
+                    </label>
+                  </div>
+                ) : null}
                 <fieldset className="mt-4" disabled={paymentLocked}>
                   <legend className="text-sm font-semibold text-gray-800">
                     How will you attend? <span className="text-negative">*</span>
@@ -520,11 +608,16 @@ export default function KenyaCoastModelsRegistration() {
               <div className={step === 2 ? undefined : "hidden"}>
                 <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">3. Payment</h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                  Members pay {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}. Non-members pay {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. Your fee is
-                  based on the membership option you selected.
+                  Confirmed members pay {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}. People joining as new members pay {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. Complete the M-Pesa prompt before continuing.
                 </p>
-                <p className="mt-3 text-2xl font-bold text-secondary-800">{feeKes == null ? "Select membership first" : formatForumFeeKes(feeKes)}</p>
-                <p className="mt-1 text-sm text-gray-600">{isMember === "yes" ? "Member fee" : isMember === "no" ? "Non-member fee" : ""}</p>
+                <p className="mt-3 text-2xl font-bold text-secondary-800">{feeKes == null ? "Confirm membership first" : formatForumFeeKes(feeKes)}</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {verifiedMember
+                    ? `Member fee for ${verifiedMember.firstName} (${verifiedMember.number})`
+                    : isMember === "no"
+                      ? "New member fee. This payment is recorded on your KCM membership."
+                      : ""}
+                </p>
                 <label className="mt-4 block text-sm font-semibold text-gray-800">
                   M-Pesa number for the prompt <span className="text-negative">*</span>
                   <input
@@ -576,10 +669,11 @@ export default function KenyaCoastModelsRegistration() {
                 {step < STEP_TITLES.length - 1 ? (
                   <button
                     type="button"
-                    onClick={goNext}
-                    className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-4 text-sm font-bold text-white hover:bg-secondary-800"
+                    onClick={() => void goNext()}
+                    disabled={checkingMember}
+                    className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-4 text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
                   >
-                    Next
+                    {checkingMember ? "Checking member…" : "Next"}
                   </button>
                 ) : (
                   <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, RefreshCw, Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -10,10 +10,14 @@ import { usePortal } from "@/contexts/PortalContext";
 import { CompositeMetricCard } from "@/components/dashboard/ui";
 import { supabase } from "@/lib/supabase";
 
+const PAGE_SIZE = 10;
+
 type MembershipStatus = "new" | "in_review" | "approved" | "rejected";
 
 type Membership = {
   id: string;
+  membership_number?: string | null;
+  forum_attendance?: { fee_kes: number; attendee_type: string; paid_at: string | null } | null;
   first_name: string;
   second_name: string;
   contact: string;
@@ -70,6 +74,8 @@ export default function DashboardKcmMembershipPage() {
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
+  const [page, setPage] = useState(0);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const [regFeeDraft, setRegFeeDraft] = useState("");
   const [regFeeLoading, setRegFeeLoading] = useState(false);
@@ -159,6 +165,8 @@ export default function DashboardKcmMembershipPage() {
       };
       if (!res.ok) throw new Error(json.error ?? "Failed to load KCM memberships.");
       setRows(json.memberships ?? []);
+      setPage(0);
+      setOpenId(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load KCM memberships.");
       setRows([]);
@@ -305,13 +313,23 @@ export default function DashboardKcmMembershipPage() {
       if (!res.ok) throw new Error(json.error ?? "Failed to update membership.");
       const updated = json.membership;
       if (!updated) return;
-      setRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...updated, membership_number: updated.membership_number ?? r.membership_number, forum_attendance: r.forum_attendance }
+            : r
+        )
+      );
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to update membership.");
     } finally {
       setSavingId(null);
     }
   };
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = useMemo(() => rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE), [rows, safePage]);
 
   const summary = useMemo(() => {
     const counts: Record<MembershipStatus, number> = {
@@ -439,57 +457,119 @@ export default function DashboardKcmMembershipPage() {
 
       {error && <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
-      <div className="mt-6 overflow-x-auto rounded-md border border-gray-200 bg-white">
-        <table className="min-w-full text-sm">
-          <thead className="border-b border-hairline bg-white">
-            <tr className="text-left">
-              <th className="px-4 py-3 font-bold text-gray-600">Name</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Profile</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Contact</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Fashion category</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Experience</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Payment / Contributions</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Status</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Review notes</th>
-              <th className="px-4 py-3 font-bold text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                  Loading memberships...
-                </td>
-              </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                  No KCM membership submissions yet.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <Row
-                  key={row.id}
-                  row={row}
-                  disabled={savingId === row.id}
-                  onSave={(status, reviewNotes) => updateStatus(row.id, status, reviewNotes)}
-                  onDownload={() =>
-                    void downloadMembership(
-                      row.id,
-                      `${row.first_name}-${row.second_name}`.trim() || row.email
-                    )
-                  }
-                  onDelete={() =>
-                    void deleteMembership(row.id, `${row.first_name} ${row.second_name}`.trim() || row.email)
-                  }
-                  downloadBusy={downloadingId === row.id || downloadingAll}
-                  deleteBusy={deletingId === row.id || downloadingAll}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="mt-6 overflow-hidden border border-hairline bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left">
+          <h3 className="text-left text-sm font-extrabold uppercase tracking-wide text-gray-900">Members</h3>
+          {!loading && rows.length > 0 ? (
+            <p className="text-xs text-gray-500">
+              Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, rows.length)} of {rows.length}
+            </p>
+          ) : null}
+        </div>
+        {loading ? (
+          <p className="p-12 text-center text-gray-500">Loading memberships...</p>
+        ) : rows.length === 0 ? (
+          <p className="p-12 text-center text-gray-500">No KCM membership submissions yet.</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+                <thead className="bg-[#f4f7fb]">
+                  <tr>
+                    {["Member ID", "Name", "Contact", "Email", "Category", "Payment", "Forum", "Status", "Joined"].map((heading) => (
+                      <th
+                        key={heading}
+                        className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
+                      >
+                        {heading}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((row) => {
+                    const open = openId === row.id;
+                    return (
+                      <Fragment key={row.id}>
+                        <tr className={open ? "bg-secondary-50" : "odd:bg-white even:bg-slate-50/60"}>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-semibold text-gray-900">
+                            <button type="button" onClick={() => setOpenId(open ? null : row.id)} className="hover:underline">
+                              {row.membership_number?.trim() || "Pending"}
+                            </button>
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-medium text-gray-900">
+                            {row.first_name} {row.second_name}
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{row.contact}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{row.email}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">{registrationFashionCategoryLabel(row)}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            {row.payment_confirmed ? `KES ${Number(row.payment_amount_kes ?? 0).toLocaleString()}` : row.payment_status}
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            {row.forum_attendance ? `Paid KES ${Number(row.forum_attendance.fee_kes).toLocaleString()}` : "—"}
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left capitalize">{row.status.replace("_", " ")}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            {new Date(row.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                        {open ? (
+                          <tr className="bg-secondary-50">
+                            <td colSpan={9} className="border-b border-hairline px-4 py-4 text-left">
+                              <Row
+                                row={row}
+                                disabled={savingId === row.id}
+                                onSave={(status, reviewNotes) => updateStatus(row.id, status, reviewNotes)}
+                                onDownload={() =>
+                                  void downloadMembership(row.id, `${row.first_name}-${row.second_name}`.trim() || row.email)
+                                }
+                                onDelete={() =>
+                                  void deleteMembership(row.id, `${row.first_name} ${row.second_name}`.trim() || row.email)
+                                }
+                                downloadBusy={downloadingId === row.id || downloadingAll}
+                                deleteBusy={deletingId === row.id || downloadingAll}
+                              />
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {rows.length > PAGE_SIZE ? (
+              <div className="flex items-center justify-between border-t border-hairline px-4 py-3 text-sm text-gray-600">
+                <button
+                  type="button"
+                  disabled={safePage <= 0}
+                  onClick={() => {
+                    setOpenId(null);
+                    setPage((current) => Math.max(0, current - 1));
+                  }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {safePage + 1} of {pageCount}
+                </span>
+                <button
+                  type="button"
+                  disabled={safePage >= pageCount - 1}
+                  onClick={() => {
+                    setOpenId(null);
+                    setPage((current) => Math.min(pageCount - 1, current + 1));
+                  }}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-50 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );
@@ -550,9 +630,10 @@ function Row({
   }, [row.status, row.review_notes]);
 
   return (
-    <tr className="border-b border-gray-100 align-top">
-      <td className="px-4 py-3">
+    <div className="grid gap-4 text-left lg:grid-cols-2">
+      <div>
         <div className="font-semibold text-gray-900">{row.first_name} {row.second_name}</div>
+        <div className="text-xs text-gray-500">{row.membership_number?.trim() || "Membership number pending approval"}</div>
         <div className="text-xs text-gray-500">{row.email}</div>
         <div className="text-xs text-gray-400">{new Date(row.created_at).toLocaleString()}</div>
         <div className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
@@ -560,8 +641,13 @@ function Row({
         }`}>
           {row.account_status ?? "inactive"}
         </div>
-      </td>
-      <td className="max-w-md px-4 py-3">
+        {row.forum_attendance ? (
+          <p className="mt-2 text-xs text-gray-700">
+            Forum attendance paid: KES {Number(row.forum_attendance.fee_kes).toLocaleString()} as {row.forum_attendance.attendee_type}.
+          </p>
+        ) : null}
+      </div>
+      <div className="max-w-md">
         <div className="flex gap-2">
           <div className="flex shrink-0 flex-col gap-1">
             <div className="relative h-12 w-12 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
@@ -626,15 +712,13 @@ function Row({
             </div>
           </div>
         </div>
-      </td>
-      <td className="px-4 py-3 text-gray-700">{row.contact}</td>
-      <td className="max-w-[10rem] px-4 py-3 text-xs text-gray-700">
-        {registrationFashionCategoryLabel(row)}
-      </td>
-      <td className="max-w-xs px-4 py-3 text-gray-700">
-        <p className="line-clamp-4">{row.experience}</p>
-      </td>
-      <td className="px-4 py-3 text-gray-700">
+      </div>
+      <div className="text-sm text-gray-700">
+        <p><span className="font-semibold text-gray-900">Contact:</span> {row.contact}</p>
+        <p className="mt-1"><span className="font-semibold text-gray-900">Category:</span> {registrationFashionCategoryLabel(row)}</p>
+        <p className="mt-1"><span className="font-semibold text-gray-900">Experience:</span> {row.experience}</p>
+      </div>
+      <div className="text-gray-700">
         <div>{row.payment_confirmed ? `KES ${Number(row.payment_amount_kes ?? 0).toLocaleString()}` : "Not confirmed"}</div>
         <div className="text-xs text-gray-500">Status: {row.payment_status}</div>
         {row.paid_at ? (
@@ -655,8 +739,8 @@ function Row({
             <div className="text-gray-400">Last: {new Date(row.contributions.last_contribution_at).toLocaleString()}</div>
           ) : null}
         </div>
-      </td>
-      <td className="px-4 py-3">
+      </div>
+      <div>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as MembershipStatus)}
@@ -669,8 +753,8 @@ function Row({
             </option>
           ))}
         </select>
-      </td>
-      <td className="px-4 py-3">
+      </div>
+      <div>
         <textarea
           value={reviewNotes}
           onChange={(e) => setReviewNotes(e.target.value)}
@@ -687,8 +771,8 @@ function Row({
         >
           {disabled ? "Saving..." : "Save"}
         </button>
-      </td>
-      <td className="px-4 py-3">
+      </div>
+      <div>
         <div className="flex flex-col gap-2">
           <button
             type="button"
@@ -709,7 +793,7 @@ function Row({
             {deleteBusy ? "Deleting…" : "Delete"}
           </button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }

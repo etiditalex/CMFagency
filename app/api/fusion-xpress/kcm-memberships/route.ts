@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     let query = admin
       .from("kcm_memberships")
       .select(
-        "id,first_name,second_name,contact,email,experience,fashion_category,fashion_category_other,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
+        "id,membership_number,first_name,second_name,contact,email,experience,fashion_category,fashion_category_other,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
         { count: "exact" }
       )
       .order("created_at", { ascending: false })
@@ -143,6 +143,29 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    let forumByMembership: Record<string, { fee_kes: number; attendee_type: string; paid_at: string | null }> = {};
+    if (ids.length > 0) {
+      const { data: forumRows, error: forumErr } = await admin
+        .from("kenya_coast_models_registrations")
+        .select("membership_id, fee_kes, attendee_type, paid_at")
+        .in("membership_id", ids)
+        .eq("payment_status", "success");
+      if (!forumErr) {
+        for (const forum of (forumRows ?? []) as Array<{
+          membership_id: string;
+          fee_kes: number;
+          attendee_type: string;
+          paid_at: string | null;
+        }>) {
+          forumByMembership[String(forum.membership_id)] = {
+            fee_kes: forum.fee_kes,
+            attendee_type: forum.attendee_type,
+            paid_at: forum.paid_at,
+          };
+        }
+      }
+    }
+
     const enriched = memberships.map((m) => {
       const prof = profileMap[String(m.id)] ?? null;
       const itemCount = portfolioItemCountMap[String(m.id)] ?? 0;
@@ -175,6 +198,7 @@ export async function GET(req: NextRequest) {
               }
             : null,
         contributions: wallet,
+        forum_attendance: forumByMembership[String(m.id)] ?? null,
         profile_completed:
           !!prof?.display_name ||
           !!prof?.avatar_url ||

@@ -7,6 +7,7 @@ import {
   KCM_FORUM_VENUE,
 } from "@/lib/kenya-coast-models";
 import { fromEmail, resend } from "@/lib/resend";
+import { ensureForumMembership } from "@/lib/kenya-coast-models-membership";
 import { escapeHtml } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +53,8 @@ export async function POST(req: NextRequest) {
     if (row.payment_status !== "success" || !row.payment_confirmed) {
       return NextResponse.json({ error: "Complete the M-Pesa prompt before finishing registration." }, { status: 400 });
     }
+
+    await ensureForumMembership(admin, row.id);
 
     if (!row.details_confirmed) {
       const { error: updateErr } = await admin
