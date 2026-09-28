@@ -21,8 +21,9 @@ const WHATSAPP_URL =
 const STEP_TITLES = ["Your details", "Membership and category", "Payment", "Confirmation"];
 
 const inputClass =
-  "mt-1.5 w-full min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 outline-none focus:border-secondary-700 focus:ring-2 focus:ring-secondary-700/20 sm:text-sm";
-const choiceClass = "flex min-h-11 items-center gap-2.5 text-sm text-gray-700 [&_input]:h-5 [&_input]:w-5 [&_input]:shrink-0";
+  "mt-1.5 w-full min-h-12 min-w-0 max-w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-base text-gray-900 outline-none focus:border-secondary-700 focus:ring-2 focus:ring-secondary-700/20";
+const choiceClass =
+  "flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-800 has-[:checked]:border-secondary-700 has-[:checked]:bg-secondary-50 has-[:checked]:text-secondary-900 [&_input]:h-5 [&_input]:w-5 [&_input]:shrink-0";
 
 type AttendeeType = "" | "model" | "designer" | "guest";
 type ModelLevel = "" | "emerging" | "professional";
@@ -301,29 +302,29 @@ export default function KenyaCoastModelsRegistration() {
   const full = remainingSeats === 0;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f3f1ec] px-4 pb-28 pt-[var(--site-nav-height)] sm:px-6 md:pb-20 lg:px-4">
+    <div className="min-h-screen overflow-x-hidden bg-[#f3f1ec] px-3 pb-[calc(var(--site-mobile-dock-height)+1.5rem)] pt-[var(--site-nav-height)] sm:px-6 md:px-4 md:pb-20">
       <div className="mx-auto w-full max-w-6xl lg:max-w-[640px]">
         <div className="grid items-center gap-6">
           <div id="event-details" className="text-center">
             {step === null || done ? (
-              <h1 className="mx-auto mt-6 inline-grid max-w-full grid-cols-[minmax(0,auto)_auto] items-stretch gap-x-2.5 text-left font-montserrat sm:mt-8 sm:gap-x-3.5">
-                <span className="col-start-1 row-start-1 flex flex-col items-end justify-end pr-0.5 text-right text-[15px] font-semibold leading-[1.05] text-gray-900 sm:text-xl">
+              <h1 className="mx-auto mt-4 inline-grid max-w-full grid-cols-[minmax(0,auto)_auto] items-stretch gap-x-2 text-left font-montserrat min-[380px]:mt-6 min-[380px]:gap-x-2.5 sm:mt-8 sm:gap-x-3.5">
+                <span className="col-start-1 row-start-1 flex flex-col items-end justify-end pr-0.5 text-right text-sm font-semibold leading-[1.05] text-gray-900 min-[380px]:text-[15px] sm:text-xl">
                   <span className="block text-right">Kenya</span>
                   <span className="block text-right">Coast</span>
                 </span>
-                <span className="col-start-1 row-start-2 mt-1 text-left text-[2.15rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-[2.65rem] sm:text-6xl lg:text-7xl">
+                <span className="col-start-1 row-start-2 mt-1 text-left text-[1.85rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-[2.35rem] sm:text-6xl lg:text-7xl">
                   Models
                 </span>
-                <span className="col-start-2 row-span-2 row-start-1 flex flex-col justify-between border-l-[3px] border-secondary-800 pl-2.5 text-left sm:pl-3.5">
-                  <span className="block text-left text-[2.15rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-5xl sm:text-6xl">20</span>
-                  <span className="block text-left text-[2.15rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-5xl sm:text-6xl">26</span>
+                <span className="col-start-2 row-span-2 row-start-1 flex flex-col justify-between border-l-[3px] border-secondary-800 pl-2 text-left min-[380px]:pl-2.5 sm:pl-3.5">
+                  <span className="block text-left text-[1.85rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-[2.65rem] sm:text-6xl">20</span>
+                  <span className="block text-left text-[1.85rem] font-extrabold leading-none tracking-tight text-secondary-800 min-[380px]:text-[2.65rem] sm:text-6xl">26</span>
                 </span>
               </h1>
             ) : (
               <p className="mt-4 text-center text-sm font-semibold text-secondary-800">Kenya Coast Models</p>
             )}
             {step === null && !done ? (
-              <div className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-gray-700 sm:text-[15px]">
+              <div className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-gray-700 sm:mt-5 sm:text-base">
                 <p className="text-center font-semibold text-gray-900">Sustainable Fashion &amp; Models Empowerment Forum</p>
                 <p className="mt-2 text-center">Fashion with Purpose, Models with Power</p>
                 <p className="mt-2 text-center">
@@ -335,19 +336,19 @@ export default function KenyaCoastModelsRegistration() {
           </div>
 
           {step === null && !done ? (
-            <section className="rounded-2xl bg-secondary-800 px-4 py-6 text-center text-white shadow-md sm:px-8 sm:py-8">
+            <section className="rounded-2xl bg-secondary-800 px-3 py-5 text-center text-white shadow-md sm:px-8 sm:py-8">
               <h2 className="text-base font-bold sm:text-lg">Forum day — 28 Nov 2026</h2>
-              <p className="mt-1 text-center text-sm text-white/85">
+              <p className="mt-1 text-center text-sm leading-snug text-white/85">
                 {KCM_FORUM_TIME_LABEL} at {KCM_FORUM_VENUE}. Members {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}, non-members{" "}
                 {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}.
               </p>
-              <div className="mt-6 grid grid-cols-4 gap-2 sm:mt-7 sm:gap-4 lg:flex lg:items-start lg:justify-center lg:gap-6">
+              <div className="mt-5 grid grid-cols-4 gap-1.5 sm:mt-7 sm:gap-4 lg:flex lg:items-start lg:justify-center lg:gap-6">
                 {units.map((unit) => (
                   <div key={unit.label} className="min-w-0 lg:w-16">
-                    <div className="mx-auto flex aspect-square w-full max-w-[4.25rem] items-center justify-center rounded-full border-2 border-white/80 text-lg font-semibold tabular-nums sm:max-w-[5rem] sm:text-2xl lg:h-16 lg:w-16 lg:max-w-none">
+                    <div className="mx-auto flex aspect-square w-full max-w-[4.5rem] items-center justify-center rounded-full border-2 border-white/80 text-lg font-semibold tabular-nums sm:max-w-[5rem] sm:text-2xl lg:h-16 lg:w-16 lg:max-w-none">
                       {unit.value}
                     </div>
-                    <div className="mt-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/80 sm:text-xs">{unit.label}</div>
+                    <div className="mt-1.5 text-center text-[9px] font-semibold uppercase leading-tight tracking-tight text-white/80 min-[380px]:text-[10px] min-[380px]:tracking-wide sm:mt-2 sm:text-xs">{unit.label}</div>
                   </div>
                 ))}
               </div>
@@ -356,12 +357,12 @@ export default function KenyaCoastModelsRegistration() {
         </div>
 
         {step === null && !done ? (
-          <div className="mt-6 grid gap-4 md:max-lg:grid-cols-2 md:max-lg:gap-6">
-            <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
+          <div className="mt-4 grid gap-3 sm:mt-6 sm:gap-4 md:max-lg:grid-cols-2 md:max-lg:gap-6">
+            <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-4 py-5 text-center shadow-sm sm:px-6 sm:py-8">
               <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
                 <FileText className="h-7 w-7" strokeWidth={1.75} />
               </span>
-              <h2 className="mt-2 text-xl font-bold text-gray-900">Attendance registration</h2>
+              <h2 className="mt-2 text-lg font-bold text-gray-900 sm:text-xl">Attendance registration</h2>
               <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
                 {full
                   ? "This forum is full. Attendance was limited to 100 guests."
@@ -375,23 +376,23 @@ export default function KenyaCoastModelsRegistration() {
                     setError(null);
                     setStep(0);
                   }}
-                  className="flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary-700 px-4 text-center text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+                  className="flex min-h-12 w-full items-center justify-center rounded-lg bg-secondary-700 px-4 text-center text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
                 >
                   Register to attend →
                 </button>
                 <a
                   href="#event-details"
-                  className="flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
+                  className="flex min-h-12 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
                 >
                   Event details →
                 </a>
               </div>
             </section>
-            <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
+            <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-4 py-5 text-center shadow-sm sm:px-6 sm:py-8">
               <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-700">
                 <MessageCircle className="h-7 w-7" strokeWidth={1.75} />
               </span>
-              <h2 className="mt-2 text-xl font-bold text-gray-900">Need help?</h2>
+              <h2 className="mt-2 text-lg font-bold text-gray-900 sm:text-xl">Need help?</h2>
               <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
                 If you have any problem registering or paying, reach Changer Fusions on WhatsApp and the events team will assist.
               </p>
@@ -399,9 +400,10 @@ export default function KenyaCoastModelsRegistration() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 py-2.5 text-center text-sm font-semibold leading-snug text-secondary-800 hover:bg-secondary-50"
+                className="mt-auto flex min-h-12 w-full flex-col items-center justify-center rounded-lg border border-secondary-700 px-4 py-2 text-center text-sm font-semibold leading-tight text-secondary-800 hover:bg-secondary-50"
               >
-                Changer Fusions WhatsApp: 0797 777 347
+                <span>WhatsApp help</span>
+                <span>0797 777 347</span>
               </a>
             </section>
           </div>
@@ -422,7 +424,7 @@ export default function KenyaCoastModelsRegistration() {
         ) : null}
 
         {step !== null && !done ? (
-          <section id="forum-registration" className="mt-6 scroll-mt-[var(--site-nav-height)] rounded-2xl border border-gray-200 bg-white px-4 py-6 shadow-sm sm:px-8 sm:py-8">
+          <section id="forum-registration" className="mt-4 scroll-mt-[var(--site-nav-height)] rounded-2xl border border-gray-200 bg-white px-3.5 py-5 shadow-sm sm:mt-6 sm:px-8 sm:py-8">
             <form onSubmit={onSubmit} className="space-y-6 text-left [&_label]:text-left [&_legend]:text-left [&_p]:text-left [&_span]:text-left">
               <div>
                 <p className="text-center text-sm font-semibold text-secondary-800">
@@ -434,7 +436,7 @@ export default function KenyaCoastModelsRegistration() {
               </div>
 
               <div className={step === 0 ? undefined : "hidden"}>
-                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">1. Your details</h2>
+                <h2 className="text-left text-base font-bold text-gray-900 sm:text-lg lg:text-center">1. Your details</h2>
                 <div className="mt-4 grid gap-4">
                   <label className="block text-sm font-semibold text-gray-800">
                     Full name <span className="text-negative">*</span>
@@ -487,12 +489,12 @@ export default function KenyaCoastModelsRegistration() {
               </div>
 
               <div className={step === 1 ? undefined : "hidden"}>
-                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">2. Membership and attendee category</h2>
+                <h2 className="text-left text-base font-bold leading-snug text-gray-900 sm:text-lg lg:text-center">2. Membership and attendee category</h2>
                 <fieldset className="mt-4" disabled={paymentLocked}>
                   <legend className="text-sm font-semibold text-gray-800">
                     Are you a Kenya-Coast Models member? <span className="text-negative">*</span>
                   </legend>
-                  <div className="mt-2 flex flex-wrap gap-x-6">
+                  <div className="mt-2 grid grid-cols-2 gap-2">
                     {(["yes", "no"] as const).map((value) => (
                       <label key={value} className={choiceClass}>
                         <input
@@ -556,7 +558,7 @@ export default function KenyaCoastModelsRegistration() {
                   <legend className="text-sm font-semibold text-gray-800">
                     How will you attend? <span className="text-negative">*</span>
                   </legend>
-                  <div className="mt-2 flex flex-col gap-1">
+                  <div className="mt-2 grid gap-2">
                     {(
                       [
                         ["model", "Model"],
@@ -582,7 +584,7 @@ export default function KenyaCoastModelsRegistration() {
                     <legend className="text-sm font-semibold text-gray-800">
                       Which best describes you? <span className="text-negative">*</span>
                     </legend>
-                    <div className="mt-2 flex flex-col gap-1">
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {(
                         [
                           ["emerging", "Emerging Model"],
@@ -606,7 +608,7 @@ export default function KenyaCoastModelsRegistration() {
               </div>
 
               <div className={step === 2 ? undefined : "hidden"}>
-                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">3. Payment</h2>
+                <h2 className="text-left text-base font-bold text-gray-900 sm:text-lg lg:text-center">3. Payment</h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-700">
                   Confirmed members pay {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}. People joining as new members pay {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. Complete the M-Pesa prompt before continuing.
                 </p>
@@ -640,7 +642,7 @@ export default function KenyaCoastModelsRegistration() {
               </div>
 
               <div className={step === 3 ? undefined : "hidden"}>
-                <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">4. Confirmation</h2>
+                <h2 className="text-left text-base font-bold text-gray-900 sm:text-lg lg:text-center">4. Confirmation</h2>
                 <label className="mt-4 flex items-start gap-3 text-sm text-gray-700">
                   <input
                     type="checkbox"
@@ -658,11 +660,11 @@ export default function KenyaCoastModelsRegistration() {
 
               {error ? <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
 
-              <div className="flex gap-3">
+              <div className="grid scroll-mb-[calc(var(--site-mobile-dock-height)+0.75rem)] grid-cols-1 gap-2 min-[420px]:grid-cols-2 min-[420px]:gap-3">
                 <button
                   type="button"
                   onClick={goBack}
-                  className="flex min-h-12 flex-1 items-center justify-center rounded-lg border border-secondary-700 px-4 text-sm font-semibold text-secondary-800 hover:bg-secondary-50"
+                  className="order-2 flex min-h-12 items-center justify-center rounded-lg border border-secondary-700 px-3 text-center text-sm font-semibold leading-tight text-secondary-800 hover:bg-secondary-50 min-[420px]:order-1"
                 >
                   {step === 0 ? "Back" : "Previous"}
                 </button>
@@ -671,7 +673,7 @@ export default function KenyaCoastModelsRegistration() {
                     type="button"
                     onClick={() => void goNext()}
                     disabled={checkingMember}
-                    className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-4 text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+                    className="order-1 flex min-h-12 items-center justify-center rounded-lg bg-secondary-700 px-3 text-center text-sm font-bold leading-tight text-white hover:bg-secondary-800 disabled:opacity-60 min-[420px]:order-2"
                   >
                     {checkingMember ? "Checking member…" : "Next"}
                   </button>
@@ -679,7 +681,7 @@ export default function KenyaCoastModelsRegistration() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-4 text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+                    className="order-1 flex min-h-12 items-center justify-center rounded-lg bg-secondary-700 px-3 text-center text-sm font-bold leading-tight text-white hover:bg-secondary-800 disabled:opacity-60 min-[420px]:order-2"
                   >
                     {submitting ? "Submitting…" : "Complete Registration"}
                   </button>
