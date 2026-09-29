@@ -265,7 +265,7 @@ function SectionBanner({ title }: { title: string }) {
           </g>
         </svg>
       </div>
-      <div className="relative mx-auto flex min-h-[5.5rem] w-full max-w-[90rem] items-end px-4 pb-4 pt-8 sm:min-h-[9rem] sm:px-6 sm:pb-6 sm:pt-10 lg:px-10 xl:px-14 2xl:px-16">
+      <div className="relative mx-auto flex min-h-[3.25rem] w-full max-w-[90rem] items-end px-4 pb-2.5 pt-5 sm:min-h-[5rem] sm:px-6 sm:pb-3.5 sm:pt-6 lg:px-10 xl:px-14 2xl:px-16">
         <h2 className="max-w-[18rem] font-montserrat text-xl font-bold uppercase leading-tight tracking-wide text-white sm:max-w-none sm:text-3xl sm:leading-snug md:text-4xl">
           {title}
         </h2>
