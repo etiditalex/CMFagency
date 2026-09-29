@@ -1,62 +1,73 @@
 import { Metadata } from "next";
+import { leadershipMembers, TEAM_PAGE_URL } from "./team-data";
+
+const memberNames = leadershipMembers.map((m) => m.name);
+const memberTitles = leadershipMembers.map((m) => `${m.name}, ${m.position}`);
+
+const title =
+  "Our Team — Javan Rolynce, Alex Etidit, Victoria Mapenzi & Christine Achilah | Changer Fusions";
+
+const description = `Meet the Changer Fusions Board of Directors in Mombasa, Kenya: ${memberTitles.join("; ")}. Leadership for marketing, events, technology, and operations.`;
+
+const ogImage =
+  leadershipMembers[0]?.image ??
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767009380/Javan_Roylence_a6fnzo.jpg";
 
 export const metadata: Metadata = {
-  title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
-  description: "Meet the Changer Fusions team, including founders Javan Rolynce and Alex Etidit. Discover the professionals behind our digital marketing, branding, events, and technology services in Kenya.",
+  title,
+  description,
   keywords: [
-    "Javan Rolynce",
-    "Alex Etidit",
-    "Changer Fusions founders",
+    ...memberNames,
+    ...leadershipMembers.flatMap((m) => [
+      `${m.name} Changer Fusions`,
+      `${m.name} ${m.position}`,
+      m.position,
+    ]),
     "Changer Fusions team",
+    "Changer Fusions Board of Directors",
     "Our Team Changer Fusions",
-    "Javan Rolynce Changer Fusions",
-    "Alex Etidit Changer Fusions",
-    "marketing team Kenya",
+    "marketing agency team Kenya",
+    "events management team Mombasa",
+    "Changer Fusions leadership",
     "marketing professionals Kenya",
     "digital marketing experts Kenya",
-    "marketing agency team Mombasa",
-    "Changer Fusions team",
-    "marketing consultants Kenya",
-    "branding experts Kenya",
-    "event management team Kenya",
-    "web development team Kenya",
-    "social media managers Kenya",
-    "marketing directors Kenya",
-    "technical directors Kenya",
-    "marketing agency staff Kenya",
-    "best marketing team Kenya",
-    "experienced marketers Kenya",
-    "marketing specialists Mombasa",
-    "creative marketing team",
-    "marketing professionals Mombasa",
-    "marketing agency employees",
-    "marketing team members",
+    "event coordinator Kenya",
+    "technical director Kenya marketing agency",
   ],
+  authors: leadershipMembers.map((m) => ({ name: m.name, url: `${TEAM_PAGE_URL}#${m.slug}` })),
+  creator: "Changer Fusions",
+  publisher: "Changer Fusions",
   openGraph: {
     type: "website",
-    title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
-    description: "Meet founders Javan Rolynce and Alex Etidit alongside the wider Changer Fusions team delivering marketing and events excellence in Kenya.",
-    url: "https://cmfagency.co.ke/about/team",
+    title,
+    description,
+    url: TEAM_PAGE_URL,
     siteName: "Changer Fusions",
     locale: "en_KE",
     images: [
       {
-        url: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Changer Fusions Marketing Team - Expert Marketing Professionals in Kenya",
+        url: ogImage,
+        width: 800,
+        height: 1000,
+        alt: "Javan Rolynce, Founder and CEO of Changer Fusions",
       },
+      ...leadershipMembers.slice(1).map((m) => ({
+        url: m.image,
+        width: 800,
+        height: 1000,
+        alt: `${m.name}, ${m.position} at Changer Fusions`,
+      })),
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Our Team - Javan Rolynce, Alex Etidit & Team | Changer Fusions",
-    description: "Meet founders Javan Rolynce and Alex Etidit alongside the wider Changer Fusions team.",
-    images: ["https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037228/CoastFashionsandmodellingawards3_nw8dby.jpg"],
+    title,
+    description,
+    images: [ogImage],
     site: "@ChangerFusions",
   },
   alternates: {
-    canonical: "https://cmfagency.co.ke/about/team",
+    canonical: TEAM_PAGE_URL,
   },
   robots: {
     index: true,
@@ -69,12 +80,4 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  verification: {
-    google: "your-google-verification-code", // Add your Google Search Console verification code
-  },
 };
-
-
-
-
-

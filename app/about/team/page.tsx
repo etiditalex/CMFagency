@@ -6,68 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { BRAND_LOGO_URL } from "@/lib/brand-logo";
-
-type TeamMember = {
-  name: string;
-  position: string;
-  image: string;
-  description: string;
-  achievements: string[];
-};
-
-/** Leadership / board members — same people as the home Leadership section */
-const leadershipMembers: TeamMember[] = [
-  {
-    name: "Javan Rolynce",
-    position: "Founder & Chief Executive Officer",
-    image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767009380/Javan_Roylence_a6fnzo.jpg",
-    description:
-      "Javan Rolynce is the Founder and Chief Executive Officer of Changer Fusions, a dynamic events management and creative consultancy company committed to delivering impactful, innovative, and well-executed experiences across Kenya. With a strong background in events coordination, marketing, and strategic communications, Javan brings a results-driven and people-centered leadership approach to the organization.",
-    achievements: [
-      "He is known for his ability to conceptualize, plan, and execute high-profile events ranging from fashion showcases and awards ceremonies to corporate, cultural, and community-based engagements.",
-      "Under his leadership, Changer Fusions continues to grow as a trusted brand, driven by professionalism, creativity, and attention to detail.",
-      "Beyond events management, Javan is passionate about youth empowerment, talent development, and ethical leadership.",
-      "His vision for Changer Fusions is to create platforms that elevate talent, foster collaboration, and deliver meaningful value to clients, partners, and communities.",
-    ],
-  },
-  {
-    name: "Alex Etidit",
-    position: "Technical Director",
-    image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768370403/Alex_Etidit-CTO_nkeiwj.jpg",
-    description:
-      "Alex Etidit serves as the Technical Director at Changer Fusions, overseeing all technical architecture, systems development, and digital innovation initiatives. With a deep understanding of technology infrastructure and emerging digital solutions, Alex ensures that the organization remains technologically agile, secure, and scalable.",
-    achievements: [
-      "His role is central to driving product development, optimizing technical processes, and aligning technology with the company's long-term strategic goals.",
-      "Alex is passionate about using technology to solve real-world challenges and enhance operational efficiency.",
-    ],
-  },
-  {
-    name: "Victoria Mapenzi",
-    position: "Finance and Operations Director",
-    image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1789386858/Victoria_h2bryf.jpg",
-    description:
-      "Victoria Mapenzi is the Finance and Operations Director at Changer Fusions. She leads finance and operations so delivery stays on time and on budget—from first brief through campaign and event execution across Mombasa, the Coast, Nairobi, Kisumu, and the rest of Kenya.",
-    achievements: [],
-  },
-  {
-    name: "Cynthia Moraa Mogaka",
-    position: "Finance and Administration Officer",
-    image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767190734/Cynthia_Moraa_deohfp.jpg",
-    description:
-      "Cynthia Moraa Mogaka is the Finance and Administration Officer at Changer Fusions, where she blends analytical precision with a people-centered approach. With a background in government finance and community outreach, she brings a calm and structured approach to the team. Cynthia is dedicated to driving growth through smart execution, ensuring that financial processes support the company's mission of delivering impactful experiences.",
-    achievements: [
-      "Strategic Financial Management: She focuses on strengthening financial accuracy and improving workflows to support informed, data-driven decision-making.",
-      "Operational Excellence: She ensures high standards of financial health by maintaining audit-ready records, performing precise reconciliations, and managing statutory obligations.",
-      "Commitment to Integrity: She brings a mature approach to financial compliance and record management, consistently raising the standard for organizational quality.",
-      "Stakeholder Engagement: Beyond the numbers, she is passionate about resolving concerns and maintaining a welcoming environment for all clients and partners.",
-    ],
-  },
-];
+import { leadershipMembers, type TeamMember } from "./team-data";
 
 const BANNER_IMAGE =
   "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg";
@@ -174,28 +113,35 @@ function BoardMemberCard({
 }) {
   return (
     <motion.article
+      id={member.slug}
+      itemScope
+      itemType="https://schema.org/Person"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.08 }}
-      className="min-w-0 text-left"
+      className="min-w-0 scroll-mt-[calc(var(--site-nav-height)+1rem)] text-left"
     >
+      <meta itemProp="jobTitle" content={member.position} />
+      <meta itemProp="worksFor" content="Changer Fusions" />
+      <link itemProp="url" href={`https://cmfagency.co.ke/about/team#${member.slug}`} />
       <button
         type="button"
         onClick={() => onOpen(member)}
         className="group flex w-full min-w-0 flex-col items-start text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-secondary-600 focus-visible:ring-offset-2"
-        aria-label={`View profile for ${member.name}`}
+        aria-label={`View profile for ${member.name}, ${member.position}`}
         style={{ textAlign: "left" }}
       >
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-gray-100 sm:aspect-[4/5]">
           <Image
             src={member.image}
-            alt={member.name}
+            alt={`${member.name}, ${member.position} at Changer Fusions in Mombasa, Kenya`}
             fill
             className="object-cover object-top transition-transform duration-300 group-hover:scale-[1.02]"
             sizes="(max-width: 640px) 45vw, (max-width: 768px) 40vw, 22vw"
           />
         </div>
         <h3
+          itemProp="name"
           className="mt-2 w-full break-words text-left font-montserrat text-[0.7rem] font-bold uppercase leading-snug text-secondary-800 transition-colors group-hover:text-secondary-700 sm:mt-3 sm:text-sm md:text-[0.95rem]"
           style={{ textAlign: "left" }}
         >
@@ -208,6 +154,9 @@ function BoardMemberCard({
           {member.position}
         </p>
       </button>
+      <p itemProp="description" className="sr-only">
+        {member.description}
+      </p>
     </motion.article>
   );
 }
@@ -277,128 +226,6 @@ function SectionBanner({ title }: { title: string }) {
 export default function OurTeamPage() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Home",
-        item: "https://cmfagency.co.ke/",
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "About Us",
-        item: "https://cmfagency.co.ke/about",
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: "Our Team",
-        item: "https://cmfagency.co.ke/about/team",
-      },
-    ],
-  };
-
-  const allMembers = leadershipMembers;
-
-  const webpageSchema = {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "@id": "https://cmfagency.co.ke/about/team",
-    url: "https://cmfagency.co.ke/about/team",
-    name: "Our Team - Expert Marketing Professionals in Kenya | Changer Fusions",
-    description:
-      "Meet the expert marketing team at Changer Fusions - Kenya's leading marketing agency. Our experienced professionals deliver innovative marketing solutions for businesses across Kenya.",
-    inLanguage: "en-KE",
-    isPartOf: {
-      "@type": "WebSite",
-      name: "Changer Fusions",
-      url: "https://cmfagency.co.ke",
-    },
-    breadcrumb: {
-      "@id": "https://cmfagency.co.ke/about/team#breadcrumb",
-    },
-    mainEntity: {
-      "@type": "ItemList",
-      name: "Changer Fusions Team Members",
-      description: "Expert marketing professionals and team members at Changer Fusions",
-      itemListElement: allMembers.map((member, index) => ({
-        "@type": "ListItem",
-        position: index + 1,
-        item: {
-          "@type": "Person",
-          name: member.name,
-          jobTitle: member.position,
-          description: member.description,
-          image: member.image,
-          worksFor: {
-            "@type": "Organization",
-            name: "Changer Fusions",
-            url: "https://cmfagency.co.ke",
-          },
-        },
-      })),
-    },
-  };
-
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Changer Fusions",
-    url: "https://cmfagency.co.ke",
-    logo: BRAND_LOGO_URL,
-    description:
-      "Kenya's leading marketing agency specializing in digital marketing, website development, branding, event management, and market research.",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: "AMBALAL BUILDING, NKRUMA ROAD",
-      addressLocality: "Mombasa",
-      addressRegion: "Mombasa County",
-      postalCode: "40305",
-      addressCountry: "KE",
-    },
-    employee: allMembers.map((member) => ({
-      "@type": "Person",
-      name: member.name,
-      jobTitle: member.position,
-      description: member.description,
-      image: member.image,
-    })),
-  };
-
-  useEffect(() => {
-    const scripts = [
-      { id: "breadcrumb-schema", data: breadcrumbSchema },
-      { id: "webpage-schema", data: webpageSchema },
-      { id: "organization-schema", data: organizationSchema },
-    ];
-
-    scripts.forEach(({ id, data }) => {
-      const existingScript = document.getElementById(id);
-      if (existingScript) {
-        existingScript.remove();
-      }
-
-      const script = document.createElement("script");
-      script.type = "application/ld+json";
-      script.id = id;
-      script.text = JSON.stringify(data);
-      document.head.appendChild(script);
-    });
-
-    return () => {
-      scripts.forEach(({ id }) => {
-        const script = document.getElementById(id);
-        if (script) {
-          script.remove();
-        }
-      });
-    };
-  }, []);
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f7f7f7] pt-[var(--site-nav-height)] pb-[calc(var(--site-mobile-dock-height)+1rem)] md:pb-0">
       <div className="border-b border-gray-200 bg-white">
@@ -420,7 +247,10 @@ export default function OurTeamPage() {
         </div>
       </div>
 
-      <h1 className="sr-only">Our Expert Marketing Team in Kenya</h1>
+      <h1 className="sr-only">
+        Our Team and Board of Directors at Changer Fusions — Javan Rolynce, Alex Etidit,
+        Victoria Mapenzi, and Christine Achilah
+      </h1>
 
       <section aria-labelledby="leadership-heading">
         <SectionBanner title="Board of Directors" />
@@ -431,7 +261,7 @@ export default function OurTeamPage() {
           <div className="grid grid-cols-2 gap-x-3 gap-y-7 text-left sm:gap-x-6 sm:gap-y-10 md:grid-cols-4 md:gap-x-8 lg:gap-x-10">
             {leadershipMembers.map((member, index) => (
               <BoardMemberCard
-                key={member.name}
+                key={member.slug}
                 member={member}
                 index={index}
                 onOpen={setSelectedMember}
