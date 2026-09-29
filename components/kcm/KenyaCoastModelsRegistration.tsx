@@ -366,7 +366,7 @@ export default function KenyaCoastModelsRegistration() {
               <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
                 {full
                   ? "This forum is full. Attendance was limited to 100 guests."
-                  : `Register as a member or guest. ${remainingSeats == null ? "100 places." : `${remainingSeats} of 100 places left.`}`}
+                  : "Register as a member or guest."}
               </p>
               <div className="mt-auto flex flex-col gap-3 pt-5">
                 <button
