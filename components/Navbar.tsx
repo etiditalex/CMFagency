@@ -790,16 +790,10 @@ export default function Navbar() {
             </div>
 
             <Link
-              href="/cart"
-              className="relative inline-flex items-center rounded-md p-2 text-[#1a2332] transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
-              aria-label="Shopping Cart"
+              href="/merchandise"
+              className="inline-flex items-center justify-center rounded-md bg-secondary-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600"
             >
-              <ShoppingCart className="w-5 h-5" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-2 -right-3 bg-secondary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {getTotalItems()}
-                </span>
-              )}
+              Shop Now
             </Link>
 
           </div>
