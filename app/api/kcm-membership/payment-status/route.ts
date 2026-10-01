@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
 
+    if (String((data as { payment_status?: string }).payment_status ?? "") === "success") {
+      const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");
+      await approvePaidKcmMembershipIfNeeded(admin, membershipId).catch(() => null);
+    }
+
     return NextResponse.json({
       membership_id: data.id,
       payment_status: data.payment_status,

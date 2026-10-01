@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
       .from("kcm_memberships")
       .update({
         top_model_interest: topModelInterest,
-        status: "new",
         updated_at: new Date().toISOString(),
       })
       .eq("id", membershipId);
@@ -110,6 +109,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: profErr.message }, { status: 500 });
       }
     }
+
+    const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");
+    await approvePaidKcmMembershipIfNeeded(admin, membershipId).catch(() => null);
 
     return NextResponse.json({ ok: true });
   } catch (e: unknown) {

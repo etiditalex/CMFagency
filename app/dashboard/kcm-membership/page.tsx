@@ -358,8 +358,7 @@ export default function DashboardKcmMembershipPage() {
         <div>
           <h2 className="text-xl font-bold text-[#1a2332] md:text-2xl">KCM Membership</h2>
           <p className="mt-1 text-gray-600">
-            Review and manage Kenya Coast Models membership registrations. Download member data as Excel (.xlsx)
-            for one person or for everyone matching the status filter.
+            Review and manage Kenya Coast Models membership registrations. Successful payments are approved automatically and the member is emailed their member ID with a PDF card. You can also approve a paid member from this list.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -509,7 +508,19 @@ export default function DashboardKcmMembershipPage() {
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
                             {row.forum_attendance ? `Paid KES ${Number(row.forum_attendance.fee_kes).toLocaleString()}` : "—"}
                           </td>
-                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left capitalize">{row.status.replace("_", " ")}</td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            <div className="capitalize">{row.status.replace("_", " ")}</div>
+                            {row.payment_status === "success" && row.status !== "approved" ? (
+                              <button
+                                type="button"
+                                onClick={() => void updateStatus(row.id, "approved", row.review_notes ?? "")}
+                                disabled={savingId === row.id}
+                                className="mt-1 rounded-md bg-primary-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {savingId === row.id ? "Approving…" : "Approve"}
+                              </button>
+                            ) : null}
+                          </td>
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
                             {new Date(row.created_at).toLocaleDateString()}
                           </td>
@@ -771,6 +782,16 @@ function Row({
         >
           {disabled ? "Saving..." : "Save"}
         </button>
+        {row.payment_status === "success" && row.status !== "approved" ? (
+          <button
+            type="button"
+            onClick={() => onSave("approved", reviewNotes)}
+            disabled={disabled}
+            className="mt-2 ml-2 rounded-md bg-secondary-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-secondary-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {disabled ? "Approving…" : "Approve & send card"}
+          </button>
+        ) : null}
       </div>
       <div>
         <div className="flex flex-col gap-2">

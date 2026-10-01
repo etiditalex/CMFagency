@@ -219,6 +219,60 @@
     hyphens: none;
   }
 
+  .about-banner h1 {
+    text-align: left !important;
+  }
+
+  .about-pillars p,
+  .about-pillars li,
+  .about-pillars h2 {
+    text-align: center !important;
+    hyphens: none;
+  }
+
+  .about-story h3,
+  .about-story p,
+  .about-story li {
+    text-align: left !important;
+    hyphens: none;
+  }
+
+  .about-focus h2,
+  .about-focus li,
+  .about-focus a {
+    text-align: center !important;
+    hyphens: none;
+  }
+
+  .about-years h2,
+  .about-years h3,
+  .about-years p,
+  .about-years li,
+  .about-years span {
+    text-align: left !important;
+    hyphens: none;
+  }
+
+  .about-years-track::before {
+    content: "";
+    position: absolute;
+    top: 0.4rem;
+    bottom: 0.35rem;
+    left: 0.3125rem;
+    width: 1px;
+    background: #9ca3af;
+  }
+
+  .about-years-marker {
+    position: absolute;
+    top: 0.35rem;
+    left: 0;
+    z-index: 1;
+    display: block;
+    width: 0.6875rem;
+    height: 0.6875rem;
+  }
+
   .home-success-scroller {
     scrollbar-width: none;
     -ms-overflow-style: none;

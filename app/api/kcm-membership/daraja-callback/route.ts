@@ -89,6 +89,8 @@ export async function POST(req: Request) {
           paid_at: new Date().toISOString(),
         })
         .eq("id", row.id);
+      const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");
+      await approvePaidKcmMembershipIfNeeded(admin, String((row as { id: string }).id)).catch(() => null);
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 

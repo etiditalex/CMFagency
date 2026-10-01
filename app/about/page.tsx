@@ -1,260 +1,263 @@
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-const carouselImages = [
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg",
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.32.06_AM_loqhra.jpg",
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955876/WhatsApp_Image_2025-12-17_at_9.31.49_AM_m3hebl.jpg",
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955877/WhatsApp_Image_2025-12-17_at_9.32.55_AM_pbzaj5.jpg",
-];
+const BANNER_IMAGE =
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1765955875/WhatsApp_Image_2025-12-17_at_9.33.02_AM_cjrrxx.jpg";
+
+const CORE_VALUES = [
+  "Innovation",
+  "Integrity",
+  "Excellence",
+  "Client-Centricity",
+  "Impact & Results",
+] as const;
+
+const STRATEGIC_FOCUS = [
+  { label: "Digital Marketing", href: "/services/digital-marketing" },
+  { label: "Website Development", href: "/services/website-development" },
+  { label: "Branding & Creative", href: "/services/branding" },
+] as const;
+
+const ENABLERS = [
+  { label: "Events Marketing", href: "/services/events-marketing" },
+  { label: "Market Research", href: "/services/market-research" },
+  { label: "Content Creation", href: "/services/content-creation" },
+] as const;
+
+const MILESTONE_TONES = [
+  { marker: "bg-gray-900", year: "text-gray-900" },
+  { marker: "bg-primary-600", year: "text-primary-600" },
+  { marker: "bg-accent-green", year: "text-accent-green" },
+] as const;
+
+const MILESTONES = [
+  {
+    year: "2018",
+    points: [
+      "Changer Fusions was founded, beginning our journey as a marketing strategic partner.",
+      "A vision to blend innovative marketing techniques and transformative strategies.",
+    ],
+  },
+  {
+    year: "2019",
+    points: [
+      "Launched our first digital marketing campaigns.",
+      "Established partnerships with local businesses and set the foundation for our marketing services.",
+    ],
+  },
+  {
+    year: "2020",
+    points: [
+      "Expanded our services to include website development and design.",
+      "Helped businesses establish their online presence during a critical period of digital transformation.",
+    ],
+  },
+  {
+    year: "2021",
+    points: [
+      "Introduced branding and creative services.",
+      "Helped businesses develop strong brand identities and visual communication strategies.",
+    ],
+  },
+  {
+    year: "2022",
+    points: [
+      "Launched market research and analysis services.",
+      "Provided data-driven insights to help businesses make informed marketing decisions.",
+    ],
+  },
+  {
+    year: "2023",
+    points: [
+      "Expanded into events marketing.",
+      "Launched The Coast Fashion and Modeling Awards and established our presence in the events sector.",
+    ],
+  },
+  {
+    year: "2024",
+    points: [
+      "Mr and Miss Mombasa International Show.",
+      "Marketing Society of Kenya workshops.",
+      "King Experience live concert, corporate partnerships, educational forums, and student engagement events.",
+    ],
+  },
+  {
+    year: "2025",
+    points: [
+      "Launching the Changer Fusions Gala Awards 2025.",
+      "An immersive journey for young leaders and creatives focused on sustainable fashion, leadership, and climate advocacy.",
+    ],
+  },
+] as const;
+
+function FocusHeading({ id, children }: { id: string; children: string }) {
+  return (
+    <div className="text-center">
+      <h2 id={id} className="font-montserrat text-2xl font-extrabold text-gray-900 md:text-3xl">
+        {children}
+      </h2>
+      <span className="mx-auto mt-2.5 block h-[3px] w-12 bg-primary-600" />
+    </div>
+  );
+}
+
+function FocusColumns({ items }: { items: readonly { label: string; href: string }[] }) {
+  return (
+    <ul className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6 md:mt-12">
+      {items.map((item) => (
+        <li key={item.href}>
+          <Link href={item.href} className="text-[0.95rem] text-gray-700 transition-colors hover:text-primary-700 md:text-base">
+            {item.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function VisionIcon() {
+  return (
+    <svg viewBox="0 0 80 80" className="mx-auto h-[4.25rem] w-[4.25rem] text-accent-green md:h-[4.75rem] md:w-[4.75rem]" aria-hidden="true">
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M40 16c-16.8 0-29.2 12.6-33.4 22.2C10.8 47.8 23.2 60.4 40 60.4s29.2-12.6 33.4-22.2C69.2 28.6 56.8 16 40 16zm0 33.2a11 11 0 1 1 0-22 11 11 0 0 1 0 22z"
+      />
+      <circle cx="40" cy="38.2" r="5.6" fill="currentColor" />
+    </svg>
+  );
+}
+
+function MissionIcon() {
+  return (
+    <svg viewBox="0 0 80 80" className="mx-auto h-[4.25rem] w-[4.25rem] md:h-[4.75rem] md:w-[4.75rem]" aria-hidden="true">
+      <circle cx="40" cy="40" r="26" className="fill-accent-green" />
+      <circle cx="40" cy="40" r="15" className="fill-white" />
+      <circle cx="40" cy="40" r="7.5" className="fill-accent-green" />
+    </svg>
+  );
+}
 
 export default function AboutPage() {
-  const images = useMemo(() => carouselImages, []);
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const t = window.setInterval(() => setIndex((p) => (p + 1) % images.length), 5000);
-    return () => window.clearInterval(t);
-  }, [images.length]);
-
   return (
-    <div className="pt-28 md:pt-32 min-h-screen bg-gray-50">
-      <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          {/* Main content (left) */}
-          <main className="lg:col-span-3">
-            {/* Carousel */}
-            <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              <div className="relative aspect-[16/7] min-h-[260px]">
-                <AnimatePresence initial={false} mode="wait">
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="absolute inset-0"
-                  >
-                    <Image
-                      src={images[index]}
-                      alt="About Changer Fusions"
-                      fill
-                      className="object-cover object-center"
-                      priority={index === 0}
-                      sizes="(max-width: 1024px) 100vw, 900px"
-                    />
-                    <div className="absolute inset-0 bg-black/15" />
-                  </motion.div>
-                </AnimatePresence>
+    <div className="min-h-screen overflow-x-hidden bg-white pb-[calc(var(--site-mobile-dock-height)+1.5rem)] pt-[var(--site-nav-height)] md:pb-0">
+      <section className="about-banner relative h-16 overflow-hidden sm:h-20 md:h-24" aria-label="About us">
+        <Image
+          src={BANNER_IMAGE}
+          alt="Changer Fusions at work"
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 to-black/10" />
+        <div className="relative flex h-full items-center px-6 sm:px-10 lg:px-16 xl:px-24">
+          <h1 className="font-montserrat text-3xl font-extrabold tracking-wide text-white sm:text-4xl md:text-5xl">
+            ABOUT US
+          </h1>
+        </div>
+      </section>
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 group">
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/45 transition-colors duration-300" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <Link
-                      href="/services"
-                      className="inline-flex items-center gap-2 rounded-lg bg-white text-primary-700 font-bold px-6 py-3 shadow-lg"
-                    >
-                      Read more
-                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-secondary-500" />
-                        Services
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Dots */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {images.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setIndex(i)}
-                      className={`h-2.5 rounded-full transition-all ${
-                        i === index ? "w-8 bg-white" : "w-2.5 bg-white/60 hover:bg-white/80"
-                      }`}
-                      aria-label={`Go to slide ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
+      <section className="about-pillars px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:px-8" aria-label="Vision, mission, and core values">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 md:grid-cols-3 md:items-start md:gap-8 lg:gap-12">
+          <article className="text-center">
+            <div className="flex h-28 items-center justify-center md:h-32">
+              <VisionIcon />
             </div>
+            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Vision</h2>
+            <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-gray-600 md:text-[0.95rem]">
+              To be the driving force behind businesses&apos; success in a dynamic and ever-evolving market landscape.
+            </p>
+          </article>
 
-            {/* Content */}
-            <div className="mt-10 space-y-10">
-              <section>
-                <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-wide">ABOUT US</h1>
-                <h2 className="mt-6 text-xl md:text-2xl font-bold text-gray-900">
-                  Marketing agency in Mombasa for brands across Kenya
-                </h2>
-                <div className="mt-4 text-gray-700 leading-relaxed space-y-4">
-                  <p>
-                    Changer Fusions works with companies, institutions, and event owners who need marketing that is both creative
-                    and accountable. We are based at Ambalal Building on Nkruma Road in Mombasa and run campaigns across the
-                    coast, Nairobi, and national programs—combining digital channels, on-ground activations, and content so your
-                    message reaches the right audience, not just the loudest one.
-                  </p>
-                  <p>
-                    Our team plans and executes work in the same lanes you see elsewhere on this site:{" "}
-                    <Link href="/services/digital-marketing" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      digital marketing and performance
-                    </Link>
-                    ,{" "}
-                    <Link href="/services/website-development" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      websites and product UX
-                    </Link>
-                    ,{" "}
-                    <Link href="/services/branding" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      branding and design systems
-                    </Link>
-                    ,{" "}
-                    <Link href="/services/events-marketing" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      events marketing
-                    </Link>
-                    , and{" "}
-                    <Link href="/services/market-research" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      market research
-                    </Link>{" "}
-                    when decisions need evidence, not guesswork. Whether you are launching a product, filling a venue, or
-                    steadying reputation after a crisis week, we align creative, media, and measurement on one plan.
-                  </p>
-                  <p>
-                    Public resources on this site include our{" "}
-                    <Link href="/events" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      events calendar
-                    </Link>
-                    ,{" "}
-                    <Link href="/jobs" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      job board
-                    </Link>{" "}
-                    for Kenya and remote-friendly roles, and{" "}
-                    <Link href="/blogs" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      long-form articles
-                    </Link>{" "}
-                    on how we think about growth, storytelling, and execution. For a scoped proposal or a chemistry call, use{" "}
-                    <Link href="/contact" className="font-semibold text-primary-600 underline hover:text-primary-700">
-                      Contact
-                    </Link>{" "}
-                    or write to{" "}
-                    <a
-                      href="mailto:info@cmfagency.co.ke"
-                      className="font-semibold text-primary-600 underline hover:text-primary-700"
-                    >
-                      info@cmfagency.co.ke
-                    </a>
-                    .
-                  </p>
-                </div>
-              </section>
-
-              <section>
-                <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 tracking-wide">OUR HISTORY</h2>
-                <p className="mt-4 text-gray-700 leading-relaxed">
-                  Built from a passion for strategic marketing and execution excellence, Changer Fusions has grown into a trusted partner for
-                  businesses, institutions, and event brands across Kenya—helping them increase visibility, strengthen brand presence, and
-                  deliver memorable experiences.
-                </p>
-              </section>
-
-              <section>
-                <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 tracking-wide">WHY CHANGER FUSIONS</h2>
-                <p className="mt-4 text-gray-700 leading-relaxed">
-                  We combine research, creativity, and modern digital tools to produce marketing that is measurable, consistent, and designed to
-                  grow your business. We don’t just market—we build momentum.
-                </p>
-              </section>
-
-              {/* CTA Banner (screenshot-style) */}
-              <section className="rounded-xl overflow-hidden border border-primary-700/20 shadow-sm">
-                <div className="bg-primary-600">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-5 px-6 md:px-10 py-8">
-                    <div className="text-white text-xl md:text-2xl font-bold">
-                      Looking to advance your skills?
-                    </div>
-                    <Link
-                      href="/careers"
-                      className="inline-flex items-center justify-center bg-white text-gray-900 font-bold px-10 py-4 rounded-md shadow-md hover:bg-gray-100 transition-colors"
-                    >
-                      Explore Careers
-                    </Link>
-                  </div>
-                </div>
-              </section>
+          <article className="text-center">
+            <div className="flex h-28 items-center justify-center md:h-32">
+              <MissionIcon />
             </div>
-          </main>
+            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Mission</h2>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gray-600 md:text-[0.95rem]">
+              To harness marketing as the catalyst for change and innovation, empowering businesses to thrive and define
+              their existence in the marketplace.
+            </p>
+          </article>
 
-          {/* Sidebar (right) */}
-          <aside className="lg:col-span-1">
-            <div className="bg-white border-2 border-secondary-600 rounded-lg p-6 sticky top-24">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">ABOUT</h2>
-              <nav className="space-y-2">
-                <div className="block text-secondary-600 font-semibold flex items-center space-x-2">
-                  <ChevronRight className="w-4 h-4" />
-                  <span>ABOUT US</span>
-                </div>
-                <Link
-                  href="/about/team"
-                  className="block text-gray-700 hover:text-secondary-600 transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  <span>OUR TEAM</span>
-                </Link>
-                <Link
-                  href="/about/partners"
-                  className="block text-gray-700 hover:text-secondary-600 transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  <span>PARTNERS</span>
-                </Link>
-                <Link
-                  href="/services"
-                  className="block text-gray-700 hover:text-secondary-600 transition-colors duration-200 flex items-center space-x-2"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  <span>SERVICES</span>
-                </Link>
-              </nav>
+          <article className="text-center">
+            <div className="flex h-28 items-center justify-center md:h-32">
+              <p className="font-montserrat text-5xl font-black leading-none tracking-tight text-accent-green md:text-[3.4rem]">
+                VALUES
+              </p>
+            </div>
+            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Core Values</h2>
+            <ul className="mt-4 space-y-2.5 text-sm text-gray-600 md:text-[0.95rem]">
+              {CORE_VALUES.map((value) => (
+                <li key={value}>{value}</li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </section>
 
-              <div className="mt-8 pt-8 border-t border-gray-200 space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">OUR VISION</h3>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    To be the driving force behind businesses' success in a dynamic and ever-evolving market landscape.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">OUR MISSION</h3>
-                  <p className="text-gray-700 text-sm leading-relaxed">
-                    To harness marketing as the catalyst for change and innovation, empowering businesses to thrive and define their existence in the marketplace.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">CORE VALUES</h3>
-                  <ul className="space-y-3">
-                    {[
-                      "Innovation",
-                      "Integrity",
-                      "Excellence",
-                      "Client-Centricity",
-                      "Impact & Results",
-                    ].map((v) => (
-                      <li key={v} className="flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-secondary-600 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm leading-relaxed">{v}</span>
-                      </li>
+      <section className="about-focus px-4 pb-16 sm:px-6 md:pb-24 lg:px-8" aria-labelledby="strategic-focus-heading">
+        <FocusHeading id="strategic-focus-heading">Strategic Focus</FocusHeading>
+        <FocusColumns items={STRATEGIC_FOCUS} />
+
+        <div className="mt-3 md:mt-4">
+          <FocusHeading id="enablers-heading">Our Enablers</FocusHeading>
+          <FocusColumns items={ENABLERS} />
+        </div>
+
+      </section>
+
+      <section className="about-years bg-[#f4f4f4] px-4 py-16 sm:px-8 md:py-24 lg:px-16" aria-labelledby="over-the-years-heading">
+        <div className="mx-auto grid max-w-6xl items-start gap-10 md:grid-cols-[minmax(14rem,22rem)_1fr] md:gap-8 lg:gap-20">
+          <div className="pt-1">
+            <p className="text-[0.95rem] font-medium text-primary-600">Our Story</p>
+            <h2
+              id="over-the-years-heading"
+              className="mt-5 font-montserrat text-[3.35rem] font-black uppercase leading-[0.86] tracking-tight text-gray-800 sm:text-6xl lg:text-7xl xl:text-[4.85rem]"
+            >
+              Over
+              <br />
+              the
+              <br />
+              years
+            </h2>
+          </div>
+
+          <ol className="about-years-track relative">
+            {MILESTONES.map((milestone, index) => {
+              const tone = MILESTONE_TONES[index % MILESTONE_TONES.length];
+              return (
+                <li key={milestone.year} className="relative pb-8 pl-9 last:pb-2">
+                  <span className={`about-years-marker ${tone.marker}`} aria-hidden="true" />
+                  <h3 className={`font-montserrat text-[0.95rem] font-bold ${tone.year}`}>{milestone.year}</h3>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[0.8rem] leading-relaxed text-gray-700 md:text-[0.85rem]">
+                    {milestone.points.map((point) => (
+                      <li key={point}>{point}</li>
                     ))}
                   </ul>
-                </div>
-              </div>
-            </div>
-          </aside>
+                </li>
+              );
+            })}
+          </ol>
         </div>
-      </div>
+      </section>
+
+      <section className="px-4 pb-16 sm:px-6 md:pb-24 lg:px-8">
+        <div className="mx-auto mt-14 max-w-5xl overflow-hidden bg-primary-600">
+          <div className="flex flex-col items-center justify-between gap-5 px-6 py-8 md:flex-row md:px-10">
+            <p className="text-center text-xl font-bold text-white md:text-left md:text-2xl">
+              Looking to advance your skills?
+            </p>
+            <Link
+              href="/careers"
+              className="inline-flex items-center justify-center bg-white px-10 py-4 font-bold text-gray-900 shadow-md transition-colors hover:bg-gray-100"
+            >
+              Explore Careers
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

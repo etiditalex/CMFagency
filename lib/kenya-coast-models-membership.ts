@@ -119,7 +119,7 @@ type ForumRow = {
   paid_at: string | null;
 };
 
-/** After a successful forum payment, non-members become a KCM membership row admins can approve. */
+/** After a successful forum payment, non-members become an approved KCM membership with a member ID emailed. */
 export async function ensureForumMembership(admin: SupabaseClient, registrationId: string): Promise<void> {
   const { data, error } = await admin
     .from("kenya_coast_models_registrations")
@@ -164,7 +164,7 @@ export async function ensureForumMembership(admin: SupabaseClient, registrationI
       mpesa_receipt: row.mpesa_receipt,
       paid_at: row.paid_at ?? new Date().toISOString(),
       status: "new",
-      review_notes: "Registered through the Kenya Coast Models forum. Approve to email their membership number.",
+      review_notes: "Registered through the Kenya Coast Models forum.",
       forum_registration_id: row.id,
     })
     .select("id")
@@ -178,4 +178,6 @@ export async function ensureForumMembership(admin: SupabaseClient, registrationI
   if (!membershipId) return;
 
   await admin.from("kenya_coast_models_registrations").update({ membership_id: membershipId }).eq("id", row.id);
+  const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");
+  await approvePaidKcmMembershipIfNeeded(admin, membershipId).catch(() => null);
 }
