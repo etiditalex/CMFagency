@@ -97,6 +97,16 @@ const MILESTONES = [
   },
 ] as const;
 
+const PARTNERS = [
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159309/Patrners_2_vad9x7.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_3_h6mjkl.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_1_llldgx.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_4_vujwiy.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_jiwrxe.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_1_qxxeml.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.42_thnno6.jpg",
+] as const;
+
 function FocusHeading({ id, children }: { id: string; children: string }) {
   return (
     <div className="text-center">
@@ -110,10 +120,13 @@ function FocusHeading({ id, children }: { id: string; children: string }) {
 
 function FocusColumns({ items }: { items: readonly { label: string; href: string }[] }) {
   return (
-    <ul className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6 md:mt-12">
+    <ul className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-4 sm:mt-10 sm:grid-cols-3 sm:gap-6 md:mt-12">
       {items.map((item) => (
         <li key={item.href}>
-          <Link href={item.href} className="text-[0.95rem] text-gray-700 transition-colors hover:text-primary-700 md:text-base">
+          <Link
+            href={item.href}
+            className="inline-flex min-h-11 items-center justify-center px-2 text-[0.95rem] text-gray-700 transition-colors hover:text-primary-700 md:text-base"
+          >
             {item.label}
           </Link>
         </li>
@@ -148,7 +161,7 @@ function MissionIcon() {
 export default function AboutPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-white pb-[calc(var(--site-mobile-dock-height)+1.5rem)] pt-[var(--site-nav-height)] md:pb-0">
-      <section className="about-banner relative h-16 overflow-hidden sm:h-20 md:h-24" aria-label="About us">
+      <section className="about-banner relative h-[4.5rem] overflow-hidden sm:h-20 md:h-24" aria-label="About us">
         <Image
           src={BANNER_IMAGE}
           alt="Changer Fusions at work"
@@ -158,30 +171,30 @@ export default function AboutPage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 to-black/10" />
-        <div className="relative flex h-full items-center px-6 sm:px-10 lg:px-16 xl:px-24">
-          <h1 className="font-montserrat text-3xl font-extrabold tracking-wide text-white sm:text-4xl md:text-5xl">
+        <div className="relative flex h-full items-center px-4 sm:px-10 lg:px-16 xl:px-24">
+          <h1 className="font-montserrat text-2xl font-extrabold tracking-wide text-white sm:text-4xl md:text-5xl">
             ABOUT US
           </h1>
         </div>
       </section>
 
-      <section className="about-pillars px-4 py-14 sm:px-6 sm:py-16 md:py-20 lg:px-8" aria-label="Vision, mission, and core values">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 md:grid-cols-3 md:items-start md:gap-8 lg:gap-12">
+      <section className="about-pillars px-4 py-10 sm:px-6 sm:py-16 md:py-20 lg:px-8" aria-label="Vision, mission, and core values">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 md:grid-cols-3 md:items-start md:gap-8 lg:gap-12">
           <article className="text-center">
-            <div className="flex h-28 items-center justify-center md:h-32">
+            <div className="flex h-24 items-center justify-center md:h-32">
               <VisionIcon />
             </div>
-            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Vision</h2>
+            <h2 className="mt-4 font-montserrat text-xl font-bold text-gray-900 md:mt-5 md:text-2xl">Vision</h2>
             <p className="mx-auto mt-3 max-w-xs text-sm leading-relaxed text-gray-600 md:text-[0.95rem]">
               To be the driving force behind businesses&apos; success in a dynamic and ever-evolving market landscape.
             </p>
           </article>
 
           <article className="text-center">
-            <div className="flex h-28 items-center justify-center md:h-32">
+            <div className="flex h-24 items-center justify-center md:h-32">
               <MissionIcon />
             </div>
-            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Mission</h2>
+            <h2 className="mt-4 font-montserrat text-xl font-bold text-gray-900 md:mt-5 md:text-2xl">Mission</h2>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gray-600 md:text-[0.95rem]">
               To harness marketing as the catalyst for change and innovation, empowering businesses to thrive and define
               their existence in the marketplace.
@@ -189,13 +202,13 @@ export default function AboutPage() {
           </article>
 
           <article className="text-center">
-            <div className="flex h-28 items-center justify-center md:h-32">
-              <p className="font-montserrat text-5xl font-black leading-none tracking-tight text-accent-green md:text-[3.4rem]">
+            <div className="flex h-24 items-center justify-center md:h-32">
+              <p className="font-montserrat text-4xl font-black leading-none tracking-tight text-accent-green sm:text-5xl md:text-[3.4rem]">
                 VALUES
               </p>
             </div>
-            <h2 className="mt-5 font-montserrat text-xl font-bold text-gray-900 md:text-2xl">Core Values</h2>
-            <ul className="mt-4 space-y-2.5 text-sm text-gray-600 md:text-[0.95rem]">
+            <h2 className="mt-4 font-montserrat text-xl font-bold text-gray-900 md:mt-5 md:text-2xl">Core Values</h2>
+            <ul className="mt-3 space-y-2 text-sm text-gray-600 md:mt-4 md:space-y-2.5 md:text-[0.95rem]">
               {CORE_VALUES.map((value) => (
                 <li key={value}>{value}</li>
               ))}
@@ -204,7 +217,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="about-focus px-4 pb-16 sm:px-6 md:pb-24 lg:px-8" aria-labelledby="strategic-focus-heading">
+      <section className="about-focus px-4 pb-12 sm:px-6 md:pb-24 lg:px-8" aria-labelledby="strategic-focus-heading">
         <FocusHeading id="strategic-focus-heading">Strategic Focus</FocusHeading>
         <FocusColumns items={STRATEGIC_FOCUS} />
 
@@ -215,13 +228,13 @@ export default function AboutPage() {
 
       </section>
 
-      <section className="about-years bg-[#f4f4f4] px-4 py-16 sm:px-8 md:py-24 lg:px-16" aria-labelledby="over-the-years-heading">
-        <div className="mx-auto grid max-w-6xl items-start gap-10 md:grid-cols-[minmax(14rem,22rem)_1fr] md:gap-8 lg:gap-20">
+      <section className="about-years bg-[#f4f4f4] px-4 py-10 sm:px-8 sm:py-16 md:py-24 lg:px-16" aria-labelledby="over-the-years-heading">
+        <div className="mx-auto grid max-w-6xl items-start gap-8 md:grid-cols-[minmax(14rem,22rem)_1fr] md:gap-8 lg:gap-20">
           <div className="pt-1">
-            <p className="text-[0.95rem] font-medium text-primary-600">Our Story</p>
+            <p className="text-sm font-medium text-primary-600 sm:text-[0.95rem]">Our Story</p>
             <h2
               id="over-the-years-heading"
-              className="mt-5 font-montserrat text-[3.35rem] font-black uppercase leading-[0.86] tracking-tight text-gray-800 sm:text-6xl lg:text-7xl xl:text-[4.85rem]"
+              className="mt-3 font-montserrat text-[2.65rem] font-black uppercase leading-[0.86] tracking-tight text-gray-800 sm:mt-5 sm:text-6xl lg:text-7xl xl:text-[4.85rem]"
             >
               Over
               <br />
@@ -231,14 +244,14 @@ export default function AboutPage() {
             </h2>
           </div>
 
-          <ol className="about-years-track relative">
+          <ol className="about-years-track relative min-w-0">
             {MILESTONES.map((milestone, index) => {
               const tone = MILESTONE_TONES[index % MILESTONE_TONES.length];
               return (
-                <li key={milestone.year} className="relative pb-8 pl-9 last:pb-2">
+                <li key={milestone.year} className="relative pb-7 pl-8 last:pb-2 sm:pb-8 sm:pl-9">
                   <span className={`about-years-marker ${tone.marker}`} aria-hidden="true" />
-                  <h3 className={`font-montserrat text-[0.95rem] font-bold ${tone.year}`}>{milestone.year}</h3>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[0.8rem] leading-relaxed text-gray-700 md:text-[0.85rem]">
+                  <h3 className={`font-montserrat text-sm font-bold sm:text-[0.95rem] ${tone.year}`}>{milestone.year}</h3>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-[0.8rem] leading-relaxed text-gray-700 [overflow-wrap:anywhere] sm:space-y-0.5 md:text-[0.85rem]">
                     {milestone.points.map((point) => (
                       <li key={point}>{point}</li>
                     ))}
@@ -250,19 +263,33 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="px-4 pb-16 sm:px-6 md:pb-24 lg:px-8">
-        <div className="mx-auto mt-14 max-w-5xl overflow-hidden bg-primary-600">
-          <div className="flex flex-col items-center justify-between gap-5 px-6 py-8 md:flex-row md:px-10">
-            <p className="text-center text-xl font-bold text-white md:text-left md:text-2xl">
-              Looking to advance your skills?
-            </p>
-            <Link
-              href="/careers"
-              className="inline-flex items-center justify-center bg-white px-10 py-4 font-bold text-gray-900 shadow-md transition-colors hover:bg-gray-100"
+      <section className="about-partners relative overflow-hidden px-4 py-10 sm:px-8 sm:py-16 md:py-20 lg:px-12" aria-labelledby="about-partners-heading">
+        <div className="relative z-[1] mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2
+              id="about-partners-heading"
+              className="font-montserrat text-xl font-extrabold text-white sm:text-2xl md:text-3xl"
             >
-              Explore Careers
-            </Link>
+              Our Partners
+            </h2>
+            <span className="mx-auto mt-2.5 block h-[3px] w-12 bg-primary-500" />
           </div>
+
+          <ul className="mt-8 grid grid-cols-2 gap-3 sm:mt-12 sm:grid-cols-3 sm:gap-5 md:mt-14 md:grid-cols-4 md:gap-8">
+            {PARTNERS.map((image) => (
+              <li key={image} className="min-w-0">
+                <div className="relative aspect-[5/3] w-full overflow-hidden bg-white">
+                  <Image
+                    src={image}
+                    alt=""
+                    fill
+                    className="object-contain p-2 sm:p-3"
+                    sizes="(min-width: 768px) 248px, 50vw"
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </div>

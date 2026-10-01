@@ -273,6 +273,20 @@
     height: 0.6875rem;
   }
 
+  .about-partners {
+    background-color: #0a1f42;
+    background-image:
+      linear-gradient(rgba(10, 31, 66, 0.88), rgba(10, 31, 66, 0.92)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='48' viewBox='0 0 84 48'%3E%3Cpath fill='none' stroke='%231e58ca' stroke-opacity='0.35' stroke-width='1' d='M21 0 L42 12 L42 36 L21 48 L0 36 L0 12 Z M63 0 L84 12 L84 36 L63 48 L42 36 L42 12 Z M21 48 L42 36 L63 48'/%3E%3C/svg%3E");
+    background-size: auto, 84px 48px;
+  }
+
+  .about-partners h2,
+  .about-partners p {
+    text-align: center !important;
+    hyphens: none;
+  }
+
   .home-success-scroller {
     scrollbar-width: none;
     -ms-overflow-style: none;
