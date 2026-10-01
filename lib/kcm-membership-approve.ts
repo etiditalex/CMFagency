@@ -5,7 +5,6 @@ import {
   kcmMembershipCategoryLabel,
   type KcmMembershipCardData,
 } from "@/lib/kcm-membership-card";
-import { generateKcmMembershipCardPdf } from "@/lib/kcm-membership-card-pdf";
 import { allocateKcmMembershipNumber } from "@/lib/kcm-membership-number";
 import { sendKcmMembershipApprovedEmail } from "@/lib/send-kcm-membership-approved-email";
 
@@ -72,6 +71,7 @@ async function notifyApprovedMember(row: MembershipRow, membershipNumber: string
 
   let pdf: { filename: string; bytes: Uint8Array } | null = null;
   try {
+    const { generateKcmMembershipCardPdf } = await import("@/lib/kcm-membership-card-pdf");
     pdf = await generateKcmMembershipCardPdf({ card, qrValue });
   } catch {
     pdf = null;

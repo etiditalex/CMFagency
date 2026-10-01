@@ -70,7 +70,7 @@ const MILESTONES = [
     year: "2023",
     points: [
       "Expanded into events marketing.",
-      "Launched The Coast Fashion and Modeling Awards and established our presence in the events sector.",
+      "Established our presence in the events sector.",
     ],
   },
   {
@@ -84,8 +84,15 @@ const MILESTONES = [
   {
     year: "2025",
     points: [
-      "Launching the Changer Fusions Gala Awards 2025.",
-      "An immersive journey for young leaders and creatives focused on sustainable fashion, leadership, and climate advocacy.",
+      "Hosted the first Coast Fashion and Modelling Awards.",
+      "A contestant awards and fashion showcase celebrating coast talent, heritage, and modelling.",
+    ],
+  },
+  {
+    year: "2026",
+    points: [
+      "Second edition of the Coast Fashion and Modelling Awards on 15 August 2026.",
+      "A contestant awards and fashion showcase awards night.",
     ],
   },
 ] as const;
