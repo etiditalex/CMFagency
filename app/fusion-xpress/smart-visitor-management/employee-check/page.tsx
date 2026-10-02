@@ -1,13 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, LogIn, XCircle } from "lucide-react";
 
 import VisitorCheckInConfirmation from "@/components/fusion-xpress/visitor-management/VisitorCheckInConfirmation";
-import { BRAND_LOGO_URL } from "@/lib/brand-logo";
 import { buildEmployeeCheckInSession } from "@/lib/employees/build-check-in-session";
 import {
   browserDeviceLabel,
@@ -407,18 +404,6 @@ export default function EmployeeCheckPage() {
 
   return (
     <main className={`min-h-[100dvh] flex flex-col ${showConfirmation ? "bg-gray-50" : "bg-gray-50"}`}>
-      <header className="border-b border-gray-100 bg-white px-4 py-4">
-        <div className="mx-auto max-w-md flex items-center justify-between gap-3">
-          <Image src={BRAND_LOGO_URL} alt="Fusion Xpress" width={120} height={36} className="h-8 w-auto" />
-          <Link
-            href="/fusion-xpress/smart-visitor-management/sign-in"
-            className="text-xs font-semibold text-primary-700 hover:underline"
-          >
-            Account sign in
-          </Link>
-        </div>
-      </header>
-
       <div className={`flex-1 flex items-center justify-center p-4 ${showConfirmation ? "pt-6 sm:pt-8" : ""}`}>
         <div className={`w-full ${showConfirmation ? "max-w-md" : "max-w-md"}`}>
           {phase.kind === "loading" || submitting ? (
