@@ -29,6 +29,7 @@ export default function ConditionalLayout({
   const isDashboard = pathname?.startsWith("/dashboard");
   const isKcmMemberPortal = pathname?.startsWith("/kcm/member-portal");
   const isFusionAdminLogin = pathname === "/fusion-xpress/admin-login";
+  const isSiteLogin = pathname === "/login";
   const isVisitorManagementAuth =
     pathname === "/fusion-xpress/smart-visitor-management/sign-in" ||
     pathname === "/fusion-xpress/smart-visitor-management/sign-up" ||
@@ -98,6 +99,7 @@ export default function ConditionalLayout({
   // Fusion Xpress admin, visitor auth, employee attendance kiosk, and industry check-in — no site chrome.
   if (
     isFusionAdminLogin ||
+    isSiteLogin ||
     isVisitorManagementAuth ||
     isEmployeeAttendanceCheck ||
     isIndustryCheckInForm ||
