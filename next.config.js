@@ -71,6 +71,10 @@ const nextConfig = {
       { source: "/careers/attachments/:path*", destination: "/careers", permanent: true },
       { source: "/careers/internships", destination: "/careers", permanent: true },
       { source: "/careers/internships/:path*", destination: "/careers", permanent: true },
+      { source: "/about/partners", destination: "/about", permanent: true },
+      { source: "/about/partners/:path*", destination: "/about", permanent: true },
+      { source: "/marketing-fusion", destination: "/about", permanent: true },
+      { source: "/marketing-fusion/:path*", destination: "/about", permanent: true },
     ];
   },
   images: {

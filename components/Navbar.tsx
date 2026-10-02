@@ -58,8 +58,6 @@ export default function Navbar() {
   const aboutLinks = [
     { href: "/about", label: "About Us" },
     { href: "/about/team", label: "Our Team" },
-    { href: "/about/partners", label: "Our Partners" },
-    { href: "/marketing-fusion", label: "Why Changer Fusions" },
   ];
 
   const testimonialsLinks = [
