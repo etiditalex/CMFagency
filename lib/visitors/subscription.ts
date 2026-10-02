@@ -168,8 +168,7 @@ export type VisitorPlanFeatureKey =
   | "employee_excel"
   | "notification_admins"
   | "gps_tracking"
-  | "employee_qr_download"
-  | "biometric_fingerprint";
+  | "employee_qr_download";
 
 const PLAN_FEATURES: Record<VisitorPlanFeatureKey, Record<VisitorSubscriptionPlan, boolean>> = {
   unlimited_checkin: { trial: false, professional: true, enterprise: true },
@@ -185,7 +184,6 @@ const PLAN_FEATURES: Record<VisitorPlanFeatureKey, Record<VisitorSubscriptionPla
   notification_admins: { trial: false, professional: true, enterprise: true },
   gps_tracking: { trial: true, professional: true, enterprise: true },
   employee_qr_download: { trial: false, professional: true, enterprise: true },
-  biometric_fingerprint: { trial: false, professional: true, enterprise: true },
 };
 
 export function planHasFeature(

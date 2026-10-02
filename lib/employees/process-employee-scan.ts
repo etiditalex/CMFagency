@@ -154,11 +154,7 @@ function isKioskScan(input: { kioskScan?: unknown; scanSource?: unknown }): bool
   if (input.kioskScan === true || input.kioskScan === "true") return true;
   const source = String(input.scanSource ?? "").toLowerCase();
   // Shared terminals skip personal phone–pass device binding.
-  return source === "kiosk" || source === "biometric";
-}
-
-function isBiometricScan(input: { scanSource?: unknown }): boolean {
-  return String(input.scanSource ?? "").toLowerCase() === "biometric";
+  return source === "kiosk";
 }
 
 export async function processEmployeeQrScan(
@@ -177,7 +173,6 @@ export async function processEmployeeQrScan(
   }
 ): Promise<EmployeeScanResult> {
   const fromKiosk = isKioskScan(input);
-  const fromBiometric = isBiometricScan(input);
   const token = parseToken(input.token ?? input.qrToken);
   if (!token) {
     return { ok: false, error: "Missing employee QR token.", status: 400 };
@@ -244,10 +239,6 @@ export async function processEmployeeQrScan(
     eventType = "sign_in";
   } else if (scanAction === "sign_out") {
     eventType = "sign_out";
-  } else if (fromBiometric) {
-    // Fingerprint terminal toggles from the live employee status so sign-out
-    // still works after repeated test scans (daily "completed" state is ignored).
-    eventType = employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
   } else {
     eventType = statusToday === "in" ? "sign_out" : "sign_in";
   }
@@ -265,19 +256,12 @@ export async function processEmployeeQrScan(
         nextEvent: eventType,
         lastEventBeforeToday,
       });
-  // Fingerprint terminal testing: allow unlimited sign-in/out toggles (skip once-per-day limits).
-  // QR / gate / kiosk keep normal daily rules.
-  if (!fromBiometric && !transitionCheck.ok) {
+  if (!transitionCheck.ok) {
     return { ok: false, error: transitionCheck.error, status: 409 };
   }
 
   const shiftNumber =
-    !fromBiometric &&
-    shiftEnabled &&
-    transitionCheck.ok &&
-    "shiftNumber" in transitionCheck
-      ? transitionCheck.shiftNumber
-      : undefined;
+    shiftEnabled && "shiftNumber" in transitionCheck ? transitionCheck.shiftNumber : undefined;
 
   const device = normalizeDeviceFingerprint({
     ...input,

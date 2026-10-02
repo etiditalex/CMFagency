@@ -64,12 +64,6 @@ export const VISITOR_EMPLOYEE_MARKETING_ROWS: MarketingFeatureRow[] = [
     enterprise: true,
   },
   {
-    label: "Biometric fingerprint attendance terminal",
-    trial: false,
-    professional: true,
-    enterprise: true,
-  },
-  {
     label: "Download employee & reception QR (PDF)",
     trial: false,
     professional: true,

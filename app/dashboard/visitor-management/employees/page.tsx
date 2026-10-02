@@ -72,7 +72,6 @@ import {
 import { eatDayKey, eatTodayDayKey } from "@/lib/time/eat";
 import { supabase } from "@/lib/supabase";
 import {
-  VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
@@ -677,9 +676,6 @@ export default function VisitorManagementEmployeesPage() {
               CRM site GPS
             </Link>
           ) : null}
-          <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_BIOMETRIC_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
-            Biometric fingerprint
-          </Link>
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Kiosk scanner
           </Link>
