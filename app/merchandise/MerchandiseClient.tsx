@@ -7,6 +7,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/lib/supabase";
+import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
+import type { BlogSidebarAdRow } from "@/lib/blog-server";
 
 export type MerchItem = {
   id: number;
@@ -23,7 +25,13 @@ export type MerchItem = {
   colors: string[];
 };
 
-export default function MerchandiseClient({ initialMerchandise }: { initialMerchandise: MerchItem[] }) {
+export default function MerchandiseClient({
+  initialMerchandise,
+  promoAds = [],
+}: {
+  initialMerchandise: MerchItem[];
+  promoAds?: BlogSidebarAdRow[];
+}) {
   const [merchandise, setMerchandise] = useState<MerchItem[]>(initialMerchandise);
   const [loadingCatalog, setLoadingCatalog] = useState(initialMerchandise.length === 0);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -140,36 +148,6 @@ export default function MerchandiseClient({ initialMerchandise }: { initialMerch
 
   return (
     <div className="pt-20 min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <section className="relative section-padding overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <Image
-            src="https://res.cloudinary.com/dyfnobo9r/image/upload/v1767037229/CoastFashionsandmodellingawards8_ifgxzv.jpg"
-            alt="Changer Fusions Merchandise"
-            fill
-            className="object-cover object-center"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/60"></div>
-        </div>
-
-        <div className="container-custom relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 text-white">Changer Fusions Merchandise</h1>
-            <p className="text-xl text-white/90 leading-relaxed">
-              Premium branded merchandise: apparel and accessories designed for professionals who value marketing
-              excellence.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
       {/* Search and Filter */}
       <section className="section-padding">
         <div className="container-custom">
@@ -515,29 +493,13 @@ export default function MerchandiseClient({ initialMerchandise }: { initialMerch
         )}
       </AnimatePresence>
 
-      {/* CTA Section */}
-      <section className="section-padding bg-gradient-to-r from-primary-600 via-secondary-600 to-primary-600">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Custom Merchandise Available</h2>
-            <p className="text-xl text-white/90 mb-8">
-              Need custom branded merchandise for your team or event? Contact us for bulk orders and custom designs.
-            </p>
-            <Link
-              href="/contact"
-              className="inline-block bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-8 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
-            >
-              Contact Us for Custom Orders
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      {promoAds.length > 0 ? (
+        <section className="section-padding bg-white">
+          <div className="container-custom max-w-4xl">
+            <BlogPromoCarousel ads={promoAds} imageMaxClass="max-h-[min(420px,55vh)]" />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

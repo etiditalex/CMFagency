@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import MerchandiseClient, { type MerchItem } from "./MerchandiseClient";
+import { getApprovedBlogSidebarAds } from "@/lib/blog-server";
 
 export const revalidate = 300;
 
@@ -51,7 +52,7 @@ async function fetchMerchandiseForSeo(): Promise<MerchItem[]> {
 }
 
 export default async function MerchandisePage() {
-  const items = await fetchMerchandiseForSeo();
+  const [items, promoAds] = await Promise.all([fetchMerchandiseForSeo(), getApprovedBlogSidebarAds()]);
   const itemListJsonLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -68,7 +69,7 @@ export default async function MerchandisePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }} />
-      <MerchandiseClient initialMerchandise={items} />
+      <MerchandiseClient initialMerchandise={items} promoAds={promoAds} />
     </>
   );
 }
