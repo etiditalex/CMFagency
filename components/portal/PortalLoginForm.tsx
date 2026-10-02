@@ -145,7 +145,7 @@ export function PortalLoginForm({
               return;
             }
             setHasTotp(!!methodData.hasTotp);
-            setTwoFactorMethod("email");
+            setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
             setStep("code");
             setLoginEmail(userEmail);
           }
@@ -170,7 +170,7 @@ export function PortalLoginForm({
             return;
           }
           setHasTotp(!!methodData.hasTotp);
-          setTwoFactorMethod("email");
+          setTwoFactorMethod(methodData.hasTotp ? "totp" : "email");
           setStep("code");
           setLoginEmail(userEmail);
         }
@@ -265,18 +265,20 @@ export function PortalLoginForm({
         return;
       }
 
-      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!sendRes.ok) {
-        const err = await sendRes.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to send verification code to your email.");
+      if (!useTotp) {
+        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!sendRes.ok) {
+          const err = await sendRes.json().catch(() => ({}));
+          throw new Error((err as { error?: string }).error ?? "Failed to send verification code to your email.");
+        }
       }
 
       setLoginEmail(email.trim());
       setHasTotp(useTotp);
-      setTwoFactorMethod("email");
+      setTwoFactorMethod(useTotp ? "totp" : "email");
       setStep("code");
       setCode("");
     } catch (e: unknown) {
@@ -481,17 +483,20 @@ export function PortalLoginForm({
                     Send code to email instead
                   </button>
                 ) : null}
-                {twoFactorMethod === "email" && hasTotp ? (
+                {hasTotp ? (
                   <button
                     type="button"
                     onClick={() => {
+                      if (twoFactorMethod === "totp") return;
                       setTwoFactorMethod("totp");
                       setError(null);
                       setCode("");
                     }}
-                    className="text-primary-700 font-medium hover:underline"
+                    className={`font-medium text-primary-700 hover:underline ${
+                      twoFactorMethod === "totp" ? "underline" : ""
+                    }`}
                   >
-                    Use authenticator app instead
+                    Google Authenticator
                   </button>
                 ) : null}
               </div>

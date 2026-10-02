@@ -150,8 +150,9 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
       const token = sessionData.session?.access_token;
       const methodRes = token ? await fetch("/api/fusion-xpress/2fa/method", { headers: { Authorization: `Bearer ${token}` } }) : null;
       const methodData = methodRes?.ok ? ((await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean }) : {};
-      setHasTotp(!!methodData.hasTotp);
-      setTwoFactorMethod("email");
+      const enrolled = !!methodData.hasTotp;
+      setHasTotp(enrolled);
+      setTwoFactorMethod(enrolled ? "totp" : "email");
       setStep("code");
       setLoginEmail(userEmail);
     };
@@ -182,18 +183,20 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
       const methodData = (await methodRes.json().catch(() => ({}))) as { hasTotp?: boolean };
       const useTotp = !!methodData.hasTotp;
 
-      const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!sendRes.ok) {
-        const err = await sendRes.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
+      if (!useTotp) {
+        const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!sendRes.ok) {
+          const err = await sendRes.json().catch(() => ({}));
+          throw new Error((err as { error?: string }).error ?? "Failed to send verification code.");
+        }
       }
 
       setLoginEmail(email.trim());
       setHasTotp(useTotp);
-      setTwoFactorMethod("email");
+      setTwoFactorMethod(useTotp ? "totp" : "email");
       setStep("code");
       setCode("");
     } catch (err: unknown) {
@@ -322,8 +325,8 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
 
         <div className="overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_rgba(15,47,100,0.18)]">
           <header className="bg-primary-800 pb-5 pt-[3.35rem] text-center">
-            <h1 className="text-[22px] font-light uppercase tracking-[0.28em] text-white">
-              {step === "code" ? "Verify Login" : "User Login"}
+            <h1 className="text-[22px] font-light uppercase tracking-[0.22em] text-white">
+              {step === "code" ? (twoFactorMethod === "totp" ? "Authenticator" : "Verify Login") : "User Login"}
             </h1>
           </header>
 
@@ -341,6 +344,11 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
 
             {step === "code" ? (
               <form className="space-y-8" onSubmit={onVerifyCode}>
+                <p className="text-center text-[13px] text-slate-500">
+                  {twoFactorMethod === "totp"
+                    ? "Enter the 6-digit code from Google Authenticator."
+                    : `Enter the 6-digit code sent to ${loginEmail || "your email"}.`}
+                </p>
                 <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
                   <KeyRound className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
                   <input
@@ -352,8 +360,8 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     className={`${underlineFieldClass} tracking-[0.35em]`}
-                    placeholder="Code"
-                    aria-label="Verification code"
+                    placeholder={twoFactorMethod === "totp" ? "Authenticator code" : "Code"}
+                    aria-label={twoFactorMethod === "totp" ? "Google Authenticator code" : "Email verification code"}
                   />
                 </div>
 
@@ -365,26 +373,30 @@ export function AdminLoginExperience({ initialErrorMessage = null }: AdminLoginE
                   {codeLoading ? "Verifying..." : "Verify"}
                 </button>
 
-                <div className="flex items-center justify-between text-[13px] italic text-slate-400">
+                <div className="flex items-center justify-between gap-3 text-[13px]">
                   {twoFactorMethod === "email" ? (
-                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-slate-600">
+                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="italic text-slate-400 hover:text-slate-600">
                       {resendCodeLoading ? "Sending..." : "Resend code"}
                     </button>
                   ) : (
-                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="hover:text-slate-600">
+                    <button type="button" onClick={onResendCode} disabled={resendCodeLoading} className="italic text-slate-400 hover:text-slate-600">
                       Send email code
                     </button>
                   )}
-                  {hasTotp && twoFactorMethod === "email" ? (
+                  {hasTotp ? (
                     <button
                       type="button"
                       onClick={() => {
+                        if (twoFactorMethod === "totp") return;
                         setTwoFactorMethod("totp");
                         setCode("");
+                        setError(null);
                       }}
-                      className="hover:text-slate-600"
+                      className={`font-medium text-primary-800 hover:text-primary-900 ${
+                        twoFactorMethod === "totp" ? "underline" : ""
+                      }`}
                     >
-                      Use authenticator
+                      Google Authenticator
                     </button>
                   ) : null}
                 </div>

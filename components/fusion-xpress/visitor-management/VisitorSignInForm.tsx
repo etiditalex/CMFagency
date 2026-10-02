@@ -114,6 +114,13 @@ export default function VisitorSignInForm() {
       return;
     }
 
+    if (useTotp) {
+      setTwoFactorMethod("totp");
+      setStep("code");
+      setCode("");
+      return;
+    }
+
     const sendRes = await fetch("/api/fusion-xpress/send-login-code", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
@@ -247,7 +254,11 @@ export default function VisitorSignInForm() {
   return (
     <div className="mt-5 sm:mt-6">
       <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">
-        {step === "login" ? "Sign in to your account" : "Enter verification code"}
+        {step === "login"
+          ? "Sign in to your account"
+          : twoFactorMethod === "totp"
+            ? "Verify with Google Authenticator"
+            : "Enter verification code"}
       </h1>
       <p className="mt-2 text-sm text-gray-600">
         {step === "login"
@@ -320,17 +331,20 @@ export default function VisitorSignInForm() {
                 Send code to email instead
               </button>
             )}
-            {hasTotp && twoFactorMethod === "email" ? (
+            {hasTotp ? (
               <button
                 type="button"
                 onClick={() => {
+                  if (twoFactorMethod === "totp") return;
                   setTwoFactorMethod("totp");
                   setCode("");
                   setError(null);
                 }}
-                className="font-semibold text-primary-700 hover:underline"
+                className={`font-semibold text-primary-700 hover:underline ${
+                  twoFactorMethod === "totp" ? "underline" : ""
+                }`}
               >
-                Use authenticator app instead
+                Google Authenticator
               </button>
             ) : null}
           </div>
