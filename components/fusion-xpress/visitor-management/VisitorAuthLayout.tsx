@@ -50,23 +50,41 @@ export default function VisitorAuthLayout({ mode, children }: VisitorAuthLayoutP
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-        <section className="order-1 flex min-h-0 flex-col lg:order-2 lg:overflow-y-auto">
-          <div className="mx-auto w-full max-w-lg flex-1 px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:px-12 lg:py-10 xl:px-16">
-            <Link
-              href="/fusion-xpress/smart-visitor-management"
-              className="inline-flex min-h-[44px] items-center"
-            >
-              <Image
-                src={BRAND_LOGO_URL}
-                alt="Changer Fusions"
-                width={200}
-                height={56}
-                className="h-10 w-auto object-contain sm:h-12"
-                priority
-              />
-            </Link>
-            {children}
-          </div>
+        <section
+          className={
+            mode === "sign-in"
+              ? "order-1 flex min-h-0 flex-col items-center justify-center px-4 py-10 font-montserrat lg:order-2 lg:overflow-y-auto"
+              : "order-1 flex min-h-0 flex-col lg:order-2 lg:overflow-y-auto"
+          }
+          style={
+            mode === "sign-in"
+              ? {
+                  backgroundImage:
+                    "linear-gradient(180deg, #f3d4d6 0%, #e8d5d8 18%, #d5e4e8 48%, #b7e4e2 78%, #9fd9d6 100%)",
+                }
+              : undefined
+          }
+        >
+          {mode === "sign-in" ? (
+            children
+          ) : (
+            <div className="mx-auto w-full max-w-lg flex-1 px-4 py-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-8 lg:px-12 lg:py-10 xl:px-16">
+              <Link
+                href="/fusion-xpress/smart-visitor-management"
+                className="inline-flex min-h-[44px] items-center"
+              >
+                <Image
+                  src={BRAND_LOGO_URL}
+                  alt="Changer Fusions"
+                  width={200}
+                  height={56}
+                  className="h-10 w-auto object-contain sm:h-12"
+                  priority
+                />
+              </Link>
+              {children}
+            </div>
+          )}
         </section>
 
         <aside className="order-2 relative flex flex-col justify-center bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900 px-4 py-8 text-white sm:px-6 sm:py-10 lg:order-1 lg:px-10 lg:py-12 xl:px-14">

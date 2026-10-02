@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { KeyRound, Lock, Mail } from "lucide-react";
+import { motion } from "framer-motion";
+import { Camera, KeyRound, Lock, Mail } from "lucide-react";
 
 import { businessTotpSetupUrl } from "@/lib/auth/business-totp";
 import { supabase } from "@/lib/supabase";
@@ -61,6 +62,7 @@ export default function VisitorSignInForm() {
   const [code, setCode] = useState("");
   const [codeLoading, setCodeLoading] = useState(false);
   const [resendCodeLoading, setResendCodeLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [hasTotp, setHasTotp] = useState(false);
   const [totpRequired, setTotpRequired] = useState(true);
   type TwoFactorMethod = "email" | "totp";
@@ -246,168 +248,205 @@ export default function VisitorSignInForm() {
     }
   };
 
-  const inputClass =
-    "w-full min-h-[48px] rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-base outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 sm:text-sm";
-  const btnPrimary =
-    "inline-flex min-h-[48px] w-full items-center justify-center rounded-lg bg-secondary-400 px-4 py-3 text-sm font-bold text-gray-900 transition hover:bg-secondary-300 active:scale-[0.99] disabled:opacity-60";
+  const underlineFieldClass =
+    "w-full border-0 bg-transparent py-1.5 text-[15px] font-light text-slate-600 outline-none placeholder:font-light placeholder:italic placeholder:text-slate-400 focus:ring-0";
+  const heading =
+    step === "code" ? (twoFactorMethod === "totp" ? "Authenticator" : "Verify Login") : "User Login";
 
   return (
-    <div className="mt-5 sm:mt-6">
-      <h1 className="text-xl font-extrabold text-gray-900 sm:text-2xl">
-        {step === "login"
-          ? "Sign in to your account"
-          : twoFactorMethod === "totp"
-            ? "Verify with Google Authenticator"
-            : "Enter verification code"}
-      </h1>
-      <p className="mt-2 text-sm text-gray-600">
-        {step === "login"
-          ? "Sign in as your organization to manage guest check-ins, approvals, and QR passes."
-          : twoFactorMethod === "totp"
-            ? "Enter the 6-digit code from Google Authenticator."
-            : `We sent a 6-digit code to ${email.trim() || "your email"}. Enter it below to continue.`}
-      </p>
+    <motion.section
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      className="relative w-full max-w-[380px] pt-12"
+      aria-label="Smart management sign in"
+    >
+      <div className="absolute left-1/2 top-0 z-20 flex h-[92px] w-[92px] -translate-x-1/2 items-center justify-center rounded-full bg-white shadow-[0_6px_18px_rgba(15,47,100,0.16)]">
+        {step === "code" ? (
+          <KeyRound className="h-10 w-10 text-primary-800" strokeWidth={1.5} />
+        ) : (
+          <Camera className="h-10 w-10 text-primary-800" strokeWidth={1.5} />
+        )}
+      </div>
 
-      {error ? (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-          <p>{error}</p>
-          {error.toLowerCase().includes("verify your email") ? (
-            <Link
-              href={`/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email.trim())}`}
-              className="mt-2 inline-block font-semibold text-primary-700 hover:underline"
-            >
-              Go to email verification
-            </Link>
+      <div className="overflow-hidden rounded-[4px] bg-white shadow-[0_18px_40px_rgba(15,47,100,0.18)]">
+        <header className="bg-primary-800 pb-5 pt-[3.35rem] text-center">
+          <h1 className="text-[22px] font-light uppercase tracking-[0.22em] text-white">{heading}</h1>
+        </header>
+
+        <div className="px-9 pb-9 pt-8">
+          {error ? (
+            <p className="mb-5 text-center text-sm text-red-600">
+              {error}{" "}
+              {error.toLowerCase().includes("verify your email") ? (
+                <Link
+                  href={`/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email.trim())}`}
+                  className="font-medium text-primary-800 hover:underline"
+                >
+                  Verify email
+                </Link>
+              ) : null}
+            </p>
           ) : null}
-        </div>
-      ) : null}
-      {(passwordJustReset || resetSent) && !error ? (
-        <p className="mt-4 text-sm text-primary-700">
-          {passwordJustReset
-            ? "Password updated. Sign in with your new password."
-            : "Password reset link sent. Check your email, then open the link to set a new password."}
-        </p>
-      ) : null}
+          {(passwordJustReset || resetSent) && !error ? (
+            <p className="mb-5 text-center text-sm text-secondary-700">
+              {passwordJustReset
+                ? "Password updated. Sign in with your new password."
+                : "Password reset link sent. Check your email, then open the link to set a new password."}
+            </p>
+          ) : null}
 
-      {step === "code" ? (
-        <form className="mt-6 space-y-4" onSubmit={onVerifyCode}>
-          <label className="block text-sm font-medium text-gray-700" htmlFor="visitor-code">
-            Verification code
-          </label>
-          <div className="relative">
-            <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="visitor-code"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className={`${inputClass} pl-10 text-center font-mono tracking-[0.35em]`}
-              placeholder="000000"
-            />
-          </div>
-          <button type="submit" disabled={codeLoading || code.length !== 6} className={btnPrimary}>
-            {codeLoading ? "Verifying…" : "Verify and continue"}
-          </button>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {twoFactorMethod === "email" ? (
+          {step === "code" ? (
+            <form className="space-y-8" onSubmit={onVerifyCode}>
+              <p className="text-center text-[13px] text-slate-500">
+                {twoFactorMethod === "totp"
+                  ? "Enter the 6-digit code from Google Authenticator."
+                  : `Enter the 6-digit code sent to ${email.trim() || "your email"}.`}
+              </p>
+              <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                <KeyRound className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                <input
+                  id="visitor-code"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  className={`${underlineFieldClass} tracking-[0.35em]`}
+                  placeholder={twoFactorMethod === "totp" ? "Authenticator code" : "Code"}
+                  aria-label={twoFactorMethod === "totp" ? "Google Authenticator code" : "Email verification code"}
+                />
+              </div>
               <button
-                type="button"
-                onClick={() => void onResendCode()}
-                disabled={resendCodeLoading}
-                className="font-semibold text-primary-700 hover:underline disabled:opacity-60"
+                type="submit"
+                disabled={codeLoading || code.length !== 6}
+                className="w-full bg-primary-800 py-3 text-[15px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-55"
               >
-                {resendCodeLoading ? "Sending…" : "Resend code"}
+                {codeLoading ? "Verifying..." : "Verify"}
               </button>
-            ) : (
+              <div className="flex items-center justify-between gap-3 text-[13px]">
+                {twoFactorMethod === "email" ? (
+                  <button
+                    type="button"
+                    onClick={() => void onResendCode()}
+                    disabled={resendCodeLoading}
+                    className="italic text-slate-400 hover:text-slate-600 disabled:opacity-60"
+                  >
+                    {resendCodeLoading ? "Sending..." : "Resend code"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void onResendCode()}
+                    disabled={resendCodeLoading}
+                    className="italic text-slate-400 hover:text-slate-600 disabled:opacity-60"
+                  >
+                    Send email code
+                  </button>
+                )}
+                {hasTotp ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (twoFactorMethod === "totp") return;
+                      setTwoFactorMethod("totp");
+                      setCode("");
+                      setError(null);
+                    }}
+                    className={`font-medium text-primary-800 hover:text-primary-900 ${
+                      twoFactorMethod === "totp" ? "underline" : ""
+                    }`}
+                  >
+                    Google Authenticator
+                  </button>
+                ) : null}
+              </div>
               <button
                 type="button"
-                onClick={() => void onResendCode()}
-                disabled={resendCodeLoading}
-                className="font-semibold text-primary-700 hover:underline disabled:opacity-60"
-              >
-                Send code to email instead
-              </button>
-            )}
-            {hasTotp ? (
-              <button
-                type="button"
-                onClick={() => {
-                  if (twoFactorMethod === "totp") return;
-                  setTwoFactorMethod("totp");
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  setStep("login");
                   setCode("");
                   setError(null);
                 }}
-                className={`font-semibold text-primary-700 hover:underline ${
-                  twoFactorMethod === "totp" ? "underline" : ""
-                }`}
+                className="w-full text-center text-[13px] italic text-slate-400 hover:text-slate-600"
               >
-                Google Authenticator
+                Use a different account
               </button>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              setStep("login");
-              setCode("");
-              setError(null);
-            }}
-            className="text-sm font-semibold text-gray-600 hover:text-gray-900"
-          >
-            Use a different account
-          </button>
-        </form>
-      ) : (
-        <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div className="flex justify-start text-sm">
-            <button
-              type="button"
-              onClick={() => void onForgotPassword()}
-              className="min-h-[44px] font-semibold text-primary-700 hover:text-primary-900"
-            >
-              Forgot password?
-            </button>
-          </div>
-          <button type="submit" disabled={loading || !canSubmit} className={btnPrimary}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-      )}
-
-      <p className="mt-6 text-center text-sm text-gray-600">
-        New here?{" "}
-        <Link href="/fusion-xpress/smart-visitor-management/sign-up" className="font-semibold text-primary-700">
-          Create an account
-        </Link>
-      </p>
-    </div>
+            </form>
+          ) : (
+            <form className="space-y-8" onSubmit={onSubmit}>
+              <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                <Mail className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                <input
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={underlineFieldClass}
+                  placeholder="Email ID"
+                  aria-label="Email ID"
+                />
+              </div>
+              <div className="flex items-end gap-3 border-b border-slate-400/80 pb-2">
+                <Lock className="mb-1 h-[18px] w-[18px] shrink-0 text-slate-500" strokeWidth={1.75} />
+                <input
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={underlineFieldClass}
+                  placeholder="Password"
+                  aria-label="Password"
+                />
+              </div>
+              <div className="flex items-center justify-between text-[13px] italic text-slate-400">
+                <label className="inline-flex cursor-pointer items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-3.5 w-3.5 shrink-0 appearance-none rounded-[2px] border border-slate-500 bg-white checked:border-slate-600 checked:bg-slate-600 checked:bg-[length:12px_12px] checked:bg-center checked:bg-no-repeat focus:outline-none focus:ring-0"
+                    style={
+                      rememberMe
+                        ? {
+                            backgroundImage:
+                              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.5 8.2 6.4 11l6.1-6.5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                          }
+                        : undefined
+                    }
+                  />
+                  Remember me
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void onForgotPassword()}
+                  disabled={loading}
+                  className="hover:text-slate-600"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !canSubmit}
+                className="w-full bg-primary-800 py-3 text-[15px] font-semibold uppercase tracking-[0.18em] text-white transition hover:bg-primary-900 disabled:cursor-not-allowed disabled:opacity-55"
+              >
+                {loading ? "Signing in..." : "Login"}
+              </button>
+              <p className="text-center text-[13px] italic text-slate-400">
+                New here?{" "}
+                <Link href="/fusion-xpress/smart-visitor-management/sign-up" className="hover:text-slate-600">
+                  Create an account
+                </Link>
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
+    </motion.section>
   );
 }
