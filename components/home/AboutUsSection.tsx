@@ -16,16 +16,9 @@ export default function AboutUsSection() {
   return (
     <section
       className="home-about bg-primary-50 py-8 sm:py-14 md:py-16 lg:py-20"
-      aria-labelledby="home-about-heading"
+      aria-label="About us"
     >
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
-        <h2
-          id="home-about-heading"
-          className="mb-5 overflow-visible px-1 font-montserrat text-[1.55rem] font-bold leading-snug text-primary-600 sm:mb-10 sm:text-4xl md:mb-12"
-        >
-          About Us
-        </h2>
-
         <div className="grid grid-cols-1 overflow-hidden bg-white shadow-sm md:grid-cols-3">
           <article className="flex flex-col items-center bg-white px-4 py-6 text-center sm:px-10 sm:py-14">
             <Send

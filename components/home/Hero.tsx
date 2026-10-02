@@ -92,10 +92,10 @@ export default function Hero() {
 
   return (
     <section
-      className="home-hero relative w-full overflow-x-visible bg-primary-950 pt-[calc(env(safe-area-inset-top,0px)+9.5rem)] sm:pt-[calc(env(safe-area-inset-top,0px)+9.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9.75rem)]"
+      className="home-hero relative w-full overflow-x-clip bg-primary-950 pt-[calc(var(--site-nav-height)+0.75rem)] sm:overflow-x-visible sm:pt-[calc(env(safe-area-inset-top,0px)+9.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9.75rem)]"
       aria-labelledby="home-hero-heading"
     >
-      <div className="relative isolate min-h-[22rem] overflow-visible sm:min-h-[28rem] md:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[38rem]">
+      <div className="relative isolate min-h-0 overflow-hidden sm:min-h-[28rem] sm:overflow-visible md:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[38rem]">
         <div className="absolute inset-0 overflow-hidden" aria-hidden>
           <Image
             loader={cloudinaryLoader}
@@ -112,7 +112,7 @@ export default function Hero() {
           <div className="absolute inset-0 bg-gradient-to-t from-primary-950/85 via-primary-950/25 to-primary-950/45 sm:from-primary-950/70 sm:via-primary-950/20 sm:to-primary-950/30 lg:from-primary-950/25 lg:via-transparent lg:to-primary-950/20" />
         </div>
 
-        <div className="relative z-10 flex min-h-[inherit] w-full items-start overflow-visible px-4 pb-6 pt-4 sm:px-8 sm:pb-12 sm:pt-5 md:px-12 md:pb-14 md:pt-5 lg:px-16 lg:pb-16 lg:pt-6 xl:px-20">
+        <div className="relative z-10 flex min-h-[inherit] w-full items-start overflow-visible px-4 pb-[calc(var(--site-mobile-dock-height)+1.25rem)] pt-2 sm:px-8 sm:pb-12 sm:pt-5 md:px-12 md:pb-14 md:pt-5 lg:px-16 lg:pb-16 lg:pt-6 xl:px-20">
           <motion.div
             initial={reduceMotion ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}

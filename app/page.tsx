@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Hero from "@/components/home/Hero";
+import AugustEventSection from "@/components/home/AugustEventSection";
 import AboutUsSection from "@/components/home/AboutUsSection";
 import WhyChangerFusionsSection from "@/components/home/WhyChangerFusionsSection";
 import CoreValues from "@/components/home/CoreValues";
@@ -85,6 +86,7 @@ export default function Home() {
     <>
       <HomeJsonLd />
       <Hero />
+      <AugustEventSection />
       <AboutUsSection />
       <WhyChangerFusionsSection />
       <CoreValues />

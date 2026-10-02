@@ -149,6 +149,13 @@
     padding-block: 0.06em;
   }
 
+  .home-august-event h2,
+  .home-august-event h2 span,
+  .home-august-event p,
+  .home-august-event a {
+    text-align: left !important;
+  }
+
   .home-about h2,
   .home-about h3,
   .home-about p {

@@ -40,14 +40,14 @@ export default function ImpactKenyaSection() {
                   isRight ? "border-l border-secondary-600/40" : ""
                 } ${isBottom ? "border-t border-secondary-600/40" : ""}`}
               >
-                <p className="font-montserrat text-[1.45rem] font-bold tabular-nums text-secondary-700 sm:text-4xl md:text-5xl">
+                <p className="font-montserrat text-2xl font-bold tabular-nums text-secondary-700 sm:text-4xl md:text-5xl">
                   <AnimatedCount
                     value={stat.value}
                     suffix={stat.suffix}
                     durationMs={1600 + index * 180}
                   />
                 </p>
-                <p className="mt-1 text-xs font-medium text-primary-900 sm:mt-2 sm:text-base">{stat.label}</p>
+                <p className="mt-1 text-sm font-medium leading-snug text-primary-900 sm:mt-2 sm:text-base">{stat.label}</p>
               </div>
             );
           })}
