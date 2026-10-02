@@ -25,35 +25,15 @@ export function JobsEditorialIntro() {
           . Employers can register under <strong>For employers</strong> and publish listings from the Fusion dashboard.
         </p>
         <p>
-          Exploring a career track with us? See{" "}
-          <Link
-            href="/careers/jobs/marketing-opportunities"
-            className="font-semibold text-primary-600 underline hover:text-primary-700"
-          >
-            marketing
+          Marketing, fashion, events, and education roles sit on this{" "}
+          <Link href="/jobs" className="font-semibold text-primary-600 underline hover:text-primary-700">
+            job board
           </Link>
-          ,{" "}
-          <Link
-            href="/careers/jobs/fashion-opportunities"
-            className="font-semibold text-primary-600 underline hover:text-primary-700"
-          >
-            fashion
+          . For a longer path with Changer Fusions, read{" "}
+          <Link href="/careers" className="font-semibold text-primary-600 underline hover:text-primary-700">
+            career development
           </Link>
-          ,{" "}
-          <Link
-            href="/careers/jobs/events-opportunities"
-            className="font-semibold text-primary-600 underline hover:text-primary-700"
-          >
-            events
-          </Link>
-          , and{" "}
-          <Link
-            href="/careers/jobs/education-opportunities"
-            className="font-semibold text-primary-600 underline hover:text-primary-700"
-          >
-            education
-          </Link>{" "}
-          opportunities, or read hiring tips on our{" "}
+          , or hiring tips on our{" "}
           <Link href="/blogs" className="font-semibold text-primary-600 underline hover:text-primary-700">
             blog
           </Link>

@@ -63,6 +63,16 @@ const nextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      { source: "/careers/jobs", destination: "/jobs", permanent: true },
+      { source: "/careers/jobs/:path*", destination: "/jobs", permanent: true },
+      { source: "/careers/attachments", destination: "/careers", permanent: true },
+      { source: "/careers/attachments/:path*", destination: "/careers", permanent: true },
+      { source: "/careers/internships", destination: "/careers", permanent: true },
+      { source: "/careers/internships/:path*", destination: "/careers", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: imageRemotePatterns,
     // Prefer next-gen formats when supported by the browser/CDN edge.

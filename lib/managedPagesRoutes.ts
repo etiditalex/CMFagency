@@ -12,23 +12,8 @@ export const MANAGED_PAGES_ROUTES: ManagedRoute[] = [
   { route: "/services/events-marketing", section: "services" },
   { route: "/services/content-creation", section: "services" },
 
-  // Careers (top + sub categories/opportunities)
+  // Career development stays under the job board. Dropdown tracks redirect.
   { route: "/careers", section: "careers" },
-  { route: "/careers/attachments", section: "careers" },
-  { route: "/careers/internships", section: "careers" },
-  { route: "/careers/jobs", section: "careers" },
-  { route: "/careers/attachments/marketing-opportunities", section: "careers" },
-  { route: "/careers/attachments/fashion-opportunities", section: "careers" },
-  { route: "/careers/attachments/events-opportunities", section: "careers" },
-  { route: "/careers/attachments/education-opportunities", section: "careers" },
-  { route: "/careers/internships/marketing-opportunities", section: "careers" },
-  { route: "/careers/internships/fashion-opportunities", section: "careers" },
-  { route: "/careers/internships/events-opportunities", section: "careers" },
-  { route: "/careers/internships/education-opportunities", section: "careers" },
-  { route: "/careers/jobs/marketing-opportunities", section: "careers" },
-  { route: "/careers/jobs/fashion-opportunities", section: "careers" },
-  { route: "/careers/jobs/events-opportunities", section: "careers" },
-  { route: "/careers/jobs/education-opportunities", section: "careers" },
 ];
 
 export function getManagedRoute(route: string): ManagedRoute | undefined {

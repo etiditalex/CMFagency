@@ -6,24 +6,8 @@ import { ArrowRight, CheckCircle, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const CAREERS_NAV = [
-  { label: "ATTACHMENTS", href: "/careers/attachments" },
-  { label: "INTERNSHIPS", href: "/careers/internships" },
-  { label: "JOBS", href: "/careers/jobs" },
-
-  { label: "MARKETING (ATTACHMENTS)", href: "/careers/attachments/marketing-opportunities" },
-  { label: "FASHION (ATTACHMENTS)", href: "/careers/attachments/fashion-opportunities" },
-  { label: "EVENTS (ATTACHMENTS)", href: "/careers/attachments/events-opportunities" },
-  { label: "EDUCATION (ATTACHMENTS)", href: "/careers/attachments/education-opportunities" },
-
-  { label: "MARKETING (INTERNSHIPS)", href: "/careers/internships/marketing-opportunities" },
-  { label: "FASHION (INTERNSHIPS)", href: "/careers/internships/fashion-opportunities" },
-  { label: "EVENTS (INTERNSHIPS)", href: "/careers/internships/events-opportunities" },
-  { label: "EDUCATION (INTERNSHIPS)", href: "/careers/internships/education-opportunities" },
-
-  { label: "MARKETING (JOBS)", href: "/careers/jobs/marketing-opportunities" },
-  { label: "FASHION (JOBS)", href: "/careers/jobs/fashion-opportunities" },
-  { label: "EVENTS (JOBS)", href: "/careers/jobs/events-opportunities" },
-  { label: "EDUCATION (JOBS)", href: "/careers/jobs/education-opportunities" },
+  { label: "JOB BOARD", href: "/jobs" },
+  { label: "CAREER DEVELOPMENT", href: "/careers" },
 ];
 
 type CareerDetailTemplateProps = {
