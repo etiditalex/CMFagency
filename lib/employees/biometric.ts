@@ -272,7 +272,9 @@ export async function createEnrollmentOptions(
     attestationType: "none",
     authenticatorSelection: {
       authenticatorAttachment: input.attachment,
-      residentKey: "required",
+      // Phone unlock uses the device screen-lock fingerprint. A required resident key
+      // opens the browser passkey sheet (including another-device QR) instead.
+      residentKey: input.attachment === "platform" ? "discouraged" : "required",
       userVerification: "required",
     },
     preferredAuthenticatorType: input.attachment === "platform" ? "localDevice" : "securityKey",
@@ -379,7 +381,10 @@ export async function verifyAndStoreEnrollment(
   const attachment = isBiometricAttachment(input.response.authenticatorAttachment)
     ? input.response.authenticatorAttachment
     : input.challenge.attachment;
-  const transports = input.response.response.transports ?? transportsFor(attachment);
+  const transports =
+    attachment === "platform"
+      ? ["internal"]
+      : input.response.response.transports ?? transportsFor(attachment);
 
   const { error: deleteErr } = await admin
     .from(CREDENTIALS)

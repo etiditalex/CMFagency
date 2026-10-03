@@ -60,6 +60,25 @@ type Props = {
 
 const autoStarted = new Set<string>();
 
+function isPhoneBrowser() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+type PreparedUnlock =
+  | {
+      kind: "enroll";
+      action: ScanAction;
+      challengeId: string;
+      options: PublicKeyCredentialCreationOptionsJSON;
+    }
+  | {
+      kind: "attend";
+      action: ScanAction;
+      challengeId: string;
+      options: PublicKeyCredentialRequestOptionsJSON;
+    };
+
 async function postJson<T>(url: string, body: Record<string, unknown>): Promise<{ ok: boolean; status: number; json: T }> {
   const res = await fetch(url, {
     method: "POST",
@@ -85,11 +104,17 @@ export default function BiometricAttendanceClient({ mode }: Props) {
   const [readerEnrolled, setReaderEnrolled] = useState(false);
   const [platformAvailable, setPlatformAvailable] = useState(false);
   const [done, setDone] = useState<DoneState | null>(null);
+  const [phoneUnlock, setPhoneUnlock] = useState(false);
+  const [unlockReady, setUnlockReady] = useState(false);
+  const [tapHint, setTapHint] = useState<string | null>(null);
   const runLock = useRef(false);
+  const preparedRef = useRef<PreparedUnlock | null>(null);
 
-  const sensorCopy = platformAvailable
-    ? "This device will use the fingerprint already set up in its operating system. Place your right thumb on the sensor."
-    : "Place your right thumb on the fingerprint reader connected to this device.";
+  const sensorCopy = phoneUnlock
+    ? "Your phone will ask for the same fingerprint that unlocks it. That scan registers your right thumb."
+    : platformAvailable
+      ? "This device will use the fingerprint already set up in its operating system. Place your right thumb on the sensor."
+      : "Place your right thumb on the fingerprint reader connected to this device.";
 
   const loadPersonal = useCallback(async () => {
     if (!token) {
@@ -155,6 +180,158 @@ export default function BiometricAttendanceClient({ mode }: Props) {
     },
     [token]
   );
+
+  const prepareDeviceUnlock = useCallback(
+    async (action: ScanAction, enrolledOnPhone: boolean) => {
+      let purpose: "enroll" | "attend" = enrolledOnPhone ? "attend" : "enroll";
+      let optionsRes = await postJson<{
+        needsEnrollment?: boolean;
+        challengeId?: string;
+        options?: PublicKeyCredentialCreationOptionsJSON & PublicKeyCredentialRequestOptionsJSON;
+        error?: string;
+      }>("/api/visitor-employees/biometric/options", {
+        purpose,
+        attachment: "platform",
+        token,
+      });
+      if (optionsRes.ok && optionsRes.json.needsEnrollment) {
+        purpose = "enroll";
+        optionsRes = await postJson<{
+          needsEnrollment?: boolean;
+          challengeId?: string;
+          options?: PublicKeyCredentialCreationOptionsJSON & PublicKeyCredentialRequestOptionsJSON;
+          error?: string;
+        }>("/api/visitor-employees/biometric/options", {
+          purpose,
+          attachment: "platform",
+          token,
+        });
+      }
+      if (!optionsRes.ok || !optionsRes.json.challengeId || !optionsRes.json.options) {
+        throw new Error(optionsRes.json.error ?? "Could not prepare the phone fingerprint prompt.");
+      }
+      preparedRef.current =
+        purpose === "enroll"
+          ? {
+              kind: "enroll",
+              action,
+              challengeId: optionsRes.json.challengeId,
+              options: optionsRes.json.options,
+            }
+          : {
+              kind: "attend",
+              action,
+              challengeId: optionsRes.json.challengeId,
+              options: optionsRes.json.options,
+            };
+      setPhoneUnlock(true);
+      setUnlockReady(true);
+    },
+    [token]
+  );
+
+  const launchDeviceUnlock = useCallback(() => {
+    const prepared = preparedRef.current;
+    if (!prepared || runLock.current) return Promise.resolve();
+    runLock.current = true;
+    setWorking(true);
+    setError(null);
+    setDone(null);
+    setTapHint(null);
+    setStatusText(
+      prepared.kind === "enroll"
+        ? "Use the fingerprint that unlocks this phone to register…"
+        : "Use the fingerprint that unlocks this phone…"
+    );
+    const credentialPromise =
+      prepared.kind === "enroll"
+        ? startRegistration({ optionsJSON: prepared.options })
+        : startAuthentication({ optionsJSON: prepared.options });
+
+    return (async () => {
+      try {
+        const response = await credentialPromise;
+        setStatusText("Checking your workplace location…");
+        const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+        const pos = await getBrowserPosition();
+        const deviceFields = {
+          challengeId: prepared.challengeId,
+          response,
+          action: prepared.action,
+          token,
+          deviceId: getOrCreateBrowserDeviceId(),
+          deviceLabel: browserDeviceLabel(),
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          accuracyMeters: pos.accuracyMeters,
+        };
+        const saved = await postJson<{
+          success?: boolean;
+          registered?: boolean;
+          error?: string;
+          attendanceError?: string;
+          eventType?: "sign_in" | "sign_out";
+          occurredAt?: string;
+          businessName?: string;
+          emailSent?: boolean;
+          employeeEmailSent?: boolean;
+          employee?: EmployeePreview;
+        }>(
+          prepared.kind === "enroll"
+            ? "/api/visitor-employees/biometric/enroll"
+            : "/api/visitor-employees/biometric/attend",
+          deviceFields
+        );
+        if (!saved.ok) throw new Error(saved.json.error ?? "Could not record the fingerprint.");
+        preparedRef.current = null;
+        setUnlockReady(false);
+        if (saved.json.employee && saved.json.eventType) {
+          if (saved.json.businessName) setBusinessName(saved.json.businessName);
+          setEmployee(saved.json.employee);
+          setPlatformEnrolled(true);
+          setDone({
+            ok: true,
+            eventType: saved.json.eventType,
+            occurredAt: saved.json.occurredAt,
+            employee: saved.json.employee,
+            businessName: saved.json.businessName,
+            emailSent: saved.json.emailSent,
+            employeeEmailSent: saved.json.employeeEmailSent,
+            message:
+              prepared.kind === "enroll"
+                ? "Fingerprint registered. You are signed in."
+                : saved.json.eventType === "sign_in"
+                  ? "Fingerprint verified. You are signed in."
+                  : "Fingerprint verified. You are signed out.",
+          });
+          return;
+        }
+        setPlatformEnrolled(true);
+        setDone({
+          ok: false,
+          message:
+            saved.json.attendanceError ??
+            "Your fingerprint is registered. Allow location at your workplace, then scan again to sign in.",
+        });
+      } catch (e: unknown) {
+        const name = e instanceof Error ? e.name : "";
+        if (name === "NotAllowedError" || name === "AbortError") {
+          setDone(null);
+          setUnlockReady(true);
+          setTapHint("Tap Scan fingerprint. Your phone will ask for the same fingerprint that unlocks it.");
+          return;
+        }
+        setDone({ ok: false, message: biometricBrowserError(e) });
+        setUnlockReady(false);
+      } finally {
+        runLock.current = false;
+        setWorking(false);
+      }
+    })();
+  }, [token]);
 
   const attend = useCallback(
     async (action: ScanAction, attachment: BiometricAttachment, enrolled: boolean, allowEnroll = true) => {
@@ -311,6 +488,24 @@ export default function BiometricAttendanceClient({ mode }: Props) {
       }
       const loaded = await loadPersonal();
       if (cancelled || !loaded) return;
+      const useUnlock = isPhoneBrowser() || platform;
+      if (useUnlock) {
+        const action = loaded.employee.attendanceStatus === "in" ? "sign_out" : "sign_in";
+        try {
+          await prepareDeviceUnlock(action, loaded.platformEnrolled);
+        } catch (e: unknown) {
+          if (!cancelled) {
+            setError(e instanceof Error ? e.message : "Could not prepare the phone fingerprint prompt.");
+          }
+          return;
+        }
+        if (cancelled || loaded.employee.attendanceStatus !== "out") return;
+        const key = `personal:${token}`;
+        if (autoStarted.has(key)) return;
+        autoStarted.add(key);
+        void launchDeviceUnlock();
+        return;
+      }
       if (loaded.employee.attendanceStatus !== "out") return;
       const key = `personal:${token}`;
       if (autoStarted.has(key)) return;
@@ -395,6 +590,10 @@ export default function BiometricAttendanceClient({ mode }: Props) {
                   confirmation.initialCheckedOut
                     ? undefined
                     : async () => {
+                        if (!isStation && (phoneUnlock || isPhoneBrowser())) {
+                          await launchDeviceUnlock();
+                          return;
+                        }
                         await run(isStation ? "toggle" : "sign_out");
                       }
                 }
@@ -423,11 +622,15 @@ export default function BiometricAttendanceClient({ mode }: Props) {
               <p className="text-sm text-red-700">{done.message}</p>
               <button
                 type="button"
-                onClick={() => void run(isStation ? "toggle" : employee?.attendanceStatus === "in" ? "sign_out" : "sign_in")}
+                onClick={() =>
+                  void (phoneUnlock && preparedRef.current
+                    ? launchDeviceUnlock()
+                    : run(isStation ? "toggle" : employee?.attendanceStatus === "in" ? "sign_out" : "sign_in"))
+                }
                 className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-bold text-white"
               >
                 <Fingerprint className="h-5 w-5" />
-                Scan right thumb
+                {phoneUnlock ? "Scan fingerprint" : "Scan right thumb"}
               </button>
               {!isStation ? (
                 <button
@@ -456,21 +659,25 @@ export default function BiometricAttendanceClient({ mode }: Props) {
                 {employee.department ? <p className="mt-1 text-sm text-gray-600">{employee.department}</p> : null}
               </div>
               <p className="text-sm text-gray-600">{sensorCopy}</p>
+              {tapHint ? <p className="text-sm font-medium text-primary-800">{tapHint}</p> : null}
               <button
                 type="button"
-                onClick={() => void run("sign_in")}
-                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-bold text-white"
+                disabled={phoneUnlock && !unlockReady}
+                onClick={() => void (phoneUnlock ? launchDeviceUnlock() : run("sign_in"))}
+                className="flex w-full min-h-[52px] items-center justify-center gap-2 rounded-xl bg-primary-600 py-3.5 text-base font-bold text-white disabled:opacity-50"
               >
-                <LogIn className="h-5 w-5" />
-                Sign in with right thumb
+                {phoneUnlock ? <Fingerprint className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+                {phoneUnlock ? "Scan fingerprint" : "Sign in with right thumb"}
               </button>
-              <button
-                type="button"
-                onClick={() => void run("sign_in", platformAvailable ? "cross-platform" : "platform")}
-                className="text-sm font-semibold text-primary-700"
-              >
-                {platformAvailable ? "Use a fingerprint reader instead" : "Use this device's fingerprint instead"}
-              </button>
+              {phoneUnlock ? null : (
+                <button
+                  type="button"
+                  onClick={() => void run("sign_in", platformAvailable ? "cross-platform" : "platform")}
+                  className="text-sm font-semibold text-primary-700"
+                >
+                  {platformAvailable ? "Use a fingerprint reader instead" : "Use this device's fingerprint instead"}
+                </button>
+              )}
             </div>
           ) : null}
 

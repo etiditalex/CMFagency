@@ -11,6 +11,7 @@ import {
   verifyAndStoreEnrollment,
   webAuthnRelyingParty,
 } from "@/lib/employees/biometric";
+import { processEmployeeQrScan } from "@/lib/employees/process-employee-scan";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
 
 export async function POST(req: NextRequest) {
@@ -23,6 +24,14 @@ export async function POST(req: NextRequest) {
       token?: unknown;
       deviceLabel?: unknown;
       response?: RegistrationResponseJSON;
+      action?: unknown;
+      deviceId?: unknown;
+      userAgent?: unknown;
+      platform?: unknown;
+      language?: unknown;
+      latitude?: unknown;
+      longitude?: unknown;
+      accuracyMeters?: unknown;
     };
     const challengeId = String(body.challengeId ?? "").trim();
     const token = String(body.token ?? "").trim();
@@ -52,10 +61,52 @@ export async function POST(req: NextRequest) {
     await consumeChallenge(admin, challengeId);
     if (!stored.ok) return NextResponse.json({ error: stored.error }, { status: stored.status });
 
+    const userAgent = req.headers.get("user-agent") ?? undefined;
+    const attendance = await processEmployeeQrScan(admin, {
+      token,
+      action: body.action ?? "sign_in",
+      deviceId: body.deviceId,
+      deviceLabel: body.deviceLabel,
+      userAgent: body.userAgent ?? userAgent,
+      platform: body.platform,
+      language: body.language,
+      latitude: body.latitude,
+      longitude: body.longitude,
+      accuracyMeters: body.accuracyMeters,
+      scanSource: "biometric",
+      trustedBiometric: true,
+      authenticatorAttachment: stored.attachment,
+    });
+
+    if (!attendance.ok) {
+      return NextResponse.json({
+        success: true,
+        registered: true,
+        finger: stored.finger,
+        attachment: stored.attachment,
+        attendanceError: attendance.error,
+      });
+    }
+
     return NextResponse.json({
       success: true,
+      registered: true,
       finger: stored.finger,
       attachment: stored.attachment,
+      eventType: attendance.eventType,
+      occurredAt: attendance.occurredAt,
+      businessName: attendance.businessName,
+      emailSent: attendance.emailSent,
+      employeeEmailSent: attendance.employeeEmailSent,
+      employee: {
+        id: attendance.employee.id,
+        fullName: attendance.employee.fullName,
+        department: attendance.employee.department,
+        employeeCode: attendance.employee.employeeCode,
+        attendanceStatus: attendance.employee.attendanceStatus,
+        lastSignedInAt: attendance.employee.lastSignedInAt,
+        lastSignedOutAt: attendance.employee.lastSignedOutAt,
+      },
     });
   } catch (e: unknown) {
     if (isMissingBiometricTable(e)) {
