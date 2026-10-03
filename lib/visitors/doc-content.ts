@@ -2,6 +2,7 @@ import {
   CRM_SITE_CHECK_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_BIOMETRIC_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
@@ -150,6 +151,40 @@ export const VISITOR_MANAGEMENT_DOC_SECTIONS: DocSection[] = [
       {
         label: "Employee check-in page",
         href: "/fusion-xpress/smart-visitor-management/employee-check",
+        external: true,
+      },
+    ],
+  },
+  {
+    id: "biometric",
+    title: "Biometric recognition",
+    summary:
+      "Staff sign in and sign out with a right-thumb fingerprint instead of a QR code. Phones use the fingerprint already set up in the operating system. A FIDO2 fingerprint reader can be used at reception. The attendance rules are the same as a QR scan: workplace location, sign-in then sign-out, shifts, and notification emails.",
+    bullets: [
+      "Only the right thumb is recorded. Each enrollment is stored as that finger.",
+      "Personal link: the employee opens the link. A phone with a fingerprint sensor uses that operating-system scanner automatically.",
+      "Fingerprint reader: record the right thumb on the reader from the personal link, then leave the station link open at reception.",
+      "A successful thumb scan writes the same attendance event as a QR scan, labelled Right thumb.",
+    ],
+    steps: [
+      {
+        title: "Open Biometric recognition",
+        body: "In Visitor Management, open Biometric recognition. Copy each employee's personal link, or the shared station link for a reception reader.",
+      },
+      {
+        title: "Record the right thumb",
+        body: "The employee opens their link on their phone, or on the computer with the fingerprint reader attached, and places their right thumb on the sensor when the operating system asks.",
+      },
+      {
+        title: "Sign in and sign out",
+        body: "Opening the link again scans the right thumb and records sign-in or sign-out using the same workplace and attendance rules as QR scanning.",
+      },
+    ],
+    links: [
+      { label: "Biometric recognition", href: VISITOR_MANAGEMENT_BIOMETRIC_PATH },
+      {
+        label: "Biometric check-in page",
+        href: "/fusion-xpress/smart-visitor-management/biometric",
         external: true,
       },
     ],

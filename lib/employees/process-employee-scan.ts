@@ -154,7 +154,7 @@ function isKioskScan(input: { kioskScan?: unknown; scanSource?: unknown }): bool
   if (input.kioskScan === true || input.kioskScan === "true") return true;
   const source = String(input.scanSource ?? "").toLowerCase();
   // Shared terminals skip personal phone–pass device binding.
-  return source === "kiosk";
+  return source === "kiosk" || source === "biometric_station";
 }
 
 export async function processEmployeeQrScan(
@@ -170,6 +170,9 @@ export async function processEmployeeQrScan(
     accuracy?: unknown;
     kioskScan?: unknown;
     scanSource?: unknown;
+    /** Set only by the biometric attend route after a verified right-thumb ceremony. */
+    trustedBiometric?: boolean;
+    authenticatorAttachment?: unknown;
   }
 ): Promise<EmployeeScanResult> {
   const fromKiosk = isKioskScan(input);
@@ -263,10 +266,28 @@ export async function processEmployeeQrScan(
   const shiftNumber =
     shiftEnabled && "shiftNumber" in transitionCheck ? transitionCheck.shiftNumber : undefined;
 
-  const device = normalizeDeviceFingerprint({
+  const normalizedDevice = normalizeDeviceFingerprint({
     ...input,
     userAgent: input.userAgent,
   });
+  const authenticator = String(input.authenticatorAttachment ?? "")
+    .trim()
+    .slice(0, 32);
+  const device =
+    input.trustedBiometric === true
+      ? {
+          ...normalizedDevice,
+          deviceLabel: normalizedDevice.deviceLabel.toLowerCase().includes("right thumb")
+            ? normalizedDevice.deviceLabel
+            : `Right thumb · ${normalizedDevice.deviceLabel || "Biometric device"}`.slice(0, 200),
+          deviceInfo: {
+            ...normalizedDevice.deviceInfo,
+            scanMethod: "biometric",
+            finger: "right_thumb",
+            authenticator: authenticator || undefined,
+          },
+        }
+      : normalizedDevice;
 
   if (
     !fromKiosk &&

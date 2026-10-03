@@ -50,6 +50,19 @@ export function employeeStats(employees: EmployeeRecord[]) {
   };
 }
 
+export function employeeBiometricPayload(token: string, siteOrigin?: string): string {
+  const base = (siteOrigin ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const path = `/fusion-xpress/smart-visitor-management/biometric?token=${encodeURIComponent(token)}`;
+  return base ? `${base}${path}` : path;
+}
+
+/** Shared fingerprint-reader station. Employees must already have a right thumb recorded on that reader. */
+export function employeeBiometricStationPayload(stationToken: string, siteOrigin?: string): string {
+  const base = (siteOrigin ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  const path = `/fusion-xpress/smart-visitor-management/biometric/station?token=${encodeURIComponent(stationToken)}`;
+  return base ? `${base}${path}` : path;
+}
+
 export function employeeQrPayload(token: string, siteOrigin?: string): string {
   const base = (siteOrigin ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
   const path = `/fusion-xpress/smart-visitor-management/employee-check?token=${encodeURIComponent(token)}`;

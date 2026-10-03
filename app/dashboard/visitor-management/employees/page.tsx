@@ -78,6 +78,7 @@ import {
   VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
+  VISITOR_MANAGEMENT_BIOMETRIC_PATH,
   VISITOR_MANAGEMENT_PATH,
   VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
 } from "@/lib/visitors/industry-options";
@@ -678,6 +679,9 @@ export default function VisitorManagementEmployeesPage() {
           ) : null}
           <Link href={pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
             Kiosk scanner
+          </Link>
+          <Link href={pathWithOwner(VISITOR_MANAGEMENT_BIOMETRIC_PATH, adminOwnerId)} className="font-semibold text-primary-700 hover:underline">
+            Biometric recognition
           </Link>
         </p>
       ) : null}
