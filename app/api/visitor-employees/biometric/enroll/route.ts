@@ -5,13 +5,13 @@ import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 import {
   biometricSetupError,
   consumeChallenge,
+  deletePlatformThumb,
   isMissingBiometricTable,
   loadChallenge,
   resolveEmployeeForBiometric,
   verifyAndStoreEnrollment,
   webAuthnRelyingParty,
 } from "@/lib/employees/biometric";
-import { processEmployeeQrScan } from "@/lib/employees/process-employee-scan";
 import { getVisitorServiceClient } from "@/lib/visitors/require-visitor-management";
 
 export async function POST(req: NextRequest) {
@@ -23,24 +23,26 @@ export async function POST(req: NextRequest) {
       challengeId?: unknown;
       token?: unknown;
       deviceLabel?: unknown;
+      discard?: unknown;
       response?: RegistrationResponseJSON;
-      action?: unknown;
-      deviceId?: unknown;
-      userAgent?: unknown;
-      platform?: unknown;
-      language?: unknown;
-      latitude?: unknown;
-      longitude?: unknown;
-      accuracyMeters?: unknown;
     };
     const challengeId = String(body.challengeId ?? "").trim();
     const token = String(body.token ?? "").trim();
-    if (!challengeId || !body.response || !token) {
+    if (!token) {
       return NextResponse.json({ error: "Fingerprint enrollment was incomplete." }, { status: 400 });
     }
 
     const resolved = await resolveEmployeeForBiometric(admin, token);
     if (!resolved.ok) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+
+    if (body.discard === true) {
+      await deletePlatformThumb(admin, resolved.employee.id);
+      return NextResponse.json({ success: true, discarded: true });
+    }
+
+    if (!challengeId || !body.response) {
+      return NextResponse.json({ error: "Fingerprint enrollment was incomplete." }, { status: 400 });
+    }
 
     const challenge = await loadChallenge(admin, challengeId);
     if (!challenge) {
@@ -61,52 +63,11 @@ export async function POST(req: NextRequest) {
     await consumeChallenge(admin, challengeId);
     if (!stored.ok) return NextResponse.json({ error: stored.error }, { status: stored.status });
 
-    const userAgent = req.headers.get("user-agent") ?? undefined;
-    const attendance = await processEmployeeQrScan(admin, {
-      token,
-      action: body.action ?? "sign_in",
-      deviceId: body.deviceId,
-      deviceLabel: body.deviceLabel,
-      userAgent: body.userAgent ?? userAgent,
-      platform: body.platform,
-      language: body.language,
-      latitude: body.latitude,
-      longitude: body.longitude,
-      accuracyMeters: body.accuracyMeters,
-      scanSource: "biometric",
-      trustedBiometric: true,
-      authenticatorAttachment: stored.attachment,
-    });
-
-    if (!attendance.ok) {
-      return NextResponse.json({
-        success: true,
-        registered: true,
-        finger: stored.finger,
-        attachment: stored.attachment,
-        attendanceError: attendance.error,
-      });
-    }
-
     return NextResponse.json({
       success: true,
       registered: true,
       finger: stored.finger,
       attachment: stored.attachment,
-      eventType: attendance.eventType,
-      occurredAt: attendance.occurredAt,
-      businessName: attendance.businessName,
-      emailSent: attendance.emailSent,
-      employeeEmailSent: attendance.employeeEmailSent,
-      employee: {
-        id: attendance.employee.id,
-        fullName: attendance.employee.fullName,
-        department: attendance.employee.department,
-        employeeCode: attendance.employee.employeeCode,
-        attendanceStatus: attendance.employee.attendanceStatus,
-        lastSignedInAt: attendance.employee.lastSignedInAt,
-        lastSignedOutAt: attendance.employee.lastSignedOutAt,
-      },
     });
   } catch (e: unknown) {
     if (isMissingBiometricTable(e)) {

@@ -60,6 +60,17 @@ type Props = {
 
 const autoStarted = new Set<string>();
 
+function isRetryableFingerprintError(err: unknown): boolean {
+  const name = err instanceof Error ? err.name : "";
+  const message = err instanceof Error ? err.message : "";
+  return (
+    name === "NotAllowedError" ||
+    name === "AbortError" ||
+    name === "TimeoutError" ||
+    /timed out|timeout|expired/i.test(message)
+  );
+}
+
 function isPhoneBrowser() {
   if (typeof navigator === "undefined") return false;
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -111,7 +122,7 @@ export default function BiometricAttendanceClient({ mode }: Props) {
   const preparedRef = useRef<PreparedUnlock | null>(null);
 
   const sensorCopy = phoneUnlock
-    ? "Your phone will ask for the same fingerprint that unlocks it. That scan registers your right thumb."
+    ? "Place your right thumb on the sensor, the same way this phone adds a fingerprint. It keeps reading the thumb until the print is saved."
     : platformAvailable
       ? "This device will use the fingerprint already set up in its operating system. Place your right thumb on the sensor."
       : "Place your right thumb on the fingerprint reader connected to this device.";
@@ -238,23 +249,192 @@ export default function BiometricAttendanceClient({ mode }: Props) {
     setError(null);
     setDone(null);
     setTapHint(null);
-    setStatusText(
-      prepared.kind === "enroll"
-        ? "Use the fingerprint that unlocks this phone to register…"
-        : "Use the fingerprint that unlocks this phone…"
-    );
-    const credentialPromise =
-      prepared.kind === "enroll"
-        ? startRegistration({ optionsJSON: prepared.options })
-        : startAuthentication({ optionsJSON: prepared.options });
 
+    if (prepared.kind === "enroll") {
+      const firstRegistration = startRegistration({ optionsJSON: prepared.options });
+      return recordThumbUntilStored(prepared, firstRegistration);
+    }
+
+    setStatusText("Use the fingerprint that unlocks this phone…");
+    const credentialPromise = startAuthentication({ optionsJSON: prepared.options });
+    return finishAttendanceScan(prepared, credentialPromise);
+  }, [token]);
+
+  async function recordThumbUntilStored(
+    first: Extract<PreparedUnlock, { kind: "enroll" }>,
+    firstRegistration: ReturnType<typeof startRegistration>
+  ) {
+    let registrationTask: ReturnType<typeof startRegistration> | null = firstRegistration;
+    let challengeId = first.challengeId;
+    let fastDenials = 0;
+    const action = first.action;
+
+    const prepareNextScan = async () => {
+      await prepareDeviceUnlock(action, false);
+      const next = preparedRef.current;
+      if (!next || next.kind !== "enroll") return false;
+      challengeId = next.challengeId;
+      registrationTask = startRegistration({ optionsJSON: next.options });
+      return true;
+    };
+
+    try {
+      while (true) {
+        setStatusText("Place your right thumb on the sensor and hold it while the phone reads the print.");
+        let registration: Awaited<ReturnType<typeof startRegistration>>;
+        try {
+          registration = await (registrationTask ?? startRegistration({ optionsJSON: first.options }));
+          registrationTask = null;
+          fastDenials = 0;
+        } catch (e: unknown) {
+          if (!isRetryableFingerprintError(e)) {
+            setDone({ ok: false, message: biometricBrowserError(e) });
+            return;
+          }
+          fastDenials += 1;
+          if (fastDenials >= 2) {
+            setUnlockReady(true);
+            setTapHint("Place your right thumb on the sensor. This stays open until the fingerprint is saved.");
+            return;
+          }
+          setStatusText("Keep your right thumb on the sensor. Reading it again…");
+          const ready = await prepareNextScan();
+          if (!ready) continue;
+          continue;
+        }
+
+        setStatusText("Reading your right thumb…");
+        const saved = await postJson<{ registered?: boolean; error?: string }>(
+          "/api/visitor-employees/biometric/enroll",
+          {
+            challengeId,
+            token,
+            response: registration,
+            deviceLabel: browserDeviceLabel(),
+          }
+        );
+        if (!saved.ok || !saved.json.registered) {
+          setStatusText(saved.json.error ?? "That reading was not clear. Place your right thumb again.");
+          const ready = await prepareNextScan();
+          if (!ready) continue;
+          continue;
+        }
+
+        setStatusText("Lift your thumb, then place the same thumb again so it can be read.");
+        const confirm = await postJson<{
+          needsEnrollment?: boolean;
+          challengeId?: string;
+          options?: PublicKeyCredentialRequestOptionsJSON;
+          error?: string;
+        }>("/api/visitor-employees/biometric/options", {
+          purpose: "attend",
+          attachment: "platform",
+          token,
+          setup: true,
+        });
+        if (!confirm.ok || !confirm.json.options || !confirm.json.challengeId) {
+          await postJson("/api/visitor-employees/biometric/enroll", { token, discard: true });
+          setStatusText("Could not read that thumb. Place your right thumb on the sensor again.");
+          const ready = await prepareNextScan();
+          if (!ready) continue;
+          continue;
+        }
+
+        try {
+          const assertion = await startAuthentication({ optionsJSON: confirm.json.options });
+          const statusRes = await fetch(
+            `/api/visitor-employees/biometric/status?token=${encodeURIComponent(token)}`,
+            { cache: "no-store" }
+          );
+          const status = (await statusRes.json().catch(() => ({}))) as { platformEnrolled?: boolean };
+          if (!statusRes.ok || !status.platformEnrolled) {
+            throw new Error("The thumb was not saved.");
+          }
+          setPlatformEnrolled(true);
+          setStatusText("Fingerprint saved. Checking your workplace location…");
+          const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
+          const pos = await getBrowserPosition();
+          const attended = await postJson<{
+            success?: boolean;
+            error?: string;
+            eventType?: "sign_in" | "sign_out";
+            occurredAt?: string;
+            businessName?: string;
+            emailSent?: boolean;
+            employeeEmailSent?: boolean;
+            employee?: EmployeePreview;
+          }>("/api/visitor-employees/biometric/attend", {
+            challengeId: confirm.json.challengeId,
+            response: assertion,
+            action,
+            token,
+            deviceId: getOrCreateBrowserDeviceId(),
+            deviceLabel: browserDeviceLabel(),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            accuracyMeters: pos.accuracyMeters,
+          });
+          preparedRef.current = null;
+          setUnlockReady(false);
+          if (attended.ok && attended.json.employee && attended.json.eventType) {
+            if (attended.json.businessName) setBusinessName(attended.json.businessName);
+            setEmployee(attended.json.employee);
+            setDone({
+              ok: true,
+              eventType: attended.json.eventType,
+              occurredAt: attended.json.occurredAt,
+              employee: attended.json.employee,
+              businessName: attended.json.businessName,
+              emailSent: attended.json.emailSent,
+              employeeEmailSent: attended.json.employeeEmailSent,
+              message: "Right thumb saved. You are signed in.",
+            });
+            return;
+          }
+          setDone({
+            ok: false,
+            message:
+              attended.json.error ??
+              "Your right thumb is saved. Allow location at your workplace, then scan again to sign in.",
+          });
+          return;
+        } catch {
+          await postJson("/api/visitor-employees/biometric/enroll", { token, discard: true });
+          setPlatformEnrolled(false);
+          setStatusText("That thumb could not be read. Place your right thumb on the sensor again.");
+          const ready = await prepareNextScan();
+          if (!ready) continue;
+        }
+      }
+    } finally {
+      runLock.current = false;
+      setWorking(false);
+    }
+  }
+
+  function finishAttendanceScan(
+    prepared: Extract<PreparedUnlock, { kind: "attend" }>,
+    credentialPromise: ReturnType<typeof startAuthentication>
+  ) {
     return (async () => {
       try {
         const response = await credentialPromise;
         setStatusText("Checking your workplace location…");
         const { getBrowserPosition } = await import("@/lib/employees/browser-geolocation");
         const pos = await getBrowserPosition();
-        const deviceFields = {
+        const saved = await postJson<{
+          success?: boolean;
+          error?: string;
+          eventType?: "sign_in" | "sign_out";
+          occurredAt?: string;
+          businessName?: string;
+          emailSent?: boolean;
+          employeeEmailSent?: boolean;
+          employee?: EmployeePreview;
+        }>("/api/visitor-employees/biometric/attend", {
           challengeId: prepared.challengeId,
           response,
           action: prepared.action,
@@ -267,24 +447,7 @@ export default function BiometricAttendanceClient({ mode }: Props) {
           latitude: pos.latitude,
           longitude: pos.longitude,
           accuracyMeters: pos.accuracyMeters,
-        };
-        const saved = await postJson<{
-          success?: boolean;
-          registered?: boolean;
-          error?: string;
-          attendanceError?: string;
-          eventType?: "sign_in" | "sign_out";
-          occurredAt?: string;
-          businessName?: string;
-          emailSent?: boolean;
-          employeeEmailSent?: boolean;
-          employee?: EmployeePreview;
-        }>(
-          prepared.kind === "enroll"
-            ? "/api/visitor-employees/biometric/enroll"
-            : "/api/visitor-employees/biometric/attend",
-          deviceFields
-        );
+        });
         if (!saved.ok) throw new Error(saved.json.error ?? "Could not record the fingerprint.");
         preparedRef.current = null;
         setUnlockReady(false);
@@ -301,20 +464,15 @@ export default function BiometricAttendanceClient({ mode }: Props) {
             emailSent: saved.json.emailSent,
             employeeEmailSent: saved.json.employeeEmailSent,
             message:
-              prepared.kind === "enroll"
-                ? "Fingerprint registered. You are signed in."
-                : saved.json.eventType === "sign_in"
-                  ? "Fingerprint verified. You are signed in."
-                  : "Fingerprint verified. You are signed out.",
+              saved.json.eventType === "sign_in"
+                ? "Fingerprint verified. You are signed in."
+                : "Fingerprint verified. You are signed out.",
           });
           return;
         }
-        setPlatformEnrolled(true);
         setDone({
           ok: false,
-          message:
-            saved.json.attendanceError ??
-            "Your fingerprint is registered. Allow location at your workplace, then scan again to sign in.",
+          message: saved.json.error ?? "Could not record attendance.",
         });
       } catch (e: unknown) {
         const name = e instanceof Error ? e.name : "";
@@ -331,7 +489,7 @@ export default function BiometricAttendanceClient({ mode }: Props) {
         setWorking(false);
       }
     })();
-  }, [token]);
+  }
 
   const attend = useCallback(
     async (action: ScanAction, attachment: BiometricAttachment, enrolled: boolean, allowEnroll = true) => {

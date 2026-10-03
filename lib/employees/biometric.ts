@@ -25,6 +25,8 @@ const CREDENTIALS = "visitor_employee_biometric_credentials";
 const CHALLENGES = "visitor_employee_biometric_challenges";
 const STATIONS = "visitor_employee_biometric_stations";
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
+/** Recording stays open until the thumb is stored. Browsers may cap this; the page scans again if they do. */
+const FINGERPRINT_SETUP_TIMEOUT_MS = 30 * 60 * 1000;
 const RP_NAME = "Fusion Xpress";
 
 export type BiometricCredentialRow = {
@@ -170,7 +172,11 @@ export async function lookupStationOwner(
 }
 
 async function purgeExpiredChallenges(admin: SupabaseClient) {
-  await admin.from(CHALLENGES).delete().lt("expires_at", new Date().toISOString());
+  await admin
+    .from(CHALLENGES)
+    .delete()
+    .eq("purpose", "attend")
+    .lt("expires_at", new Date().toISOString());
 }
 
 async function saveChallenge(
@@ -182,6 +188,7 @@ async function saveChallenge(
     purpose: "enroll" | "attend";
     attachment: BiometricAttachment;
     station: boolean;
+    longLived?: boolean;
   }
 ): Promise<string> {
   await purgeExpiredChallenges(admin);
@@ -194,7 +201,10 @@ async function saveChallenge(
       purpose: row.purpose,
       attachment: row.attachment,
       station: row.station,
-      expires_at: new Date(Date.now() + CHALLENGE_TTL_MS).toISOString(),
+      expires_at: new Date(
+        Date.now() +
+          (row.purpose === "enroll" || row.longLived ? FINGERPRINT_SETUP_TIMEOUT_MS : CHALLENGE_TTL_MS)
+      ).toISOString(),
     })
     .select("id")
     .single();
@@ -215,7 +225,8 @@ export async function loadChallenge(
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  if (new Date(String(data.expires_at)).getTime() < Date.now()) {
+  const expired = new Date(String(data.expires_at)).getTime() < Date.now();
+  if (expired && data.purpose !== "enroll") {
     await admin.from(CHALLENGES).delete().eq("id", id);
     return null;
   }
@@ -269,6 +280,7 @@ export async function createEnrollmentOptions(
     userName: input.employee.employeeCode || input.employee.email || input.employee.id,
     userDisplayName: input.employee.fullName,
     userID: new TextEncoder().encode(input.employee.id),
+    timeout: FINGERPRINT_SETUP_TIMEOUT_MS,
     attestationType: "none",
     authenticatorSelection: {
       authenticatorAttachment: input.attachment,
@@ -307,6 +319,8 @@ export async function createAttendanceOptions(
     employee?: EmployeeRecord;
     ownerId: string;
     station: boolean;
+    /** Second read while a thumb is being set up. No short timeout. */
+    setupRead?: boolean;
   }
 ) {
   const credentials = input.station
@@ -321,6 +335,7 @@ export async function createAttendanceOptions(
 
   const options = await generateAuthenticationOptions({
     rpID: input.rpID,
+    timeout: input.setupRead ? FINGERPRINT_SETUP_TIMEOUT_MS : undefined,
     userVerification: "required",
     allowCredentials: input.station
       ? undefined
@@ -338,6 +353,7 @@ export async function createAttendanceOptions(
     purpose: "attend",
     attachment: input.attachment,
     station: input.station,
+    longLived: input.setupRead === true,
   });
   return { needsEnrollment: false as const, challengeId, options, attachment: input.attachment };
 }
@@ -496,6 +512,16 @@ export async function verifyAttendanceCredential(
     ownerId: credential.owner_id,
     attachment: credential.attachment,
   };
+}
+
+export async function deletePlatformThumb(admin: SupabaseClient, employeeId: string) {
+  const { error } = await admin
+    .from(CREDENTIALS)
+    .delete()
+    .eq("employee_id", employeeId)
+    .eq("attachment", "platform")
+    .eq("finger", RIGHT_THUMB);
+  if (error) throw error;
 }
 
 export async function deleteEmployeeCredentials(admin: SupabaseClient, employeeId: string, ownerId: string) {

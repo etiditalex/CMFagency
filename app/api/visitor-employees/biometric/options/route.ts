@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       employee: resolved.employee,
       ownerId: resolved.ownerId,
       station: false,
+      setupRead: body.setup === true,
     });
     return NextResponse.json(options);
   } catch (e: unknown) {
