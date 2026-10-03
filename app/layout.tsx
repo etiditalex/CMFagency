@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import "./globals.css";
 import PageLoader from "@/components/PageLoader";
+import KenyaCoastModelsPopup from "@/components/KenyaCoastModelsPopup";
 import AdSenseLoader from "@/components/AdSenseLoader";
 import SEOStructuredData from "@/components/SEOStructuredData";
 import ConditionalLayout from "@/components/ConditionalLayout";
@@ -190,6 +191,7 @@ export default async function RootLayout({
               <PageLoader>
                 <ConditionalLayout>{children}</ConditionalLayout>
               </PageLoader>
+              <KenyaCoastModelsPopup />
             </PortalProvider>
           </AuthProvider>
         </CartProvider>
