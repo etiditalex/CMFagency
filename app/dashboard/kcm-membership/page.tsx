@@ -78,6 +78,15 @@ export default function DashboardKcmMembershipPage() {
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
   const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [forumMoney, setForumMoney] = useState({
+    totalKes: 0,
+    count: 0,
+    memberKes: 0,
+    memberCount: 0,
+    nonMemberKes: 0,
+    nonMemberCount: 0,
+    membershipKes: 0,
+  });
 
   const [regFeeDraft, setRegFeeDraft] = useState("");
   const [memberForumFeeDraft, setMemberForumFeeDraft] = useState("");
@@ -197,6 +206,30 @@ export default function DashboardKcmMembershipPage() {
       setRows(json.memberships ?? []);
       setPage(0);
       setOpenId(null);
+
+      const moneyRes = await fetch("/api/fusion-xpress/kcm-memberships/summary", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const money = (await moneyRes.json().catch(() => ({}))) as {
+        totalMembershipPaidKes?: number;
+        forumRegistrationPaidKes?: number;
+        forumRegistrationCount?: number;
+        forumMemberPaidKes?: number;
+        forumMemberCount?: number;
+        forumNonMemberPaidKes?: number;
+        forumNonMemberCount?: number;
+      };
+      if (moneyRes.ok) {
+        setForumMoney({
+          totalKes: Number(money.forumRegistrationPaidKes ?? 0) || 0,
+          count: Number(money.forumRegistrationCount ?? 0) || 0,
+          memberKes: Number(money.forumMemberPaidKes ?? 0) || 0,
+          memberCount: Number(money.forumMemberCount ?? 0) || 0,
+          nonMemberKes: Number(money.forumNonMemberPaidKes ?? 0) || 0,
+          nonMemberCount: Number(money.forumNonMemberCount ?? 0) || 0,
+          membershipKes: Number(money.totalMembershipPaidKes ?? 0) || 0,
+        });
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load KCM memberships.");
       setRows([]);
@@ -456,7 +489,7 @@ export default function DashboardKcmMembershipPage() {
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-3 lg:grid-cols-2">
         <CompositeMetricCard
           title="Memberships"
           value={(summary.new + summary.in_review + summary.approved + summary.rejected).toLocaleString()}
@@ -466,6 +499,17 @@ export default function DashboardKcmMembershipPage() {
             { label: "In review", value: summary.in_review.toLocaleString() },
             { label: "Approved", value: summary.approved.toLocaleString() },
             { label: "Rejected", value: summary.rejected.toLocaleString() },
+            { label: "Membership paid", value: `KES ${forumMoney.membershipKes.toLocaleString()}` },
+          ]}
+        />
+        <CompositeMetricCard
+          title="Forum registration"
+          value={`KES ${forumMoney.totalKes.toLocaleString()}`}
+          featured
+          rows={[
+            { label: "Paid places", value: forumMoney.count.toLocaleString() },
+            { label: "Members", value: `KES ${forumMoney.memberKes.toLocaleString()} · ${forumMoney.memberCount}` },
+            { label: "New members", value: `KES ${forumMoney.nonMemberKes.toLocaleString()} · ${forumMoney.nonMemberCount}` },
           ]}
         />
       </div>
@@ -585,6 +629,15 @@ export default function DashboardKcmMembershipPage() {
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-semibold text-gray-900">
                             <button type="button" onClick={() => setOpenId(open ? null : row.id)} className="hover:underline">
                               {row.membership_number?.trim() || "Pending"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void resendRegistrationEmail(row.id, row.email)}
+                              disabled={resendingId === row.id || !row.email}
+                              className="mt-1 flex items-center gap-1 rounded-md bg-secondary-700 px-2 py-1 text-[11px] font-semibold text-white hover:bg-secondary-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              {resendingId === row.id ? "Sending…" : "Email member ID"}
                             </button>
                           </td>
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left font-medium text-gray-900">
@@ -891,11 +944,11 @@ function Row({
           <button
             type="button"
             onClick={onResend}
-            disabled={downloadBusy || deleteBusy || resendBusy || row.payment_status !== "success"}
+            disabled={downloadBusy || deleteBusy || resendBusy || !row.email}
             className="inline-flex items-center justify-center gap-1.5 rounded-md bg-secondary-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-secondary-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Mail className="h-3.5 w-3.5" />
-            {resendBusy ? "Sending…" : "Resend registration ID"}
+            {resendBusy ? "Sending…" : "Email member ID"}
           </button>
           <button
             type="button"

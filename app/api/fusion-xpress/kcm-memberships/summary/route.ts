@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
+import { getSuccessfulForumRegistrationTotals } from "@/lib/kenya-coast-models-membership";
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,9 +9,10 @@ export async function GET(req: NextRequest) {
     if ("error" in auth) return auth.error;
     const { admin } = auth;
 
-    const { data: memberships, error: mErr } = await admin
-      .from("kcm_memberships")
-      .select("payment_status,payment_confirmed,payment_amount_kes");
+    const [{ data: memberships, error: mErr }, forum] = await Promise.all([
+      admin.from("kcm_memberships").select("payment_status,payment_confirmed,payment_amount_kes"),
+      getSuccessfulForumRegistrationTotals(admin),
+    ]);
     if (mErr) return NextResponse.json({ error: mErr.message }, { status: 500 });
 
     const { data: walletRows, error: wErr } = await admin
@@ -54,6 +56,12 @@ export async function GET(req: NextRequest) {
       totalContributionKes,
       pendingContributionKes,
       successfulContributionCount,
+      forumRegistrationPaidKes: forum.totalKes,
+      forumRegistrationCount: forum.count,
+      forumMemberPaidKes: forum.memberKes,
+      forumMemberCount: forum.memberCount,
+      forumNonMemberPaidKes: forum.nonMemberKes,
+      forumNonMemberCount: forum.nonMemberCount,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Unexpected error";

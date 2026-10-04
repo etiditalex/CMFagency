@@ -181,3 +181,45 @@ export async function ensureForumMembership(admin: SupabaseClient, registrationI
   const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");
   await approvePaidKcmMembershipIfNeeded(admin, membershipId).catch(() => null);
 }
+
+export type ForumRegistrationTotals = {
+  totalKes: number;
+  count: number;
+  memberKes: number;
+  memberCount: number;
+  nonMemberKes: number;
+  nonMemberCount: number;
+};
+
+/** Successful forum attendance payments only. Failed prompts are not included. */
+export async function getSuccessfulForumRegistrationTotals(admin: SupabaseClient): Promise<ForumRegistrationTotals> {
+  const empty: ForumRegistrationTotals = {
+    totalKes: 0,
+    count: 0,
+    memberKes: 0,
+    memberCount: 0,
+    nonMemberKes: 0,
+    nonMemberCount: 0,
+  };
+  const { data, error } = await admin
+    .from("kenya_coast_models_registrations")
+    .select("fee_kes, is_member")
+    .eq("payment_status", "success");
+  if (error || !data) return empty;
+
+  const totals = { ...empty };
+  for (const row of data as Array<{ fee_kes?: number | null; is_member?: boolean | null }>) {
+    const amount = Number(row.fee_kes ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+    totals.totalKes += amount;
+    totals.count += 1;
+    if (row.is_member) {
+      totals.memberKes += amount;
+      totals.memberCount += 1;
+    } else {
+      totals.nonMemberKes += amount;
+      totals.nonMemberCount += 1;
+    }
+  }
+  return totals;
+}

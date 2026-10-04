@@ -54,6 +54,8 @@ export default function DashboardPayoutsPage() {
     totalMembershipPaidKes: number;
     membershipPaidCount: number;
     totalContributionKes: number;
+    forumRegistrationPaidKes: number;
+    forumRegistrationCount: number;
   } | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -98,12 +100,16 @@ export default function DashboardPayoutsPage() {
           totalMembershipPaidKes?: number;
           membershipPaidCount?: number;
           totalContributionKes?: number;
+          forumRegistrationPaidKes?: number;
+          forumRegistrationCount?: number;
         };
         if (kcmRes.ok) {
           setKcmSummary({
             totalMembershipPaidKes: Number(kj.totalMembershipPaidKes ?? 0) || 0,
             membershipPaidCount: Number(kj.membershipPaidCount ?? 0) || 0,
             totalContributionKes: Number(kj.totalContributionKes ?? 0) || 0,
+            forumRegistrationPaidKes: Number(kj.forumRegistrationPaidKes ?? 0) || 0,
+            forumRegistrationCount: Number(kj.forumRegistrationCount ?? 0) || 0,
           });
         } else {
           setKcmSummary(null);
@@ -329,6 +335,11 @@ export default function DashboardPayoutsPage() {
                 Membership paid: <span className="font-semibold">KES {formatKes(kcmSummary.totalMembershipPaidKes)}</span>
                 <span className="text-gray-500"> · </span>
                 Paid members: <span className="font-semibold">{kcmSummary.membershipPaidCount.toLocaleString()}</span>
+              </div>
+              <div className="mt-1 text-sm text-gray-700">
+                Forum registration: <span className="font-semibold">KES {formatKes(kcmSummary.forumRegistrationPaidKes)}</span>
+                <span className="text-gray-500"> · </span>
+                Paid forum places: <span className="font-semibold">{kcmSummary.forumRegistrationCount.toLocaleString()}</span>
               </div>
               <div className="mt-1 text-sm text-gray-700">
                 Contributions: <span className="font-semibold">KES {formatKes(kcmSummary.totalContributionKes)}</span>

@@ -123,12 +123,14 @@ async function fallbackMetrics(
 }
 
 async function loadKcmSummary(admin: ReturnType<typeof createClient<any>>) {
-  const [{ data: paidMemberships, error: mErr }, { data: walletRows, error: wErr }] = await Promise.all([
+  const { getSuccessfulForumRegistrationTotals } = await import("@/lib/kenya-coast-models-membership");
+  const [{ data: paidMemberships, error: mErr }, { data: walletRows, error: wErr }, forum] = await Promise.all([
     admin
       .from("kcm_memberships")
       .select("payment_amount_kes")
       .or("payment_status.eq.success,payment_confirmed.eq.true"),
     admin.from("kcm_member_wallet_transactions").select("amount_kes").eq("status", "success"),
+    getSuccessfulForumRegistrationTotals(admin),
   ]);
 
   if (mErr || wErr) return null;
@@ -149,7 +151,13 @@ async function loadKcmSummary(admin: ReturnType<typeof createClient<any>>) {
     totalContributionKes += amount;
   }
 
-  return { totalMembershipPaidKes, membershipPaidCount, totalContributionKes };
+  return {
+    totalMembershipPaidKes,
+    membershipPaidCount,
+    totalContributionKes,
+    forumRegistrationPaidKes: forum.totalKes,
+    forumRegistrationCount: forum.count,
+  };
 }
 
 /**

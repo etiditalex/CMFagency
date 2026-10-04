@@ -134,6 +134,8 @@ export default function DashboardHomePage() {
   const [kcmMembershipPaidKes, setKcmMembershipPaidKes] = useState(0);
   const [kcmMembershipPaidCount, setKcmMembershipPaidCount] = useState(0);
   const [kcmContributionsKes, setKcmContributionsKes] = useState(0);
+  const [kcmForumPaidKes, setKcmForumPaidKes] = useState(0);
+  const [kcmForumPaidCount, setKcmForumPaidCount] = useState(0);
 
   const [votingScheduleDate, setVotingScheduleDate] = useState("2026-04-01");
   const [votingScheduleEndDate, setVotingScheduleEndDate] = useState("");
@@ -273,6 +275,8 @@ export default function DashboardHomePage() {
           totalMembershipPaidKes?: number;
           membershipPaidCount?: number;
           totalContributionKes?: number;
+          forumRegistrationPaidKes?: number;
+          forumRegistrationCount?: number;
         } | null;
         pendingJobApplications?: number;
       };
@@ -310,10 +314,14 @@ export default function DashboardHomePage() {
         setKcmMembershipPaidKes(Number(j.kcmSummary.totalMembershipPaidKes ?? 0) || 0);
         setKcmMembershipPaidCount(Number(j.kcmSummary.membershipPaidCount ?? 0) || 0);
         setKcmContributionsKes(Number(j.kcmSummary.totalContributionKes ?? 0) || 0);
+        setKcmForumPaidKes(Number(j.kcmSummary.forumRegistrationPaidKes ?? 0) || 0);
+        setKcmForumPaidCount(Number(j.kcmSummary.forumRegistrationCount ?? 0) || 0);
       } else {
         setKcmMembershipPaidKes(0);
         setKcmMembershipPaidCount(0);
         setKcmContributionsKes(0);
+        setKcmForumPaidKes(0);
+        setKcmForumPaidCount(0);
       }
 
       if (isAdmin) {
@@ -717,6 +725,13 @@ export default function DashboardHomePage() {
       label: "KCM paid",
       value: `KES ${kcmMembershipPaidKes.toLocaleString()}`,
       icon: Crown,
+      href: "/dashboard/kcm-membership",
+      show: hasFeature("kcm_membership"),
+    },
+    {
+      label: "Forum registration",
+      value: `KES ${kcmForumPaidKes.toLocaleString()} · ${kcmForumPaidCount}`,
+      icon: Ticket,
       href: "/dashboard/kcm-membership",
       show: hasFeature("kcm_membership"),
     },
