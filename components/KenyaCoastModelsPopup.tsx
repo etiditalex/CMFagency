@@ -101,7 +101,7 @@ export default function KenyaCoastModelsPopup() {
           type="button"
           onClick={dismiss}
           className="absolute -right-1 -top-1 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-900 shadow-lg ring-1 ring-black/10 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white sm:-right-3 sm:-top-3"
-          aria-label="Cancel poster"
+          aria-label="Close poster"
         >
           <X className="h-5 w-5" />
         </button>
@@ -120,14 +120,6 @@ export default function KenyaCoastModelsPopup() {
             className="h-auto max-h-[78vh] w-full object-contain bg-white"
           />
         </Link>
-
-        <button
-          type="button"
-          onClick={dismiss}
-          className="mt-3 inline-flex items-center justify-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-gray-900 shadow-lg hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        >
-          Cancel
-        </button>
       </div>
     </div>
   );
