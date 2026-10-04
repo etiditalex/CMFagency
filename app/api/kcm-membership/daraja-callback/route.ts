@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { discardUnpaidKcmMembership } from "@/lib/kcm-unpaid-registration";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -75,8 +76,6 @@ export async function POST(req: Request) {
     const items = stk.CallbackMetadata?.Item ?? [];
     const findItem = (name: string) => items.find((i) => String(i.Name) === name)?.Value;
     const mpesaReceipt = String(findItem("MpesaReceiptNumber") ?? "").trim();
-    const resultDesc = String(stk.ResultDesc ?? "").trim();
-
     const success = isStkSuccessResult(stk.ResultCode, items);
 
     if (success) {
@@ -98,20 +97,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    const failNote =
-      resultDesc ||
-      (stk.ResultCode !== undefined && stk.ResultCode !== null && String(stk.ResultCode).trim() !== ""
-        ? `M-Pesa result code ${String(stk.ResultCode).trim()}`
-        : "Payment not completed");
-
-    await admin
-      .from("kcm_memberships")
-      .update({
-        payment_status: "failed",
-        payment_confirmed: false,
-        review_notes: failNote.slice(0, 2000),
-      })
-      .eq("id", row.id);
+    await discardUnpaidKcmMembership(admin, String((row as { id: string }).id));
 
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
   } catch (e: unknown) {

@@ -42,7 +42,7 @@ export function KcmMembershipCard({
 
       <dl className="mt-6 grid grid-cols-2 gap-x-3 gap-y-4 text-left sm:mt-8 sm:gap-x-6 sm:gap-y-5">
         <div className="min-w-0">
-          <dt className="text-left text-xs text-white/75 sm:text-sm">Member ID</dt>
+          <dt className="text-left text-xs text-white/75 sm:text-sm">Registration ID</dt>
           <dd className="mt-0.5 break-words text-left text-base font-bold sm:text-lg">{card.membershipNumber}</dd>
         </div>
         <div className="min-w-0">

@@ -23,7 +23,16 @@ export async function GET(req: NextRequest) {
       .maybeSingle();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    if (!data) return NextResponse.json({ error: "Membership not found." }, { status: 404 });
+    if (!data) {
+      return NextResponse.json({
+        membership_id: membershipId,
+        payment_status: "failed",
+        payment_confirmed: false,
+        mpesa_receipt: null,
+        paid_at: null,
+        review_notes: "Payment was not completed. No membership was saved. You can try again.",
+      });
+    }
 
     if (String((data as { payment_status?: string }).payment_status ?? "") === "success") {
       const { approvePaidKcmMembershipIfNeeded } = await import("@/lib/kcm-membership-approve");

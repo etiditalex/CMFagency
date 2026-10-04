@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { ensureForumMembership } from "@/lib/kenya-coast-models-membership";
+import { discardUnpaidForumRegistration } from "@/lib/kcm-unpaid-registration";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -71,14 +72,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
     }
 
-    await admin
-      .from("kenya_coast_models_registrations")
-      .update({
-        payment_status: "failed",
-        payment_confirmed: false,
-        review_notes: (stk?.ResultDesc || "Payment not completed").slice(0, 2000),
-      })
-      .eq("id", row.id);
+    await discardUnpaidForumRegistration(admin, String((row as { id: string }).id));
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
   } catch (e: unknown) {
     return NextResponse.json(

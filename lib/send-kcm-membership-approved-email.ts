@@ -23,10 +23,10 @@ export async function sendKcmMembershipApprovedEmail(params: {
   if (!membershipNumber) return { ok: false, error: "missing_membership_number" };
   if (!resend) return { ok: false, error: "RESEND_API_KEY not configured" };
 
-  const subject = "Kenya Coast Models membership approved";
+  const subject = `Your Kenya Coast Models registration ID ${membershipNumber}`;
   const pdfNote = params.pdf
-    ? "Your membership card is attached as a PDF. Keep it for your records and official communication."
-    : "Please keep your membership number for future reference and official communication.";
+    ? "Your membership card is attached as a PDF. The registration ID is printed on the card."
+    : "Please keep this registration ID for future reference and official communication.";
 
   const html = `
   <div style="max-width: 640px; margin: 0 auto; padding: 18px 14px; background: #f1f5f9;">
@@ -35,10 +35,10 @@ export async function sendKcmMembershipApprovedEmail(params: {
       <div style="padding: 20px 22px 22px; font-family: Arial, Helvetica, sans-serif; color: #0f172a;">
         <p style="margin: 0 0 12px; font-size: 15px; line-height: 1.55;">Dear ${escapeHtml(firstName)},</p>
         <p style="margin: 0 0 14px; font-size: 15px; line-height: 1.55;">
-          Your Kenya Coast Models membership has been approved after your payment was confirmed.
+          Your Kenya Coast Models registration is confirmed after your payment was received.
         </p>
         <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.55;">
-          <strong>Member ID:</strong> ${escapeHtml(membershipNumber)}
+          <strong>Registration ID:</strong> ${escapeHtml(membershipNumber)}
         </p>
         <p style="margin: 0; font-size: 15px; line-height: 1.55;">
           ${escapeHtml(pdfNote)}

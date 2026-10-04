@@ -86,9 +86,14 @@ async function notifyApprovedMember(row: MembershipRow, membershipNumber: string
   return sent.ok;
 }
 
+function membershipIsPaid(row: MembershipRow): boolean {
+  return row.payment_confirmed === true || String(row.payment_status ?? "") === "success";
+}
+
 /**
- * Marks a membership approved, assigns a member ID, and emails the card PDF.
+ * Marks a paid membership approved, assigns a registration ID, and emails the card PDF.
  * Idempotent: already-approved members are not emailed again.
+ * Unpaid attempts never receive a registration ID.
  */
 export async function approveKcmMembershipAndNotify(
   admin: SupabaseClient,
@@ -99,6 +104,17 @@ export async function approveKcmMembershipAndNotify(
 
   const prevStatus = String(before.status ?? "").trim();
   const existingNumber = String(before.membership_number ?? "").trim();
+  if (!membershipIsPaid(before)) {
+    if (existingNumber && prevStatus !== "approved") {
+      await admin
+        .from("kcm_memberships")
+        .update({ membership_number: null, updated_at: new Date().toISOString() })
+        .eq("id", membershipId)
+        .neq("payment_status", "success");
+    }
+    return { ok: false, membershipNumber: null, emailed: false, alreadyApproved: false, error: "payment_required" };
+  }
+
   if (prevStatus === "approved" && existingNumber) {
     return { ok: true, membershipNumber: existingNumber, emailed: false, alreadyApproved: true };
   }
@@ -131,6 +147,43 @@ export async function approveKcmMembershipAndNotify(
   return { ok: true, membershipNumber, emailed, alreadyApproved: false };
 }
 
+/**
+ * Emails the registration ID and membership-card PDF again.
+ * Paid members who never received an ID are approved first, then emailed.
+ */
+export async function resendKcmRegistrationEmail(
+  admin: SupabaseClient,
+  membershipId: string
+): Promise<ApproveKcmResult> {
+  const before = await loadMembership(admin, membershipId);
+  if (!before) return { ok: false, membershipNumber: null, emailed: false, alreadyApproved: false, error: "not_found" };
+  if (!membershipIsPaid(before)) {
+    return { ok: false, membershipNumber: null, emailed: false, alreadyApproved: false, error: "payment_required" };
+  }
+
+  const alreadyApproved = String(before.status ?? "") === "approved" && Boolean(String(before.membership_number ?? "").trim());
+  if (!alreadyApproved) {
+    const approved = await approveKcmMembershipAndNotify(admin, membershipId);
+    if (!approved.ok || !approved.membershipNumber) return approved;
+    if (approved.emailed) return approved;
+  }
+
+  const row = (await loadMembership(admin, membershipId)) ?? before;
+  const membershipNumber = String(row.membership_number ?? "").trim();
+  if (!membershipNumber) {
+    return { ok: false, membershipNumber: null, emailed: false, alreadyApproved, error: "membership_number_failed" };
+  }
+
+  const emailed = await notifyApprovedMember(row, membershipNumber);
+  return {
+    ok: emailed,
+    membershipNumber,
+    emailed,
+    alreadyApproved,
+    error: emailed ? undefined : "email_failed",
+  };
+}
+
 /** Auto-approve only after a successful M-Pesa payment. Skips rejected rows. */
 export async function approvePaidKcmMembershipIfNeeded(
   admin: SupabaseClient,
@@ -139,7 +192,6 @@ export async function approvePaidKcmMembershipIfNeeded(
   const row = await loadMembership(admin, membershipId);
   if (!row) return null;
   if (String(row.status ?? "") === "rejected") return null;
-  const paid = row.payment_confirmed === true || String(row.payment_status ?? "") === "success";
-  if (!paid) return null;
+  if (!membershipIsPaid(row)) return null;
   return approveKcmMembershipAndNotify(admin, membershipId);
 }

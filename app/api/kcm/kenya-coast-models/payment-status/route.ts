@@ -23,7 +23,16 @@ export async function GET(req: NextRequest) {
       .eq("id", registrationId)
       .maybeSingle();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    if (!data) return NextResponse.json({ error: "Registration not found." }, { status: 404 });
+    if (!data) {
+      return NextResponse.json({
+        registration_id: registrationId,
+        payment_status: "failed",
+        payment_confirmed: false,
+        mpesa_receipt: null,
+        fee_kes: null,
+        review_notes: "Payment was not completed. No registration was saved. Send the prompt again.",
+      });
+    }
 
     return NextResponse.json({
       registration_id: data.id,

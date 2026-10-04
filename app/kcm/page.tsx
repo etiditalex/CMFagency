@@ -77,8 +77,12 @@ export default function KcmPage() {
           setPaymentFailureDetail(null);
           setForm((prev) => ({ ...prev, paymentConfirmed: true }));
         } else if (status === "failed") {
-          setPaymentFailureDetail(json.review_notes?.trim() || null);
+          setPaymentFailureDetail(
+            json.review_notes?.trim() || "Payment was not completed. Nothing was saved. You can try again."
+          );
           setPaymentStatus("failed");
+          setMembershipId(null);
+          setForm((prev) => ({ ...prev, paymentConfirmed: false }));
         }
       } catch {
         // Keep polling quietly for callback completion.

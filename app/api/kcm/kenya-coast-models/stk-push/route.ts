@@ -13,8 +13,10 @@ import {
 } from "@/lib/daraja-stk-config";
 import { isValidKenyaPhone, normalizeKenyaPhone } from "@/lib/kenya-phone";
 import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
-import { KCM_FORUM_CAPACITY, KCM_FORUM_MEMBER_FEE_KES, KCM_FORUM_NON_MEMBER_FEE_KES } from "@/lib/kenya-coast-models";
+import { KCM_FORUM_CAPACITY } from "@/lib/kenya-coast-models";
+import { getKcmFeeSettings } from "@/lib/kcm-registration-fee";
 import { findApprovedMemberByEmail, findApprovedMemberByNumber } from "@/lib/kenya-coast-models-membership";
+import { discardUnpaidForumRegistration } from "@/lib/kcm-unpaid-registration";
 import { sanitizeText } from "@/lib/sanitize";
 
 export const dynamic = "force-dynamic";
@@ -89,9 +91,10 @@ export async function POST(req: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    const fees = await getKcmFeeSettings(admin);
     let membershipId: string | null = null;
     let membershipNumber: string | null = null;
-    let feeKes = KCM_FORUM_NON_MEMBER_FEE_KES;
+    let feeKes = fees.forumNonMemberFeeKes;
     if (isMember) {
       const found = await findApprovedMemberByNumber(admin, body.membershipNumber);
       if (!found.member) {
@@ -99,7 +102,7 @@ export async function POST(req: NextRequest) {
       }
       membershipId = found.member.id;
       membershipNumber = found.member.membershipNumber;
-      feeKes = KCM_FORUM_MEMBER_FEE_KES;
+      feeKes = fees.forumMemberFeeKes;
       const { count: already } = await admin
         .from("kenya_coast_models_registrations")
         .select("id", { count: "exact", head: true })
@@ -122,7 +125,7 @@ export async function POST(req: NextRequest) {
       if (existingMember) {
         return NextResponse.json(
           {
-            error: `This email already belongs to member ${existingMember.membershipNumber}. Choose Member and enter that number to pay KES ${KCM_FORUM_MEMBER_FEE_KES}.`,
+            error: `This email already belongs to member ${existingMember.membershipNumber}. Choose Member and enter that number to pay KES ${fees.forumMemberFeeKes}.`,
           },
           { status: 409 }
         );
@@ -185,7 +188,7 @@ export async function POST(req: NextRequest) {
     const registrationId = String((inserted as { id: string }).id);
     const token = await fetchDarajaAccessToken();
     if (!token.ok) {
-      await admin.from("kenya_coast_models_registrations").update({ payment_status: "failed", review_notes: token.error }).eq("id", registrationId);
+      await discardUnpaidForumRegistration(admin, registrationId);
       return NextResponse.json({ error: token.error }, { status: 502 });
     }
 
@@ -218,10 +221,7 @@ export async function POST(req: NextRequest) {
     const stkJson = (await stkRes.json().catch(() => ({}))) as StkPushJson;
     if (!stkRes.ok || !isStkPushAccepted(stkJson)) {
       const reason = describeStkPushFailure(stkJson, stkRes.status);
-      await admin
-        .from("kenya_coast_models_registrations")
-        .update({ payment_status: "failed", review_notes: reason.slice(0, 2000) })
-        .eq("id", registrationId);
+      await discardUnpaidForumRegistration(admin, registrationId);
       return NextResponse.json({ error: reason }, { status: 502 });
     }
 

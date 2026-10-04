@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { discardUnpaidKcmMembership } from "@/lib/kcm-unpaid-registration";
 import { getKcmRegistrationFeeKes } from "@/lib/kcm-registration-fee";
 
 const FASHION_CATEGORIES = new Set(["model", "event_organizer", "designer", "other"]);
@@ -204,13 +205,7 @@ export async function POST(req: NextRequest) {
     const acceptedByCode = !responseCode || responseCode === "0";
 
     if (!stkRes.ok) {
-      await admin
-        .from("kcm_memberships")
-        .update({
-          payment_status: "failed",
-          review_notes: describeStkFailure(stkJson, stkRes.status).slice(0, 2000),
-        })
-        .eq("id", membershipId);
+      await discardUnpaidKcmMembership(admin, membershipId);
       return NextResponse.json(
         { error: describeStkFailure(stkJson, stkRes.status) },
         { status: 502 }
@@ -219,13 +214,7 @@ export async function POST(req: NextRequest) {
 
     if (!acceptedByCode || !checkoutId) {
       const reason = describeStkFailure(stkJson, stkRes.status);
-      await admin
-        .from("kcm_memberships")
-        .update({
-          payment_status: "failed",
-          review_notes: reason.slice(0, 2000),
-        })
-        .eq("id", membershipId);
+      await discardUnpaidKcmMembership(admin, membershipId);
       return NextResponse.json(
         {
           error:

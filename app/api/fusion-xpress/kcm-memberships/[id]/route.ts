@@ -125,6 +125,12 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
       if (!approved.ok && approved.error === "not_found") {
         return NextResponse.json({ error: "Membership not found." }, { status: 404 });
       }
+      if (!approved.ok && approved.error === "payment_required") {
+        return NextResponse.json(
+          { error: "A registration ID is issued only after a successful M-Pesa payment." },
+          { status: 400 }
+        );
+      }
       await admin
         .from("kcm_memberships")
         .update({

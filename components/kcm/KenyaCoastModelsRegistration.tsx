@@ -49,6 +49,8 @@ export default function KenyaCoastModelsRegistration() {
   const [step, setStep] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
+  const [memberFeeKes, setMemberFeeKes] = useState(KCM_FORUM_MEMBER_FEE_KES);
+  const [nonMemberFeeKes, setNonMemberFeeKes] = useState(KCM_FORUM_NON_MEMBER_FEE_KES);
 
   const [fullName, setFullName] = useState("");
   const [phoneCalls, setPhoneCalls] = useState("");
@@ -78,13 +80,27 @@ export default function KenyaCoastModelsRegistration() {
 
   const whatsapp = sameWhatsapp ? phoneCalls : whatsappInput;
   const member = isMember === "yes" && verifiedMember != null;
-  const feeKes = isMember === "yes" ? (verifiedMember ? KCM_FORUM_MEMBER_FEE_KES : null) : isMember === "no" ? KCM_FORUM_NON_MEMBER_FEE_KES : null;
+  const feeKes = isMember === "yes" ? (verifiedMember ? memberFeeKes : null) : isMember === "no" ? nonMemberFeeKes : null;
   const paymentLocked = paymentStatus === "pending" || paymentStatus === "success";
 
   useEffect(() => {
     const id = window.setInterval(() => setClock(remaining(eventMs)), 1000);
     return () => window.clearInterval(id);
   }, [eventMs]);
+
+  useEffect(() => {
+    fetch("/api/kcm/kenya-coast-models/fees", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((json: { forum_member_fee_kes?: number; forum_non_member_fee_kes?: number }) => {
+        if (typeof json.forum_member_fee_kes === "number" && json.forum_member_fee_kes >= 1) {
+          setMemberFeeKes(json.forum_member_fee_kes);
+        }
+        if (typeof json.forum_non_member_fee_kes === "number" && json.forum_non_member_fee_kes >= 1) {
+          setNonMemberFeeKes(json.forum_non_member_fee_kes);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     fetch("/api/kcm/kenya-coast-models/availability")
@@ -339,8 +355,8 @@ export default function KenyaCoastModelsRegistration() {
             <section className="rounded-2xl bg-secondary-800 px-3 py-5 text-center text-white shadow-md sm:px-8 sm:py-8">
               <h2 className="text-base font-bold sm:text-lg">Forum day — 28 Nov 2026</h2>
               <p className="mt-1 text-center text-sm leading-snug text-white/85">
-                {KCM_FORUM_TIME_LABEL} at {KCM_FORUM_VENUE}. Members {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}, non-members{" "}
-                {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}.
+                {KCM_FORUM_TIME_LABEL} at {KCM_FORUM_VENUE}. Members {formatForumFeeKes(memberFeeKes)}, non-members{" "}
+                {formatForumFeeKes(nonMemberFeeKes)}.
               </p>
               <div className="mt-5 grid grid-cols-4 gap-1.5 sm:mt-7 sm:gap-4 lg:flex lg:items-start lg:justify-center lg:gap-6">
                 {units.map((unit) => (
@@ -528,14 +544,14 @@ export default function KenyaCoastModelsRegistration() {
                       autoComplete="off"
                     />
                     <span className="mt-1 block text-xs font-medium text-gray-600">
-                      Use the member ID emailed when your Kenya-Coast Models membership was approved. A matching number pays {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}.
+                      Use the member ID emailed when your Kenya-Coast Models membership was approved. A matching number pays {formatForumFeeKes(memberFeeKes)}.
                     </span>
                   </label>
                 ) : null}
                 {isMember === "no" ? (
                   <div className="mt-4 space-y-4">
                     <p className="text-sm leading-relaxed text-gray-700">
-                      You will be registered as a Kenya-Coast Models member. The attendance fee stays {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. After approval, your membership number is emailed to you.
+                      You will be registered as a Kenya-Coast Models member. The attendance fee stays {formatForumFeeKes(nonMemberFeeKes)}. After approval, your membership number is emailed to you.
                     </p>
                     <label className="block text-sm font-semibold text-gray-800">
                       Email address <span className="text-negative">*</span>
@@ -610,7 +626,7 @@ export default function KenyaCoastModelsRegistration() {
               <div className={step === 2 ? undefined : "hidden"}>
                 <h2 className="text-left text-base font-bold text-gray-900 sm:text-lg lg:text-center">3. Payment</h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                  Confirmed members pay {formatForumFeeKes(KCM_FORUM_MEMBER_FEE_KES)}. People joining as new members pay {formatForumFeeKes(KCM_FORUM_NON_MEMBER_FEE_KES)}. Complete the M-Pesa prompt before continuing.
+                  Confirmed members pay {formatForumFeeKes(memberFeeKes)}. People joining as new members pay {formatForumFeeKes(nonMemberFeeKes)}. Complete the M-Pesa prompt before continuing.
                 </p>
                 <p className="mt-3 text-2xl font-bold text-secondary-800">{feeKes == null ? "Confirm membership first" : formatForumFeeKes(feeKes)}</p>
                 <p className="mt-1 text-sm text-gray-600">

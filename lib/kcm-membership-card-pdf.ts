@@ -101,7 +101,7 @@ export async function generateKcmMembershipCardPdf(params: {
   }
 
   const fields: Array<[string, string]> = [
-    ["Member ID", params.card.membershipNumber],
+    ["Registration ID", params.card.membershipNumber],
     ["Category", params.card.category],
     ["Contact", params.card.contact],
     ["Email", params.card.email],

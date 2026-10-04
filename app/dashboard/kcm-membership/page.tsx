@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, RefreshCw, Trash2 } from "lucide-react";
+import { Download, Mail, RefreshCw, Trash2 } from "lucide-react";
 import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +71,8 @@ export default function DashboardKcmMembershipPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
@@ -78,6 +80,8 @@ export default function DashboardKcmMembershipPage() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const [regFeeDraft, setRegFeeDraft] = useState("");
+  const [memberForumFeeDraft, setMemberForumFeeDraft] = useState("");
+  const [nonMemberForumFeeDraft, setNonMemberForumFeeDraft] = useState("");
   const [regFeeLoading, setRegFeeLoading] = useState(false);
   const [regFeeSaving, setRegFeeSaving] = useState(false);
   const [regFeeMessage, setRegFeeMessage] = useState<string | null>(null);
@@ -95,18 +99,33 @@ export default function DashboardKcmMembershipPage() {
       const res = await fetch("/api/fusion-xpress/kcm-registration-settings", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const json = (await res.json().catch(() => ({}))) as { registration_fee_kes?: number; error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        registration_fee_kes?: number;
+        forum_member_fee_kes?: number;
+        forum_non_member_fee_kes?: number;
+        error?: string;
+      };
       if (!res.ok) return;
       if (typeof json.registration_fee_kes === "number") setRegFeeDraft(String(json.registration_fee_kes));
+      if (typeof json.forum_member_fee_kes === "number") setMemberForumFeeDraft(String(json.forum_member_fee_kes));
+      if (typeof json.forum_non_member_fee_kes === "number") setNonMemberForumFeeDraft(String(json.forum_non_member_fee_kes));
     } finally {
       setRegFeeLoading(false);
     }
   }, []);
 
+  const parseFeeDraft = (raw: string) => {
+    const n = Math.floor(Number(raw));
+    if (!Number.isFinite(n) || n < 1 || n > 1_000_000) return null;
+    return n;
+  };
+
   const saveRegistrationFee = async () => {
-    const n = Math.floor(Number(regFeeDraft));
-    if (!Number.isFinite(n) || n < 1 || n > 1_000_000) {
-      setRegFeeMessage("Enter an amount between 1 and 1,000,000 KES.");
+    const registrationFee = parseFeeDraft(regFeeDraft);
+    const memberForumFee = parseFeeDraft(memberForumFeeDraft);
+    const nonMemberForumFee = parseFeeDraft(nonMemberForumFeeDraft);
+    if (registrationFee == null || memberForumFee == null || nonMemberForumFee == null) {
+      setRegFeeMessage("Enter each amount between 1 and 1,000,000 KES.");
       setRegFeeMessageIsError(true);
       return;
     }
@@ -124,15 +143,26 @@ export default function DashboardKcmMembershipPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ registration_fee_kes: n }),
+        body: JSON.stringify({
+          registration_fee_kes: registrationFee,
+          forum_member_fee_kes: memberForumFee,
+          forum_non_member_fee_kes: nonMemberForumFee,
+        }),
       });
-      const json = (await res.json().catch(() => ({}))) as { registration_fee_kes?: number; error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Could not save registration fee.");
+      const json = (await res.json().catch(() => ({}))) as {
+        registration_fee_kes?: number;
+        forum_member_fee_kes?: number;
+        forum_non_member_fee_kes?: number;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(json.error ?? "Could not save fees.");
       if (typeof json.registration_fee_kes === "number") setRegFeeDraft(String(json.registration_fee_kes));
-      setRegFeeMessage("Registration fee saved. New checkouts use this amount.");
+      if (typeof json.forum_member_fee_kes === "number") setMemberForumFeeDraft(String(json.forum_member_fee_kes));
+      if (typeof json.forum_non_member_fee_kes === "number") setNonMemberForumFeeDraft(String(json.forum_non_member_fee_kes));
+      setRegFeeMessage("Fees saved. New M-Pesa checkouts use these amounts.");
       setRegFeeMessageIsError(false);
     } catch (e: unknown) {
-      setRegFeeMessage(e instanceof Error ? e.message : "Could not save registration fee.");
+      setRegFeeMessage(e instanceof Error ? e.message : "Could not save fees.");
       setRegFeeMessageIsError(true);
     } finally {
       setRegFeeSaving(false);
@@ -265,6 +295,34 @@ export default function DashboardKcmMembershipPage() {
     }
   };
 
+  const resendRegistrationEmail = async (id: string, email: string) => {
+    setResendingId(id);
+    setError(null);
+    setResendNotice(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+
+      const res = await fetch(`/api/fusion-xpress/kcm-memberships/${encodeURIComponent(id)}/resend-email`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; membership_number?: string | null };
+      if (!res.ok) throw new Error(json.error ?? "Could not resend the registration email.");
+      if (json.membership_number) {
+        setRows((prev) => prev.map((row) => (row.id === id ? { ...row, membership_number: json.membership_number, status: "approved" } : row)));
+      }
+      setResendNotice(`Registration ID ${json.membership_number ?? ""} emailed to ${email}.`.replace(/\s+/g, " ").trim());
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not resend the registration email.");
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   const deleteMembership = async (id: string, displayLabel: string) => {
     const ok = window.confirm(
       `Permanently delete ${displayLabel}? This removes their membership record, portal profile, portfolio uploads metadata, wallet history, and sessions. This cannot be undone.`
@@ -358,7 +416,7 @@ export default function DashboardKcmMembershipPage() {
         <div>
           <h2 className="text-xl font-bold text-[#1a2332] md:text-2xl">KCM Membership</h2>
           <p className="mt-1 text-gray-600">
-            Review and manage Kenya Coast Models membership registrations. Successful payments are approved automatically and the member is emailed their member ID with a PDF card. You can also approve a paid member from this list.
+            Review Kenya Coast Models members whose payment succeeded. A registration ID is issued only after payment, and you can resend that ID by email with the membership card PDF.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -414,15 +472,15 @@ export default function DashboardKcmMembershipPage() {
 
       {(isAdmin || isManager) ? (
       <div className="mt-6 rounded-lg border border-brand/30 bg-brand-muted p-4 md:p-5">
-        <h3 className="text-sm font-bold text-brand-dark">KCM registration fee</h3>
+        <h3 className="text-sm font-bold text-brand-dark">KCM fees</h3>
         <p className="mt-1 text-xs text-brand-dark">
-          This amount is used for new M-Pesa STK prompts and stored on each membership record. Allowed range: 1–1,000,000
-          KES.
+          These amounts are used for new M-Pesa prompts. Membership registration is the joining fee. Forum attendance is
+          charged separately for existing members and for people joining as new members. Allowed range: 1–1,000,000 KES.
         </p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div>
             <label htmlFor="kcm-reg-fee" className="block text-xs font-medium text-gray-700">
-              Amount (KES)
+              Membership registration (KES)
             </label>
             <input
               id="kcm-reg-fee"
@@ -435,13 +493,43 @@ export default function DashboardKcmMembershipPage() {
               className="mt-0.5 w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
             />
           </div>
+          <div>
+            <label htmlFor="kcm-forum-member-fee" className="block text-xs font-medium text-gray-700">
+              Forum fee, members (KES)
+            </label>
+            <input
+              id="kcm-forum-member-fee"
+              type="number"
+              min={1}
+              max={1_000_000}
+              value={memberForumFeeDraft}
+              onChange={(e) => setMemberForumFeeDraft(e.target.value)}
+              disabled={regFeeLoading || regFeeSaving}
+              className="mt-0.5 w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
+          <div>
+            <label htmlFor="kcm-forum-non-member-fee" className="block text-xs font-medium text-gray-700">
+              Forum fee, new members (KES)
+            </label>
+            <input
+              id="kcm-forum-non-member-fee"
+              type="number"
+              min={1}
+              max={1_000_000}
+              value={nonMemberForumFeeDraft}
+              onChange={(e) => setNonMemberForumFeeDraft(e.target.value)}
+              disabled={regFeeLoading || regFeeSaving}
+              className="mt-0.5 w-44 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+            />
+          </div>
           <button
             type="button"
             onClick={() => void saveRegistrationFee()}
-            disabled={regFeeLoading || regFeeSaving || regFeeDraft === ""}
+            disabled={regFeeLoading || regFeeSaving || regFeeDraft === "" || memberForumFeeDraft === "" || nonMemberForumFeeDraft === ""}
             className="rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {regFeeSaving ? "Saving..." : "Save fee"}
+            {regFeeSaving ? "Saving..." : "Save fees"}
           </button>
         </div>
         {regFeeMessage ? (
@@ -455,6 +543,9 @@ export default function DashboardKcmMembershipPage() {
       ) : null}
 
       {error && <div className="mt-6 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {resendNotice ? (
+        <div className="mt-6 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">{resendNotice}</div>
+      ) : null}
 
       <div className="mt-6 overflow-hidden border border-hairline bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left">
@@ -468,14 +559,14 @@ export default function DashboardKcmMembershipPage() {
         {loading ? (
           <p className="p-12 text-center text-gray-500">Loading memberships...</p>
         ) : rows.length === 0 ? (
-          <p className="p-12 text-center text-gray-500">No KCM membership submissions yet.</p>
+          <p className="p-12 text-center text-gray-500">No successful KCM payments yet.</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
                 <thead className="bg-[#f4f7fb]">
                   <tr>
-                    {["Member ID", "Name", "Contact", "Email", "Category", "Payment", "Forum", "Status", "Joined"].map((heading) => (
+                    {["Registration ID", "Name", "Contact", "Email", "Category", "Payment", "Forum", "Status", "Joined"].map((heading) => (
                       <th
                         key={heading}
                         className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
@@ -529,6 +620,7 @@ export default function DashboardKcmMembershipPage() {
                           <tr className="bg-secondary-50">
                             <td colSpan={9} className="border-b border-hairline px-4 py-4 text-left">
                               <Row
+                                key={`${row.id}-${row.status}-${row.review_notes ?? ""}`}
                                 row={row}
                                 disabled={savingId === row.id}
                                 onSave={(status, reviewNotes) => updateStatus(row.id, status, reviewNotes)}
@@ -538,8 +630,10 @@ export default function DashboardKcmMembershipPage() {
                                 onDelete={() =>
                                   void deleteMembership(row.id, `${row.first_name} ${row.second_name}`.trim() || row.email)
                                 }
+                                onResend={() => void resendRegistrationEmail(row.id, row.email)}
                                 downloadBusy={downloadingId === row.id || downloadingAll}
                                 deleteBusy={deletingId === row.id || downloadingAll}
+                                resendBusy={resendingId === row.id}
                               />
                             </td>
                           </tr>
@@ -621,30 +715,29 @@ function Row({
   onSave,
   onDownload,
   onDelete,
+  onResend,
   downloadBusy,
   deleteBusy,
+  resendBusy,
 }: {
   row: Membership;
   disabled: boolean;
   onSave: (status: MembershipStatus, reviewNotes: string) => void;
   onDownload: () => void;
   onDelete: () => void;
+  onResend: () => void;
   downloadBusy: boolean;
   deleteBusy: boolean;
+  resendBusy: boolean;
 }) {
   const [status, setStatus] = useState<MembershipStatus>(row.status);
   const [reviewNotes, setReviewNotes] = useState(row.review_notes ?? "");
-
-  useEffect(() => {
-    setStatus(row.status);
-    setReviewNotes(row.review_notes ?? "");
-  }, [row.status, row.review_notes]);
 
   return (
     <div className="grid gap-4 text-left lg:grid-cols-2">
       <div>
         <div className="font-semibold text-gray-900">{row.first_name} {row.second_name}</div>
-        <div className="text-xs text-gray-500">{row.membership_number?.trim() || "Membership number pending approval"}</div>
+        <div className="text-xs text-gray-500">{row.membership_number?.trim() || "Registration ID is issued after a successful payment"}</div>
         <div className="text-xs text-gray-500">{row.email}</div>
         <div className="text-xs text-gray-400">{new Date(row.created_at).toLocaleString()}</div>
         <div className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
@@ -797,8 +890,17 @@ function Row({
         <div className="flex flex-col gap-2">
           <button
             type="button"
+            onClick={onResend}
+            disabled={downloadBusy || deleteBusy || resendBusy || row.payment_status !== "success"}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-secondary-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-secondary-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            {resendBusy ? "Sending…" : "Resend registration ID"}
+          </button>
+          <button
+            type="button"
             onClick={onDownload}
-            disabled={downloadBusy || deleteBusy}
+            disabled={downloadBusy || deleteBusy || resendBusy}
             className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Download className="h-3.5 w-3.5" />
@@ -807,7 +909,7 @@ function Row({
           <button
             type="button"
             onClick={onDelete}
-            disabled={downloadBusy || deleteBusy}
+            disabled={downloadBusy || deleteBusy || resendBusy}
             className="inline-flex items-center justify-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 className="h-3.5 w-3.5" />

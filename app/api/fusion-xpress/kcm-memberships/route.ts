@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { buildAllMembersXlsxBuffer, KCM_MEMBERSHIP_XLSX_MIME } from "@/lib/kcm-membership-excel";
+import { purgeUnsuccessfulForumRegistrations, purgeUnsuccessfulKcmMemberships } from "@/lib/kcm-unpaid-registration";
 import { requireFusionKcmMembershipAccess } from "@/lib/fusion-require-admin";
 
 export async function GET(req: NextRequest) {
@@ -8,6 +9,10 @@ export async function GET(req: NextRequest) {
     const auth = await requireFusionKcmMembershipAccess(req);
     if ("error" in auth) return auth.error;
     const { admin } = auth;
+    await Promise.all([
+      purgeUnsuccessfulKcmMemberships(admin).catch(() => null),
+      purgeUnsuccessfulForumRegistrations(admin).catch(() => null),
+    ]);
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status")?.trim() || "";
@@ -25,6 +30,7 @@ export async function GET(req: NextRequest) {
         "id,membership_number,first_name,second_name,contact,email,experience,fashion_category,fashion_category_other,top_model_interest,payment_amount_kes,payment_confirmed,payment_status,mpesa_receipt,paid_at,status,review_notes,created_at,updated_at",
         { count: "exact" }
       )
+      .or("payment_status.eq.success,payment_confirmed.eq.true")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -35,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     const memberships = (data ?? []) as Array<{ id: string; payment_status?: string } & Record<string, unknown>>;
     const ids = memberships.map((m) => String(m.id));
-    let profileMap: Record<
+    const profileMap: Record<
       string,
       {
         display_name: string | null;
@@ -52,8 +58,8 @@ export async function GET(req: NextRequest) {
         updated_at: string | null;
       }
     > = {};
-    let portfolioItemCountMap: Record<string, number> = {};
-    let walletMap: Record<
+    const portfolioItemCountMap: Record<string, number> = {};
+    const walletMap: Record<
       string,
       {
         total_contributions_kes: number;
@@ -143,7 +149,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let forumByMembership: Record<string, { fee_kes: number; attendee_type: string; paid_at: string | null }> = {};
+    const forumByMembership: Record<string, { fee_kes: number; attendee_type: string; paid_at: string | null }> = {};
     if (ids.length > 0) {
       const { data: forumRows, error: forumErr } = await admin
         .from("kenya_coast_models_registrations")
