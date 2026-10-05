@@ -54,28 +54,36 @@ export async function sendAttendanceDigestEmail(params: {
 
   const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-${buildResendEmailHeaderHtml({ subtitle: "Fusion Xpress · Attendance summary" })}
-<div style="background: #f9fafb; padding: 24px; border-radius: 0 0 10px 10px; text-align: left;">
-<p style="margin: 0 0 16px; font-size: 16px;"><strong>${escapeHtml(kindLabel)} attendance summary</strong></p>
-<p style="margin: 0 0 16px;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+</head>
+<body style="margin:0;padding:0;width:100%;background:#f9fafb;-webkit-text-size-adjust:100%;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;background:#f9fafb;">
+<tr><td style="padding:0;">
+${buildResendEmailHeaderHtml({ subtitle: "Fusion Xpress · Attendance summary", fullWidth: true })}
+</td></tr>
+<tr><td style="padding:28px 24px 40px;font-family:Arial,Helvetica,sans-serif;color:#333333;line-height:1.5;text-align:left;">
+<p style="margin:0 0 18px;font-size:28px;font-weight:700;line-height:1.25;color:#132a46;">${escapeHtml(kindLabel)} attendance summary</p>
+<p style="margin:0 0 20px;font-size:18px;line-height:1.5;">
 Here is the <strong>${escapeHtml(kindLabel.toLowerCase())}</strong> attendance register for <strong>${org}</strong>.
 </p>
-<ul style="margin: 0 0 20px; padding-left: 20px;">
-<li><strong>Period:</strong> ${period}</li>
-<li><strong>Records:</strong> ${params.rowCount}</li>
+<ul style="margin:0 0 24px;padding-left:22px;font-size:18px;line-height:1.5;">
+<li style="margin:0 0 8px;"><strong>Period:</strong> ${period}</li>
+<li style="margin:0;"><strong>Records:</strong> ${params.rowCount}</li>
 </ul>
-<p style="margin: 0 0 16px; padding: 14px; background: #ecfdf5; border-radius: 8px; border: 1px solid #a7f3d0;">
+<p style="margin:0 0 24px;padding:16px 18px;background:#ecfdf5;border-radius:8px;border:1px solid #a7f3d0;font-size:18px;line-height:1.5;">
 <strong>PDF attached</strong> — download and save the register. An Excel copy is also attached for filtering and payroll use.
 </p>
-<p style="margin: 0 0 16px;">
-<a href="${escapeHtml(dashboardUrl)}" style="display: inline-block; background: #2ca57c; color: #ffffff; font-weight: 700; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Open summary reports</a>
+<p style="margin:0 0 28px;">
+<a href="${escapeHtml(dashboardUrl)}" style="display:inline-block;background:#2ca57c;color:#ffffff;font-size:18px;font-weight:700;padding:14px 28px;text-decoration:none;border-radius:6px;">Open summary reports</a>
 </p>
-<p style="margin: 24px 0 0; font-size: 12px; color: #6b7280;">
+<p style="margin:0;font-size:15px;line-height:1.5;color:#6b7280;">
 This summary is sent to the business account and listed notification recipients. Fusion Xpress platform admins also receive a copy for every organisation.
 </p>
-</div>
+</td></tr>
+</table>
 </body>
 </html>`;
 

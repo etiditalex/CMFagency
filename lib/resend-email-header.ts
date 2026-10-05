@@ -25,6 +25,8 @@ export type ResendEmailHeaderOptions = {
   primaryTitle?: string;
   /** Override logo URL (must be https). Default: Changer Fusions asset from Cloudinary */
   logoUrl?: string;
+  /** Edge-to-edge banner with larger type. Other emails keep the narrower card header. */
+  fullWidth?: boolean;
 };
 
 /**
@@ -42,9 +44,15 @@ export function buildResendEmailHeaderHtml(options: ResendEmailHeaderOptions): s
         : DEFAULT_LOGO_URL;
   const logo = raw.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
-  return `<div style="background: ${RESEND_EMAIL_HEADER_BANNER_BG}; padding: 28px 24px 26px; text-align: center; border-radius: 10px 10px 0 0; border-bottom: 1px solid #d1dce8;">
-    <img src="${logo}" alt="Changer Fusions" width="220" height="80" style="max-height: 80px; max-width: 240px; width: auto; height: auto; display: block; margin: 0 auto 18px; border: 0; outline: none;" />
-    <h1 style="color: #132a46; margin: 0; font-size: 22px; font-weight: 700; font-family: Arial, Helvetica, sans-serif; line-height: 1.3;">${primary}</h1>
-    <p style="color: #475569; margin: 12px 0 0; font-size: 15px; font-weight: 400; font-family: Arial, Helvetica, sans-serif; line-height: 1.4;">${subtitle}</p>
+  const fullWidth = options.fullWidth === true;
+  const radius = fullWidth ? "0" : "10px 10px 0 0";
+  const titleSize = fullWidth ? "28px" : "22px";
+  const subtitleSize = fullWidth ? "18px" : "15px";
+  const logoMaxHeight = fullWidth ? "96px" : "80px";
+
+  return `<div style="background: ${RESEND_EMAIL_HEADER_BANNER_BG}; padding: 32px 24px 28px; text-align: center; border-radius: ${radius}; border-bottom: 1px solid #d1dce8;">
+    <img src="${logo}" alt="Changer Fusions" width="220" height="80" style="max-height: ${logoMaxHeight}; max-width: 240px; width: auto; height: auto; display: block; margin: 0 auto 18px; border: 0; outline: none;" />
+    <h1 style="color: #132a46; margin: 0; font-size: ${titleSize}; font-weight: 700; font-family: Arial, Helvetica, sans-serif; line-height: 1.25;">${primary}</h1>
+    <p style="color: #475569; margin: 12px 0 0; font-size: ${subtitleSize}; font-weight: 400; font-family: Arial, Helvetica, sans-serif; line-height: 1.4;">${subtitle}</p>
   </div>`;
 }
