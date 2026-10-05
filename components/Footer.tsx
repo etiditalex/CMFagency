@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin, Crown, Shield } from "lucide-react";
+import { Mail, Phone, MapPin, Instagram, Facebook, Linkedin } from "lucide-react";
 import Image from "next/image";
 import NewsletterSubscribeForm from "@/components/NewsletterSubscribeForm";
 import { BRAND_LOGO_URL } from "@/lib/brand-logo";
@@ -38,10 +38,6 @@ function FooterKenyaDotMap() {
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const footerActionLinks = [
-    { href: "/kcm/member-portal", label: "KCM Member", icon: Crown },
-    { href: "/fusion-xpress", label: "Fusion Xpress", icon: Shield },
-  ];
 
   const quickLinks = [
     { href: "/", label: "Home" },
@@ -231,34 +227,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      </div>
-      {/* Short dock (~52px + safe area). Keep in sync with CookieBanner mobile bottom offset. */}
-      <div className="fixed inset-x-0 bottom-0 z-[60] pb-[env(safe-area-inset-bottom,0px)] md:hidden">
-        <div className="mx-0 rounded-none border-t border-gray-200 bg-white px-1.5 py-1 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
-          <div className="grid grid-cols-2 gap-0.5">
-            {footerActionLinks.map((item) => {
-              const Icon = item.icon;
-              const mobileLabel =
-                item.label === "KCM Member"
-                  ? "KCM"
-                  : item.label === "Fusion Xpress"
-                    ? "FX"
-                    : item.label;
-              return (
-                <Link
-                  key={`mobile-${item.href}-${item.label}`}
-                  href={item.href}
-                  className="group flex min-h-[44px] flex-col items-center justify-center gap-0.5 px-0.5 py-0.5 text-center transition-colors duration-200 active:bg-gray-50"
-                >
-                  <Icon className="h-4 w-4 shrink-0 text-gray-700 group-hover:text-primary-700 group-active:text-primary-800" />
-                  <span className="whitespace-nowrap text-[10px] font-semibold leading-tight text-gray-800 group-hover:text-primary-800">
-                    {mobileLabel}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
       </div>
     </footer>
   );
