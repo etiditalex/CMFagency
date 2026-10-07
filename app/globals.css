@@ -93,8 +93,8 @@
   .type-section-heading {
     font-family: var(--font-playfair), Georgia, serif;
     font-style: italic;
-    font-weight: 500;
-    font-size: 2.5rem;
+    font-weight: 400;
+    font-size: 2rem;
     line-height: 1.08;
     color: var(--editorial-accent);
   }
@@ -157,7 +157,7 @@
 
 @media (min-width: 900px) {
   .type-section-heading {
-    font-size: 3.5rem;
+    font-size: 2.75rem;
   }
 }
 
@@ -167,7 +167,7 @@
 .site-editorial h3 {
   font-family: var(--font-playfair), Georgia, serif;
   font-style: italic;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: normal;
   text-transform: none;
   background-image: none;
@@ -180,7 +180,7 @@
 .site-editorial h1,
 .site-editorial h2,
 .site-editorial .home-about h3 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   line-height: 1.08;
 }
 
@@ -223,7 +223,51 @@
   .site-editorial h1,
   .site-editorial h2,
   .site-editorial .home-about h3 {
-    font-size: 3.5rem;
+    font-size: 2.75rem;
+  }
+}
+
+/* Homepage phone layout: tighter reading type, and no floating drop cap. */
+@media (max-width: 639px) {
+  .site-editorial .home-page p,
+  .site-editorial .home-page li {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+  }
+
+  .site-editorial .home-page .home-impact-stat > p:first-child {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+
+  .site-editorial .home-page .home-why h3 {
+    font-size: 1.125rem;
+    line-height: 1.25;
+  }
+
+  .site-editorial .home-page .home-why p {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .site-editorial .home-page .home-success .home-success-quote {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .site-editorial .home-page .type-dropcap::first-letter {
+    float: none;
+    margin: 0;
+    font-family: inherit;
+    font-style: inherit;
+    font-weight: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+
+  .site-editorial .home-page .type-eyebrow::after {
+    width: 40px;
   }
 }
 

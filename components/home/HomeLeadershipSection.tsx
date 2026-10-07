@@ -145,17 +145,17 @@ export default function HomeLeadershipSection() {
   return (
     <section
       ref={sectionRef}
-      className="home-leadership w-full overflow-hidden bg-editorial-background py-20"
+      className="home-leadership w-full overflow-hidden bg-editorial-background py-12 sm:py-16 lg:py-20"
       aria-labelledby="home-leadership-heading"
     >
-      <div className="mx-auto grid w-full max-w-[90rem] items-center gap-16 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:px-8">
+      <div className="mx-auto grid w-full max-w-[90rem] items-center gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16 lg:px-8">
         <div>
           <p className="sr-only">
             {LEADERS.map((leader) => `${leader.name}, ${leader.role} ${leader.org}`).join(" ")}
           </p>
-          <div className="relative mx-auto w-full max-w-[36rem] pb-16 pr-4 sm:pb-20 sm:pr-8 lg:mx-0 lg:max-w-none">
+          <div className="relative mx-auto w-full max-w-[36rem] pb-14 pr-2 sm:pb-20 sm:pr-8 lg:mx-0 lg:max-w-none">
             <span
-              className="pointer-events-none absolute -left-1 -top-8 h-11 w-11 rounded-full border border-brand/35"
+              className="pointer-events-none absolute left-1 top-1 h-9 w-9 rounded-full border border-brand/35 sm:-left-1 sm:-top-8 sm:h-11 sm:w-11"
               aria-hidden
             />
             <LeaderPhoto
@@ -169,7 +169,7 @@ export default function HomeLeadershipSection() {
           </div>
 
           <div
-            className={`mt-8 grid gap-8 ${reduceMotion ? "sm:grid-cols-3" : "grid-cols-2"}`}
+            className={`mt-6 grid gap-5 sm:mt-8 sm:gap-8 ${reduceMotion ? "sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2"}`}
             aria-hidden="true"
           >
             {reduceMotion ? (

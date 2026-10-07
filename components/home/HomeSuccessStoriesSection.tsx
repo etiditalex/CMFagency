@@ -53,7 +53,7 @@ function StorySlot({
 }) {
   return (
     <article
-      className={`relative min-h-[28rem] overflow-y-auto rounded-xl bg-secondary-800 sm:min-h-[28rem] sm:overflow-hidden lg:min-h-[32rem] ${className}`}
+      className={`relative min-h-[28rem] overflow-y-auto rounded-xl bg-secondary-800 sm:overflow-hidden lg:min-h-[32rem] ${className}`}
     >
       {stories.map((person) => (
         <div

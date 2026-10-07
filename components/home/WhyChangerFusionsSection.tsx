@@ -63,7 +63,7 @@ export default function WhyChangerFusionsSection() {
               href={card.href}
               className="group relative block pb-7 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white sm:pb-8"
             >
-              <div className="relative aspect-[16/10] overflow-hidden sm:aspect-[3/4]">
+              <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[3/4]">
                 <Image
                   src={card.image}
                   alt={card.imageAlt}
