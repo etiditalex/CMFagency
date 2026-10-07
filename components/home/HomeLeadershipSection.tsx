@@ -9,7 +9,7 @@ const LEADERS = [
     role: "Founder & Chief Executive Officer,",
     org: "Changer Fusions",
     image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_fill,g_face,w_256,h_256,f_auto,q_auto/v1767009380/Javan_Roylence_a6fnzo.jpg",
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_thumb,g_face,z_0.62,w_900,h_1125,f_auto,q_auto/v1767009380/Javan_Roylence_a6fnzo.jpg",
     imageAlt: "Javan Rolynce, Founder and Chief Executive Officer of Changer Fusions",
   },
   {
@@ -17,7 +17,7 @@ const LEADERS = [
     role: "Technical Director,",
     org: "Changer Fusions",
     image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_fill,g_face,w_256,h_256,f_auto,q_auto/v1768370403/Alex_Etidit-CTO_nkeiwj.jpg",
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_thumb,g_face,z_0.62,w_900,h_1125,f_auto,q_auto/v1768370403/Alex_Etidit-CTO_nkeiwj.jpg",
     imageAlt: "Alex Etidit, Technical Director of Changer Fusions",
   },
   {
@@ -25,7 +25,7 @@ const LEADERS = [
     role: "Finance and Operations Director,",
     org: "Changer Fusions",
     image:
-      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_fill,g_face,w_256,h_256,f_auto,q_auto/v1789386858/Victoria_h2bryf.jpg",
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/c_thumb,g_face,z_0.62,w_900,h_1125,f_auto,q_auto/v1789386858/Victoria_h2bryf.jpg",
     imageAlt: "Victoria Mapenzi, Finance and Operations Director of Changer Fusions",
   },
 ] as const;
@@ -33,58 +33,61 @@ const LEADERS = [
 const HOLD_MS = 7000;
 const FADE_CLASS = "duration-[1800ms]";
 
-function LeaderSlot({
-  leader,
-  className = "",
+function LeaderPhoto({
+  activeName,
+  className,
 }: {
-  leader: (typeof LEADERS)[number];
-  className?: string;
+  activeName: string;
+  className: string;
 }) {
   return (
-    <li className={`relative mx-auto flex w-full max-w-[22rem] items-center gap-3 text-left sm:mx-0 sm:w-[22rem] sm:gap-4 ${className}`}>
-      <div className="relative h-20 w-20 shrink-0 sm:h-28 sm:w-28">
-        {LEADERS.map((person) => (
-          <div
-            key={person.name}
-            className={`absolute inset-0 overflow-hidden rounded-full ring-[3px] ring-white transition-opacity ${FADE_CLASS} ease-in-out ${
-              person.name === leader.name ? "opacity-100" : "opacity-0"
-            }`}
-            aria-hidden={person.name !== leader.name}
-          >
-            <Image
-              src={person.image}
-              alt={person.name === leader.name ? person.imageAlt : ""}
-              width={256}
-              height={256}
-              className="h-full w-full object-cover object-center"
-              unoptimized
-            />
-          </div>
-        ))}
-      </div>
-      <div className="relative min-h-[3.75rem] flex-1 sm:min-h-[4.25rem]">
-        {LEADERS.map((person) => (
-          <div
-            key={person.name}
-            className={`transition-opacity ${FADE_CLASS} ease-in-out ${
-              person.name === leader.name
-                ? "relative opacity-100"
-                : "pointer-events-none absolute inset-0 opacity-0"
-            }`}
-            aria-hidden={person.name !== leader.name}
-          >
-            <p className="home-leadership-name font-montserrat text-base font-bold text-white sm:text-xl">
-              {person.name}
-            </p>
-            <p className="home-leadership-role mt-0.5 text-[0.8rem] leading-snug text-white/90 sm:text-[0.95rem]">
-              {person.role}
-              <br />
-              {person.org}
-            </p>
-          </div>
-        ))}
-      </div>
-    </li>
+    <div className={`overflow-hidden rounded-editorial shadow-editorial ${className}`}>
+      {LEADERS.map((person) => (
+        <div
+          key={person.name}
+          className={`absolute inset-0 transition-opacity ${FADE_CLASS} ease-in-out ${
+            person.name === activeName ? "opacity-100" : "opacity-0"
+          }`}
+          aria-hidden={person.name !== activeName}
+        >
+          <Image
+            src={person.image}
+            alt={person.name === activeName ? person.imageAlt : ""}
+            width={960}
+            height={1200}
+            className="h-full w-full object-cover object-[center_18%]"
+            unoptimized
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LeaderCaption({ activeName }: { activeName: string }) {
+  return (
+    <div className="relative min-h-[4.5rem]">
+      {LEADERS.map((person) => (
+        <div
+          key={person.name}
+          className={`transition-opacity ${FADE_CLASS} ease-in-out ${
+            person.name === activeName
+              ? "relative opacity-100"
+              : "pointer-events-none absolute inset-0 opacity-0"
+          }`}
+          aria-hidden={person.name !== activeName}
+        >
+          <p className="home-leadership-name font-inter text-base font-semibold text-editorial-strong sm:text-lg">
+            {person.name}
+          </p>
+          <p className="home-leadership-role mt-0.5 font-inter text-sm font-normal leading-snug text-editorial-body">
+            {person.role}
+            <br />
+            {person.org}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -136,76 +139,108 @@ export default function HomeLeadershipSection() {
     };
   }, [reduceMotion]);
 
-  const visible = reduceMotion
-    ? LEADERS
-    : [LEADERS[index % LEADERS.length], LEADERS[(index + 1) % LEADERS.length]];
+  const primary = LEADERS[index % LEADERS.length];
+  const secondary = LEADERS[(index + 1) % LEADERS.length];
 
   return (
     <section
       ref={sectionRef}
-      className="home-leadership w-full bg-gradient-to-r from-secondary-500 via-primary-800 to-primary-950 py-8 sm:py-16 lg:py-20"
+      className="home-leadership w-full overflow-hidden bg-editorial-background py-20"
       aria-labelledby="home-leadership-heading"
     >
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
-        <h2
-          id="home-leadership-heading"
-          className="overflow-visible px-1 font-montserrat text-[1.55rem] font-bold leading-snug text-white sm:text-4xl md:text-5xl"
-        >
-          Leadership at Changer Fusions
-        </h2>
-      </div>
-      <p className="home-leadership-copy mx-auto mt-4 w-full max-w-3xl px-4 text-center text-[0.95rem] leading-[1.65] text-white/95 sm:mt-7 sm:max-w-4xl sm:px-6 sm:text-xl sm:leading-relaxed md:max-w-5xl md:px-8 md:text-2xl md:leading-[1.55] lg:max-w-6xl lg:px-10 lg:text-[1.65rem] lg:leading-[1.5]">
-        We plan events, run digital marketing, and keep campaigns moving with Fusion Xpress so
-        brands stay visible and relevant. From first brief to last guest, our directors shape the
-        work on the ground and the systems behind it—event design, campaign strategy, ticketing,
-        voting, operations, finance, and the digital tools that keep a brand in the market after
-        the room empties. Technical leadership keeps Fusion Xpress and our platforms secure and
-        ready to scale; operations leadership keeps delivery on time and on budget. From Mombasa
-        across the Coast, Nairobi, Kisumu, and the rest of Kenya, Changer Fusions is led by people
-        who stay close to the work: people, craft, and measurable growth. Market to thrive, Market
-        to exist.
-      </p>
-
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
-        <p className="sr-only">
-          {LEADERS.map((leader) => `${leader.name}, ${leader.role} ${leader.org}`).join(" ")}
-        </p>
-
-        <ul
-          className={`mt-6 flex w-full flex-col items-stretch justify-center gap-5 sm:mt-12 sm:flex-row sm:items-center sm:gap-12 md:gap-16 ${
-            reduceMotion ? "lg:gap-10" : ""
-          }`}
-          aria-hidden="true"
-        >
-          {visible.map((leader, slot) => (
-            <LeaderSlot
-              key={reduceMotion ? leader.name : `slot-${slot}`}
-              leader={leader}
-              className={!reduceMotion && slot > 0 ? "hidden md:flex" : undefined}
+      <div className="mx-auto grid w-full max-w-[90rem] items-center gap-16 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:px-8">
+        <div>
+          <p className="sr-only">
+            {LEADERS.map((leader) => `${leader.name}, ${leader.role} ${leader.org}`).join(" ")}
+          </p>
+          <div className="relative mx-auto w-full max-w-[36rem] pb-16 pr-4 sm:pb-20 sm:pr-8 lg:mx-0 lg:max-w-none">
+            <span
+              className="pointer-events-none absolute -left-1 -top-8 h-11 w-11 rounded-full border border-brand/35"
+              aria-hidden
             />
-          ))}
-        </ul>
-
-        {!reduceMotion ? (
-          <div className="mt-5 flex justify-center gap-1 md:hidden" role="group" aria-label="Leadership">
-            {LEADERS.map((leader, leaderIndex) => (
-              <button
-                key={leader.name}
-                type="button"
-                aria-label={`Show ${leader.name}`}
-                aria-current={index === leaderIndex ? "true" : undefined}
-                onClick={() => setIndex(leaderIndex)}
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center"
-              >
-                <span
-                  className={`block h-2.5 w-2.5 rounded-full ${
-                    index === leaderIndex ? "bg-white" : "bg-white/40"
-                  }`}
-                />
-              </button>
-            ))}
+            <LeaderPhoto
+              activeName={primary.name}
+              className="relative aspect-[4/5] w-[70%]"
+            />
+            <LeaderPhoto
+              activeName={reduceMotion ? LEADERS[1].name : secondary.name}
+              className="absolute bottom-0 right-0 z-10 aspect-[4/5] w-[46%]"
+            />
           </div>
-        ) : null}
+
+          <div
+            className={`mt-8 grid gap-8 ${reduceMotion ? "sm:grid-cols-3" : "grid-cols-2"}`}
+            aria-hidden="true"
+          >
+            {reduceMotion ? (
+              LEADERS.map((leader) => (
+                <div key={leader.name}>
+                  <p className="home-leadership-name font-inter text-base font-semibold text-editorial-strong">
+                    {leader.name}
+                  </p>
+                  <p className="home-leadership-role mt-0.5 font-inter text-sm leading-snug text-editorial-body">
+                    {leader.role}
+                    <br />
+                    {leader.org}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <>
+                <LeaderCaption activeName={primary.name} />
+                <LeaderCaption activeName={secondary.name} />
+              </>
+            )}
+          </div>
+
+          {!reduceMotion ? (
+            <div className="mt-4 flex gap-1 md:hidden" role="group" aria-label="Leadership">
+              {LEADERS.map((leader, leaderIndex) => (
+                <button
+                  key={leader.name}
+                  type="button"
+                  aria-label={`Show ${leader.name}`}
+                  aria-current={index === leaderIndex ? "true" : undefined}
+                  onClick={() => setIndex(leaderIndex)}
+                  className="flex min-h-[44px] min-w-[44px] items-center justify-center"
+                >
+                  <span
+                    className={`block h-2.5 w-2.5 rounded-full ${
+                      index === leaderIndex ? "bg-editorial-accent" : "bg-editorial-accent/40"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        <div>
+          <p className="type-eyebrow">Leadership</p>
+          <h2 id="home-leadership-heading" className="type-section-heading mt-5 overflow-visible">
+            Leadership at
+            <br />
+            Changer Fusions
+          </h2>
+          <div className="mt-6 space-y-5">
+            <p className="type-body type-dropcap home-leadership-copy">
+              We plan events, run digital marketing, and keep campaigns moving with{" "}
+              <strong>Fusion Xpress</strong> so brands stay visible and relevant.
+            </p>
+            <p className="type-body home-leadership-copy">
+              From first brief to last guest, our directors shape the work on the ground and the
+              systems behind it—event design, campaign strategy, ticketing, voting, operations,
+              finance, and the digital tools that keep a brand in the market after the room empties.
+            </p>
+            <p className="type-body home-leadership-copy">
+              Technical leadership keeps <strong>Fusion Xpress</strong> and our platforms secure and
+              ready to scale; operations leadership keeps delivery on time and on budget. From
+              Mombasa across the Coast, Nairobi, Kisumu, and the rest of Kenya, Changer Fusions is
+              led by people who stay close to the work: people, craft, and measurable growth.{" "}
+              <strong>Market to thrive, Market to exist.</strong>
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

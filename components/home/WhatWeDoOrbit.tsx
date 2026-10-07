@@ -154,7 +154,7 @@ export default function WhatWeDoOrbit() {
 
       <div className="container-custom relative z-10">
         <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-10 md:mb-12">
-          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
+          <p className="home-kicker mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
             What we&apos;re building
           </p>
           <h2

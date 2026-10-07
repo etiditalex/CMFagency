@@ -119,7 +119,7 @@ export default function ConditionalLayout({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen overflow-x-clip">{children}</main>
+      <main className="site-editorial min-h-screen overflow-x-clip">{children}</main>
       <Footer />
       <SiteViewTracker />
       <CookieBanner />

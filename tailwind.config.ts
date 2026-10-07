@@ -10,6 +10,14 @@ const config: Config = {
     extend: {
       fontFamily: {
         montserrat: ["var(--font-montserrat)", "ui-sans-serif", "system-ui", "sans-serif"],
+        inter: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        playfair: ["var(--font-playfair)", "Georgia", "serif"],
+      },
+      borderRadius: {
+        editorial: "var(--editorial-radius)",
+      },
+      boxShadow: {
+        editorial: "var(--editorial-shadow)",
       },
       colors: {
         primary: {
@@ -67,6 +75,12 @@ const config: Config = {
         canvas: "#F6F7FB",
         positive: "#1F9D6C",
         negative: "#D64545",
+        editorial: {
+          accent: "var(--editorial-accent)",
+          background: "var(--editorial-background)",
+          body: "var(--editorial-body)",
+          strong: "var(--editorial-strong)",
+        },
         fx: {
           canvas: "#F6F7FB",
           card: "#FFFFFF",

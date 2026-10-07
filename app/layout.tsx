@@ -1,8 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: "500",
+  style: "italic",
+  variable: "--font-playfair",
+  display: "swap",
+});
 import PageLoader from "@/components/PageLoader";
 import KenyaCoastModelsPopup from "@/components/KenyaCoastModelsPopup";
 import AdSenseLoader from "@/components/AdSenseLoader";
@@ -166,7 +182,7 @@ export default async function RootLayout({
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body>
         {/* Google tag (gtag.js) */}
         <Script

@@ -11,7 +11,7 @@ export default function AugustEventSection() {
       <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10">
         <div className="grid grid-cols-1 items-start gap-6 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-x-14 xl:gap-x-16">
           <div className="min-w-0">
-            <p className="mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#1a8a3e] sm:mb-5 sm:text-xs">
+            <p className="home-kicker mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#1a8a3e] sm:mb-5 sm:text-xs">
               About us
             </p>
             <h2

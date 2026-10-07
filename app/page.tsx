@@ -83,7 +83,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <>
+    <div className="home-page">
       <HomeJsonLd />
       <Hero />
       <AugustEventSection />
@@ -96,6 +96,6 @@ export default function Home() {
       <HomeDeferredGallery />
       <WhatWeDoOrbit />
       <HomeDeferredPartnersCTA />
-    </>
+    </div>
   );
 }
