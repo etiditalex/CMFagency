@@ -19,8 +19,8 @@ export default function AboutUsSection() {
       aria-label="About us"
     >
       <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 overflow-hidden bg-white shadow-sm md:grid-cols-3">
-          <article className="flex flex-col items-center bg-white px-4 py-6 text-center sm:px-10 sm:py-14">
+        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3 lg:gap-8">
+          <article className="flex flex-col items-center border border-primary-100 bg-white px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
             <Send
               className="mb-4 h-10 w-10 -rotate-45 text-primary-600 sm:mb-8 sm:h-12 sm:w-12"
               strokeWidth={1.6}
@@ -31,7 +31,7 @@ export default function AboutUsSection() {
             <p className="max-w-xs text-[0.95rem] leading-relaxed text-gray-600">{VISION}</p>
           </article>
 
-          <article className="flex flex-col items-center bg-primary-800 px-4 py-6 text-center sm:px-10 sm:py-14">
+          <article className="flex flex-col items-center border border-primary-900/20 bg-primary-800 px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
             <FileText
               className="mb-4 h-10 w-10 text-white sm:mb-8 sm:h-12 sm:w-12"
               strokeWidth={1.6}
@@ -42,7 +42,7 @@ export default function AboutUsSection() {
             <p className="max-w-xs text-[0.95rem] leading-relaxed text-white/95">{MISSION}</p>
           </article>
 
-          <article className="flex flex-col items-center bg-white px-4 py-6 text-center sm:px-10 sm:py-14">
+          <article className="flex flex-col items-center border border-primary-100 bg-white px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
             <List
               className="mb-4 h-10 w-10 text-primary-600 sm:mb-8 sm:h-12 sm:w-12"
               strokeWidth={1.6}
