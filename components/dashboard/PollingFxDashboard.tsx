@@ -45,7 +45,7 @@ const EMPTY_FORM: PollForm = {
   title: "",
   question: "",
   topic: "senatorial",
-  status: "Ended",
+  status: "Live",
   region: "Eastern",
   county: "Embu",
   ends: "",
@@ -129,6 +129,51 @@ export default function PollingFxDashboard() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, [authLoading, isAdmin, isAuthenticated, load, portalLoading, user]);
+
+  useEffect(() => {
+    if (authLoading || portalLoading || !isAuthenticated || !user || !isAdmin) return;
+    let stop = false;
+    const applyVotes = (rows: { id: string; poll_id: string; votes: number | null }[]) => {
+      const votes = new Map(rows.map((row) => [String(row.id), Number(row.votes ?? 0)]));
+      setPolls((current) =>
+        current.map((record) => {
+          let changed = false;
+          const options = record.options.map((option) => {
+            if (!option.id || !votes.has(option.id)) return option;
+            const next = votes.get(option.id) ?? option.votes;
+            if (next === option.votes) return option;
+            changed = true;
+            return { ...option, votes: next };
+          });
+          if (!changed) return record;
+          return {
+            ...record,
+            options,
+            poll: { ...record.poll, totalVotes: options.reduce((total, option) => total + option.votes, 0) },
+          };
+        }),
+      );
+    };
+    const tick = async () => {
+      const { data, error: err } = await supabase.from("fusion_poll_options").select("id,poll_id,votes");
+      if (stop || err || !data) return;
+      applyVotes(data);
+    };
+    const timer = window.setInterval(() => {
+      void tick();
+    }, 4000);
+    const channel = supabase
+      .channel("polling-fx-live-votes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "fusion_poll_options" }, () => {
+        void tick();
+      })
+      .subscribe();
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [authLoading, isAdmin, isAuthenticated, portalLoading, user]);
 
   const visible = polls.filter((record) => statusFilter === "all" || record.poll.status === statusFilter);
 
@@ -341,7 +386,7 @@ export default function PollingFxDashboard() {
         <div className="min-w-0">
           <h2 className="border-b border-hairline pb-3 text-left text-xl font-bold text-[#1a2332] md:text-2xl">Polling Fx</h2>
           <p className="mt-1 max-w-3xl text-left text-gray-600">
-            Create the polls that appear on Live Polls. A poll can include more than two candidates, each with a photo. Comments stay stored with that poll.
+            A new poll is published as soon as you save it. While its status is Live, visitors can vote and the public results update as each vote is recorded.
           </p>
         </div>
         <button
@@ -435,6 +480,9 @@ export default function PollingFxDashboard() {
               </select>
             </label>
           </div>
+          <p className="text-sm text-gray-600">
+            Live publishes this poll immediately. Visitors vote on the public page, and those totals update here and on the results page. Choose Scheduled or Ended when voting should stay closed.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm font-semibold text-gray-700">
               Ends

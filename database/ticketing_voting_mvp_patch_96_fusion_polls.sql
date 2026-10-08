@@ -9,7 +9,7 @@ create table if not exists public.fusion_polls (
   question text not null,
   topic text not null,
   topic_label text not null,
-  status text not null default 'Ended',
+  status text not null default 'Live',
   region text not null default 'Nairobi',
   county text not null default 'Nairobi',
   ends_label text not null default '',

@@ -712,6 +712,11 @@
     text-align: right !important;
   }
 
+  .live-polls-results .live-polls-vote,
+  .live-polls-results .live-polls-note {
+    text-align: center !important;
+  }
+
   .poll-cta h2,
   .poll-cta h2 span {
     text-align: left !important;

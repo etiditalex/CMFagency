@@ -32,7 +32,7 @@ export default function LivePollsGrid({
 
         {polls.length === 0 ? (
           <p className="live-polls-count mx-auto mt-10 max-w-md text-center text-sm text-ink-muted">
-            No polls match these filters. Try another topic, status, or county.
+            No polls match these filters. A poll saved as Live in Polling Fx shows here, ready to vote.
           </p>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -86,7 +86,7 @@ export default function LivePollsGrid({
                       href={`/poll/live/${poll.id}`}
                       className="inline-flex h-11 min-w-0 flex-1 items-center justify-center rounded-lg bg-primary-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-primary-500"
                     >
-                      View Poll Results
+                      {poll.status === "Live" ? "Vote now" : "View Poll Results"}
                     </Link>
                     <button
                       type="button"

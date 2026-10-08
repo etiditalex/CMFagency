@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LayoutGrid, List, UserRound } from "lucide-react";
 import LivePollDiscussion from "@/components/poll/LivePollDiscussion";
 import LiveVoteTrends from "@/components/poll/LiveVoteTrends";
-import type { PollComment } from "@/lib/fusion-polls";
+import type { PollComment, PollOptionRow } from "@/lib/fusion-polls";
 import type { PollOption, SamplePoll } from "@/components/poll/live-polls-sample";
+import { supabase } from "@/lib/supabase";
 
 const RANKS = [
   { tint: "#e7eefb", ink: "#1e58ca" },
@@ -14,10 +15,12 @@ const RANKS = [
   { tint: "#fff1e0", ink: "#e07a00" },
 ] as const;
 
+type BallotOption = PollOption & { id?: string; sortOrder?: number };
+
 type Ballot = {
   title: string;
   question: string;
-  options: PollOption[];
+  options: BallotOption[];
 };
 
 function initials(name: string) {
@@ -56,6 +59,63 @@ export default function LivePollResults({
   persisted: boolean;
 }) {
   const [view, setView] = useState<"list" | "grid">("list");
+  const [options, setOptions] = useState<BallotOption[]>(ballot.options);
+  const [myVote, setMyVote] = useState<string | null>(null);
+  const [votingId, setVotingId] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const canVote = persisted && poll.status === "Live";
+
+  const ranked = useMemo(
+    () => [...options].sort((a, b) => b.votes - a.votes || (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [options],
+  );
+  const totalVotes = ranked.reduce((total, option) => total + option.votes, 0);
+
+  const refresh = useCallback(async () => {
+    if (!persisted) return;
+    const response = await fetch(`/api/polls/${poll.id}`, { cache: "no-store" });
+    const json = (await response.json().catch(() => null)) as { options?: PollOptionRow[]; votedOptionId?: string | null } | null;
+    if (!response.ok || !json?.options) return;
+    setOptions(json.options);
+    if (json.votedOptionId) setMyVote(json.votedOptionId);
+  }, [persisted, poll.id]);
+
+  useEffect(() => {
+    if (!persisted) return;
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, 3000);
+    const channel = supabase
+      .channel(`live-poll-${poll.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fusion_poll_options", filter: `poll_id=eq.${poll.id}` }, () => {
+        void refresh();
+      })
+      .subscribe();
+    return () => {
+      window.clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
+  }, [persisted, poll.id, refresh]);
+
+  async function castVote(optionId: string) {
+    if (!canVote || votingId || myVote) return;
+    setVotingId(optionId);
+    setVoteError(null);
+    const response = await fetch(`/api/polls/${poll.id}/vote`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ optionId }),
+    });
+    const json = (await response.json().catch(() => null)) as { error?: string; optionId?: string | null; options?: PollOptionRow[] } | null;
+    if (!response.ok || !json?.options) {
+      setVoteError(json?.error || "That vote could not be recorded.");
+      setVotingId(null);
+      return;
+    }
+    setOptions(json.options);
+    if (json.optionId) setMyVote(json.optionId);
+    setVotingId(null);
+  }
 
   return (
     <section className="live-polls-results bg-white px-4 pb-16 pt-[var(--site-nav-height)] sm:px-8" aria-labelledby="poll-results-heading">
@@ -99,12 +159,26 @@ export default function LivePollResults({
           </div>
         </div>
 
+        {canVote ? (
+          <p className="live-polls-note mt-4 text-sm font-medium text-primary-700">Open for voting. Results update as each vote is recorded.</p>
+        ) : persisted && poll.status === "Ended" ? (
+          <p className="live-polls-note mt-4 text-sm text-ink-muted">This poll has ended. The recorded results stay on this page.</p>
+        ) : persisted && poll.status === "Scheduled" ? (
+          <p className="live-polls-note mt-4 text-sm text-ink-muted">This poll is scheduled. Voting opens when it is set to Live.</p>
+        ) : null}
+        {voteError ? (
+          <p className="live-polls-note mt-3 text-sm font-medium text-negative" role="alert">
+            {voteError}
+          </p>
+        ) : null}
+
         <ol className={view === "list" ? "mt-5 space-y-3" : "mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2"}>
-          {ballot.options.map((option, index) => {
+          {ranked.map((option, index) => {
             const rank = RANKS[index % RANKS.length];
-            const percent = poll.totalVotes === 0 ? 0 : (option.votes / poll.totalVotes) * 100;
+            const percent = totalVotes === 0 ? 0 : (option.votes / totalVotes) * 100;
+            const selected = Boolean(option.id && myVote === option.id);
             return (
-              <li key={option.name} className="relative overflow-hidden rounded-2xl bg-white ring-1 ring-primary-100">
+              <li key={option.id ?? option.name} className={`relative overflow-hidden rounded-2xl bg-white ring-1 ${selected ? "ring-primary-600" : "ring-primary-100"}`}>
                 <Watermark />
                 <div className={`relative z-10 flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-4 ${view === "grid" ? "min-h-[5.5rem]" : ""}`}>
                   <div className="flex shrink-0 items-center gap-2 rounded-full py-1 pl-1.5 pr-2 sm:gap-3 sm:pr-3" style={{ backgroundColor: rank.tint }}>
@@ -138,13 +212,28 @@ export default function LivePollResults({
                       {percent.toFixed(1)}%
                     </p>
                     <p className="mt-1 text-[11px] text-ink-muted sm:text-xs">{option.votes.toLocaleString("en-KE")} votes</p>
+                    {canVote && option.id ? (
+                      <button
+                        type="button"
+                        className={`live-polls-vote mt-2 inline-flex h-8 min-w-[4.5rem] items-center justify-center rounded-lg px-3 text-xs font-semibold ${
+                          selected ? "bg-primary-50 text-primary-700 ring-1 ring-primary-200" : "bg-primary-600 text-white hover:bg-primary-500"
+                        }`}
+                        disabled={Boolean(votingId) || Boolean(myVote)}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          if (option.id) void castVote(option.id);
+                        }}
+                      >
+                        {selected ? "Your vote" : votingId === option.id ? "Saving…" : "Vote"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </li>
             );
           })}
         </ol>
-        <LiveVoteTrends options={ballot.options} />
+        <LiveVoteTrends options={ranked} />
         <LivePollDiscussion pollId={poll.id} comments={comments} persisted={persisted} />
       </div>
     </section>

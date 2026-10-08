@@ -1,13 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Radio } from "lucide-react";
 import LivePollsGrid from "@/components/poll/LivePollsGrid";
 import type { SamplePoll } from "@/components/poll/live-polls-sample";
-import { supabase } from "@/lib/supabase";
-import { mapPollRow, POLL_LIST_SELECT, type PollDbRow } from "@/lib/fusion-polls";
 
 const TOPICS = [
+  { id: "all", label: "All" },
   { id: "brand", label: "Brand" },
   { id: "politics", label: "Politics" },
   { id: "presidential", label: "Presidential" },
@@ -49,9 +48,9 @@ const COUNTIES = [
 ] as const;
 
 const INITIAL = {
-  topic: "senatorial" as const,
+  topic: "all" as const,
   query: "",
-  status: "Ended" as const,
+  status: "Live" as const,
   region: "All Regions" as const,
   county: "All Counties" as const,
 };
@@ -68,7 +67,8 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
   const visiblePolls = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return items.filter((poll) => {
-      if (poll.topic !== topic || poll.status !== status) return false;
+      if (topic !== "all" && poll.topic !== topic) return false;
+      if (poll.status !== status) return false;
       if (region !== "All Regions" && poll.region !== region) return false;
       if (county !== "All Counties" && poll.county !== county) return false;
       if (!needle) return true;
@@ -80,10 +80,42 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
   const refreshPolls = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    const { data, error } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: false });
-    if (!error && data) setItems((data as PollDbRow[]).map((row) => mapPollRow(row).poll));
+    const response = await fetch("/api/polls", { cache: "no-store" });
+    const json = (await response.json().catch(() => ({}))) as { polls?: SamplePoll[] | null };
+    if (response.ok && Array.isArray(json.polls)) {
+      setItems((current) => {
+        const next = json.polls ?? [];
+        const same =
+          current.length === next.length &&
+          current.every((poll, index) => poll.id === next[index]?.id && poll.totalVotes === next[index]?.totalVotes && poll.status === next[index]?.status);
+        return same ? current : next;
+      });
+    }
     setRefreshing(false);
   };
+
+  useEffect(() => {
+    let stop = false;
+    const tick = async () => {
+      const response = await fetch("/api/polls", { cache: "no-store" });
+      const json = (await response.json().catch(() => ({}))) as { polls?: SamplePoll[] | null };
+      if (stop || !response.ok || !Array.isArray(json.polls)) return;
+      const next = json.polls;
+      setItems((current) => {
+        const same =
+          current.length === next.length &&
+          current.every((poll, index) => poll.id === next[index]?.id && poll.totalVotes === next[index]?.totalVotes && poll.status === next[index]?.status);
+        return same ? current : next;
+      });
+    };
+    const timer = window.setInterval(() => {
+      void tick();
+    }, 5000);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const clearFilters = () => {
     setTopic(INITIAL.topic);
