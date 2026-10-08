@@ -11,6 +11,8 @@ const POSTER_SRC =
 const REGISTER_HREF = "/kcm/kenya-coast-models";
 const REPEAT_MS = 60_000;
 const OPEN_DELAY_MS = 500;
+/** Set to true to bring the repeating poster popup back. */
+const POPUP_ENABLED = false;
 
 function isInternalRoute(pathname: string) {
   const blocked = [
@@ -56,7 +58,7 @@ export default function KenyaCoastModelsPopup() {
     clearTimers();
     setOpen(false);
 
-    if (!pathname || pathname === REGISTER_HREF || isInternalRoute(pathname)) {
+    if (!POPUP_ENABLED || !pathname || pathname === REGISTER_HREF || isInternalRoute(pathname)) {
       return;
     }
 
