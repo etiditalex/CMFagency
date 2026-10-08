@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default async function LivePollsPage() {
   const records = await listFusionPolls();
-  const polls = records ?? SAMPLE_POLLS;
+  const polls = records ? records.map((record) => record.poll) : SAMPLE_POLLS;
 
   return (
     <div className="min-h-screen bg-canvas">

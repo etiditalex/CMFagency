@@ -49,11 +49,11 @@ const COUNTIES = [
 ] as const;
 
 const INITIAL = {
-  topic: "senatorial" as TopicId,
+  topic: "senatorial" as const,
   query: "",
-  status: "Ended",
-  region: "All Regions",
-  county: "All Counties",
+  status: "Ended" as const,
+  region: "All Regions" as const,
+  county: "All Counties" as const,
 };
 
 export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
