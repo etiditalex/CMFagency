@@ -59,6 +59,7 @@ export default function Footer() {
     { name: "Market Research & Analysis", href: "/services/market-research" },
     { name: "Events Marketing", href: "/services/events-marketing" },
     { name: "Content Creation", href: "/services/content-creation" },
+    { name: "Poll & Opinion Polls", href: "/poll" },
   ];
 
   return (

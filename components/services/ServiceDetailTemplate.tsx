@@ -15,6 +15,7 @@ const SERVICES_NAV = [
   { label: "MARKET RESEARCH", href: "/services/market-research" },
   { label: "EVENTS MARKETING", href: "/services/events-marketing" },
   { label: "CONTENT CREATION", href: "/services/content-creation" },
+  { label: "POLL & OPINION POLLS", href: "/poll" },
 ];
 
 type ServiceDetailTemplateProps = {

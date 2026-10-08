@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -227,6 +227,182 @@
   }
 }
 
+/* Poll hero matches the bold sans banner, not the editorial serif titles. */
+.site-editorial .poll-maker h2,
+.site-editorial .poll-maker h3,
+.site-editorial .poll-maker p,
+.site-editorial .poll-maker label,
+.site-editorial .poll-maker span,
+.site-editorial .poll-maker button,
+.site-editorial .poll-maker a,
+.site-editorial .poll-maker input,
+.site-editorial .poll-maker select {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.site-editorial .poll-maker h2 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.site-editorial .poll-maker h3 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.site-editorial .poll-maker p {
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.site-editorial .poll-maker .poll-maker-lead,
+.site-editorial .poll-maker .poll-maker-hint {
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.45;
+}
+
+@media (min-width: 640px) {
+  .site-editorial .poll-maker h2 {
+    font-size: 2.15rem;
+  }
+}
+
+.site-editorial .poll-features h2,
+.site-editorial .poll-features h3,
+.site-editorial .poll-features p {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: center;
+}
+
+.site-editorial .poll-features h2 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.site-editorial .poll-features h3 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.site-editorial .poll-features .poll-features-kicker {
+  color: #8fb8ef;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.site-editorial .poll-features .poll-features-copy {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+
+.site-editorial .poll-cta h2,
+.site-editorial .poll-cta h2 span {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-align: left;
+  text-transform: none;
+  color: #fff;
+}
+
+.site-editorial .poll-cta h2 span:last-child {
+  color: #a3d1df;
+}
+
+@media (min-width: 640px) {
+  .site-editorial .poll-cta h2,
+  .site-editorial .poll-cta h2 span {
+    font-size: 2.15rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .site-editorial .poll-features h2 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-editorial .poll-features h2 {
+    font-size: 2.65rem;
+  }
+}
+
+.site-editorial .poll-hero h1,
+.site-editorial .poll-hero h1 span {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.96;
+  text-transform: none;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.site-editorial .poll-hero h1 {
+  font-size: 2rem;
+  line-height: 1.05;
+  color: #fff;
+}
+
+.site-editorial .poll-hero h1 span:last-child {
+  color: #a3d1df;
+}
+
+.site-editorial .poll-hero p {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.site-editorial .poll-hero .poll-hero-note {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (min-width: 640px) {
+  .site-editorial .poll-hero h1 {
+    font-size: 3.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-editorial .poll-hero h1 {
+    font-size: 4.05rem;
+  }
+}
+
 /* Homepage phone layout: tighter reading type, and no floating drop cap. */
 @media (max-width: 639px) {
   .site-editorial .home-page p,
@@ -322,6 +498,18 @@
   .gallery-hero h2,
   .gallery-hero h3,
   .gallery-hero p,
+  .poll-hero h1,
+  .poll-hero h2,
+  .poll-hero p,
+  .poll-hero span,
+  .poll-hero a,
+  .poll-maker h2,
+  .poll-maker h3,
+  .poll-maker p,
+  .poll-maker span,
+  .poll-maker label,
+  .poll-maker a,
+  .poll-maker button,
   .home-hero h1,
   .home-hero h2,
   .home-hero h3,
@@ -333,6 +521,19 @@
 
   .home-hero h1 {
     padding-block: 0.06em;
+  }
+
+  .poll-maker .poll-maker-title,
+  .poll-maker .poll-maker-lead,
+  .poll-features h2,
+  .poll-features h3,
+  .poll-features p {
+    text-align: center !important;
+  }
+
+  .poll-cta h2,
+  .poll-cta h2 span {
+    text-align: left !important;
   }
 
   .home-august-event h2,

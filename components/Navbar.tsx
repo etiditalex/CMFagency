@@ -77,6 +77,7 @@ export default function Navbar() {
     { href: "/services/market-research", label: "Market Research" },
     { href: "/services/events-marketing", label: "Events Marketing" },
     { href: "/services/content-creation", label: "Content Creation" },
+    { href: "/poll", label: "Poll & Opinion Polls" },
   ];
   const servicesLinksCol1 = servicesLinks.slice(0, Math.ceil(servicesLinks.length / 2));
   const servicesLinksCol2 = servicesLinks.slice(Math.ceil(servicesLinks.length / 2));
@@ -612,6 +613,10 @@ export default function Navbar() {
               </AnimatePresence>
             </div>
 
+            <Link href="/poll" className={desktopNavItem}>
+              Poll
+            </Link>
+
             <Link
               href="/merchandise"
               className="inline-flex items-center justify-center rounded-md bg-secondary-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600"
@@ -996,6 +1001,14 @@ export default function Navbar() {
                     )}
                   </AnimatePresence>
                 </div>
+
+                <Link
+                  href="/poll"
+                  onClick={() => setIsOpen(false)}
+                  className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  Poll
+                </Link>
 
                 <Link
                   href="/track-application"

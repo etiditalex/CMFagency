@@ -66,6 +66,8 @@ export default function SEOStructuredData() {
       "Content Creation",
       "SEO",
       "Social Media Marketing",
+      "Polls",
+      "Opinion Polls",
     ],
     sameAs: [
       "https://www.instagram.com/changerfusions?igsh=bzk0dWM0ZzJsbGxt&utm_source=ig_contact_invite",
@@ -224,6 +226,14 @@ export default function SEOStructuredData() {
             description: "Creating engaging content including videos and testimonials",
           },
         },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Poll & Opinion Polls",
+            description: "Audience polls and opinion polls for events, brands, and campaigns",
+          },
+        },
       ],
     },
   };
@@ -237,7 +247,7 @@ export default function SEOStructuredData() {
         name: "What services does Changer Fusions offer?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Changer Fusions offers comprehensive marketing services including digital marketing (SEO, social media, email marketing), website development and design, branding and creative services (logo design, brand identity), market research and analysis, events marketing and management, and content creation (videos, graphics, copywriting). We help businesses across Kenya grow with innovative marketing strategies and cutting-edge technologies.",
+          text: "Changer Fusions offers comprehensive marketing services including digital marketing (SEO, social media, email marketing), website development and design, branding and creative services (logo design, brand identity), market research and analysis, events marketing and management, content creation (videos, graphics, copywriting), and poll and opinion polls. We help businesses across Kenya grow with innovative marketing strategies and cutting-edge technologies.",
         },
       },
       {

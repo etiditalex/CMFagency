@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin, Megaphone, Search } from "lucide-react";
+import { TrendingUp, Globe, Award, Target, Users, Lightbulb, Mail, Phone, MapPin, Megaphone, Search, Vote } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -65,6 +65,14 @@ const services = [
     href: "/services/content-creation",
     features: ["Video Production", "Content Strategy", "Testimonials", "Creative Content"],
   },
+  {
+    icon: Vote,
+    title: "Poll & Opinion Polls",
+    description:
+      "Audience polls and opinion polls for events, brands, and campaigns, so you can collect answers in no time.",
+    href: "/poll",
+    features: ["Audience polls", "Opinion polls", "Event and campaign voting", "Live results"],
+  },
 ];
 
 export default function ServicesPage() {
@@ -85,7 +93,7 @@ export default function ServicesPage() {
               </h1>
               <p className="mt-4 text-gray-600 leading-relaxed max-w-3xl">
                 Explore our core services — from digital marketing and social media to website development, branding,
-                research, events, and content creation.
+                research, events, content creation, and polls.
               </p>
             </motion.div>
 
