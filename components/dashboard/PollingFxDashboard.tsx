@@ -89,13 +89,14 @@ export default function PollingFxDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    let { data, error: err } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
-    if (err && /image_url/i.test(err.message)) {
-      const retry = await supabase.from("fusion_polls").select(POLL_LIST_SELECT.replace(",image_url", "")).order("created_at", { ascending: true });
-      data = retry.data;
-      err = retry.error;
-      if (!err) setError("Candidate photos need database/ticketing_voting_mvp_patch_97_fusion_poll_option_images.sql in the Supabase SQL editor.");
-    }
+    const first = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+    const retry =
+      first.error && /image_url/i.test(first.error.message)
+        ? await supabase.from("fusion_polls").select(POLL_LIST_SELECT.replace(",image_url", "")).order("created_at", { ascending: true })
+        : null;
+    const err = retry ? retry.error : first.error;
+    const data = (retry ? retry.data : first.data) as PollDbRow[] | null;
+    if (retry && !err) setError("Candidate photos need database/ticketing_voting_mvp_patch_97_fusion_poll_option_images.sql in the Supabase SQL editor.");
     if (err) {
       const offline = /fetch failed|Failed to fetch|NetworkError/i.test(err.message);
       setMissingTable(isMissingPollTable(err));
