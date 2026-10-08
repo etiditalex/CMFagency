@@ -114,12 +114,20 @@ export default function LivePollResults({
                     >
                       #{index + 1}
                     </span>
-                    <span
-                      className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-bold sm:h-12 sm:w-12"
-                      style={{ color: rank.ink }}
-                    >
-                      {initials(option.name) || index + 1}
-                    </span>
+                    {option.imageUrl ? (
+                      <img
+                        src={option.imageUrl}
+                        alt=""
+                        className="h-11 w-11 rounded-full bg-white object-cover sm:h-12 sm:w-12"
+                      />
+                    ) : (
+                      <span
+                        className="grid h-11 w-11 place-items-center rounded-full bg-white text-sm font-bold sm:h-12 sm:w-12"
+                        style={{ color: rank.ink }}
+                      >
+                        {initials(option.name) || index + 1}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-primary-950 sm:text-base">{option.name}</p>

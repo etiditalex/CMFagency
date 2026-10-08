@@ -28,6 +28,7 @@ create table if not exists public.fusion_poll_options (
   poll_id text not null references public.fusion_polls(id) on delete cascade,
   name text not null,
   label text not null default '',
+  image_url text,
   votes integer not null default 0,
   sort_order integer not null default 0,
   constraint fusion_poll_options_votes_check check (votes >= 0),

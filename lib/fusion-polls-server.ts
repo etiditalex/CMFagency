@@ -14,9 +14,18 @@ const supabase = configured
     })
   : null;
 
+function withoutPhotoColumn(select: string) {
+  return select.replace(",image_url", "");
+}
+
 export const listFusionPolls = cache(async (): Promise<FusionPollRecord[] | null> => {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+  let { data, error } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+  if (error && /image_url/i.test(error.message)) {
+    const retry = await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_LIST_SELECT)).order("created_at", { ascending: true });
+    data = retry.data;
+    error = retry.error;
+  }
   if (error) {
     if (!isMissingPollTable(error)) console.error("fusion_polls list:", error.message);
     return null;
@@ -26,7 +35,12 @@ export const listFusionPolls = cache(async (): Promise<FusionPollRecord[] | null
 
 export const getFusionPoll = cache(async (id: string): Promise<FusionPollRecord | null> => {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("fusion_polls").select(POLL_DETAIL_SELECT).eq("id", id).maybeSingle();
+  let { data, error } = await supabase.from("fusion_polls").select(POLL_DETAIL_SELECT).eq("id", id).maybeSingle();
+  if (error && /image_url/i.test(error.message)) {
+    const retry = await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_DETAIL_SELECT)).eq("id", id).maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
   if (error || !data) {
     if (error && !isMissingPollTable(error)) console.error("fusion_polls get:", error.message);
     return null;

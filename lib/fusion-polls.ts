@@ -42,6 +42,7 @@ type OptionDb = {
   id?: string;
   name: string;
   label: string | null;
+  image_url?: string | null;
   votes: number | null;
   sort_order: number | null;
 };
@@ -70,10 +71,10 @@ export type PollDbRow = {
 };
 
 export const POLL_LIST_SELECT =
-  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,votes,sort_order),fusion_poll_comments(count)";
+  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(count)";
 
 export const POLL_DETAIL_SELECT =
-  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,votes,sort_order),fusion_poll_comments(id,author_name,body,created_at)";
+  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(id,author_name,body,created_at)";
 
 export function isMissingPollTable(error: { code?: string; message?: string } | null) {
   if (!error) return false;
@@ -107,6 +108,7 @@ export function mapPollRow(row: PollDbRow): FusionPollRecord {
       id: option.id,
       name: option.name,
       label: option.label ?? "",
+      imageUrl: option.image_url ?? null,
       votes: Number(option.votes ?? 0),
       sortOrder: option.sort_order ?? index,
     }));

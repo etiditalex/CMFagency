@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Calendar, CheckCircle2, ClipboardList, ExternalLink, MapPin, MessageCircle, Pencil, Plus, Radio, Trash2 } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, ExternalLink, ImagePlus, MapPin, MessageCircle, Pencil, Plus, Radio, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
 import { supabase } from "@/lib/supabase";
@@ -25,7 +25,7 @@ const STATUSES: LivePollStatus[] = ["Live", "Ended", "Scheduled"];
 const REGIONS = ["Nairobi", "Coast", "Central", "Rift Valley", "Western", "Nyanza", "Eastern", "North Eastern"];
 const COUNTIES = ["Nairobi", "Mombasa", "Kisumu", "Nakuru", "Kiambu", "Kilifi", "Uasin Gishu", "Embu", "Wajir", "Kericho", "Kakamega", "Machakos"];
 
-type OptionDraft = { name: string; label: string; votes: string };
+type OptionDraft = { name: string; label: string; votes: string; imageUrl: string };
 
 type PollForm = {
   id: string;
@@ -50,9 +50,9 @@ const EMPTY_FORM: PollForm = {
   county: "Embu",
   ends: "",
   spoiledVotes: "0",
-  options: [
-    { name: "", label: "No party", votes: "0" },
-    { name: "", label: "No party", votes: "0" },
+    options: [
+    { name: "", label: "No party", votes: "0", imageUrl: "" },
+    { name: "", label: "No party", votes: "0", imageUrl: "" },
   ],
 };
 
@@ -84,11 +84,18 @@ export default function PollingFxDashboard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [comments, setComments] = useState<PollComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+    let { data, error: err } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+    if (err && /image_url/i.test(err.message)) {
+      const retry = await supabase.from("fusion_polls").select(POLL_LIST_SELECT.replace(",image_url", "")).order("created_at", { ascending: true });
+      data = retry.data;
+      err = retry.error;
+      if (!err) setError("Candidate photos need database/ticketing_voting_mvp_patch_97_fusion_poll_option_images.sql in the Supabase SQL editor.");
+    }
     if (err) {
       const offline = /fetch failed|Failed to fetch|NetworkError/i.test(err.message);
       setMissingTable(isMissingPollTable(err));
@@ -147,6 +154,7 @@ export default function PollingFxDashboard() {
         name: option.name,
         label: option.label,
         votes: String(option.votes),
+        imageUrl: option.imageUrl ?? "",
       })),
     });
     setFormOpen(true);
@@ -175,6 +183,46 @@ export default function PollingFxDashboard() {
     setCommentsLoading(false);
   }
 
+  function updateOption(index: number, patch: Partial<OptionDraft>) {
+    setForm((current) => {
+      const options = [...current.options];
+      const existing = options[index];
+      if (!existing) return current;
+      options[index] = { ...existing, ...patch };
+      return { ...current, options };
+    });
+  }
+
+  async function uploadCandidatePhoto(index: number, file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Photo must be 5MB or smaller.");
+      return;
+    }
+    setUploadingIndex(index);
+    setError(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Session expired. Sign in again.");
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/campaign-image/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const json = (await response.json().catch(() => ({}))) as { url?: string; error?: string };
+      if (!response.ok || !json.url) throw new Error(json.error || "Photo upload failed");
+      updateOption(index, { imageUrl: json.url });
+    } catch (uploadError: unknown) {
+      setError(uploadError instanceof Error ? uploadError.message : "Photo upload failed");
+    } finally {
+      setUploadingIndex(null);
+    }
+  }
+
   async function onSave(event: FormEvent) {
     event.preventDefault();
     const title = form.title.trim();
@@ -183,8 +231,9 @@ export default function PollingFxDashboard() {
     const options = form.options
       .map((option) => ({
         name: option.name.trim(),
-        label: option.label.trim() || TOPICS.find((topic) => topic.id === form.topic)?.label || "Option",
+        label: option.label.trim() || TOPICS.find((topic) => topic.id === form.topic)?.label || "Candidate",
         votes: Math.max(0, Math.round(Number(option.votes) || 0)),
+        imageUrl: option.imageUrl.trim(),
       }))
       .filter((option) => option.name);
     if (!title || !question || !id || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)) {
@@ -192,7 +241,7 @@ export default function PollingFxDashboard() {
       return;
     }
     if (options.length < 2) {
-      setError("Add at least two options.");
+      setError("Add at least two candidates. Use Add candidate for every extra person.");
       return;
     }
     const spoiledVotes = Math.max(0, Math.round(Number(form.spoiledVotes) || 0));
@@ -229,12 +278,17 @@ export default function PollingFxDashboard() {
         poll_id: id,
         name: option.name,
         label: option.label,
+        image_url: option.imageUrl || null,
         votes: option.votes,
         sort_order: index,
       })),
     );
     if (inserted.error) {
-      setError(inserted.error.message);
+      setError(
+        /image_url/i.test(inserted.error.message)
+          ? "Candidate photos need database/ticketing_voting_mvp_patch_97_fusion_poll_option_images.sql in the Supabase SQL editor."
+          : inserted.error.message,
+      );
       setSaving(false);
       return;
     }
@@ -286,7 +340,7 @@ export default function PollingFxDashboard() {
         <div className="min-w-0">
           <h2 className="border-b border-hairline pb-3 text-left text-xl font-bold text-[#1a2332] md:text-2xl">Polling Fx</h2>
           <p className="mt-1 max-w-3xl text-left text-gray-600">
-            Create the polls that appear on Live Polls. Comments people share on a result page are stored with that poll.
+            Create the polls that appear on Live Polls. A poll can include more than two candidates, each with a photo. Comments stay stored with that poll.
           </p>
         </div>
         <button
@@ -390,46 +444,63 @@ export default function PollingFxDashboard() {
               <input className={`${fieldClass()} mt-1`} inputMode="numeric" value={form.spoiledVotes} onChange={(event) => setForm({ ...form, spoiledVotes: event.target.value })} />
             </label>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">Options</p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-700">Candidates</p>
+                <p className="text-xs text-gray-500">Add as many people as the poll needs. Each one can have a photo.</p>
+              </div>
               <button
                 type="button"
-                className="text-sm font-semibold text-primary-700"
-                onClick={() => setForm({ ...form, options: [...form.options, { name: "", label: "", votes: "0" }] })}
+                className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary-700"
+                onClick={() => setForm({ ...form, options: [...form.options, { name: "", label: "", votes: "0", imageUrl: "" }] })}
               >
-                Add option
+                <Plus className="h-4 w-4" />
+                Add candidate
               </button>
             </div>
             {form.options.map((option, index) => (
-              <div key={index} className="grid gap-2 sm:grid-cols-[1fr_8rem_6rem_auto]">
-                <input className={fieldClass()} placeholder="Name" value={option.name} onChange={(event) => {
-                  const options = [...form.options];
-                  options[index] = { ...option, name: event.target.value };
-                  setForm({ ...form, options });
-                }} />
-                <input className={fieldClass()} placeholder="Label" value={option.label} onChange={(event) => {
-                  const options = [...form.options];
-                  options[index] = { ...option, label: event.target.value };
-                  setForm({ ...form, options });
-                }} />
-                <input className={fieldClass()} inputMode="numeric" placeholder="Votes" value={option.votes} onChange={(event) => {
-                  const options = [...form.options];
-                  options[index] = { ...option, votes: event.target.value };
-                  setForm({ ...form, options });
-                }} />
-                <button
-                  type="button"
-                  className="text-sm font-semibold text-negative"
-                  onClick={() => setForm({ ...form, options: form.options.filter((_, optionIndex) => optionIndex !== index) })}
-                >
-                  Remove
-                </button>
+              <div key={index} className="rounded-xl border border-hairline p-3">
+                <div className="flex items-start gap-3">
+                  <label className="grid h-16 w-16 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full border border-dashed border-primary-200 bg-primary-50 text-primary-700">
+                    {option.imageUrl ? (
+                      <img src={option.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImagePlus className="h-5 w-5" aria-hidden />
+                    )}
+                    <span className="sr-only">Upload photo for candidate {index + 1}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) void uploadCandidatePhoto(index, file);
+                      }}
+                    />
+                  </label>
+                  <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[1fr_8rem_6rem]">
+                    <input className={fieldClass()} placeholder="Name" aria-label={`Candidate ${index + 1} name`} value={option.name} onChange={(event) => updateOption(index, { name: event.target.value })} />
+                    <input className={fieldClass()} placeholder="Party or label" aria-label={`Candidate ${index + 1} label`} value={option.label} onChange={(event) => updateOption(index, { label: event.target.value })} />
+                    <input className={fieldClass()} inputMode="numeric" placeholder="Votes" aria-label={`Candidate ${index + 1} votes`} value={option.votes} onChange={(event) => updateOption(index, { votes: event.target.value })} />
+                  </div>
+                  <button
+                    type="button"
+                    className="shrink-0 text-sm font-semibold text-negative"
+                    onClick={() => setForm({ ...form, options: form.options.filter((_, optionIndex) => optionIndex !== index) })}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {uploadingIndex === index ? "Uploading photo…" : option.imageUrl ? "Photo added. Choose another file to replace it." : "Photo"}
+                </p>
               </div>
             ))}
           </div>
           <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="rounded-md bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
+            <button type="submit" disabled={saving || uploadingIndex !== null} className="rounded-md bg-primary-600 px-4 py-2 font-semibold text-white hover:bg-primary-700 disabled:opacity-60">
               {saving ? "Saving…" : "Save poll"}
             </button>
             <button type="button" className="rounded-md border border-gray-200 px-4 py-2 font-semibold text-gray-700" onClick={() => setFormOpen(false)}>

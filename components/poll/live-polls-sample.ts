@@ -111,6 +111,7 @@ export type PollOption = {
   name: string;
   label: string;
   votes: number;
+  imageUrl?: string | null;
 };
 
 export function ballotFor(poll: SamplePoll) {
