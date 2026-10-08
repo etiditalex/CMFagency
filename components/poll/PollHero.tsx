@@ -82,10 +82,10 @@ export default function PollHero() {
                   Create a poll
                 </Link>
                 <Link
-                  href="/voting/all"
+                  href="/poll/live"
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-primary-600 px-5 py-2.5 text-[15px] font-semibold text-white shadow-sm transition-colors hover:bg-primary-500 sm:w-auto"
                 >
-                  Live Demo
+                  Live Polls
                 </Link>
               </div>
 

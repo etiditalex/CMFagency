@@ -403,6 +403,132 @@
   }
 }
 
+.site-editorial .live-polls-hero h1,
+.site-editorial .live-polls-hero h1 span,
+.site-editorial .live-polls-hero p,
+.site-editorial .live-polls-hero button,
+.site-editorial .live-polls-hero input,
+.site-editorial .live-polls-hero select {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.site-editorial .live-polls-hero h1,
+.site-editorial .live-polls-hero h1 span {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.site-editorial .live-polls-hero h1 span {
+  color: #0a1f42;
+}
+
+.site-editorial .live-polls-hero h1 svg {
+  color: #1e58ca;
+}
+
+.site-editorial .live-polls-hero h1 {
+  font-size: 1.75rem;
+}
+
+.site-editorial .live-polls-hero p {
+  font-weight: 500;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #6b6b7a;
+}
+
+@media (min-width: 640px) {
+  .site-editorial .live-polls-hero h1 {
+    font-size: 2.35rem;
+  }
+}
+
+.site-editorial .live-polls-grid h2,
+.site-editorial .live-polls-grid h3,
+.site-editorial .live-polls-grid p,
+.site-editorial .live-polls-grid span,
+.site-editorial .live-polls-grid button {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+}
+
+.site-editorial .live-polls-grid h3 {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .live-polls-count span {
+  color: #1e58ca;
+  font-weight: 700;
+}
+
+.site-editorial .live-polls-results h1,
+.site-editorial .live-polls-results h2,
+.site-editorial .live-polls-results h3,
+.site-editorial .live-polls-results p,
+.site-editorial .live-polls-results span,
+.site-editorial .live-polls-results button,
+.site-editorial .live-polls-results input,
+.site-editorial .live-polls-results textarea {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: normal;
+}
+
+.site-editorial .live-polls-results h1 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.35rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: #0a1f42;
+}
+
+@media (min-width: 640px) {
+  .site-editorial .live-polls-results h1 {
+    font-size: 1.75rem;
+  }
+}
+
+.site-editorial .live-polls-results h2 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  text-transform: none;
+  color: #0a1f42;
+}
+
+.site-editorial .live-polls-results h2 svg {
+  color: #1e58ca;
+}
+
+.site-editorial .live-polls-results .live-polls-discussion h2 svg {
+  color: #ff8a00;
+}
+
+.site-editorial .live-polls-results h3 {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.3;
+  text-transform: none;
+  color: #0a1f42;
+}
+
+.site-editorial .live-polls-results h3 svg {
+  color: #1e58ca;
+}
+
 /* Homepage phone layout: tighter reading type, and no floating drop cap. */
 @media (max-width: 639px) {
   .site-editorial .home-page p,
@@ -527,8 +653,63 @@
   .poll-maker .poll-maker-lead,
   .poll-features h2,
   .poll-features h3,
-  .poll-features p {
+  .poll-features p,
+  .live-polls-hero h1,
+  .live-polls-hero h1 span,
+  .live-polls-hero p {
     text-align: center !important;
+  }
+
+  .live-polls-hero input,
+  .live-polls-hero select,
+  .live-polls-hero button {
+    text-align: center !important;
+  }
+
+  .live-polls-hero input,
+  .live-polls-hero select {
+    text-align: left !important;
+  }
+
+  .live-polls-grid h3,
+  .live-polls-grid p,
+  .live-polls-grid span {
+    text-align: left !important;
+  }
+
+  .live-polls-grid .live-polls-count,
+  .live-polls-grid .live-polls-count span,
+  .live-polls-grid .live-polls-stat,
+  .live-polls-grid .live-polls-stat span {
+    text-align: center !important;
+  }
+
+  .live-polls-results h1 {
+    text-align: center !important;
+  }
+
+  .live-polls-results h2,
+  .live-polls-results h2 span,
+  .live-polls-results h3,
+  .live-polls-results h3 span {
+    text-align: left !important;
+  }
+
+  .live-polls-results p,
+  .live-polls-results span,
+  .live-polls-results input,
+  .live-polls-results textarea {
+    text-align: left !important;
+  }
+
+  .live-polls-results .live-polls-comment-count,
+  .live-polls-results .live-polls-comment-count span {
+    text-align: right !important;
+  }
+
+  .live-polls-results .live-polls-score,
+  .live-polls-results .live-polls-score p {
+    text-align: right !important;
   }
 
   .poll-cta h2,

@@ -31,6 +31,7 @@ import {
   ClipboardList,
   Crown,
   QrCode,
+  Radio,
   Receipt,
   ScanLine,
   ShoppingBag,
@@ -154,6 +155,7 @@ const NAV: NavItem[] = [
     featureKey: "reports",
   },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "campaigns_voting", featureKey: "voting" },
+  { label: "Polling Fx", href: "/dashboard/polling-fx", icon: Radio, section: "campaigns_voting", adminOnly: true },
   { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "campaigns_voting", featureKey: "voting" },
   {
     label: "Contestants",
