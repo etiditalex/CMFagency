@@ -80,7 +80,7 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
   const refreshPolls = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    const { data, error } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+    const { data, error } = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: false });
     if (!error && data) setItems((data as PollDbRow[]).map((row) => mapPollRow(row).poll));
     setRefreshing(false);
   };

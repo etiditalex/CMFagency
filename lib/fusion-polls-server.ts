@@ -20,10 +20,10 @@ function withoutPhotoColumn(select: string) {
 
 export const listFusionPolls = cache(async (): Promise<FusionPollRecord[] | null> => {
   if (!supabase) return null;
-  const first = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
+  const first = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: false });
   const retry =
     first.error && /image_url/i.test(first.error.message)
-      ? await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_LIST_SELECT)).order("created_at", { ascending: true })
+      ? await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_LIST_SELECT)).order("created_at", { ascending: false })
       : null;
   const error = retry ? retry.error : first.error;
   const data = (retry ? retry.data : first.data) as PollDbRow[] | null;
