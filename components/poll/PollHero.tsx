@@ -76,7 +76,7 @@ export default function PollHero() {
 
               <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center">
                 <Link
-                  href={`/contact?service=${active.id}`}
+                  href="/poll/create"
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-white px-5 py-2.5 text-[15px] font-semibold text-primary-950 shadow-sm transition-colors hover:bg-primary-50 sm:w-auto"
                 >
                   Create a poll

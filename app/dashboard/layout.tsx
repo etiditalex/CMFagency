@@ -25,16 +25,25 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isVisitorOnly } = usePortal();
+  const { isPortalMember, loading: portalLoading, isVisitorOnly, isPollOnly } = usePortal();
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
 
     const isVisitorDashboardPath = pathname.startsWith("/dashboard/visitor-management");
-    const loginFallback = isVisitorDashboardPath || isVisitorOnly ? VISITOR_SIGN_IN : "/fusion-xpress";
+    const loginFallback = pathname.startsWith("/dashboard/polling-fx/poll")
+      ? "/poll/login"
+      : isVisitorDashboardPath || isVisitorOnly
+        ? VISITOR_SIGN_IN
+        : "/fusion-xpress";
 
     if (!isAuthenticated || !user || !isPortalMember) {
       router.replace(loginFallback);
+      return;
+    }
+
+    if (isPollOnly && pathname !== "/dashboard/polling-fx/poll") {
+      router.replace("/dashboard/polling-fx/poll");
       return;
     }
 
@@ -72,7 +81,7 @@ export default function DashboardLayout({
     return () => {
       cancelled = true;
     };
-  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isVisitorOnly, pathname, user, router]);
+  }, [authLoading, portalLoading, isAuthenticated, isPortalMember, isVisitorOnly, isPollOnly, pathname, user, router]);
 
   return <>{children}</>;
 }

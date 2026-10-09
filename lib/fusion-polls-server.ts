@@ -179,3 +179,64 @@ export async function castFusionPollVote(pollId: string, optionId: string, voter
   if (!record) return { ok: false, status: 404, error: "This poll is not available." };
   return { ok: true, already: false, optionId, record };
 }
+
+function slugifyPollTitle(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+export async function createPublicPoll(input: { title: string; description: string; options: string[]; ends: string }) {
+  if (!supabase) return { ok: false as const, error: "Polls are not connected." };
+  const title = input.title.trim().slice(0, 140);
+  const description = input.description.trim().slice(0, 500);
+  const options = input.options.map((option) => option.trim()).filter(Boolean).slice(0, 12);
+  if (title.length < 3) return { ok: false as const, error: "Add a question for this poll." };
+  if (options.length < 2) return { ok: false as const, error: "Add at least two answer options." };
+  if (options.some((option) => option.length > 80)) {
+    return { ok: false as const, error: "Each answer must be 80 characters or fewer." };
+  }
+
+  const base = slugifyPollTitle(title) || "poll";
+  let id = base;
+  for (let attempt = 2; attempt < 30; attempt += 1) {
+    const existing = await supabase.from("fusion_polls").select("id").eq("id", id).maybeSingle();
+    if (!existing.data) break;
+    id = `${base.slice(0, 40)}-${attempt}`;
+  }
+
+  const inserted = await supabase.from("fusion_polls").insert({
+    id,
+    title,
+    question: description || title,
+    topic: "opinion",
+    topic_label: "Opinion",
+    status: "Live",
+    region: "Nairobi",
+    county: "Nairobi",
+    ends_label: input.ends.trim().slice(0, 80),
+    spoiled_votes: 0,
+  });
+  if (inserted.error) {
+    console.error("fusion_polls create:", inserted.error.message);
+    return { ok: false as const, error: "This poll could not be created." };
+  }
+
+  const optionInsert = await supabase.from("fusion_poll_options").insert(
+    options.map((name, index) => ({
+      poll_id: id,
+      name,
+      label: "Option",
+      votes: 0,
+      sort_order: index,
+    })),
+  );
+  if (optionInsert.error) {
+    await supabase.from("fusion_polls").delete().eq("id", id);
+    console.error("fusion_poll_options create:", optionInsert.error.message);
+    return { ok: false as const, error: "This poll could not be created." };
+  }
+  return { ok: true as const, id };
+}

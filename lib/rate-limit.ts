@@ -22,10 +22,19 @@ function cleanup(): void {
 const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 const REGISTER_MAX_ATTEMPTS = 5;
 
+/** Rate limit public poll-account registration by IP. */
+export function checkPollRegisterRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkRegisterRateLimit(ip, "poll-register");
+}
+
 /** Rate limit public employer self-registration by IP. */
 export function checkEmployerRegisterRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkRegisterRateLimit(ip, "employer-register");
+}
+
+function checkRegisterRateLimit(ip: string, prefix: string): { allowed: boolean; retryAfter?: number } {
   cleanup();
-  const key = getKey(ip, "employer-register");
+  const key = getKey(ip, prefix);
   const now = Date.now();
   const entry = store.get(key);
 

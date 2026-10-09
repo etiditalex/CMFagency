@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, CheckCircle2, ClipboardList, ExternalLink, ImagePlus, MapPin, MessageCircle, Pencil, Plus, Radio, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -70,6 +70,9 @@ function fieldClass() {
 
 export default function PollingFxDashboard() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editFromList = searchParams.get("edit");
+  const editApplied = useRef(false);
   const { isAuthenticated, user, loading: authLoading } = useAuth();
   const { isPortalMember, loading: portalLoading, isAdmin } = usePortal();
   const [polls, setPolls] = useState<FusionPollRecord[]>([]);
@@ -183,6 +186,14 @@ export default function PollingFxDashboard() {
     setFormOpen(true);
     setError(null);
   }
+
+  useEffect(() => {
+    if (editApplied.current || loading || !editFromList) return;
+    const record = polls.find((item) => item.poll.id === editFromList);
+    if (!record) return;
+    editApplied.current = true;
+    openEdit(record);
+  }, [editFromList, loading, polls]);
 
   function openEdit(record: FusionPollRecord) {
     setEditingId(record.poll.id);

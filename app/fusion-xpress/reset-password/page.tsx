@@ -41,6 +41,7 @@ async function resolvePostResetLoginPath(): Promise<string> {
 
     const accountType = String(user.user_metadata?.account_type ?? "").toLowerCase();
     if (accountType === "employer") return EMPLOYER_SIGN_IN;
+    if (accountType === "poll") return "/poll/login";
     if (accountType === "visitor_management") return VISITOR_SIGN_IN;
 
     const { data: member } = await supabase
@@ -57,6 +58,7 @@ async function resolvePostResetLoginPath(): Promise<string> {
 
     if (role === "admin" || role === "manager") return ADMIN_LOGIN;
     if (role === "employer") return EMPLOYER_SIGN_IN;
+    if (role === "poll") return "/poll/login";
     if (isVisitorOnlyPortalUser(role, features, isAdmin) || hasVisitorManagementAccess(role, features, false)) {
       return VISITOR_SIGN_IN;
     }

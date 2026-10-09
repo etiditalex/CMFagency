@@ -121,6 +121,8 @@ type NavItem = {
   children?: VisitorManagementNavChild[];
   /** Simple expandable links under a parent item (e.g. Contestants). */
   nestedLinks?: NestedNavLink[];
+  /** Shown only to self-serve poll accounts. */
+  pollAccount?: boolean;
 };
 
 const TIER_ORDER: Record<PortalTier, number> = { basic: 0, pro: 1, enterprise: 2 };
@@ -155,7 +157,15 @@ const NAV: NavItem[] = [
     featureKey: "reports",
   },
   { label: "Voting", href: "/dashboard/campaigns?type=vote", icon: Vote, section: "campaigns_voting", featureKey: "voting" },
-  { label: "Polling Fx", href: "/dashboard/polling-fx", icon: Radio, section: "campaigns_voting", adminOnly: true },
+  {
+    label: "Polling Fx",
+    href: "/dashboard/polling-fx",
+    icon: Radio,
+    section: "campaigns_voting",
+    adminOnly: true,
+    nestedLinks: [{ label: "Poll", href: "/dashboard/polling-fx/poll" }],
+  },
+  { label: "Poll", href: "/dashboard/polling-fx/poll", icon: PieChart, section: "campaigns_voting", pollAccount: true },
   { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "campaigns_voting", featureKey: "voting" },
   {
     label: "Contestants",
@@ -251,8 +261,12 @@ function isContestantsSection(pathname: string) {
   return pathname === "/dashboard/contestants" || pathname.startsWith("/dashboard/contestants/");
 }
 
+function isNestedParentActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function isNestedLinkActive(pathname: string, href: string) {
-  if (href === "/dashboard/contestants") return pathname === href;
+  if (href === "/dashboard/contestants" || href === "/dashboard/polling-fx") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -332,7 +346,7 @@ function DashboardNavItem({
   if (item.nestedLinks?.length) {
     const visibleLinks = item.nestedLinks.filter((link) => !link.adminOnly || isAdmin);
     const extraLinks = visibleLinks.filter((link) => link.href !== item.href);
-    const parentActive = isContestantsSection(pathname);
+    const parentActive = isNestedParentActive(pathname, item.href);
     const isOpen = showLabels && (nestedNavOpen || parentActive);
 
     if (!showLabels && extraLinks.length > 0) {
@@ -354,21 +368,35 @@ function DashboardNavItem({
     if (showLabels && extraLinks.length > 0) {
       return (
         <div className="space-y-0.5">
-          <button
-            type="button"
-            onClick={() => setNestedNavOpen(!nestedNavOpen)}
-            className={`group flex w-full items-center rounded-sm transition-colors duration-200 ${
+          <div
+            className={`flex items-center rounded-sm transition-colors duration-200 ${
               parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
-            } gap-3 px-3 py-2`}
+            }`}
           >
-            <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
-            <span className="text-[13px] font-medium truncate flex-1 text-left">{item.label}</span>
-            <ChevronDown
-              className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
-            />
-          </button>
+            <Link
+              href={item.href}
+              prefetch={false}
+              onClick={() => {
+                setNestedNavOpen(true);
+                onNavigate?.();
+              }}
+              className="group flex min-w-0 flex-1 items-center gap-3 px-3 py-2"
+            >
+              <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
+              <span className="text-[13px] font-medium truncate flex-1 text-left">{item.label}</span>
+            </Link>
+            <button
+              type="button"
+              aria-expanded={isOpen}
+              aria-label={`${item.label} pages`}
+              onClick={() => setNestedNavOpen(!nestedNavOpen)}
+              className="px-2 py-2"
+            >
+              <ChevronDown className={`h-4 w-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
           {isOpen ? (
-            <div className={NAV_SUBTREE}>
+            <div className="ml-4 space-y-0.5 border-l border-[#d5dde6] py-0.5 pl-2">
               {visibleLinks.map((link) => {
                 const childActive = isNestedLinkActive(pathname, link.href);
                 return (
@@ -499,7 +527,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const currentType = sp?.get("type") ?? null;
   const visitorIndustry = sp?.get("industry") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly, isManager, isFullAdmin, role } =
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly, isPollOnly, isManager, isFullAdmin, role } =
     usePortal();
   const adminOwnerId = isAdmin ? sp?.get("owner")?.trim() || null : null;
   const isLeaveManagementPage =
@@ -649,7 +677,15 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     }
   }, [isVisitorOnly, pathname, portalLoading, router]);
 
+  useEffect(() => {
+    if (!isPollOnly || portalLoading) return;
+    if (pathname === "/dashboard/polling-fx/poll") return;
+    router.replace("/dashboard/polling-fx/poll");
+  }, [isPollOnly, pathname, portalLoading, router]);
+
   const canSeeItem = (item: NavItem) => {
+    if (isPollOnly) return item.href === "/dashboard/polling-fx/poll";
+    if (item.pollAccount) return false;
     if (isVisitorOnly) {
       if (item.href === "/dashboard/account") return true;
       return item.featureKey === "visitor_management";
@@ -669,6 +705,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   const [visitorNavOpen, setVisitorNavOpen] = useState(() => isVisitorSection(pathname));
   const [contestantsNavOpen, setContestantsNavOpen] = useState(() => isContestantsSection(pathname));
+  const [pollingNavOpen, setPollingNavOpen] = useState(true);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -797,7 +834,9 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       ? "Manager"
       : isEmployer
         ? "Employer"
-        : isVisitorOnly
+        : isPollOnly
+          ? "Poll"
+          : isVisitorOnly
           ? "Visitor management"
           : role
             ? `${role.charAt(0).toUpperCase()}${role.slice(1)}`
@@ -849,8 +888,8 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       visitorIndustry={visitorIndustry}
       visitorNavOpen={visitorNavOpen}
       setVisitorNavOpen={setVisitorNavOpen}
-      nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : false}
-      setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : () => {}}
+      nestedNavOpen={item.href === "/dashboard/contestants" ? contestantsNavOpen : item.href === "/dashboard/polling-fx" ? pollingNavOpen : false}
+      setNestedNavOpen={item.href === "/dashboard/contestants" ? setContestantsNavOpen : item.href === "/dashboard/polling-fx" ? setPollingNavOpen : () => {}}
       showLabels={showLabels}
       onNavigate={onNavigate}
       iconClassName={iconClassName}

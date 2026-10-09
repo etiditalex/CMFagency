@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { isVisitorOnlyPortalUser } from "@/lib/visitors/visitor-only-access";
 
-export type PortalRole = "admin" | "manager" | "client" | "employer";
+export type PortalRole = "admin" | "manager" | "client" | "employer" | "poll";
 export type PortalTier = "basic" | "pro" | "enterprise";
 
 export type PortalFeature =
@@ -71,6 +71,8 @@ type PortalContextValue = {
   isEmployer: boolean;
   /** Client with only Smart Visitor Management (no other dashboard modules). */
   isVisitorOnly: boolean;
+  /** Self-serve poll account: Fusion Xpress shows only the Poll page. */
+  isPollOnly: boolean;
   refresh: () => Promise<void>;
 };
 
@@ -102,6 +104,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isManager = useMemo(() => role === "manager", [role]);
   const isFullAdmin = useMemo(() => role === "admin", [role]);
   const isEmployer = useMemo(() => role === "employer", [role]);
+  const isPollOnly = useMemo(() => role === "poll", [role]);
   const isVisitorOnly = useMemo(
     () => isVisitorOnlyPortalUser(role, features, isAdmin),
     [role, features, isAdmin]
@@ -218,6 +221,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
         setRole("employer");
         setTier("basic");
         setFeatures([]);
+      } else if (r === "poll") {
+        setRole("poll");
+        setTier("basic");
+        setFeatures([]);
       } else {
         setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
         setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);
@@ -255,9 +262,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       isFullAdmin,
       isEmployer,
       isVisitorOnly,
+      isPollOnly,
       refresh,
     }),
-    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin, isEmployer, isVisitorOnly]
+    [authLoading, loading, isPortalMember, role, tier, features, hasFeature, isAdmin, isManager, isFullAdmin, isEmployer, isVisitorOnly, isPollOnly]
   );
 
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;
