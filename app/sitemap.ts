@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-server";
 import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 import { getPublishedJobListings } from "@/lib/job-board-listings";
+import { listFusionPolls } from "@/lib/fusion-polls-server";
 import { SITE_URL } from "@/lib/site-url";
 
 /** Do not run multi-query Supabase work during `next build` (Vercel 60s prerender limit). */
@@ -36,11 +37,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/jobs", priority: 0.95, changeFrequency: "daily" as const },
     { path: "/jobs/apply", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/talent", priority: 0.8, changeFrequency: "monthly" as const },
-    { path: "/poll", priority: 0.8, changeFrequency: "monthly" as const },
-    { path: "/poll/create", priority: 0.8, changeFrequency: "monthly" as const },
-    { path: "/poll/login", priority: 0.6, changeFrequency: "monthly" as const },
-    { path: "/poll/signup", priority: 0.6, changeFrequency: "monthly" as const },
-    { path: "/poll/live", priority: 0.8, changeFrequency: "daily" as const },
+    { path: "/poll", priority: 0.86, changeFrequency: "weekly" as const },
+    { path: "/poll/create", priority: 0.84, changeFrequency: "weekly" as const },
+    { path: "/poll/live", priority: 0.9, changeFrequency: "daily" as const },
     { path: "/career", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/kcm", priority: 0.94, changeFrequency: "weekly" as const },
     { path: "/kcm/cfm-tickets", priority: 1.0, changeFrequency: "daily" as const },
@@ -153,6 +152,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // fusion_events / is_live may be unavailable
   }
 
-  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries];
+  const pollResultEntries: MetadataRoute.Sitemap = [];
+  try {
+    const records = await listFusionPolls();
+    for (const record of records ?? []) {
+      pollResultEntries.push({
+        url: `${baseUrl}/poll/live/${record.poll.id}`,
+        lastModified: now,
+        changeFrequency: "daily" as const,
+        priority: record.poll.status === "Live" ? 0.8 : 0.6,
+      });
+    }
+  } catch {
+    // fusion_polls may be unavailable
+  }
+
+  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries, ...pollResultEntries];
 }
 

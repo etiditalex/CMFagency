@@ -148,7 +148,7 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
                 role="tab"
                 aria-selected={selected}
                 onClick={() => setTopic(item.id)}
-                className={`inline-flex min-h-10 items-center rounded-full px-3.5 py-2 text-sm font-medium transition-colors sm:px-4 ${
+                className={`inline-flex min-h-11 items-center rounded-full px-3.5 py-2 text-sm font-medium transition-colors sm:px-4 ${
                   selected
                     ? "bg-primary-600 text-white shadow-sm"
                     : "bg-primary-50 text-primary-800/80 hover:bg-primary-100"
@@ -171,7 +171,7 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search poll title, brand, or candidate..."
-              className="h-11 w-full rounded-lg border border-hairline bg-white px-4 text-sm font-medium text-primary-950 placeholder:text-ink-muted/80 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              className="h-11 w-full rounded-lg border border-hairline bg-white px-4 text-base font-medium text-primary-950 placeholder:text-ink-muted/80 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:text-sm"
             />
           </label>
 
@@ -213,7 +213,7 @@ function FilterSelect<T extends string>({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
-        className="h-11 w-full appearance-none rounded-lg border border-hairline bg-white pl-3 pr-9 text-sm font-medium text-primary-950 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        className="h-11 w-full appearance-none rounded-lg border border-hairline bg-white pl-3 pr-9 text-base font-medium text-primary-950 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200 sm:text-sm"
       >
         {options.map((option) => (
           <option key={option}>{option}</option>

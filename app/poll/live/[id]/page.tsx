@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import LivePollResults from "@/components/poll/LivePollResults";
+import PollJsonLd from "@/components/poll/PollJsonLd";
 import { ballotFor, getSamplePoll, pollResultsTitle } from "@/components/poll/live-polls-sample";
 import { STARTER_COMMENTS } from "@/lib/fusion-polls";
 import { getFusionPoll } from "@/lib/fusion-polls-server";
+import { pollResultJsonLd } from "@/lib/poll/poll-jsonld";
+import { pollPageMetadata } from "@/lib/poll/poll-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -13,16 +16,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const record = await getFusionPoll(id);
   if (record) {
-    return {
+    const description = `${record.question} ${record.poll.topicLabel} poll. ${record.poll.totalVotes.toLocaleString("en-KE")} votes recorded.`;
+    return pollPageMetadata({
       title: pollResultsTitle(record.poll),
-      description: record.question,
-    };
+      description,
+      path: `/poll/live/${id}`,
+      keywords: [record.poll.title, record.poll.topicLabel, "live poll results", "Changer Fusions", "opinion poll"],
+    });
   }
   const poll = getSamplePoll(id);
-  if (!poll) return { title: "Poll results" };
+  if (!poll) return { title: "Poll results", robots: { index: false, follow: false } };
   return {
-    title: ballotFor(poll).title,
-    description: ballotFor(poll).question,
+    ...pollPageMetadata({
+      title: ballotFor(poll).title,
+      description: ballotFor(poll).question,
+      path: `/poll/live/${id}`,
+      keywords: [],
+      index: false,
+    }),
   };
 }
 
@@ -31,7 +42,16 @@ export default async function PollResultsPage({ params }: Props) {
   const record = await getFusionPoll(id);
   if (record) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen overflow-x-clip bg-white">
+        <PollJsonLd
+          data={pollResultJsonLd({
+            id,
+            title: pollResultsTitle(record.poll),
+            question: record.question,
+            topicLabel: record.poll.topicLabel,
+            options: record.options.map((option) => ({ name: option.name, votes: option.votes })),
+          })}
+        />
         <LivePollResults
           poll={record.poll}
           ballot={{
@@ -51,7 +71,7 @@ export default async function PollResultsPage({ params }: Props) {
   const ballot = ballotFor(poll);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen overflow-x-clip bg-white">
       <LivePollResults poll={poll} ballot={ballot} comments={STARTER_COMMENTS} persisted={false} />
     </div>
   );

@@ -9,7 +9,7 @@ const VISIBILITY = ["Always public"] as const;
 const EDIT_VOTES = ["Nobody"] as const;
 
 function fieldClass() {
-  return "w-full rounded-lg border border-white/10 bg-primary-950 px-3 py-2.5 text-sm font-medium text-white outline-none placeholder:text-white/35 focus:border-primary-300";
+  return "w-full rounded-lg border border-white/10 bg-primary-950 px-3 py-2.5 text-base font-medium text-white outline-none placeholder:text-white/35 focus:border-primary-300 sm:text-sm";
 }
 
 function Toggle({

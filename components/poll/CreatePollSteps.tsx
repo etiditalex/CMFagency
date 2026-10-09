@@ -1,17 +1,6 @@
-const STEPS = [
-  {
-    title: "Fill out the form",
-    body: "Choose a title, add the answer options, and set how the poll should run for your audience, brand, or event.",
-  },
-  {
-    title: "Invite participants",
-    body: "Share the poll link so a room, a campaign, or the public can vote as soon as the poll is live.",
-  },
-  {
-    title: "Get instant results",
-    body: "As soon as a vote is cast, the totals update on the public results page while the poll is still open.",
-  },
-] as const;
+import { CREATE_POLL_STEPS } from "@/lib/poll/create-poll-content";
+
+const STEPS = CREATE_POLL_STEPS;
 
 export default function CreatePollSteps() {
   return (

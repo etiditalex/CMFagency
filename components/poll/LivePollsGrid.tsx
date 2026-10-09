@@ -45,7 +45,7 @@ export default function LivePollsGrid({
                       {poll.status.toUpperCase()}
                     </span>
                   </div>
-                  <h3 className="mt-3 truncate">{poll.title}</h3>
+                  <h3 className="mt-3 line-clamp-2 break-words">{poll.title}</h3>
                   <p className="mt-1 text-sm font-medium text-white/80">{poll.topicLabel}</p>
                 </div>
 

@@ -204,7 +204,7 @@ export default function LivePollResults({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold text-primary-950 sm:text-base">{option.name}</p>
+                    <p className="line-clamp-2 break-words text-sm font-bold text-primary-950 sm:text-base">{option.name}</p>
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{option.label}</p>
                   </div>
                   <div className="live-polls-score shrink-0 text-right">

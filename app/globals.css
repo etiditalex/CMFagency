@@ -656,6 +656,31 @@
   border-color: #8fb8ef;
 }
 
+@media (max-width: 640px) {
+  .poll-auth-field,
+  .poll-create input,
+  .poll-create textarea,
+  .poll-create select,
+  .poll-maker input,
+  .poll-maker textarea,
+  .live-polls-hero input,
+  .live-polls-hero select,
+  .live-polls-results input,
+  .live-polls-results textarea {
+    font-size: 16px;
+  }
+}
+
+.poll-hero,
+.poll-maker,
+.poll-features,
+.poll-create,
+.poll-auth,
+.live-polls-hero,
+.live-polls-grid {
+  overflow-x: clip;
+}
+
 .site-editorial .live-polls-hero h1,
 .site-editorial .live-polls-hero h1 span,
 .site-editorial .live-polls-hero p,
