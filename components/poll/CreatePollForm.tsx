@@ -150,7 +150,7 @@ export default function CreatePollForm() {
       setSaving(false);
       return;
     }
-    router.push(`/poll/live/${json.id}`);
+    router.push(`/poll/${json.id}?view=results`);
   }
 
   return (

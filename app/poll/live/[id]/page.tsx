@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import LivePollResults from "@/components/poll/LivePollResults";
 import PollJsonLd from "@/components/poll/PollJsonLd";
 import { ballotFor, getSamplePoll, pollResultsTitle } from "@/components/poll/live-polls-sample";
@@ -15,6 +15,9 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const record = await getFusionPoll(id);
+  if (record?.poll.topic === "poll") {
+    return { title: record.question, robots: { index: false, follow: false } };
+  }
   if (record) {
     const description = `${record.question} ${record.poll.topicLabel} poll. ${record.poll.totalVotes.toLocaleString("en-KE")} votes recorded.`;
     return pollPageMetadata({
@@ -40,6 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PollResultsPage({ params }: Props) {
   const { id } = await params;
   const record = await getFusionPoll(id);
+  if (record?.poll.topic === "poll") redirect(`/poll/${id}`);
   if (record) {
     return (
       <div className="min-h-screen overflow-x-clip bg-white">

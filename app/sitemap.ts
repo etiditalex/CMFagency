@@ -158,7 +158,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const records = await listFusionPolls();
     for (const record of records ?? []) {
       pollResultEntries.push({
-        url: `${baseUrl}/poll/live/${record.poll.id}`,
+        url: record.poll.topic === "poll" ? `${baseUrl}/poll/${record.poll.id}` : `${baseUrl}/poll/live/${record.poll.id}`,
         lastModified: now,
         changeFrequency: "daily" as const,
         priority: record.poll.status === "Live" ? 0.8 : 0.6,

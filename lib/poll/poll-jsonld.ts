@@ -135,8 +135,10 @@ export function pollResultJsonLd(input: {
   question: string;
   topicLabel: string;
   options: Array<{ name: string; votes: number }>;
+  feature?: "poll" | "live";
 }) {
-  const path = `/poll/live/${input.id}`;
+  const isPoll = input.feature === "poll";
+  const path = isPoll ? `/poll/${input.id}` : `/poll/live/${input.id}`;
   const total = input.options.reduce((sum, option) => sum + option.votes, 0);
   const leader = [...input.options].sort((a, b) => b.votes - a.votes)[0];
   const answer = leader
@@ -152,7 +154,9 @@ export function pollResultJsonLd(input: {
         "@id": `${SITE_URL}${path}#breadcrumb`,
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-          { "@type": "ListItem", position: 2, name: "Live polls", item: `${SITE_URL}/poll/live` },
+          isPoll
+            ? { "@type": "ListItem", position: 2, name: "Poll", item: `${SITE_URL}/poll` }
+            : { "@type": "ListItem", position: 2, name: "Live polls", item: `${SITE_URL}/poll/live` },
           { "@type": "ListItem", position: 3, name: input.title, item: `${SITE_URL}${path}` },
         ],
       },

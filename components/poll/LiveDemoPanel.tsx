@@ -60,12 +60,13 @@ export default function LiveDemoPanel() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[34rem]">
-      <p className="poll-live-demo-lead">See how easy it is to run a poll with live results.</p>
-      <div className="poll-live-demo-card mt-6 overflow-hidden rounded-lg border border-white/10 bg-[#12305c] shadow-[0_24px_70px_rgba(4,12,32,0.45)]">
+    <div className="mx-auto flex w-full max-w-[40rem] flex-col items-center">
+      <h1 className="poll-live-demo-title">Real-Time Polling</h1>
+      <p className="poll-live-demo-lead mt-4 max-w-[36rem]">See how easy it is to run a poll with live results.</p>
+      <div className="poll-live-demo-card mt-8 w-full max-w-[34rem] overflow-hidden rounded-lg border border-white/10 bg-[#12305c] shadow-[0_24px_70px_rgba(4,12,32,0.45)]">
         <div className="h-1 bg-primary-300" aria-hidden />
         <div className="px-5 py-6 sm:px-7 sm:py-7">
-          <h1>Which brand should open the next runway?</h1>
+          <h2 className="poll-live-demo-question">Which brand should open the next runway?</h2>
 
           {showResults ? (
             <div className="mt-6">

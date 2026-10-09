@@ -610,7 +610,7 @@ export default function PollingFxDashboard() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 text-sm font-semibold">
-                <Link href={`/poll/live/${record.poll.id}`} className="inline-flex items-center gap-1 text-primary-700">
+                <Link href={record.poll.topic === "poll" ? `/poll/${record.poll.id}` : `/poll/live/${record.poll.id}`} className="inline-flex items-center gap-1 text-primary-700">
                   <ExternalLink className="h-4 w-4" /> View
                 </Link>
                 <button type="button" className="inline-flex items-center gap-1 text-gray-700" onClick={() => openEdit(record)}>

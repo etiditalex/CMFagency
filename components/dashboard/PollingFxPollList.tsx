@@ -231,7 +231,7 @@ export default function PollingFxPollList() {
             <ul className="space-y-2">
               {visible.map((poll) => (
                 <li key={poll.id} className="grid grid-cols-[minmax(0,1.6fr)_7rem_8rem_7rem_2.5rem] items-center rounded-xl border border-hairline bg-white px-4 py-3">
-                  <Link href={`/poll/live/${poll.id}`} className="flex min-w-0 items-center gap-3">
+                  <Link href={`/poll/${poll.id}`} className="flex min-w-0 items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-positive text-white">
                       <PieChart className="h-4 w-4" aria-hidden />
                     </span>
@@ -260,7 +260,7 @@ export default function PollingFxPollList() {
                     </button>
                     {menuId === poll.id ? (
                       <div className="absolute right-0 top-9 z-20 w-44 rounded-lg border border-hairline bg-white p-1 shadow-lg">
-                        <Link href={`/poll/live/${poll.id}`} className="block rounded-md px-3 py-2 text-sm font-medium text-ink hover:bg-canvas" onClick={() => setMenuId(null)}>
+                        <Link href={`/poll/${poll.id}`} className="block rounded-md px-3 py-2 text-sm font-medium text-ink hover:bg-canvas" onClick={() => setMenuId(null)}>
                           View results
                         </Link>
                         {isAdmin ? (
