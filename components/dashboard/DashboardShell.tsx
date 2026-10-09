@@ -26,6 +26,7 @@ import {
   Menu,
   MessagesSquare,
   PieChart,
+  Play,
   Plus,
   Quote,
   ClipboardList,
@@ -52,6 +53,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { isPollAccountDashboardPath, POLL_ACCOUNT_HOME, POLL_LIVE_DEMO_PUBLIC_PATH } from "@/lib/poll/poll-dashboard-paths";
 import { usePortal } from "@/contexts/PortalContext";
 import { useOrganizationIndustry } from "@/lib/hooks/useOrganizationIndustry";
 import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/VisitorTrialBanner";
@@ -163,9 +165,13 @@ const NAV: NavItem[] = [
     icon: Radio,
     section: "campaigns_voting",
     adminOnly: true,
-    nestedLinks: [{ label: "Poll", href: "/dashboard/polling-fx/poll" }],
+    nestedLinks: [
+      { label: "Poll", href: POLL_ACCOUNT_HOME },
+      { label: "Live Demo", href: POLL_LIVE_DEMO_PUBLIC_PATH },
+    ],
   },
-  { label: "Poll", href: "/dashboard/polling-fx/poll", icon: PieChart, section: "campaigns_voting", pollAccount: true },
+  { label: "Poll", href: POLL_ACCOUNT_HOME, icon: PieChart, section: "campaigns_voting", pollAccount: true },
+  { label: "Live Demo", href: POLL_LIVE_DEMO_PUBLIC_PATH, icon: Play, section: "campaigns_voting", pollAccount: true },
   { label: "Vote visibility", href: "/dashboard/voting/settings", icon: EyeOff, section: "campaigns_voting", featureKey: "voting" },
   {
     label: "Contestants",
@@ -679,12 +685,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isPollOnly || portalLoading) return;
-    if (pathname === "/dashboard/polling-fx/poll") return;
-    router.replace("/dashboard/polling-fx/poll");
+    if (isPollAccountDashboardPath(pathname)) return;
+    router.replace(POLL_ACCOUNT_HOME);
   }, [isPollOnly, pathname, portalLoading, router]);
 
   const canSeeItem = (item: NavItem) => {
-    if (isPollOnly) return item.href === "/dashboard/polling-fx/poll";
+    if (isPollOnly) return item.pollAccount === true;
     if (item.pollAccount) return false;
     if (isVisitorOnly) {
       if (item.href === "/dashboard/account") return true;

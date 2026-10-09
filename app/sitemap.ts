@@ -40,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/poll", priority: 0.86, changeFrequency: "weekly" as const },
     { path: "/poll/create", priority: 0.84, changeFrequency: "weekly" as const },
     { path: "/poll/live", priority: 0.9, changeFrequency: "daily" as const },
+    { path: "/poll/live-demo", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/career", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/kcm", priority: 0.94, changeFrequency: "weekly" as const },
     { path: "/kcm/cfm-tickets", priority: 1.0, changeFrequency: "daily" as const },

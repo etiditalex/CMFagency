@@ -9,6 +9,7 @@ import {
   isVisitorOnlyAllowedDashboardPath,
   VISITOR_ONLY_DASHBOARD_PREFIX,
 } from "@/lib/visitors/visitor-only-access";
+import { isPollAccountDashboardPath } from "@/lib/poll/poll-dashboard-paths";
 import { supabase } from "@/lib/supabase";
 
 const VISITOR_SIGN_IN = "/fusion-xpress/smart-visitor-management/sign-in";
@@ -31,7 +32,7 @@ export default function DashboardLayout({
     if (authLoading || portalLoading) return;
 
     const isVisitorDashboardPath = pathname.startsWith("/dashboard/visitor-management");
-    const loginFallback = pathname.startsWith("/dashboard/polling-fx/poll")
+    const loginFallback = isPollAccountDashboardPath(pathname)
       ? "/poll/login"
       : isVisitorDashboardPath || isVisitorOnly
         ? VISITOR_SIGN_IN
@@ -42,7 +43,7 @@ export default function DashboardLayout({
       return;
     }
 
-    if (isPollOnly && pathname !== "/dashboard/polling-fx/poll") {
+    if (isPollOnly && !isPollAccountDashboardPath(pathname)) {
       router.replace("/dashboard/polling-fx/poll");
       return;
     }
