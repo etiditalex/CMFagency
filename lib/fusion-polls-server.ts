@@ -211,8 +211,8 @@ export async function createPublicPoll(input: { title: string; description: stri
     id,
     title,
     question: description || title,
-    topic: "opinion",
-    topic_label: "Opinion",
+    topic: "poll",
+    topic_label: "Poll",
     status: "Live",
     region: "Nairobi",
     county: "Nairobi",
@@ -221,6 +221,12 @@ export async function createPublicPoll(input: { title: string; description: stri
   });
   if (inserted.error) {
     console.error("fusion_polls create:", inserted.error.message);
+    if (/fusion_polls_topic_check|check constraint/i.test(inserted.error.message)) {
+      return {
+        ok: false as const,
+        error: "Polls need database/ticketing_voting_mvp_patch_100_fusion_poll_topic.sql in the Supabase SQL editor.",
+      };
+    }
     return { ok: false as const, error: "This poll could not be created." };
   }
 

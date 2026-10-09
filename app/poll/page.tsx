@@ -7,7 +7,7 @@ import PollMakerSection from "@/components/poll/PollMakerSection";
 export const metadata: Metadata = {
   title: "Poll",
   description:
-    "Poll and opinion polls from Changer Fusions. Ask your audience who should take the runway, or what clients and fans think about a brand or event, and get answers in no time.",
+    "Polls from Changer Fusions. Ask your audience who should take the runway, or which session to run next, and get answers in no time.",
 };
 
 export default function PollPage() {

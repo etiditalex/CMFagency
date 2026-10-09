@@ -27,6 +27,11 @@ export function checkPollRegisterRateLimit(ip: string): { allowed: boolean; retr
   return checkRegisterRateLimit(ip, "poll-register");
 }
 
+/** Rate limit poll email verification and resend by IP. */
+export function checkPollVerifyRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(ip, "poll-verify", 10, 15 * 60 * 1000);
+}
+
 /** Rate limit public employer self-registration by IP. */
 export function checkEmployerRegisterRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   return checkRegisterRateLimit(ip, "employer-register");

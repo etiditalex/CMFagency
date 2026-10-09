@@ -67,11 +67,11 @@ const services = [
   },
   {
     icon: Vote,
-    title: "Poll & Opinion Polls",
+    title: "Poll",
     description:
-      "Audience polls and opinion polls for events, brands, and campaigns, so you can collect answers in no time.",
+      "Audience polls for events, brands, and campaigns, so you can collect answers in no time.",
     href: "/poll",
-    features: ["Audience polls", "Opinion polls", "Event and campaign voting", "Live results"],
+    features: ["Audience polls", "Event and campaign voting", "Live results"],
   },
 ];
 

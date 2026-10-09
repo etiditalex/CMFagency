@@ -9,7 +9,7 @@ const FEATURES = [
   {
     icon: Clock,
     title: "Deadlines",
-    description: "Polls can stay open, or close when a runway vote or opinion poll reaches its deadline.",
+    description: "Polls can stay open, or close when a runway vote or audience poll reaches its deadline.",
   },
   {
     icon: Smile,
@@ -29,7 +29,7 @@ const FEATURES = [
   {
     icon: FlaskConical,
     title: "Active Development",
-    description: "We keep adding features for polls and opinion polls, from setup through live results.",
+    description: "We keep adding features for polls, from setup through live results.",
   },
 ] as const;
 
@@ -47,7 +47,7 @@ export default function PollFeaturesSection() {
           Simple polls with powerful configuration
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-center text-[15px] leading-relaxed text-white/70 sm:text-base">
-          Polls stay simple to launch, with configuration for deadlines, live results, and opinion polls
+          Polls stay simple to launch, with configuration for deadlines and live results
           across events, brands, and audiences.
         </p>
 

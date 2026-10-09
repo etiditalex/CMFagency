@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Live Polls",
   description:
-    "Live polls and results from Changer Fusions. Follow politics, brands, events, opinion polls, and campaigns as the votes come in.",
+    "Live polls and results from Changer Fusions. Follow politics, brands, events, and campaigns as the votes come in.",
 };
 
 export default async function LivePollsPage() {

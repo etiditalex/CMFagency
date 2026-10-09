@@ -86,7 +86,8 @@ export default function PollingFxPollList() {
     if (!quiet) setLoading(true);
     const { data, error: err } = await supabase
       .from("fusion_polls")
-      .select("id,title,status,ends_label,created_at,fusion_poll_options(votes)")
+      .select("id,title,status,ends_label,created_at,topic,fusion_poll_options(votes)")
+      .neq("topic", "opinion")
       .order("created_at", { ascending: false });
     if (err) {
       const offline = /fetch failed|Failed to fetch|NetworkError/i.test(err.message);

@@ -4,11 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { PieChart, Plus, Search } from "lucide-react";
 
-type MakerMode = "poll" | "opinion";
-
 const NAV = [
   { id: "poll" as const, label: "Create Poll" },
-  { id: "opinion" as const, label: "Opinion Polls" },
   { id: "discover" as const, label: "Discover" },
   { id: "results" as const, label: "Results" },
 ];
@@ -45,14 +42,11 @@ function Toggle({
 }
 
 export default function PollMakerSection() {
-  const [mode, setMode] = useState<MakerMode>("poll");
   const [options, setOptions] = useState(["", ""]);
   const [isPrivate, setIsPrivate] = useState(false);
   const [allowMultiple, setAllowMultiple] = useState(true);
   const [checkDuplicates, setCheckDuplicates] = useState(false);
   const [duplicateBy, setDuplicateBy] = useState("IP Address");
-
-  const isPoll = mode === "poll";
 
   return (
     <section className="poll-maker bg-primary-900 py-16 sm:py-20 lg:py-24" aria-labelledby="poll-maker-heading">
@@ -65,8 +59,8 @@ export default function PollMakerSection() {
             Use our advanced poll maker
           </h2>
           <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/70 sm:text-base">
-            A Changer Fusions poll is a vote that helps a group or the public decide an issue. Opinion polls
-            are useful when the majority view matters, and not the opinion of each individual participant.
+            A Changer Fusions poll is a vote that helps a group or the public decide an issue, from a runway
+            lineup to the next event session.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <Link
@@ -94,23 +88,16 @@ export default function PollMakerSection() {
             </div>
             <nav aria-label="Poll maker" className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto sm:gap-4">
               {NAV.map((item) => {
-                const active = item.id === mode;
+                const active = item.id === "poll";
                 return (
-                  <button
+                  <span
                     key={item.id}
-                    type="button"
-                    onClick={() => {
-                      if (item.id === "poll" || item.id === "opinion") setMode(item.id);
-                    }}
                     className={`shrink-0 border-b-2 pb-1 text-[12px] font-semibold sm:text-[13px] ${
-                      active
-                        ? "border-primary-300 text-white"
-                        : "border-transparent text-white/55 hover:text-white"
-                    } ${item.id === "discover" || item.id === "results" ? "hidden sm:inline-flex" : ""}`}
-                    aria-pressed={item.id === "poll" || item.id === "opinion" ? active : undefined}
+                      active ? "border-primary-300 text-white" : "border-transparent text-white/55"
+                    } ${item.id === "discover" || item.id === "results" ? "hidden sm:inline" : ""}`}
                   >
                     {item.label}
-                  </button>
+                  </span>
                 );
               })}
             </nav>
@@ -127,12 +114,10 @@ export default function PollMakerSection() {
 
           <div className="px-4 py-6 sm:px-6 sm:py-7">
             <h3 className="poll-maker-title text-center font-montserrat text-xl font-bold text-white sm:text-2xl">
-              {isPoll ? "Create a Poll" : "Create an opinion poll"}
+              Create a Poll
             </h3>
             <p className="poll-maker-lead mt-1 text-center text-[13px] text-white/45">
-              {isPoll
-                ? "Complete the fields below to create your poll."
-                : "Complete the fields below to create your opinion poll."}
+              Complete the fields below to create your poll.
             </p>
 
             <div className="mx-auto mt-5 max-w-xl rounded-xl border border-primary-500/60 bg-primary-950 p-4 sm:p-5">

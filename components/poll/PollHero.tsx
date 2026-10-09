@@ -1,34 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 const HERO_IMAGE = "/images/poll-hero-ballot.jpg";
 
-const SERVICES = [
-  {
-    id: "poll",
-    label: "Poll",
-    title: "Create a poll",
-    accent: "in seconds",
-    body: "Want to ask your audience who should take the runway or which session to run next? Create a poll — and get answers in no time.",
-  },
-  {
-    id: "opinion",
-    label: "Opinion polls",
-    title: "Opinion polls",
-    accent: "in seconds",
-    body: "Want to hear what clients, fans, or a community think about a brand, a launch, or the next event? Run an opinion poll — and get answers in no time.",
-  },
-] as const;
-
-type ServiceId = (typeof SERVICES)[number]["id"];
-
 export default function PollHero() {
-  const [activeId, setActiveId] = useState<ServiceId>("poll");
-  const active = SERVICES.find((service) => service.id === activeId) ?? SERVICES[0];
-
   return (
     <section
       className="poll-hero relative w-full overflow-hidden bg-primary-950 pt-[var(--site-nav-height)]"
@@ -37,42 +14,17 @@ export default function PollHero() {
       <div className="relative mx-auto grid max-w-[1440px] lg:min-h-[36rem] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
         <div className="relative z-10 flex items-center px-4 py-10 sm:px-10 sm:py-16 lg:px-14 lg:py-20 xl:px-20">
           <div className="w-full max-w-[34rem]">
-            <div role="tablist" aria-label="Poll services" className="mb-5 flex flex-wrap items-center gap-x-5 gap-y-1 sm:mb-7 sm:gap-x-6">
-              {SERVICES.map((service) => {
-                const selected = service.id === active.id;
-                return (
-                  <button
-                    key={service.id}
-                    type="button"
-                    role="tab"
-                    id={`poll-service-${service.id}`}
-                    aria-selected={selected}
-                    aria-controls="poll-hero-panel"
-                    onClick={() => setActiveId(service.id)}
-                    className={`inline-flex min-h-11 items-center border-b-2 text-sm font-semibold transition-colors sm:text-[15px] ${
-                      selected
-                        ? "border-white text-white"
-                        : "border-transparent text-white/55 hover:text-white"
-                    }`}
-                  >
-                    {service.label}
-                  </button>
-                );
-              })}
-            </div>
+            <h1
+              id="poll-hero-heading"
+              className="font-montserrat text-[2rem] font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-[4.15rem]"
+            >
+              <span className="block text-white">Create a poll</span>
+              <span className="block text-primary-200">in seconds</span>
+            </h1>
 
-            <div id="poll-hero-panel" role="tabpanel" aria-labelledby={`poll-service-${active.id}`}>
-              <h1
-                id="poll-hero-heading"
-                className="font-montserrat text-[2rem] font-extrabold leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-[4.15rem]"
-              >
-                <span className="block text-white">{active.title}</span>
-                <span className="block text-primary-200">{active.accent}</span>
-              </h1>
-
-              <p className="mt-5 max-w-[32rem] text-[15px] font-medium leading-relaxed text-white/90 sm:mt-6 sm:text-[17px] sm:leading-[1.55]">
-                {active.body}
-              </p>
+            <p className="mt-5 max-w-[32rem] text-[15px] font-medium leading-relaxed text-white/90 sm:mt-6 sm:text-[17px] sm:leading-[1.55]">
+              Want to ask your audience who should take the runway or which session to run next? Create a poll — and get answers in no time.
+            </p>
 
               <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center">
                 <Link
@@ -90,7 +42,6 @@ export default function PollHero() {
               </div>
 
               <p className="poll-hero-note mt-3.5 text-[13px] font-medium text-white/55">No signup required</p>
-            </div>
           </div>
         </div>
 

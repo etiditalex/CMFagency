@@ -26,9 +26,12 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
+  const [code, setCode] = useState("");
+  const [verifyEmail, setVerifyEmail] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -37,8 +40,8 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
     setLoading(true);
     try {
       if (mode === "signup") {
-        if (name.trim().length < 2 || !email.includes("@") || password.length < 8) {
-          setError("Add your name, a valid email, and a password of at least 8 characters.");
+        if (name.trim().length < 2 || !email.includes("@") || password.length < 6) {
+          setError("Add your name, a valid email, and a password of at least 6 characters.");
           return;
         }
         const created = await fetch("/api/poll/register", {
@@ -46,8 +49,11 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password }),
         });
-        const createdJson = (await created.json().catch(() => ({}))) as { error?: string };
+        const createdJson = (await created.json().catch(() => ({}))) as { error?: string; verificationRequired?: boolean; emailWarning?: string };
         if (!created.ok) throw new Error(createdJson.error || "Could not create the account.");
+        setVerifyEmail(email.trim().toLowerCase());
+        setNotice(createdJson.emailWarning || "We sent a verification code to your email.");
+        return;
       } else if (!email.includes("@") || !password) {
         setError("Add your email and password.");
         return;
@@ -65,10 +71,60 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
         setError(message);
       } else {
         await supabase.auth.signOut().catch(() => undefined);
+        if (/verify your email/i.test(message)) setVerifyEmail(email.trim().toLowerCase());
         setError(message);
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function verifyCode(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    if (!/^\d{6}$/.test(code.trim())) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/poll/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyEmail, code: code.trim() }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not verify the email.");
+      const { session } = await loginWithPassword(verifyEmail, password);
+      await openPollDashboard(session.access_token, remember);
+      router.push("/dashboard/polling-fx/poll");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      await supabase.auth.signOut().catch(() => undefined);
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resendCode() {
+    setError("");
+    setNotice("");
+    setResending(true);
+    try {
+      const res = await fetch("/api/poll/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyEmail }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string; alreadyVerified?: boolean };
+      if (!res.ok) throw new Error(json.error || "Could not send the email.");
+      setNotice(json.alreadyVerified ? "This email is already verified. Log in." : "A new verification code was sent.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send the email.");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -90,15 +146,32 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
     <main className="poll-auth flex min-h-screen items-center justify-center bg-primary-950 px-4 pb-16 pt-[calc(var(--site-nav-height)+2.5rem)]">
       <div className="w-full max-w-md">
         <img src={BRAND_LOGO_URL} alt="Changer Fusions" className="mx-auto h-14 w-auto" />
-        <h1 className="poll-auth-title mt-6">{mode === "login" ? "Log in to your account" : "Create your free account"}</h1>
-        <p className="poll-auth-switch mt-2 text-center text-sm text-white/70">
-          {mode === "login" ? "Or " : "Or "}
-          <Link href={mode === "login" ? "/poll/signup" : "/poll/login"} className="font-semibold text-primary-200 hover:text-white">
-            {mode === "login" ? "create a free account" : "log in"}
-          </Link>
-        </p>
+        <h1 className="poll-auth-title mt-6">{verifyEmail ? "Verify your email" : mode === "login" ? "Log in to your account" : "Create your free account"}</h1>
+        {verifyEmail ? (
+          <p className="poll-auth-switch mt-2 text-center text-sm text-white/70">Enter the code we sent to {verifyEmail}.</p>
+        ) : (
+          <p className="poll-auth-switch mt-2 text-center text-sm text-white/70">
+            Or{" "}
+            <Link href={mode === "login" ? "/poll/signup" : "/poll/login"} className="font-semibold text-primary-200 hover:text-white">
+              {mode === "login" ? "create a free account" : "log in"}
+            </Link>
+          </p>
+        )}
 
-        <form onSubmit={(event) => void onSubmit(event)} className="mt-8 rounded-xl border border-white/10 border-t-2 border-t-primary-300 bg-primary-900 p-6 shadow-2xl">
+        <form onSubmit={(event) => void (verifyEmail ? verifyCode(event) : onSubmit(event))} className="mt-8 rounded-xl border border-white/10 border-t-2 border-t-primary-300 bg-primary-900 p-6 shadow-2xl">
+          {verifyEmail ? (
+            <label className="block text-sm font-medium text-white/80">
+              Verification code
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="poll-auth-field mt-1.5 tracking-[0.3em]"
+              />
+            </label>
+          ) : (
+            <>
           {mode === "signup" ? (
             <label className="block text-sm font-medium text-white/80">
               Name
@@ -125,13 +198,20 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
               </button>
             </div>
           ) : null}
+            </>
+          )}
 
           {error ? <p className="poll-auth-error mt-4 text-sm font-semibold text-[#ffb4b4]">{error}</p> : null}
           {notice ? <p className="mt-4 text-sm font-semibold text-primary-200">{notice}</p> : null}
 
           <button type="submit" disabled={loading} className="poll-auth-submit mt-5 inline-flex h-11 w-full items-center justify-center rounded-md bg-primary-600 text-sm font-semibold text-white hover:bg-primary-500 disabled:opacity-60">
-            {loading ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
+            {loading ? "Please wait…" : verifyEmail ? "Verify email" : mode === "login" ? "Log in" : "Create account"}
           </button>
+          {verifyEmail ? (
+            <button type="button" disabled={resending} onClick={() => void resendCode()} className="mt-3 w-full text-center text-sm font-semibold text-primary-200 hover:text-white disabled:opacity-60">
+              {resending ? "Sending…" : "Resend verification email"}
+            </button>
+          ) : null}
         </form>
       </div>
     </main>

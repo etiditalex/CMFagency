@@ -28,6 +28,10 @@ export async function POST(req: NextRequest) {
     if (String(member?.role ?? "") !== "poll") {
       return NextResponse.json({ error: "This login is for poll accounts." }, { status: 403 });
     }
+    const meta = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
+    if (meta.poll_email_verified === false) {
+      return NextResponse.json({ error: "Verify your email before logging in. Enter the code from your inbox." }, { status: 403 });
+    }
 
     const body = (await req.json().catch(() => ({}))) as { remember?: boolean };
     const res = NextResponse.json({ ok: true });

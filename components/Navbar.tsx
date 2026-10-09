@@ -77,7 +77,7 @@ export default function Navbar() {
     { href: "/services/market-research", label: "Market Research" },
     { href: "/services/events-marketing", label: "Events Marketing" },
     { href: "/services/content-creation", label: "Content Creation" },
-    { href: "/poll", label: "Poll & Opinion Polls" },
+    { href: "/poll", label: "Poll" },
   ];
   const servicesLinksCol1 = servicesLinks.slice(0, Math.ceil(servicesLinks.length / 2));
   const servicesLinksCol2 = servicesLinks.slice(Math.ceil(servicesLinks.length / 2));
