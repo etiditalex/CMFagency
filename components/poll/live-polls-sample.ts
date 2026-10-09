@@ -226,6 +226,18 @@ export const SAMPLE_POLLS: SamplePoll[] = [
     spoiledVotes: 0,
   },
   {
+    id: "opinion-launch",
+    title: "Opinion poll on the next brand launch",
+    topic: "opinion",
+    topicLabel: "Opinion",
+    status: "Ended",
+    region: "Central",
+    county: "Kiambu",
+    ends: "6 Oct 2026, 14:20",
+    totalVotes: 1288,
+    spoiledVotes: 0,
+  },
+  {
     id: "campaign-sample",
     title: "Campaign message poll for the season",
     topic: "campaign",

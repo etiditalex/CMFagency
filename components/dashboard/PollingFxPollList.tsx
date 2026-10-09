@@ -27,6 +27,8 @@ type PollListRow = {
   status: LivePollStatus;
   ends_label: string | null;
   created_at: string;
+  topic: string;
+  created_by: string | null;
   fusion_poll_options?: { votes: number | null }[] | null;
 };
 
@@ -84,11 +86,13 @@ export default function PollingFxPollList() {
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
-    const { data, error: err } = await supabase
+    let query = supabase
       .from("fusion_polls")
-      .select("id,title,status,ends_label,created_at,topic,fusion_poll_options(votes)")
-      .neq("topic", "opinion")
+      .select("id,title,status,ends_label,created_at,topic,created_by,fusion_poll_options(votes)")
+      .eq("topic", "poll")
       .order("created_at", { ascending: false });
+    if (!isAdmin && user?.id) query = query.eq("created_by", user.id);
+    const { data, error: err } = await query;
     if (err) {
       const offline = /fetch failed|Failed to fetch|NetworkError/i.test(err.message);
       setMissingTable(isMissingPollTable(err));
@@ -104,7 +108,7 @@ export default function PollingFxPollList() {
       setPolls(((data ?? []) as PollListRow[]).map(mapRow));
     }
     setLoading(false);
-  }, []);
+  }, [isAdmin, user?.id]);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -221,7 +225,7 @@ export default function PollingFxPollList() {
           </div>
           {visible.length === 0 ? (
             <div className="rounded-xl border border-hairline bg-white px-4 py-10 text-center text-sm text-ink-muted">
-              No polls yet. A poll created on the public page shows up here.
+              No polls yet. Create a poll and it will show up here.
             </div>
           ) : (
             <ul className="space-y-2">

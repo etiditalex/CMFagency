@@ -13,6 +13,7 @@ const TOPICS = [
   { id: "gubernatorial", label: "Gubernatorial" },
   { id: "senatorial", label: "Senatorial" },
   { id: "events", label: "Events" },
+  { id: "opinion", label: "Opinion" },
   { id: "campaign", label: "Campaign" },
 ] as const;
 
@@ -66,7 +67,7 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
   const visiblePolls = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return items.filter((poll) => {
-      if (poll.topic === "opinion") return false;
+      if (poll.topic === "poll") return false;
       if (topic !== "all" && poll.topic !== topic) return false;
       if (poll.status !== status) return false;
       if (region !== "All Regions" && poll.region !== region) return false;
@@ -134,7 +135,7 @@ export default function LivePollsHero({ polls }: { polls: SamplePoll[] }) {
           <span>Live Polls &amp; Results</span>
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-ink-muted">
-          Live results for politics, brands, events, and campaigns. Track votes across audiences and the runway.
+          Live results for opinion polls, politics, brands, and events. Track votes as they come in from Polling Fx.
         </p>
 
         <div role="tablist" aria-label="Poll topics" className="mt-8 flex flex-wrap items-center justify-center gap-2 sm:mt-9 sm:gap-2.5">

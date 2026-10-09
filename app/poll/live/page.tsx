@@ -8,12 +8,14 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Live Polls",
   description:
-    "Live polls and results from Changer Fusions. Follow politics, brands, events, and campaigns as the votes come in.",
+    "Live opinion polls and results from Changer Fusions. Follow opinion polls, politics, brands, and events as the votes come in.",
 };
 
 export default async function LivePollsPage() {
   const records = await listFusionPolls();
-  const polls = records ? records.map((record) => record.poll) : SAMPLE_POLLS;
+  const polls = records
+    ? records.map((record) => record.poll).filter((poll) => poll.topic !== "poll")
+    : SAMPLE_POLLS;
 
   return (
     <div className="min-h-screen bg-canvas">

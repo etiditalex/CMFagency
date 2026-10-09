@@ -125,6 +125,7 @@ export default function CreatePollForm() {
     setError(null);
     const response = await fetch("/api/polls", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,

@@ -188,7 +188,13 @@ function slugifyPollTitle(value: string) {
     .slice(0, 48);
 }
 
-export async function createPublicPoll(input: { title: string; description: string; options: string[]; ends: string }) {
+export async function createPublicPoll(input: {
+  title: string;
+  description: string;
+  options: string[];
+  ends: string;
+  createdBy?: string | null;
+}) {
   if (!supabase) return { ok: false as const, error: "Polls are not connected." };
   const title = input.title.trim().slice(0, 140);
   const description = input.description.trim().slice(0, 500);
@@ -218,6 +224,7 @@ export async function createPublicPoll(input: { title: string; description: stri
     county: "Nairobi",
     ends_label: input.ends.trim().slice(0, 80),
     spoiled_votes: 0,
+    created_by: input.createdBy || null,
   });
   if (inserted.error) {
     console.error("fusion_polls create:", inserted.error.message);
