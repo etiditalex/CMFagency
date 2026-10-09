@@ -84,6 +84,11 @@ const OPTION_POOLS: Record<LivePollTopic, { names: string[]; label: string; ques
     question: () => "Which campaign message should run this season?",
     names: ["Market to thrive", "The next runway", "Audience first", "Brand in motion", "Live results", "Coast to capital"],
   },
+  poll: {
+    label: "Option",
+    question: (poll) => poll.title,
+    names: ["First choice", "Second choice", "Third choice", "Fourth choice", "Fifth choice", "Sixth choice"],
+  },
 };
 
 const VOTE_SHARES = [0.187, 0.15, 0.137, 0.13, 0.112, 0.098, 0.096, 0.09];
