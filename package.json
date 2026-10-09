@@ -23,6 +23,7 @@
     "@supabase/supabase-js": "^2.90.0",
     "@tavily/core": "^0.7.2",
     "ai": "^6.0.86",
+    "bcryptjs": "^2.4.3",
     "date-fns": "^3.6.0",
     "framer-motion": "^11.3.19",
     "html5-qrcode": "^2.3.8",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.10",
     "@types/nodemailer": "^7.0.11",
     "@types/paystack__inline-js": "^1.0.2",
