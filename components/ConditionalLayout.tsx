@@ -119,7 +119,7 @@ export default function ConditionalLayout({
 
   return (
     <>
-      <Navbar />
+      {isFashionNight ? null : <Navbar />}
       <main className="site-editorial min-h-screen overflow-x-clip">{children}</main>
       {isFashionNight ? null : <Footer />}
       <SiteViewTracker />

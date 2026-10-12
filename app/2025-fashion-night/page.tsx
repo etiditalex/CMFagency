@@ -75,7 +75,7 @@ export const metadata: Metadata = {
 
 export default function FashionNight2025Page() {
   return (
-    <article className="fashion-night-page pt-[var(--site-nav-height)]">
+    <article className="fashion-night-page">
       <FashionNightJsonLd />
       <FashionNightNotice />
       <FashionNightHero />
