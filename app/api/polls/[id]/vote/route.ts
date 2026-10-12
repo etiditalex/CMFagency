@@ -9,6 +9,7 @@ import {
   writePollBallots,
 } from "@/lib/fusion-poll-ballot";
 import { castFusionPollVote, getFusionPoll } from "@/lib/fusion-polls-server";
+import { parseLiveVoteConsent } from "@/lib/poll/live-vote-consent";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,12 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Props) {
   const { id } = await params;
-  const body = (await request.json().catch(() => null)) as { optionId?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as {
+    optionId?: unknown;
+    name?: unknown;
+    email?: unknown;
+    acceptTerms?: unknown;
+  } | null;
   const optionId = typeof body?.optionId === "string" ? body.optionId : "";
   const jar = await cookies();
   const voterKey = voterKeyFromCookie(jar.get(pollVoterCookieName())?.value);
@@ -34,7 +40,16 @@ export async function POST(request: Request, { params }: Props) {
     });
   }
 
-  const result = await castFusionPollVote(id, optionId, voterKey);
+  const record = await getFusionPoll(id);
+  if (!record) return NextResponse.json({ error: "This poll is not available." }, { status: 404 });
+  let voter: { name: string; email: string } | undefined;
+  if (record.poll.topic !== "poll") {
+    const consent = parseLiveVoteConsent(body ?? {});
+    if (!consent.ok) return NextResponse.json({ error: consent.error }, { status: 400 });
+    voter = consent.voter;
+  }
+
+  const result = await castFusionPollVote(id, optionId, voterKey, voter);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
   ballots.set(id, result.optionId ?? optionId);

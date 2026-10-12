@@ -65,9 +65,14 @@ function rpcPayload(value: unknown) {
   return value as { ok?: boolean; already?: boolean; error?: string };
 }
 
-function isMissingRpc(error: { code?: string; message?: string }) {
+function isMissingRpc(error: { code?: string; message?: string }, fn: string) {
   const message = error.message ?? "";
-  return error.code === "PGRST202" || error.code === "42883" || /could not find the function|schema cache|cast_fusion_poll_vote/i.test(message);
+  return error.code === "PGRST202" || error.code === "42883" || /could not find the function|schema cache/i.test(message) || message.includes(fn);
+}
+
+function isMissingVoterColumns(error: { message?: string }) {
+  const message = error.message ?? "";
+  return /column|schema cache/i.test(message) && /voter_name|voter_email|terms_accepted_at/i.test(message);
 }
 
 function isMissingVoteLedger(error: { code?: string; message?: string }) {
@@ -111,11 +116,110 @@ async function incrementOptionVotes(optionId: string) {
   return false;
 }
 
-export async function castFusionPollVote(pollId: string, optionId: string, voterKey: string): Promise<CastVoteResult> {
+const LIVE_VOTER_PATCH = "Live poll votes need database/ticketing_voting_mvp_patch_101_fusion_poll_live_voter.sql in the Supabase SQL editor.";
+
+async function castLiveOpinionVote(
+  pollId: string,
+  optionId: string,
+  voterKey: string,
+  voter: { name: string; email: string },
+): Promise<CastVoteResult> {
+  if (!supabase) return { ok: false, status: 503, error: "Polls are not connected." };
+
+  const rpc = await supabase.rpc("cast_fusion_poll_live_vote", {
+    p_poll_id: pollId,
+    p_option_id: optionId,
+    p_voter_key: voterKey,
+    p_voter_name: voter.name,
+    p_voter_email: voter.email,
+  });
+  if (!rpc.error) {
+    const payload = rpcPayload(rpc.data);
+    if (payload?.ok === true) {
+      const record = await loadFusionPoll(pollId);
+      if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+      const chosen = payload.already ? await recordedOptionId(pollId, voterKey) : optionId;
+      return { ok: true, already: Boolean(payload.already), optionId: chosen, record };
+    }
+    const error = payload?.error || "That vote could not be recorded.";
+    return { ok: false, status: payload ? voteStatus(error) : 500, error };
+  }
+  if (!isMissingRpc(rpc.error, "cast_fusion_poll_live_vote")) {
+    console.error("cast_fusion_poll_live_vote:", rpc.error.message);
+    return { ok: false, status: 500, error: "That vote could not be recorded." };
+  }
+
+  const poll = await supabase.from("fusion_polls").select("status,topic").eq("id", pollId).maybeSingle();
+  if (poll.error || !poll.data || poll.data.topic === "poll") return { ok: false, status: 404, error: "This poll is not available." };
+  if (poll.data.status !== "Live") {
+    return {
+      ok: false,
+      status: 409,
+      error: poll.data.status === "Scheduled" ? "This poll is not open yet." : "This poll has ended.",
+    };
+  }
+  const option = await supabase.from("fusion_poll_options").select("id").eq("id", optionId).eq("poll_id", pollId).maybeSingle();
+  if (option.error || !option.data) return { ok: false, status: 404, error: "That choice is not on this poll." };
+
+  const existing = await recordedOptionId(pollId, voterKey);
+  if (existing) {
+    const record = await loadFusionPoll(pollId);
+    if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+    return { ok: true, already: true, optionId: existing, record };
+  }
+
+  const emailUsed = await supabase.from("fusion_poll_votes").select("id").eq("poll_id", pollId).eq("voter_email", voter.email).maybeSingle();
+  if (emailUsed.error && (isMissingVoterColumns(emailUsed.error) || emailUsed.error.code === "42P01" || emailUsed.error.code === "PGRST205")) {
+    return { ok: false, status: 503, error: LIVE_VOTER_PATCH };
+  }
+  if (emailUsed.data) return { ok: false, status: 409, error: "This email has already been used to vote on this poll." };
+
+  const ledger = await supabase.from("fusion_poll_votes").insert({
+    poll_id: pollId,
+    option_id: optionId,
+    voter_key: voterKey,
+    voter_name: voter.name,
+    voter_email: voter.email,
+    terms_accepted_at: new Date().toISOString(),
+  });
+  if (ledger.error) {
+    if (isMissingVoterColumns(ledger.error) || ledger.error.code === "42P01" || ledger.error.code === "PGRST205") {
+      return { ok: false, status: 503, error: LIVE_VOTER_PATCH };
+    }
+    if (ledger.error.code === "23505") {
+      const again = await recordedOptionId(pollId, voterKey);
+      if (again) {
+        const record = await loadFusionPoll(pollId);
+        if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+        return { ok: true, already: true, optionId: again, record };
+      }
+      return { ok: false, status: 409, error: "This email has already been used to vote on this poll." };
+    }
+    console.error("fusion_poll_votes:", ledger.error.message);
+    return { ok: false, status: 500, error: "That vote could not be recorded." };
+  }
+
+  const incremented = await incrementOptionVotes(optionId);
+  if (!incremented) {
+    await supabase.from("fusion_poll_votes").delete().eq("poll_id", pollId).eq("voter_key", voterKey);
+    return { ok: false, status: 500, error: "That vote could not be recorded." };
+  }
+  const record = await loadFusionPoll(pollId);
+  if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+  return { ok: true, already: false, optionId, record };
+}
+
+export async function castFusionPollVote(
+  pollId: string,
+  optionId: string,
+  voterKey: string,
+  voter?: { name: string; email: string },
+): Promise<CastVoteResult> {
   if (!supabase) return { ok: false, status: 503, error: "Polls are not connected." };
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pollId) || !OPTION_ID.test(optionId) || voterKey.length < 8) {
     return { ok: false, status: 400, error: "That vote could not be recorded." };
   }
+  if (voter) return castLiveOpinionVote(pollId, optionId, voterKey, voter);
 
   const rpc = await supabase.rpc("cast_fusion_poll_vote", {
     p_poll_id: pollId,
@@ -123,7 +227,7 @@ export async function castFusionPollVote(pollId: string, optionId: string, voter
     p_voter_key: voterKey,
   });
   if (rpc.error) {
-    if (!isMissingRpc(rpc.error)) {
+    if (!isMissingRpc(rpc.error, "cast_fusion_poll_vote")) {
       console.error("cast_fusion_poll_vote:", rpc.error.message);
       return { ok: false, status: 500, error: "That vote could not be recorded." };
     }

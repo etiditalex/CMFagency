@@ -53,7 +53,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { isPollAccountDashboardPath, POLL_ACCOUNT_HOME, POLL_LIVE_DEMO_PUBLIC_PATH } from "@/lib/poll/poll-dashboard-paths";
+import { isPollAccountDashboardPath, POLL_ACCOUNT_HOME, POLL_LIVE_DEMO_PUBLIC_PATH, POLL_RESULTS_PATH } from "@/lib/poll/poll-dashboard-paths";
 import { usePortal } from "@/contexts/PortalContext";
 import { useOrganizationIndustry } from "@/lib/hooks/useOrganizationIndustry";
 import VisitorTrialBanner from "@/components/fusion-xpress/visitor-management/VisitorTrialBanner";
@@ -167,6 +167,7 @@ const NAV: NavItem[] = [
     adminOnly: true,
     nestedLinks: [
       { label: "Poll", href: POLL_ACCOUNT_HOME },
+      { label: "Poll Results", href: POLL_RESULTS_PATH, adminOnly: true },
       { label: "Live Demo", href: POLL_LIVE_DEMO_PUBLIC_PATH },
     ],
   },

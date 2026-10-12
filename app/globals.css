@@ -1024,6 +1024,15 @@
   color: #1e58ca;
 }
 
+.site-editorial .live-polls-results .live-polls-consent h2,
+.site-editorial .live-polls-results .live-polls-consent p,
+.site-editorial .live-polls-results .live-polls-consent span,
+.site-editorial .live-polls-results .live-polls-consent label,
+.site-editorial .live-polls-results .live-polls-consent a,
+.site-editorial .live-polls-results .live-polls-consent input {
+  text-align: left !important;
+}
+
 /* Homepage phone layout: tighter reading type, and no floating drop cap. */
 @media (max-width: 639px) {
   .site-editorial .home-page p,
