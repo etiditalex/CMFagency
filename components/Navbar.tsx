@@ -85,6 +85,7 @@ export default function Navbar() {
   const eventsLinks = [
     { href: "/events/upcoming", label: "Upcoming Events" },
     { href: "/events/past", label: "Past Events" },
+    { href: "/2025-fashion-night", label: "2025 Fashion Night" },
     { href: "/events/registration", label: "Registration" },
   ];
   const kcmLinks = [

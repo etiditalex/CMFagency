@@ -47,6 +47,7 @@ export default function ConditionalLayout({
   const isTeamsWorkPortal = pathname?.startsWith("/teams-work/portal");
   const isFxQrGeneratorPage = pathname === "/fusion-xpress/fx-qr-code-generator";
   const isServiceInvoice = Boolean(pathname?.startsWith("/invoice/"));
+  const isFashionNight = pathname === "/2025-fashion-night";
 
   // For verify-email pages, hide navbar and show full-screen layout
   if (isVerifyEmailPage) {
@@ -120,7 +121,7 @@ export default function ConditionalLayout({
     <>
       <Navbar />
       <main className="site-editorial min-h-screen overflow-x-clip">{children}</main>
-      <Footer />
+      {isFashionNight ? null : <Footer />}
       <SiteViewTracker />
       <CookieBanner />
       <ScrollToTopButton />

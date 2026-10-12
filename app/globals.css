@@ -227,6 +227,389 @@
   }
 }
 
+/* 2025 Fashion Night hero matches the gala banner, not editorial italic titles. */
+.site-editorial .fashion-night-hero :is(h1, p, span):not(.fn-serif) {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  color: inherit;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.site-editorial .fashion-night-hero h1 {
+  font-weight: 800;
+  font-size: clamp(2rem, 4.8vw, 4.35rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-hero .fn-date {
+  font-size: 0.68rem;
+  line-height: 1.45;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-hero .fn-kicker {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-hero .fn-script {
+  font-size: clamp(1.85rem, 3.1vw, 2.65rem);
+  line-height: 1.15;
+  font-weight: 500;
+  font-style: italic;
+  color: #e0b84a;
+}
+
+.site-editorial .fashion-night-hero .fn-invest-label {
+  font-size: 0.78rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: #e6d3a1;
+}
+
+.site-editorial .fashion-night-hero .fn-price {
+  font-size: clamp(2.15rem, 2.8vw, 3rem);
+  line-height: 0.95;
+  font-weight: 700;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-hero .fn-price-label {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #e0b84a;
+}
+
+.site-editorial .fashion-night-hero .fn-meta {
+  font-size: 1.05rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-story p {
+  max-width: none;
+  font-family: inherit;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  text-align: left;
+  color: #1a1a1a;
+}
+
+.site-editorial .fashion-night-story strong {
+  font-weight: 700;
+  color: #8a6a1e;
+}
+
+.site-editorial .fashion-night-story .fn-sponsor {
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
+  font-style: italic;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-story .fn-sponsor .fn-bang {
+  color: #ff3b1f;
+}
+
+.site-editorial .fashion-night-place :is(h2, p, a) {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  text-transform: none;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.site-editorial .fashion-night-place h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-place .fn-location-copy {
+  margin-top: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-place .fn-route {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 1.1rem;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.site-editorial .fashion-night-place .fn-sponsor-title {
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 768px) {
+  .fn-location-panel {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 62%;
+    clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
+  }
+}
+
+.site-editorial .fashion-night-gallery h2 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.fashion-night-gallery .fn-gallery-grid {
+  overflow: visible;
+}
+
+.fashion-night-gallery .fn-gallery-item {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  background: #111;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fashion-night-gallery .fn-gallery-item:hover,
+  .fashion-night-gallery .fn-gallery-item:focus-within {
+    z-index: 5;
+    transform: scale(1.14);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fashion-night-gallery .fn-gallery-item {
+    transition: none;
+  }
+}
+
+.fashion-night-page {
+  overflow-x: clip;
+}
+
+.fn-notice {
+  background: #070705;
+  color: #e6d3a1;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.site-editorial .fn-notice p {
+  margin: 0;
+  padding: 0.55rem 1.25rem;
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: center;
+  color: #e6d3a1;
+}
+
+.fn-notice svg {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.45rem;
+  vertical-align: -0.15em;
+  color: #e0b84a;
+}
+
+.fn-notice a {
+  color: #e0b84a;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fn-notice a:hover,
+.fn-notice a:focus-visible {
+  color: #fff;
+}
+
+.fashion-night-past {
+  background: #8a6a1e;
+  color: #fff;
+  text-align: center;
+  padding: 4.75rem 1.5rem 2.5rem;
+}
+
+.site-editorial .fashion-night-past h2 {
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 800;
+  font-size: clamp(1.15rem, 2.2vw, 1.5rem);
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #fff;
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.site-editorial .fashion-night-past p {
+  margin: 0.85rem auto 0;
+  max-width: 36rem;
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.fashion-night-past .fn-past-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 1.85rem;
+  padding: 0.7rem 1.4rem;
+  border: 1.5px solid #fff;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.fashion-night-past .fn-past-more:hover,
+.fashion-night-past .fn-past-more:focus-visible {
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.fashion-night-past .fn-past-rule {
+  display: block;
+  height: 1px;
+  width: min(72rem, calc(100% - 4rem));
+  margin: 3.5rem auto 0;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.site-editorial .fashion-night-hero .fn-watermark {
+  font-size: clamp(4.4rem, 9vw, 8rem);
+  font-weight: 700;
+  font-style: normal;
+  line-height: 0.8;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #c6a04a;
+}
+
+@media (max-width: 639px) {
+  .site-editorial .fashion-night-hero .fn-date,
+  .site-editorial .fashion-night-hero .fn-kicker,
+  .site-editorial .fashion-night-hero .fn-meta {
+    letter-spacing: 0.06em;
+  }
+
+  .site-editorial .fashion-night-hero .fn-date {
+    font-size: 0.62rem;
+  }
+
+  .site-editorial .fashion-night-hero .fn-kicker {
+    font-size: 0.68rem;
+    line-height: 1.45;
+  }
+
+  .site-editorial .fashion-night-hero .fn-meta {
+    font-size: 0.78rem;
+  }
+
+  .site-editorial .fashion-night-hero .fn-watermark {
+    font-size: clamp(2.35rem, 16vw, 3.6rem);
+  }
+
+  .site-editorial .fashion-night-hero h1 {
+    font-size: clamp(1.65rem, 8.4vw, 2.15rem);
+  }
+
+  .site-editorial .fashion-night-story .fn-sponsor {
+    font-size: clamp(1.05rem, 5.6vw, 1.45rem);
+  }
+
+  .site-editorial .fashion-night-story p {
+    font-size: 1rem;
+  }
+
+  .fashion-night-past {
+    padding: 2.75rem 1rem 1.5rem;
+  }
+
+  .site-editorial .fn-notice p {
+    padding: 0.6rem 0.85rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .site-editorial .fashion-night-hero .fn-date {
+    font-size: 0.72rem;
+  }
+
+  .site-editorial .fashion-night-hero .fn-kicker {
+    font-size: 0.84rem;
+  }
+
+  .site-editorial .fashion-night-hero .fn-meta {
+    font-size: 1.2rem;
+  }
+}
+
 /* Poll hero matches the bold sans banner, not the editorial serif titles. */
 .site-editorial .poll-maker h2,
 .site-editorial .poll-maker h3,
