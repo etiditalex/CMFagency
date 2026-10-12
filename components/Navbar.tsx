@@ -86,6 +86,7 @@ export default function Navbar() {
     { href: "/events/upcoming", label: "Upcoming Events" },
     { href: "/events/past", label: "Past Events" },
     { href: "/2025-fashion-night", label: "2025 Fashion Night" },
+    { href: "/2026-fashion-show", label: "2026 Fashion Show" },
     { href: "/events/registration", label: "Registration" },
   ];
   const kcmLinks = [

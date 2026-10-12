@@ -594,6 +594,14 @@
     padding: 0.6rem 0.85rem;
     font-size: 0.78rem;
   }
+
+  .site-editorial .fashion-night-place .fn-location-copy {
+    overflow-wrap: break-word;
+  }
+
+  .fashion-night-place .fn-sponsor-title + div {
+    max-width: calc(100vw - 2rem);
+  }
 }
 
 @media (min-width: 640px) {
