@@ -35,6 +35,7 @@ export default function PollResultsDashboard() {
   const [polls, setPolls] = useState<FusionPollRecord[]>([]);
   const [voters, setVoters] = useState<VoterRow[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -115,6 +116,11 @@ export default function PollResultsDashboard() {
 
   const selected = polls.find((record) => record.poll.id === selectedId) ?? null;
   const rows = useMemo(() => voters.filter((voter) => voter.pollId === selectedId), [selectedId, voters]);
+  const pageCount = Math.max(1, Math.ceil(rows.length / 10));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageRows = rows.slice(safePage * 10, safePage * 10 + 10);
+  const rangeStart = rows.length === 0 ? 0 : safePage * 10 + 1;
+  const rangeEnd = Math.min(rows.length, safePage * 10 + pageRows.length);
 
   if (authLoading || portalLoading || loading) {
     return (
@@ -150,7 +156,10 @@ export default function PollResultsDashboard() {
             <select
               className="mt-1.5 min-h-11 w-full rounded-lg border border-hairline bg-white px-3 text-base text-ink"
               value={selectedId}
-              onChange={(event) => setSelectedId(event.target.value)}
+              onChange={(event) => {
+                setSelectedId(event.target.value);
+                setPage(0);
+              }}
             >
               {polls.map((record) => (
                 <option key={record.poll.id} value={record.poll.id}>
@@ -166,46 +175,63 @@ export default function PollResultsDashboard() {
             </p>
           ) : null}
 
-          {rows.length === 0 ? (
-            <p className="mt-6 text-sm text-gray-600">No names or emails stored for this poll yet.</p>
-          ) : (
-            <>
-              <ul className="mt-4 divide-y divide-primary-100 rounded-2xl border border-hairline bg-white sm:hidden">
-                {rows.map((voter) => (
-                  <li key={voter.id} className="px-4 py-3">
-                    <p className="text-sm font-bold text-primary-950">{voter.name}</p>
-                    <p className="mt-0.5 break-all text-sm text-ink">{voter.email}</p>
-                    <p className="mt-1 text-sm text-ink-muted">
-                      {voter.choice}
-                      {voter.at ? ` · ${formatWhen(voter.at)}` : ""}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 hidden overflow-x-auto rounded-2xl border border-hairline bg-white sm:block">
-                <table className="w-full min-w-[40rem] text-left text-sm">
-                  <thead className="border-b border-hairline bg-primary-50/70 text-xs uppercase tracking-wide text-ink-muted">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold">Name</th>
-                      <th className="px-4 py-3 font-semibold">Email</th>
-                      <th className="px-4 py-3 font-semibold">Choice</th>
-                      <th className="px-4 py-3 font-semibold">Voted</th>
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-hairline bg-white">
+            <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+              <thead className="border-b border-hairline bg-primary-50/70 text-xs uppercase tracking-wide text-ink-muted">
+                <tr>
+                  <th className="w-12 border-r border-hairline px-3 py-3 font-semibold">#</th>
+                  <th className="border-r border-hairline px-4 py-3 font-semibold">Name</th>
+                  <th className="border-r border-hairline px-4 py-3 font-semibold">Email</th>
+                  <th className="border-r border-hairline px-4 py-3 font-semibold">Choice</th>
+                  <th className="px-4 py-3 font-semibold">Voted</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-gray-600">
+                      No names or emails stored for this poll yet.
+                    </td>
+                  </tr>
+                ) : (
+                  pageRows.map((voter, index) => (
+                    <tr key={voter.id} className="border-t border-hairline">
+                      <td className="border-r border-hairline px-3 py-3 tabular-nums text-ink-muted">{rangeStart + index}</td>
+                      <td className="border-r border-hairline px-4 py-3 font-semibold text-primary-950">{voter.name}</td>
+                      <td className="border-r border-hairline px-4 py-3 text-ink">{voter.email}</td>
+                      <td className="border-r border-hairline px-4 py-3 text-ink">{voter.choice}</td>
+                      <td className="px-4 py-3 text-ink-muted">{formatWhen(voter.at)}</td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-primary-100">
-                    {rows.map((voter) => (
-                      <tr key={voter.id}>
-                        <td className="px-4 py-3 font-semibold text-primary-950">{voter.name}</td>
-                        <td className="px-4 py-3 text-ink">{voter.email}</td>
-                        <td className="px-4 py-3 text-ink">{voter.choice}</td>
-                        <td className="px-4 py-3 text-ink-muted">{formatWhen(voter.at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > 10 ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-gray-600">
+                Rows {rangeStart}–{rangeEnd} of {rows.length.toLocaleString("en-KE")}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-hairline bg-white px-4 text-sm font-semibold text-primary-950 disabled:opacity-50"
+                  disabled={safePage === 0}
+                  onClick={() => setPage(safePage - 1)}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center rounded-lg border border-hairline bg-white px-4 text-sm font-semibold text-primary-950 disabled:opacity-50"
+                  disabled={safePage >= pageCount - 1}
+                  onClick={() => setPage(safePage + 1)}
+                >
+                  Next
+                </button>
               </div>
-            </>
-          )}
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>
