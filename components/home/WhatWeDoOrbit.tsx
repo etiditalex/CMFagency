@@ -1,246 +1,421 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import {
-  CalendarRange,
-  UserSquare2,
-  Briefcase,
-  Share2,
-  Ticket,
-  Code2,
-  type LucideIcon,
-} from "lucide-react";
 
-type Service = {
-  label: string;
+type BuildIcon = "events" | "models" | "careers" | "tickets" | "web";
+
+type BuildItem = {
+  title: string;
+  word: string;
+  description: string;
   href: string;
-  icon: LucideIcon;
-  accent: string;
+  frame: string;
+  wash: string;
+  icon: BuildIcon;
 };
 
-const services: Service[] = [
+const items: BuildItem[] = [
   {
-    label: "Events Planning",
+    title: "Event Planning",
+    word: "Events",
+    description:
+      "From concept to curtain call, we plan and produce events people remember.",
     href: "/services/events-marketing",
-    icon: CalendarRange,
-    accent: "from-cyan-400 to-primary-500",
+    frame: "#1e58ca",
+    wash: "#c5daf8",
+    icon: "events",
   },
   {
-    label: "Modelling",
+    title: "Modelling",
+    word: "Models",
+    description:
+      "Models, MCs, and creatives for campaigns and runways across Kenya.",
     href: "/talent",
-    icon: UserSquare2,
-    accent: "from-fuchsia-400 to-primary-600",
+    frame: "#1d8a63",
+    wash: "#c6f0da",
+    icon: "models",
   },
   {
-    label: "Job Placement & Applications",
+    title: "Job Placement & Applications",
+    word: "Careers",
+    description:
+      "Open roles, applications, and placements that connect talent with employers.",
     href: "/jobs",
-    icon: Briefcase,
-    accent: "from-amber-400 to-secondary-500",
+    frame: "#151321",
+    wash: "#e4e5ee",
+    icon: "careers",
   },
   {
-    label: "Social Media Management",
-    href: "/services/digital-marketing",
-    icon: Share2,
-    accent: "from-sky-400 to-primary-500",
+    title: "Ticketing & Voting",
+    word: "Xpress",
+    description:
+      "Ticket sales and live voting, from checkout to the gate and the final count.",
+    href: "/fusion-xpress",
+    frame: "#0f766e",
+    wash: "#c8f0ec",
+    icon: "tickets",
   },
   {
-    label: "Ticketing & Voting",
-    href: "/events/upcoming",
-    icon: Ticket,
-    accent: "from-emerald-400 to-secondary-600",
-  },
-  {
-    label: "Web Development",
+    title: "Web Development",
+    word: "Web",
+    description:
+      "Responsive websites and web apps, designed to look sharp and load fast.",
     href: "/services/website-development",
-    icon: Code2,
-    accent: "from-violet-400 to-primary-700",
+    frame: "#0D3A99",
+    wash: "#d0def6",
+    icon: "web",
   },
 ];
 
-/** Isometric “people building together” hub — SVG, no external asset. */
-function HumanBuildingHub({ reduceMotion }: { reduceMotion: boolean | null }) {
-  return (
-    <motion.div
-      className="relative z-10 flex h-28 w-28 items-center justify-center sm:h-40 sm:w-40 md:h-44 md:w-44"
-      initial={false}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <motion.div
-        className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/25 via-white/5 to-secondary-400/20 blur-xl"
-        animate={
-          reduceMotion
-            ? undefined
-            : { opacity: [0.5, 0.85, 0.5], scale: [1, 1.06, 1] }
-        }
-        transition={
-          reduceMotion
-            ? undefined
-            : { duration: 5, repeat: Infinity, ease: "easeInOut" }
-        }
-      />
-      <svg
-        viewBox="0 0 200 200"
-        className="relative z-[1] h-full w-full drop-shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
-        aria-hidden
-      >
-        <defs>
-          <linearGradient id="wb-face" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#5eead4" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.95" />
-          </linearGradient>
-          <linearGradient id="wb-block" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#e2e8f0" />
-            <stop offset="100%" stopColor="#94a3b8" />
-          </linearGradient>
-        </defs>
-        {/* Isometric base platform */}
-        <path
-          fill="url(#wb-block)"
-          opacity={0.35}
-          d="M100 168 L40 138 L100 108 L160 138 Z"
-        />
-        <path
-          fill="#64748b"
-          opacity={0.5}
-          d="M100 108 L40 138 L40 128 L100 98 L160 128 L160 138 Z"
-        />
-        {/* Stacked blocks — “building” */}
-        <path fill="#cbd5e1" d="M88 112 L112 112 L118 96 L82 96 Z" />
-        <path fill="#94a3b8" d="M82 96 L118 96 L118 88 L82 88 Z" />
-        <path fill="#e2e8f0" d="M76 92 L124 92 L130 76 L70 76 Z" />
-        <path fill="#cbd5e1" d="M70 76 L130 76 L130 68 L70 68 Z" />
-        {/* Small figures (abstract humans) */}
-        <circle cx={72} cy={124} r={7} fill="url(#wb-face)" />
-        <path
-          d="M72 131 L66 148 L78 148 Z"
-          fill="#38bdf8"
-          opacity={0.85}
-        />
-        <circle cx={128} cy={120} r={7} fill="url(#wb-face)" />
-        <path
-          d="M128 127 L122 146 L134 146 Z"
-          fill="#34d399"
-          opacity={0.85}
-        />
-        <circle cx={100} cy={100} r={8} fill="url(#wb-face)" />
-        <path
-          d="M100 108 L92 132 L108 132 Z"
-          fill="#818cf8"
-          opacity={0.9}
-        />
-        {/* Top capstone */}
-        <path fill="#f8fafc" d="M92 64 L108 64 L112 54 L88 54 Z" />
-        <path fill="#cbd5e1" d="M88 54 L112 54 L112 50 L88 50 Z" />
+function Mark({ icon }: { icon: BuildIcon }) {
+  const common = {
+    viewBox: "0 0 32 32",
+    className: "h-8 w-8 shrink-0 sm:h-9 sm:w-9",
+    fill: "none",
+    "aria-hidden": true as const,
+  };
+
+  if (icon === "events") {
+    return (
+      <svg {...common}>
+        <rect x="5" y="7" width="22" height="18" rx="3" stroke="currentColor" strokeWidth="2" />
+        <path d="M5 13h22M11 5v4M21 5v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M11 18h4M17 18h4M11 22h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       </svg>
-    </motion.div>
+    );
+  }
+
+  if (icon === "models") {
+    return (
+      <svg {...common}>
+        <circle cx="16" cy="11" r="4.2" stroke="currentColor" strokeWidth="2" />
+        <path
+          d="M7.5 26c1.4-4.4 4.4-6.6 8.5-6.6s7.1 2.2 8.5 6.6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "careers") {
+    return (
+      <svg {...common}>
+        <rect x="4" y="12" width="24" height="14" rx="2.5" stroke="currentColor" strokeWidth="2" />
+        <path d="M12 12V9.2A4 4 0 0 1 20 9.2V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M4 18h24" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    );
+  }
+
+  if (icon === "tickets") {
+    return (
+      <svg {...common}>
+        <path
+          d="M6 9h20v4.2a2.8 2.8 0 0 0 0 5.6V23H6v-4.2a2.8 2.8 0 0 0 0-5.6V9Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <path d="M16 9v14" stroke="currentColor" strokeWidth="2" strokeDasharray="2.2 2.4" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...common}>
+      <rect x="4" y="6" width="24" height="18" rx="2.5" stroke="currentColor" strokeWidth="2" />
+      <path d="M4 11.5h24" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M12.5 21.5 16 15l3.5 6.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
+}
+
+function PhoneCard({
+  item,
+  copy,
+  index,
+}: {
+  item: BuildItem;
+  copy: number;
+  index: number;
+}) {
+  const hidden = copy === 1;
+
+  return (
+    <div
+      className="home-build-slot flex shrink-0 snap-center justify-center"
+      data-build-card
+      data-copy={copy}
+      data-index={index}
+      aria-hidden={hidden || undefined}
+    >
+      <article
+        className="w-full max-w-[15.75rem] overflow-hidden rounded-[2rem] p-1.5 sm:rounded-[2.4rem] sm:p-2"
+        style={{ backgroundColor: item.frame }}
+      >
+        <div className="relative flex flex-col overflow-hidden rounded-[1.6rem] bg-white sm:rounded-[1.85rem]">
+          <div
+            className="absolute left-1/2 top-0 z-20 h-[22px] w-[88px] -translate-x-1/2 rounded-b-[12px] bg-[#111114] sm:h-[26px] sm:w-[108px] sm:rounded-b-[14px]"
+            aria-hidden
+          />
+          <div
+            className="relative flex h-[132px] items-center justify-center px-3 pt-6 sm:h-[176px] sm:pt-7"
+            style={{
+              background: `linear-gradient(180deg, ${item.wash} 0%, #ffffff 84%)`,
+            }}
+          >
+            <div className="flex max-w-full items-center gap-2" style={{ color: item.frame }}>
+              <Mark icon={item.icon} />
+              <span className="home-build-word">{item.word}</span>
+            </div>
+          </div>
+          <div className="flex w-full min-w-0 flex-col items-center px-4 pb-5 pt-3 text-center sm:px-5 sm:pb-6">
+            <h3 className="flex min-h-[2.6rem] max-w-[12.5rem] items-center justify-center">
+              {item.title}
+            </h3>
+            <p className="mt-1.5 min-h-[4.35rem] w-full min-w-0 sm:min-h-[3.75rem]">{item.description}</p>
+            <Link
+              href={item.href}
+              tabIndex={hidden ? -1 : 0}
+              aria-label={`Learn more about ${item.title}`}
+              className="home-build-cta mt-4 inline-flex min-h-11 min-w-[8.25rem] items-center justify-center rounded-full px-5 py-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+              style={{ backgroundColor: item.frame }}
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+      </article>
+    </div>
+  );
+}
+
+function perViewFor(width: number) {
+  if (width >= 700) return 3;
+  if (width >= 480) return 2;
+  return 1;
 }
 
 export default function WhatWeDoOrbit() {
   const reduceMotion = useReducedMotion();
+  const motionOff = reduceMotion === true;
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const indexRef = useRef(0);
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressClickRef = useRef(false);
+  const [index, setIndex] = useState(0);
+  const [sliding, setSliding] = useState(true);
+  const [slot, setSlot] = useState(272);
+
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const measure = () => {
+      const width = viewport.clientWidth;
+      if (width < 1) return;
+      const next = width / perViewFor(width);
+      setSlot((current) => (Math.abs(current - next) < 0.5 ? current : next));
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+
+  const goNext = () => {
+    if (indexRef.current >= items.length) {
+      setSliding(false);
+      setIndex(0);
+      return;
+    }
+    setSliding(true);
+    setIndex(indexRef.current + 1);
+  };
+
+  const goPrev = () => {
+    const current = indexRef.current % items.length;
+    if (current === 0) {
+      setSliding(false);
+      setIndex(items.length);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setSliding(true);
+          setIndex(items.length - 1);
+        });
+      });
+      return;
+    }
+    setSliding(true);
+    setIndex(current - 1);
+  };
+
+  useEffect(() => {
+    if (motionOff) return;
+    const viewport = viewportRef.current;
+    let onScreen = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+    });
+    if (viewport) observer.observe(viewport);
+
+    const timer = window.setInterval(() => {
+      if (pausedRef.current || !onScreen || document.visibilityState !== "visible") return;
+      goNext();
+    }, 4200);
+
+    return () => {
+      window.clearInterval(timer);
+      observer.disconnect();
+    };
+  }, [motionOff]);
+
+  useEffect(() => {
+    if (sliding) return;
+    const frame = requestAnimationFrame(() => setSliding(true));
+    return () => cancelAnimationFrame(frame);
+  }, [sliding]);
+
+  const active = index % items.length;
+  const copies = motionOff ? [0] : [0, 1];
 
   return (
     <section
-      className="home-orbit relative z-0 bg-primary-600 py-8 text-white sm:py-14 md:py-16 lg:py-20"
-      aria-labelledby="home-orbit-heading"
+      className="home-build relative isolate overflow-hidden bg-primary-500 py-12 sm:py-16 lg:py-20"
+      aria-labelledby="home-build-heading"
     >
-      {/* Soft radial highlight behind the hub (matches reference) */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_48%,rgba(255,255,255,0.14),transparent_72%)]"
-        aria-hidden
-      />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">
+        <h2 id="home-build-heading" className="text-center text-white">
+          What we&apos;re building
+        </h2>
 
-      <div className="container-custom relative z-10">
-        <div className="mx-auto mb-6 max-w-3xl text-center sm:mb-10 md:mb-12">
-          <p className="home-kicker mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-white/90 sm:text-sm">
-            What we&apos;re building
-          </p>
-          <h2
-            id="home-orbit-heading"
-            className="overflow-visible px-1 text-[1.4rem] font-bold leading-snug text-white sm:text-3xl md:text-4xl lg:text-5xl"
+        <div
+          ref={viewportRef}
+          className={`relative mx-auto mt-7 w-full max-w-[19.5rem] sm:mt-12 sm:max-w-[34rem] lg:max-w-[51rem] ${
+            motionOff ? "snap-x snap-mandatory overflow-x-auto" : "touch-pan-y overflow-hidden"
+          }`}
+          style={{ "--build-slot": `${slot}px` } as React.CSSProperties}
+          aria-roledescription="carousel"
+          aria-label="What we're building"
+          onMouseEnter={() => {
+            pausedRef.current = true;
+          }}
+          onMouseLeave={() => {
+            pausedRef.current = false;
+          }}
+          onFocus={() => {
+            pausedRef.current = true;
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              pausedRef.current = false;
+            }
+          }}
+          onPointerDown={(event) => {
+            if (event.pointerType === "mouse") return;
+            pausedRef.current = true;
+            swipeRef.current = { x: event.clientX, y: event.clientY };
+          }}
+          onPointerUp={(event) => {
+            const start = swipeRef.current;
+            swipeRef.current = null;
+            pausedRef.current = false;
+            if (!start || motionOff) return;
+            const dx = event.clientX - start.x;
+            const dy = event.clientY - start.y;
+            if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+            suppressClickRef.current = true;
+            if (dx < 0) goNext();
+            else goPrev();
+          }}
+          onPointerCancel={() => {
+            swipeRef.current = null;
+            pausedRef.current = false;
+          }}
+          onClickCapture={(event) => {
+            if (!suppressClickRef.current) return;
+            event.preventDefault();
+            event.stopPropagation();
+            suppressClickRef.current = false;
+          }}
+        >
+          <div
+            ref={trackRef}
+            className="flex w-max"
+            style={{
+              transform: motionOff ? undefined : `translate3d(${-index * slot}px, 0, 0)`,
+              transition:
+                !motionOff && sliding
+                  ? "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)"
+                  : "none",
+            }}
+            onTransitionEnd={(event) => {
+              if (event.target !== event.currentTarget || event.propertyName !== "transform") return;
+              if (indexRef.current < items.length) return;
+              setSliding(false);
+              setIndex(0);
+            }}
           >
-            People, platforms &amp; experiences — together
-          </h2>
+            {copies.map((copy) =>
+              items.map((item, cardIndex) => (
+                <PhoneCard
+                  key={`${item.title}-${copy}`}
+                  item={item}
+                  copy={copy}
+                  index={cardIndex}
+                />
+              )),
+            )}
+          </div>
         </div>
 
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden">
-          {services.map((service) => (
-            <li key={service.label}>
-              <Link
-                href={service.href}
-                className="flex min-h-[52px] items-center gap-3 rounded-2xl border border-white/20 bg-white px-3 py-3 text-gray-900 shadow-sm"
+        <div className="mt-4 flex items-center justify-center sm:mt-8">
+          {items.map((item, dotIndex) => {
+            const selected = active === dotIndex;
+            return (
+              <button
+                key={item.title}
+                type="button"
+                aria-label={`Show ${item.title}`}
+                aria-current={selected ? "true" : undefined}
+                onClick={() => {
+                  if (motionOff) {
+                    document
+                      .querySelector<HTMLElement>(`[data-copy="0"][data-index="${dotIndex}"]`)
+                      ?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+                    setIndex(dotIndex);
+                    return;
+                  }
+                  setSliding(true);
+                  setIndex(dotIndex);
+                }}
+                className="inline-flex h-11 w-11 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent}`}
-                >
-                  <service.icon className="h-5 w-5 text-white" strokeWidth={2} />
-                </span>
-                <span className="home-orbit-label text-sm font-semibold leading-snug">{service.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        {/* Flat 2D orbit on tablet/desktop so labels stay readable */}
-        <div className="mx-auto hidden max-w-xl px-1 sm:max-w-2xl sm:px-3 md:block md:max-w-3xl">
-          <div className="relative isolate mx-auto aspect-square w-full max-w-[min(92vw,520px)] md:max-w-[580px]">
-            <div className="pointer-events-none absolute inset-[5%] z-[1]">
-              <motion.div
-                className="h-full w-full rounded-full border-2 border-dashed border-white/35"
-                style={{ transformOrigin: "50% 50%" }}
-                animate={reduceMotion ? undefined : { rotate: [0, 360] }}
-                transition={
-                  reduceMotion
-                    ? undefined
-                    : { duration: 100, repeat: Infinity, ease: "linear" }
-                }
-                aria-hidden
-              />
-            </div>
-
-            {services.map((service, index) => {
-              const slotClass =
-                index === 0
-                  ? "left-[50%] top-[10%]"
-                  : index === 1
-                    ? "left-[84%] top-[30%]"
-                    : index === 2
-                      ? "left-[84%] top-[70%]"
-                      : index === 3
-                        ? "left-[50%] top-[90%]"
-                        : index === 4
-                          ? "left-[16%] top-[70%]"
-                          : "left-[16%] top-[30%]";
-
-              return (
-                <div
-                  key={service.label}
-                  className={`absolute z-30 w-[24%] min-w-[6.75rem] max-w-[9.5rem] -translate-x-1/2 -translate-y-1/2 ${slotClass}`}
-                >
-                  <Link
-                    href={service.href}
-                    title={service.label}
-                    className="group flex min-h-[44px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-gray-200 bg-white px-2.5 py-2.5 text-center shadow-sm outline-none ring-0 transition-[border-color,box-shadow] hover:border-primary-200 hover:shadow-md"
-                  >
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${service.accent}`}
-                    >
-                      <service.icon className="h-5 w-5 text-white" strokeWidth={2} />
-                    </div>
-                    <span className="home-orbit-label text-xs font-semibold leading-snug text-gray-900 group-hover:text-primary-600">
-                      {service.label}
-                    </span>
-                  </Link>
-                </div>
-              );
-            })}
-
-            <div className="pointer-events-none absolute left-1/2 top-1/2 z-[8] -translate-x-1/2 -translate-y-1/2">
-              <HumanBuildingHub reduceMotion={reduceMotion} />
-            </div>
-          </div>
+                  className={`h-2.5 w-2.5 rounded-full ${
+                    selected ? "bg-[#0a1f42]" : "bg-white/75"
+                  }`}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
