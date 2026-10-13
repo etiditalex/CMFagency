@@ -1905,6 +1905,134 @@
   color: var(--ink) !important;
 }
 
+.calendar-2028 {
+  min-height: 100vh;
+  background: #fff;
+  color: #1a1a1a;
+  padding: 2.75rem 1.25rem 4rem;
+}
+
+.calendar-2028 .cal-sheet {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.calendar-2028 .cal-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.35rem;
+}
+
+.calendar-2028 .cal-rule {
+  flex: 1;
+  height: 7px;
+  background: #c6a04a;
+}
+
+.calendar-2028 .cal-logo {
+  width: min(100%, 420px);
+  height: auto;
+}
+
+.calendar-2028 .cal-frame {
+  border: 8px solid #c6a04a;
+  background: #fff;
+}
+
+.site-editorial .calendar-2028 h1 {
+  margin: 0;
+  padding: 0.72rem 1rem;
+  background: #8a6a1e;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.calendar-2028 table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.calendar-2028 th,
+.calendar-2028 td {
+  border: 1px solid #d5d5d5;
+  padding: 0.72rem 0.85rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.calendar-2028 th {
+  background: #f3f3f3;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calendar-2028 td:last-child,
+.calendar-2028 th:last-child {
+  text-align: left;
+}
+
+.calendar-2028 tbody tr:nth-child(even) {
+  background: #f7f7f7;
+}
+
+.calendar-2028 th:first-child,
+.calendar-2028 td:first-child {
+  width: 3.25rem;
+}
+
+@media (max-width: 639px) {
+  .calendar-2028 {
+    padding: 1.25rem 0.75rem 2.5rem;
+  }
+
+  .calendar-2028 .cal-brand {
+    gap: 0.6rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .calendar-2028 .cal-logo {
+    width: min(68%, 280px);
+  }
+
+  .calendar-2028 .cal-rule {
+    height: 4px;
+  }
+
+  .calendar-2028 .cal-frame {
+    border-width: 5px;
+  }
+
+  .site-editorial .calendar-2028 h1 {
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    padding: 0.6rem 0.5rem;
+  }
+
+  .calendar-2028 th,
+  .calendar-2028 td {
+    padding: 0.55rem 0.4rem;
+    font-size: 0.78rem;
+  }
+
+  .calendar-2028 th:first-child,
+  .calendar-2028 td:first-child {
+    width: 2rem;
+  }
+}
+
 @keyframes home-hero-caret-blink {
   0%,
   49% {
