@@ -91,11 +91,12 @@
 
   /* Editorial type scale (leadership). Tokens live on :root. */
   .type-section-heading {
-    font-family: var(--font-playfair), Georgia, serif;
-    font-style: italic;
-    font-weight: 400;
-    font-size: 2rem;
-    line-height: 1.08;
+    font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+    font-style: normal;
+    font-weight: 800;
+    font-size: 1.65rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     color: var(--editorial-accent);
   }
 
@@ -155,21 +156,24 @@
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 640px) {
   .type-section-heading {
-    font-size: 2.75rem;
+    font-size: 2.25rem;
   }
 }
 
-/* Public pages use the leadership title and description type. */
+@media (min-width: 1024px) {
+  .type-section-heading {
+    font-size: 2.65rem;
+  }
+}
+
+/* Public titles match the poll page: Montserrat, extrabold, same scale. */
 .site-editorial h1,
 .site-editorial h2,
 .site-editorial h3 {
-  font-family: var(--font-playfair), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: normal;
-  text-transform: none;
+  font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-style: normal;
   background-image: none;
   background-clip: border-box;
   -webkit-background-clip: border-box;
@@ -178,10 +182,44 @@
 }
 
 .site-editorial h1,
+.site-editorial h2 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+.site-editorial h1 {
+  font-size: 2rem;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
 .site-editorial h2,
 .site-editorial .home-about h3 {
-  font-size: 2rem;
-  line-height: 1.08;
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+@media (min-width: 640px) {
+  .site-editorial h1 {
+    font-size: 3.5rem;
+  }
+
+  .site-editorial h2,
+  .site-editorial .home-about h3 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-editorial h1 {
+    font-size: 4.05rem;
+  }
+
+  .site-editorial h2,
+  .site-editorial .home-about h3 {
+    font-size: 2.65rem;
+  }
 }
 
 .site-editorial :is(h1, h2, h3)[class*="text-white"],
@@ -219,13 +257,6 @@
   }
 }
 
-@media (min-width: 900px) {
-  .site-editorial h1,
-  .site-editorial h2,
-  .site-editorial .home-about h3 {
-    font-size: 2.75rem;
-  }
-}
 
 /* 2025 Fashion Night hero matches the gala banner, not editorial italic titles. */
 .site-editorial .fashion-night-hero :is(h1, p, span):not(.fn-serif) {
@@ -1806,13 +1837,25 @@
 .site-editorial .home-build h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 700;
-  font-size: clamp(1.85rem, 2.6vw, 2.4rem);
+  font-weight: 800;
+  font-size: 1.65rem;
   line-height: 1.15;
   letter-spacing: -0.02em;
   text-align: center !important;
   text-transform: none;
   color: #fff;
+}
+
+@media (min-width: 640px) {
+  .site-editorial .home-build h2 {
+    font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-editorial .home-build h2 {
+    font-size: 2.65rem;
+  }
 }
 
 .site-editorial .home-build h3 {
