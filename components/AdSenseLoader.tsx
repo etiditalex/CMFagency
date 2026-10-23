@@ -41,7 +41,8 @@ function isBlockedPath(pathname: string) {
 }
 
 function setAnalyticsDisabled(disabled: boolean) {
-  (window as Window & Record<string, boolean>)[`ga-disable-${GA_ID}`] = disabled;
+  const flags = window as unknown as Record<string, boolean>;
+  flags[`ga-disable-${GA_ID}`] = disabled;
 }
 
 function loadAnalytics() {
