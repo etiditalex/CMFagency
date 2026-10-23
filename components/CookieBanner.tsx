@@ -4,28 +4,33 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Cookie } from "lucide-react";
 import Link from "next/link";
+import { COOKIE_CONSENT_EVENT, readCookieConsent, writeCookieConsent } from "@/lib/cookie-consent";
 
 export default function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Check if user has already accepted cookies
-    const cookieConsent = localStorage.getItem("cookieConsent");
-    if (!cookieConsent) {
-      // Show banner after a short delay
-      setTimeout(() => {
+    if (!readCookieConsent()) {
+      const timer = window.setTimeout(() => {
         setIsVisible(true);
       }, 1000);
+      return () => window.clearTimeout(timer);
     }
   }, []);
 
+  useEffect(() => {
+    const hide = () => setIsVisible(false);
+    window.addEventListener(COOKIE_CONSENT_EVENT, hide);
+    return () => window.removeEventListener(COOKIE_CONSENT_EVENT, hide);
+  }, []);
+
   const handleAccept = () => {
-    localStorage.setItem("cookieConsent", "accepted");
+    writeCookieConsent("accepted");
     setIsVisible(false);
   };
 
   const handleDecline = () => {
-    localStorage.setItem("cookieConsent", "declined");
+    writeCookieConsent("declined");
     setIsVisible(false);
   };
 

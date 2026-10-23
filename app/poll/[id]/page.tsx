@@ -26,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: `${record.question} Vote on this Changer Fusions poll and see the tally update.`,
     path: `/poll/${id}`,
     keywords: [record.poll.title, "Changer Fusions poll", "live poll"],
+    index: false,
   });
 }
 

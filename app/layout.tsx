@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import Script from "next/script";
-import { headers } from "next/headers";
 import { connection } from "next/server";
 import "./globals.css";
 
@@ -179,26 +177,11 @@ export default async function RootLayout({
 }>) {
   // Force dynamic rendering so Next can inject CSP nonces per request.
   await connection();
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body>
-        {/* Google tag (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-46VYE6KM7V"
-          strategy="lazyOnload"
-          nonce={nonce}
-        />
-        <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-46VYE6KM7V');
-          `}
-        </Script>
-        {/* AdSense: client inject avoids Next.js `data-nscript` (AdSense warns on that). */}
+        {/* Analytics and AdSense load only after the cookie choice, and ads stay off thin screens. */}
         <AdSenseLoader />
         <SEOStructuredData />
         <CartProvider>

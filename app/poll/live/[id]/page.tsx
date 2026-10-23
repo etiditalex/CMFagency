@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       path: `/poll/live/${id}`,
       keywords: [record.poll.title, record.poll.topicLabel, "live poll results", "Changer Fusions", "opinion poll"],
+      index: false,
     });
   }
   const poll = getSamplePoll(id);

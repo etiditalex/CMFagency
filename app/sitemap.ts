@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-server";
 import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 import { getPublishedJobListings } from "@/lib/job-board-listings";
-import { listFusionPolls } from "@/lib/fusion-polls-server";
 import { SITE_URL } from "@/lib/site-url";
 
 /** Do not run multi-query Supabase work during `next build` (Vercel 60s prerender limit). */
@@ -43,13 +42,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/poll", priority: 0.86, changeFrequency: "weekly" as const },
     { path: "/poll/create", priority: 0.84, changeFrequency: "weekly" as const },
     { path: "/poll/live", priority: 0.9, changeFrequency: "daily" as const },
-    { path: "/poll/live-demo", priority: 0.8, changeFrequency: "weekly" as const },
     { path: "/career", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/kcm", priority: 0.94, changeFrequency: "weekly" as const },
     { path: "/kcm/cfm-tickets", priority: 1.0, changeFrequency: "daily" as const },
     { path: "/fusion-xpress", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/fusion-xpress/fx-qr-code-generator", priority: 0.98, changeFrequency: "daily" as const },
-    { path: "/research", priority: 0.8, changeFrequency: "monthly" as const },
     { path: "/careers", priority: 0.82, changeFrequency: "weekly" as const },
     { path: "/blogs", priority: 0.85, changeFrequency: "weekly" as const },
     { path: "/privacy", priority: 0.3, changeFrequency: "yearly" as const },
@@ -156,21 +153,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // fusion_events / is_live may be unavailable
   }
 
-  const pollResultEntries: MetadataRoute.Sitemap = [];
-  try {
-    const records = await listFusionPolls();
-    for (const record of records ?? []) {
-      pollResultEntries.push({
-        url: record.poll.topic === "poll" ? `${baseUrl}/poll/${record.poll.id}` : `${baseUrl}/poll/live/${record.poll.id}`,
-        lastModified: now,
-        changeFrequency: "daily" as const,
-        priority: record.poll.status === "Live" ? 0.8 : 0.6,
-      });
-    }
-  } catch {
-    // fusion_polls may be unavailable
-  }
-
-  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries, ...pollResultEntries];
+  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries];
 }
 

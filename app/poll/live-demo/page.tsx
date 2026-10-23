@@ -9,6 +9,7 @@ export const metadata: Metadata = pollPageMetadata({
     "Try a Changer Fusions poll on a public page. Choose a runway brand, vote, and watch the tally move. The demo stays on this screen.",
   path: "/poll/live-demo",
   keywords: ["live poll demo", "Changer Fusions poll", "runway poll", "live poll results"],
+  index: false,
 });
 
 export default function PollLiveDemoPage() {

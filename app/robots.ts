@@ -13,6 +13,16 @@ const DISALLOW = [
   "/events/cmfa-registration",
   "/events/upcoming/cmfa-registration",
   "/nominate-models",
+  "/dashboard",
+  "/login",
+  "/invoice",
+  "/pay",
+  "/poll/login",
+  "/poll/signup",
+  "/fusion-xpress/smart-visitor-management/sign-in",
+  "/fusion-xpress/smart-visitor-management/sign-up",
+  "/fusion-xpress/reset-password",
+  "/fusion-xpress/setup-authenticator",
 ];
 
 export default function robots(): MetadataRoute.Robots {
