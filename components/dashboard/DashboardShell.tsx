@@ -86,7 +86,12 @@ import {
 } from "@/lib/visitors/industry-options";
 import { pathWithOwner } from "@/lib/visitors/admin-business-scope-api";
 import { supabase } from "@/lib/supabase";
-import { VISITOR_ONLY_DASHBOARD_PREFIX } from "@/lib/visitors/visitor-only-access";
+import {
+  hasEmployerService,
+  hasPollService,
+  isServiceScopedAccount,
+  VISITOR_ONLY_DASHBOARD_PREFIX,
+} from "@/lib/visitors/visitor-only-access";
 
 type PortalTier = "basic" | "pro" | "enterprise";
 
@@ -534,7 +539,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   const currentType = sp?.get("type") ?? null;
   const visitorIndustry = sp?.get("industry") ?? null;
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isPortalMember, loading: portalLoading, tier, hasFeature, isEmployer, isVisitorOnly, isPollOnly, isManager, isFullAdmin, role } =
+  const { isAdmin, isPortalMember, loading: portalLoading, tier, features, hasFeature, isEmployer, isVisitorOnly, isPollOnly, isManager, isFullAdmin, role } =
     usePortal();
   const adminOwnerId = isAdmin ? sp?.get("owner")?.trim() || null : null;
   const isLeaveManagementPage =
@@ -690,16 +695,26 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     router.replace(POLL_ACCOUNT_HOME);
   }, [isPollOnly, pathname, portalLoading, router]);
 
+  const hasPoll = hasPollService(role, features);
+  const hasEmployer = hasEmployerService(role, features);
+  const hasVisitor = features.includes("visitor_management");
+  const serviceScoped = isServiceScopedAccount(role, features, isAdmin);
   const canSeeItem = (item: NavItem) => {
     if (isPollOnly) return item.pollAccount === true;
-    if (item.pollAccount) return false;
+    if (item.pollAccount) return hasPoll;
     if (isVisitorOnly) {
       if (item.href === "/dashboard/account") return true;
       return item.featureKey === "visitor_management";
     }
-    if (isEmployer) {
+    if (isEmployer && !hasVisitor && !features.includes("poll_account")) {
       if (item.href === "/dashboard/job-listings") return true;
       return item.href === "/dashboard" || item.href === "/dashboard/account";
+    }
+    if (item.href === "/dashboard/job-listings") return isAdmin || hasEmployer;
+    if (serviceScoped) {
+      if (item.href === "/dashboard" || item.href === "/dashboard/account") return true;
+      if (item.featureKey === "visitor_management") return hasVisitor;
+      return false;
     }
     if (item.adminOnly && !isAdmin) return false;
     if (item.featureKey) return hasFeature(item.featureKey);

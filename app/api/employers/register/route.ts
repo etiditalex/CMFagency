@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { attachAccountService, isDuplicateAuthError } from "@/lib/auth/attach-account-service";
 import { checkEmployerRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
 
 /**
@@ -61,11 +62,19 @@ export async function POST(req: NextRequest) {
 
     if (createErr || !created?.user?.id) {
       const msg = createErr?.message ?? "Could not create account";
-      const lower = msg.toLowerCase();
-      if (lower.includes("already") || lower.includes("registered") || lower.includes("exists")) {
-        return NextResponse.json({ error: "An account with this email already exists. Sign in instead." }, { status: 400 });
+      if (!isDuplicateAuthError(msg)) {
+        return NextResponse.json({ error: msg }, { status: 400 });
       }
-      return NextResponse.json({ error: msg }, { status: 400 });
+      const attached = await attachAccountService(admin, email, password, "employer", {
+        company_name,
+        ...(contact_name ? { name: contact_name } : {}),
+      });
+      if (!attached.ok) return NextResponse.json({ error: attached.error }, { status: attached.status });
+      return NextResponse.json({
+        ok: true,
+        addedToExisting: true,
+        message: "Hiring was added to your existing account. Sign in with your current password.",
+      });
     }
 
     const userId = created.user.id;

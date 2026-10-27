@@ -29,6 +29,7 @@ export default function VisitorSignUpForm() {
   const [step, setStep] = useState<1 | 2>(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const [businessName, setBusinessName] = useState("");
@@ -49,6 +50,7 @@ export default function VisitorSignUpForm() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     if (!terms) {
       setError("Please accept the terms and conditions.");
       return;
@@ -78,8 +80,13 @@ export default function VisitorSignUpForm() {
         message?: string;
         emailWarning?: string;
         verifyUrl?: string;
+        addedToExisting?: boolean;
       };
       if (!res.ok) throw new Error(json.error ?? "Registration failed");
+      if (json.addedToExisting && !json.verifyUrl) {
+        setSuccess(json.message ?? "Visitor Management was added to your existing account. Sign in with your current password.");
+        return;
+      }
       const verifyPath =
         json.verifyUrl ??
         `/fusion-xpress/smart-visitor-management/verify-email?email=${encodeURIComponent(email.trim())}`;
@@ -100,6 +107,9 @@ export default function VisitorSignUpForm() {
       </p>
       {error ? (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+      ) : null}
+      {success ? (
+        <p className="mb-4 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">{success}</p>
       ) : null}
 
       {step === 1 ? (

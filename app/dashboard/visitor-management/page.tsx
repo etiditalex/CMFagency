@@ -52,7 +52,7 @@ export default function DashboardVisitorManagementPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin, isVisitorOnly } = usePortal();
+  const { isPortalMember, loading: portalLoading, hasFeature, isAdmin, isVisitorOnly, features } = usePortal();
   const {
     needsSelection,
     appendOwnerQuery,
@@ -160,11 +160,12 @@ export default function DashboardVisitorManagementPage() {
       isAdmin,
       isVisitorOnly,
       email: user?.email,
+      features,
       plan: visitorSubscription?.plan ?? "trial",
       feature: "employee_qr_download",
       subscriptionActive: visitorSubscription?.isActive ?? false,
     });
-  }, [isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
+  }, [features, isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
 
   const loadOverviewExtras = useCallback(async () => {
     if (isAdmin && needsSelection) return;

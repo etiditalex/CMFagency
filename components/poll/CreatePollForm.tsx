@@ -56,7 +56,7 @@ export default function CreatePollForm() {
   const [pasting, setPasting] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [multiple, setMultiple] = useState(false);
-  const [requireNames, setRequireNames] = useState(false);
+  const [collectContact, setCollectContact] = useState(false);
   const [security, setSecurity] = useState<(typeof SECURITY)[number]>("One vote per IP address");
   const [learnMore, setLearnMore] = useState(false);
   const [blockVpn, setBlockVpn] = useState(true);
@@ -133,7 +133,7 @@ export default function CreatePollForm() {
         options: answers,
         ends: closeOnDate ? ends : "",
         multiple,
-        requireNames,
+        collectContact,
         security,
         blockVpn,
         allowComments,
@@ -243,7 +243,21 @@ export default function CreatePollForm() {
         <div className="mt-4 grid gap-6 md:grid-cols-2 md:gap-8">
           <div className="space-y-4">
             <Toggle label="Allow selection of multiple options" on={multiple} onChange={setMultiple} />
-            <Toggle label="Require participant names" on={requireNames} onChange={setRequireNames} />
+            <div className="space-y-2">
+              <Toggle
+                label="Collect participant name and email"
+                on={collectContact}
+                onChange={(next) => {
+                  setCollectContact(next);
+                  if (next) setAnonymize(false);
+                }}
+              />
+              {collectContact ? (
+                <p className="text-sm text-white/60">
+                  Voters enter their name and email before the vote is saved. The public tally stays anonymous. You can read the list from your poll dashboard.
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="space-y-4 md:border-l md:border-white/10 md:pl-8">
             <div className="flex items-center justify-between gap-3">
@@ -286,7 +300,14 @@ export default function CreatePollForm() {
               ) : null}
               <Toggle label="Allow comments" on={allowComments} onChange={setAllowComments} />
               <Toggle label="Hide share button" on={hideShare} onChange={setHideShare} />
-              <Toggle label="Anonymize voter data" on={anonymize} onChange={setAnonymize} />
+              <Toggle
+                label="Anonymize voter data"
+                on={anonymize}
+                onChange={(next) => {
+                  setAnonymize(next);
+                  if (next) setCollectContact(false);
+                }}
+              />
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm font-medium text-white/90">Custom design</span>
                 <button type="button" onClick={() => setDesignNote((open) => !open)} className="rounded-md bg-white/10 px-3 py-1.5 text-sm font-semibold text-white/80 hover:bg-white/15">

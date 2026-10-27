@@ -29,7 +29,7 @@ function todayIso() {
 export default function CrmSiteGpsPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } =
+  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin, features } =
     usePortal();
   const { isRealEstate, loading: industryLoading } = useOrganizationIndustry();
 
@@ -80,6 +80,7 @@ export default function CrmSiteGpsPage() {
       isAdmin,
       isVisitorOnly,
       email: user?.email,
+      features,
       plan: visitorSubscription?.plan ?? "trial",
       feature: "real_estate_crm",
       subscriptionActive: visitorSubscription?.isActive ?? false,

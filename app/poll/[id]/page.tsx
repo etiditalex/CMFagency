@@ -63,6 +63,7 @@ export default async function CreatedPollPage({ params, searchParams }: Props) {
           options={options}
           votedOptionId={votedOptionId}
           openResults={view === "results"}
+          collectContact={record.collectContact}
         />
       </div>
     </main>

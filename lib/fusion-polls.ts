@@ -36,6 +36,8 @@ export type FusionPollRecord = {
   options: PollOptionRow[];
   comments: PollComment[];
   commentCount: number;
+  /** When true, a survey poll asks each voter for a name and email. */
+  collectContact: boolean;
 };
 
 type OptionDb = {
@@ -66,15 +68,16 @@ export type PollDbRow = {
   county: string;
   ends_label: string;
   spoiled_votes: number | null;
+  collect_contact?: boolean | null;
   fusion_poll_options?: OptionDb[] | null;
   fusion_poll_comments?: CommentDb[] | null;
 };
 
 export const POLL_LIST_SELECT =
-  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(count)";
+  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,collect_contact,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(count)";
 
 export const POLL_DETAIL_SELECT =
-  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(id,author_name,body,created_at)";
+  "id,title,question,topic,topic_label,status,region,county,ends_label,spoiled_votes,collect_contact,fusion_poll_options(id,name,label,image_url,votes,sort_order),fusion_poll_comments(id,author_name,body,created_at)";
 
 export function isMissingPollTable(error: { code?: string; message?: string } | null) {
   if (!error) return false;
@@ -130,5 +133,6 @@ export function mapPollRow(row: PollDbRow): FusionPollRecord {
     options,
     comments,
     commentCount,
+    collectContact: row.collect_contact === true,
   };
 }

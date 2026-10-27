@@ -16,7 +16,11 @@ const PORTAL_FEATURE_KEYS = new Set<PortalFeature>([
   "teams_work",
   "kcm_payouts_inflow",
   "visitor_management",
+  "poll_account",
+  "employer_account",
 ]);
+
+const SERVICE_FEATURE_KEYS = new Set<PortalFeature>(["visitor_management", "poll_account", "employer_account"]);
 
 export function parsePortalFeatures(raw: unknown): PortalFeature[] {
   if (!Array.isArray(raw)) return [];
@@ -36,13 +40,36 @@ export function isVisitorOnlyPortalUser(
   return features.length === 1 && features[0] === "visitor_management";
 }
 
-export function hasVisitorManagementAccess(
+export function hasPollService(role: string | null, features: readonly string[]): boolean {
+  return role === "poll" || features.includes("poll_account");
+}
+
+export function hasEmployerService(role: string | null, features: readonly string[]): boolean {
+  return role === "employer" || features.includes("employer_account");
+}
+
+/** Poll role with no other service attached. */
+export function isExclusivePollAccount(role: string | null, features: readonly string[]): boolean {
+  return role === "poll" && !features.includes("visitor_management") && !features.includes("employer_account");
+}
+
+/** Account whose modules are only self-serve services (poll, visitor, employer). */
+export function isServiceScopedAccount(
   role: string | null,
+  features: readonly string[],
+  isAdmin: boolean
+): boolean {
+  if (isAdmin || role === "admin" || role === "manager") return false;
+  if (features.some((feature) => !SERVICE_FEATURE_KEYS.has(feature as PortalFeature))) return false;
+  return hasPollService(role, features) || hasEmployerService(role, features) || features.includes("visitor_management");
+}
+
+export function hasVisitorManagementAccess(
+  _role: string | null,
   features: PortalFeature[],
   isAdmin: boolean
 ): boolean {
   if (isAdmin) return true;
-  if (role === "employer") return false;
   return features.includes("visitor_management");
 }
 

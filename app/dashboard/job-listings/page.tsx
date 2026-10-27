@@ -41,7 +41,8 @@ function linesFromJson(val: unknown): string {
 
 export default function DashboardJobListingsPage() {
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isEmployer } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, isEmployer, features } = usePortal();
+  const canUseJobBoard = isAdmin || isEmployer || features.includes("employer_account");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -275,7 +276,7 @@ export default function DashboardJobListingsPage() {
   };
 
   if (authLoading || portalLoading) return null;
-  if (!isAuthenticated || !user || !isPortalMember || (!isAdmin && !isEmployer)) return null;
+  if (!isAuthenticated || !user || !isPortalMember || !canUseJobBoard) return null;
 
   return (
     <div className="text-left">

@@ -16,14 +16,14 @@ import { supabase } from "@/lib/supabase";
 
 export default function VisitorTrialBanner() {
   const { user } = useAuth();
-  const { isAdmin, isVisitorOnly } = usePortal();
+  const { isAdmin, isVisitorOnly, features } = usePortal();
   const [subscription, setSubscription] = useState<VisitorSubscriptionState | null>(null);
   const [promoEnterprise, setPromoEnterprise] = useState(false);
   const [exempt, setExempt] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly, email: user?.email })) {
+    if (isExemptFromVisitorSubscription({ isAdmin, isVisitorOnly, email: user?.email, features })) {
       setExempt(true);
       setLoading(false);
       return;
@@ -55,7 +55,7 @@ export default function VisitorTrialBanner() {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, isVisitorOnly, user?.email]);
+  }, [features, isAdmin, isVisitorOnly, user?.email]);
 
   if (loading || exempt || !subscription) return null;
 

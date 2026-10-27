@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { isVisitorOnlyPortalUser } from "@/lib/visitors/visitor-only-access";
+import { isExclusivePollAccount, isVisitorOnlyPortalUser } from "@/lib/visitors/visitor-only-access";
 
 export type PortalRole = "admin" | "manager" | "client" | "employer" | "poll";
 export type PortalTier = "basic" | "pro" | "enterprise";
@@ -24,7 +24,9 @@ export type PortalFeature =
   | "kcm_membership"
   | "teams_work"
   | "kcm_payouts_inflow"
-  | "visitor_management";
+  | "visitor_management"
+  | "poll_account"
+  | "employer_account";
 
 /** All assignable dashboard features (stored on portal_members.features). */
 const ALL_PORTAL_FEATURES: PortalFeature[] = [
@@ -42,6 +44,8 @@ const ALL_PORTAL_FEATURES: PortalFeature[] = [
   "teams_work",
   "kcm_payouts_inflow",
   "visitor_management",
+  "poll_account",
+  "employer_account",
 ];
 
 /** Pro/Enterprise tier defaults: everything except special gated modules (assigned explicitly per user). */
@@ -50,7 +54,9 @@ const TIER_DEFAULT_FEATURES: PortalFeature[] = ALL_PORTAL_FEATURES.filter(
     k !== "kcm_membership" &&
     k !== "teams_work" &&
     k !== "kcm_payouts_inflow" &&
-    k !== "visitor_management"
+    k !== "visitor_management" &&
+    k !== "poll_account" &&
+    k !== "employer_account"
 );
 
 type PortalContextValue = {
@@ -104,7 +110,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   const isManager = useMemo(() => role === "manager", [role]);
   const isFullAdmin = useMemo(() => role === "admin", [role]);
   const isEmployer = useMemo(() => role === "employer", [role]);
-  const isPollOnly = useMemo(() => role === "poll", [role]);
+  const isPollOnly = useMemo(() => isExclusivePollAccount(role, features), [role, features]);
   const isVisitorOnly = useMemo(
     () => isVisitorOnlyPortalUser(role, features, isAdmin),
     [role, features, isAdmin]
@@ -220,11 +226,11 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       if (r === "employer") {
         setRole("employer");
         setTier("basic");
-        setFeatures([]);
+        setFeatures(fs);
       } else if (r === "poll") {
         setRole("poll");
         setTier("basic");
-        setFeatures([]);
+        setFeatures(fs);
       } else {
         setRole(r === "admin" ? "admin" : r === "manager" ? "manager" : "client");
         setTier(r === "admin" || r === "manager" ? "enterprise" : validTier);

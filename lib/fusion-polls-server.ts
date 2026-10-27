@@ -16,16 +16,16 @@ const supabase = configured
     })
   : null;
 
-function withoutPhotoColumn(select: string) {
-  return select.replace(",image_url", "");
+function withoutOptionalColumns(select: string) {
+  return select.replace(",image_url", "").replace(",collect_contact", "");
 }
 
 export const listFusionPolls = cache(async (): Promise<FusionPollRecord[] | null> => {
   if (!supabase) return null;
   const first = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: false });
   const retry =
-    first.error && /image_url/i.test(first.error.message)
-      ? await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_LIST_SELECT)).order("created_at", { ascending: false })
+    first.error && /image_url|collect_contact/i.test(first.error.message)
+      ? await supabase.from("fusion_polls").select(withoutOptionalColumns(POLL_LIST_SELECT)).order("created_at", { ascending: false })
       : null;
   const error = retry ? retry.error : first.error;
   const data = (retry ? retry.data : first.data) as PollDbRow[] | null;
@@ -40,8 +40,8 @@ async function loadFusionPoll(id: string): Promise<FusionPollRecord | null> {
   if (!supabase) return null;
   const first = await supabase.from("fusion_polls").select(POLL_DETAIL_SELECT).eq("id", id).maybeSingle();
   const retry =
-    first.error && /image_url/i.test(first.error.message)
-      ? await supabase.from("fusion_polls").select(withoutPhotoColumn(POLL_DETAIL_SELECT)).eq("id", id).maybeSingle()
+    first.error && /image_url|collect_contact/i.test(first.error.message)
+      ? await supabase.from("fusion_polls").select(withoutOptionalColumns(POLL_DETAIL_SELECT)).eq("id", id).maybeSingle()
       : null;
   const error = retry ? retry.error : first.error;
   const data = (retry ? retry.data : first.data) as PollDbRow | null;
@@ -209,6 +209,72 @@ async function castLiveOpinionVote(
   return { ok: true, already: false, optionId, record };
 }
 
+async function castSurveyContactVote(
+  pollId: string,
+  optionId: string,
+  voterKey: string,
+  voter: { name: string; email: string },
+): Promise<CastVoteResult> {
+  if (!supabase) return { ok: false, status: 503, error: "Polls are not connected." };
+  const poll = await supabase.from("fusion_polls").select("status,topic").eq("id", pollId).maybeSingle();
+  if (poll.error || !poll.data || poll.data.topic !== "poll") return { ok: false, status: 404, error: "This poll is not available." };
+  if (poll.data.status !== "Live") {
+    return {
+      ok: false,
+      status: 409,
+      error: poll.data.status === "Scheduled" ? "This poll is not open yet." : "This poll has ended.",
+    };
+  }
+  const option = await supabase.from("fusion_poll_options").select("id").eq("id", optionId).eq("poll_id", pollId).maybeSingle();
+  if (option.error || !option.data) return { ok: false, status: 404, error: "That choice is not on this poll." };
+
+  const existing = await recordedOptionId(pollId, voterKey);
+  if (existing) {
+    const record = await loadFusionPoll(pollId);
+    if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+    return { ok: true, already: true, optionId: existing, record };
+  }
+
+  const emailUsed = await supabase.from("fusion_poll_votes").select("id").eq("poll_id", pollId).eq("voter_email", voter.email).maybeSingle();
+  if (emailUsed.error && (isMissingVoterColumns(emailUsed.error) || emailUsed.error.code === "42P01" || emailUsed.error.code === "PGRST205")) {
+    return { ok: false, status: 503, error: LIVE_VOTER_PATCH };
+  }
+  if (emailUsed.data) return { ok: false, status: 409, error: "This email has already been used to vote on this poll." };
+
+  const ledger = await supabase.from("fusion_poll_votes").insert({
+    poll_id: pollId,
+    option_id: optionId,
+    voter_key: voterKey,
+    voter_name: voter.name,
+    voter_email: voter.email,
+  });
+  if (ledger.error) {
+    if (isMissingVoterColumns(ledger.error) || ledger.error.code === "42P01" || ledger.error.code === "PGRST205") {
+      return { ok: false, status: 503, error: LIVE_VOTER_PATCH };
+    }
+    if (ledger.error.code === "23505") {
+      const again = await recordedOptionId(pollId, voterKey);
+      if (again) {
+        const record = await loadFusionPoll(pollId);
+        if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+        return { ok: true, already: true, optionId: again, record };
+      }
+      return { ok: false, status: 409, error: "This email has already been used to vote on this poll." };
+    }
+    console.error("fusion_poll_votes:", ledger.error.message);
+    return { ok: false, status: 500, error: "That vote could not be recorded." };
+  }
+
+  const incremented = await incrementOptionVotes(optionId);
+  if (!incremented) {
+    await supabase.from("fusion_poll_votes").delete().eq("poll_id", pollId).eq("voter_key", voterKey);
+    return { ok: false, status: 500, error: "That vote could not be recorded." };
+  }
+  const record = await loadFusionPoll(pollId);
+  if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+  return { ok: true, already: false, optionId, record };
+}
+
 export async function castFusionPollVote(
   pollId: string,
   optionId: string,
@@ -219,7 +285,19 @@ export async function castFusionPollVote(
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pollId) || !OPTION_ID.test(optionId) || voterKey.length < 8) {
     return { ok: false, status: 400, error: "That vote could not be recorded." };
   }
-  if (voter) return castLiveOpinionVote(pollId, optionId, voterKey, voter);
+  if (voter) {
+    const record = await loadFusionPoll(pollId);
+    if (!record) return { ok: false, status: 404, error: "This poll is not available." };
+    if (record.poll.topic === "poll") {
+      if (!record.collectContact) return { ok: false, status: 400, error: "This poll does not collect a name and email." };
+      return castSurveyContactVote(pollId, optionId, voterKey, voter);
+    }
+    return castLiveOpinionVote(pollId, optionId, voterKey, voter);
+  }
+  const survey = await loadFusionPoll(pollId);
+  if (survey?.poll.topic === "poll" && survey.collectContact) {
+    return { ok: false, status: 400, error: "Enter your name and email to vote." };
+  }
 
   const rpc = await supabase.rpc("cast_fusion_poll_vote", {
     p_poll_id: pollId,
@@ -292,11 +370,15 @@ function slugifyPollTitle(value: string) {
     .slice(0, 48);
 }
 
+const COLLECT_CONTACT_PATCH =
+  "Collecting names and emails needs database/ticketing_voting_mvp_patch_102_fusion_poll_collect_contact.sql in the Supabase SQL editor.";
+
 export async function createPublicPoll(input: {
   title: string;
   description: string;
   options: string[];
   ends: string;
+  collectContact?: boolean;
   createdBy?: string | null;
 }) {
   if (!supabase) return { ok: false as const, error: "Polls are not connected." };
@@ -317,7 +399,7 @@ export async function createPublicPoll(input: {
     id = `${base.slice(0, 40)}-${attempt}`;
   }
 
-  const inserted = await supabase.from("fusion_polls").insert({
+  const pollRow = {
     id,
     title,
     question: description || title,
@@ -328,8 +410,15 @@ export async function createPublicPoll(input: {
     county: "Nairobi",
     ends_label: input.ends.trim().slice(0, 80),
     spoiled_votes: 0,
+    collect_contact: input.collectContact === true,
     created_by: input.createdBy || null,
-  });
+  };
+  let inserted = await supabase.from("fusion_polls").insert(pollRow);
+  if (inserted.error && /collect_contact/i.test(inserted.error.message)) {
+    if (pollRow.collect_contact) return { ok: false as const, error: COLLECT_CONTACT_PATCH };
+    const { collect_contact: _collectContact, ...withoutContact } = pollRow;
+    inserted = await supabase.from("fusion_polls").insert(withoutContact);
+  }
   if (inserted.error) {
     console.error("fusion_polls create:", inserted.error.message);
     if (/fusion_polls_topic_check|check constraint/i.test(inserted.error.message)) {

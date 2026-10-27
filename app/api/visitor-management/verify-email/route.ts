@@ -53,9 +53,8 @@ export async function POST(req: NextRequest) {
       .eq("user_id", userId)
       .maybeSingle();
 
-    const features = Array.isArray(memberRow?.features) ? memberRow.features : [];
-    const isVisitorAccount =
-      memberRow?.role === "client" && features.length === 1 && features[0] === "visitor_management";
+    const features = Array.isArray(memberRow?.features) ? memberRow.features.map((feature) => String(feature)) : [];
+    const isVisitorAccount = features.includes("visitor_management");
 
     if (!isVisitorAccount) {
       return NextResponse.json({ error: "This verification is for Visitor Management accounts only" }, { status: 403 });

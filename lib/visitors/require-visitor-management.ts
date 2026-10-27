@@ -77,10 +77,6 @@ export async function requireVisitorManagementAccess(
   }
 
   const role = String(memberRow.role ?? "client").toLowerCase();
-  if (role === "employer") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
   const feats = parseFeatures(memberRow.features);
   const isAdmin = role === "admin" || role === "manager";
   const allowed = isAdmin || feats.includes("visitor_management");

@@ -49,10 +49,20 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, password }),
         });
-        const createdJson = (await created.json().catch(() => ({}))) as { error?: string; verificationRequired?: boolean; emailWarning?: string };
+        const createdJson = (await created.json().catch(() => ({}))) as {
+          error?: string;
+          verificationRequired?: boolean;
+          emailWarning?: string;
+          addedToExisting?: boolean;
+          message?: string;
+        };
         if (!created.ok) throw new Error(createdJson.error || "Could not create the account.");
+        if (createdJson.addedToExisting && !createdJson.verificationRequired) {
+          setNotice(createdJson.message || "Poll was added to your existing account. Sign in with your current password.");
+          return;
+        }
         setVerifyEmail(email.trim().toLowerCase());
-        setNotice(createdJson.emailWarning || "We sent a verification code to your email.");
+        setNotice(createdJson.emailWarning || createdJson.message || "We sent a verification code to your email.");
         return;
       } else if (!email.includes("@") || !password) {
         setError("Add your email and password.");

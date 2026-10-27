@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { hash } from "bcryptjs";
+import { attachAccountService, isDuplicateAuthError } from "@/lib/auth/attach-account-service";
 import { sendPollVerificationEmail } from "@/lib/poll/send-poll-verification-email";
 import { checkPollRegisterRateLimit, getClientIp } from "@/lib/rate-limit";
 
@@ -45,30 +46,54 @@ export async function POST(req: NextRequest) {
       user_metadata: { name, account_type: "poll", poll_email_verified: false },
     });
 
-    const userId = created.user?.id;
+    let userId = created.user?.id ?? "";
+    let addedToExisting = false;
+    let emailConfirmed = false;
     if (createErr || !userId) {
       const msg = createErr?.message ?? "Could not create account";
-      if (/already|registered|exists/i.test(msg)) {
-        return NextResponse.json({ error: "An account with this email already exists. Log in instead." }, { status: 400 });
+      if (!isDuplicateAuthError(msg)) {
+        return NextResponse.json({ error: "Could not create account" }, { status: 400 });
       }
-      return NextResponse.json({ error: "Could not create account" }, { status: 400 });
-    }
-    const { error: memberErr } = await admin.from("portal_members").insert({
-      user_id: userId,
-      role: "poll",
-      tier: "basic",
-      features: [],
-    });
+      const attached = await attachAccountService(admin, email, password, "poll", { name });
+      if (!attached.ok) return NextResponse.json({ error: attached.error }, { status: attached.status });
+      userId = attached.userId;
+      addedToExisting = true;
+      emailConfirmed = attached.emailConfirmed;
+    } else {
+      const { error: memberErr } = await admin.from("portal_members").insert({
+        user_id: userId,
+        role: "poll",
+        tier: "basic",
+        features: [],
+      });
 
-    if (memberErr) {
-      await admin.auth.admin.deleteUser(userId).catch(() => undefined);
-      if (/check constraint|portal_members_role/i.test(memberErr.message)) {
-        return NextResponse.json(
-          { error: "Poll accounts need database/ticketing_voting_mvp_patch_99_portal_poll_role.sql in the Supabase SQL editor." },
-          { status: 500 },
-        );
+      if (memberErr) {
+        await admin.auth.admin.deleteUser(userId).catch(() => undefined);
+        if (/check constraint|portal_members_role/i.test(memberErr.message)) {
+          return NextResponse.json(
+            { error: "Poll accounts need database/ticketing_voting_mvp_patch_99_portal_poll_role.sql in the Supabase SQL editor." },
+            { status: 500 },
+          );
+        }
+        return NextResponse.json({ error: memberErr.message || "Could not finish the account." }, { status: 500 });
       }
-      return NextResponse.json({ error: memberErr.message || "Could not finish the account." }, { status: 500 });
+    }
+
+    if (addedToExisting && emailConfirmed) {
+      return NextResponse.json({
+        ok: true,
+        addedToExisting: true,
+        verificationRequired: false,
+        message: "Poll was added to your existing account. Sign in with your current password.",
+      });
+    }
+
+    if (addedToExisting) {
+      const { data: existing } = await admin.auth.admin.getUserById(userId);
+      const meta = (existing.user?.user_metadata ?? {}) as Record<string, unknown>;
+      await admin.auth.admin.updateUserById(userId, {
+        user_metadata: { ...meta, poll_email_verified: false },
+      });
     }
 
     const emailResult = await sendPollVerificationEmail(admin, userId, email, name);

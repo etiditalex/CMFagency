@@ -73,7 +73,8 @@ function statusClass(status: LivePollStatus) {
 export default function PollingFxPollList() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, isAdmin, isPollOnly } = usePortal();
+  const { isPortalMember, loading: portalLoading, isAdmin, features, role } = usePortal();
+  const canUsePoll = isAdmin || role === "poll" || features.includes("poll_account");
   const [polls, setPolls] = useState<PollListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,14 +117,14 @@ export default function PollingFxPollList() {
       router.replace("/poll/login");
       return;
     }
-    if (!isAdmin && !isPollOnly) {
+    if (!canUsePoll) {
       setLoading(false);
       return;
     }
     void load();
     const timer = window.setInterval(() => void load(true), 5000);
     return () => window.clearInterval(timer);
-  }, [authLoading, isAdmin, isAuthenticated, isPollOnly, isPortalMember, load, portalLoading, router, user]);
+  }, [authLoading, canUsePoll, isAuthenticated, isPortalMember, load, portalLoading, router, user]);
 
   useEffect(() => {
     function close(event: MouseEvent) {
@@ -141,7 +142,7 @@ export default function PollingFxPollList() {
     );
   }
 
-  if (!isAuthenticated || !user || !isPortalMember || (!isAdmin && !isPollOnly)) return null;
+  if (!isAuthenticated || !user || !isPortalMember || !canUsePoll) return null;
 
   const visible = polls
     .filter((poll) => status === "all" || poll.status === status)
@@ -262,6 +263,13 @@ export default function PollingFxPollList() {
                       <div className="absolute right-0 top-9 z-20 w-44 rounded-lg border border-hairline bg-white p-1 shadow-lg">
                         <Link href={`/poll/${poll.id}`} className="block rounded-md px-3 py-2 text-sm font-medium text-ink hover:bg-canvas" onClick={() => setMenuId(null)}>
                           View results
+                        </Link>
+                        <Link
+                          href={`/dashboard/polling-fx/poll/${poll.id}`}
+                          className="block rounded-md px-3 py-2 text-sm font-medium text-ink hover:bg-canvas"
+                          onClick={() => setMenuId(null)}
+                        >
+                          Names and emails
                         </Link>
                         {isAdmin ? (
                           <Link href={`/dashboard/polling-fx?edit=${poll.id}`} className="block rounded-md px-3 py-2 text-sm font-medium text-ink hover:bg-canvas" onClick={() => setMenuId(null)}>

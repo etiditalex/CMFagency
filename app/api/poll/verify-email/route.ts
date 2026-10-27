@@ -18,8 +18,10 @@ export async function POST(req: NextRequest) {
     const user = await findUserByEmail(admin, email);
     if (!user?.id) return NextResponse.json({ error: "No account found for this email." }, { status: 404 });
 
-    const { data: member } = await admin.from("portal_members").select("role").eq("user_id", user.id).maybeSingle();
-    if (String(member?.role ?? "") !== "poll") {
+    const { data: member } = await admin.from("portal_members").select("role, features").eq("user_id", user.id).maybeSingle();
+    const role = String(member?.role ?? "");
+    const features = Array.isArray(member?.features) ? member.features.map((feature) => String(feature)) : [];
+    if (role !== "poll" && !features.includes("poll_account")) {
       return NextResponse.json({ error: "This verification is for poll accounts." }, { status: 403 });
     }
 

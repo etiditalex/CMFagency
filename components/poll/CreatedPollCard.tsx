@@ -18,15 +18,26 @@ type Props = {
   options: PollChoice[];
   votedOptionId: string | null;
   openResults?: boolean;
+  collectContact?: boolean;
 };
 
-export default function CreatedPollCard({ pollId, question, status, options: initialOptions, votedOptionId, openResults = false }: Props) {
+export default function CreatedPollCard({
+  pollId,
+  question,
+  status,
+  options: initialOptions,
+  votedOptionId,
+  openResults = false,
+  collectContact = false,
+}: Props) {
   const [options, setOptions] = useState(initialOptions);
   const [selected, setSelected] = useState<string | null>(votedOptionId);
   const [choice, setChoice] = useState<string | null>(votedOptionId);
   const [showResults, setShowResults] = useState(openResults || status !== "Live" || Boolean(votedOptionId));
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [voterName, setVoterName] = useState("");
+  const [voterEmail, setVoterEmail] = useState("");
   const open = status === "Live" && !choice;
 
   useEffect(() => {
@@ -60,13 +71,24 @@ export default function CreatedPollCard({ pollId, question, status, options: ini
       setNotice("Choose an option, then vote.");
       return;
     }
+    if (collectContact && voterName.trim().length < 2) {
+      setNotice("Enter your name to vote.");
+      return;
+    }
+    if (collectContact && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(voterEmail.trim())) {
+      setNotice("Enter a valid email address to vote.");
+      return;
+    }
     setSaving(true);
     setNotice(null);
     const response = await fetch(`/api/polls/${pollId}/vote`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ optionId: selected }),
+      body: JSON.stringify({
+        optionId: selected,
+        ...(collectContact ? { name: voterName.trim(), email: voterEmail.trim() } : {}),
+      }),
     });
     const json = (await response.json().catch(() => null)) as { error?: string; optionId?: string; options?: PollChoice[] } | null;
     setSaving(false);
@@ -160,6 +182,34 @@ export default function CreatedPollCard({ pollId, question, status, options: ini
                   );
                 })}
               </div>
+              {collectContact ? (
+                <div className="mt-4 grid gap-3">
+                  <label className="block text-sm font-medium text-white/90">
+                    Your name
+                    <input
+                      className="mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-primary-300"
+                      value={voterName}
+                      onChange={(event) => setVoterName(event.target.value)}
+                      maxLength={80}
+                      autoComplete="name"
+                      placeholder="Full name"
+                    />
+                  </label>
+                  <label className="block text-sm font-medium text-white/90">
+                    Email
+                    <input
+                      type="email"
+                      className="mt-1.5 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-primary-300"
+                      value={voterEmail}
+                      onChange={(event) => setVoterEmail(event.target.value)}
+                      maxLength={120}
+                      autoComplete="email"
+                      placeholder="name@email.com"
+                    />
+                  </label>
+                  <p className="text-xs text-white/50">Your name and email are saved for the poll owner. They are not shown on the public results.</p>
+                </div>
+              ) : null}
               {notice ? (
                 <p className="poll-live-demo-note mt-3 text-sm font-medium text-[#ffb4b4]" role="alert">
                   {notice}

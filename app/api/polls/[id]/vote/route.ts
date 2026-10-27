@@ -10,6 +10,7 @@ import {
 } from "@/lib/fusion-poll-ballot";
 import { castFusionPollVote, getFusionPoll } from "@/lib/fusion-polls-server";
 import { parseLiveVoteConsent } from "@/lib/poll/live-vote-consent";
+import { parseSurveyContact } from "@/lib/poll/survey-contact";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,10 @@ export async function POST(request: Request, { params }: Props) {
     const consent = parseLiveVoteConsent(body ?? {});
     if (!consent.ok) return NextResponse.json({ error: consent.error }, { status: 400 });
     voter = consent.voter;
+  } else if (record.collectContact) {
+    const contact = parseSurveyContact(body ?? {});
+    if (!contact.ok) return NextResponse.json({ error: contact.error }, { status: 400 });
+    voter = contact.voter;
   }
 
   const result = await castFusionPollVote(id, optionId, voterKey, voter);

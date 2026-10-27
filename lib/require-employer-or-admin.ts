@@ -31,8 +31,15 @@ export async function requireEmployerOrAdminForJobBoard(req: NextRequest): Promi
   }
 
   const callerId = String(callerData.user.id ?? "");
-  const { data: memberRow } = await admin.from("portal_members").select("role").eq("user_id", callerId).maybeSingle();
+  const { data: memberRow } = await admin
+    .from("portal_members")
+    .select("role, features")
+    .eq("user_id", callerId)
+    .maybeSingle();
   const role = String((memberRow as { role?: string } | null)?.role ?? "").toLowerCase();
+  const features = Array.isArray((memberRow as { features?: unknown } | null)?.features)
+    ? ((memberRow as { features: unknown[] }).features).map((feature) => String(feature))
+    : [];
 
   const isLegacyAdmin =
     !memberRow &&
@@ -41,7 +48,7 @@ export async function requireEmployerOrAdminForJobBoard(req: NextRequest): Promi
   if (isLegacyAdmin || role === "admin" || role === "manager") {
     return { admin, userId: callerId, mode: "admin" };
   }
-  if (role === "employer") {
+  if (role === "employer" || features.includes("employer_account")) {
     return { admin, userId: callerId, mode: "employer" };
   }
 

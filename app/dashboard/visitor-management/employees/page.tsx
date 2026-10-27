@@ -103,7 +103,7 @@ function formatLongDate(ymd: string) {
 export default function VisitorManagementEmployeesPage() {
   const router = useRouter();
   const { isAuthenticated, user, loading: authLoading } = useAuth();
-  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin } =
+  const { isPortalMember, loading: portalLoading, hasFeature, isVisitorOnly, isAdmin, features } =
     usePortal();
   const {
     needsSelection,
@@ -260,11 +260,12 @@ export default function VisitorManagementEmployeesPage() {
       isAdmin,
       isVisitorOnly,
       email: user?.email,
+      features,
       plan: visitorSubscription?.plan ?? "trial",
       feature: "employee_qr_download",
       subscriptionActive: visitorSubscription?.isActive ?? false,
     });
-  }, [isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
+  }, [features, isAdmin, isVisitorOnly, user?.email, visitorSubscription]);
 
   const loadReportingSettings = useCallback(async () => {
     try {

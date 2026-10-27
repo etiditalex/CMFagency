@@ -94,8 +94,8 @@ export default function PollingFxDashboard() {
     setError(null);
     const first = await supabase.from("fusion_polls").select(POLL_LIST_SELECT).order("created_at", { ascending: true });
     const retry =
-      first.error && /image_url/i.test(first.error.message)
-        ? await supabase.from("fusion_polls").select(POLL_LIST_SELECT.replace(",image_url", "")).order("created_at", { ascending: true })
+      first.error && /image_url|collect_contact/i.test(first.error.message)
+        ? await supabase.from("fusion_polls").select(POLL_LIST_SELECT.replace(",image_url", "").replace(",collect_contact", "")).order("created_at", { ascending: true })
         : null;
     const err = retry ? retry.error : first.error;
     const data = (retry ? retry.data : first.data) as PollDbRow[] | null;

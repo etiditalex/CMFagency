@@ -103,15 +103,22 @@ export function formatSubscriptionExpiryDate(iso: string | null | undefined): st
   });
 }
 
-/** Platform admins, non–visitor-only users, and demo accounts skip subscription enforcement. */
+const VISITOR_SERVICE_FEATURES = new Set(["visitor_management", "poll_account", "employer_account"]);
+
+/** Platform admins, accounts with other client modules, and demo accounts skip subscription enforcement. */
 export function isExemptFromVisitorSubscription(params: {
   isAdmin: boolean;
   isVisitorOnly: boolean;
   email?: string | null;
+  features?: readonly string[] | null;
 }): boolean {
   if (params.isAdmin) return true;
-  if (!params.isVisitorOnly) return true;
   if (isVisitorDemoAccount(params.email)) return true;
+  if (params.features) {
+    const onlyServices = params.features.every((feature) => VISITOR_SERVICE_FEATURES.has(feature));
+    if (params.features.includes("visitor_management") && onlyServices) return false;
+  }
+  if (!params.isVisitorOnly) return true;
   return false;
 }
 
@@ -120,6 +127,7 @@ export function accountHasVisitorFeature(params: {
   isAdmin: boolean;
   isVisitorOnly: boolean;
   email?: string | null;
+  features?: readonly string[] | null;
   plan: VisitorSubscriptionPlan;
   feature: VisitorPlanFeatureKey;
   subscriptionActive: boolean;
@@ -129,6 +137,7 @@ export function accountHasVisitorFeature(params: {
       isAdmin: params.isAdmin,
       isVisitorOnly: params.isVisitorOnly,
       email: params.email,
+      features: params.features,
     })
   ) {
     return true;

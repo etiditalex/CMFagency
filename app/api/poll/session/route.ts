@@ -24,8 +24,10 @@ export async function POST(req: NextRequest) {
     if (userErr || !userData.user) return NextResponse.json({ error: "Invalid session" }, { status: 401 });
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-    const { data: member } = await admin.from("portal_members").select("role").eq("user_id", userData.user.id).maybeSingle();
-    if (String(member?.role ?? "") !== "poll") {
+    const { data: member } = await admin.from("portal_members").select("role, features").eq("user_id", userData.user.id).maybeSingle();
+    const role = String(member?.role ?? "");
+    const features = Array.isArray(member?.features) ? member.features.map((feature) => String(feature)) : [];
+    if (role !== "poll" && !features.includes("poll_account")) {
       return NextResponse.json({ error: "This login is for poll accounts." }, { status: 403 });
     }
     const meta = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
