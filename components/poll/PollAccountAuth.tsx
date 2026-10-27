@@ -145,10 +145,13 @@ export default function PollAccountAuth({ mode }: { mode: Mode }) {
       setError("Add your email first, then choose forgot password.");
       return;
     }
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/fusion-xpress/reset-password`,
+    const res = await fetch("/api/fusion-xpress/send-password-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
     });
-    if (resetError) setError(resetError.message);
+    const json = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) setError(json.error || "Could not send the recovery email.");
     else setNotice("Check your email for a link to choose a new password.");
   }
 
