@@ -37,6 +37,11 @@ export function checkEmployerRegisterRateLimit(ip: string): { allowed: boolean; 
   return checkRegisterRateLimit(ip, "employer-register");
 }
 
+/** Rate limit public KFCAA volunteer applications by IP. */
+export function checkVolunteerApplyRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkRegisterRateLimit(ip, "kfcaa-volunteer");
+}
+
 function checkRegisterRateLimit(ip: string, prefix: string): { allowed: boolean; retryAfter?: number } {
   cleanup();
   const key = getKey(ip, prefix);
