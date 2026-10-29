@@ -1,22 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
 import { connection } from "next/server";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: "italic",
-  variable: "--font-playfair",
-  display: "swap",
-});
+import { inter, playfair } from "@/lib/site-fonts";
 import PageLoader from "@/components/PageLoader";
 import KenyaCoastModelsPopup from "@/components/KenyaCoastModelsPopup";
 import AdSenseLoader from "@/components/AdSenseLoader";

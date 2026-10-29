@@ -1,23 +1,9 @@
-import { Montserrat, Playfair_Display } from "next/font/google";
 import Link from "next/link";
-
-const storySerif = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  style: "normal",
-  display: "swap",
-});
-
-const sponsorFace = Montserrat({
-  subsets: ["latin"],
-  weight: "800",
-  style: "italic",
-  display: "swap",
-});
+import { montserratHeavyItalic, playfair } from "@/lib/site-fonts";
 
 export default function FashionShowStory() {
   return (
-    <section className={`fashion-night-story bg-white ${storySerif.className}`} aria-labelledby="fashion-show-story-heading">
+    <section className={`fashion-night-story bg-white ${playfair.className}`} aria-labelledby="fashion-show-story-heading">
       <h2 id="fashion-show-story-heading" className="sr-only">
         About the Coast Fashion and Modelling Awards 2026
       </h2>
@@ -47,7 +33,7 @@ export default function FashionShowStory() {
       <div className="mx-auto flex max-w-6xl justify-center px-4 pb-14 sm:px-10 sm:pb-20 lg:pb-24">
         <Link
           href="/contact"
-          className={`fn-sponsor group relative inline-block -rotate-6 no-underline transition-transform duration-300 hover:-rotate-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2f6bff] ${sponsorFace.className}`}
+          className={`fn-sponsor group relative inline-block -rotate-6 no-underline transition-transform duration-300 hover:-rotate-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#2f6bff] ${montserratHeavyItalic.className}`}
         >
           <span className="absolute -left-3 -top-3 block h-full w-full bg-[#2f6bff]" aria-hidden />
           <span className="relative block bg-[#f6a21a] px-4 py-3 text-white shadow-sm sm:px-9 sm:py-3.5">

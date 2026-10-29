@@ -1,12 +1,5 @@
 import { Calendar, CircleDollarSign, MapPin } from "lucide-react";
-import { Playfair_Display } from "next/font/google";
-
-const fashionSerif = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["500", "700"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
+import { playfair } from "@/lib/site-fonts";
 
 const TICKETS = [
   { amount: "500", label: "Regular" },
@@ -132,7 +125,7 @@ export default function FashionNightHero() {
               </p>
               <div className="relative mt-3 sm:mt-4">
                 <p
-                  className={`fn-watermark fn-serif pointer-events-none absolute left-1/2 top-1/2 z-0 w-[140%] -translate-x-1/2 -translate-y-[62%] select-none text-center ${fashionSerif.className}`}
+                  className={`fn-watermark fn-serif pointer-events-none absolute left-1/2 top-1/2 z-0 w-[140%] -translate-x-1/2 -translate-y-[62%] select-none text-center ${playfair.className}`}
                   aria-hidden
                 >
                   Awards
@@ -143,7 +136,7 @@ export default function FashionNightHero() {
               </div>
               <span className="relative z-10 mx-auto mt-3 block h-[3px] w-12 bg-[#e0b84a]" aria-hidden />
               <p className="fn-kicker relative z-10 mt-4">Coast Fashion &amp; Modelling Awards 2025</p>
-              <p className={`fn-script fn-serif relative z-10 mt-2 sm:mt-3 ${fashionSerif.className}`}>
+              <p className={`fn-script fn-serif relative z-10 mt-2 sm:mt-3 ${playfair.className}`}>
                 Celebrating coast talent
               </p>
             </div>
