@@ -50,7 +50,7 @@ type DbRow = {
   email: string;
   town: string;
   residence_county: string;
-  current_role: string | null;
+  present_role: string | null;
   role: VolunteerRole;
   region: string | null;
   represent_county: string | null;
@@ -86,7 +86,7 @@ export default function DashboardVolunteersPage() {
       const { data, error: fetchErr } = await supabase
         .from("kfcaa_volunteer_applications")
         .select(
-          "id, application_code, full_name, phone, whatsapp, email, town, residence_county, current_role, role, region, represent_county, creative_areas, why_apply, community_experience, how_promote, status, created_at"
+          "id, application_code, full_name, phone, whatsapp, email, town, residence_county, present_role, role, region, represent_county, creative_areas, why_apply, community_experience, how_promote, status, created_at"
         )
         .order("created_at", { ascending: false });
       if (fetchErr) throw fetchErr;
@@ -100,7 +100,7 @@ export default function DashboardVolunteersPage() {
           email: row.email,
           town: row.town,
           residenceCounty: row.residence_county,
-          currentRole: row.current_role,
+          currentRole: row.present_role,
           role: row.role,
           region: row.region,
           representCounty: row.represent_county,

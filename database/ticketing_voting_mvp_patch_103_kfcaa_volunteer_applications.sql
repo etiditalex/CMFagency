@@ -11,7 +11,7 @@ create table if not exists public.kfcaa_volunteer_applications (
   email text not null,
   town text not null,
   residence_county text not null,
-  current_role text,
+  present_role text,
   role text not null check (role in ('regional', 'county')),
   region text,
   represent_county text,

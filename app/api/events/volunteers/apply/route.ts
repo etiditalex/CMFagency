@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
         email,
         town,
         residence_county: residenceCounty,
-        current_role: currentRole || null,
+        present_role: currentRole || null,
         role,
         region,
         represent_county: county,
