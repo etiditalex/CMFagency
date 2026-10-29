@@ -9,7 +9,6 @@ import {
   isPlausiblePhone,
   KFCAA_REGIONS,
   regionForCounty,
-  roleLabel,
   type VolunteerRole,
 } from "@/lib/kfcaa-volunteers";
 import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
@@ -178,55 +177,63 @@ export default function VolunteerApplication() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f3f1ec] px-4 pb-28 pt-[var(--site-nav-height)] sm:px-6 md:pb-20 lg:px-4">
       <div className="mx-auto w-full max-w-6xl lg:max-w-[640px]">
-        <div className="text-center">
-          {showIntro || receipt ? (
-            <>
-              <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-secondary-800 sm:mt-8">
-                Kenya Fashion and Creative Arts Awards
-              </p>
-              <h1 className="mt-3 font-montserrat text-4xl font-extrabold leading-none tracking-tight text-secondary-800 sm:text-6xl">
-                Volunteers
+        <div className="grid items-center gap-6">
+          <div id="call-details" className="text-center">
+            {showIntro || receipt ? (
+              <h1 className="mx-auto mt-6 inline-grid w-max max-w-full grid-cols-[auto_auto] items-stretch gap-x-[0.22em] text-left font-montserrat text-[clamp(1.65rem,calc((100vw-2.75rem)/9.8),4rem)] leading-none sm:mt-8">
+                <span className="col-start-1 row-start-1 flex flex-col items-end justify-end pr-[0.12em] text-right text-[clamp(0.8125rem,0.4em,1.35rem)] font-semibold leading-[1.05] text-gray-900">
+                  <span className="block text-right">Regional</span>
+                  <span className="block text-right">County</span>
+                </span>
+                <span className="col-start-1 row-start-2 mt-[0.08em] text-left font-extrabold tracking-tight text-secondary-800">
+                  Volunteers
+                </span>
+                <span className="col-start-2 row-span-2 row-start-1 flex flex-col justify-between border-l-[0.07em] border-secondary-800 pl-[0.22em] text-left text-[0.9em]">
+                  <span className="block text-left font-extrabold tracking-tight text-secondary-800">KF</span>
+                  <span className="block text-left font-extrabold tracking-tight text-secondary-800">CAA</span>
+                </span>
               </h1>
-              <p className="mt-3 text-lg font-bold text-gray-900 sm:text-xl">Regional &amp; County Representatives</p>
-            </>
-          ) : (
-            <p className="mt-4 text-center text-sm font-semibold text-secondary-800">
-              KFCAA volunteers — Regional &amp; County Representatives
-            </p>
-          )}
+            ) : (
+              <p className="mt-4 text-balance text-center text-sm font-semibold leading-snug text-secondary-800">
+                KFCAA volunteers
+                <span className="mt-0.5 block">Regional &amp; County Representatives</span>
+              </p>
+            )}
+            {showIntro ? (
+              <p className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]">
+                Changer Fusions, organizers of the Kenya Fashion and Creative Arts Awards, invites passionate, committed,
+                and proactive individuals to volunteer as Regional Representatives and County Representatives across Kenya.
+              </p>
+            ) : null}
+          </div>
+
           {showIntro ? (
-            <p className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]">
-              Changer Fusions, organizers of the Kenya Fashion and Creative Arts Awards, invites passionate, committed,
-              and proactive individuals to volunteer as Regional Representatives and County Representatives across Kenya.
-            </p>
+            <section className="rounded-2xl bg-secondary-800 px-4 py-6 text-center text-white shadow-md sm:px-8 sm:py-8">
+              <h2 className="text-base font-bold sm:text-lg">Represent KFCAA where you are</h2>
+              <p className="mt-1 text-center text-sm text-white/85">
+                Ambassadors who promote the awards, connect with creatives, and mobilise participation.
+              </p>
+              <div className="mt-6 grid grid-cols-1 gap-4 min-[380px]:grid-cols-2 min-[380px]:items-start min-[380px]:gap-2 sm:mt-7 sm:gap-6">
+                <div className="min-w-0 border-b border-white/40 pb-4 min-[380px]:border-b-0 min-[380px]:border-r min-[380px]:pb-0 min-[380px]:pr-3 sm:pr-6">
+                  <p className="text-sm font-bold sm:text-base">Regional</p>
+                  <p className="mt-2 text-center text-xs leading-relaxed text-white/85 sm:text-sm">
+                    Champion KFCAA across one of Kenya’s regions.
+                  </p>
+                </div>
+                <div className="min-w-0 min-[380px]:pl-3 sm:pl-6">
+                  <p className="text-sm font-bold sm:text-base">County</p>
+                  <p className="mt-2 text-center text-xs leading-relaxed text-white/85 sm:text-sm">
+                    Represent one county and mobilise local creatives.
+                  </p>
+                </div>
+              </div>
+            </section>
           ) : null}
         </div>
 
         {showIntro ? (
           <>
-            <section className="mt-6 rounded-2xl bg-secondary-800 px-4 py-6 text-white shadow-md sm:px-8 sm:py-8">
-              <h2 className="text-center text-base font-bold sm:text-lg">Represent KFCAA where you are</h2>
-              <p className="mx-auto mt-2 max-w-xl text-center text-sm leading-relaxed text-white/85">
-                Selected representatives serve as ambassadors: promoting the awards, connecting with creatives,
-                identifying emerging talent, mobilising participation, and building partnerships.
-              </p>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-white/25 px-4 py-4 text-left">
-                  <p className="text-sm font-bold">Regional Representative</p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/85">
-                    Champion KFCAA across one of Kenya’s regions and connect creatives, institutions, brands, and media.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/25 px-4 py-4 text-left">
-                  <p className="text-sm font-bold">County Representative</p>
-                  <p className="mt-1 text-sm leading-relaxed text-white/85">
-                    Represent one county, mobilise local creatives, and support promotional activities on the ground.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <div className="mt-6 grid gap-4">
+            <div className="mt-6 grid gap-4 md:max-lg:grid-cols-2 md:max-lg:gap-6">
               <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
                 <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
                   <FileText className="h-7 w-7" strokeWidth={1.75} />
@@ -236,7 +243,7 @@ export default function VolunteerApplication() {
                   Ready to represent your region or county? Apply today and become part of the movement championing
                   Kenyan creativity.
                 </p>
-                <div className="mt-5 flex flex-col gap-3">
+                <div className="mt-auto flex flex-col gap-3 pt-5">
                   <button
                     type="button"
                     onClick={() => {
@@ -268,7 +275,7 @@ export default function VolunteerApplication() {
                   href={WHATSAPP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 py-2.5 text-center text-sm font-semibold leading-snug text-secondary-800 hover:bg-secondary-50"
+                  className="mt-auto flex min-h-11 w-full items-center justify-center rounded-lg border border-secondary-700 px-4 py-2.5 text-center text-sm font-semibold leading-snug text-secondary-800 hover:bg-secondary-50"
                 >
                   Changer Fusions WhatsApp: 0797 777 347
                 </a>
@@ -333,12 +340,11 @@ export default function VolunteerApplication() {
                 </button>
               </div>
             ) : step !== null ? (
-              <form ref={formRef} onSubmit={onSubmit} className="space-y-6 text-left">
+              <form ref={formRef} onSubmit={onSubmit} className="space-y-6 text-left [&_fieldset]:min-w-0 [&_label]:text-left [&_legend]:text-left [&_p]:text-left [&_span]:text-left">
                 <div>
                   <p className="text-center text-sm font-semibold text-secondary-800">
                     Step {step + 1} of {STEP_TITLES.length}
                   </p>
-                  <p className="mt-1 text-center text-sm text-gray-600">{STEP_TITLES[step]}</p>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200">
                     <div
                       className="h-full rounded-full bg-secondary-700"
@@ -348,8 +354,8 @@ export default function VolunteerApplication() {
                 </div>
 
                 <div className={step === 0 ? undefined : "hidden"}>
-                  <h2 className="text-lg font-bold text-gray-900 sm:text-xl">1. Your details</h2>
-                  <div className="mt-4 grid gap-4">
+                  <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">1. Your details</h2>
+                  <div className="mt-4 grid gap-4 sm:max-lg:grid-cols-2">
                     <label className="block text-sm font-semibold text-gray-800">
                       Full name <span className="text-negative">*</span>
                       <input name="fullName" required={step === 0} className={inputClass} autoComplete="name" />
@@ -387,7 +393,7 @@ export default function VolunteerApplication() {
                 </div>
 
                 <div className={step === 1 ? undefined : "hidden"}>
-                  <h2 className="text-lg font-bold text-gray-900 sm:text-xl">2. Role and area</h2>
+                  <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">2. Role and area</h2>
                   <p className="mt-1 text-sm text-gray-600">Choose one role. You can apply again later for another area.</p>
                   <fieldset className="mt-4">
                     <legend className="text-sm font-semibold text-gray-800">
@@ -461,14 +467,14 @@ export default function VolunteerApplication() {
                 </div>
 
                 <div className={step === 2 ? undefined : "hidden"}>
-                  <h2 className="text-lg font-bold text-gray-900 sm:text-xl">3. Creative focus</h2>
-                  <div className="mt-4 grid gap-4">
+                  <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">3. Creative focus</h2>
+                  <div className="mt-4 grid gap-4 sm:max-lg:grid-cols-2">
                     <label className="block text-sm font-semibold text-gray-800">
                       Current role, organisation, or community position{" "}
                       <span className="font-medium text-gray-500">(optional)</span>
                       <input name="currentRole" className={inputClass} />
                     </label>
-                    <fieldset>
+                    <fieldset className="sm:max-lg:col-span-2">
                       <legend className="text-sm font-semibold text-gray-800">
                         Creative areas you care about <span className="text-negative">*</span>
                       </legend>
@@ -481,16 +487,16 @@ export default function VolunteerApplication() {
                         ))}
                       </div>
                     </fieldset>
-                    <label className="block text-sm font-semibold text-gray-800">
+                    <label className="block text-sm font-semibold text-gray-800 sm:max-lg:col-span-2">
                       Why do you want to represent KFCAA? <span className="text-negative">*</span>
                       <textarea name="whyApply" required={step === 2} rows={4} className={inputClass} />
                     </label>
-                    <label className="block text-sm font-semibold text-gray-800">
+                    <label className="block text-sm font-semibold text-gray-800 sm:max-lg:col-span-2">
                       How do you know your local creative community, and what networks can you bring?{" "}
                       <span className="text-negative">*</span>
                       <textarea name="communityExperience" required={step === 2} rows={4} className={inputClass} />
                     </label>
-                    <label className="block text-sm font-semibold text-gray-800">
+                    <label className="block text-sm font-semibold text-gray-800 sm:max-lg:col-span-2">
                       How will you promote KFCAA and mobilise creatives in your area? <span className="text-negative">*</span>
                       <textarea name="howPromote" required={step === 2} rows={4} className={inputClass} />
                     </label>
@@ -498,7 +504,7 @@ export default function VolunteerApplication() {
                 </div>
 
                 <div className={step === 3 ? undefined : "hidden"}>
-                  <h2 className="text-lg font-bold text-gray-900 sm:text-xl">4. Declarations</h2>
+                  <h2 className="text-left text-lg font-bold text-gray-900 sm:text-xl lg:text-center lg:text-lg">4. Declarations</h2>
                   <div className="mt-4 space-y-3 text-sm text-gray-700">
                     <label className="flex items-start gap-3">
                       <input name="accuracy" type="checkbox" value="true" required={step === 3} className="mt-1 h-5 w-5 shrink-0" />
@@ -547,9 +553,9 @@ export default function VolunteerApplication() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-4 text-center text-sm font-bold text-white hover:bg-secondary-800 disabled:opacity-60"
+                      className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-secondary-700 px-3 py-2 text-center text-sm font-bold leading-tight text-white hover:bg-secondary-800 disabled:opacity-60"
                     >
-                      {submitting ? "Submitting…" : `Apply as ${role ? roleLabel(role) : "a volunteer"}`}
+                      {submitting ? "Submitting…" : "Apply"}
                     </button>
                   )}
                 </div>
