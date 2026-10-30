@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { blogLastModifiedDate, getPublishedBlogsForSitemap } from "@/lib/blog-server";
+import { getPublishedFormsForSitemap } from "@/lib/forms-server";
 import { CFMA_TICKET_LOCATIONS } from "@/lib/cfma-ticket-locations";
 import { getPublishedJobListings } from "@/lib/job-board-listings";
 import { SITE_URL } from "@/lib/site-url";
@@ -50,6 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/fusion-xpress/fx-qr-code-generator", priority: 0.98, changeFrequency: "daily" as const },
     { path: "/careers", priority: 0.82, changeFrequency: "weekly" as const },
     { path: "/blogs", priority: 0.85, changeFrequency: "weekly" as const },
+    { path: "/forms", priority: 0.85, changeFrequency: "weekly" as const },
     { path: "/privacy", priority: 0.3, changeFrequency: "yearly" as const },
     { path: "/terms", priority: 0.3, changeFrequency: "yearly" as const },
     { path: "/cookies", priority: 0.3, changeFrequency: "yearly" as const },
@@ -108,6 +110,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // aggregated_jobs may not exist yet
   }
 
+  const formEntries: MetadataRoute.Sitemap = [];
+  try {
+    const formRows = await getPublishedFormsForSitemap();
+    for (const row of formRows) {
+      if (!row.slug) continue;
+      formEntries.push({
+        url: `${baseUrl}/forms/${row.slug}`,
+        lastModified: row.updated_at ? new Date(row.updated_at) : row.published_at ? new Date(row.published_at) : now,
+        changeFrequency: "weekly" as const,
+        priority: 0.84,
+      });
+    }
+  } catch {
+    // fusion_forms may not exist yet
+  }
+
   const blogEntries: MetadataRoute.Sitemap = [];
   try {
     const blogRows = await getPublishedBlogsForSitemap();
@@ -154,6 +172,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // fusion_events / is_live may be unavailable
   }
 
-  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...liveEventEntries];
+  return [...staticEntries, ...ticketLocationEntries, ...jobEntries, ...blogEntries, ...formEntries, ...liveEventEntries];
 }
 

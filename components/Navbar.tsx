@@ -53,6 +53,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
+    { href: "/forms", label: "Forms" },
   ];
 
   const aboutLinks = [
@@ -64,6 +65,7 @@ export default function Navbar() {
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
     { href: "/blogs", label: "Blogs/News" },
+    { href: "/forms", label: "Forms" },
     { href: "/download", label: "Download" },
   ];
 

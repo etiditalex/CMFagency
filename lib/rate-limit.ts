@@ -42,6 +42,11 @@ export function checkVolunteerApplyRateLimit(ip: string): { allowed: boolean; re
   return checkRegisterRateLimit(ip, "kfcaa-volunteer");
 }
 
+/** Rate limit public Fusion form submissions by IP. */
+export function checkFormSubmitRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkRegisterRateLimit(ip, "fusion-form");
+}
+
 function checkRegisterRateLimit(ip: string, prefix: string): { allowed: boolean; retryAfter?: number } {
   cleanup();
   const key = getKey(ip, prefix);
