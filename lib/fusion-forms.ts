@@ -155,7 +155,54 @@ export function makeFormSubmissionCode(): string {
   return `CFF-${body}`;
 }
 
-export const FORMS_SETUP_SQL = "database/ticketing_voting_mvp_patch_104_fusion_forms.sql";
+export const STARTER_FORM_SLUGS = ["registration", "volunteers"] as const;
+
+export type StarterForm = {
+  slug: (typeof STARTER_FORM_SLUGS)[number];
+  title: string;
+  excerpt: string;
+  intro: string;
+  category: string;
+  imageUrl: string;
+  linkHref: string;
+};
+
+/** Registration and Volunteers, the first forms on the public page and in the dashboard. */
+export const STARTER_FORMS: readonly StarterForm[] = [
+  {
+    slug: "registration",
+    title: "Registration",
+    excerpt:
+      "Apply for Kenya’s Ideal Mr & Miss 2026. Theme: Models for Education. 12 December 2026 at Malaika Lounge, Malindi.",
+    intro:
+      "Contestant application for Kenya’s Ideal Mr & Miss 2026. The card on the Forms page opens this application.",
+    category: "Registration",
+    imageUrl: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
+    linkHref: "/events/registration",
+  },
+  {
+    slug: "volunteers",
+    title: "Volunteers",
+    excerpt:
+      "Apply to volunteer as a Regional or County Representative for the Kenya Fashion and Creative Arts Awards, organised by Changer Fusions.",
+    intro:
+      "Regional and county representative application for the Kenya Fashion and Creative Arts Awards. The card on the Forms page opens this application.",
+    category: "Volunteer",
+    imageUrl: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448264/HighFashionAudition202512_uju1mf.jpg",
+    linkHref: "/events/volunteers",
+  },
+];
+
+export function isStarterFormSlug(slug: string): boolean {
+  return (STARTER_FORM_SLUGS as readonly string[]).includes(slug);
+}
+
+export function starterFormBySlug(slug: string): StarterForm | null {
+  return STARTER_FORMS.find((form) => form.slug === slug) ?? null;
+}
+
+export const FORMS_SETUP_SQL =
+  "database/ticketing_voting_mvp_patch_104_fusion_forms.sql, then database/ticketing_voting_mvp_patch_105_fusion_forms_starters.sql";
 
 export function formsTableMissingMessage(error: string): string | null {
   const missing =

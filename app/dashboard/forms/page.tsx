@@ -7,7 +7,13 @@ import { Plus, RefreshCw } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
-import { formatFormSubmittedDate, formsTableMissingMessage, parseFormFields } from "@/lib/fusion-forms";
+import {
+  formatFormSubmittedDate,
+  formsTableMissingMessage,
+  isStarterFormSlug,
+  parseFormFields,
+  STARTER_FORMS,
+} from "@/lib/fusion-forms";
 import { supabase } from "@/lib/supabase";
 
 const PAGE_SIZE = 10;
@@ -22,6 +28,7 @@ type FormRow = {
   createdAt: string;
   fieldCount: number;
   responses: number;
+  href: string;
 };
 
 type DbForm = {
@@ -33,8 +40,40 @@ type DbForm = {
   fields: unknown;
   published_at: string | null;
   created_at: string;
+  link_href?: string | null;
   fusion_form_submissions?: { count: number }[] | null;
 };
+
+function publicHref(slug: string, linkHref: string | null | undefined) {
+  const saved = linkHref?.trim();
+  if (saved?.startsWith("/")) return saved;
+  return STARTER_FORMS.find((form) => form.slug === slug)?.linkHref || `/forms/${slug}`;
+}
+
+async function ensureStarterForms() {
+  const { data, error } = await supabase.from("fusion_forms").select("slug").in("slug", ["registration", "volunteers"]);
+  if (error) return;
+  const have = new Set((data ?? []).map((row) => String((row as { slug: string }).slug)));
+  for (const starter of STARTER_FORMS) {
+    if (have.has(starter.slug)) continue;
+    const payload = {
+      slug: starter.slug,
+      title: starter.title,
+      excerpt: starter.excerpt,
+      intro: starter.intro,
+      category: starter.category,
+      image_url: starter.imageUrl,
+      fields: [],
+      link_href: starter.linkHref,
+      published_at: starter.slug === "registration" ? "2026-01-01T00:00:00.000Z" : "2026-01-02T00:00:00.000Z",
+    };
+    const inserted = await supabase.from("fusion_forms").insert(payload);
+    if (inserted.error?.message.includes("link_href")) {
+      const { link_href: _ignored, ...withoutLink } = payload;
+      await supabase.from("fusion_forms").insert(withoutLink);
+    }
+  }
+}
 
 export default function DashboardFormsPage() {
   const router = useRouter();
@@ -52,24 +91,42 @@ export default function DashboardFormsPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchErr } = await supabase
+      await ensureStarterForms();
+      let fetched = await supabase
         .from("fusion_forms")
-        .select("id, slug, title, excerpt, category, fields, published_at, created_at, fusion_form_submissions(count)")
-        .order("created_at", { ascending: false });
-      if (fetchErr) throw fetchErr;
-      setRows(
-        ((data as DbForm[]) ?? []).map((row) => ({
-          id: row.id,
-          slug: row.slug,
-          title: row.title,
-          excerpt: row.excerpt,
-          category: row.category,
-          publishedAt: row.published_at,
-          createdAt: row.created_at,
-          fieldCount: parseFormFields(row.fields).length,
-          responses: row.fusion_form_submissions?.[0]?.count ?? 0,
-        }))
-      );
+        .select("id, slug, title, excerpt, category, fields, link_href, published_at, created_at, fusion_form_submissions(count)")
+        .order("created_at", { ascending: true });
+      if (fetched.error?.message.includes("link_href")) {
+        fetched = await supabase
+          .from("fusion_forms")
+          .select("id, slug, title, excerpt, category, fields, published_at, created_at, fusion_form_submissions(count)")
+          .order("created_at", { ascending: true });
+      }
+      if (fetched.error) throw fetched.error;
+      const mapped = ((fetched.data as DbForm[]) ?? []).map((row) => ({
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        excerpt: row.excerpt,
+        category: row.category,
+        publishedAt: row.published_at,
+        createdAt: row.created_at,
+        fieldCount: parseFormFields(row.fields).length,
+        responses: row.fusion_form_submissions?.[0]?.count ?? 0,
+        href: publicHref(row.slug, row.link_href),
+      }));
+      const starterOrder = STARTER_FORMS.map((form) => form.slug);
+      mapped.sort((a, b) => {
+        const aIndex = starterOrder.indexOf(a.slug as (typeof starterOrder)[number]);
+        const bIndex = starterOrder.indexOf(b.slug as (typeof starterOrder)[number]);
+        if (aIndex !== -1 || bIndex !== -1) {
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        }
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      setRows(mapped);
       setPage(0);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to load forms";
@@ -136,7 +193,7 @@ export default function DashboardFormsPage() {
         <div>
           <h2 className="border-b border-hairline pb-3 text-xl font-bold text-[#1a2332] md:text-2xl">Forms</h2>
           <p className="mt-1 max-w-3xl text-gray-600">
-            Create a form here and publish it. Each published form is added to the public Forms page in the same card grid as blogs.
+            Registration and Volunteers are listed first. Edit a row to change its card on the public Forms page. New forms you publish are added after them.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -238,7 +295,7 @@ export default function DashboardFormsPage() {
                                 <span className="font-semibold text-gray-900">Summary:</span> {row.excerpt?.trim() || "—"}
                               </p>
                               <p className="mt-2 text-sm text-gray-700">
-                                <span className="font-semibold text-gray-900">Public URL:</span> /forms/{row.slug}
+                                <span className="font-semibold text-gray-900">Opens:</span> {row.href}
                               </p>
                               <div className="mt-4 flex flex-wrap gap-3 text-sm font-semibold">
                                 <Link href={`/dashboard/forms/${row.id}/edit`} className="text-primary-700 hover:underline">
@@ -248,18 +305,20 @@ export default function DashboardFormsPage() {
                                   Responses
                                 </Link>
                                 {row.publishedAt ? (
-                                  <Link href={`/forms/${row.slug}`} target="_blank" className="text-primary-700 hover:underline">
+                                  <Link href={row.href} target="_blank" className="text-primary-700 hover:underline">
                                     View public page
                                   </Link>
                                 ) : null}
-                                <button
-                                  type="button"
-                                  onClick={() => void removeForm(row)}
-                                  disabled={deletingId === row.id}
-                                  className="text-red-600 hover:underline disabled:opacity-50"
-                                >
-                                  {deletingId === row.id ? "Deleting…" : "Delete"}
-                                </button>
+                                {isStarterFormSlug(row.slug) ? null : (
+                                  <button
+                                    type="button"
+                                    onClick={() => void removeForm(row)}
+                                    disabled={deletingId === row.id}
+                                    className="text-red-600 hover:underline disabled:opacity-50"
+                                  >
+                                    {deletingId === row.id ? "Deleting…" : "Delete"}
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import PublicForm from "@/components/forms/PublicForm";
@@ -39,6 +39,7 @@ export default async function FormDetailPage({ params }: Props) {
   const { slug } = await params;
   const form = await getPublishedFormBySlug(slug);
   if (!form) notFound();
+  if (form.href && form.href !== `/forms/${form.slug}`) redirect(form.href);
   const intro = form.intro?.trim() || form.excerpt?.trim() || "";
   const image = form.image_url ? resolveBlogImageSrc(form.image_url, DEFAULT_BLOG_CARD_IMAGE, form.slug) : null;
 

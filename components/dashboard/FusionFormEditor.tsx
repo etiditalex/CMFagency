@@ -13,9 +13,11 @@ import {
   FORM_CATEGORIES,
   FORM_FIELD_TYPES,
   formsTableMissingMessage,
+  isStarterFormSlug,
   newFieldId,
   parseFormFields,
   slugifyFormTitle,
+  starterFormBySlug,
   type FormFieldType,
   type FusionFormField,
 } from "@/lib/fusion-forms";
@@ -42,6 +44,7 @@ export default function FusionFormEditor({ formId }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [linkHref, setLinkHref] = useState("");
   const [publishNow, setPublishNow] = useState(false);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -62,10 +65,49 @@ export default function FusionFormEditor({ formId }: Props) {
     const load = async () => {
       const { data, error: loadError } = await supabase
         .from("fusion_forms")
-        .select("title, slug, excerpt, intro, category, image_url, fields, published_at")
+        .select("title, slug, excerpt, intro, category, image_url, fields, link_href, published_at")
         .eq("id", formId)
         .maybeSingle();
       if (cancelled) return;
+      if (loadError?.message.includes("link_href")) {
+        const fallback = await supabase
+          .from("fusion_forms")
+          .select("title, slug, excerpt, intro, category, image_url, fields, published_at")
+          .eq("id", formId)
+          .maybeSingle();
+        if (cancelled) return;
+        if (fallback.error || !fallback.data) {
+          setError(formsTableMissingMessage(fallback.error?.message ?? "") ?? fallback.error?.message ?? "Form not found.");
+          setReady(true);
+          return;
+        }
+        const row = fallback.data as {
+          title: string;
+          slug: string;
+          excerpt: string | null;
+          intro: string | null;
+          category: string | null;
+          image_url: string | null;
+          fields: unknown;
+          published_at: string | null;
+        };
+        const parsed = parseFormFields(row.fields);
+        const starter = starterFormBySlug(row.slug);
+        setTitle(row.title);
+        setSlug(row.slug);
+        setSlugTouched(true);
+        setExcerpt(row.excerpt ?? "");
+        setIntro(row.intro ?? "");
+        setCategory(row.category || FORM_CATEGORIES[0]);
+        setLinkHref(starter?.linkHref ?? "");
+        setFields(parsed.length ? parsed : starter ? [] : defaultFormFields());
+        setImageUrl(row.image_url);
+        setImagePreviewUrl(row.image_url);
+        setPublishedAt(row.published_at);
+        setPublishNow(row.published_at != null);
+        setReady(true);
+        return;
+      }
       if (loadError || !data) {
         setError(formsTableMissingMessage(loadError?.message ?? "") ?? loadError?.message ?? "Form not found.");
         setReady(true);
@@ -79,15 +121,20 @@ export default function FusionFormEditor({ formId }: Props) {
         category: string | null;
         image_url: string | null;
         fields: unknown;
+        link_href?: string | null;
         published_at: string | null;
       };
+      const parsed = parseFormFields(row.fields);
+      const starter = starterFormBySlug(row.slug);
+      const savedLink = row.link_href?.trim() || starter?.linkHref || "";
       setTitle(row.title);
       setSlug(row.slug);
       setSlugTouched(true);
       setExcerpt(row.excerpt ?? "");
       setIntro(row.intro ?? "");
       setCategory(row.category || FORM_CATEGORIES[0]);
-      setFields(parseFormFields(row.fields).length ? parseFormFields(row.fields) : defaultFormFields());
+      setLinkHref(savedLink);
+      setFields(parsed.length ? parsed : savedLink ? [] : defaultFormFields());
       setImageUrl(row.image_url);
       setImagePreviewUrl(row.image_url);
       setPublishedAt(row.published_at);
@@ -150,7 +197,8 @@ export default function FusionFormEditor({ formId }: Props) {
       if (!title.trim()) throw new Error("Title is required.");
       if (!normalizedSlug) throw new Error("Slug is required.");
       const cleanFields = parseFormFields(fields);
-      if (cleanFields.length === 0) throw new Error("Add at least one field.");
+      const opensExistingPage = linkHref.trim().startsWith("/");
+      if (cleanFields.length === 0 && !opensExistingPage) throw new Error("Add at least one field.");
       for (const field of cleanFields) {
         if (field.type === "select" && field.options.length === 0) {
           throw new Error(`Add at least one option for “${field.label}”.`);
@@ -167,12 +215,19 @@ export default function FusionFormEditor({ formId }: Props) {
         category: category.trim() || null,
         image_url: nextImage,
         fields: cleanFields,
+        link_href: linkHref.trim() || null,
         published_at: nextPublishedAt,
       };
-      const query = formId
-        ? supabase.from("fusion_forms").update(payload).eq("id", formId)
-        : supabase.from("fusion_forms").insert({ ...payload, created_by: user.id });
-      const { error: saveError } = await query;
+      const save = (body: typeof payload | Omit<typeof payload, "link_href">) =>
+        formId
+          ? supabase.from("fusion_forms").update(body).eq("id", formId)
+          : supabase.from("fusion_forms").insert({ ...body, created_by: user.id });
+      let { error: saveError } = await save(payload);
+      if (saveError?.message.includes("link_href")) {
+        const { link_href: _ignored, ...withoutLink } = payload;
+        const retried = await save(withoutLink);
+        saveError = retried.error;
+      }
       if (saveError) throw saveError;
       router.push("/dashboard/forms");
     } catch (err: unknown) {
@@ -200,7 +255,8 @@ export default function FusionFormEditor({ formId }: Props) {
             {formId ? "Edit form" : "New form"}
           </h2>
           <p className="mt-1 text-left text-gray-600">
-            Published forms appear as cards on the public Forms page. Leave publish unchecked to keep a draft.
+            Published forms appear as cards on the public Forms page. Registration and Volunteers open their existing
+            application pages. Leave publish unchecked to keep a draft.
           </p>
         </div>
         <Link
@@ -230,6 +286,26 @@ export default function FusionFormEditor({ formId }: Props) {
             required
           />
           <p className="mt-2 text-xs text-gray-500">URL: /forms/{slugifyFormTitle(slug) || "slug"}</p>
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-gray-700">Card opens</label>
+          <input
+            value={linkHref}
+            onChange={(e) => setLinkHref(e.target.value)}
+            className={inputClass}
+            placeholder="/events/registration — leave empty to open the questions on this form"
+          />
+          {linkHref.trim().startsWith("/") ? (
+            <p className="mt-2 text-xs text-gray-500">
+              Visitors who open this card go to {linkHref.trim()}. Title, summary, category, and cover image are what
+              change on the Forms page.
+              {isStarterFormSlug(slugifyFormTitle(slug))
+                ? " Questions below are not shown on the existing application page."
+                : ""}
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-gray-500">Leave this empty to show the questions on /forms/{slugifyFormTitle(slug) || "slug"}.</p>
+          )}
         </div>
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">Card summary</label>

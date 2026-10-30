@@ -93,8 +93,8 @@
   .type-section-heading {
     font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
     font-style: normal;
-    font-weight: 800;
-    font-size: 1.65rem;
+    font-weight: 600;
+    font-size: 1.35rem;
     line-height: 1.15;
     letter-spacing: -0.02em;
     color: var(--editorial-accent);
@@ -158,17 +158,17 @@
 
 @media (min-width: 640px) {
   .type-section-heading {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .type-section-heading {
-    font-size: 2.65rem;
+    font-size: 1.75rem;
   }
 }
 
-/* Public titles match the poll page: Montserrat, extrabold, same scale. */
+/* Public titles: Montserrat, semibold, a quieter scale. */
 .site-editorial h1,
 .site-editorial h2,
 .site-editorial h3 {
@@ -182,43 +182,44 @@
 }
 
 .site-editorial h1,
-.site-editorial h2 {
-  font-weight: 800;
+.site-editorial h2,
+.site-editorial h3 {
+  font-weight: 600;
   letter-spacing: -0.02em;
   text-transform: none;
 }
 
 .site-editorial h1 {
-  font-size: 2rem;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .site-editorial h2,
 .site-editorial .home-about h3 {
-  font-size: 1.65rem;
-  line-height: 1.15;
+  font-size: 1.35rem;
+  line-height: 1.25;
 }
 
 @media (min-width: 640px) {
   .site-editorial h1 {
-    font-size: 3.5rem;
+    font-size: 2.25rem;
   }
 
   .site-editorial h2,
   .site-editorial .home-about h3 {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .site-editorial h1 {
-    font-size: 4.05rem;
+    font-size: 2.6rem;
   }
 
   .site-editorial h2,
   .site-editorial .home-about h3 {
-    font-size: 2.65rem;
+    font-size: 1.75rem;
   }
 }
 
@@ -268,8 +269,8 @@
 }
 
 .site-editorial .fashion-night-hero h1 {
-  font-weight: 800;
-  font-size: clamp(2rem, 4.8vw, 4.35rem);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 3.4vw, 2.75rem);
   line-height: 0.92;
   letter-spacing: -0.03em;
   text-transform: uppercase;
@@ -354,7 +355,7 @@
 .site-editorial .fashion-night-story .fn-sponsor {
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-style: italic;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
   text-align: center;
@@ -375,7 +376,7 @@
 
 .site-editorial .fashion-night-place h2 {
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: 0.12em;
   text-align: center;
@@ -426,7 +427,7 @@
 .site-editorial .fashion-night-gallery h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.35rem;
   line-height: 1.1;
   letter-spacing: 0.14em;
@@ -516,7 +517,7 @@
 .site-editorial .fashion-night-past h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   font-size: clamp(1.15rem, 2.2vw, 1.5rem);
   line-height: 1.2;
   letter-spacing: 0.06em;
@@ -667,8 +668,8 @@
 
 .site-editorial .poll-maker h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 1.65rem;
+  font-weight: 600;
+  font-size: 1.35rem;
   line-height: 1.15;
   color: #fff;
 }
@@ -710,8 +711,8 @@
 
 .site-editorial .poll-features h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 1.65rem;
+  font-weight: 600;
+  font-size: 1.35rem;
   line-height: 1.15;
   color: #fff;
 }
@@ -743,7 +744,7 @@
 .site-editorial .poll-cta h2 span {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.75rem;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -759,19 +760,19 @@
 @media (min-width: 640px) {
   .site-editorial .poll-cta h2,
   .site-editorial .poll-cta h2 span {
-    font-size: 2.15rem;
+    font-size: 1.65rem;
   }
 }
 
 @media (min-width: 640px) {
   .site-editorial .poll-features h2 {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .site-editorial .poll-features h2 {
-    font-size: 2.65rem;
+    font-size: 1.75rem;
   }
 }
 
@@ -779,7 +780,7 @@
 .site-editorial .poll-hero h1 span {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 0.96;
   text-transform: none;
@@ -788,8 +789,8 @@
 }
 
 .site-editorial .poll-hero h1 {
-  font-size: 2rem;
-  line-height: 1.05;
+  font-size: 1.75rem;
+  line-height: 1.15;
   color: #fff;
 }
 
@@ -815,13 +816,13 @@
 
 @media (min-width: 640px) {
   .site-editorial .poll-hero h1 {
-    font-size: 3.5rem;
+    font-size: 2.25rem;
   }
 }
 
 @media (min-width: 1024px) {
   .site-editorial .poll-hero h1 {
-    font-size: 4.05rem;
+    font-size: 2.6rem;
   }
 }
 
@@ -843,7 +844,7 @@
 
 .site-editorial .poll-create h1 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.85rem;
   line-height: 1.15;
   color: #fff;
@@ -874,7 +875,7 @@
 
 .site-editorial .poll-create .poll-create-steps-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.7rem;
   line-height: 1.2;
   color: #fff;
@@ -901,7 +902,7 @@
 
 .site-editorial .poll-create .poll-create-showcase-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.85rem;
   line-height: 1.15;
   color: #fff;
@@ -984,7 +985,7 @@
 
 .site-editorial .poll-create .poll-create-faq-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.85rem;
   line-height: 1.15;
   color: #fff;
@@ -1016,8 +1017,8 @@
 
 .site-editorial .poll-create .poll-create-ready-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  font-size: 1.65rem;
+  font-weight: 600;
+  font-size: 1.35rem;
   line-height: 1.2;
   color: #fff;
 }
@@ -1043,7 +1044,7 @@
 
 .site-editorial .poll-auth .poll-auth-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.75rem;
   line-height: 1.2;
   color: #fff;
@@ -1132,8 +1133,8 @@
 
 .site-editorial .poll-live-demo .poll-live-demo-section-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.65rem;
-  font-weight: 800;
+  font-size: 1.35rem;
+  font-weight: 600;
   line-height: 1.2;
   color: #fff;
 }
@@ -1149,7 +1150,7 @@
   margin-top: 2.25rem;
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-size: 1.2rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.3;
   color: #fff;
 }
@@ -1198,8 +1199,8 @@
 
 .site-editorial .poll-live-demo .poll-live-demo-title {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-size: 2.15rem;
-  font-weight: 800;
+  font-size: 1.75rem;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.03em;
   text-align: center !important;
@@ -1208,7 +1209,7 @@
 
 @media (min-width: 640px) {
   .site-editorial .poll-live-demo .poll-live-demo-title {
-    font-size: 2.75rem;
+    font-size: 2.15rem;
   }
 }
 
@@ -1335,7 +1336,7 @@
 .site-editorial .live-polls-hero h1,
 .site-editorial .live-polls-hero h1 span {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
 }
@@ -1349,7 +1350,7 @@
 }
 
 .site-editorial .live-polls-hero h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
 }
 
 .site-editorial .live-polls-hero p {
@@ -1361,7 +1362,7 @@
 
 @media (min-width: 640px) {
   .site-editorial .live-polls-hero h1 {
-    font-size: 2.35rem;
+    font-size: 1.9rem;
   }
 }
 
@@ -1376,7 +1377,7 @@
 }
 
 .site-editorial .live-polls-grid h3 {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.95rem;
   line-height: 1.3;
   text-transform: uppercase;
@@ -1403,7 +1404,7 @@
 
 .site-editorial .live-polls-results h1 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.35rem;
   line-height: 1.25;
   letter-spacing: -0.02em;
@@ -1419,7 +1420,7 @@
 
 .site-editorial .live-polls-results h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.15rem;
   line-height: 1.2;
   text-transform: none;
@@ -1837,8 +1838,8 @@
 .site-editorial .home-build h2 {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
   font-style: normal;
-  font-weight: 800;
-  font-size: 1.65rem;
+  font-weight: 600;
+  font-size: 1.35rem;
   line-height: 1.15;
   letter-spacing: -0.02em;
   text-align: center !important;
@@ -1848,13 +1849,13 @@
 
 @media (min-width: 640px) {
   .site-editorial .home-build h2 {
-    font-size: 2.25rem;
+    font-size: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
   .site-editorial .home-build h2 {
-    font-size: 2.65rem;
+    font-size: 1.75rem;
   }
 }
 
@@ -1889,7 +1890,7 @@
 
 .site-editorial .home-build .home-build-word {
   font-family: var(--font-montserrat), "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.7rem;
   line-height: 1;
   letter-spacing: -0.03em;
