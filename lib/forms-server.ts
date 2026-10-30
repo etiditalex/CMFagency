@@ -107,7 +107,7 @@ export const listPublicForms = cache(async (): Promise<FormListingRow[]> => {
     if (known.unavailable || !knownSlugs.has(starter.slug)) return [staticStarterCard(starter)];
     return [];
   });
-  const pinnedSlugs = new Set(STARTER_FORMS.map((form) => form.slug));
+  const pinnedSlugs = new Set<string>(STARTER_FORMS.map((form) => form.slug));
   const rest = published.rows.filter((row) => !pinnedSlugs.has(row.slug));
   return [...pinned, ...rest];
 });

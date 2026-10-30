@@ -92,18 +92,22 @@ export default function DashboardFormsPage() {
     setError(null);
     try {
       await ensureStarterForms();
-      let fetched = await supabase
+      const withLink = await supabase
         .from("fusion_forms")
         .select("id, slug, title, excerpt, category, fields, link_href, published_at, created_at, fusion_form_submissions(count)")
         .order("created_at", { ascending: true });
-      if (fetched.error?.message.includes("link_href")) {
-        fetched = await supabase
+      let data = (withLink.data ?? null) as DbForm[] | null;
+      let fetchError = withLink.error;
+      if (fetchError?.message.includes("link_href")) {
+        const withoutLink = await supabase
           .from("fusion_forms")
           .select("id, slug, title, excerpt, category, fields, published_at, created_at, fusion_form_submissions(count)")
           .order("created_at", { ascending: true });
+        data = (withoutLink.data ?? null) as DbForm[] | null;
+        fetchError = withoutLink.error;
       }
-      if (fetched.error) throw fetched.error;
-      const mapped = ((fetched.data as DbForm[]) ?? []).map((row) => ({
+      if (fetchError) throw fetchError;
+      const mapped = (data ?? []).map((row) => ({
         id: row.id,
         slug: row.slug,
         title: row.title,
