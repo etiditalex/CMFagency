@@ -16,7 +16,37 @@ export type FormListingRow = {
   category: string | null;
   image_url: string | null;
   published_at: string | null;
+  /** Public page for this card. Dashboard forms use /forms/[slug]. */
+  href?: string;
 };
+
+/** Existing application pages, shown first on /forms before dashboard-created forms. */
+export const BUILT_IN_FORM_CARDS: FormListingRow[] = [
+  {
+    id: "built-in-registration",
+    slug: "registration",
+    href: "/events/registration",
+    title: "Registration",
+    excerpt:
+      "Apply for Kenya’s Ideal Mr & Miss 2026. Theme: Models for Education. 12 December 2026 at Malaika Lounge, Malindi.",
+    category: "Registration",
+    image_url:
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg",
+    published_at: null,
+  },
+  {
+    id: "built-in-volunteers",
+    slug: "volunteers",
+    href: "/events/volunteers",
+    title: "Volunteers",
+    excerpt:
+      "Apply to volunteer as a Regional or County Representative for the Kenya Fashion and Creative Arts Awards, organised by Changer Fusions.",
+    category: "Volunteer",
+    image_url:
+      "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448264/HighFashionAudition202512_uju1mf.jpg",
+    published_at: null,
+  },
+];
 
 export type FormDetailRow = FormListingRow & {
   intro: string | null;

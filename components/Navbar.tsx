@@ -53,7 +53,6 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/forms", label: "Forms" },
   ];
 
   const aboutLinks = [
@@ -65,7 +64,6 @@ export default function Navbar() {
     { href: "/testimonials", label: "Testimonials" },
     { href: "/portfolios", label: "Gallery" },
     { href: "/blogs", label: "Blogs/News" },
-    { href: "/forms", label: "Forms" },
     { href: "/download", label: "Download" },
   ];
 
@@ -622,6 +620,9 @@ export default function Navbar() {
             <Link href="/poll" className={desktopNavItem}>
               Poll
             </Link>
+            <Link href="/forms" className={desktopNavItem}>
+              Forms
+            </Link>
 
             <Link
               href="/merchandise"
@@ -1014,6 +1015,13 @@ export default function Navbar() {
                   className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
                 >
                   Poll
+                </Link>
+                <Link
+                  href="/forms"
+                  onClick={() => setIsOpen(false)}
+                  className="block py-2 text-gray-700 hover:text-primary-600 font-bold transition-colors duration-200"
+                >
+                  Forms
                 </Link>
 
                 <Link

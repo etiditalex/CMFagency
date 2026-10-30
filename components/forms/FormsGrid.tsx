@@ -35,12 +35,13 @@ export default function FormsGrid({ forms }: { forms: FormListingRow[] }) {
             forms.map((form, idx) => {
               const src = resolveBlogImageSrc(form.image_url, DEFAULT_BLOG_CARD_IMAGE, form.slug);
               const dateLabel = formatFormDate(form.published_at);
+              const href = form.href || `/forms/${form.slug}`;
               return (
                 <article
                   key={form.id}
                   className="group w-full min-w-0 overflow-hidden rounded-xl border border-gray-200/80 bg-white/95 shadow-md backdrop-blur-sm transition-shadow duration-300 hover:shadow-lg"
                 >
-                  <Link href={`/forms/${form.slug}`} className="block">
+                  <Link href={href} className="block">
                     <div className="relative h-40 overflow-hidden bg-gray-100 sm:h-44 md:h-48">
                       <Image
                         src={src}
@@ -72,11 +73,11 @@ export default function FormsGrid({ forms }: { forms: FormListingRow[] }) {
                       </div>
                     ) : null}
                     <h2 className="mb-2 line-clamp-3 text-base font-bold text-gray-900 transition-colors group-hover:text-primary-600 sm:text-lg">
-                      <Link href={`/forms/${form.slug}`}>{form.title}</Link>
+                      <Link href={href}>{form.title}</Link>
                     </h2>
                     <p className="mb-3 line-clamp-3 text-sm text-gray-600 sm:text-base">{form.excerpt || ""}</p>
                     <Link
-                      href={`/forms/${form.slug}`}
+                      href={href}
                       className="group/link inline-flex items-center text-sm font-semibold text-primary-600 hover:text-primary-700 sm:text-base"
                     >
                       <span>Open form</span>
