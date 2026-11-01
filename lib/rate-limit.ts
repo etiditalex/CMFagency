@@ -47,6 +47,11 @@ export function checkFormSubmitRateLimit(ip: string): { allowed: boolean; retryA
   return checkRegisterRateLimit(ip, "fusion-form");
 }
 
+/** Rate limit public application-status lookups by IP. */
+export function checkApplicationTrackRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(ip, "track-application", 8, 15 * 60 * 1000);
+}
+
 function checkRegisterRateLimit(ip: string, prefix: string): { allowed: boolean; retryAfter?: number } {
   cleanup();
   const key = getKey(ip, prefix);

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { ensureForumMembership } from "@/lib/kenya-coast-models-membership";
 import { discardUnpaidForumRegistration } from "@/lib/kcm-unpaid-registration";
+import { getStkMetadataItem } from "@/lib/daraja-stk-result";
+import { querySafaricomStkCheckout, safaricomStkDecision, stkPaidAmountMatches } from "@/lib/daraja-stk-query";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -21,16 +23,6 @@ function extractStkCallback(payload: unknown): StkCallback | null {
   return stk && typeof stk === "object" ? stk : null;
 }
 
-function isSuccess(resultCode: unknown, items: CallbackMetadataItem[]): boolean {
-  const receipt = items.find((item) => String(item.Name) === "MpesaReceiptNumber")?.Value;
-  if (receipt !== undefined && receipt !== null && String(receipt).trim() !== "") return true;
-  if (resultCode === undefined || resultCode === null) return false;
-  const text = String(resultCode).trim();
-  if (text === "0" || text === "00") return true;
-  const number = Number(resultCode);
-  return Number.isFinite(number) && number === 0;
-}
-
 export async function POST(req: Request) {
   try {
     const payload = JSON.parse(await req.text()) as unknown;
@@ -47,14 +39,24 @@ export async function POST(req: Request) {
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
     const { data: row } = await admin
       .from("kenya_coast_models_registrations")
-      .select("id, payment_status")
+      .select("id, payment_status, fee_kes")
       .eq("daraja_checkout_request_id", checkoutId)
       .maybeSingle();
     if (!row) return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
 
-    const items = stk?.CallbackMetadata?.Item ?? [];
-    const receipt = String(items.find((item) => String(item.Name) === "MpesaReceiptNumber")?.Value ?? "").trim();
-    if (isSuccess(stk?.ResultCode, items)) {
+    if ((row as { payment_status?: string }).payment_status === "success") {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
+    }
+
+    const confirmed = await querySafaricomStkCheckout(checkoutId);
+    if (!confirmed.ok) return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
+
+    const decision = safaricomStkDecision(confirmed.parsed);
+    if (
+      decision === "paid" &&
+      stkPaidAmountMatches(confirmed.parsed.items, Number((row as { fee_kes?: number }).fee_kes))
+    ) {
+      const receipt = String(getStkMetadataItem(confirmed.parsed.items, "MpesaReceiptNumber") ?? "").trim();
       await admin
         .from("kenya_coast_models_registrations")
         .update({
@@ -68,16 +70,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
     }
 
-    if ((row as { payment_status?: string }).payment_status === "success") {
-      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
+    if (decision === "failed") {
+      await discardUnpaidForumRegistration(admin, String((row as { id: string }).id));
     }
-
-    await discardUnpaidForumRegistration(admin, String((row as { id: string }).id));
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" });
-  } catch (e: unknown) {
-    return NextResponse.json(
-      { ResultCode: 1, ResultDesc: e instanceof Error ? e.message : "Unknown error" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ ResultCode: 1, ResultDesc: "Server error" }, { status: 500 });
   }
 }

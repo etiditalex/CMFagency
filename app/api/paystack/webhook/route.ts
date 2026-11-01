@@ -30,7 +30,10 @@ type PaystackEvent = {
 function verifySignature(rawBody: string, signature: string | null, secret: string): boolean {
   if (!signature) return false;
   const hash = crypto.createHmac("sha512", secret).update(rawBody).digest("hex");
-  return hash === signature;
+  const actual = Buffer.from(hash);
+  const claimed = Buffer.from(signature);
+  if (actual.length !== claimed.length) return false;
+  return crypto.timingSafeEqual(actual, claimed);
 }
 
 /**

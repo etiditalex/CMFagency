@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { discardUnpaidKcmMembership } from "@/lib/kcm-unpaid-registration";
+import { getStkMetadataItem } from "@/lib/daraja-stk-result";
+import { querySafaricomStkCheckout, safaricomStkDecision, stkPaidAmountMatches } from "@/lib/daraja-stk-query";
 
 type CallbackMetadataItem = { Name: string; Value: string | number };
 type StkCallback = {
@@ -19,19 +21,6 @@ function extractStkCallback(payload: unknown): StkCallback | null {
   if (!body) return null;
   const stk = (body.stkCallback ?? body.StkCallback) as StkCallback | undefined;
   return stk && typeof stk === "object" ? stk : null;
-}
-
-/** ResultCode 0 means success; Daraja may send number or string. */
-function isStkSuccessResult(resultCode: unknown, items: CallbackMetadataItem[]): boolean {
-  const receipt = items.find((i) => String(i.Name) === "MpesaReceiptNumber")?.Value;
-  if (receipt !== undefined && receipt !== null && String(receipt).trim() !== "") {
-    return true;
-  }
-  if (resultCode === undefined || resultCode === null) return false;
-  const s = String(resultCode).trim();
-  if (s === "0" || s === "00") return true;
-  const n = Number(resultCode);
-  return Number.isFinite(n) && n === 0;
 }
 
 export async function POST(req: Request) {
@@ -65,7 +54,7 @@ export async function POST(req: Request) {
 
     const { data: row } = await admin
       .from("kcm_memberships")
-      .select("id,payment_status")
+      .select("id,payment_status,payment_amount_kes")
       .eq("daraja_checkout_request_id", checkoutId)
       .maybeSingle();
 
@@ -73,12 +62,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    const items = stk.CallbackMetadata?.Item ?? [];
-    const findItem = (name: string) => items.find((i) => String(i.Name) === name)?.Value;
-    const mpesaReceipt = String(findItem("MpesaReceiptNumber") ?? "").trim();
-    const success = isStkSuccessResult(stk.ResultCode, items);
+    if ((row as { payment_status?: string }).payment_status === "success") {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    }
 
-    if (success) {
+    const confirmed = await querySafaricomStkCheckout(checkoutId);
+    if (!confirmed.ok) {
+      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    }
+
+    const decision = safaricomStkDecision(confirmed.parsed);
+    if (
+      decision === "paid" &&
+      stkPaidAmountMatches(confirmed.parsed.items, Number((row as { payment_amount_kes?: number }).payment_amount_kes))
+    ) {
+      const mpesaReceipt = String(getStkMetadataItem(confirmed.parsed.items, "MpesaReceiptNumber") ?? "").trim();
       await admin
         .from("kcm_memberships")
         .update({
@@ -93,17 +91,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
     }
 
-    if ((row as { payment_status?: string }).payment_status === "success") {
-      return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
+    if (decision === "failed") {
+      await discardUnpaidKcmMembership(admin, String((row as { id: string }).id));
     }
 
-    await discardUnpaidKcmMembership(admin, String((row as { id: string }).id));
-
     return NextResponse.json({ ResultCode: 0, ResultDesc: "Accepted" }, { status: 200 });
-  } catch (e: unknown) {
-    return NextResponse.json(
-      { ResultCode: 1, ResultDesc: e instanceof Error ? e.message : "Unknown error" },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ ResultCode: 1, ResultDesc: "Server error" }, { status: 500 });
   }
 }

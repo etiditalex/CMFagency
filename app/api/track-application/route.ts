@@ -1,197 +1,181 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createRequestAuthClient, hasSupabaseAuthCookie } from "@/lib/auth/session-cookies";
+import { checkApplicationTrackRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("Missing Supabase environment variables:");
-  console.error("- NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? "✅ Set" : "❌ Missing");
-  console.error("- SUPABASE_SERVICE_ROLE_KEY:", supabaseServiceKey ? "✅ Set" : "❌ Missing");
-  console.error("Please check ENV_SETUP_TRACK_APPLICATION.md for setup instructions");
+const supabaseAdmin =
+  supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : null;
+
+type ApplicationRow = {
+  id: string;
+  cmf_agency_id: string | null;
+  application_type: string | null;
+  status: string | null;
+  name: string | null;
+  full_name: string | null;
+  created_at: string | null;
+  notes: string | null;
+  comments: string | null;
+};
+
+function publicApplication(app: ApplicationRow, includeNotes: boolean) {
+  return {
+    id: app.id,
+    cmfAgencyId: app.cmf_agency_id,
+    applicationType: app.application_type,
+    status: app.status || "pending",
+    name: app.name || app.full_name,
+    submittedAt: app.created_at,
+    ...(includeNotes ? { notes: app.notes || app.comments } : {}),
+  };
 }
 
-const supabaseAdmin = supabaseUrl && supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-  : null;
+async function sessionUserId(request: NextRequest): Promise<string | null> {
+  if (!hasSupabaseAuthCookie(request)) return null;
+  try {
+    const supabase = createRequestAuthClient(request, () => {});
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user?.id) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}
+
+function tooMany(retryAfter: number) {
+  return NextResponse.json(
+    { error: "Too many lookups. Please wait and try again." },
+    { status: 429, headers: { "Retry-After": String(retryAfter) } }
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { method, value, userId } = await request.json();
-
     if (!supabaseAdmin) {
-      const missingVars = [];
-      if (!supabaseUrl) missingVars.push("NEXT_PUBLIC_SUPABASE_URL");
-      if (!supabaseServiceKey) missingVars.push("SUPABASE_SERVICE_ROLE_KEY");
-      
-      console.error("Missing environment variables:", missingVars.join(", "));
-      return NextResponse.json(
-        { 
-          error: "Database connection not configured",
-          details: `Missing: ${missingVars.join(", ")}. Please add these to your .env.local file and restart the server.`
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Application tracking is unavailable." }, { status: 500 });
     }
 
-    // If userId is provided, fetch user's applications directly
-    if (userId && !method && !value) {
+    const body = (await request.json().catch(() => null)) as {
+      method?: unknown;
+      value?: unknown;
+    } | null;
+    const method = typeof body?.method === "string" ? body.method : "";
+    const value = typeof body?.value === "string" ? body.value.trim() : "";
+
+    if (!method && !value) {
+      const userId = await sessionUserId(request);
+      if (!userId) {
+        return NextResponse.json({ error: "Sign in to see your applications." }, { status: 401 });
+      }
+
       const { data, error } = await supabaseAdmin
         .from("applications")
-        .select("*")
+        .select("id,cmf_agency_id,application_type,status,name,full_name,created_at,notes,comments")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error querying applications by user_id:", error);
-        return NextResponse.json(
-          { error: "Failed to query applications" },
-          { status: 500 }
-        );
+        console.error("Error querying applications by session:", error);
+        return NextResponse.json({ error: "Failed to query applications" }, { status: 500 });
       }
 
       if (!data || data.length === 0) {
-        return NextResponse.json(
-          { error: "No applications found for this user" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "No applications found for this user" }, { status: 404 });
       }
 
-      // Return all applications or just the most recent
-      const applications = data.map((app) => ({
-        id: app.id,
-        cmfAgencyId: app.cmf_agency_id,
-        applicationType: app.application_type,
-        status: app.status || "pending",
-        name: app.name || app.full_name,
-        submittedAt: app.created_at,
-        notes: app.notes || app.comments,
-      }));
-
+      const applications = (data as ApplicationRow[]).map((app) => publicApplication(app, true));
       return NextResponse.json({
         success: true,
-        applications: applications,
-        application: applications[0], // Most recent for backward compatibility
+        applications,
+        application: applications[0],
       });
     }
 
+    const limit = checkApplicationTrackRateLimit(getClientIp(request));
+    if (!limit.allowed) return tooMany(limit.retryAfter ?? 900);
+
     if (!method || !value) {
-      return NextResponse.json(
-        { error: "Method and value are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Method and value are required" }, { status: 400 });
     }
 
-    if (!supabaseAdmin) {
-      const missingVars = [];
-      if (!supabaseUrl) missingVars.push("NEXT_PUBLIC_SUPABASE_URL");
-      if (!supabaseServiceKey) missingVars.push("SUPABASE_SERVICE_ROLE_KEY");
-      
-      console.error("Missing environment variables:", missingVars.join(", "));
-      return NextResponse.json(
-        { 
-          error: "Database connection not configured",
-          details: `Missing: ${missingVars.join(", ")}. Please add these to your .env.local file and restart the server.`
-        },
-        { status: 500 }
-      );
-    }
+    let application: ApplicationRow | null = null;
 
-    let application = null;
-
-    // Query based on tracking method
     if (method === "nationalId") {
-      // Search in applications table by national_id
+      if (!/^[0-9A-Za-z]{5,20}$/.test(value)) {
+        return NextResponse.json({ error: "Enter a valid national ID." }, { status: 400 });
+      }
       const { data, error } = await supabaseAdmin
         .from("applications")
-        .select("*")
+        .select("id,cmf_agency_id,application_type,status,name,full_name,created_at,notes,comments")
         .eq("national_id", value)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 is "no rows returned"
+        .maybeSingle();
+      if (error) {
         console.error("Error querying by national ID:", error);
-        return NextResponse.json(
-          { error: "Failed to query application" },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to query application" }, { status: 500 });
       }
-
-      if (data) {
-        application = data;
-      }
+      application = (data as ApplicationRow | null) ?? null;
     } else if (method === "phoneNumber") {
-      // Search by phone number - need to find user first, then their applications
-      const phoneNumber = value.replace(/\s+/g, ""); // Remove spaces
+      const phoneNumber = value.replace(/[\s-]/g, "");
+      if (!/^\+?[0-9]{9,15}$/.test(phoneNumber)) {
+        return NextResponse.json({ error: "Enter a valid phone number." }, { status: 400 });
+      }
 
-      // First, try to find user by phone
-      const { data: userData, error: userError } = await supabaseAdmin
+      const { data: userData } = await supabaseAdmin
         .from("users")
         .select("id")
-        .or(`phone.eq.${phoneNumber},phone.eq.${value}`)
+        .eq("phone", phoneNumber)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (userError && userError.code !== "PGRST116") {
-        console.error("Error querying user by phone:", userError);
-      }
-
-      if (userData) {
-        // Find applications by user_id
+      if (userData?.id) {
         const { data, error } = await supabaseAdmin
           .from("applications")
-          .select("*")
+          .select("id,cmf_agency_id,application_type,status,name,full_name,created_at,notes,comments")
           .eq("user_id", userData.id)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Error querying application by user:", error);
-        } else if (data) {
-          application = data;
-        }
+          .maybeSingle();
+        if (error) console.error("Error querying application by user:", error);
+        else application = (data as ApplicationRow | null) ?? null;
       }
 
-      // Also try direct phone search in applications table
       if (!application) {
         const { data, error } = await supabaseAdmin
           .from("applications")
-          .select("*")
-          .or(`phone.eq.${phoneNumber},phone.eq.${value}`)
+          .select("id,cmf_agency_id,application_type,status,name,full_name,created_at,notes,comments")
+          .eq("phone", phoneNumber)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single();
-
-        if (error && error.code !== "PGRST116") {
-          console.error("Error querying by phone:", error);
-        } else if (data) {
-          application = data;
-        }
+          .maybeSingle();
+        if (error) console.error("Error querying by phone:", error);
+        else application = (data as ApplicationRow | null) ?? null;
       }
     } else if (method === "cmfAgencyId") {
-      // Search by CMF Agency ID
+      const agencyId = value.toUpperCase();
+      if (!/^CMF-\d{9}$/.test(agencyId)) {
+        return NextResponse.json({ error: "Enter a valid CMF Agency ID." }, { status: 400 });
+      }
       const { data, error } = await supabaseAdmin
         .from("applications")
-        .select("*")
-        .eq("cmf_agency_id", value)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
+        .select("id,cmf_agency_id,application_type,status,name,full_name,created_at,notes,comments")
+        .eq("cmf_agency_id", agencyId)
+        .maybeSingle();
+      if (error) {
         console.error("Error querying by CMF Agency ID:", error);
-        return NextResponse.json(
-          { error: "Failed to query application" },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: "Failed to query application" }, { status: 500 });
       }
-
-      if (data) {
-        application = data;
-      }
+      application = (data as ApplicationRow | null) ?? null;
+    } else {
+      return NextResponse.json({ error: "Method and value are required" }, { status: 400 });
     }
 
     if (!application) {
@@ -201,20 +185,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return application data (sanitize sensitive info if needed)
     return NextResponse.json({
       success: true,
-      application: {
-        id: application.id,
-        cmfAgencyId: application.cmf_agency_id,
-        applicationType: application.application_type,
-        status: application.status || "pending",
-        name: application.name || application.full_name,
-        submittedAt: application.created_at,
-        notes: application.notes || application.comments,
-      },
+      application: publicApplication(application, false),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Track application error:", error);
     return NextResponse.json(
       { error: "An error occurred while tracking your application" },

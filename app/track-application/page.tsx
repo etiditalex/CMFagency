@@ -132,9 +132,7 @@ export default function TrackApplicationPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userId: user?.id,
-        }),
+        body: JSON.stringify({}),
       });
 
       const data = await response.json();
