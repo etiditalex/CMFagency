@@ -286,6 +286,7 @@ export default function IdealMrMissRegistration({ content }: { content: FusionFo
         </div>
 
         {step === null && !card ? (
+        <>
         <div className="mt-6 grid gap-4 md:max-lg:grid-cols-2 md:max-lg:gap-6">
           <section className="flex flex-col rounded-2xl border border-gray-200 bg-white px-5 py-7 text-center shadow-sm sm:px-6 sm:py-8">
             <span className="mx-auto inline-flex h-10 w-10 items-center justify-center text-secondary-800">
@@ -337,6 +338,7 @@ export default function IdealMrMissRegistration({ content }: { content: FusionFo
           {sections.map((block) => (
             <FormBlockCard key={block.id} block={block} />
           ))}
+        </>
         ) : null}
 
         {(card || step !== null) && (
