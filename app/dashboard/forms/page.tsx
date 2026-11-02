@@ -197,7 +197,7 @@ export default function DashboardFormsPage() {
         <div>
           <h2 className="border-b border-hairline pb-3 text-xl font-bold text-[#1a2332] md:text-2xl">Forms</h2>
           <p className="mt-1 max-w-3xl text-gray-600">
-            Registration and Volunteers are listed first. Edit a row to change its card on the public Forms page. New forms you publish are added after them.
+            Registration and Volunteers are listed first. Edit any form to change its card and page content. Add a section or remove one, then save. New forms you publish are added after them.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

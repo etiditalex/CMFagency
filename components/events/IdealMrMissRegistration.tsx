@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { ContestantCardPanel } from "@/components/events/ContestantCardPanel";
+import FormBlockCard, { FormIntroCopy } from "@/components/forms/FormBlockCard";
+import { splitIntroBlock, withFeeLabel, type FusionFormBlock } from "@/lib/fusion-forms";
 import { formatIdealFeeKes, IDEAL_APPLICATION_FEE_DEFAULT_KES, type ContestantCardData } from "@/lib/ideal-mr-miss";
 import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
 import { FileText, MessageCircle } from "lucide-react";
@@ -53,7 +55,8 @@ const STEP_TITLES = [
   "Declarations and consent",
 ];
 
-export default function IdealMrMissRegistration() {
+export default function IdealMrMissRegistration({ content }: { content: FusionFormBlock[] }) {
+  const { intro, sections } = splitIntroBlock(content);
   const eventMs = useMemo(() => new Date(EVENT_ISO).getTime(), []);
   const [clock, setClock] = useState(() => remaining(eventMs));
   const [about, setAbout] = useState("");
@@ -252,12 +255,13 @@ export default function IdealMrMissRegistration() {
             ) : (
               <p className="mt-4 text-center text-sm font-semibold text-secondary-800">Kenya’s Ideal Mr &amp; Miss 2026</p>
             )}
-            {step === null && !card ? (
-              <p className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]">
-                Welcome to the contestant application for Kenya’s Ideal Mr &amp; Miss 2026. The theme is Models for
-                Education. The event is on 12 December 2026 at Malaika Lounge, Malindi, and the registration fee is{" "}
-                {feeLabel}. Submit this form so Changer Fusions can review the entry.
-              </p>
+            {step === null && !card && intro ? (
+              <div className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px] [&_p]:text-center">
+                <FormIntroCopy
+                  body={withFeeLabel(intro.body, feeLabel)}
+                  className="space-y-3 text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]"
+                />
+              </div>
             ) : null}
           </div>
 
@@ -330,6 +334,9 @@ export default function IdealMrMissRegistration() {
             </a>
           </section>
         </div>
+          {sections.map((block) => (
+            <FormBlockCard key={block.id} block={block} />
+          ))}
         ) : null}
 
         {(card || step !== null) && (

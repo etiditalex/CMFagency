@@ -1,7 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { cache } from "react";
 
-import { parseFormFields, STARTER_FORMS, starterFormBySlug, type FusionFormField } from "@/lib/fusion-forms";
+import {
+  parseFormContent,
+  parseFormFields,
+  STARTER_FORMS,
+  starterFormBySlug,
+  type FusionFormBlock,
+  type FusionFormField,
+} from "@/lib/fusion-forms";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -66,8 +73,19 @@ function staticStarterCard(form: (typeof STARTER_FORMS)[number]): FormListingRow
 export type FormDetailRow = FormListingRow & {
   intro: string | null;
   fields: FusionFormField[];
+  content: FusionFormBlock[];
   updated_at: string | null;
 };
+
+/** Null means the form still uses its built-in copy. An array is the saved copy, including an empty one. */
+export async function getStarterFormContent(slug: string): Promise<FusionFormBlock[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("fusion_forms").select("content").eq("slug", slug).maybeSingle();
+  if (error || !data) return null;
+  const content = (data as { content?: unknown }).content;
+  if (content == null) return null;
+  return parseFormContent(content);
+}
 
 async function selectFormRows(columns: string, onlyPublished: boolean) {
   if (!supabase) return { rows: [] as FormListingRow[], unavailable: true };
@@ -119,13 +137,14 @@ export const getPublishedForms = cache(async (): Promise<FormListingRow[]> => {
 
 export const getPublishedFormBySlug = cache(async (slug: string): Promise<FormDetailRow | null> => {
   if (!slug || !supabase) return null;
+  const columns = "id, slug, title, excerpt, intro, category, image_url, fields, content, published_at, updated_at, link_href";
   const { data, error } = await supabase
     .from("fusion_forms")
-    .select("id, slug, title, excerpt, intro, category, image_url, fields, published_at, updated_at, link_href")
+    .select(columns)
     .eq("slug", slug)
     .not("published_at", "is", null)
     .maybeSingle();
-  if (error?.message.includes("link_href")) {
+  if (error?.message.includes("content") || error?.message.includes("link_href")) {
     const fallback = await supabase
       .from("fusion_forms")
       .select("id, slug, title, excerpt, intro, category, image_url, fields, published_at, updated_at")
@@ -133,12 +152,21 @@ export const getPublishedFormBySlug = cache(async (slug: string): Promise<FormDe
       .not("published_at", "is", null)
       .maybeSingle();
     if (fallback.error || !fallback.data) return null;
-    const row = fallback.data as Omit<FormDetailRow, "fields" | "href"> & { fields: unknown };
-    return { ...row, href: cardHref(row.slug, null), fields: parseFormFields(row.fields) };
+    const row = fallback.data as Omit<FormDetailRow, "fields" | "content" | "href"> & { fields: unknown };
+    return { ...row, href: cardHref(row.slug, null), fields: parseFormFields(row.fields), content: [] };
   }
   if (error || !data) return null;
-  const row = data as Omit<FormDetailRow, "fields" | "href"> & { fields: unknown; link_href?: string | null };
-  return { ...row, href: cardHref(row.slug, row.link_href), fields: parseFormFields(row.fields) };
+  const row = data as Omit<FormDetailRow, "fields" | "content" | "href"> & {
+    fields: unknown;
+    content?: unknown;
+    link_href?: string | null;
+  };
+  return {
+    ...row,
+    href: cardHref(row.slug, row.link_href),
+    fields: parseFormFields(row.fields),
+    content: parseFormContent(row.content),
+  };
 });
 
 export async function getPublishedFormsForSitemap(): Promise<

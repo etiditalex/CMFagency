@@ -16,6 +16,12 @@ export type StoredFormAnswer = {
   value: string;
 };
 
+export type FusionFormBlock = {
+  id: string;
+  heading: string;
+  body: string;
+};
+
 export const FORM_CATEGORIES = ["General", "Events", "Registration", "Volunteer", "Membership", "Other"] as const;
 
 export const FORM_SUBMISSION_STATUSES = ["new", "reviewed", "shortlisted", "rejected"] as const;
@@ -112,6 +118,40 @@ export function parseFormFields(value: unknown): FusionFormField[] {
   return fields;
 }
 
+const MAX_BLOCKS = 20;
+
+export function parseFormContent(value: unknown): FusionFormBlock[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const blocks: FusionFormBlock[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const heading = typeof row.heading === "string" ? row.heading.trim().slice(0, 120) : "";
+    const body = typeof row.body === "string" ? row.body.trim().slice(0, 4000) : "";
+    if (!heading && !body) continue;
+    let id = typeof row.id === "string" ? row.id.trim().toLowerCase() : "";
+    if (!id || !FIELD_ID_RE.test(id) || id.length > 40 || seen.has(id)) id = newFieldId();
+    seen.add(id);
+    blocks.push({ id, heading, body });
+    if (blocks.length >= MAX_BLOCKS) break;
+  }
+  return blocks;
+}
+
+export function splitIntroBlock(blocks: FusionFormBlock[]) {
+  const index = blocks.findIndex((block) => !block.heading.trim());
+  if (index === -1) return { intro: null as FusionFormBlock | null, sections: blocks };
+  return {
+    intro: blocks[index],
+    sections: blocks.filter((_, itemIndex) => itemIndex !== index),
+  };
+}
+
+export function withFeeLabel(body: string, feeLabel: string) {
+  return body.replaceAll("{fee}", feeLabel);
+}
+
 export function parseStoredAnswers(value: unknown): StoredFormAnswer[] {
   if (!Array.isArray(value)) return [];
   const answers: StoredFormAnswer[] = [];
@@ -200,6 +240,52 @@ export function isStarterFormSlug(slug: string): boolean {
 export function starterFormBySlug(slug: string): StarterForm | null {
   return STARTER_FORMS.find((form) => form.slug === slug) ?? null;
 }
+
+const VOLUNTEER_DEFAULT_CONTENT: readonly FusionFormBlock[] = [
+  {
+    id: "intro",
+    heading: "",
+    body: "Changer Fusions, organizers of the Kenya Fashion and Creative Arts Awards, invites passionate, committed, and proactive individuals to volunteer as Regional Representatives and County Representatives across Kenya.",
+  },
+  {
+    id: "responsibilities",
+    heading: "Key responsibilities",
+    body: [
+      "Promote KFCAA activities and official announcements.",
+      "Engage and mobilise creatives within assigned areas.",
+      "Build networks with creative organisations, institutions, brands, and media.",
+      "Identify emerging talent and partnership opportunities.",
+      "Support local promotional activities and events.",
+      "Submit regular updates to the organising team.",
+    ].join("\n"),
+  },
+  {
+    id: "who-can-apply",
+    heading: "Who can apply?",
+    body: [
+      "Individuals with strong communication, networking, leadership, and organizational skills, a good understanding of their local communities, and a genuine interest in Kenya's creative industry.",
+      "We welcome people passionate about fashion, modelling, design, photography, film, music, visual arts, and the wider creative industry.",
+      "This is a volunteer opportunity offering valuable experience, professional networking, and an opportunity to contribute to the growth of Kenya's creative sector.",
+    ].join("\n\n"),
+  },
+];
+
+const REGISTRATION_DEFAULT_CONTENT: readonly FusionFormBlock[] = [
+  {
+    id: "welcome",
+    heading: "",
+    body: "Welcome to the contestant application for Kenya’s Ideal Mr & Miss 2026. The theme is Models for Education. The event is on 12 December 2026 at Malaika Lounge, Malindi, and the registration fee is {fee}. Submit this form so Changer Fusions can review the entry.",
+  },
+];
+
+/** Copy shown until an admin saves their own sections for that form. */
+export function starterDefaultContent(slug: string): FusionFormBlock[] {
+  const source =
+    slug === "volunteers" ? VOLUNTEER_DEFAULT_CONTENT : slug === "registration" ? REGISTRATION_DEFAULT_CONTENT : [];
+  return source.map((block) => ({ ...block }));
+}
+
+export const FORM_CONTENT_SETUP_SQL = "database/ticketing_voting_mvp_patch_106_fusion_forms_content.sql";
 
 export const FORMS_SETUP_SQL =
   "database/ticketing_voting_mvp_patch_104_fusion_forms.sql, then database/ticketing_voting_mvp_patch_105_fusion_forms_starters.sql";

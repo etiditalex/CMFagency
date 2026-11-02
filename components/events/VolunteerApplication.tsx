@@ -12,20 +12,13 @@ import {
   type VolunteerRole,
 } from "@/lib/kfcaa-volunteers";
 import { KENYA_COUNTY_DEFINITIONS } from "@/lib/kenya-counties";
+import FormBlockCard, { FormIntroCopy } from "@/components/forms/FormBlockCard";
+import { splitIntroBlock, type FusionFormBlock } from "@/lib/fusion-forms";
 import { FileText, MessageCircle } from "lucide-react";
 
 const WHATSAPP_URL =
   "https://wa.me/254797777347?text=" +
   encodeURIComponent("Hello, I need help with the KFCAA regional and county volunteer application.");
-
-const RESPONSIBILITIES = [
-  "Promote KFCAA activities and official announcements.",
-  "Engage and mobilise creatives within assigned areas.",
-  "Build networks with creative organisations, institutions, brands, and media.",
-  "Identify emerging talent and partnership opportunities.",
-  "Support local promotional activities and events.",
-  "Submit regular updates to the organising team.",
-];
 
 const STEP_TITLES = ["Your details", "Role and area", "Creative focus", "Declarations"];
 const MIN_STORY = 40;
@@ -37,7 +30,8 @@ const choiceClass = "flex min-h-11 items-center gap-2.5 [&_input]:h-5 [&_input]:
 
 type Receipt = { applicationCode: string; emailedTo: string | null };
 
-export default function VolunteerApplication() {
+export default function VolunteerApplication({ content }: { content: FusionFormBlock[] }) {
+  const { intro, sections } = splitIntroBlock(content);
   const [step, setStep] = useState<number | null>(null);
   const [role, setRole] = useState<VolunteerRole | "">("");
   const [representCounty, setRepresentCounty] = useState("");
@@ -199,11 +193,10 @@ export default function VolunteerApplication() {
                 <span className="mt-0.5 block">Regional &amp; County Representatives</span>
               </p>
             )}
-            {showIntro ? (
-              <p className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]">
-                Changer Fusions, organizers of the Kenya Fashion and Creative Arts Awards, invites passionate, committed,
-                and proactive individuals to volunteer as Regional Representatives and County Representatives across Kenya.
-              </p>
+            {showIntro && intro ? (
+              <div className="mx-auto mt-5 max-w-xl text-center text-sm leading-relaxed text-gray-700 sm:text-[15px] [&_p]:text-center">
+                <FormIntroCopy body={intro.body} className="space-y-3 text-center text-sm leading-relaxed text-gray-700 sm:text-[15px]" />
+              </div>
             ) : null}
           </div>
 
@@ -282,30 +275,14 @@ export default function VolunteerApplication() {
               </section>
             </div>
 
-            <section id="call" className="mt-6 scroll-mt-[var(--site-nav-height)] rounded-2xl border border-gray-200 bg-white px-5 py-7 text-left shadow-sm sm:px-6 sm:py-8">
-              <h2 className="text-xl font-bold text-gray-900">Key responsibilities</h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-gray-700">
-                {RESPONSIBILITIES.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="mt-4 rounded-2xl border border-gray-200 bg-white px-5 py-7 text-left shadow-sm sm:px-6 sm:py-8">
-              <h2 className="text-xl font-bold text-gray-900">Who can apply?</h2>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                Individuals with strong communication, networking, leadership, and organizational skills, a good
-                understanding of their local communities, and a genuine interest in Kenya&apos;s creative industry.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                We welcome people passionate about fashion, modelling, design, photography, film, music, visual arts,
-                and the wider creative industry.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-gray-700">
-                This is a volunteer opportunity offering valuable experience, professional networking, and an
-                opportunity to contribute to the growth of Kenya&apos;s creative sector.
-              </p>
-            </section>
+            {sections.map((block, index) => (
+              <FormBlockCard
+                key={block.id}
+                block={block}
+                id={index === 0 ? "call" : undefined}
+                className={index === 0 ? "mt-6 scroll-mt-[var(--site-nav-height)]" : "mt-4"}
+              />
+            ))}
           </>
         ) : null}
 

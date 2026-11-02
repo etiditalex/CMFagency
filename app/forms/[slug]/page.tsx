@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import FormBlockCard from "@/components/forms/FormBlockCard";
 import PublicForm from "@/components/forms/PublicForm";
 import { blogImageOptimizeProps, resolveBlogImageSrc } from "@/lib/blog-image";
 import { DEFAULT_BLOG_CARD_IMAGE } from "@/lib/blog-defaults";
@@ -71,6 +72,13 @@ export default async function FormDetailPage({ params }: Props) {
           <h1 className="mt-3 text-2xl font-bold text-gray-900 md:text-3xl">{form.title}</h1>
           {intro ? <p className="mt-3 text-sm leading-relaxed text-gray-700 sm:text-base">{intro}</p> : null}
         </div>
+        {form.content.length > 0 ? (
+          <div className="mt-6 space-y-4">
+            {form.content.map((block) => (
+              <FormBlockCard key={block.id} block={block} className="" />
+            ))}
+          </div>
+        ) : null}
         <div className="mt-6">
           <PublicForm slug={form.slug} fields={form.fields} />
         </div>

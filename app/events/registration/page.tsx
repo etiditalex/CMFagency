@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import IdealMrMissRegistration from "@/components/events/IdealMrMissRegistration";
+import { getStarterFormContent } from "@/lib/forms-server";
+import { starterDefaultContent } from "@/lib/fusion-forms";
 import { getIdealApplicationFeeKes } from "@/lib/ideal-mr-miss-fee";
 import { formatIdealFeeKes } from "@/lib/ideal-mr-miss";
 
@@ -13,6 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function EventRegistrationPage() {
-  return <IdealMrMissRegistration />;
+export default async function EventRegistrationPage() {
+  const stored = await getStarterFormContent("registration");
+  const content = stored ?? starterDefaultContent("registration");
+  return <IdealMrMissRegistration content={content} />;
 }

@@ -11,14 +11,18 @@ import {
   defaultFormFields,
   fieldTypeLabel,
   FORM_CATEGORIES,
+  FORM_CONTENT_SETUP_SQL,
   FORM_FIELD_TYPES,
   formsTableMissingMessage,
   isStarterFormSlug,
   newFieldId,
+  parseFormContent,
   parseFormFields,
   slugifyFormTitle,
+  starterDefaultContent,
   starterFormBySlug,
   type FormFieldType,
+  type FusionFormBlock,
   type FusionFormField,
 } from "@/lib/fusion-forms";
 import { supabase } from "@/lib/supabase";
@@ -41,6 +45,7 @@ export default function FusionFormEditor({ formId }: Props) {
   const [intro, setIntro] = useState("");
   const [category, setCategory] = useState<string>(FORM_CATEGORIES[0]);
   const [fields, setFields] = useState<FusionFormField[]>(defaultFormFields);
+  const [blocks, setBlocks] = useState<FusionFormBlock[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
@@ -65,11 +70,11 @@ export default function FusionFormEditor({ formId }: Props) {
     const load = async () => {
       const { data, error: loadError } = await supabase
         .from("fusion_forms")
-        .select("title, slug, excerpt, intro, category, image_url, fields, link_href, published_at")
+        .select("title, slug, excerpt, intro, category, image_url, fields, content, link_href, published_at")
         .eq("id", formId)
         .maybeSingle();
       if (cancelled) return;
-      if (loadError?.message.includes("link_href")) {
+      if (loadError?.message.includes("content") || loadError?.message.includes("link_href")) {
         const fallback = await supabase
           .from("fusion_forms")
           .select("title, slug, excerpt, intro, category, image_url, fields, published_at")
@@ -101,6 +106,7 @@ export default function FusionFormEditor({ formId }: Props) {
         setCategory(row.category || FORM_CATEGORIES[0]);
         setLinkHref(starter?.linkHref ?? "");
         setFields(parsed.length ? parsed : starter ? [] : defaultFormFields());
+        setBlocks(starterDefaultContent(row.slug));
         setImageUrl(row.image_url);
         setImagePreviewUrl(row.image_url);
         setPublishedAt(row.published_at);
@@ -121,6 +127,7 @@ export default function FusionFormEditor({ formId }: Props) {
         category: string | null;
         image_url: string | null;
         fields: unknown;
+        content?: unknown;
         link_href?: string | null;
         published_at: string | null;
       };
@@ -135,6 +142,7 @@ export default function FusionFormEditor({ formId }: Props) {
       setCategory(row.category || FORM_CATEGORIES[0]);
       setLinkHref(savedLink);
       setFields(parsed.length ? parsed : savedLink ? [] : defaultFormFields());
+      setBlocks(row.content == null ? starterDefaultContent(row.slug) : parseFormContent(row.content));
       setImageUrl(row.image_url);
       setImagePreviewUrl(row.image_url);
       setPublishedAt(row.published_at);
@@ -153,6 +161,21 @@ export default function FusionFormEditor({ formId }: Props) {
 
   const updateField = (id: string, patch: Partial<FusionFormField>) => {
     setFields((current) => current.map((field) => (field.id === id ? { ...field, ...patch } : field)));
+  };
+
+  const updateBlock = (id: string, patch: Partial<FusionFormBlock>) => {
+    setBlocks((current) => current.map((block) => (block.id === id ? { ...block, ...patch } : block)));
+  };
+
+  const moveBlock = (index: number, direction: -1 | 1) => {
+    setBlocks((current) => {
+      const next = [...current];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return current;
+      const [item] = next.splice(index, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
   };
 
   const moveField = (index: number, direction: -1 | 1) => {
@@ -197,6 +220,7 @@ export default function FusionFormEditor({ formId }: Props) {
       if (!title.trim()) throw new Error("Title is required.");
       if (!normalizedSlug) throw new Error("Slug is required.");
       const cleanFields = parseFormFields(fields);
+      const cleanBlocks = parseFormContent(blocks);
       const opensExistingPage = linkHref.trim().startsWith("/");
       if (cleanFields.length === 0 && !opensExistingPage) throw new Error("Add at least one field.");
       for (const field of cleanFields) {
@@ -215,10 +239,11 @@ export default function FusionFormEditor({ formId }: Props) {
         category: category.trim() || null,
         image_url: nextImage,
         fields: cleanFields,
+        content: cleanBlocks,
         link_href: linkHref.trim() || null,
         published_at: nextPublishedAt,
       };
-      const save = (body: typeof payload | Omit<typeof payload, "link_href">) =>
+      const save = (body: Partial<typeof payload> & Pick<typeof payload, "slug" | "title" | "fields">) =>
         formId
           ? supabase.from("fusion_forms").update(body).eq("id", formId)
           : supabase.from("fusion_forms").insert({ ...body, created_by: user.id });
@@ -226,6 +251,14 @@ export default function FusionFormEditor({ formId }: Props) {
       if (saveError?.message.includes("link_href")) {
         const { link_href: _ignored, ...withoutLink } = payload;
         const retried = await save(withoutLink);
+        saveError = retried.error;
+      }
+      if (saveError?.message.includes("content")) {
+        if (cleanBlocks.length > 0) {
+          throw new Error(`Page content could not be saved. Run ${FORM_CONTENT_SETUP_SQL} in the Supabase SQL editor, then save again.`);
+        }
+        const { content: _content, ...withoutContent } = payload;
+        const retried = await save(withoutContent);
         saveError = retried.error;
       }
       if (saveError) throw saveError;
@@ -255,8 +288,8 @@ export default function FusionFormEditor({ formId }: Props) {
             {formId ? "Edit form" : "New form"}
           </h2>
           <p className="mt-1 text-left text-gray-600">
-            Published forms appear as cards on the public Forms page. Registration and Volunteers open their existing
-            application pages. Leave publish unchecked to keep a draft.
+            Published forms appear as cards on the public Forms page. Edit a form that is already created to change its
+            card and page content. Add a section or remove one, then save.
           </p>
         </div>
         <Link
@@ -297,10 +330,10 @@ export default function FusionFormEditor({ formId }: Props) {
           />
           {linkHref.trim().startsWith("/") ? (
             <p className="mt-2 text-xs text-gray-500">
-              Visitors who open this card go to {linkHref.trim()}. Title, summary, category, and cover image are what
-              change on the Forms page.
+              Visitors who open this card go to {linkHref.trim()}. Page content below is the text on that page. Title,
+              summary, category, and cover image change the card on the Forms page.
               {isStarterFormSlug(slugifyFormTitle(slug))
-                ? " Questions below are not shown on the existing application page."
+                ? " Questions are not shown on the existing application page."
                 : ""}
             </p>
           ) : (
@@ -327,6 +360,70 @@ export default function FusionFormEditor({ formId }: Props) {
             placeholder="Shown above the questions on the form page"
           />
         </div>
+        <div>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <label className="text-sm font-medium text-gray-700">Page content</label>
+            <button
+              type="button"
+              onClick={() =>
+                setBlocks((current) => [...current, { id: newFieldId(), heading: "", body: "" }])
+              }
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-primary-800"
+            >
+              <Plus className="h-4 w-4" />
+              Add content
+            </button>
+          </div>
+          <p className="mb-3 text-xs text-gray-500">
+            Each section is shown on the form page. Leave the heading empty for an introduction. Put one list item on
+            each line. Remove a section to take it off the page.
+            {slugifyFormTitle(slug) === "registration" ? " {fee} is replaced with the current registration fee." : ""}
+          </p>
+          {blocks.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
+              No page content yet. Add a section to show text on this form.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {blocks.map((block, index) => (
+                <div key={block.id} className="rounded-lg border border-gray-200 bg-[#f8fafc] p-4">
+                  <div className="flex items-start gap-2">
+                    <input
+                      value={block.heading}
+                      onChange={(e) => updateBlock(block.id, { heading: e.target.value })}
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                      placeholder="Heading (optional)"
+                    />
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button type="button" onClick={() => moveBlock(index, -1)} className="rounded p-2 text-gray-600 hover:bg-white" aria-label="Move content up">
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => moveBlock(index, 1)} className="rounded p-2 text-gray-600 hover:bg-white" aria-label="Move content down">
+                        <ArrowDown className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBlocks((current) => current.filter((item) => item.id !== block.id))}
+                        className="rounded p-2 text-red-600 hover:bg-white"
+                        aria-label="Remove content"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <textarea
+                    value={block.body}
+                    onChange={(e) => updateBlock(block.id, { body: e.target.value })}
+                    rows={4}
+                    className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                    placeholder="Section text"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700">Category</label>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>

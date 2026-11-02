@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
@@ -37,34 +37,28 @@ type Row = {
   whyApply: string;
   communityExperience: string;
   howPromote: string;
+  accuracyConfirmed: boolean;
+  volunteerAcknowledged: boolean;
+  contactAgreed: boolean;
+  updatesCommitted: boolean;
   status: VolunteerStatus;
   createdAt: string;
-};
-
-type DbRow = {
-  id: string;
-  application_code: string;
-  full_name: string;
-  phone: string;
-  whatsapp: string;
-  email: string;
-  town: string;
-  residence_county: string;
-  present_role: string | null;
-  role: VolunteerRole;
-  region: string | null;
-  represent_county: string | null;
-  creative_areas: string[] | null;
-  why_apply: string;
-  community_experience: string;
-  how_promote: string;
-  status: string;
-  created_at: string;
 };
 
 function cell(value: string | null | undefined) {
   const text = value?.trim();
   return text ? text : "—";
+}
+
+function yesNo(value: boolean) {
+  return value ? "Yes" : "No";
+}
+
+async function authHeaders(): Promise<HeadersInit> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Session expired. Please sign in again.");
+  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
 
 export default function DashboardVolunteersPage() {
@@ -77,50 +71,21 @@ export default function DashboardVolunteersPage() {
   const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchErr } = await supabase
-        .from("kfcaa_volunteer_applications")
-        .select(
-          "id, application_code, full_name, phone, whatsapp, email, town, residence_county, present_role, role, region, represent_county, creative_areas, why_apply, community_experience, how_promote, status, created_at"
-        )
-        .order("created_at", { ascending: false });
-      if (fetchErr) throw fetchErr;
-      setRows(
-        ((data as DbRow[]) ?? []).map((row) => ({
-          id: row.id,
-          applicationCode: row.application_code,
-          fullName: row.full_name,
-          phone: row.phone,
-          whatsapp: row.whatsapp,
-          email: row.email,
-          town: row.town,
-          residenceCounty: row.residence_county,
-          currentRole: row.present_role,
-          role: row.role,
-          region: row.region,
-          representCounty: row.represent_county,
-          creativeAreas: row.creative_areas ?? [],
-          whyApply: row.why_apply,
-          communityExperience: row.community_experience,
-          howPromote: row.how_promote,
-          status: isVolunteerStatus(row.status) ? row.status : "new",
-          createdAt: row.created_at,
-        }))
-      );
+      const headers = await authHeaders();
+      const res = await fetch("/api/fusion-xpress/volunteers", { headers });
+      const json = (await res.json().catch(() => ({}))) as { applications?: Row[]; error?: string };
+      if (!res.ok) throw new Error(json.error || "Failed to load volunteer applications");
+      setRows(json.applications ?? []);
       setPage(0);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to load volunteer applications";
-      const missing = msg.includes("does not exist") || msg.includes("42P01") || msg.includes("application_code");
-      setError(
-        missing
-          ? "Volunteer applications are not set up yet. Run database/ticketing_voting_mvp_patch_103_kfcaa_volunteer_applications.sql in the Supabase SQL editor."
-          : msg
-      );
+      setError(e instanceof Error ? e.message : "Failed to load volunteer applications");
     } finally {
       setLoading(false);
     }
@@ -143,13 +108,38 @@ export default function DashboardVolunteersPage() {
     setUpdatingId(id);
     setStatusError(null);
     try {
-      const { error: updateErr } = await supabase.from("kfcaa_volunteer_applications").update({ status }).eq("id", id);
-      if (updateErr) throw updateErr;
+      const headers = await authHeaders();
+      const res = await fetch(`/api/fusion-xpress/volunteers/${id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ status }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not update the status.");
       setRows((current) => current.map((row) => (row.id === id ? { ...row, status } : row)));
     } catch (e: unknown) {
       setStatusError(e instanceof Error ? e.message : "Could not update the status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const removeApplication = async (row: Row) => {
+    const ok = window.confirm(`Delete the application for ${row.fullName} (${row.applicationCode})? This cannot be undone.`);
+    if (!ok) return;
+    setDeletingId(row.id);
+    setStatusError(null);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch(`/api/fusion-xpress/volunteers/${row.id}`, { method: "DELETE", headers });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Could not delete the application.");
+      setRows((current) => current.filter((item) => item.id !== row.id));
+      setOpenId((current) => (current === row.id ? null : current));
+    } catch (e: unknown) {
+      setStatusError(e instanceof Error ? e.message : "Could not delete the application.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -169,7 +159,8 @@ export default function DashboardVolunteersPage() {
         <div>
           <h2 className="border-b border-hairline pb-3 text-xl font-bold text-[#1a2332] md:text-2xl">Volunteers</h2>
           <p className="mt-1 max-w-3xl text-gray-600">
-            Regional and county representative applications for the Kenya Fashion and Creative Arts Awards.
+            Regional and county representative applications for the Kenya Fashion and Creative Arts Awards. Open an
+            application number to read every answer that was collected.
           </p>
         </div>
         <button
@@ -203,7 +194,7 @@ export default function DashboardVolunteersPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+              <table className="min-w-[1200px] w-full border-collapse text-left text-sm">
                 <thead className="bg-[#f4f7fb]">
                   <tr>
                     {[
@@ -215,9 +206,10 @@ export default function DashboardVolunteersPage() {
                       "Email",
                       "Status",
                       "Submitted",
+                      "",
                     ].map((heading) => (
                       <th
-                        key={heading}
+                        key={heading || "actions"}
                         className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
                       >
                         {heading}
@@ -229,6 +221,7 @@ export default function DashboardVolunteersPage() {
                   {pageRows.map((row) => {
                     const open = openId === row.id;
                     const area = row.role === "regional" ? cell(row.region) : cell(row.representCounty);
+                    const busy = updatingId === row.id || deletingId === row.id;
                     return (
                       <Fragment key={row.id}>
                         <tr className={open ? "bg-secondary-50" : "odd:bg-white even:bg-slate-50/60"}>
@@ -248,7 +241,7 @@ export default function DashboardVolunteersPage() {
                             <select
                               aria-label={`Status for ${row.fullName}`}
                               value={row.status}
-                              disabled={updatingId === row.id}
+                              disabled={busy}
                               onChange={(event) => {
                                 const next = event.target.value;
                                 if (isVolunteerStatus(next)) void updateStatus(row.id, next);
@@ -265,37 +258,81 @@ export default function DashboardVolunteersPage() {
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
                             {formatSubmittedDate(row.createdAt)}
                           </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            <button
+                              type="button"
+                              onClick={() => void removeApplication(row)}
+                              disabled={busy}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingId === row.id ? "Deleting…" : "Delete"}
+                            </button>
+                          </td>
                         </tr>
                         {open ? (
                           <tr className="bg-secondary-50">
-                            <td colSpan={8} className="border-b border-hairline px-4 py-5 text-left">
+                            <td colSpan={9} className="border-b border-hairline px-4 py-5 text-left">
                               <div className="grid gap-4 text-sm text-gray-700 md:grid-cols-2">
                                 <p>
-                                  <span className="font-semibold text-gray-900">WhatsApp:</span> {row.whatsapp}
+                                  <span className="font-semibold text-gray-900">Phone:</span> {cell(row.phone)}
                                 </p>
                                 <p>
-                                  <span className="font-semibold text-gray-900">Lives in:</span> {row.town}, {row.residenceCounty}
+                                  <span className="font-semibold text-gray-900">WhatsApp:</span> {cell(row.whatsapp)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Email:</span> {cell(row.email)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Town:</span> {cell(row.town)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">County of residence:</span>{" "}
+                                  {cell(row.residenceCounty)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Current role:</span> {cell(row.currentRole)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Role applied for:</span> {roleLabel(row.role)}
                                 </p>
                                 <p>
                                   <span className="font-semibold text-gray-900">Region:</span> {cell(row.region)}
                                 </p>
                                 <p>
-                                  <span className="font-semibold text-gray-900">Current role:</span> {cell(row.currentRole)}
+                                  <span className="font-semibold text-gray-900">County to represent:</span>{" "}
+                                  {cell(row.representCounty)}
                                 </p>
                                 <p className="md:col-span-2">
                                   <span className="font-semibold text-gray-900">Creative areas:</span>{" "}
-                                  {row.creativeAreas.map(creativeAreaLabel).join(", ")}
+                                  {row.creativeAreas.length ? row.creativeAreas.map(creativeAreaLabel).join(", ") : "—"}
                                 </p>
-                                <p className="md:col-span-2">
-                                  <span className="font-semibold text-gray-900">Why apply:</span> {row.whyApply}
+                                <p className="whitespace-pre-wrap md:col-span-2">
+                                  <span className="font-semibold text-gray-900">Why apply:</span> {cell(row.whyApply)}
                                 </p>
-                                <p className="md:col-span-2">
+                                <p className="whitespace-pre-wrap md:col-span-2">
                                   <span className="font-semibold text-gray-900">Community and networks:</span>{" "}
-                                  {row.communityExperience}
+                                  {cell(row.communityExperience)}
                                 </p>
-                                <p className="md:col-span-2">
+                                <p className="whitespace-pre-wrap md:col-span-2">
                                   <span className="font-semibold text-gray-900">How they will promote KFCAA:</span>{" "}
-                                  {row.howPromote}
+                                  {cell(row.howPromote)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Information confirmed accurate:</span>{" "}
+                                  {yesNo(row.accuracyConfirmed)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Unpaid volunteer role acknowledged:</span>{" "}
+                                  {yesNo(row.volunteerAcknowledged)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Agreed to be contacted:</span>{" "}
+                                  {yesNo(row.contactAgreed)}
+                                </p>
+                                <p>
+                                  <span className="font-semibold text-gray-900">Can submit regular updates:</span>{" "}
+                                  {yesNo(row.updatesCommitted)}
                                 </p>
                               </div>
                             </td>
