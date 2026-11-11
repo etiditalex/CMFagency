@@ -854,12 +854,6 @@ export default function Navbar() {
                           <a
                             key={item.href}
                             href={item.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => {
-                              setIsOpen(false);
-                              setEventsOpen(false);
-                            }}
                             className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
                           >
                             {item.label}

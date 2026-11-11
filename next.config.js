@@ -48,6 +48,13 @@ const nextConfig = {
 
     return [
       {
+        source: '/documents/:path*',
+        headers: [
+          { key: 'Content-Disposition', value: 'inline' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+        ],
+      },
+      {
         source: '/downloads/:path*',
         headers: [
           ...securityHeaders,

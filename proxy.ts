@@ -60,6 +60,12 @@ function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: numbe
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  // Phone browsers render a PDF with an internal viewer. object-src 'none' blocks that
+  // viewer, so the concept note opens as an empty page. Leave these files without CSP.
+  if (pathname.startsWith("/documents/") && pathname.toLowerCase().endsWith(".pdf")) {
+    return NextResponse.next();
+  }
+
   // Login rate limit: POST to /login, /api/auth/login, and login verification APIs
   if (request.method === "POST" && isLoginRoute(pathname)) {
     const ip = getClientIp(request);
