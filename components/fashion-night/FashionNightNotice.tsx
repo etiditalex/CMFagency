@@ -19,7 +19,7 @@ export default function FashionNightNotice() {
           Coast Fashion and Modelling Awards 2025 was held on <time dateTime="2025-05-15">15 May</time> in the Coast
           Region, Kenya.{" "}
         </span>
-        <Link href="/events">Open the Changer Fusions calendar</Link>
+        <Link href="/2028-calendar">Open the Changer Fusions calendar</Link>
       </p>
     </div>
   );

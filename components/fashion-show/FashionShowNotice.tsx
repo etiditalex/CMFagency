@@ -19,7 +19,7 @@ export default function FashionShowNotice() {
           Coast Fashion and Modelling Awards 2026 was held on <time dateTime="2026-08-15">15 August</time> at City Blue
           Creekside Hotel, Mombasa.{" "}
         </span>
-        <Link href="/events">Open the Changer Fusions calendar</Link>
+        <Link href="/2028-calendar">Open the Changer Fusions calendar</Link>
       </p>
     </div>
   );

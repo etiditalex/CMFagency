@@ -2152,6 +2152,71 @@
   }
 }
 
+.calendar-2028--site {
+  padding-top: 7.5rem;
+}
+
+.calendar-2028 .cal-years {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.calendar-2028 .cal-years button {
+  border: 1px solid #c6a04a;
+  background: #fff;
+  color: #8a6a1e;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+}
+
+.calendar-2028 .cal-years button.is-active {
+  background: #8a6a1e;
+  color: #fff;
+}
+
+.calendar-2028 tbody tr {
+  cursor: pointer;
+}
+
+.calendar-2028 tbody tr:hover td {
+  background: #fbf6ea;
+}
+
+.calendar-2028 tbody tr.is-selected td {
+  background: #f6edd4;
+}
+
+.calendar-2028 tbody tr:focus-visible {
+  outline: 2px solid #8a6a1e;
+  outline-offset: -2px;
+}
+
+.calendar-2028 .cal-empty,
+.calendar-2028 .cal-detail {
+  margin: 0;
+  padding: 0.9rem 1rem 1.1rem;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.calendar-2028 .cal-detail-date {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.calendar-2028 .cal-detail-host,
+.calendar-2028 .cal-detail-note {
+  margin: 0.25rem 0 0;
+}
+
 @keyframes home-hero-caret-blink {
   0%,
   49% {

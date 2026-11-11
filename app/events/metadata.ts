@@ -2,20 +2,21 @@ import { Metadata } from "next";
 import { EVENTS_BANNER_OG } from "@/lib/og-images";
 
 export const metadata: Metadata = {
-  title: "Events - Upcoming & Past Events | Changer Fusions",
-  description: "Discover exciting upcoming events and relive memorable past events organized by Changer Fusions. From corporate events to cultural celebrations, explore our event portfolio.",
+  title: "Events Calendar",
+  description:
+    "The Changer Fusions events calendar lists Kenya Fashion and Creative Arts Awards host dates, including the 2028 calendar.",
   keywords: [
-    "events Kenya",
-    "event management",
-    "corporate events",
-    "cultural events",
-    "event planning Kenya",
+    "2028 Calendar",
+    "events calendar Kenya",
+    "Kenya Fashion and Creative Arts Awards",
+    "Changer Fusions events",
     "Mombasa events",
   ],
   openGraph: {
     type: "website",
-    title: "Events - Upcoming & Past Events | Changer Fusions",
-    description: "Discover exciting upcoming events and relive memorable past events organized by Changer Fusions.",
+    title: "Events Calendar | Changer Fusions",
+    description:
+      "The Changer Fusions events calendar lists Kenya Fashion and Creative Arts Awards host dates.",
     url: "https://cmfagency.co.ke/events",
     siteName: "Changer Fusions",
     images: [
@@ -30,16 +31,12 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Events - Upcoming & Past Events | Changer Fusions",
-    description: "Discover exciting upcoming events and relive memorable past events organized by Changer Fusions.",
+    title: "Events Calendar | Changer Fusions",
+    description:
+      "The Changer Fusions events calendar lists Kenya Fashion and Creative Arts Awards host dates.",
     images: [EVENTS_BANNER_OG.url],
   },
   alternates: {
     canonical: "https://cmfagency.co.ke/events",
   },
 };
-
-
-
-
-

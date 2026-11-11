@@ -147,7 +147,7 @@ export default function DashboardEventsPage() {
         <div className="min-w-0">
           <h2 className="text-xl md:text-2xl font-bold text-[#1a2332] text-left pb-3 border-b border-hairline">Events</h2>
           <p className="text-gray-600 mt-1 max-w-3xl text-left">
-            Manage events shown on the upcoming events, past events, and all events pages. Use{" "}
+            Manage events shown on the upcoming and past event pages. Host dates for the public calendar are edited under Calendar. Use{" "}
             <span className="font-semibold text-gray-800">Live / Off</span> to open or close ticket
             sales — the public page stays up (e.g. flash sale shows &quot;closed for now&quot; when off).
           </p>

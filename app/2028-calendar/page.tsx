@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Calendar2028JsonLd from "@/components/calendar-2028/Calendar2028JsonLd";
 import Calendar2028Sheet from "@/components/calendar-2028/Calendar2028Sheet";
 import { CALENDAR_LOGO } from "@/components/calendar-2028/calendar-2028-data";
+import { FALLBACK_CALENDAR_STOPS } from "@/lib/award-calendar";
+import { getPublishedCalendarStops } from "@/lib/award-calendar-server";
 import { SITE_URL } from "@/lib/site-url";
 
 const PAGE_PATH = "/2028-calendar";
@@ -56,11 +58,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Calendar2028Page() {
+export default async function Calendar2028Page() {
+  const { stops, fromDatabase } = await getPublishedCalendarStops();
+  const sheetStops = fromDatabase ? stops : FALLBACK_CALENDAR_STOPS;
   return (
     <article>
-      <Calendar2028JsonLd />
-      <Calendar2028Sheet />
+      <Calendar2028JsonLd stops={sheetStops} />
+      <Calendar2028Sheet stops={sheetStops} year={2028} />
     </article>
   );
 }
