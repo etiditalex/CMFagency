@@ -82,7 +82,7 @@ export default function Navbar() {
   const servicesLinksCol1 = servicesLinks.slice(0, Math.ceil(servicesLinks.length / 2));
   const servicesLinksCol2 = servicesLinks.slice(Math.ceil(servicesLinks.length / 2));
 
-  const eventsLinks = [
+  const eventsLinks: { href: string; label: string; external?: boolean }[] = [
     { href: "/events/upcoming", label: "Upcoming Events" },
     { href: "/events/past", label: "Past Events" },
     { href: "/2025-fashion-night", label: "2025 Fashion Night" },
@@ -90,6 +90,7 @@ export default function Navbar() {
     { href: "/2028-calendar", label: "2028 Calendar" },
     { href: "/events/registration", label: "Registration" },
     { href: "/events/volunteers", label: "Volunteers" },
+    { href: "/documents/kfcaa-concept-note.pdf", label: "CONCEPT NOTE", external: true },
   ];
   const kcmLinks = [
     { href: "/kcm", label: "KCM Membership" },
@@ -454,15 +455,27 @@ export default function Navbar() {
                     transition={{ duration: 0.2 }}
                     className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50"
                   >
-                    {eventsLinks.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                    {eventsLinks.map((item) =>
+                      item.external ? (
+                        <a
+                          key={item.href}
+                          href={item.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
+                        >
+                          {item.label}
+                        </a>
+                      ) : (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className="block px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-[#f4f7fb] hover:text-primary-700"
+                        >
+                          {item.label}
+                        </Link>
+                      )
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -836,19 +849,35 @@ export default function Navbar() {
                       exit={{ opacity: 0, height: 0 }}
                       className="pl-4 space-y-2 mt-2"
                     >
-                      {eventsLinks.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => {
-                            setIsOpen(false);
-                            setEventsOpen(false);
-                          }}
-                          className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
+                      {eventsLinks.map((item) =>
+                        item.external ? (
+                          <a
+                            key={item.href}
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              setIsOpen(false);
+                              setEventsOpen(false);
+                            }}
+                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              setIsOpen(false);
+                              setEventsOpen(false);
+                            }}
+                            className="block py-2 text-gray-600 hover:text-primary-600 transition-colors duration-200 text-sm"
+                          >
+                            {item.label}
+                          </Link>
+                        )
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
