@@ -78,7 +78,16 @@ async function incrementTotal(): Promise<number | null> {
 
 /** GET — current total (no increment). */
 export async function GET() {
-  const total = await readTotal();
+  let total = await readTotal();
+  if (total == null && process.env.NODE_ENV !== "production") {
+    try {
+      const live = await fetch("https://cmfagency.co.ke/api/site-views", { cache: "no-store" });
+      const body = (await live.json()) as { total?: number | null };
+      if (typeof body.total === "number" && Number.isFinite(body.total)) total = body.total;
+    } catch {
+      // Local database is not configured; leave the counter unset.
+    }
+  }
   return NextResponse.json(
     {
       total,

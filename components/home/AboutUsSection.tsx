@@ -1,65 +1,94 @@
-import { FileText, List, Send } from "lucide-react";
+"use client";
 
-const VISION =
-  "To be the driving force behind businesses' success in a dynamic and ever-evolving market landscape.";
+import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 const MISSION =
   "To harness marketing as the catalyst for change and innovation, empowering businesses to thrive and define their existence in the marketplace.";
 
-const PROMISE_ITEMS = [
-  "Plan events with care from first brief to last guest.",
-  "Promote brands with digital marketing that stays relevant.",
-  "Grow results through Fusion Xpress ticketing and campaign tools.",
-];
+const VISION =
+  "To be the driving force behind businesses' success in a dynamic and ever-evolving market landscape.";
+
+const ROWS = [
+  { label: "Event planning", href: "/services/events-marketing" },
+  { label: "Digital marketing", href: "/services/digital-marketing" },
+  { label: "SEO", href: "/services/seo" },
+  { label: "Social media marketing", href: "/services/social-media-marketing" },
+  { label: "Website development", href: "/services/website-development" },
+  { label: "Branding and creative", href: "/services/branding" },
+  { label: "Market research", href: "/services/market-research" },
+  { label: "Content creation", href: "/services/content-creation" },
+  { label: "Poll", href: "/poll" },
+  { label: "Fusion Xpress", href: "/fusion-xpress" },
+  { label: "Career pathways", href: "/careers" },
+] as const;
 
 export default function AboutUsSection() {
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motionQuery.matches) return undefined;
+
+    let frame = 0;
+    const measure = () => {
+      const rows = listRef.current?.querySelectorAll<HTMLElement>(".home-service-row");
+      if (!rows?.length) return;
+      const center = window.innerHeight / 2;
+      const band = window.innerHeight * 0.32;
+      rows.forEach((row) => {
+        const rect = row.getBoundingClientRect();
+        const distance = Math.abs(rect.top + rect.height / 2 - center);
+        const focus = Math.max(0, 1 - distance / band);
+        const eased = focus * focus * (3 - 2 * focus);
+        row.style.setProperty("--f", eased.toFixed(3));
+      });
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
-    <section
-      className="home-about bg-primary-50 py-8 sm:py-14 md:py-16 lg:py-20"
-      aria-label="About us"
-    >
-      <div className="mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-3 lg:gap-8">
-          <article className="flex flex-col items-center border border-primary-100 bg-white px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
-            <Send
-              className="mb-4 h-10 w-10 -rotate-45 text-primary-600 sm:mb-8 sm:h-12 sm:w-12"
-              strokeWidth={1.6}
-              aria-hidden
-            />
-            <h3 className="mb-2 font-montserrat text-xl font-bold text-gray-900 sm:text-2xl">Our Vision</h3>
-            <p className="mb-5 font-semibold text-secondary-600">Market to thrive</p>
-            <p className="max-w-xs text-[0.95rem] leading-relaxed text-gray-600">{VISION}</p>
-          </article>
-
-          <article className="flex flex-col items-center border border-primary-900/20 bg-primary-800 px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
-            <FileText
-              className="mb-4 h-10 w-10 text-white sm:mb-8 sm:h-12 sm:w-12"
-              strokeWidth={1.6}
-              aria-hidden
-            />
-            <h3 className="mb-2 font-montserrat text-xl font-bold text-white sm:text-2xl">Our Mission</h3>
-            <p className="mb-5 font-semibold text-secondary-300">Market to exist</p>
-            <p className="max-w-xs text-[0.95rem] leading-relaxed text-white/95">{MISSION}</p>
-          </article>
-
-          <article className="flex flex-col items-center border border-primary-100 bg-white px-6 py-8 text-center shadow-editorial sm:px-8 sm:py-12 lg:px-10 lg:py-14">
-            <List
-              className="mb-4 h-10 w-10 text-primary-600 sm:mb-8 sm:h-12 sm:w-12"
-              strokeWidth={1.6}
-              aria-hidden
-            />
-            <h3 className="mb-2 font-montserrat text-xl font-bold text-gray-900 sm:text-2xl">Our Promise</h3>
-            <p className="mb-5 font-semibold text-secondary-600">Plan • Promote • Grow</p>
-            <ul className="mx-auto w-fit max-w-xs space-y-2.5 text-left text-[0.95rem] leading-relaxed text-gray-600">
-              {PROMISE_ITEMS.map((item) => (
-                <li key={item} className="flex !text-left gap-2">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary-500" aria-hidden />
-                  <span className="!text-left">{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
+    <section id="home-about" className="home-about home-band home-band-paper home-arch" aria-labelledby="home-about-heading">
+      <div className="home-shell grid items-start gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+        <div className="lg:sticky lg:top-[calc(var(--site-nav-height)+1.75rem)] lg:self-start lg:pb-16">
+          <h2 id="home-about-heading" className="home-display text-primary-950">
+            What we deliver
+          </h2>
+          <p className="home-lead mt-6 max-w-xl text-primary-900/80">{MISSION}</p>
+          <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-900/75">{VISION}</p>
+          <p className="mt-6 font-montserrat text-lg font-medium text-secondary-700">
+            Market to thrive. Market to exist.
+          </p>
+          <Link href="#home-brief" className="home-text-link mt-8 text-primary-800">
+            Start a brief <span aria-hidden>→</span>
+          </Link>
         </div>
+        <ul ref={listRef}>
+          {ROWS.map((row) => (
+            <li key={row.href}>
+              <Link href={row.href} className="home-service-row text-primary-950">
+                <span className="home-service-name">
+                  {row.label}
+                </span>
+                <span className="home-service-arrow" aria-hidden>
+                  →
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );

@@ -17,6 +17,15 @@ const DEPARTMENTS = [
   "General Inquiry",
 ] as const;
 
+const BRIEF_NEEDS = [
+  "Event planning",
+  "Digital marketing",
+  "Branding and creative",
+  "Website development",
+  "Fusion Xpress",
+  "Career pathways",
+] as const;
+
 const BG_IMAGE =
   "https://res.cloudinary.com/dyfnobo9r/image/upload/v1786360469/careers_mtyoxg.jpg";
 
@@ -53,7 +62,11 @@ function SideCoastDotMap({
   );
 }
 
-export default function CareersContactSection() {
+export default function CareersContactSection({
+  variant = "card",
+}: {
+  variant?: "card" | "brief";
+}) {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
@@ -64,6 +77,7 @@ export default function CareersContactSection() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [siteViews, setSiteViews] = useState<number | null>(null);
+  const [needs, setNeeds] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +107,10 @@ export default function CareersContactSection() {
       const subject = formData.department
         ? `Careers — ${formData.department}`
         : "Careers inquiry";
+      const message =
+        variant === "brief" && needs.length > 0
+          ? `Needed: ${needs.join(", ")}\n\n${formData.message}`
+          : formData.message;
 
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -102,7 +120,7 @@ export default function CareersContactSection() {
           email: formData.email,
           phone: "",
           subject,
-          message: formData.message,
+          message,
         }),
       });
 
@@ -126,6 +144,7 @@ ${formData.message}`;
       );
 
       setSubmitted(true);
+      setNeeds([]);
       setFormData({ email: "", name: "", department: "", message: "" });
       setTimeout(() => setSubmitted(false), 5000);
     } catch (err: unknown) {
@@ -138,12 +157,22 @@ ${formData.message}`;
   const fieldClassName =
     "w-full rounded-lg border border-gray-300 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30";
 
+  const brief = variant === "brief";
+
   return (
     <section
-      className="careers-contact relative w-full overflow-hidden py-10 sm:py-14 md:py-16 lg:py-20"
+      id={brief ? "home-brief" : undefined}
+      className={
+        brief
+          ? "careers-contact home-band home-band-ink home-arch relative w-full overflow-hidden"
+          : "careers-contact relative w-full overflow-hidden py-10 sm:py-14 md:py-16 lg:py-20"
+      }
       aria-labelledby="careers-contact-heading"
     >
-      <div className="absolute inset-0">
+      {brief ? (
+        <div className="absolute inset-0 bg-primary-950" />
+      ) : (
+        <div className="absolute inset-0">
         <Image
           src={BG_IMAGE}
           alt=""
@@ -172,10 +201,11 @@ ${formData.message}`;
             className="-right-[15%] top-1/2 h-[140%] w-[140%] -translate-y-1/2 scale-x-[-1] opacity-80"
           />
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Site views — desktop/tablet: bottom-left over dotted coast (beside the card) */}
-      {siteViews != null ? (
+      {!brief && siteViews != null ? (
         <div className="pointer-events-none absolute bottom-6 left-5 z-20 hidden sm:block md:bottom-8 md:left-8 lg:bottom-10 lg:left-10">
           <div
             className="inline-flex items-center gap-3 rounded-lg bg-black/25 px-3.5 py-2.5 backdrop-blur-[2px]"
@@ -196,14 +226,121 @@ ${formData.message}`;
         </div>
       ) : null}
 
-      <div className="relative w-full px-3 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
+      <div className={brief ? "home-shell relative" : "relative w-full px-3 sm:px-6 lg:px-10 xl:px-14 2xl:px-16"}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl sm:rounded-2xl lg:rounded-3xl"
+          className={
+            brief
+              ? "home-brief-layout"
+              : "mx-auto w-full max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl sm:rounded-2xl lg:rounded-3xl"
+          }
         >
+          {brief ? (
+            <>
+              <div className="home-brief-copy">
+                <h2 id="careers-contact-heading" className="home-display text-white">
+                  Let’s build your <em>brief</em>
+                </h2>
+                <a href={PHONE_HREF} className="home-brief-phone">
+                  <Phone className="h-5 w-5" aria-hidden />
+                  {PHONE_DISPLAY}
+                </a>
+              </div>
+              <form onSubmit={handleSubmit} className="home-brief-form">
+                <fieldset className="home-brief-need">
+                  <legend>What do you need?</legend>
+                  <div className="home-brief-chips">
+                    {BRIEF_NEEDS.map((need) => (
+                      <label key={need} className="home-brief-chip">
+                        <input
+                          type="checkbox"
+                          name="needs"
+                          value={need}
+                          checked={needs.includes(need)}
+                          onChange={() =>
+                            setNeeds((current) =>
+                              current.includes(need)
+                                ? current.filter((item) => item !== need)
+                                : [...current, need]
+                            )
+                          }
+                        />
+                        {need}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <div className="home-brief-row">
+                  <label className="home-brief-field" htmlFor="careers-contact-name">
+                    Name
+                    <input
+                      id="careers-contact-name"
+                      type="text"
+                      required
+                      autoComplete="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                    />
+                  </label>
+                  <label className="home-brief-field" htmlFor="careers-contact-email">
+                    Email
+                    <input
+                      id="careers-contact-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+                    />
+                  </label>
+                </div>
+                <label className="home-brief-field" htmlFor="careers-contact-department">
+                  Department
+                  <select
+                    id="careers-contact-department"
+                    required
+                    value={formData.department}
+                    onChange={(e) => setFormData((p) => ({ ...p, department: e.target.value }))}
+                  >
+                    <option value="" disabled>
+                      Select department
+                    </option>
+                    {DEPARTMENTS.map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="home-brief-field" htmlFor="careers-contact-message">
+                  Message
+                  <textarea
+                    id="careers-contact-message"
+                    required
+                    rows={4}
+                    value={formData.message}
+                    onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
+                  />
+                </label>
+                {submitError ? (
+                  <p className="!text-left text-sm text-red-300" role="alert">
+                    {submitError}
+                  </p>
+                ) : null}
+                {submitted ? (
+                  <p className="!text-left text-sm text-secondary-300" role="status">
+                    Thanks — your message has been sent.
+                  </p>
+                ) : null}
+                <button type="submit" disabled={submitting} className="home-brief-send">
+                  {submitting ? "Sending…" : "Send brief"}
+                </button>
+              </form>
+            </>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="flex flex-col justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
               <h2
@@ -212,7 +349,7 @@ ${formData.message}`;
               >
                 Having any trouble?
               </h2>
-              <p className="!text-left mt-2 text-sm text-gray-600 sm:mt-3 sm:text-lg">
+              <p className="!text-left mt-4 text-sm text-gray-600 sm:mt-3 sm:text-lg">
                 Do not hesitate to reach out to us anytime.
               </p>
 
@@ -223,13 +360,13 @@ ${formData.message}`;
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white shadow-md sm:h-14 sm:w-14">
                   <Phone className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
                 </span>
-                <span className="text-base font-bold text-gray-900 sm:text-xl">
+                <span className={`text-base font-bold sm:text-xl ${brief ? "text-white" : "text-gray-900"}`}>
                   {PHONE_DISPLAY}
                 </span>
               </a>
             </div>
 
-            <div className="border-t border-gray-100 px-4 py-7 sm:px-8 sm:py-10 lg:border-l lg:border-t-0 lg:px-10 lg:py-12">
+            <div className={`px-4 py-7 sm:px-8 sm:py-10 lg:px-10 lg:py-12 ${brief ? "" : "border-t border-gray-100 lg:border-l lg:border-t-0"}`}>
               <form onSubmit={handleSubmit} className="flex h-full flex-col gap-3 sm:gap-3.5">
                 <label className="sr-only" htmlFor="careers-contact-email">
                   Your e-mail address
@@ -318,10 +455,11 @@ ${formData.message}`;
               </form>
             </div>
           </div>
+          )}
         </motion.div>
 
         {/* Site views — mobile: compact row under the card (avoids overlapping the form) */}
-        {siteViews != null ? (
+        {!brief && siteViews != null ? (
           <div className="relative z-20 mt-4 flex justify-start sm:hidden">
             <div
               className="inline-flex max-w-full items-center gap-2 rounded-full bg-black/35 px-3 py-1.5 text-white shadow-sm ring-1 ring-white/25 backdrop-blur-sm"
@@ -338,6 +476,21 @@ ${formData.message}`;
           </div>
         ) : null}
       </div>
+
+      {brief && siteViews != null ? (
+        <div
+          className="home-brief-views"
+          aria-label={`${siteViews.toLocaleString("en-KE")} total site views`}
+        >
+          <span className="home-brief-views-icon">
+            <Eye className="h-5 w-5" aria-hidden />
+          </span>
+          <span className="home-brief-views-copy">
+            <strong>{siteViews.toLocaleString("en-KE")}</strong>
+            <span>Site views</span>
+          </span>
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -145,10 +145,10 @@ export default function HomeLeadershipSection() {
   return (
     <section
       ref={sectionRef}
-      className="home-leadership w-full overflow-hidden bg-editorial-background py-12 sm:py-16 lg:py-20"
+      className="home-leadership home-band home-band-paper home-arch w-full overflow-hidden"
       aria-labelledby="home-leadership-heading"
     >
-      <div className="mx-auto grid w-full max-w-[90rem] items-center gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16 lg:px-8">
+      <div className="home-shell grid w-full items-center gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16">
         <div>
           <p className="sr-only">
             {LEADERS.map((leader) => `${leader.name}, ${leader.role} ${leader.org}`).join(" ")}
@@ -217,7 +217,7 @@ export default function HomeLeadershipSection() {
 
         <div>
           <p className="type-eyebrow">Leadership</p>
-          <h2 id="home-leadership-heading" className="type-section-heading mt-5 overflow-visible">
+          <h2 id="home-leadership-heading" className="home-display mt-5 text-primary-950">
             Leadership at
             <br />
             Changer Fusions

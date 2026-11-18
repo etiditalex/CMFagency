@@ -6,12 +6,8 @@ const galleryPlaceholder = () => (
   <div className="min-h-[200px] bg-gray-50/80 sm:min-h-[240px] md:min-h-[320px]" aria-hidden />
 );
 
-const HomeGalleryCarousel = dynamic(() => import("@/components/home/HomeGalleryCarousel"), {
+const HomeEventCuration = dynamic(() => import("@/components/home/HomeEventCuration"), {
   ssr: false,
-  loading: galleryPlaceholder,
-});
-
-const PartnersCarousel = dynamic(() => import("@/components/home/PartnersCarousel"), {
   loading: galleryPlaceholder,
 });
 
@@ -30,14 +26,9 @@ const CareersContactSection = dynamic(
  * `next/dynamic` with `ssr: false` must run inside a Client Component (not `app/page.tsx`).
  */
 export function HomeDeferredGallery() {
-  return <HomeGalleryCarousel />;
+  return <HomeEventCuration />;
 }
 
 export function HomeDeferredPartnersCTA() {
-  return (
-    <>
-      <PartnersCarousel />
-      <CareersContactSection />
-    </>
-  );
+  return <CareersContactSection variant="brief" />;
 }

@@ -1,60 +1,88 @@
-import Link from "next/link";
+"use client";
 
-const YOUTUBE_ID = "IxGC31vxQtU";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { cloudinaryLoader } from "@/lib/cloudinary";
+
+const NAMES = ["CityBlue Hotels", "Letsvoice Podcast"] as const;
+
+const LOGOS = [
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159309/Patrners_2_vad9x7.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_3_h6mjkl.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_1_llldgx.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1767159308/Patrners_4_vujwiy.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_jiwrxe.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.43_1_qxxeml.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1777897771/WhatsApp_Image_2026-05-03_at_16.30.42_thnno6.jpg",
+] as const;
 
 export default function AugustEventSection() {
+  const [nameIndex, setNameIndex] = useState(0);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (motion.matches) return undefined;
+    const timer = window.setInterval(() => {
+      setNameIndex((current) => (current + 1) % NAMES.length);
+    }, 2200);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const rail = [...LOGOS, ...LOGOS];
+
   return (
     <section
-      className="home-august-event overflow-x-clip bg-white py-8 sm:py-16 md:py-20 lg:py-24"
+      id="home-story"
+      className="home-august-event home-band home-band-paper home-arch home-arch-first overflow-x-clip"
       aria-labelledby="home-august-event-heading"
     >
-      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-10">
-        <div className="grid grid-cols-1 items-start gap-6 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-x-14 xl:gap-x-16">
-          <div className="min-w-0">
-            <p className="home-kicker mb-4 text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[#1a8a3e] sm:mb-5 sm:text-xs">
-              About us
+      <div className="home-shell">
+        <div className="grid grid-cols-1 items-end gap-10 lg:grid-cols-[minmax(16rem,0.42fr)_minmax(0,0.58fr)] lg:gap-20">
+          <div>
+            <p className="home-giant" aria-hidden>
+              17,000+
             </p>
-            <h2
-              id="home-august-event-heading"
-              className="font-montserrat text-[clamp(1.45rem,7.4vw,1.85rem)] font-bold uppercase leading-[1.05] tracking-tight text-neutral-950 sm:text-4xl sm:leading-[1.02] md:text-[2.65rem] lg:text-[2.85rem] xl:text-[3.15rem]"
-            >
-              <span className="block">Event Planning,</span>
-              <span className="block">Ticketing, and</span>
-              <span className="block">Smart Systems</span>
+            <p className="home-giant-word">reached</p>
+          </div>
+          <div>
+            <h2 id="home-august-event-heading" className="sr-only">
+              Event planning, ticketing, and smart systems
             </h2>
-            <div className="mt-6 max-w-xl space-y-4 text-[0.95rem] leading-[1.7] text-neutral-600 sm:mt-7 sm:text-base sm:leading-8">
+            <div className="home-lead max-w-xl space-y-4 text-primary-900/85">
               <p>
                 Changer Fusions plans and manages events from the first brief to the last guest.
                 Fusion Xpress covers ticketing and voting for shows, launches, awards, and fan
                 programmes, so a ticket sale and a vote sit in the same place.
               </p>
               <p>
-                The Smart Management System looks after visitors, guests, and employees: pre-registration,
-                gate check-in, digital passes, attendance, and live reports. Planning, ticketing, voting,
-                and day-of management stay on one workflow.
+                Planning, ticketing, voting, and day-of management stay on one workflow, including
               </p>
             </div>
-            <Link
-              href="/about"
-              className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[#1a8a3e] px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#146e32] sm:mt-10 sm:w-auto sm:px-8 sm:text-[0.95rem]"
-            >
-              Learn more
+            <p className="mt-6 font-montserrat text-2xl font-medium tracking-tight text-primary-950" aria-live="polite">
+              {NAMES[nameIndex]}
+            </p>
+            <Link href="/about" className="home-text-link mt-2 text-primary-800">
+              and many more <span aria-hidden>→</span>
             </Link>
           </div>
+        </div>
+      </div>
 
-          <div className="w-full lg:pt-9">
-            <div className="relative aspect-video w-full overflow-hidden bg-neutral-950">
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube.com/embed/${YOUTUBE_ID}`}
-                title="Changer Fusions on YouTube"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                loading="lazy"
+      <div className="home-logo-viewport mt-14" aria-label="Partners">
+        <div className="home-logo-rail px-4">
+          {rail.map((src, index) => (
+            <div key={`${src}-${index}`} className="flex h-24 w-40 items-center justify-center rounded-2xl bg-white/80 px-3">
+              <Image
+                loader={cloudinaryLoader}
+                src={src}
+                alt=""
+                width={160}
+                height={72}
+                className="h-16 w-auto object-contain"
               />
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>

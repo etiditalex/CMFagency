@@ -1,29 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Image from "next/image";
-import { cloudinaryLoader } from "@/lib/cloudinary";
+import Link from "next/link";
+import { cloudinaryLoaderHero } from "@/lib/cloudinary";
 
-const HERO_IMAGE =
-  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1768448265/HighFashionAudition202514_kwly2p.jpg";
-
-const TITLE_PREFIX = "Strategic Marketing That Powers";
+const TITLE_PREFIX = "Strategic marketing that powers";
 const TITLE_PHRASES = [
-  ["Growth", "and", "Relevance"],
-  ["Events", "and", "Campaigns"],
-  ["Digital", "Marketing", "Tools"],
+  "growth and relevance",
+  "events and campaigns",
+  "digital marketing",
 ] as const;
 
-const CANONICAL_TITLE = `${TITLE_PREFIX} ${TITLE_PHRASES[0].join(" ")}`;
+const CANONICAL_TITLE = `${TITLE_PREFIX} ${TITLE_PHRASES[0]}`;
 
-const HERO_DESCRIPTION =
-  "We plan and manage events from first brief to last guest, then keep that work moving with digital marketing tools that promote, measure, and grow every campaign. Ticketing runs on Fusion Xpress—our platform for selling tickets, managing attendees, and running voting programmes for shows, launches, awards, and fan experiences—so the live moment and the digital follow-through stay in one place, and brands remain visible long after the room empties.";
-
-const LONGEST_PHRASE = TITLE_PHRASES.reduce((longest, phrase) => {
-  const next = phrase.join(" ");
-  return next.length > longest.length ? next : longest;
-}, "");
+/** Landscape homepage photos. Homepage 4 leads because it is the sharpest frame. */
+const SLIDES = [
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396193/Homepage_4_qik5ts.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396192/Homepage_3_puyiot.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396193/Homepage_2_pfpccl.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396192/Homepage_5_ut7g6w.jpg",
+  "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396192/Homepage_1_n4ow6e.jpg",
+] as const;
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = useState(false);
@@ -39,115 +37,83 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-function usePhraseWordTypewriter(
-  phrases: readonly (readonly string[])[],
-  reduceMotion: boolean
-) {
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [wordCount, setWordCount] = useState(phrases[0].length);
-  const [phase, setPhase] = useState<"holding" | "deleting" | "typing">("holding");
-
-  useEffect(() => {
-    if (reduceMotion) {
-      setPhraseIndex(0);
-      setWordCount(phrases[0].length);
-      setPhase("holding");
-      return undefined;
-    }
-
-    const words = phrases[phraseIndex];
-
-    if (phase === "holding") {
-      const timer = window.setTimeout(() => setPhase("deleting"), 2400);
-      return () => window.clearTimeout(timer);
-    }
-
-    if (phase === "deleting") {
-      if (wordCount > 0) {
-        const timer = window.setTimeout(() => setWordCount((count) => count - 1), 220);
-        return () => window.clearTimeout(timer);
-      }
-      const timer = window.setTimeout(() => {
-        setPhraseIndex((index) => (index + 1) % phrases.length);
-        setPhase("typing");
-      }, 280);
-      return () => window.clearTimeout(timer);
-    }
-
-    if (wordCount < words.length) {
-      const timer = window.setTimeout(() => setWordCount((count) => count + 1), 320);
-      return () => window.clearTimeout(timer);
-    }
-
-    const timer = window.setTimeout(() => setPhase("holding"), 80);
-    return () => window.clearTimeout(timer);
-  }, [phase, phraseIndex, phrases, reduceMotion, wordCount]);
-
-  return phrases[phraseIndex].slice(0, wordCount).join(" ");
-}
-
 export default function Hero() {
   const reduceMotion = usePrefersReducedMotion();
-  const animatedWords = usePhraseWordTypewriter(TITLE_PHRASES, reduceMotion);
+  const [slide, setSlide] = useState(0);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+    const timer = window.setInterval(() => {
+      setSlide((current) => (current + 1) % SLIDES.length);
+    }, 6800);
+    return () => window.clearInterval(timer);
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion) return undefined;
+    const timer = window.setInterval(() => {
+      setPhraseIndex((current) => (current + 1) % TITLE_PHRASES.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, [reduceMotion]);
+
+  const phrase = TITLE_PHRASES[phraseIndex];
 
   return (
     <section
-      className="home-hero relative w-full overflow-x-clip bg-primary-950 pt-[calc(var(--site-nav-height)+0.75rem)] sm:overflow-x-visible sm:pt-[calc(env(safe-area-inset-top,0px)+9.25rem)] md:pt-[calc(env(safe-area-inset-top,0px)+9.75rem)]"
+      className="home-hero relative w-full overflow-hidden bg-primary-950"
       aria-labelledby="home-hero-heading"
     >
-      <div className="relative isolate min-h-0 overflow-hidden sm:min-h-[28rem] sm:overflow-visible md:min-h-[32rem] lg:min-h-[36rem] xl:min-h-[38rem]">
-        <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      <div className="home-hero-stage" aria-hidden>
+        {SLIDES.map((src, index) => (
           <Image
-            loader={cloudinaryLoader}
-            src={HERO_IMAGE}
+            key={src}
+            loader={cloudinaryLoaderHero}
+            src={src}
             alt=""
             fill
-            className="object-cover object-[70%_center] sm:object-[74%_center] lg:object-[80%_center]"
-            priority
-            fetchPriority="high"
-            quality={75}
+            priority={index === 0}
+            fetchPriority={index === 0 ? "high" : "low"}
+            quality={90}
             sizes="100vw"
+            className={`home-hero-slide${index === slide ? " is-on" : ""}`}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-950 from-0% via-primary-950/96 via-[62%] to-primary-950/35 to-[100%] sm:via-primary-950/95 sm:via-[32%] sm:to-transparent sm:to-[78%] lg:from-[4%] lg:via-primary-950/92 lg:via-[34%] lg:to-[72%]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-primary-950/85 via-primary-950/25 to-primary-950/45 sm:from-primary-950/70 sm:via-primary-950/20 sm:to-primary-950/30 lg:from-primary-950/25 lg:via-transparent lg:to-primary-950/20" />
-        </div>
+        ))}
+      </div>
+      <div className="home-hero-shade" aria-hidden />
 
-        <div className="relative z-10 flex min-h-[inherit] w-full items-start overflow-visible px-4 pb-[calc(var(--site-mobile-dock-height)+1.25rem)] pt-2 sm:px-8 sm:pb-12 sm:pt-5 md:px-12 md:pb-14 md:pt-5 lg:px-16 lg:pb-16 lg:pt-6 xl:px-20">
-          <motion.div
-            initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-xl overflow-visible md:max-w-4xl lg:max-w-5xl xl:max-w-6xl"
-          >
-            <h1
-              id="home-hero-heading"
-              aria-label={CANONICAL_TITLE}
-              className="!text-left overflow-visible font-montserrat text-[clamp(1.35rem,6.4vw,1.75rem)] font-bold leading-[1.28] tracking-normal text-white sm:text-5xl sm:leading-tight md:text-6xl lg:text-7xl xl:text-[4.75rem]"
-            >
-              <span aria-hidden="true" className="flex flex-col items-start gap-1.5 overflow-visible sm:gap-2">
-                <span className="block overflow-visible py-[0.08em]">Strategic Marketing</span>
-                <span className="block overflow-visible py-[0.08em]">That Powers</span>
-                <span className="relative block min-h-[1.45em] w-full overflow-visible py-[0.08em] sm:min-h-[2.6em] md:min-h-[1.35em]">
-                  <span className="invisible !text-left md:whitespace-nowrap" aria-hidden>
-                    {LONGEST_PHRASE}
-                  </span>
-                  <span className="absolute left-0 top-0 w-full overflow-visible break-words !text-left md:whitespace-nowrap">
-                    {animatedWords}
-                    {reduceMotion ? null : (
-                      <span
-                        className="home-hero-caret ml-1 inline-block h-[0.78em] w-[3px] translate-y-[0.12em] bg-secondary-400 align-baseline"
-                        aria-hidden
-                      />
-                    )}
-                  </span>
-                </span>
-              </span>
-            </h1>
-            <p className="!text-left mt-4 w-full max-w-none text-sm leading-relaxed text-white/90 sm:mt-6 sm:max-w-2xl sm:text-base sm:leading-7 md:max-w-3xl md:text-[1.05rem] md:leading-[1.7] lg:max-w-[min(42rem,calc(50vw-5rem))] lg:text-[1.08rem]">
-              {HERO_DESCRIPTION}
-            </p>
-          </motion.div>
+      <h1 id="home-hero-heading" aria-label={CANONICAL_TITLE} className="home-hero-title">
+        <span className="home-hero-lead">{TITLE_PREFIX}</span>
+        <span className="home-hero-win">
+          <span key={phrase} className="home-hero-phrase">
+            {phrase}
+          </span>
+        </span>
+      </h1>
+
+      <div className="home-hero-meta">
+        <p className="home-hero-caption">
+          <b>Coast Fashion and Modelling Awards 2026</b>
+          City Blue Creekside Hotel, Mombasa · 15 August 2026
+        </p>
+        <div className="home-hero-seq" aria-hidden>
+          {SLIDES.map((src, index) => (
+            <i
+              key={src}
+              className={index < slide ? "is-done" : index === slide ? "is-now" : undefined}
+            />
+          ))}
         </div>
+      </div>
+
+      <div className="home-hero-cta">
+        <Link href="#home-brief" className="home-hero-btn">
+          Start a brief
+        </Link>
+        <a href="#home-story" className="home-hero-scroll" aria-label="Scroll to continue">
+          <span aria-hidden>↓</span>
+        </a>
       </div>
     </section>
   );
