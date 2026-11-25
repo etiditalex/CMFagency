@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, X, ShoppingCart, User, Ticket, ChevronDown, LogOut, FileText, Instagram, Facebook, Linkedin, Search, Shield, PhoneCall } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -28,8 +27,6 @@ export default function Navbar() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const { getTotalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
-  const pathname = usePathname();
-  const onHeroNav = pathname === "/" && !scrolled && !isOpen;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,14 +125,12 @@ export default function Navbar() {
   return (
     <motion.nav
       initial={false}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-        onHeroNav
-          ? "home-nav-on-hero border-transparent bg-gradient-to-b from-primary-950/75 to-transparent"
-          : `border-b border-gray-200 bg-white ${scrolled ? "shadow-sm" : ""}`
+      className={`fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white transition-shadow duration-200 ${
+        scrolled ? "shadow-sm" : ""
       }`}
     >
       {/* Top bar: tagline + phone; Track + Login (icons on small screens) */}
-      <div className={`${onHeroNav ? "bg-transparent" : "bg-primary-800"} pt-[env(safe-area-inset-top,0px)] text-white`}>
+      <div className="bg-primary-800 pt-[env(safe-area-inset-top,0px)] text-white">
         <div className="container-custom">
           <div className="flex h-8 items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
@@ -213,7 +208,7 @@ export default function Navbar() {
       </div>
 
       {/* Main Navigation Bar */}
-      <div className={`container-custom ${onHeroNav ? "bg-transparent" : "bg-white"}`}>
+      <div className="container-custom bg-white">
         <div className="flex h-14 items-center justify-between sm:h-16">
             <Link href="/" className="flex h-full shrink-0 items-center">
               <Image
@@ -221,13 +216,13 @@ export default function Navbar() {
                 alt="Changer Fusions"
                 width={168}
                 height={76}
-                className={`h-8 w-auto object-contain object-left sm:h-9 ${onHeroNav ? "brightness-0 invert" : ""}`}
+                className="h-8 w-auto object-contain object-left sm:h-9"
                 priority
               />
             </Link>
 
           {/* Navigation Links */}
-          <div className="home-nav-links hidden flex-1 items-center justify-center gap-0.5 lg:flex">
+          <div className="hidden flex-1 items-center justify-center gap-0.5 lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -644,7 +639,7 @@ export default function Navbar() {
 
             <Link
               href="/merchandise"
-              className="home-nav-shop inline-flex items-center justify-center rounded-full bg-secondary-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600"
+              className="inline-flex items-center justify-center rounded-md bg-secondary-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-secondary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary-600"
             >
               Shop Now
             </Link>
@@ -655,9 +650,7 @@ export default function Navbar() {
           <div className="lg:hidden flex items-center gap-1">
             <Link
               href="/cart"
-              className={`relative flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
-                onHeroNav ? "text-white hover:bg-white/10" : "text-gray-700 hover:bg-gray-100 hover:text-primary-700"
-              }`}
+              className="relative flex h-10 w-10 items-center justify-center rounded-md text-gray-700 transition-colors hover:bg-gray-100 hover:text-primary-700"
               aria-label="Shopping Cart"
             >
               <ShoppingCart className="h-5 w-5" />
@@ -670,9 +663,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className={`flex h-10 w-10 items-center justify-center rounded-md ${
-                onHeroNav ? "text-white hover:bg-white/10" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className="flex h-10 w-10 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
               aria-label="Toggle menu"
               aria-expanded={isOpen}
             >

@@ -88,7 +88,7 @@ const nextConfig = {
     remotePatterns: imageRemotePatterns,
     // Prefer next-gen formats when supported by the browser/CDN edge.
     formats: ['image/avif', 'image/webp'],
-    qualities: [70, 75, 80, 90],
+    qualities: [70, 75, 80],
   },
 }
 

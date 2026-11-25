@@ -298,7 +298,7 @@ export default function WhatWeDoOrbit() {
 
   return (
     <section
-      className="home-build home-band home-arch relative isolate overflow-hidden bg-primary-600"
+      className="home-build relative isolate overflow-hidden bg-primary-500 py-12 sm:py-16 lg:py-20"
       aria-labelledby="home-build-heading"
     >
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6">

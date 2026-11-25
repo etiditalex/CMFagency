@@ -1,10 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import KenyaPresenceMap from "@/components/home/KenyaPresenceMap";
 import AnimatedCount from "@/components/home/AnimatedCount";
-
-const PLACES = ["the Coast", "Mombasa", "Nairobi", "Kisumu"] as const;
 
 const STATS = [
   { value: 17000, suffix: "+", label: "People reached" },
@@ -14,47 +9,49 @@ const STATS = [
 ] as const;
 
 export default function ImpactKenyaSection() {
-  const [placeIndex, setPlaceIndex] = useState(0);
-
-  useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (motion.matches) return undefined;
-    const timer = window.setInterval(() => {
-      setPlaceIndex((current) => (current + 1) % PLACES.length);
-    }, 1800);
-    return () => window.clearInterval(timer);
-  }, []);
-
   return (
     <section
-      className="home-impact home-band home-band-ink home-arch w-full"
+      className="home-impact w-full bg-primary-50 py-8 sm:py-14 md:py-16 lg:py-20"
       aria-labelledby="home-impact-heading"
     >
-      <div className="home-shell grid w-full items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+      <div className="mx-auto grid w-full max-w-[90rem] items-center gap-5 px-4 sm:px-6 lg:grid-cols-2 lg:gap-12 lg:px-8">
         <div>
-          <h2 id="home-impact-heading" className="home-display text-white">
-            This work reaches{" "}
-            <span className="text-secondary-300" aria-live="polite">
-              {PLACES[placeIndex]}
-            </span>
-            .
-          </h2>
-          <p className="home-lead mt-6 max-w-xl text-white/75">
-            From Mombasa and the Coast to Nairobi, Kisumu, and the rest of Kenya, planning,
-            ticketing, and the day of the event stay on one workflow.
+          <p className="home-impact-eyebrow mb-2 flex items-center gap-3 font-montserrat text-[0.7rem] font-bold uppercase tracking-[0.22em] text-primary-700 sm:mb-3 sm:text-sm">
+            <span className="inline-block h-px w-10 bg-primary-700 sm:w-14" aria-hidden />
+            In Kenya
           </p>
-          <ul className="mt-10 grid grid-cols-2 gap-x-6 gap-y-5">
-            {STATS.map((stat, index) => (
-              <li key={stat.label}>
-                <p className="font-montserrat text-3xl font-medium tabular-nums text-white">
-                  <AnimatedCount value={stat.value} suffix={stat.suffix} durationMs={1400 + index * 120} />
-                </p>
-                <p className="mt-1 text-sm text-white/70">{stat.label}</p>
-              </li>
-            ))}
-          </ul>
+          <h2
+            id="home-impact-heading"
+            className="mb-4 overflow-visible font-montserrat text-[1.6rem] font-bold leading-snug text-primary-950 sm:mb-10 sm:text-5xl md:text-6xl"
+          >
+            Where We Work
+          </h2>
+          <KenyaPresenceMap />
         </div>
-        <KenyaPresenceMap />
+
+        <div className="grid grid-cols-2">
+          {STATS.map((stat, index) => {
+            const isRight = index % 2 === 1;
+            const isBottom = index > 1;
+            return (
+              <div
+                key={stat.label}
+                className={`home-impact-stat flex flex-col items-center justify-center px-2 py-4 text-center sm:px-6 sm:py-10 md:py-12 ${
+                  isRight ? "border-l border-secondary-600/40" : ""
+                } ${isBottom ? "border-t border-secondary-600/40" : ""}`}
+              >
+                <p className="font-montserrat text-2xl font-bold tabular-nums text-secondary-700 sm:text-4xl md:text-5xl">
+                  <AnimatedCount
+                    value={stat.value}
+                    suffix={stat.suffix}
+                    durationMs={1600 + index * 180}
+                  />
+                </p>
+                <p className="mt-1 text-sm font-medium leading-snug text-primary-900 sm:mt-2 sm:text-base">{stat.label}</p>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

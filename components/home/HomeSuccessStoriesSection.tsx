@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import {
   FALLBACK_HOME_STORIES,
@@ -17,77 +18,74 @@ type HomeStory = {
   image_url: string;
 };
 
-function bubbleMotion(delta: number) {
-  if (delta < 0) {
-    const past = Math.min(-delta, 1);
-    return {
-      opacity: Math.max(0, 1 - past * 1.35),
-      transform: `translate(${-past * 8}%, ${-past * 42}vh) scale(${1 - past * 0.2})`,
-      zIndex: 24,
-      featured: past < 0.45,
-    };
-  }
+const HOLD_MS = 7000;
+const FADE_CLASS = "duration-[1800ms]";
+const VISIBLE = 3;
 
-  const step = Math.min(delta, 1.35);
-  const fade = delta <= 1 ? 1 : Math.max(0, 1 - (delta - 1) * 1.2);
-  return {
-    opacity: fade,
-    transform: `translate(${Math.min(step, 1) * 58}%, ${Math.min(step, 1) * 34}vh) scale(${1 - Math.min(step, 1) * 0.64})`,
-    zIndex: Math.round(30 - delta * 8),
-    featured: delta < 0.42,
-  };
+function StoryPortrait({ name, imageUrl }: { name: string; imageUrl: string }) {
+  if (!imageUrl) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-white/15 font-montserrat text-sm font-bold text-white sm:text-base">
+        {testimonialInitials(name)}
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={imageUrl}
+      alt=""
+      width={160}
+      height={160}
+      className="h-full w-full object-cover object-center"
+      unoptimized
+    />
+  );
 }
 
-function QuoteBubble({
+function StorySlot({
   story,
-  delta,
-  stacked = false,
+  stories,
+  className = "",
 }: {
   story: HomeStory;
-  delta: number;
-  stacked?: boolean;
+  stories: HomeStory[];
+  className?: string;
 }) {
-  const motion = bubbleMotion(delta);
-  if (!stacked && motion.opacity <= 0.02) return null;
-
   return (
-    <figure
-      className={`${
-        stacked ? "relative" : "absolute left-0 top-0 origin-top-left"
-      } w-[min(100%,58rem)] rounded-[2rem] px-6 py-6 sm:rounded-[2.6rem] sm:px-8 sm:py-8 ${
-        motion.featured || stacked ? "bg-secondary-600 text-white" : "bg-[#e5f3f7] text-primary-950"
-      }`}
-      style={
-        stacked
-          ? undefined
-          : {
-              opacity: motion.opacity,
-              transform: motion.transform,
-              zIndex: motion.zIndex,
-            }
-      }
+    <article
+      className={`relative min-h-[28rem] overflow-y-auto rounded-xl bg-secondary-800 sm:overflow-hidden lg:min-h-[32rem] ${className}`}
     >
-      <blockquote className="text-[1.05rem] font-medium leading-snug sm:text-2xl sm:leading-snug">
-        {story.quote}
-      </blockquote>
-      <figcaption className="mt-5 flex items-center gap-3">
-        <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-950/10 text-sm font-semibold">
-          {testimonialInitials(story.name)}
-        </span>
-        <span>
-          <span className="block font-montserrat text-base font-semibold">{story.name}</span>
-          <span className={`block text-sm ${motion.featured ? "text-white/80" : "text-primary-800/70"}`}>
-            {story.role}
-          </span>
-        </span>
-      </figcaption>
-    </figure>
+      {stories.map((person) => (
+        <div
+          key={person.id}
+          className={`absolute inset-0 flex flex-col overflow-hidden px-4 py-6 transition-opacity ${FADE_CLASS} ease-in-out sm:px-6 sm:py-8 lg:px-7 lg:py-9 ${
+            person.id === story.id ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          aria-hidden={person.id !== story.id}
+        >
+          <div className="mb-3 flex items-center gap-3 sm:mb-6 sm:gap-4">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-white/30 sm:h-16 sm:w-16">
+              <StoryPortrait name={person.name} imageUrl={person.image_url} />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-montserrat text-base font-bold leading-tight text-white sm:text-xl">
+                {person.name}
+              </h3>
+              <p className="home-success-role mt-0.5 text-xs leading-snug text-white/80 sm:text-sm">{person.role}</p>
+            </div>
+          </div>
+          <p className="home-success-quote flex-1 text-[0.9rem] leading-relaxed text-white sm:text-[1.05rem] sm:leading-7 lg:text-lg lg:leading-8">
+            &lsquo;{person.quote}&rsquo;
+          </p>
+        </div>
+      ))}
+    </article>
   );
 }
 
 export default function HomeSuccessStoriesSection() {
   const sectionRef = useRef<HTMLElement>(null);
-  const [progress, setProgress] = useState(0);
+  const [index, setIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [stories, setStories] = useState<HomeStory[]>(FALLBACK_HOME_STORIES);
 
@@ -105,7 +103,8 @@ export default function HomeSuccessStoriesSection() {
         if (error) throw error;
         if (cancelled) return;
         const rows = (data ?? []) as HomeStory[];
-        if (rows.length > 0) setStories(rows);
+        setStories(rows);
+        setIndex(0);
       } catch (error) {
         if (!cancelled && !isMissingTestimonialsTable(error as { message?: string; code?: string })) {
           setStories(FALLBACK_HOME_STORIES);
@@ -127,63 +126,96 @@ export default function HomeSuccessStoriesSection() {
   }, []);
 
   useEffect(() => {
-    if (reduceMotion || stories.length < 2) return undefined;
-    let frame = 0;
-    const measure = () => {
-      const section = sectionRef.current;
-      if (!section) return;
-      const rect = section.getBoundingClientRect();
-      const distance = section.offsetHeight - window.innerHeight;
-      const travelled = Math.min(Math.max(-rect.top, 0), Math.max(distance, 1));
-      setProgress(distance > 0 ? travelled / distance : 0);
+    if (reduceMotion || stories.length <= 1) return undefined;
+
+    const section = sectionRef.current;
+    if (!section) return undefined;
+
+    let timer: number | undefined;
+    const start = () => {
+      if (timer) window.clearInterval(timer);
+      timer = window.setInterval(() => {
+        setIndex((current) => (current + 1) % stories.length);
+      }, HOLD_MS);
     };
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(measure);
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = undefined;
+      }
     };
-    measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) start();
+        else stop();
+      },
+      { threshold: 0.35 }
+    );
+
+    observer.observe(section);
     return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      observer.disconnect();
+      stop();
     };
   }, [reduceMotion, stories.length]);
 
   if (stories.length === 0) return null;
 
-  const focus = progress * Math.max(stories.length - 1, 0);
+  const visibleCount = Math.min(VISIBLE, stories.length);
+  const visible = Array.from({ length: visibleCount }, (_, slot) => stories[(index + slot) % stories.length]);
 
   return (
     <section
       ref={sectionRef}
-      className="home-success home-arch relative bg-primary-950"
-      style={reduceMotion || stories.length < 2 ? undefined : { height: `${stories.length * 100}vh` }}
+      className="home-success w-full bg-secondary-500 py-10 sm:py-20 md:py-24 lg:py-28"
       aria-labelledby="home-success-heading"
     >
-      <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden px-5 pt-[calc(var(--site-nav-height)+1.25rem)] sm:px-10 lg:px-16">
-        <h2 id="home-success-heading" className="home-client-title home-display max-w-4xl text-white">
-          From our clients
-        </h2>
-        <p className="sr-only">
-          {stories.map((story) => `${story.name}, ${story.role}. ${story.quote}`).join(" ")}
-        </p>
+      <h2
+        id="home-success-heading"
+        className="mb-6 overflow-visible px-4 font-montserrat text-[1.55rem] font-bold leading-snug text-white sm:mb-12 sm:text-4xl md:mb-14 md:text-5xl"
+      >
+        Success Stories
+      </h2>
 
-        {reduceMotion ? (
-          <div className="mt-8 space-y-4 overflow-y-auto pb-10">
-            {stories.map((story) => (
-              <QuoteBubble key={story.id} story={story} delta={0} stacked />
-            ))}
-          </div>
-        ) : (
-          <div className="relative mt-6 min-h-0 flex-1">
-            {stories.map((story, index) => (
-              <QuoteBubble key={story.id} story={story} delta={index - focus} />
-            ))}
-          </div>
-        )}
+      <p className="sr-only">
+        {stories.map((story) => `${story.name}, ${story.role}. ${story.quote}`).join(" ")}
+      </p>
+
+      <div
+        className="mx-auto grid w-full grid-cols-1 gap-4 px-4 sm:px-6 md:grid-cols-3 md:gap-5 md:px-8 lg:px-10"
+        aria-hidden="true"
+      >
+        {(reduceMotion ? stories.slice(0, visibleCount) : visible).map((story, slot) => (
+          <StorySlot
+            key={reduceMotion ? story.id : `slot-${slot}`}
+            story={story}
+            stories={stories}
+            className={slot > 0 ? "hidden md:block" : undefined}
+          />
+        ))}
       </div>
+
+      {!reduceMotion && stories.length > 1 ? (
+        <div className="mt-5 flex justify-center gap-1 md:hidden" role="group" aria-label="Success stories">
+          {stories.map((story, storyIndex) => (
+            <button
+              key={story.id}
+              type="button"
+              aria-label={`Show story from ${story.name}`}
+              aria-current={index === storyIndex ? "true" : undefined}
+              onClick={() => setIndex(storyIndex)}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center"
+            >
+              <span
+                className={`block h-2.5 w-2.5 rounded-full ${
+                  index === storyIndex ? "bg-white" : "bg-white/40"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

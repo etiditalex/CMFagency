@@ -1,14 +1,15 @@
 import { Metadata } from "next";
 import Hero from "@/components/home/Hero";
 import AugustEventSection from "@/components/home/AugustEventSection";
-import ImpactKenyaSection from "@/components/home/ImpactKenyaSection";
 import AboutUsSection from "@/components/home/AboutUsSection";
 import WhyChangerFusionsSection from "@/components/home/WhyChangerFusionsSection";
+import CoreValues from "@/components/home/CoreValues";
+import ImpactKenyaSection from "@/components/home/ImpactKenyaSection";
+import HomeLeadershipSection from "@/components/home/HomeLeadershipSection";
 import HomeSuccessStoriesSection from "@/components/home/HomeSuccessStoriesSection";
-import HomeNotesSection from "@/components/home/HomeNotesSection";
+import WhatWeDoOrbit from "@/components/home/WhatWeDoOrbit";
 import { HomeDeferredGallery, HomeDeferredPartnersCTA } from "@/components/home/HomeBelowFoldDynamic";
 import HomeJsonLd from "@/components/home/HomeJsonLd";
-import { getHomeBlogNotes } from "@/lib/blog-server";
 
 /** Keep homepage fast with ISR instead of per-request rendering. */
 export const revalidate = 300;
@@ -80,20 +81,20 @@ export const metadata: Metadata = {
   category: "marketing",
 };
 
-export default async function Home() {
-  const notes = await getHomeBlogNotes(3);
-
+export default function Home() {
   return (
     <div className="home-page">
       <HomeJsonLd />
       <Hero />
       <AugustEventSection />
-      <ImpactKenyaSection />
       <AboutUsSection />
       <WhyChangerFusionsSection />
-      <HomeDeferredGallery />
+      <CoreValues />
+      <ImpactKenyaSection />
+      <HomeLeadershipSection />
       <HomeSuccessStoriesSection />
-      <HomeNotesSection posts={notes} />
+      <HomeDeferredGallery />
+      <WhatWeDoOrbit />
       <HomeDeferredPartnersCTA />
     </div>
   );
