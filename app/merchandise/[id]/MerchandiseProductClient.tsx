@@ -3,25 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Check, ShoppingCart, X } from "lucide-react";
+import { Check, ChevronRight, ShieldCheck, ShoppingCart, Star, Truck, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
+import { canOptimizeRemoteImage } from "@/lib/image-hosts";
+import { discountPercent, formatKes, type MerchItem } from "@/lib/dropship/catalog";
 
-export type ProductDetail = {
-  id: number;
-  name: string;
-  price: number;
-  originalPrice: number | null;
-  image: string;
-  category: string;
-  description: string;
-  inStock: boolean;
-  sizes: string[];
-  colors: string[];
-};
+export type ProductDetail = MerchItem;
 
 export default function MerchandiseProductClient({ product }: { product: ProductDetail }) {
   const { addToCart, cart } = useCart();
+  const photos = [product.image, ...product.gallery].filter(Boolean);
+  const [photo, setPhoto] = useState(photos[0] ?? "");
+  const [qty, setQty] = useState(1);
   const [variant, setVariant] = useState<{ size: string; color: string }>({
     size: product.sizes[0] ?? "",
     color: product.colors[0] ?? "",
@@ -29,93 +23,168 @@ export default function MerchandiseProductClient({ product }: { product: Product
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const key = useMemo(() => `${product.id}::${variant.size ?? ""}::${variant.color ?? ""}`, [product.id, variant]);
-  const alreadyInCart = cart.some((c) => c.key === key);
+  const alreadyInCart = cart.some((item) => item.key === key);
+  const off = discountPercent(product.price, product.originalPrice);
+  const optionsReady = (product.sizes.length === 0 || Boolean(variant.size)) && (product.colors.length === 0 || Boolean(variant.color));
 
   useEffect(() => {
     if (!lightboxOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightboxOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightboxOpen(false);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [lightboxOpen]);
 
   return (
-    <div className="pt-24 md:pt-28 min-h-screen bg-gray-50">
-      <div className="container-custom">
-        <div className="mb-5 text-sm text-gray-600">
-          <Link href="/merchandise" className="text-primary-700 hover:underline">
-            ← Back to merchandise
+    <div className="min-h-screen bg-[#F6F7FB]" style={{ paddingTop: "var(--site-nav-height)" }}>
+      <div className="container-custom py-6 md:py-10">
+        <nav className="mb-5 flex flex-wrap items-center gap-1 text-xs font-semibold text-[#6B6B7A]">
+          <Link href="/merchandise" className="hover:text-[#1148C0]">
+            Shop
           </Link>
-        </div>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span>{product.category || "Product"}</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="line-clamp-1 text-[#151321]">{product.name}</span>
+        </nav>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+          <div className="overflow-hidden rounded-3xl border border-[#E4E7EF] bg-white">
             <button
               type="button"
-              onClick={() => setLightboxOpen(true)}
-              className="relative block w-full aspect-square cursor-zoom-in"
+              onClick={() => photo && setLightboxOpen(true)}
+              className="relative block aspect-square w-full cursor-zoom-in bg-[#F6F7FB]"
               aria-label="Open product image"
             >
-              <Image src={product.image} alt={product.name} fill unoptimized className="object-contain bg-white" />
+              {photo ? (
+                <Image
+                  src={photo}
+                  alt={product.name}
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 50vw, 100vw"
+                  referrerPolicy="no-referrer"
+                  unoptimized={!canOptimizeRemoteImage(photo)}
+                  className="object-contain"
+                />
+              ) : null}
             </button>
+            {photos.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto border-t border-[#E4E7EF] p-3">
+                {photos.map((src) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => setPhoto(src)}
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border ${
+                      src === photo ? "border-[#1148C0]" : "border-[#E4E7EF]"
+                    }`}
+                    aria-label="Show product photo"
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      referrerPolicy="no-referrer"
+                      unoptimized={!canOptimizeRemoteImage(src)}
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-            <p className="text-xs font-bold uppercase tracking-wide text-primary-700">{product.category || "Merchandise"}</p>
-            <h1 className="mt-2 text-2xl md:text-3xl font-extrabold text-gray-900">{product.name}</h1>
-            {product.description ? <p className="mt-3 text-gray-700 leading-relaxed">{product.description}</p> : null}
-
-            <div className="mt-5 flex items-end gap-3">
-              <div className="text-3xl font-extrabold text-gray-900">KSh {product.price.toLocaleString()}</div>
-              {product.originalPrice != null ? (
-                <div className="text-sm text-gray-500 line-through pb-1">KSh {product.originalPrice.toLocaleString()}</div>
+          <div className="rounded-3xl border border-[#E4E7EF] bg-white p-5 md:p-7">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1148C0]">{product.category || "Shop"}</p>
+              {product.source === "aliexpress" ? (
+                <span className="rounded-full bg-[#E7EEFB] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D3A99]">
+                  Supplier
+                </span>
               ) : null}
             </div>
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#151321] md:text-3xl">{product.name}</h1>
+            {product.rating > 0 || product.orders > 0 ? (
+              <div className="mt-3 flex items-center gap-2 text-sm text-[#6B6B7A]">
+                {product.rating > 0 ? (
+                  <span className="inline-flex items-center gap-1 font-semibold text-[#151321]">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    {product.rating.toFixed(1)}
+                  </span>
+                ) : null}
+                {product.orders > 0 ? <span>{product.orders.toLocaleString("en-KE")} sold</span> : null}
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex items-end gap-3">
+              <p className="text-3xl font-extrabold text-[#151321]">{formatKes(product.price)}</p>
+              {product.originalPrice != null && product.originalPrice > product.price ? (
+                <p className="pb-1 text-sm text-[#6B6B7A] line-through">{formatKes(product.originalPrice)}</p>
+              ) : null}
+              {off ? <span className="mb-1 rounded-full bg-[#D64545] px-2 py-0.5 text-xs font-bold text-white">-{off}%</span> : null}
+            </div>
+            {product.description ? <p className="mt-4 text-sm leading-relaxed text-[#6B6B7A]">{product.description}</p> : null}
 
             <div className="mt-6 space-y-4">
-              {product.sizes.length > 0 && (
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-sm font-semibold text-gray-700">Size</label>
-                  <select
-                    value={variant.size}
-                    onChange={(e) => setVariant((v) => ({ ...v, size: e.target.value }))}
-                    className="min-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  >
-                    {product.sizes.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
+              {product.sizes.length > 0 ? (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Size</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setVariant((current) => ({ ...current, size }))}
+                        className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
+                          variant.size === size ? "bg-[#151321] text-white" : "bg-[#F6F7FB] text-[#151321] ring-1 ring-[#E4E7EF]"
+                        }`}
+                      >
+                        {size}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
-              )}
+              ) : null}
 
-              {product.colors.length > 0 && (
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-sm font-semibold text-gray-700">Color</label>
-                  <select
-                    value={variant.color}
-                    onChange={(e) => setVariant((v) => ({ ...v, color: e.target.value }))}
-                    className="min-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm"
-                  >
-                    {product.colors.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+              {product.colors.length > 0 ? (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Color</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {product.colors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setVariant((current) => ({ ...current, color }))}
+                        className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
+                          variant.color === color ? "bg-[#151321] text-white" : "bg-[#F6F7FB] text-[#151321] ring-1 ring-[#E4E7EF]"
+                        }`}
+                      >
+                        {color}
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
-              )}
+              ) : null}
 
-              <div className="flex flex-wrap gap-3 pt-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Quantity</p>
+                <div className="inline-flex items-center rounded-full border border-[#E4E7EF]">
+                  <button type="button" className="px-3 py-1.5 text-lg" onClick={() => setQty((value) => Math.max(1, value - 1))} aria-label="Decrease quantity">
+                    −
+                  </button>
+                  <span className="min-w-8 text-center text-sm font-bold">{qty}</span>
+                  <button type="button" className="px-3 py-1.5 text-lg" onClick={() => setQty((value) => Math.min(10, value + 1))} aria-label="Increase quantity">
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-1 sm:flex-row">
                 <button
                   type="button"
-                  disabled={
-                    !product.inStock ||
-                    (product.sizes.length > 0 && !variant.size) ||
-                    (product.colors.length > 0 && !variant.color)
-                  }
+                  disabled={!product.inStock || !optionsReady}
                   onClick={() => {
                     addToCart({
                       key,
@@ -126,44 +195,50 @@ export default function MerchandiseProductClient({ product }: { product: Product
                       category: product.category,
                       size: variant.size || null,
                       color: variant.color || null,
+                      quantity: qty,
                     });
                   }}
-                  className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold transition ${
-                    product.inStock
+                  className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold text-white ${
+                    product.inStock && optionsReady
                       ? alreadyInCart
-                        ? "bg-secondary-600 text-white"
-                        : "bg-primary-700 text-white hover:bg-primary-800"
-                      : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                        ? "bg-[#2CBD71]"
+                        : "bg-[#1148C0] hover:bg-[#0D3A99]"
+                      : "cursor-not-allowed bg-[#E4E7EF] text-[#6B6B7A]"
                   }`}
                 >
-                  {alreadyInCart ? (
-                    <>
-                      <Check className="h-5 w-5" /> Added to cart
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart className="h-5 w-5" /> Add to cart
-                    </>
-                  )}
+                  {alreadyInCart ? <Check className="h-5 w-5" /> : <ShoppingCart className="h-5 w-5" />}
+                  {alreadyInCart ? "Added to cart" : "Add to cart"}
                 </button>
                 <Link
                   href="/cart"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-bold text-gray-900 hover:bg-gray-50"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#151321] px-5 text-sm font-bold text-[#151321] hover:bg-[#151321] hover:text-white"
                 >
                   View cart
                 </Link>
               </div>
-
-              {!product.inStock ? (
-                <p className="text-sm font-semibold text-amber-700">Out of stock</p>
-              ) : null}
+              {!product.inStock ? <p className="text-sm font-semibold text-amber-700">Out of stock</p> : null}
             </div>
+
+            <ul className="mt-6 space-y-3 border-t border-[#E4E7EF] pt-5 text-sm text-[#151321]">
+              <li className="flex gap-2">
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[#1148C0]" />
+                <span>
+                  {product.source === "aliexpress"
+                    ? "We place this order with the supplier after you pay. Delivery to Kenya is usually 7–20 days."
+                    : "This item ships from our own stock to addresses in Kenya."}
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1148C0]" />
+                <span>Pay with M-Pesa or card. The charge is in Kenya shillings on this site.</span>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
 
       <AnimatePresence>
-        {lightboxOpen ? (
+        {lightboxOpen && photo ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -174,27 +249,24 @@ export default function MerchandiseProductClient({ product }: { product: Product
             aria-label="Product image preview"
             onClick={() => setLightboxOpen(false)}
           >
-            <div className="relative mx-auto h-full w-full max-w-5xl" onClick={(e) => e.stopPropagation()}>
-              <div className="absolute right-0 top-0 z-[1] flex items-center gap-2">
-                <a
-                  href={product.image}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-md bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur hover:bg-white/20"
-                >
-                  Open in new tab
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setLightboxOpen(false)}
-                  className="inline-flex items-center justify-center rounded-md bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
-                  aria-label="Close image preview"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+            <div className="relative mx-auto h-full w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute right-0 top-0 z-[1] rounded-full bg-white/15 p-2 text-white"
+                aria-label="Close image preview"
+              >
+                <X className="h-5 w-5" />
+              </button>
               <div className="relative h-full w-full">
-                <Image src={product.image} alt={product.name} fill unoptimized className="object-contain" />
+                <Image
+                  src={photo}
+                  alt={product.name}
+                  fill
+                  referrerPolicy="no-referrer"
+                  unoptimized={!canOptimizeRemoteImage(photo)}
+                  className="object-contain"
+                />
               </div>
             </div>
           </motion.div>
@@ -203,4 +275,3 @@ export default function MerchandiseProductClient({ product }: { product: Product
     </div>
   );
 }
-

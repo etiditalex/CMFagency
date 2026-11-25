@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { Download, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortal } from "@/contexts/PortalContext";
+import { isMissingDropshipColumn } from "@/lib/dropship/catalog";
 import { supabase } from "@/lib/supabase";
 
 type MerchRow = {
@@ -21,6 +22,8 @@ type MerchRow = {
   sort_order: number;
   available_sizes?: string[] | null;
   available_colors?: string[] | null;
+  source?: string | null;
+  source_url?: string | null;
   updated_at: string;
 };
 
@@ -76,6 +79,10 @@ export default function DashboardMerchandisePage() {
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const [catalogTick, setCatalogTick] = useState(0);
 
   useEffect(() => {
     if (authLoading || portalLoading) return;
@@ -92,16 +99,26 @@ export default function DashboardMerchandisePage() {
 
     let cancelled = false;
     const load = async () => {
-      setLoading(true);
+      if (catalogTick === 0) setLoading(true);
       setError(null);
       try {
-        const { data, error: err } = await supabase
+        const extended =
+          "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,source,source_url,updated_at";
+        const basic =
+          "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,updated_at";
+        let result = await supabase
           .from("merchandise_items")
-          .select(
-            "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,updated_at"
-          )
+          .select(extended)
           .order("sort_order", { ascending: true })
           .order("id", { ascending: true });
+        if (result.error && isMissingDropshipColumn(result.error)) {
+          result = await supabase
+            .from("merchandise_items")
+            .select(basic)
+            .order("sort_order", { ascending: true })
+            .order("id", { ascending: true });
+        }
+        const { data, error: err } = result;
         if (err) throw err;
         if (!cancelled) setItems((data ?? []) as MerchRow[]);
       } catch (e: unknown) {
@@ -124,7 +141,42 @@ export default function DashboardMerchandisePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, portalLoading, isAuthenticated, user?.id, isPortalMember, isAdmin]);
+  }, [authLoading, portalLoading, isAuthenticated, user?.id, isPortalMember, isAdmin, catalogTick]);
+
+  const importSupplier = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setImportNote(null);
+    const query = supplierQuery.trim();
+    if (query.length < 2) {
+      setImportNote("Enter a keyword or an AliExpress product link.");
+      return;
+    }
+    setImporting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Session expired. Please sign in again.");
+      const response = await fetch("/api/dropship/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const body = (await response.json()) as { error?: string; warning?: string | null; pulled?: number };
+      if (!response.ok && body.error) throw new Error(body.error);
+      const pulled = Number(body.pulled ?? 0);
+      if (pulled > 0) {
+        setImportNote(`Imported ${pulled} product${pulled === 1 ? "" : "s"} into the shop.`);
+        setSupplierQuery("");
+        setCatalogTick((value) => value + 1);
+      } else {
+        setImportNote(body.warning || body.error || "No products were imported.");
+      }
+    } catch (e: unknown) {
+      setImportNote(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -344,6 +396,35 @@ export default function DashboardMerchandisePage() {
       {error && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-md text-red-700 whitespace-pre-wrap">{error}</div>
       )}
+
+      <form onSubmit={importSupplier} className="mt-6 max-w-3xl rounded-md border border-hairline bg-white p-6">
+        <h3 className="text-lg font-bold text-gray-900">Pull from AliExpress</h3>
+        <p className="mt-1 text-sm text-gray-600">
+          Search a keyword or paste a product link. Matching products are saved into this catalog with a Kenya shilling
+          price (USD converted, then your markup). Customers pay here. You place the supplier order after payment.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <input
+            className="w-full rounded-md border border-gray-300 px-3 py-2"
+            value={supplierQuery}
+            onChange={(e) => setSupplierQuery(e.target.value)}
+            placeholder="e.g. linen shirt, or an AliExpress item link"
+          />
+          <button
+            type="submit"
+            disabled={importing}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md bg-[#1148C0] px-4 py-2 font-semibold text-white hover:bg-[#0D3A99] disabled:opacity-60"
+          >
+            <Download className="h-4 w-4" />
+            {importing ? "Importing…" : "Import"}
+          </button>
+        </div>
+        {importNote ? <p className="mt-3 text-sm text-gray-700">{importNote}</p> : null}
+        <p className="mt-3 text-xs text-gray-500">
+          Needs ALIEXPRESS_APP_KEY, ALIEXPRESS_APP_SECRET, and ALIEXPRESS_TRACKING_ID. Markup defaults to 40% via
+          DROPSHIP_MARKUP_PERCENT. Run database/ticketing_voting_mvp_patch_108_merchandise_dropship.sql once.
+        </p>
+      </form>
 
       <form
         onSubmit={handleSubmit}
@@ -566,6 +647,19 @@ export default function DashboardMerchandisePage() {
                           <div className="font-semibold text-gray-900">{row.name}</div>
                           <div className="text-gray-500 text-xs mt-0.5 line-clamp-2">{row.short_description || "—"}</div>
                           <div className="text-xs text-gray-500 mt-1">{row.category}</div>
+                          {row.source === "aliexpress" ? (
+                            <div className="mt-1 text-xs font-semibold text-[#0D3A99]">
+                              Supplier
+                              {row.source_url ? (
+                                <>
+                                  {" · "}
+                                  <a href={row.source_url} target="_blank" rel="noopener noreferrer" className="underline">
+                                    Open listing
+                                  </a>
+                                </>
+                              ) : null}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </td>

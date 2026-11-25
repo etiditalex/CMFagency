@@ -105,6 +105,16 @@ function checkWindowedLimit(
   return { allowed: true };
 }
 
+/** Public shop searches that call the supplier catalog. */
+export function checkDropshipSearchRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(ip, "dropship-search", 12, 10 * 60 * 1000);
+}
+
+/** Admin imports from the supplier catalog. */
+export function checkDropshipImportRateLimit(userId: string): { allowed: boolean; retryAfter?: number } {
+  return checkWindowedLimit(userId, "dropship-import", 30, 10 * 60 * 1000);
+}
+
 export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   return checkWindowedLimit(ip, "login", MAX_ATTEMPTS, WINDOW_MS);
 }

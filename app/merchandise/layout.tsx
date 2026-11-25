@@ -28,9 +28,9 @@ async function getTopMerchImage(): Promise<MerchRow> {
 
 export async function generateMetadata(): Promise<Metadata> {
   const url = `${SITE_URL}/merchandise`;
-  const title = "Merchandise | Changer Fusions";
+  const title = "Shop | Changer Fusions";
   const description =
-    "Shop premium Changer Fusions merchandise — t-shirts, hoodies, bottles and more. Order online in Kenya.";
+    "Shop Changer Fusions in Kenya. Browse products and supplier finds, with prices in Kenya shillings and checkout on this site.";
 
   const top = await getTopMerchImage();
   const imageUrl = top?.image_url || FALLBACK_OG_IMAGE;
