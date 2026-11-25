@@ -237,7 +237,7 @@ async function callAliExpress(method: string, business: Record<string, string>):
       return payload;
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (isSignatureError(message) || /not JSON|request failed \(\d+\)|aborted|timeout/i.test(message)) {
+      if (isSignatureError(message) || /not JSON|request failed \(\d+\)|aborted|timeout|api path is invalid/i.test(message)) {
         if (isSignatureError(message)) lastSignatureError = message;
         continue;
       }
@@ -359,7 +359,6 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
   };
   const methods = ids.length ? ["aliexpress.affiliate.productdetail.get"] : SEARCH_METHODS;
   const notes: string[] = [];
-  let lastError = "";
 
   for (const method of methods) {
     const params: Record<string, string> = { ...base };
@@ -379,7 +378,6 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     } catch (error) {
       const message = error instanceof Error ? error.message : "Supplier search failed.";
       notes.push(`${method}: ${message}`.slice(0, 220));
-      lastError = message;
       if (/tracking/i.test(message)) {
         lastSearchNote = notes.join(" | ").slice(0, 500);
         throw error;
@@ -387,8 +385,7 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     }
   }
 
-  lastSearchNote = notes.join(" | ").slice(0, 500);
-  if (lastError && notes.every((note) => note.includes(": "))) throw new Error(lastError);
+  lastSearchNote = notes.join(" | ").slice(0, 700);
   return [];
 }
 
