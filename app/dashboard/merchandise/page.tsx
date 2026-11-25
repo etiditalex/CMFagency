@@ -106,21 +106,21 @@ export default function DashboardMerchandisePage() {
           "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,source,source_url,updated_at";
         const basic =
           "id,name,price_kes,original_price_kes,short_description,image_url,category,in_stock,is_active,sort_order,available_sizes,available_colors,updated_at";
-        let result = await supabase
+        const extendedResult = await supabase
           .from("merchandise_items")
           .select(extended)
           .order("sort_order", { ascending: true })
           .order("id", { ascending: true });
-        if (result.error && isMissingDropshipColumn(result.error)) {
-          result = await supabase
-            .from("merchandise_items")
-            .select(basic)
-            .order("sort_order", { ascending: true })
-            .order("id", { ascending: true });
-        }
-        const { data, error: err } = result;
-        if (err) throw err;
-        if (!cancelled) setItems((data ?? []) as MerchRow[]);
+        const result =
+          extendedResult.error && isMissingDropshipColumn(extendedResult.error)
+            ? await supabase
+                .from("merchandise_items")
+                .select(basic)
+                .order("sort_order", { ascending: true })
+                .order("id", { ascending: true })
+            : extendedResult;
+        if (result.error) throw result.error;
+        if (!cancelled) setItems((result.data ?? []) as MerchRow[]);
       } catch (e: unknown) {
         const errObj = e as { message?: string; code?: string };
         if (!cancelled) {
