@@ -19,28 +19,24 @@ const PHOTOS = [
     alt: "Models on stage at a Coast fashion show",
     kicker: "Mombasa",
     caption: "Runway on the Coast",
-    lead: false,
   },
   {
     src: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396193/Homepage_2_pfpccl.jpg",
     alt: "Participants in a Changer Fusions workshop",
     kicker: "Careers",
     caption: "Workshop and pathways",
-    lead: false,
   },
   {
     src: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396192/Homepage_5_ut7g6w.jpg",
     alt: "Guests seated together at a Changer Fusions gathering",
     kicker: "Events",
     caption: "Guests at the table",
-    lead: false,
   },
   {
     src: "https://res.cloudinary.com/dyfnobo9r/image/upload/v1794396192/Homepage_1_n4ow6e.jpg",
     alt: "Videographer filming a Changer Fusions event",
     kicker: "Campaigns",
     caption: "Filming the day",
-    lead: false,
   },
 ] as const;
 
