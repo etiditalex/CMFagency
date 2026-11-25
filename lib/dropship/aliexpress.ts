@@ -85,7 +85,16 @@ function isProductRecord(item: RawProduct): boolean {
 }
 
 function asProductList(node: unknown, depth = 0): RawProduct[] {
-  if (node == null || depth > 8) return [];
+  if (typeof node === "string") {
+    const text = node.trim();
+    if (depth > 10 || (text[0] !== "{" && text[0] !== "[")) return [];
+    try {
+      return asProductList(JSON.parse(text), depth + 1);
+    } catch {
+      return [];
+    }
+  }
+  if (node == null || depth > 10) return [];
   if (Array.isArray(node)) {
     const objects = node.filter((item) => item && typeof item === "object") as RawProduct[];
     if (objects.some(isProductRecord)) return objects;
@@ -142,7 +151,8 @@ function feedbackToStars(raw: unknown): number {
 }
 
 function moneyToKes(amountRaw: unknown, currencyRaw: unknown): number | null {
-  const amount = parseFloat(String(amountRaw ?? "").replace(/,/g, ""));
+  const match = String(amountRaw ?? "").replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  const amount = match ? Number(match[0]) : Number.NaN;
   if (!Number.isFinite(amount) || amount < 0) return null;
   const currency = String(currencyRaw ?? "USD").trim().toUpperCase();
   const usdToKes = envNumber("DROPSHIP_USD_TO_KES", 130, 50, 400);
@@ -234,20 +244,47 @@ async function callAliExpress(method: string, business: Record<string, string>):
   );
 }
 
+function productField(product: RawProduct, names: string[]): unknown {
+  for (const name of names) {
+    if (product[name] != null && product[name] !== "") return product[name];
+  }
+  return undefined;
+}
+
 function toDrafts(products: RawProduct[], categoryLabel: string) {
   const drafts = [];
   for (const product of products) {
-    const sourceId = String(product.product_id ?? product.productId ?? "").replace(/\D/g, "");
-    const image = httpsUrl(product.product_main_image_url ?? product.productMainImageUrl);
-    const title = String(product.product_title ?? product.productTitle ?? "")
+    const sourceId = String(productField(product, ["product_id", "productId", "item_id", "itemId"]) ?? "").replace(/\D/g, "");
+    const small = product.product_small_image_urls ?? product.productSmallImageUrls;
+    const smallList = Array.isArray(small)
+      ? small
+      : small && typeof small === "object" && Array.isArray((small as { string?: unknown }).string)
+        ? (small as { string: unknown[] }).string
+        : [];
+    const image = httpsUrl(
+      productField(product, ["product_main_image_url", "productMainImageUrl", "image_url", "product_image"]) ?? smallList[0]
+    );
+    const title = String(productField(product, ["product_title", "productTitle", "title", "product_name"]) ?? "")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 180);
     if (!sourceId || !image || !title) continue;
-    const currency =
-      product.target_sale_price_currency || product.sale_price_currency || product.target_original_price_currency;
+    const currency = productField(product, [
+      "target_sale_price_currency",
+      "sale_price_currency",
+      "target_original_price_currency",
+      "targetSalePriceCurrency",
+    ]);
     const sale = moneyToKes(
-      product.target_sale_price ?? product.app_sale_price ?? product.sale_price,
+      productField(product, [
+        "target_sale_price",
+        "target_app_sale_price",
+        "app_sale_price",
+        "sale_price",
+        "targetSalePrice",
+        "appSalePrice",
+        "salePrice",
+      ]),
       currency
     );
     if (sale == null) continue;
@@ -255,12 +292,6 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
       product.target_original_price ?? product.original_price ?? product.app_original_price,
       product.target_original_price_currency || currency
     );
-    const small = product.product_small_image_urls;
-    const smallList = Array.isArray(small)
-      ? small
-      : small && typeof small === "object" && Array.isArray((small as { string?: unknown }).string)
-        ? (small as { string: unknown[] }).string
-        : [];
     const gallery = smallList.map(httpsUrl).filter((url): url is string => Boolean(url && url !== image)).slice(0, 6);
     const category =
       categoryLabel ||
@@ -284,34 +315,61 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
   return drafts;
 }
 
+const SEARCH_METHODS = [
+  "aliexpress.affiliate.hotproduct.query",
+  "aliexpress.affiliate.product.query",
+  "aliexpress.affiliate.product.smartmatch",
+];
+
+let lastSearchNote = "";
+
+function responseOutline(node: unknown, depth = 0): string {
+  if (node == null || depth > 4) return "";
+  if (Array.isArray(node)) return `[${node.length}]`;
+  if (typeof node === "number" || typeof node === "boolean") return String(node);
+  if (typeof node !== "object") return "str";
+  const record = node as Record<string, unknown>;
+  const parts = Object.keys(record)
+    .slice(0, 10)
+    .map((key) => `${key}:${responseOutline(record[key], depth + 1)}`);
+  return `{${parts.join(",")}}`;
+}
+
 async function fetchRawProducts(query: string, page: number, pageSize: number): Promise<RawProduct[]> {
   const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
   const ids = productIdsFromQuery(query);
-  const common = {
+  lastSearchNote = "";
+  const base = {
     tracking_id: trackingId,
     target_currency: "USD",
     target_language: "EN",
-    ship_to_country: "KE",
+    page_no: String(page),
+    page_size: String(pageSize),
   };
-  const search = async (shipToCountry: boolean) => {
-    const shipping = shipToCountry ? common : { tracking_id: common.tracking_id, target_currency: common.target_currency, target_language: common.target_language };
-    return ids.length
-      ? callAliExpress("aliexpress.affiliate.productdetail.get", {
-          ...shipping,
-          product_ids: ids.join(","),
-        })
-      : callAliExpress("aliexpress.affiliate.product.query", {
-          ...shipping,
-          keywords: query,
-          page_no: String(page),
-          page_size: String(pageSize),
-          sort: "LAST_VOLUME_DESC",
-        });
-  };
-  const payload = await search(true);
-  const products = asProductList(payload);
-  if (products.length > 0) return products;
-  return asProductList(await search(false));
+  const methods = ids.length ? ["aliexpress.affiliate.productdetail.get"] : SEARCH_METHODS;
+  let lastError = "";
+
+  for (const method of methods) {
+    const params: Record<string, string> = { ...base };
+    if (method === "aliexpress.affiliate.productdetail.get") params.product_ids = ids.join(",");
+    else params.keywords = query;
+    if (method !== "aliexpress.affiliate.product.smartmatch" && method !== "aliexpress.affiliate.productdetail.get") {
+      params.sort = "SALE_PRICE_ASC";
+    }
+    try {
+      const payload = await callAliExpress(method, params);
+      const products = asProductList(payload);
+      lastSearchNote = `${method} ${responseOutline(payload)}`.slice(0, 420);
+      if (products.length > 0) return products;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Supplier search failed.";
+      lastError = message;
+      if (/tracking/i.test(message)) throw error;
+    }
+  }
+
+  if (lastError && !lastSearchNote) throw new Error(lastError);
+  return [];
 }
 
 export async function pullAliExpressIntoCatalog(
@@ -341,7 +399,8 @@ export async function pullAliExpressIntoCatalog(
 
   const drafts = toDrafts(raw, category).slice(0, pageSize);
   if (drafts.length === 0) {
-    return { configured: true, products: [], warning: "No supplier products matched that search." };
+    const detail = lastSearchNote ? ` ${lastSearchNote}` : "";
+    return { configured: true, products: [], warning: `No supplier products matched that search.${detail}` };
   }
 
   const { data, error } = await admin
