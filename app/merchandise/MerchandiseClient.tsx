@@ -154,10 +154,10 @@ export default function MerchandiseClient({
       } else if (body.configured === false) {
         setFocusIds([]);
         setSupplierNote("Supplier catalog is not connected yet. You are browsing this shop’s own products.");
-      } else if (body.warning) {
+      } else if (body.warning && !category) {
         setFocusIds([]);
         setSupplierNote(body.warning);
-      } else if (!response.ok) {
+      } else if (!response.ok && !category) {
         setSupplierNote("Supplier search is unavailable right now.");
       }
     } catch {

@@ -326,30 +326,9 @@ const SEARCH_METHODS = [
   "aliexpress.affiliate.product.smartmatch",
 ];
 
-let lastSearchNote = "";
-
-function responseOutline(node: unknown, depth = 0): string {
-  if (node == null || depth > 4) return "";
-  if (Array.isArray(node)) return `[${node.length}]`;
-  if (typeof node === "number" || typeof node === "boolean") return String(node);
-  if (typeof node !== "object") return "str";
-  const record = node as Record<string, unknown>;
-  const parts = Object.keys(record)
-    .slice(0, 10)
-    .map((key) => {
-      const value = record[key];
-      if (typeof value === "string" && /^(message|msg|resp_msg|code|type|sub_msg)$/i.test(key)) {
-        return `${key}:${value.replace(/\s+/g, " ").slice(0, 140)}`;
-      }
-      return `${key}:${responseOutline(value, depth + 1)}`;
-    });
-  return `{${parts.join(",")}}`;
-}
-
 async function fetchRawProducts(query: string, page: number, pageSize: number): Promise<RawProduct[]> {
   const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
   const ids = productIdsFromQuery(query);
-  lastSearchNote = "";
   const base = {
     tracking_id: trackingId,
     target_currency: "USD",
@@ -358,7 +337,6 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     page_size: String(pageSize),
   };
   const methods = ids.length ? ["aliexpress.affiliate.productdetail.get"] : SEARCH_METHODS;
-  const notes: string[] = [];
 
   for (const method of methods) {
     const params: Record<string, string> = { ...base };
@@ -370,22 +348,13 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     try {
       const payload = await callAliExpress(method, params);
       const products = asProductList(payload);
-      notes.push(`${method} ${responseOutline(payload)}`.slice(0, 220));
-      if (products.length > 0) {
-        lastSearchNote = notes.join(" | ").slice(0, 500);
-        return products;
-      }
+      if (products.length > 0) return products;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Supplier search failed.";
-      notes.push(`${method}: ${message}`.slice(0, 220));
-      if (/tracking/i.test(message)) {
-        lastSearchNote = notes.join(" | ").slice(0, 500);
-        throw error;
-      }
+      const message = error instanceof Error ? error.message : "";
+      if (/tracking/i.test(message)) throw error;
     }
   }
 
-  lastSearchNote = notes.join(" | ").slice(0, 700);
   return [];
 }
 
@@ -409,15 +378,13 @@ export async function pullAliExpressIntoCatalog(
   let raw: RawProduct[] = [];
   try {
     raw = await fetchRawProducts(query, page, pageSize);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Supplier search failed.";
-    return { configured: true, products: [], warning: message };
+  } catch {
+    return { configured: true, products: [], warning: "Supplier products are not available right now." };
   }
 
   const drafts = toDrafts(raw, category).slice(0, pageSize);
   if (drafts.length === 0) {
-    const detail = lastSearchNote ? ` ${lastSearchNote}` : "";
-    return { configured: true, products: [], warning: `No supplier products matched that search.${detail}` };
+    return { configured: true, products: [], warning: "No products matched that search." };
   }
 
   const { data, error } = await admin
