@@ -130,6 +130,11 @@ function apiErrorMessage(payload: unknown, depth = 0): string | null {
     const msg = String(err.msg || err.sub_msg || err.message || "").trim();
     if (msg) return msg;
   }
+  if ("code" in record && "message" in record && !("product_id" in record) && !("product_title" in record)) {
+    const code = String(record.code ?? "").trim();
+    const msg = String(record.message ?? "").trim();
+    if (msg && code && code !== "0" && code !== "200") return msg;
+  }
   if ("resp_code" in record || "resp_msg" in record) {
     const code = Number(record.resp_code);
     const msg = String(record.resp_msg ?? record.message ?? "").trim();
@@ -331,7 +336,13 @@ function responseOutline(node: unknown, depth = 0): string {
   const record = node as Record<string, unknown>;
   const parts = Object.keys(record)
     .slice(0, 10)
-    .map((key) => `${key}:${responseOutline(record[key], depth + 1)}`);
+    .map((key) => {
+      const value = record[key];
+      if (typeof value === "string" && /^(message|msg|resp_msg|code|type|sub_msg)$/i.test(key)) {
+        return `${key}:${value.replace(/\s+/g, " ").slice(0, 140)}`;
+      }
+      return `${key}:${responseOutline(value, depth + 1)}`;
+    });
   return `{${parts.join(",")}}`;
 }
 
@@ -347,6 +358,7 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     page_size: String(pageSize),
   };
   const methods = ids.length ? ["aliexpress.affiliate.productdetail.get"] : SEARCH_METHODS;
+  const notes: string[] = [];
   let lastError = "";
 
   for (const method of methods) {
@@ -359,16 +371,24 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     try {
       const payload = await callAliExpress(method, params);
       const products = asProductList(payload);
-      lastSearchNote = `${method} ${responseOutline(payload)}`.slice(0, 420);
-      if (products.length > 0) return products;
+      notes.push(`${method} ${responseOutline(payload)}`.slice(0, 220));
+      if (products.length > 0) {
+        lastSearchNote = notes.join(" | ").slice(0, 500);
+        return products;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Supplier search failed.";
+      notes.push(`${method}: ${message}`.slice(0, 220));
       lastError = message;
-      if (/tracking/i.test(message)) throw error;
+      if (/tracking/i.test(message)) {
+        lastSearchNote = notes.join(" | ").slice(0, 500);
+        throw error;
+      }
     }
   }
 
-  if (lastError && !lastSearchNote) throw new Error(lastError);
+  lastSearchNote = notes.join(" | ").slice(0, 500);
+  if (lastError && notes.every((note) => note.includes(": "))) throw new Error(lastError);
   return [];
 }
 
