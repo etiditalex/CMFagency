@@ -17,22 +17,54 @@ function envNumber(name: string, fallback: number, min: number, max: number): nu
 }
 
 export function aliexpressConfigured(): boolean {
-  return Boolean(
-    process.env.ALIEXPRESS_APP_KEY?.trim() &&
-      process.env.ALIEXPRESS_APP_SECRET?.trim() &&
-      process.env.ALIEXPRESS_TRACKING_ID?.trim()
-  );
+  return Boolean(envValue("ALIEXPRESS_APP_KEY") && envValue("ALIEXPRESS_APP_SECRET") && envValue("ALIEXPRESS_TRACKING_ID"));
 }
 
-function signRequest(apiName: string, params: Record<string, string>, secret: string): string {
-  const keys = Object.keys(params).sort();
-  let payload = apiName;
-  for (const key of keys) {
-    const value = params[key];
-    if (!key || value == null || value === "") continue;
-    payload += key + value;
+type SignStyle =
+  | "iop-sha256"
+  | "iop-sha256-nomethod"
+  | "top-hmac-sha256"
+  | "top-md5"
+  | "iop-md5"
+  | "top-hmac-md5"
+  | "rest-sha256";
+
+let preferredStyle: SignStyle = "top-hmac-sha256";
+
+function envValue(name: string): string {
+  let value = process.env[name]?.trim() ?? "";
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    value = value.slice(1, -1).trim();
   }
-  return crypto.createHmac("sha256", secret).update(payload, "utf8").digest("hex").toUpperCase();
+  return value;
+}
+
+function signRequest(style: SignStyle, apiName: string, params: Record<string, string>, secret: string): string {
+  const keys = Object.keys(params)
+    .filter((key) => key !== "sign" && params[key] !== "" && !(style === "iop-sha256-nomethod" && key === "method"))
+    .sort();
+  let payload = style === "top-hmac-sha256" || style === "top-md5" || style === "top-hmac-md5" ? "" : apiName;
+  for (const key of keys) payload += key + params[key];
+  if (style === "top-md5" || style === "iop-md5") {
+    return crypto
+      .createHash("md5")
+      .update(secret + payload + secret, "utf8")
+      .digest("hex")
+      .toUpperCase();
+  }
+  const algorithm = style === "top-hmac-md5" ? "md5" : "sha256";
+  return crypto.createHmac(algorithm, secret).update(payload, "utf8").digest("hex").toUpperCase();
+}
+
+function signMethodFor(style: SignStyle): string {
+  if (style === "top-hmac-sha256") return "hmac-sha256";
+  if (style === "top-md5" || style === "iop-md5") return "md5";
+  if (style === "top-hmac-md5") return "hmac";
+  return "sha256";
+}
+
+function isSignatureError(message: string): boolean {
+  return /signature does not conform|invalid signature|incompletesignature|isv\.invalid-signature/i.test(message);
 }
 
 function httpsUrl(raw: unknown): string | null {
@@ -48,11 +80,15 @@ function httpsUrl(raw: unknown): string | null {
   }
 }
 
+function isProductRecord(item: RawProduct): boolean {
+  return "product_id" in item || "productId" in item || "product_title" in item || "productTitle" in item;
+}
+
 function asProductList(node: unknown, depth = 0): RawProduct[] {
-  if (node == null || depth > 7) return [];
+  if (node == null || depth > 8) return [];
   if (Array.isArray(node)) {
     const objects = node.filter((item) => item && typeof item === "object") as RawProduct[];
-    if (objects.some((item) => "product_id" in item || "product_title" in item)) return objects;
+    if (objects.some(isProductRecord)) return objects;
     for (const item of objects) {
       const found = asProductList(item, depth + 1);
       if (found.length) return found;
@@ -60,24 +96,39 @@ function asProductList(node: unknown, depth = 0): RawProduct[] {
     return [];
   }
   if (typeof node !== "object") return [];
-  const record = node as Record<string, unknown>;
-  for (const key of ["product", "products", "resp_result", "result", "result_list"]) {
-    if (key in record) {
-      const found = asProductList(record[key], depth + 1);
-      if (found.length) return found;
-    }
+  const record = node as RawProduct;
+  if (isProductRecord(record)) return [record];
+  for (const value of Object.values(record)) {
+    const found = asProductList(value, depth + 1);
+    if (found.length) return found;
   }
   return [];
 }
 
-function apiErrorMessage(payload: unknown): string | null {
-  if (!payload || typeof payload !== "object") return null;
+function apiErrorMessage(payload: unknown, depth = 0): string | null {
+  if (!payload || typeof payload !== "object" || depth > 6) return null;
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const message = apiErrorMessage(item, depth + 1);
+      if (message) return message;
+    }
+    return null;
+  }
   const record = payload as Record<string, unknown>;
   const error = record.error_response;
   if (error && typeof error === "object") {
     const err = error as Record<string, unknown>;
     const msg = String(err.msg || err.sub_msg || err.message || "").trim();
-    return msg || "AliExpress rejected the request.";
+    if (msg) return msg;
+  }
+  if ("resp_code" in record || "resp_msg" in record) {
+    const code = Number(record.resp_code);
+    const msg = String(record.resp_msg ?? record.message ?? "").trim();
+    if (Number.isFinite(code) && code !== 200 && code !== 0) return msg || "AliExpress rejected the request.";
+  }
+  for (const value of Object.values(record)) {
+    const message = apiErrorMessage(value, depth + 1);
+    if (message) return message;
   }
   return null;
 }
@@ -116,24 +167,30 @@ function productIdsFromQuery(query: string): string[] {
   return Array.from(ids).slice(0, 10);
 }
 
-async function callAliExpress(method: string, business: Record<string, string>): Promise<unknown> {
-  const appKey = process.env.ALIEXPRESS_APP_KEY?.trim() ?? "";
-  const secret = process.env.ALIEXPRESS_APP_SECRET?.trim() ?? "";
-  const endpoint = (process.env.ALIEXPRESS_API_URL || "https://api-sg.aliexpress.com/sync").trim();
+const SIGN_STYLES: SignStyle[] = ["top-hmac-sha256", "top-md5", "iop-sha256-nomethod", "rest-sha256"];
+
+async function postAliExpress(method: string, business: Record<string, string>, style: SignStyle): Promise<unknown> {
+  const appKey = envValue("ALIEXPRESS_APP_KEY");
+  const secret = envValue("ALIEXPRESS_APP_SECRET");
+  const apiName = style === "rest-sha256" ? `/${method.replace(/\./g, "/")}` : method;
+  const configuredEndpoint = envValue("ALIEXPRESS_API_URL");
+  const endpoint =
+    style === "rest-sha256"
+      ? `https://api-sg.aliexpress.com/rest${apiName}`
+      : configuredEndpoint || "https://api-sg.aliexpress.com/sync";
   const params: Record<string, string> = {
-    method,
     app_key: appKey,
     timestamp: String(Date.now()),
-    sign_method: "sha256",
+    sign_method: signMethodFor(style),
     ...business,
   };
-  params.sign = signRequest(method, params, secret);
-  const body = new URLSearchParams(params);
+  if (style !== "rest-sha256") params.method = method;
+  params.sign = signRequest(style, apiName, params, secret);
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
-    body,
-    signal: AbortSignal.timeout(15000),
+    body: new URLSearchParams(params),
+    signal: AbortSignal.timeout(8000),
     cache: "no-store",
   });
   const text = await response.text();
@@ -146,17 +203,46 @@ async function callAliExpress(method: string, business: Record<string, string>):
   if (!response.ok) {
     throw new Error(apiErrorMessage(payload) || `AliExpress request failed (${response.status}).`);
   }
-  const error = apiErrorMessage(payload);
-  if (error) throw new Error(error);
   return payload;
+}
+
+async function callAliExpress(method: string, business: Record<string, string>): Promise<unknown> {
+  const ordered = [preferredStyle, ...SIGN_STYLES.filter((style) => style !== preferredStyle)];
+  let lastSignatureError = "AliExpress rejected the app signature.";
+  for (const style of ordered) {
+    try {
+      const payload = await postAliExpress(method, business, style);
+      const message = apiErrorMessage(payload);
+      if (message && isSignatureError(message)) {
+        lastSignatureError = message;
+        continue;
+      }
+      if (message) throw new Error(message);
+      preferredStyle = style;
+      return payload;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (isSignatureError(message) || /not JSON|request failed \(\d+\)|aborted|timeout/i.test(message)) {
+        if (isSignatureError(message)) lastSignatureError = message;
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(
+    `${lastSignatureError} Check that ALIEXPRESS_APP_KEY and ALIEXPRESS_APP_SECRET are the Open Platform App Key and App Secret, with no extra quotes.`
+  );
 }
 
 function toDrafts(products: RawProduct[], categoryLabel: string) {
   const drafts = [];
   for (const product of products) {
-    const sourceId = String(product.product_id ?? "").replace(/\D/g, "");
-    const image = httpsUrl(product.product_main_image_url);
-    const title = String(product.product_title ?? "").replace(/\s+/g, " ").trim().slice(0, 180);
+    const sourceId = String(product.product_id ?? product.productId ?? "").replace(/\D/g, "");
+    const image = httpsUrl(product.product_main_image_url ?? product.productMainImageUrl);
+    const title = String(product.product_title ?? product.productTitle ?? "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180);
     if (!sourceId || !image || !title) continue;
     const currency =
       product.target_sale_price_currency || product.sale_price_currency || product.target_original_price_currency;
@@ -188,7 +274,7 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
       category,
       source: "aliexpress",
       source_product_id: sourceId,
-      source_url: httpsUrl(product.product_detail_url),
+      source_url: httpsUrl(product.product_detail_url ?? product.productDetailUrl),
       rating: feedbackToStars(product.evaluate_rate),
       review_count: 0,
       orders_count: ordersCount(product.lastest_volume ?? product.latest_volume ?? product.volume),
@@ -199,7 +285,7 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
 }
 
 async function fetchRawProducts(query: string, page: number, pageSize: number): Promise<RawProduct[]> {
-  const trackingId = process.env.ALIEXPRESS_TRACKING_ID?.trim() ?? "";
+  const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
   const ids = productIdsFromQuery(query);
   const common = {
     tracking_id: trackingId,
@@ -207,19 +293,25 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     target_language: "EN",
     ship_to_country: "KE",
   };
-  const payload = ids.length
-    ? await callAliExpress("aliexpress.affiliate.productdetail.get", {
-        ...common,
-        product_ids: ids.join(","),
-      })
-    : await callAliExpress("aliexpress.affiliate.product.query", {
-        ...common,
-        keywords: query,
-        page_no: String(page),
-        page_size: String(pageSize),
-        sort: "LAST_VOLUME_DESC",
-      });
-  return asProductList(payload);
+  const search = async (shipToCountry: boolean) => {
+    const shipping = shipToCountry ? common : { tracking_id: common.tracking_id, target_currency: common.target_currency, target_language: common.target_language };
+    return ids.length
+      ? callAliExpress("aliexpress.affiliate.productdetail.get", {
+          ...shipping,
+          product_ids: ids.join(","),
+        })
+      : callAliExpress("aliexpress.affiliate.product.query", {
+          ...shipping,
+          keywords: query,
+          page_no: String(page),
+          page_size: String(pageSize),
+          sort: "LAST_VOLUME_DESC",
+        });
+  };
+  const payload = await search(true);
+  const products = asProductList(payload);
+  if (products.length > 0) return products;
+  return asProductList(await search(false));
 }
 
 export async function pullAliExpressIntoCatalog(

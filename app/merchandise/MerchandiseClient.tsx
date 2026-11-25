@@ -181,6 +181,14 @@ export default function MerchandiseClient({
     return () => window.clearTimeout(timer);
   }, [searchQuery, pullSupplier]);
 
+  const supplierPrimed = useRef(false);
+  useEffect(() => {
+    if (supplierConfigured !== true || supplierPrimed.current) return;
+    if (merchandise.some((item) => item.source === "aliexpress")) return;
+    supplierPrimed.current = true;
+    void pullSupplier("fashion clothes", "Fashion");
+  }, [supplierConfigured, merchandise, pullSupplier]);
+
   const categories = useMemo(() => {
     const names = new Set<string>(SUPPLIER_DEPARTMENTS.map((item) => item.id));
     for (const item of merchandise) {
