@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 const PAGE_SIZE = 10;
 
 type MembershipStatus = "new" | "in_review" | "approved" | "rejected";
+type ContributionStanding = "paid" | "none" | "pending" | "this_week";
 
 type Membership = {
   id: string;
@@ -76,6 +77,11 @@ export default function DashboardKcmMembershipPage() {
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"" | MembershipStatus>("");
+  const [memberQuery, setMemberQuery] = useState("");
+  const [minContribution, setMinContribution] = useState("");
+  const [maxContribution, setMaxContribution] = useState("");
+  const [minContributionCount, setMinContributionCount] = useState("");
+  const [contributionStanding, setContributionStanding] = useState<"" | ContributionStanding>("");
   const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
   const [forumMoney, setForumMoney] = useState({
@@ -193,7 +199,7 @@ export default function DashboardKcmMembershipPage() {
 
       const params = new URLSearchParams();
       if (status) params.set("status", status);
-      params.set("limit", "200");
+      params.set("limit", "2000");
 
       const res = await fetch(`/api/fusion-xpress/kcm-memberships?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -418,9 +424,28 @@ export default function DashboardKcmMembershipPage() {
     }
   };
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const filteredRows = useMemo(
+    () => rows.filter((row) => memberMatchesContributionSearch(row, {
+      memberQuery,
+      minContribution,
+      maxContribution,
+      minContributionCount,
+      contributionStanding,
+    })),
+    [rows, memberQuery, minContribution, maxContribution, minContributionCount, contributionStanding]
+  );
+  const contributionFiltersActive =
+    memberQuery.trim() !== "" ||
+    minContribution.trim() !== "" ||
+    maxContribution.trim() !== "" ||
+    minContributionCount.trim() !== "" ||
+    contributionStanding !== "";
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
-  const pageRows = useMemo(() => rows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE), [rows, safePage]);
+  const pageRows = useMemo(
+    () => filteredRows.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE),
+    [filteredRows, safePage]
+  );
 
   const summary = useMemo(() => {
     const counts: Record<MembershipStatus, number> = {
@@ -594,23 +619,123 @@ export default function DashboardKcmMembershipPage() {
       <div className="mt-6 overflow-hidden border border-hairline bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-4 py-3 text-left">
           <h3 className="text-left text-sm font-extrabold uppercase tracking-wide text-gray-900">Members</h3>
-          {!loading && rows.length > 0 ? (
+          {!loading && filteredRows.length > 0 ? (
             <p className="text-xs text-gray-500">
-              Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, rows.length)} of {rows.length}
+              Showing {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filteredRows.length)} of {filteredRows.length}
+              {contributionFiltersActive && filteredRows.length !== rows.length ? ` (from ${rows.length})` : ""}
             </p>
+          ) : null}
+        </div>
+        <div className="grid gap-3 border-b border-hairline bg-[#f8fafc] px-4 py-3 sm:grid-cols-2 lg:grid-cols-5">
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Member
+            <input
+              value={memberQuery}
+              onChange={(e) => {
+                setMemberQuery(e.target.value);
+                setPage(0);
+                setOpenId(null);
+              }}
+              placeholder="Name, ID, email, or phone"
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 outline-none focus:border-primary-500"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Minimum contributed (KES)
+            <input
+              type="number"
+              min={0}
+              value={minContribution}
+              onChange={(e) => {
+                setMinContribution(e.target.value);
+                setPage(0);
+                setOpenId(null);
+              }}
+              placeholder="0"
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 outline-none focus:border-primary-500"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Maximum contributed (KES)
+            <input
+              type="number"
+              min={0}
+              value={maxContribution}
+              onChange={(e) => {
+                setMaxContribution(e.target.value);
+                setPage(0);
+                setOpenId(null);
+              }}
+              placeholder="Any"
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 outline-none focus:border-primary-500"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Minimum payments
+            <input
+              type="number"
+              min={0}
+              value={minContributionCount}
+              onChange={(e) => {
+                setMinContributionCount(e.target.value);
+                setPage(0);
+                setOpenId(null);
+              }}
+              placeholder="Any"
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 outline-none focus:border-primary-500"
+            />
+          </label>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Contribution
+            <select
+              value={contributionStanding}
+              onChange={(e) => {
+                setContributionStanding(e.target.value as "" | ContributionStanding);
+                setPage(0);
+                setOpenId(null);
+              }}
+              className="h-9 rounded-md border border-gray-300 bg-white px-2 text-sm text-gray-900 outline-none focus:border-primary-500"
+            >
+              <option value="">Any</option>
+              <option value="paid">Has contributed</option>
+              <option value="none">Has not contributed</option>
+              <option value="pending">Has a pending payment</option>
+              <option value="this_week">Contributed this week</option>
+            </select>
+          </label>
+          {contributionFiltersActive ? (
+            <div className="sm:col-span-2 lg:col-span-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setMemberQuery("");
+                  setMinContribution("");
+                  setMaxContribution("");
+                  setMinContributionCount("");
+                  setContributionStanding("");
+                  setPage(0);
+                  setOpenId(null);
+                }}
+                className="text-xs font-semibold text-primary-700 hover:underline"
+              >
+                Clear contribution filters
+              </button>
+            </div>
           ) : null}
         </div>
         {loading ? (
           <p className="p-12 text-center text-gray-500">Loading memberships...</p>
         ) : rows.length === 0 ? (
           <p className="p-12 text-center text-gray-500">No successful KCM payments yet.</p>
+        ) : filteredRows.length === 0 ? (
+          <p className="p-12 text-center text-gray-500">No members match these contribution filters.</p>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full border-collapse text-left text-sm">
+              <table className="min-w-[1280px] w-full border-collapse text-left text-sm">
                 <thead className="bg-[#f4f7fb]">
                   <tr>
-                    {["Registration ID", "Name", "Contact", "Email", "Category", "Payment", "Forum", "Status", "Joined"].map((heading) => (
+                    {["Registration ID", "Name", "Contact", "Email", "Category", "Payment", "Contributions", "Forum", "Status", "Joined"].map((heading) => (
                       <th
                         key={heading}
                         className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"
@@ -650,6 +775,15 @@ export default function DashboardKcmMembershipPage() {
                             {row.payment_confirmed ? `KES ${Number(row.payment_amount_kes ?? 0).toLocaleString()}` : row.payment_status}
                           </td>
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
+                            <div className="font-semibold text-gray-900">
+                              KES {Number(row.contributions?.total_contributions_kes ?? 0).toLocaleString()}
+                            </div>
+                            <div className="text-[11px] text-gray-500">
+                              {Number(row.contributions?.successful_contributions_count ?? 0)} payment
+                              {Number(row.contributions?.successful_contributions_count ?? 0) === 1 ? "" : "s"}
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
                             {row.forum_attendance ? `Paid KES ${Number(row.forum_attendance.fee_kes).toLocaleString()}` : "—"}
                           </td>
                           <td className="whitespace-nowrap border-b border-hairline px-4 py-3 text-left">
@@ -671,7 +805,7 @@ export default function DashboardKcmMembershipPage() {
                         </tr>
                         {open ? (
                           <tr className="bg-secondary-50">
-                            <td colSpan={9} className="border-b border-hairline px-4 py-4 text-left">
+                            <td colSpan={10} className="border-b border-hairline px-4 py-4 text-left">
                               <Row
                                 key={`${row.id}-${row.status}-${row.review_notes ?? ""}`}
                                 row={row}
@@ -697,7 +831,7 @@ export default function DashboardKcmMembershipPage() {
                 </tbody>
               </table>
             </div>
-            {rows.length > PAGE_SIZE ? (
+            {filteredRows.length > PAGE_SIZE ? (
               <div className="flex items-center justify-between border-t border-hairline px-4 py-3 text-sm text-gray-600">
                 <button
                   type="button"
@@ -731,6 +865,73 @@ export default function DashboardKcmMembershipPage() {
       </div>
     </div>
   );
+}
+
+function optionalAmount(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return value;
+}
+
+function currentWeekBounds(): { start: number; end: number } {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = startDate.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  startDate.setDate(startDate.getDate() + diff);
+  startDate.setHours(0, 0, 0, 0);
+  const start = startDate.getTime();
+  return { start, end: start + 7 * 24 * 60 * 60 * 1000 };
+}
+
+function memberMatchesContributionSearch(
+  row: Membership,
+  filters: {
+    memberQuery: string;
+    minContribution: string;
+    maxContribution: string;
+    minContributionCount: string;
+    contributionStanding: "" | ContributionStanding;
+  }
+): boolean {
+  const query = filters.memberQuery.trim().toLowerCase();
+  if (query) {
+    const haystack = [
+      row.membership_number,
+      row.first_name,
+      row.second_name,
+      row.email,
+      row.contact,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    if (!haystack.includes(query)) return false;
+  }
+
+  const total = Number(row.contributions?.total_contributions_kes ?? 0);
+  const count = Number(row.contributions?.successful_contributions_count ?? 0);
+  const pending = Number(row.contributions?.pending_contributions_kes ?? 0);
+  const minTotal = optionalAmount(filters.minContribution);
+  const maxTotal = optionalAmount(filters.maxContribution);
+  const minCount = optionalAmount(filters.minContributionCount);
+  if (minTotal != null && total < minTotal) return false;
+  if (maxTotal != null && total > maxTotal) return false;
+  if (minCount != null && count < minCount) return false;
+
+  if (filters.contributionStanding === "paid" && count < 1) return false;
+  if (filters.contributionStanding === "none" && (count > 0 || pending > 0)) return false;
+  if (filters.contributionStanding === "pending" && pending <= 0) return false;
+  if (filters.contributionStanding === "this_week") {
+    const last = row.contributions?.last_contribution_at;
+    if (!last) return false;
+    const stamp = new Date(last).getTime();
+    const { start, end } = currentWeekBounds();
+    if (!(stamp >= start && stamp < end)) return false;
+  }
+  return true;
 }
 
 function registrationFashionCategoryLabel(row: Membership): string {

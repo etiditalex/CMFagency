@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status")?.trim() || "";
     const format = searchParams.get("format")?.trim().toLowerCase() ?? "";
-    const defaultCap = format === "xlsx" ? 5000 : 300;
+    const defaultCap = format === "xlsx" ? 5000 : 2000;
     const limit = Math.min(
       Math.max(parseInt(searchParams.get("limit") ?? (format === "xlsx" ? "5000" : "100"), 10) || (format === "xlsx" ? 5000 : 100), 1),
       defaultCap
