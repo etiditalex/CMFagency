@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdminOrManager } from "@/lib/fusion-require-admin";
 import { checkDropshipImportRateLimit, checkDropshipSearchRateLimit, getClientIp } from "@/lib/rate-limit";
-import { aliexpressConfigured, pullAliExpressIntoCatalog } from "@/lib/dropship/aliexpress";
+import { aliexpressConfigured, pullAliExpressIntoCatalog, repriceStoredProducts } from "@/lib/dropship/aliexpress";
 import type { MerchItem } from "@/lib/dropship/catalog";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function adminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,7 +23,8 @@ export async function GET(req: NextRequest) {
   const configured = aliexpressConfigured();
   const query = (req.nextUrl.searchParams.get("q") ?? "").trim();
   const category = (req.nextUrl.searchParams.get("category") ?? "").trim();
-  if (!query) {
+  const reprice = req.nextUrl.searchParams.get("reprice") === "1";
+  if (!query && !reprice) {
     return NextResponse.json({ configured, products: [], pulled: 0 });
   }
 
@@ -44,6 +46,19 @@ export async function GET(req: NextRequest) {
       { configured: true, products: [], pulled: 0, warning: "Shop storage is not configured on the server." },
       { status: 500 }
     );
+  }
+
+  if (reprice) {
+    const offset = Math.max(0, Math.trunc(Number(req.nextUrl.searchParams.get("offset") ?? "0")));
+    try {
+      const priced = await repriceStoredProducts(admin, { category, offset });
+      return NextResponse.json({ configured: true, ...priced });
+    } catch {
+      return NextResponse.json(
+        { configured: true, updated: 0, scanned: 0, nextOffset: null, status: "unavailable" },
+        { status: 502 }
+      );
+    }
   }
 
   const result = await pullAliExpressIntoCatalog(admin, { query, category, pageSize: 20 });

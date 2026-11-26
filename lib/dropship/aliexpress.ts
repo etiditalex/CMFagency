@@ -476,3 +476,82 @@ export async function pullAliExpressIntoCatalog(
     status: "ok",
   };
 }
+
+function storedPrice(product: RawProduct): { sale: number; original: number | null } | null {
+  const currency = productField(product, [
+    "target_sale_price_currency",
+    "sale_price_currency",
+    "target_original_price_currency",
+    "targetSalePriceCurrency",
+  ]);
+  const sale = moneyToKes(
+    productField(product, [
+      "target_sale_price",
+      "target_app_sale_price",
+      "app_sale_price",
+      "sale_price",
+      "targetSalePrice",
+      "appSalePrice",
+      "salePrice",
+    ]),
+    currency
+  );
+  if (sale == null) return null;
+  const original = moneyToKes(
+    product.target_original_price ?? product.original_price ?? product.app_original_price,
+    product.target_original_price_currency || currency
+  );
+  return { sale, original: original != null && original > sale ? original : null };
+}
+
+export async function repriceStoredProducts(
+  admin: SupabaseClient,
+  input: { category?: string; offset?: number }
+): Promise<{ updated: number; scanned: number; nextOffset: number | null; status: string }> {
+  const offset = Math.max(0, Math.trunc(input.offset ?? 0));
+  const batch = 40;
+  let query = admin
+    .from("merchandise_items")
+    .select("source_product_id")
+    .eq("source", "aliexpress")
+    .order("id", { ascending: true })
+    .range(offset, offset + batch - 1);
+  const category = String(input.category ?? "").trim();
+  if (category) query = query.eq("category", category);
+  const { data, error } = await query;
+  if (error) return { updated: 0, scanned: 0, nextOffset: null, status: "unavailable" };
+
+  const ids = ((data ?? []) as { source_product_id?: string }[])
+    .map((row) => String(row.source_product_id ?? "").replace(/\D/g, ""))
+    .filter((id) => id.length >= 6);
+  let updated = 0;
+  const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
+
+  for (let index = 0; index < ids.length; index += 20) {
+    const chunk = ids.slice(index, index + 20);
+    const payload = await callAliExpress("aliexpress.affiliate.productdetail.get", {
+      tracking_id: trackingId,
+      target_currency: "USD",
+      target_language: "EN",
+      product_ids: chunk.join(","),
+    });
+    for (const product of asProductList(payload)) {
+      const sourceId = String(productField(product, ["product_id", "productId", "item_id", "itemId"]) ?? "").replace(/\D/g, "");
+      const prices = storedPrice(product);
+      if (!sourceId || !prices) continue;
+      const { error: updateError } = await admin
+        .from("merchandise_items")
+        .update({ price_kes: prices.sale, original_price_kes: prices.original })
+        .eq("source", "aliexpress")
+        .eq("source_product_id", sourceId);
+      if (!updateError) updated += 1;
+    }
+  }
+
+  return {
+    updated,
+    scanned: ids.length,
+    nextOffset: ids.length === batch ? offset + batch : null,
+    status: "ok",
+  };
+}
