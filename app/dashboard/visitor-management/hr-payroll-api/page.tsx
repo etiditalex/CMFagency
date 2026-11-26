@@ -55,7 +55,7 @@ export default function VisitorManagementHrPayrollApiPage() {
   }
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
+    <div className="grid gap-4">
       {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} /> : null}
       {isAdmin && needsSelection ? <AdminSelectBusinessPrompt /> : null}
 

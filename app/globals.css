@@ -2217,6 +2217,48 @@
   margin: 0.25rem 0 0;
 }
 
+.fx-smart-desk {
+  color: #111827;
+  font-size: 13px;
+}
+
+.fx-smart-desk h1 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em;
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  color: #0f172a !important;
+}
+
+.fx-smart-desk h1 svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fx-smart-desk thead,
+.fx-smart-desk thead th {
+  background: transparent !important;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.fx-smart-desk table {
+  font-size: 12px;
+}
+
+.fx-smart-desk .border.border-hairline,
+.fx-smart-desk .rounded-xl.border.border-gray-200,
+.fx-smart-desk .rounded-xl.border.border-slate-200 {
+  border-color: transparent;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
 @keyframes home-hero-caret-blink {
   0%,
   49% {

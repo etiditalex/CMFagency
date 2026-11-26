@@ -73,11 +73,20 @@ import {
   VISITOR_MANAGEMENT_LEAVE_SETTINGS_NAV_CHILD,
   VISITOR_MANAGEMENT_VERIFICATION_NAV_CHILD,
   VISITOR_MANAGEMENT_HR_PAYROLL_API_NAV_CHILD,
+  VISITOR_MANAGEMENT_ACCOUNTS_PATH,
+  VISITOR_MANAGEMENT_BIOMETRIC_PATH,
+  VISITOR_MANAGEMENT_DOCS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH,
+  VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH,
+  VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH,
   VISITOR_MANAGEMENT_LEAVE_PATH,
   VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH,
   VISITOR_MANAGEMENT_EMPLOYEES_PATH,
+  VISITOR_MANAGEMENT_SUBSCRIPTION_PATH,
+  VISITOR_MANAGEMENT_VERIFICATION_PATH,
   isEmployeesNestedNavPath,
   isLeaveNestedNavPath,
   VISITOR_MANAGEMENT_NAV_CHILDREN,
@@ -145,7 +154,6 @@ const NAV_IDLE = "text-ink hover:bg-white/80";
 const NAV_EXPAND_IDLE = "text-ink hover:bg-white/70";
 const NAV_CHILD_ACTIVE = "fx-nav-active bg-white text-ink shadow-[0_1px_2px_rgba(21,19,33,0.06)]";
 const NAV_CHILD_IDLE = "text-ink-muted hover:bg-white/70 hover:text-ink";
-const NAV_SUBTREE = "ml-1 space-y-0.5 py-0.5 pl-1";
 const NAV_ICON_TONES = [
   "text-negative",
   "text-brand",
@@ -326,6 +334,30 @@ function visitorNavChildHref(child: VisitorManagementNavChild, ownerId: string |
   return visitorManagementHref(child.industrySlug);
 }
 
+function smartDeskLabel(pathname: string, industry: string | null) {
+  const routes: Array<[string, string]> = [
+    [VISITOR_MANAGEMENT_EMPLOYEES_CRM_SITE_GPS_PATH, "CRM site GPS"],
+    [VISITOR_MANAGEMENT_EMPLOYEES_PER_EMPLOYEE_REPORT_PATH, "Per employee attendance"],
+    [VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, "Summary reports"],
+    [VISITOR_MANAGEMENT_EMPLOYEES_KIOSK_PATH, "Kiosk scanner"],
+    [VISITOR_MANAGEMENT_EMPLOYEES_GPS_PATH, "GPS tracking"],
+    [VISITOR_MANAGEMENT_LEAVE_SETTINGS_PATH, "Leave settings"],
+    [VISITOR_MANAGEMENT_LEAVE_PATH, "Leave"],
+    [VISITOR_MANAGEMENT_BIOMETRIC_PATH, "Biometric recognition"],
+    [VISITOR_MANAGEMENT_VERIFICATION_PATH, "Verification"],
+    [VISITOR_MANAGEMENT_HR_PAYROLL_API_PATH, "HR & Payroll API"],
+    [VISITOR_MANAGEMENT_ACCOUNTS_PATH, "Accounts"],
+    [VISITOR_MANAGEMENT_SUBSCRIPTION_PATH, "Subscription"],
+    [VISITOR_MANAGEMENT_DOCS_PATH, "Documentation"],
+    [VISITOR_MANAGEMENT_EMPLOYEES_PATH, "Employees"],
+  ];
+  for (const [path, label] of routes) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) return label;
+  }
+  if (industry && industry !== "all") return industryLabel(industry);
+  return "Overview";
+}
+
 function DashboardNavItem({
   item,
   pathname,
@@ -459,22 +491,25 @@ function DashboardNavItem({
     }
 
     return (
-      <div className="space-y-0.5">
+      <div className="grid gap-0.5">
         <button
           type="button"
           onClick={() => setVisitorNavOpen(!visitorNavOpen)}
-          className={`group flex w-full items-center rounded-sm transition-colors duration-200 ${
-            parentActive ? NAV_ACTIVE : NAV_EXPAND_IDLE
-          } gap-3 px-3 py-2`}
+          className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 ${
+            parentActive ? "bg-brand font-semibold text-white" : NAV_EXPAND_IDLE
+          }`}
         >
-          <Icon strokeWidth={1.75} className={`h-[18px] w-[18px] flex-shrink-0 ${iconClassName}`} />
-          <span className="text-[13px] font-medium truncate flex-1 text-left">{item.label}</span>
+          <Icon
+            strokeWidth={1.75}
+            className={`h-4 w-4 flex-shrink-0 ${parentActive ? "text-white" : iconClassName}`}
+          />
+          <span className="flex-1 truncate text-left text-[13px]">{item.label}</span>
           <ChevronDown
-            className={`w-4 h-4 flex-shrink-0 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`h-4 w-4 flex-shrink-0 transition-transform ${parentActive ? "text-white" : "text-ink-muted"} ${isOpen ? "rotate-180" : ""}`}
           />
         </button>
         {isOpen ? (
-          <div className={NAV_SUBTREE}>
+          <div className="grid gap-0.5 py-0.5 pl-2">
             {item.children
               .filter((child) => !("adminOnly" in child && child.adminOnly) || isAdmin)
               .map((child) => {
@@ -491,10 +526,12 @@ function DashboardNavItem({
                     href={visitorNavChildHref(child, adminOwnerId)}
                     prefetch={false}
                     onClick={onNavigate}
-                    className={`block rounded-md py-2 font-medium transition-colors ${
-                      nestedChild ? "ml-3 px-3 text-xs" : "px-3 text-sm"
+                    className={`block truncate rounded-lg py-2 transition-colors ${
+                      nestedChild ? "ml-3 px-3 text-[12px]" : "px-3 text-[13px]"
                     } ${
-                      childActive ? NAV_CHILD_ACTIVE : NAV_CHILD_IDLE
+                      childActive
+                        ? "bg-brand font-semibold text-white"
+                        : "font-medium text-slate-600 hover:bg-white"
                     }`}
                   >
                     {child.label}
@@ -847,6 +884,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }, [currentType, pathname, visitorIndustry, navItems]);
 
   const breadcrumbTail = active === "Dashboard" ? "Overview" : active;
+  const smartSectionLabel = smartDeskLabel(pathname, visitorIndustry);
 
   const displayName = user?.name || user?.email || "Admin";
   const initials = (() => {
@@ -1180,28 +1218,46 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
           </div>
         ) : null}
 
-        <div className="flex min-w-0 flex-1 flex-col bg-white">
-          <div className="bg-white px-4 pb-1 pt-4 sm:px-5">
-            <h1 className="text-[15px] font-semibold text-ink">
-              Fusion Xpress
-              <span className="mx-2 font-normal text-ink-muted">»</span>
-              <span className="font-normal text-ink-muted">{breadcrumbTail}</span>
-            </h1>
-          </div>
-          <main className="flex-1 px-4 pb-8 pt-3 sm:px-5">
-            <div className={isWidePage ? "max-w-none" : "mx-auto max-w-[1280px]"}>
-              <div
-                key={`${pathname}:${currentType ?? ""}`}
-                className={`fx-page-in ${
-                  isWidePage || isDashboardHome || isTicketingVotingWorkspace
-                    ? "p-0"
-                    : "border border-hairline bg-surface p-4 sm:p-6 md:p-8"
-                }`}
-              >
+        <div className={`flex min-w-0 flex-1 flex-col ${isVisitorManagementPage ? "bg-[#f4f6fb] text-[13px] text-[#111827]" : "bg-white"}`}>
+          {isVisitorManagementPage ? (
+            <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-5">
+              <DeskPinIcon />
+              <h1 className="truncate text-[18px] font-bold tracking-tight text-slate-900">
+                Smart Management System
+                <span className="font-semibold text-slate-300"> · </span>
+                <span className="font-medium text-slate-600">{smartSectionLabel}</span>
+              </h1>
+            </header>
+          ) : (
+            <div className="bg-white px-4 pb-1 pt-4 sm:px-5">
+              <h1 className="text-[15px] font-semibold text-ink">
+                Fusion Xpress
+                <span className="mx-2 font-normal text-ink-muted">»</span>
+                <span className="font-normal text-ink-muted">{breadcrumbTail}</span>
+              </h1>
+            </div>
+          )}
+          <main className={isVisitorManagementPage ? "flex-1 overflow-auto p-4" : "flex-1 px-4 pb-8 pt-3 sm:px-5"}>
+            {isVisitorManagementPage ? (
+              <div key={`${pathname}:${currentType ?? ""}`} className="fx-smart-desk fx-page-in">
                 {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
                 {children}
               </div>
-            </div>
+            ) : (
+              <div className={isWidePage ? "max-w-none" : "mx-auto max-w-[1280px]"}>
+                <div
+                  key={`${pathname}:${currentType ?? ""}`}
+                  className={`fx-page-in ${
+                    isWidePage || isDashboardHome || isTicketingVotingWorkspace
+                      ? "p-0"
+                      : "border border-hairline bg-surface p-4 sm:p-6 md:p-8"
+                  }`}
+                >
+                  {isVisitorOnly && !isAdmin ? <VisitorTrialBanner /> : null}
+                  {children}
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -1228,5 +1284,13 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </a>
       </footer>
     </div>
+  );
+}
+
+function DeskPinIcon() {
+  return (
+    <svg className="h-4 w-4 shrink-0 text-slate-700" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path d="M6 1h4l.5 4.2 2.2.8L9.2 9.2 8.5 15h-1L6.8 9.2 3.3 6l2.2-.8L6 1z" />
+    </svg>
   );
 }

@@ -162,7 +162,7 @@ export default function VisitorSubscriptionSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="grid max-w-3xl gap-4">
       <div>
         <p className="text-sm text-gray-500">
           <Link href={VISITOR_MANAGEMENT_PATH} className="font-semibold text-primary-700 hover:underline">

@@ -114,7 +114,7 @@ export default function VisitorManagementAccountsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <div className="grid gap-4">
       <Link
         href={VISITOR_MANAGEMENT_PATH}
         className="inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-800 mb-6"

@@ -75,36 +75,28 @@ export default function VisitorManagementLeaveSettingsPage() {
   }, [needsSelection, checkSetup]);
 
   if (authLoading || portalLoading) {
-    return (
-      <div className="flex min-h-[320px] items-center justify-center rounded-xl bg-primary-600">
-        <p className="text-sm font-semibold text-white">Loading leave settings…</p>
-      </div>
-    );
+    return <p className="py-12 text-center text-[13px] text-slate-500">Loading leave settings…</p>;
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="grid gap-4">
       {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} /> : null}
       {isAdmin && needsSelection ? <AdminSelectBusinessPrompt /> : null}
 
       {setupRequired ? <EmployeeSetupBanner /> : null}
 
       {!needsSelection ? (
-        <div className="w-full overflow-hidden border border-hairline">
-          <header className="relative flex items-center bg-primary-900 px-4 py-3 sm:px-6">
-            <div className="relative z-10 flex shrink-0 items-center">
-              <Image
-                src={BRAND_LOGO_URL}
-                alt="CMF Agency"
-                width={120}
-                height={40}
-                className="h-9 w-auto object-contain brightness-0 invert sm:h-10"
-                priority
-              />
-            </div>
-            <h1 className="pointer-events-none absolute inset-x-0 text-center text-lg font-extrabold tracking-wide text-white sm:text-xl">
-              Leave Day Settings
-            </h1>
+        <div className="overflow-hidden rounded-xl bg-white shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
+          <header className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+            <Image
+              src={BRAND_LOGO_URL}
+              alt="CMF Agency"
+              width={120}
+              height={40}
+              className="h-8 w-auto object-contain"
+              priority
+            />
+            <h2 className="text-[15px] font-semibold text-slate-900">Leave Day Settings</h2>
           </header>
 
           <div className="bg-primary-600 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">

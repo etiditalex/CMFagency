@@ -221,7 +221,7 @@ export default function CrmSiteGpsPage() {
   }
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
+    <div className="grid gap-4">
       <div>
         <h1 className="text-2xl font-bold text-[#1a2332] flex items-center gap-2 pb-3 border-b border-hairline">
           <MapPin className="w-7 h-7 text-emerald-600" />

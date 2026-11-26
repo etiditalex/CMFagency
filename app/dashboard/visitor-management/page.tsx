@@ -472,7 +472,7 @@ export default function DashboardVisitorManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-4">
       {isAdmin ? <BusinessScopeBar basePath={VISITOR_MANAGEMENT_PATH} /> : null}
 
       {needsSelection ? <AdminSelectBusinessPrompt /> : null}
@@ -542,7 +542,7 @@ export default function DashboardVisitorManagementPage() {
         <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary-700" />
-            <span className="text-sm font-bold text-slate-900">Visitor register</span>
+            <span className="text-[15px] font-semibold text-slate-900">Visitor register</span>
             <span className="text-xs font-semibold text-slate-500">{filteredVisitors.length} item(s)</span>
           </div>
           <div className="flex flex-1 flex-col gap-3 lg:max-w-xl lg:flex-row lg:items-center lg:justify-end">

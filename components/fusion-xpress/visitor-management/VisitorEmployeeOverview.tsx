@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  CalendarDays,
   ClipboardList,
   Download,
   FileBarChart,
@@ -48,7 +47,6 @@ import {
 import type { VisitorRecord } from "@/lib/visitors/types";
 import { statusBadgeClass, statusLabel } from "@/lib/visitors/utils";
 import { VM_CARD } from "@/components/fusion-xpress/visitor-management/vm-card";
-import { METRIC_TILE_TONES, MetricTile } from "@/components/dashboard/ui";
 
 function initials(name: string) {
   return name
@@ -284,29 +282,21 @@ export default function VisitorEmployeeOverview({
       label: "Total employees",
       value: employees.length,
       hint: `Active: ${activeEmployees}`,
-      icon: Users,
-      tone: "bg-primary-50 text-primary-700",
     },
     {
       label: "Present today",
       value: presentIds.size,
       hint: `Late: ${lateIds.size}`,
-      icon: UserCheck,
-      tone: "bg-secondary-50 text-secondary-700",
     },
     {
       label: "Visitors today",
       value: visitorsToday.length,
       hint: `Checked in: ${visitorCheckInsToday}`,
-      icon: LogIn,
-      tone: "bg-primary-100 text-primary-800",
     },
     {
       label: "Total check-ins",
       value: employeeSignInsToday + visitorCheckInsToday,
       hint: "Employees and visitors",
-      icon: ScanLine,
-      tone: "bg-secondary-50 text-secondary-800",
     },
   ];
 
@@ -351,36 +341,41 @@ export default function VisitorEmployeeOverview({
   const summaryHref = pathWithOwner(VISITOR_MANAGEMENT_EMPLOYEES_SUMMARY_PATH, adminOwnerId);
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1a2332] sm:text-[28px]">{title}</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">{subtitle}</p>
-        </div>
-        <label className="relative inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-[0_8px_18px_rgba(15,47,100,0.08)] ring-1 ring-black/[0.03]">
-          <CalendarDays className="h-4 w-4 text-primary-700" />
-          <span>{formatLongDate(selectedDate)}</span>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="absolute inset-0 cursor-pointer opacity-0"
-            aria-label="Dashboard date"
-          />
-        </label>
-      </section>
-
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card, idx) => (
-          <MetricTile
-            key={card.label}
-            label={card.label}
-            value={card.value.toLocaleString()}
-            icon={card.icon}
-            tone={METRIC_TILE_TONES[idx % METRIC_TILE_TONES.length]}
-          />
+    <div className="grid items-start gap-4 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid gap-4">
+        <section className={`${VM_CARD} p-4`}>
+          <label className="grid gap-1 text-[11px] font-medium text-slate-500">
+            Date
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => onDateChange(e.target.value)}
+              className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-800 outline-none focus:border-[#1148C0]"
+              aria-label="Dashboard date"
+            />
+          </label>
+          <p className="mt-2 text-[12px] text-slate-600">{formatLongDate(selectedDate)}</p>
+        </section>
+        {kpiCards.map((card) => (
+          <section key={card.label} className={`${VM_CARD} p-4`}>
+            <h2 className="text-[12px] font-medium text-slate-500">{card.label}</h2>
+            <p
+              className={`mt-1 text-[28px] font-bold leading-none ${
+                card.label === "Present today" ? "text-emerald-600" : "text-slate-900"
+              }`}
+            >
+              {card.value.toLocaleString()}
+            </p>
+            <p className="mt-2 text-[11px] font-medium text-slate-500">{card.hint}</p>
+          </section>
         ))}
-      </section>
+      </div>
+
+      <div className="grid gap-4">
+        <div>
+          <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+          <p className="mt-1 max-w-3xl text-[12px] text-slate-500">{subtitle}</p>
+        </div>
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className={`${VM_CARD} p-5`}>
@@ -498,8 +493,8 @@ export default function VisitorEmployeeOverview({
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.9fr_1.15fr]">
-        <div className={`${VM_CARD} overflow-hidden`}>
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+        <div className={`${VM_CARD} overflow-hidden xl:col-span-3`}>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h3 className="text-sm font-bold text-slate-900">Recent employee check-ins</h3>
             <Link href={employeesHref} className="text-xs font-semibold text-primary-700 hover:underline">
@@ -556,7 +551,7 @@ export default function VisitorEmployeeOverview({
           </div>
         </div>
 
-        <div className={`${VM_CARD} p-5`}>
+        <div className={`${VM_CARD} p-5 xl:col-span-2`}>
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-900">Employee status overview</h3>
             <Link href={summaryHref} className="text-xs font-semibold text-primary-700 hover:underline">
@@ -602,7 +597,7 @@ export default function VisitorEmployeeOverview({
           </div>
         </div>
 
-        <div className={`${VM_CARD} overflow-hidden`}>
+        <div className={`${VM_CARD} overflow-hidden xl:col-span-5`}>
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <h3 className="text-sm font-bold text-slate-900">Recent visitor registrations</h3>
             <Link href={VISITOR_MANAGEMENT_PATH} className="text-xs font-semibold text-primary-700 hover:underline">
@@ -697,6 +692,7 @@ export default function VisitorEmployeeOverview({
           </Link>
         </div>
       </section>
+      </div>
     </div>
   );
 }

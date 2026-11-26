@@ -142,7 +142,7 @@ export default function BiometricRecognitionPage() {
   const stationUrl = stationToken ? employeeBiometricStationPayload(stationToken, origin) : "";
 
   return (
-    <div className="space-y-6 -mx-2 sm:mx-0">
+    <div className="grid gap-4">
       <div>
         <h1 className="flex items-center gap-2 border-b border-hairline pb-3 text-2xl font-bold text-[#1a2332]">
           <Fingerprint className="h-7 w-7 text-primary-700" />

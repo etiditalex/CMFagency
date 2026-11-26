@@ -411,7 +411,7 @@ export default function EmployeeSummaryReportsPage() {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="grid gap-4">
       <style jsx global>{`
         @media print {
           body * {
