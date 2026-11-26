@@ -467,6 +467,7 @@ export async function pullAliExpressIntoCatalog(
     if (stale.length > 0) {
       await admin.from("merchandise_items").delete().in("id", stale);
     }
+    await admin.from("merchandise_items").delete().eq("source", "aliexpress").eq("category", "Laptop check");
   }
 
   return {
