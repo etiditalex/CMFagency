@@ -340,7 +340,7 @@ export default function MerchandiseClient({
           </div>
         ) : null}
 
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-4 flex flex-wrap gap-2 pb-1">
           {categories.map((category) => {
             const department = SUPPLIER_DEPARTMENTS.find((item) => item.id === category);
             const active = selectedCategory === category;
