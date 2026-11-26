@@ -8,6 +8,7 @@ export type SupplierPullResult = {
   configured: boolean;
   products: MerchItem[];
   warning?: string;
+  status?: "ok" | "empty" | "signature" | "permission" | "unavailable" | "unconfigured";
 };
 
 function envNumber(name: string, fallback: number, min: number, max: number): number {
@@ -20,16 +21,7 @@ export function aliexpressConfigured(): boolean {
   return Boolean(envValue("ALIEXPRESS_APP_KEY") && envValue("ALIEXPRESS_APP_SECRET") && envValue("ALIEXPRESS_TRACKING_ID"));
 }
 
-type SignStyle =
-  | "iop-sha256"
-  | "iop-sha256-nomethod"
-  | "top-hmac-sha256"
-  | "top-md5"
-  | "iop-md5"
-  | "top-hmac-md5"
-  | "rest-sha256";
-
-let preferredStyle: SignStyle = "top-hmac-sha256";
+type SignStyle = "top-sha256" | "gop-sha256";
 
 function envValue(name: string): string {
   let value = process.env[name]?.trim() ?? "";
@@ -39,28 +31,27 @@ function envValue(name: string): string {
   return value;
 }
 
-function signRequest(style: SignStyle, apiName: string, params: Record<string, string>, secret: string): string {
-  const keys = Object.keys(params)
-    .filter((key) => key !== "sign" && params[key] !== "" && !(style === "iop-sha256-nomethod" && key === "method"))
-    .sort();
-  let payload = style === "top-hmac-sha256" || style === "top-md5" || style === "top-hmac-md5" ? "" : apiName;
-  for (const key of keys) payload += key + params[key];
-  if (style === "top-md5" || style === "iop-md5") {
-    return crypto
-      .createHash("md5")
-      .update(secret + payload + secret, "utf8")
-      .digest("hex")
-      .toUpperCase();
-  }
-  const algorithm = style === "top-hmac-md5" ? "md5" : "sha256";
-  return crypto.createHmac(algorithm, secret).update(payload, "utf8").digest("hex").toUpperCase();
+function chinaTimestamp(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "00";
+  return `${pick("year")}-${pick("month")}-${pick("day")} ${pick("hour")}:${pick("minute")}:${pick("second")}`;
 }
 
-function signMethodFor(style: SignStyle): string {
-  if (style === "top-hmac-sha256") return "hmac-sha256";
-  if (style === "top-md5" || style === "iop-md5") return "md5";
-  if (style === "top-hmac-md5") return "hmac";
-  return "sha256";
+function signRequest(params: Record<string, string>, secret: string): string {
+  const payload = Object.keys(params)
+    .filter((key) => key !== "sign" && params[key] !== "")
+    .sort()
+    .reduce((text, key) => text + key + params[key], "");
+  return crypto.createHmac("sha256", secret).update(payload, "utf8").digest("hex").toUpperCase();
 }
 
 function isSignatureError(message: string): boolean {
@@ -182,25 +173,29 @@ function productIdsFromQuery(query: string): string[] {
   return Array.from(ids).slice(0, 10);
 }
 
-const SIGN_STYLES: SignStyle[] = ["top-hmac-sha256", "top-md5", "iop-sha256-nomethod", "rest-sha256"];
+const SIGN_STYLES: SignStyle[] = ["top-sha256", "gop-sha256"];
+
+function isPermissionError(message: string): boolean {
+  return /permission|not authorized|insufficient/i.test(message);
+}
 
 async function postAliExpress(method: string, business: Record<string, string>, style: SignStyle): Promise<unknown> {
   const appKey = envValue("ALIEXPRESS_APP_KEY");
   const secret = envValue("ALIEXPRESS_APP_SECRET");
-  const apiName = style === "rest-sha256" ? `/${method.replace(/\./g, "/")}` : method;
-  const configuredEndpoint = envValue("ALIEXPRESS_API_URL");
-  const endpoint =
-    style === "rest-sha256"
-      ? `https://api-sg.aliexpress.com/rest${apiName}`
-      : configuredEndpoint || "https://api-sg.aliexpress.com/sync";
+  const endpoint = envValue("ALIEXPRESS_API_URL") || "https://api-sg.aliexpress.com/sync";
   const params: Record<string, string> = {
     app_key: appKey,
-    timestamp: String(Date.now()),
-    sign_method: signMethodFor(style),
+    method,
+    sign_method: "sha256",
+    timestamp: style === "top-sha256" ? chinaTimestamp() : String(Date.now()),
     ...business,
   };
-  if (style !== "rest-sha256") params.method = method;
-  params.sign = signRequest(style, apiName, params, secret);
+  if (style === "top-sha256") {
+    params.format = "json";
+    params.simplify = "true";
+    params.v = "2.0";
+  }
+  params.sign = signRequest(params, secret);
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" },
@@ -222,31 +217,31 @@ async function postAliExpress(method: string, business: Record<string, string>, 
 }
 
 async function callAliExpress(method: string, business: Record<string, string>): Promise<unknown> {
-  const ordered = [preferredStyle, ...SIGN_STYLES.filter((style) => style !== preferredStyle)];
-  let lastSignatureError = "AliExpress rejected the app signature.";
-  for (const style of ordered) {
+  let sawSignature = false;
+  let lastMessage = "AliExpress rejected the request.";
+  for (const style of SIGN_STYLES) {
     try {
       const payload = await postAliExpress(method, business, style);
       const message = apiErrorMessage(payload);
-      if (message && isSignatureError(message)) {
-        lastSignatureError = message;
+      if (!message) return payload;
+      lastMessage = message;
+      if (isSignatureError(message)) {
+        sawSignature = true;
         continue;
       }
-      if (message) throw new Error(message);
-      preferredStyle = style;
-      return payload;
+      throw new Error(message);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
+      const message = error instanceof Error ? error.message : lastMessage;
+      lastMessage = message || lastMessage;
       if (isSignatureError(message) || /not JSON|request failed \(\d+\)|aborted|timeout|api path is invalid/i.test(message)) {
-        if (isSignatureError(message)) lastSignatureError = message;
+        if (isSignatureError(message)) sawSignature = true;
         continue;
       }
       throw error;
     }
   }
-  throw new Error(
-    `${lastSignatureError} Check that ALIEXPRESS_APP_KEY and ALIEXPRESS_APP_SECRET are the Open Platform App Key and App Secret, with no extra quotes.`
-  );
+  console.error(`AliExpress ${method}: ${lastMessage}`);
+  throw new Error(sawSignature || isSignatureError(lastMessage) ? "signature" : lastMessage);
 }
 
 function productField(product: RawProduct, names: string[]): unknown {
@@ -322,11 +317,15 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
 
 const SEARCH_METHODS = [
   "aliexpress.affiliate.hotproduct.query",
-  "aliexpress.affiliate.product.query",
   "aliexpress.affiliate.product.smartmatch",
+  "aliexpress.affiliate.product.query",
 ];
 
-async function fetchRawProducts(query: string, page: number, pageSize: number): Promise<RawProduct[]> {
+async function fetchRawProducts(
+  query: string,
+  page: number,
+  pageSize: number
+): Promise<{ products: RawProduct[]; status: NonNullable<SupplierPullResult["status"]> }> {
   const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
   const ids = productIdsFromQuery(query);
   const base = {
@@ -337,6 +336,9 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     page_size: String(pageSize),
   };
   const methods = ids.length ? ["aliexpress.affiliate.productdetail.get"] : SEARCH_METHODS;
+  let clean = false;
+  let signature = false;
+  let permission = false;
 
   for (const method of methods) {
     const params: Record<string, string> = { ...base };
@@ -348,14 +350,18 @@ async function fetchRawProducts(query: string, page: number, pageSize: number): 
     try {
       const payload = await callAliExpress(method, params);
       const products = asProductList(payload);
-      if (products.length > 0) return products;
+      if (products.length > 0) return { products, status: "ok" };
+      clean = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       if (/tracking/i.test(message)) throw error;
+      if (message === "signature" || isSignatureError(message)) signature = true;
+      else if (isPermissionError(message)) permission = true;
     }
   }
 
-  return [];
+  const status = clean ? "empty" : signature ? "signature" : permission ? "permission" : "unavailable";
+  return { products: [], status };
 }
 
 export async function pullAliExpressIntoCatalog(
@@ -363,7 +369,7 @@ export async function pullAliExpressIntoCatalog(
   input: { query: string; category?: string; page?: number; pageSize?: number }
 ): Promise<SupplierPullResult> {
   if (!aliexpressConfigured()) {
-    return { configured: false, products: [] };
+    return { configured: false, products: [], status: "unconfigured" };
   }
 
   const query = input.query.replace(/[\u0000-\u001F]/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
@@ -375,16 +381,19 @@ export async function pullAliExpressIntoCatalog(
   const pageSize = Math.max(1, Math.min(40, Math.trunc(input.pageSize ?? 20)));
   const category = String(input.category ?? "").trim().slice(0, 80);
 
-  let raw: RawProduct[] = [];
+  let fetched: { products: RawProduct[]; status: NonNullable<SupplierPullResult["status"]> };
   try {
-    raw = await fetchRawProducts(query, page, pageSize);
+    fetched = await fetchRawProducts(query, page, pageSize);
   } catch {
-    return { configured: true, products: [], warning: "Supplier products are not available right now." };
+    return { configured: true, products: [], status: "unavailable", warning: "Supplier products are not available right now." };
+  }
+  if (fetched.status === "signature" || fetched.status === "permission" || fetched.status === "unavailable") {
+    return { configured: true, products: [], status: fetched.status, warning: "Supplier products are not available right now." };
   }
 
-  const drafts = toDrafts(raw, category).slice(0, pageSize);
+  const drafts = toDrafts(fetched.products, category).slice(0, pageSize);
   if (drafts.length === 0) {
-    return { configured: true, products: [], warning: "No products matched that search." };
+    return { configured: true, products: [], status: "empty", warning: "No products matched that search." };
   }
 
   const { data, error } = await admin
@@ -399,14 +408,16 @@ export async function pullAliExpressIntoCatalog(
     return {
       configured: true,
       products: [],
+      status: "unavailable",
       warning: missing
         ? "Run database/ticketing_voting_mvp_patch_108_merchandise_dropship.sql in Supabase, then search again."
-        : error.message,
+        : "Supplier products are not available right now.",
     };
   }
 
   return {
     configured: true,
     products: ((data ?? []) as Record<string, unknown>[]).map(mapMerchRow),
+    status: "ok",
   };
 }

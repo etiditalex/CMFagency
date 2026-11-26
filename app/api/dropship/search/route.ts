@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
     products: result.products.map(forShop),
     pulled: result.products.length,
     warning: result.warning ?? null,
+    status: result.status ?? null,
   });
 }
 
@@ -102,5 +103,6 @@ export async function POST(req: NextRequest) {
     products: result.products,
     pulled: result.products.length,
     warning: result.warning ?? null,
+    status: result.status ?? null,
   });
 }
