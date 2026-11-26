@@ -14,6 +14,7 @@ import KesPrice from "@/app/merchandise/KesPrice";
 import {
   SUPPLIER_DEPARTMENTS,
   discountPercent,
+  formatKes,
   loadActiveMerchandise,
   type MerchItem,
 } from "@/lib/dropship/catalog";
@@ -189,6 +190,34 @@ export default function MerchandiseClient({
     void pullSupplier("fashion clothes", "Fashion");
   }, [supplierConfigured, merchandise, pullSupplier]);
 
+  const heroOffers = useMemo(() => {
+    const deals = merchandise
+      .filter((item) => item.originalPrice != null && item.originalPrice > item.price)
+      .sort((a, b) => b.originalPrice! - b.price - (a.originalPrice! - a.price))
+      .slice(0, 4)
+      .map((item) => ({
+        key: String(item.id),
+        href: `/merchandise/${item.id}`,
+        title: `${formatKes(item.originalPrice! - item.price)} OFF`,
+        detail: `from ${formatKes(item.price)}`,
+        chip: item.category || "Shop deal",
+        image: item.image,
+        name: item.name,
+      }));
+    if (deals.length > 0) return deals;
+    return [
+      { key: "pay", href: null as string | null, title: "M-Pesa or card", detail: "checkout on this site", chip: "Kenya checkout", image: "", name: "" },
+      { key: "price", href: null as string | null, title: "Prices in KSh", detail: "supplier sale, shown here", chip: "Pay on this site", image: "", name: "" },
+      { key: "ship", href: "/cart", title: "Ships to Kenya", detail: "usually 7–20 days", chip: "Delivery", image: "", name: "" },
+    ];
+  }, [merchandise]);
+
+  const heroPercent = useMemo(() => {
+    return merchandise.reduce((max, item) => Math.max(max, discountPercent(item.price, item.originalPrice) ?? 0), 0);
+  }, [merchandise]);
+
+  const heroVisual = heroOffers.find((offer) => offer.image) ?? merchandise.find((item) => item.image);
+
   const categories = useMemo(() => {
     const names = new Set<string>(SUPPLIER_DEPARTMENTS.map((item) => item.id));
     for (const item of merchandise) {
@@ -269,35 +298,48 @@ export default function MerchandiseClient({
   return (
     <div className="min-h-screen bg-[#F6F7FB]" style={{ paddingTop: "var(--site-nav-height)" }}>
       <header className="bg-black text-white">
-        <div className="container-custom flex min-h-[270px] flex-col items-center justify-center px-4 py-8 text-center">
-          <p className="text-xl font-bold text-white">Sale ends: Dec 4, 10:59 (GMT+3)</p>
-          <h1 className="!mt-2 !bg-gradient-to-r !from-[#c8f5cf] !via-white !to-[#f3b7e2] !bg-clip-text !text-4xl !font-bold !leading-tight !tracking-normal !text-transparent sm:!text-5xl md:!text-6xl">
-            Massive holiday deals
-          </h1>
-          <div className="mt-6 flex w-full max-w-4xl gap-3 overflow-x-auto pb-1">
-            {[
-              { amount: "M-Pesa or card", detail: "checkout on this site", code: "Kenya checkout", href: null },
-              { amount: "Prices in KSh", detail: "supplier sale, shown here", code: "Pay on this site", href: null },
-              { amount: "Ships to Kenya", detail: "usually 7–20 days", code: `${cart.reduce((sum, item) => sum + item.quantity, 0)} in cart`, href: "/cart" },
-            ].map((offer) => {
-              const card = (
-                <div className="min-w-[190px] flex-1 rounded-md border border-dashed border-[#ffb3c2] bg-[#ff2751]/10 px-3 py-4 text-center">
-                  <p className="text-[17px] font-bold leading-snug text-[#FF2751]">{offer.amount}</p>
-                  <p className="mt-1 text-sm font-normal text-[#FF7D97]">{offer.detail}</p>
-                  <p className="mt-3 text-sm font-bold text-[#FF2751]">{offer.code}</p>
-                </div>
-              );
-              return offer.href ? (
-                <Link key={offer.amount} href={offer.href} className="min-w-[190px] flex-1">
-                  {card}
-                </Link>
-              ) : (
-                <div key={offer.amount} className="min-w-[190px] flex-1">
-                  {card}
-                </div>
-              );
-            })}
+        <div className="relative mx-auto flex min-h-[240px] max-w-[1200px] items-center px-4 py-4 md:px-8">
+          <div className="relative z-10 min-w-0 flex-1 md:max-w-[680px]">
+            <p className="text-xl font-bold leading-none text-white">Sale ends: Dec 4, 10:59 (GMT+3)</p>
+            <h1 className="!mt-2 !bg-gradient-to-r !from-[#d9f8cf] !via-[#f4f1ff] !to-[#f3b6e0] !bg-clip-text !text-[34px] !font-black !leading-none !tracking-tight !text-transparent sm:!text-[42px]">
+              {heroPercent > 0 ? `UP TO ${heroPercent}% OFF` : "UP TO 80% OFF"}
+            </h1>
+            <div className="mt-4 flex h-[110px] max-w-[560px] overflow-x-auto bg-[#FFDBDB] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {heroOffers.map((offer, index) => {
+                const body = (
+                  <span className={`flex h-full w-[148px] shrink-0 flex-col px-2.5 py-2 ${index > 0 ? "border-l border-dashed border-[#ff8aa0]" : ""}`}>
+                    <span className="truncate text-[15px] font-bold leading-6 text-[#FF2751]">{offer.title}</span>
+                    <span className="truncate text-xs font-normal leading-6 text-[#FF7D97]">{offer.detail}</span>
+                    <span className="mt-auto inline-flex h-6 max-w-full items-center truncate bg-white px-1.5 text-[13px] font-bold leading-6 text-[#FF2751]">
+                      {offer.chip}
+                    </span>
+                  </span>
+                );
+                return offer.href ? (
+                  <Link key={offer.key} href={offer.href} className="flex shrink-0">
+                    {body}
+                  </Link>
+                ) : (
+                  <div key={offer.key} className="flex shrink-0">
+                    {body}
+                  </div>
+                );
+              })}
+            </div>
           </div>
+          {heroVisual && "image" in heroVisual && heroVisual.image ? (
+            <div className="absolute inset-y-0 right-0 hidden w-[387px] md:block">
+              <Image
+                src={heroVisual.image}
+                alt={heroVisual.name || "Shop deal"}
+                fill
+                sizes="387px"
+                referrerPolicy="no-referrer"
+                unoptimized={!canOptimizeRemoteImage(heroVisual.image)}
+                className="object-cover object-center"
+              />
+            </div>
+          ) : null}
         </div>
         <div className="border-t border-white/10 bg-white">
           <form
