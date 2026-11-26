@@ -297,20 +297,20 @@ export default function MerchandiseClient({
 
   return (
     <div className="min-h-screen bg-[#F6F7FB]" style={{ paddingTop: "var(--site-nav-height)" }}>
-      <header className="bg-black text-white">
+      <header className="bg-[#1148C0] text-white">
         <div className="relative mx-auto flex min-h-[240px] max-w-[1200px] items-center px-4 py-4 md:px-8">
           <div className="relative z-10 min-w-0 flex-1 md:max-w-[680px]">
             <p className="text-xl font-bold leading-none text-white">Sale ends: Dec 4, 10:59 (GMT+3)</p>
-            <h1 className="!mt-2 !bg-gradient-to-r !from-[#d9f8cf] !via-[#f4f1ff] !to-[#f3b6e0] !bg-clip-text !text-[34px] !font-black !leading-none !tracking-tight !text-transparent sm:!text-[42px]">
+            <h1 className="!mt-2 !bg-gradient-to-r !from-white !via-[#E7EEFB] !to-[#2CBD71] !bg-clip-text !text-[34px] !font-black !leading-none !tracking-tight !text-transparent sm:!text-[42px]">
               {heroPercent > 0 ? `UP TO ${heroPercent}% OFF` : "UP TO 80% OFF"}
             </h1>
-            <div className="mt-4 flex h-[110px] max-w-[560px] overflow-x-auto bg-[#FFDBDB] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="mt-4 flex h-[110px] max-w-[560px] overflow-x-auto bg-[#E7EEFB] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {heroOffers.map((offer, index) => {
                 const body = (
-                  <span className={`flex h-full w-[148px] shrink-0 flex-col px-2.5 py-2 ${index > 0 ? "border-l border-dashed border-[#ff8aa0]" : ""}`}>
-                    <span className="truncate text-[15px] font-bold leading-6 text-[#FF2751]">{offer.title}</span>
-                    <span className="truncate text-xs font-normal leading-6 text-[#FF7D97]">{offer.detail}</span>
-                    <span className="mt-auto inline-flex h-6 max-w-full items-center truncate bg-white px-1.5 text-[13px] font-bold leading-6 text-[#FF2751]">
+                  <span className={`flex h-full w-[148px] shrink-0 flex-col px-2.5 py-2 ${index > 0 ? "border-l border-dashed border-[#1148C0]/35" : ""}`}>
+                    <span className="truncate text-[15px] font-bold leading-6 text-[#0D3A99]">{offer.title}</span>
+                    <span className="truncate text-xs font-normal leading-6 text-[#1148C0]">{offer.detail}</span>
+                    <span className="mt-auto inline-flex h-6 max-w-full items-center truncate bg-white px-1.5 text-[13px] font-bold leading-6 text-[#1148C0]">
                       {offer.chip}
                     </span>
                   </span>
@@ -366,7 +366,7 @@ export default function MerchandiseClient({
               <button
                 type="submit"
                 disabled={pulling}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#191919] px-4 py-2 text-xs font-bold text-white hover:bg-black disabled:opacity-60"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#1148C0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D3A99] disabled:opacity-60"
               >
                 {pulling ? "Searching…" : "Search"}
               </button>
