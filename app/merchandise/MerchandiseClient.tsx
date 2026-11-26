@@ -63,6 +63,7 @@ export default function MerchandiseClient({
   const [showToast, setShowToast] = useState(false);
   const [addedItem, setAddedItem] = useState("");
   const [lightbox, setLightbox] = useState<null | { src: string; alt: string }>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -295,19 +296,22 @@ export default function MerchandiseClient({
     window.setTimeout(() => setShowToast(false), 2800);
   };
 
+  const activeFilterCount =
+    (priceBand !== "all" ? 1 : 0) + (inStockOnly ? 1 : 0) + (saleOnly ? 1 : 0) + (savedOnly ? 1 : 0);
+
   return (
-    <div className="min-h-screen bg-[#F6F7FB]" style={{ paddingTop: "var(--site-nav-height)" }}>
+    <div className="min-h-screen overflow-x-hidden bg-[#F6F7FB] pb-[max(1.5rem,env(safe-area-inset-bottom))]" style={{ paddingTop: "var(--site-nav-height)" }}>
       <header className="bg-[#1148C0] text-white">
-        <div className="relative mx-auto flex min-h-[240px] max-w-[1200px] items-center px-4 py-4 md:px-8">
+        <div className="relative mx-auto flex max-w-[1200px] items-center px-4 py-4 md:min-h-[240px] md:px-8">
           <div className="relative z-10 min-w-0 flex-1 md:max-w-[680px]">
-            <p className="text-xl font-bold leading-none text-white">Sale ends: Dec 4, 10:59 (GMT+3)</p>
-            <h1 className="!mt-2 !bg-gradient-to-r !from-white !via-[#E7EEFB] !to-[#2CBD71] !bg-clip-text !text-[34px] !font-black !leading-none !tracking-tight !text-transparent sm:!text-[42px]">
+            <p className="text-sm font-bold leading-snug text-white sm:text-xl sm:leading-none">Sale ends: Dec 4, 10:59 (GMT+3)</p>
+            <h1 className="!mt-2 !bg-gradient-to-r !from-white !via-[#E7EEFB] !to-[#2CBD71] !bg-clip-text !text-[28px] !font-black !leading-none !tracking-tight !text-transparent sm:!text-[34px] md:!text-[42px]">
               {heroPercent > 0 ? `UP TO ${heroPercent}% OFF` : "UP TO 80% OFF"}
             </h1>
-            <div className="mt-4 flex h-[110px] max-w-[560px] overflow-x-auto bg-[#E7EEFB] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-4 mt-4 flex h-[104px] snap-x snap-mandatory overflow-x-auto bg-[#E7EEFB] px-4 [scrollbar-width:none] sm:mx-0 sm:h-[110px] sm:max-w-[560px] sm:px-0 [&::-webkit-scrollbar]:hidden">
               {heroOffers.map((offer, index) => {
                 const body = (
-                  <span className={`flex h-full w-[148px] shrink-0 flex-col px-2.5 py-2 ${index > 0 ? "border-l border-dashed border-[#1148C0]/35" : ""}`}>
+                  <span className={`flex h-full w-[136px] shrink-0 snap-start flex-col px-2.5 py-2 sm:w-[148px] ${index > 0 ? "border-l border-dashed border-[#1148C0]/35" : ""}`}>
                     <span className="truncate text-[15px] font-bold leading-6 text-[#0D3A99]">{offer.title}</span>
                     <span className="truncate text-xs font-normal leading-6 text-[#1148C0]">{offer.detail}</span>
                     <span className="mt-auto inline-flex h-6 max-w-full items-center truncate bg-white px-1.5 text-[13px] font-bold leading-6 text-[#1148C0]">
@@ -356,17 +360,13 @@ export default function MerchandiseClient({
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={
-                  supplierConfigured
-                    ? "Search the shop or pull products from the supplier catalog"
-                    : "Search products"
-                }
-                className="w-full rounded-full border border-[#E4E7EF] bg-[#F6F7FB] py-3.5 pl-12 pr-28 text-sm text-[#151321] outline-none ring-[#1148C0] focus:bg-white focus:ring-2"
+                placeholder="Search products"
+                className="w-full rounded-full border border-[#E4E7EF] bg-[#F6F7FB] py-3 pl-11 pr-24 text-base text-[#151321] outline-none ring-[#1148C0] focus:bg-white focus:ring-2 md:py-3.5 md:pl-12 md:pr-28 md:text-sm"
               />
               <button
                 type="submit"
                 disabled={pulling}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#1148C0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D3A99] disabled:opacity-60"
+                className="absolute right-1.5 top-1/2 min-h-10 -translate-y-1/2 rounded-full bg-[#1148C0] px-3.5 text-xs font-bold text-white hover:bg-[#0D3A99] disabled:opacity-60 md:px-4"
               >
                 {pulling ? "Searching…" : "Search"}
               </button>
@@ -376,7 +376,7 @@ export default function MerchandiseClient({
         </div>
       </header>
 
-      <section className="container-custom py-6 md:py-8">
+      <section className="container-custom py-4 md:py-8">
         {catalogError ? (
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
             <p className="font-semibold">Products could not be loaded.</p>
@@ -384,7 +384,7 @@ export default function MerchandiseClient({
           </div>
         ) : null}
 
-        <div className="mb-4 flex flex-wrap gap-2 pb-1">
+        <div className="-mx-4 mb-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
           {categories.map((category) => {
             const department = SUPPLIER_DEPARTMENTS.find((item) => item.id === category);
             const active = selectedCategory === category;
@@ -404,7 +404,7 @@ export default function MerchandiseClient({
                   setSelectedCategory(category);
                   if (department) void pullSupplier(department.query, department.id);
                 }}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                className={`shrink-0 snap-start rounded-full px-4 py-2.5 text-sm font-semibold transition ${
                   active ? "bg-[#151321] text-white" : "bg-white text-[#151321] ring-1 ring-[#E4E7EF] hover:bg-[#E7EEFB]"
                 }`}
               >
@@ -414,9 +414,35 @@ export default function MerchandiseClient({
           })}
         </div>
 
-        <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-[#E4E7EF] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <SlidersHorizontal className="h-4 w-4 text-[#6B6B7A]" />
+        <div className="mb-4 rounded-2xl border border-[#E4E7EF] bg-white p-3 sm:mb-5">
+          <div className="flex items-center gap-2 sm:hidden">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[#F6F7FB] px-3 text-xs font-semibold text-[#151321]"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-[#6B6B7A]" />
+              Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </button>
+            <p className="ml-auto text-xs font-semibold text-[#6B6B7A]">
+              {loadingCatalog ? "Loading…" : `${filteredMerchandise.length}`}
+            </p>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortKey)}
+              aria-label="Sort products"
+              className="min-h-11 max-w-[46%] rounded-full border border-[#E4E7EF] bg-white px-3 text-xs font-semibold text-[#151321]"
+            >
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="rating">Top rated</option>
+              <option value="discount">Biggest discount</option>
+            </select>
+          </div>
+          <div className={`${filtersOpen ? "mt-3 flex" : "hidden"} flex-wrap items-center gap-2 text-sm sm:mt-0 sm:flex`}>
+            <SlidersHorizontal className="hidden h-4 w-4 text-[#6B6B7A] sm:block" />
             {(
               [
                 ["all", "Any price"],
@@ -429,7 +455,7 @@ export default function MerchandiseClient({
                 key={id}
                 type="button"
                 onClick={() => setPriceBand(id)}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                className={`min-h-10 rounded-full px-3 py-2 text-xs font-semibold ${
                   priceBand === id ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A] hover:bg-[#F6F7FB]"
                 }`}
               >
@@ -439,26 +465,26 @@ export default function MerchandiseClient({
             <button
               type="button"
               onClick={() => setInStockOnly((value) => !value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${inStockOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
+              className={`min-h-10 rounded-full px-3 py-2 text-xs font-semibold ${inStockOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
             >
               In stock
             </button>
             <button
               type="button"
               onClick={() => setSaleOnly((value) => !value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${saleOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
+              className={`min-h-10 rounded-full px-3 py-2 text-xs font-semibold ${saleOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
             >
               On sale
             </button>
             <button
               type="button"
               onClick={() => setSavedOnly((value) => !value)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${savedOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
+              className={`min-h-10 rounded-full px-3 py-2 text-xs font-semibold ${savedOnly ? "bg-[#E7EEFB] text-[#0D3A99]" : "text-[#6B6B7A]"}`}
             >
               Saved
             </button>
           </div>
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <div className="mt-3 hidden items-center justify-end gap-3 sm:flex">
             <p className="text-xs font-semibold text-[#6B6B7A]">
               {loadingCatalog ? "Loading…" : `${filteredMerchandise.length} product${filteredMerchandise.length === 1 ? "" : "s"}`}
             </p>
@@ -555,8 +581,8 @@ export default function MerchandiseClient({
                         {item.orders > 0 ? <span className="text-[#191919]">{soldLabel(item.orders)}</span> : null}
                       </div>
                     ) : null}
-                    <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
-                      <KesPrice amount={item.price} />
+                    <div className="mt-1 flex flex-wrap items-baseline gap-1">
+                      <KesPrice amount={item.price} currencyClass="text-xs" amountClass="text-base sm:text-xl" />
                       {item.originalPrice != null && item.originalPrice > item.price ? (
                         <span className="text-xs font-normal text-[#999999] line-through">
                           KSh{Math.round(item.originalPrice).toLocaleString("en-KE")}
@@ -567,7 +593,7 @@ export default function MerchandiseClient({
                     {choose ? (
                       <Link
                         href={`/merchandise/${item.id}`}
-                        className="mt-2 inline-flex items-center justify-center rounded-full border border-[#191919] px-3 py-1.5 text-xs font-medium text-[#191919] hover:bg-[#191919] hover:text-white"
+                        className="mt-2 inline-flex min-h-10 w-full items-center justify-center rounded-full border border-[#191919] px-3 py-2 text-xs font-medium text-[#191919] hover:bg-[#191919] hover:text-white"
                       >
                         Choose options
                       </Link>
@@ -576,7 +602,7 @@ export default function MerchandiseClient({
                         type="button"
                         disabled={!item.inStock}
                         onClick={() => addItem(item)}
-                        className={`mt-2 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+                        className={`mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium ${
                           !item.inStock
                             ? "cursor-not-allowed bg-[#E4E7EF] text-[#6B6B7A]"
                             : inCart
@@ -612,7 +638,7 @@ export default function MerchandiseClient({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
-            className="fixed bottom-6 left-1/2 z-50 w-[min(92vw,380px)] -translate-x-1/2"
+            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 w-[min(92vw,380px)] -translate-x-1/2"
           >
             <div className="flex items-center gap-3 rounded-2xl border border-[#E4E7EF] bg-white p-3 shadow-xl">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2CBD71]">
