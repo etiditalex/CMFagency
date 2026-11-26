@@ -152,7 +152,7 @@ function moneyToKes(amountRaw: unknown, currencyRaw: unknown): number | null {
   if (!Number.isFinite(amount) || amount < 0) return null;
   const currency = String(currencyRaw ?? "USD").trim().toUpperCase();
   const usdToKes = envNumber("DROPSHIP_USD_TO_KES", 130, 50, 400);
-  const markup = envNumber("DROPSHIP_MARKUP_PERCENT", 40, 0, 300);
+  const markup = envNumber("DROPSHIP_MARKUP_PERCENT", 0, 0, 300);
   const kes = currency === "KES" ? amount : amount * usdToKes;
   const withMarkup = kes * (1 + markup / 100);
   return Math.max(50, Math.round(withMarkup / 10) * 10);
@@ -244,6 +244,49 @@ async function callAliExpress(method: string, business: Record<string, string>):
   throw new Error(sawSignature || isSignatureError(lastMessage) ? "signature" : lastMessage);
 }
 
+function matchesDepartment(title: string, category: string, priceKes: number): boolean {
+  const name = title.toLowerCase();
+  if (category === "Computers") {
+    if (priceKes < 12000) return false;
+    if (/case|cover|skin|sticker|keyboard|mouse|cable|charger|stand|sleeve|bag|adapter|hub|webcam|speaker|mousepad|riser|dock|cooler|fan/.test(name)) {
+      return false;
+    }
+    return /laptop|notebook|macbook|chromebook|desktop|all-in-one|gaming pc|mini pc/.test(name);
+  }
+  if (category === "Phone") {
+    if (priceKes < 6000) return false;
+    if (/case|cover|screen protector|tempered|cable|charger|holder|stand|glass|pouch|wallet|lens|film/.test(name)) {
+      return false;
+    }
+    return /smartphone|mobile phone|iphone|android phone|\bphone\b/.test(name);
+  }
+  return true;
+}
+
+function productQualifies(product: RawProduct, category: string): boolean {
+  const title = String(productField(product, ["product_title", "productTitle", "title", "product_name"]) ?? "");
+  const currency = productField(product, [
+    "target_sale_price_currency",
+    "sale_price_currency",
+    "target_original_price_currency",
+    "targetSalePriceCurrency",
+  ]);
+  const sale = moneyToKes(
+    productField(product, [
+      "target_sale_price",
+      "target_app_sale_price",
+      "app_sale_price",
+      "sale_price",
+      "targetSalePrice",
+      "appSalePrice",
+      "salePrice",
+    ]),
+    currency
+  );
+  if (!title || sale == null) return false;
+  return matchesDepartment(title, category, sale);
+}
+
 function productField(product: RawProduct, names: string[]): unknown {
   for (const name of names) {
     if (product[name] != null && product[name] !== "") return product[name];
@@ -288,6 +331,7 @@ function toDrafts(products: RawProduct[], categoryLabel: string) {
       currency
     );
     if (sale == null) continue;
+    if (!matchesDepartment(title, categoryLabel, sale)) continue;
     const original = moneyToKes(
       product.target_original_price ?? product.original_price ?? product.app_original_price,
       product.target_original_price_currency || currency
@@ -324,7 +368,8 @@ const SEARCH_METHODS = [
 async function fetchRawProducts(
   query: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  category: string
 ): Promise<{ products: RawProduct[]; status: NonNullable<SupplierPullResult["status"]> }> {
   const trackingId = envValue("ALIEXPRESS_TRACKING_ID");
   const ids = productIdsFromQuery(query);
@@ -345,11 +390,11 @@ async function fetchRawProducts(
     if (method === "aliexpress.affiliate.productdetail.get") params.product_ids = ids.join(",");
     else params.keywords = query;
     if (method !== "aliexpress.affiliate.product.smartmatch" && method !== "aliexpress.affiliate.productdetail.get") {
-      params.sort = "SALE_PRICE_ASC";
+      params.sort = "LAST_VOLUME_DESC";
     }
     try {
       const payload = await callAliExpress(method, params);
-      const products = asProductList(payload);
+      const products = asProductList(payload).filter((item) => productQualifies(item, category));
       if (products.length > 0) return { products, status: "ok" };
       clean = true;
     } catch (error) {
@@ -383,7 +428,7 @@ export async function pullAliExpressIntoCatalog(
 
   let fetched: { products: RawProduct[]; status: NonNullable<SupplierPullResult["status"]> };
   try {
-    fetched = await fetchRawProducts(query, page, pageSize);
+    fetched = await fetchRawProducts(query, page, pageSize, category);
   } catch {
     return { configured: true, products: [], status: "unavailable", warning: "Supplier products are not available right now." };
   }
@@ -413,6 +458,21 @@ export async function pullAliExpressIntoCatalog(
         ? "Run database/ticketing_voting_mvp_patch_108_merchandise_dropship.sql in Supabase, then search again."
         : "Supplier products are not available right now.",
     };
+  }
+
+  if (category === "Computers" || category === "Phone") {
+    const existing = await admin
+      .from("merchandise_items")
+      .select("id,name,price_kes")
+      .eq("source", "aliexpress")
+      .eq("category", category)
+      .limit(1000);
+    const stale = ((existing.data ?? []) as { id: number; name?: string; price_kes?: number }[])
+      .filter((row) => !matchesDepartment(String(row.name ?? ""), category, Number(row.price_kes ?? 0)))
+      .map((row) => row.id);
+    if (stale.length > 0) {
+      await admin.from("merchandise_items").delete().in("id", stale);
+    }
   }
 
   return {

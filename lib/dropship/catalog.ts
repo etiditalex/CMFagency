@@ -26,14 +26,14 @@ export const SUPPLIER_DEPARTMENTS = [
   { id: "Beauty", query: "beauty skincare" },
   { id: "Home", query: "home decor" },
   { id: "Electronics", query: "electronics gadgets" },
-  { id: "Computers", query: "laptop computer" },
+  { id: "Computers", query: "laptop" },
   { id: "Accessories", query: "fashion accessories" },
   { id: "Sports", query: "sports fitness" },
   { id: "Kids", query: "kids clothes" },
   { id: "Shoes", query: "women shoes" },
   { id: "Bags", query: "travel bag" },
   { id: "Jewelry", query: "fashion jewelry" },
-  { id: "Phone", query: "phone case" },
+  { id: "Phone", query: "smartphone" },
 ] as const;
 
 const BASE_COLUMNS =
