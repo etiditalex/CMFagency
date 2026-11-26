@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Heart, Search, ShoppingCart, SlidersHorizontal, Star, Truck, X } from "lucide-react";
+import { Check, Heart, Search, ShoppingCart, SlidersHorizontal, Star, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
@@ -268,38 +268,40 @@ export default function MerchandiseClient({
 
   return (
     <div className="min-h-screen bg-[#F6F7FB]" style={{ paddingTop: "var(--site-nav-height)" }}>
-      <div className="bg-[#1148C0] text-white">
-        <div className="container-custom flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-2 text-[11px] font-semibold tracking-wide sm:text-xs">
-          <span>Pay with M-Pesa or card</span>
-          <span className="hidden sm:inline">Delivery across Kenya</span>
-          <span>Supplier orders arrive in 7–20 days</span>
-        </div>
-      </div>
-
-      <header className="border-b border-[#E4E7EF] bg-white">
-        <div className="container-custom py-6 md:py-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1148C0]">Changer Fusions Shop</p>
-          <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="!text-2xl !font-semibold !tracking-normal !text-[#191919]">Shop</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6B6B7A] md:text-base">
-                Browse our products and supplier finds. Prices are in Kenya shillings, and checkout stays on this site.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 text-xs font-semibold text-[#151321]">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E7EEFB] px-3 py-1.5">
-                <Truck className="h-3.5 w-3.5 text-[#1148C0]" />
-                Ships to Kenya
-              </span>
-              <Link href="/cart" className="inline-flex items-center gap-1.5 rounded-full border border-[#E4E7EF] px-3 py-1.5 hover:bg-[#F6F7FB]">
-                <ShoppingCart className="h-3.5 w-3.5" />
-                {cart.reduce((sum, item) => sum + item.quantity, 0)} in cart
-              </Link>
-            </div>
+      <header className="bg-black text-white">
+        <div className="container-custom flex min-h-[270px] flex-col items-center justify-center px-4 py-8 text-center">
+          <p className="text-xl font-bold text-white">Sale ends: Dec 4, 10:59 (GMT+3)</p>
+          <h1 className="!mt-2 !bg-gradient-to-r !from-[#c8f5cf] !via-white !to-[#f3b7e2] !bg-clip-text !text-4xl !font-bold !leading-tight !tracking-normal !text-transparent sm:!text-5xl md:!text-6xl">
+            Massive holiday deals
+          </h1>
+          <div className="mt-6 flex w-full max-w-4xl gap-3 overflow-x-auto pb-1">
+            {[
+              { amount: "M-Pesa or card", detail: "checkout on this site", code: "Kenya checkout", href: null },
+              { amount: "Prices in KSh", detail: "supplier sale, shown here", code: "Pay on this site", href: null },
+              { amount: "Ships to Kenya", detail: "usually 7–20 days", code: `${cart.reduce((sum, item) => sum + item.quantity, 0)} in cart`, href: "/cart" },
+            ].map((offer) => {
+              const card = (
+                <div className="min-w-[190px] flex-1 rounded-md border border-dashed border-[#ffb3c2] bg-[#ff2751]/10 px-3 py-4 text-center">
+                  <p className="text-[17px] font-bold leading-snug text-[#FF2751]">{offer.amount}</p>
+                  <p className="mt-1 text-sm font-normal text-[#FF7D97]">{offer.detail}</p>
+                  <p className="mt-3 text-sm font-bold text-[#FF2751]">{offer.code}</p>
+                </div>
+              );
+              return offer.href ? (
+                <Link key={offer.amount} href={offer.href} className="min-w-[190px] flex-1">
+                  {card}
+                </Link>
+              ) : (
+                <div key={offer.amount} className="min-w-[190px] flex-1">
+                  {card}
+                </div>
+              );
+            })}
           </div>
-
+        </div>
+        <div className="border-t border-white/10 bg-white">
           <form
-            className="mt-5"
+            className="container-custom py-3"
             onSubmit={(event) => {
               event.preventDefault();
               setSelectedCategory("All");
@@ -322,13 +324,13 @@ export default function MerchandiseClient({
               <button
                 type="submit"
                 disabled={pulling}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#1148C0] px-4 py-2 text-xs font-bold text-white hover:bg-[#0D3A99] disabled:opacity-60"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full bg-[#191919] px-4 py-2 text-xs font-bold text-white hover:bg-black disabled:opacity-60"
               >
                 {pulling ? "Searching…" : "Search"}
               </button>
             </label>
           </form>
-          {supplierNote ? <p className="mt-2 text-sm text-[#6B6B7A]">{supplierNote}</p> : null}
+          {supplierNote ? <p className="container-custom pb-3 text-sm text-[#6B6B7A]">{supplierNote}</p> : null}
         </div>
       </header>
 
