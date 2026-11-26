@@ -10,10 +10,10 @@ import { supabase } from "@/lib/supabase";
 import BlogPromoCarousel from "@/components/blogs/BlogPromoCarousel";
 import type { BlogSidebarAdRow } from "@/lib/blog-server";
 import { canOptimizeRemoteImage } from "@/lib/image-hosts";
+import KesPrice from "@/app/merchandise/KesPrice";
 import {
   SUPPLIER_DEPARTMENTS,
   discountPercent,
-  formatKes,
   loadActiveMerchandise,
   type MerchItem,
 } from "@/lib/dropship/catalog";
@@ -281,7 +281,7 @@ export default function MerchandiseClient({
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1148C0]">Changer Fusions Shop</p>
           <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-[#151321] md:text-4xl">Shop</h1>
+              <h1 className="!text-2xl !font-semibold !tracking-normal !text-[#191919]">Shop</h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#6B6B7A] md:text-base">
                 Browse our products and supplier finds. Prices are in Kenya shillings, and checkout stays on this site.
               </p>
@@ -453,11 +453,8 @@ export default function MerchandiseClient({
               const inCart = cart.some((cartItem) => cartItem.key === lineKey);
               const choose = needsOptions(item);
               return (
-                <article
-                  key={item.id}
-                  className="group flex flex-col overflow-hidden rounded-2xl border border-[#E4E7EF] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <div className="relative aspect-square bg-[#F6F7FB]">
+                <article key={item.id} className="group flex flex-col bg-white">
+                  <div className="relative aspect-square overflow-hidden rounded-md bg-[#F6F7FB]">
                     <Link href={`/merchandise/${item.id}`} className="absolute inset-0" aria-label={item.name}>
                       {item.image ? (
                         <Image
@@ -471,13 +468,8 @@ export default function MerchandiseClient({
                         />
                       ) : null}
                     </Link>
-                    {off ? (
-                      <span className="absolute left-2 top-2 rounded-full bg-[#D64545] px-2 py-1 text-[11px] font-bold text-white">
-                        -{off}%
-                      </span>
-                    ) : null}
                     {item.source === "aliexpress" ? (
-                      <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[#0D3A99]">
+                      <span className="absolute bottom-2 left-2 rounded bg-white/95 px-1.5 py-0.5 text-[11px] font-normal text-[#666666]">
                         Supplier
                       </span>
                     ) : null}
@@ -502,36 +494,36 @@ export default function MerchandiseClient({
                       Zoom
                     </button>
                   </div>
-                  <div className="flex flex-1 flex-col p-3">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-[#1148C0]">{item.category || "Shop"}</p>
-                    <h2 className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm font-bold leading-snug text-[#151321]">
-                      <Link href={`/merchandise/${item.id}`} className="hover:text-[#1148C0]">
+                  <div className="flex flex-1 flex-col px-1 pb-3 pt-2">
+                    <h2 className="line-clamp-2 min-h-9 !text-sm !font-normal !leading-[18px] !tracking-normal !text-[#191919]">
+                      <Link href={`/merchandise/${item.id}`} className="hover:text-[#191919]">
                         {item.name}
                       </Link>
                     </h2>
                     {item.rating > 0 || item.orders > 0 ? (
-                      <div className="mt-2 flex items-center gap-1 text-[11px] text-[#6B6B7A]">
+                      <div className="mt-1 flex items-center gap-1.5 text-xs font-normal text-[#666666]">
                         {item.rating > 0 ? (
                           <>
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                            <span className="font-semibold text-[#151321]">{item.rating.toFixed(1)}</span>
+                            <Star className="h-3 w-3 fill-[#FFB400] text-[#FFB400]" />
+                            <span>{item.rating.toFixed(1)}</span>
                           </>
                         ) : null}
-                        {item.orders > 0 ? <span>{soldLabel(item.orders)}</span> : null}
+                        {item.orders > 0 ? <span className="text-[#191919]">{soldLabel(item.orders)}</span> : null}
                       </div>
-                    ) : (
-                      <p className="mt-2 line-clamp-1 text-[11px] text-[#6B6B7A]">{item.description}</p>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-baseline gap-2">
-                      <span className="text-base font-extrabold text-[#151321]">{formatKes(item.price)}</span>
+                    ) : null}
+                    <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
+                      <KesPrice amount={item.price} />
                       {item.originalPrice != null && item.originalPrice > item.price ? (
-                        <span className="text-xs text-[#6B6B7A] line-through">{formatKes(item.originalPrice)}</span>
+                        <span className="text-xs font-normal text-[#999999] line-through">
+                          KSh{Math.round(item.originalPrice).toLocaleString("en-KE")}
+                        </span>
                       ) : null}
+                      {off ? <span className="text-sm font-normal text-[#F00633]">-{off}%</span> : null}
                     </div>
                     {choose ? (
                       <Link
                         href={`/merchandise/${item.id}`}
-                        className="mt-3 inline-flex items-center justify-center rounded-full border border-[#151321] px-3 py-2 text-xs font-bold text-[#151321] hover:bg-[#151321] hover:text-white"
+                        className="mt-2 inline-flex items-center justify-center rounded-full border border-[#191919] px-3 py-1.5 text-xs font-medium text-[#191919] hover:bg-[#191919] hover:text-white"
                       >
                         Choose options
                       </Link>
@@ -540,7 +532,7 @@ export default function MerchandiseClient({
                         type="button"
                         disabled={!item.inStock}
                         onClick={() => addItem(item)}
-                        className={`mt-3 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold ${
+                        className={`mt-2 inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
                           !item.inStock
                             ? "cursor-not-allowed bg-[#E4E7EF] text-[#6B6B7A]"
                             : inCart

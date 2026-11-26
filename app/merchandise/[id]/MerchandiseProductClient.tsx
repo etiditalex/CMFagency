@@ -7,7 +7,8 @@ import { Check, ChevronRight, ShieldCheck, ShoppingCart, Star, Truck, X } from "
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
 import { canOptimizeRemoteImage } from "@/lib/image-hosts";
-import { discountPercent, formatKes, type MerchItem } from "@/lib/dropship/catalog";
+import { discountPercent, type MerchItem } from "@/lib/dropship/catalog";
+import KesPrice from "@/app/merchandise/KesPrice";
 
 export type ProductDetail = MerchItem;
 
@@ -97,48 +98,46 @@ export default function MerchandiseProductClient({ product }: { product: Product
           </div>
 
           <div className="rounded-3xl border border-[#E4E7EF] bg-white p-5 md:p-7">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#1148C0]">{product.category || "Shop"}</p>
-              {product.source === "aliexpress" ? (
-                <span className="rounded-full bg-[#E7EEFB] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#0D3A99]">
-                  Supplier
-                </span>
-              ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-sm font-normal text-[#666666]">
+              <p>{product.category || "Shop"}</p>
+              {product.source === "aliexpress" ? <span>Supplier</span> : null}
             </div>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-[#151321] md:text-3xl">{product.name}</h1>
+            <h1 className="mt-2 !text-xl !font-normal !leading-snug !tracking-normal !text-[#191919] md:!text-2xl">{product.name}</h1>
             {product.rating > 0 || product.orders > 0 ? (
-              <div className="mt-3 flex items-center gap-2 text-sm text-[#6B6B7A]">
+              <div className="mt-3 flex items-center gap-2 text-sm font-normal text-[#666666]">
                 {product.rating > 0 ? (
-                  <span className="inline-flex items-center gap-1 font-semibold text-[#151321]">
-                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  <span className="inline-flex items-center gap-1">
+                    <Star className="h-3.5 w-3.5 fill-[#FFB400] text-[#FFB400]" />
                     {product.rating.toFixed(1)}
                   </span>
                 ) : null}
-                {product.orders > 0 ? <span>{product.orders.toLocaleString("en-KE")} sold</span> : null}
+                {product.orders > 0 ? <span className="text-[#191919]">{product.orders.toLocaleString("en-KE")} sold</span> : null}
               </div>
             ) : null}
 
-            <div className="mt-5 flex items-end gap-3">
-              <p className="text-3xl font-extrabold text-[#151321]">{formatKes(product.price)}</p>
+            <div className="mt-4 flex flex-wrap items-baseline gap-2">
+              <KesPrice amount={product.price} currencyClass="text-base" amountClass="text-[28px]" />
               {product.originalPrice != null && product.originalPrice > product.price ? (
-                <p className="pb-1 text-sm text-[#6B6B7A] line-through">{formatKes(product.originalPrice)}</p>
+                <p className="text-sm font-normal text-[#999999] line-through">
+                  KSh{Math.round(product.originalPrice).toLocaleString("en-KE")}
+                </p>
               ) : null}
-              {off ? <span className="mb-1 rounded-full bg-[#D64545] px-2 py-0.5 text-xs font-bold text-white">-{off}%</span> : null}
+              {off ? <span className="text-sm font-normal text-[#F00633]">-{off}%</span> : null}
             </div>
             {product.description ? <p className="mt-4 text-sm leading-relaxed text-[#6B6B7A]">{product.description}</p> : null}
 
             <div className="mt-6 space-y-4">
               {product.sizes.length > 0 ? (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Size</p>
+                  <p className="text-sm font-normal text-[#191919]">Size</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {product.sizes.map((size) => (
                       <button
                         key={size}
                         type="button"
                         onClick={() => setVariant((current) => ({ ...current, size }))}
-                        className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-                          variant.size === size ? "bg-[#151321] text-white" : "bg-[#F6F7FB] text-[#151321] ring-1 ring-[#E4E7EF]"
+                        className={`rounded-full px-3 py-1.5 text-sm font-normal ${
+                          variant.size === size ? "bg-[#191919] text-white" : "bg-[#F6F7FB] text-[#191919] ring-1 ring-[#E4E7EF]"
                         }`}
                       >
                         {size}
@@ -150,15 +149,15 @@ export default function MerchandiseProductClient({ product }: { product: Product
 
               {product.colors.length > 0 ? (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Color</p>
+                  <p className="text-sm font-normal text-[#191919]">Color</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {product.colors.map((color) => (
                       <button
                         key={color}
                         type="button"
                         onClick={() => setVariant((current) => ({ ...current, color }))}
-                        className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-                          variant.color === color ? "bg-[#151321] text-white" : "bg-[#F6F7FB] text-[#151321] ring-1 ring-[#E4E7EF]"
+                        className={`rounded-full px-3 py-1.5 text-sm font-normal ${
+                          variant.color === color ? "bg-[#191919] text-white" : "bg-[#F6F7FB] text-[#191919] ring-1 ring-[#E4E7EF]"
                         }`}
                       >
                         {color}
@@ -169,12 +168,12 @@ export default function MerchandiseProductClient({ product }: { product: Product
               ) : null}
 
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#6B6B7A]">Quantity</p>
+                <p className="text-sm font-normal text-[#191919]">Quantity</p>
                 <div className="inline-flex items-center rounded-full border border-[#E4E7EF]">
                   <button type="button" className="px-3 py-1.5 text-lg" onClick={() => setQty((value) => Math.max(1, value - 1))} aria-label="Decrease quantity">
                     −
                   </button>
-                  <span className="min-w-8 text-center text-sm font-bold">{qty}</span>
+                  <span className="min-w-8 text-center text-sm font-normal">{qty}</span>
                   <button type="button" className="px-3 py-1.5 text-lg" onClick={() => setQty((value) => Math.min(10, value + 1))} aria-label="Increase quantity">
                     +
                   </button>
@@ -198,7 +197,7 @@ export default function MerchandiseProductClient({ product }: { product: Product
                       quantity: qty,
                     });
                   }}
-                  className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold text-white ${
+                  className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-white ${
                     product.inStock && optionsReady
                       ? alreadyInCart
                         ? "bg-[#2CBD71]"
@@ -211,7 +210,7 @@ export default function MerchandiseProductClient({ product }: { product: Product
                 </button>
                 <Link
                   href="/cart"
-                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#151321] px-5 text-sm font-bold text-[#151321] hover:bg-[#151321] hover:text-white"
+                  className="inline-flex min-h-12 items-center justify-center rounded-full border border-[#191919] px-5 text-sm font-medium text-[#191919] hover:bg-[#191919] hover:text-white"
                 >
                   View cart
                 </Link>
