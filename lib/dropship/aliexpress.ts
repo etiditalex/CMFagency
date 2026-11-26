@@ -247,18 +247,12 @@ async function callAliExpress(method: string, business: Record<string, string>):
 function matchesDepartment(title: string, category: string, priceKes: number): boolean {
   const name = title.toLowerCase();
   if (category === "Computers") {
-    if (priceKes < 12000) return false;
-    if (/case|cover|skin|sticker|keyboard|mouse|cable|charger|stand|sleeve|bag|adapter|hub|webcam|speaker|mousepad|riser|dock|cooler|fan/.test(name)) {
-      return false;
-    }
-    return /laptop|notebook|macbook|chromebook|desktop|all-in-one|gaming pc|mini pc/.test(name);
+    if (priceKes < 15000) return false;
+    return !/case|cover|skin|sticker|keyboard|mouse|cable|charger|stand|sleeve|bag|adapter|hub|webcam|speaker|mousepad|riser|dock|cooler|fan|protector/.test(name);
   }
   if (category === "Phone") {
-    if (priceKes < 6000) return false;
-    if (/case|cover|screen protector|tempered|cable|charger|holder|stand|glass|pouch|wallet|lens|film/.test(name)) {
-      return false;
-    }
-    return /smartphone|mobile phone|iphone|android phone|\bphone\b/.test(name);
+    if (priceKes < 8000) return false;
+    return !/case|cover|screen protector|tempered|cable|charger|holder|stand|glass|pouch|wallet|lens|film|protector/.test(name);
   }
   return true;
 }
